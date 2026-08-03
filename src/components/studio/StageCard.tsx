@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { T, type Lang } from "./strings";
 
 /**
  * The one card shell used by every full-width block on this page.
@@ -12,9 +13,13 @@ export const StageCard: React.FC<
     defaultOpen?: boolean;
     collapsible?: boolean;
     align?: "left" | "right";
+    lang?: Lang;
   }>
-> = ({ title, subtitle, defaultOpen = true, collapsible = false, align = "left", children }) => {
+> = ({ title, subtitle, defaultOpen = true, collapsible = false, align = "left", lang = "en", children }) => {
   const [open, setOpen] = useState(defaultOpen);
+  // `useState` snapshots at mount. When the caller's answer changes later the
+  // card must follow it, never keep a stale first answer.
+  useEffect(() => { setOpen(defaultOpen); }, [defaultOpen]);
   return (
     <section
       style={{
@@ -42,6 +47,7 @@ export const StageCard: React.FC<
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
+            aria-label={T.cardToggle[lang]}
             style={{
               background: "transparent",
               border: 0,
