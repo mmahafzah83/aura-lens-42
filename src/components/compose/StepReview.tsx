@@ -11,6 +11,8 @@ interface Props {
   busy: null | "post" | "save";
   notice: string | null;
   publishDisabled: boolean;
+  deckAvailable: boolean;
+  onMakeDeck: () => void;
   onSwitchLanguage: () => void;
   onPost: () => void;
   onSave: () => void;
@@ -89,13 +91,27 @@ const PostingRing: React.FC = () => {
 /** Model A — the member is the editor-in-chief. One post, directly editable. */
 const StepReview: React.FC<Props> = ({
   lang, writeLang, content, onContentChange, busy, notice, publishDisabled,
-  onSwitchLanguage, onPost, onSave, onBack,
+  deckAvailable, onMakeDeck, onSwitchLanguage, onPost, onSave, onBack,
 }) => {
   const rtl = writeLang === "ar";
   const over = content.length > MAX;
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const active = focused || hovered;
+  const [format, setFormat] = useState<"post" | "deck">("post");
+
+  const optionCard = (selected: boolean, disabled: boolean): React.CSSProperties => ({
+    flex: "1 1 220px",
+    textAlign: rtl ? "right" : "left",
+    background: "var(--surface-card)",
+    border: `1px solid ${selected ? "var(--act)" : "var(--border-default)"}`,
+    boxShadow: selected ? "0 0 0 3px color-mix(in srgb, var(--act) 14%, transparent)" : "var(--shadow-card)",
+    borderRadius: 12,
+    padding: 14,
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.55 : 1,
+    transition: "border-color 120ms ease, box-shadow 120ms ease",
+  });
 
   return (
     <div>
@@ -174,7 +190,54 @@ const StepReview: React.FC<Props> = ({
         <Muted>{S.s5SwitchNote[lang]}</Muted>
       </div>
 
-      {notice && (
+      <div style={{ marginTop: 24 }} dir={rtl ? "rtl" : "ltr"}>
+        <div style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, color: "var(--text-primary)" }}>
+          {S.s5FormatHead[lang]}
+        </div>
+        <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+          <div
+            role="radio"
+            aria-checked={format === "post"}
+            tabIndex={0}
+            onClick={() => setFormat("post")}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setFormat("post"); }}
+            style={optionCard(format === "post", false)}
+          >
+            <div style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+              {S.s5FormatPost[lang]}
+            </div>
+            <div style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-secondary)", marginTop: 4 }}>
+              {S.s5FormatPostSub[lang]}
+            </div>
+          </div>
+
+          <div style={{ flex: "1 1 220px" }}>
+            <div
+              role="radio"
+              aria-checked={format === "deck"}
+              aria-disabled={!deckAvailable || undefined}
+              tabIndex={deckAvailable ? 0 : -1}
+              onClick={() => { if (deckAvailable) setFormat("deck"); }}
+              onKeyDown={(e) => { if (deckAvailable && (e.key === "Enter" || e.key === " ")) setFormat("deck"); }}
+              style={optionCard(format === "deck", !deckAvailable)}
+            >
+              <div style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+                {S.s5FormatDeck[lang]}
+              </div>
+              <div style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-secondary)", marginTop: 4 }}>
+                {S.s5FormatDeckSub[lang]}
+              </div>
+            </div>
+            {!deckAvailable && (
+              <div style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.7, color: "var(--text-muted)", marginTop: 8, textAlign: rtl ? "right" : "left" }}>
+                {S.s5DeckNeedsSignal[lang]}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {format === "post" && notice && (
         <p
           style={{
             fontFamily: "var(--ff-ui)",
@@ -188,7 +251,7 @@ const StepReview: React.FC<Props> = ({
         </p>
       )}
 
-      {busy === "post" && (
+      {format === "post" && busy === "post" && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}>
           <PostingRing />
           <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, color: "var(--machine-text)" }}>
@@ -219,9 +282,15 @@ const StepReview: React.FC<Props> = ({
       )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 22, flexWrap: "wrap" }}>
-        <ButtonPrimary onClick={onPost} disabled={busy !== null || publishDisabled}>
-          {S.s5Post[lang]}
-        </ButtonPrimary>
+        {format === "deck" ? (
+          <ButtonPrimary onClick={onMakeDeck} disabled={busy !== null}>
+            {S.s5OpenDeck[lang]}
+          </ButtonPrimary>
+        ) : (
+          <ButtonPrimary onClick={onPost} disabled={busy !== null || publishDisabled}>
+            {S.s5Post[lang]}
+          </ButtonPrimary>
+        )}
         <ButtonGhost onClick={onSave} disabled={busy !== null}>
           {S.s5Save[lang]}
         </ButtonGhost>
