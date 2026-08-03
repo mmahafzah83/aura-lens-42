@@ -7,10 +7,11 @@ import StepStart from "@/components/compose/StepStart";
 import StepChoose, { fromStartCard, type ChoiceRow } from "@/components/compose/StepChoose";
 import StepCheck from "@/components/compose/StepCheck";
 import StepWrite from "@/components/compose/StepWrite";
-import StepReview, { type QualityGate } from "@/components/compose/StepReview";
+import StepReview from "@/components/compose/StepReview";
 import StepDone from "@/components/compose/StepDone";
 import { LangToggle } from "@/components/compose/ui";
 import { S, type Lang } from "@/components/compose/strings";
+import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
 
 /**
  * /compose — a guided "write one post" pilot slice.
@@ -45,7 +46,6 @@ const Compose: React.FC = () => {
   // Write / Review
   const [genError, setGenError] = useState<string | null>(null);
   const [content, setContent] = useState("");
-  const [gate, setGate] = useState<QualityGate | null>(null);
   const [busy, setBusy] = useState<null | "post" | "save">(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [publishDisabled, setPublishDisabled] = useState(false);
@@ -177,8 +177,8 @@ const Compose: React.FC = () => {
       if (runId !== genRunId.current) return;
       const text = json?.content;
       if (!res.ok || !text) { setGenError("failed"); return; }
-      setContent(String(text));
-      setGate((json?.quality_gate as QualityGate) ?? null);
+      const cleaned = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
+      setContent(cleaned);
       setNotice(null);
       setPublishDisabled(false);
       setStep(5);
@@ -232,7 +232,9 @@ const Compose: React.FC = () => {
     const id = await insertDraft();
     if (!id) { setBusy(null); setNotice(S.s5PostFailed[lang]); return; }
     await supabase.from("linkedin_posts").update({ publish_attempted_at: new Date().toISOString() }).eq("id", id);
-    const { data, error } = await supabase.functions.invoke("linkedin-publish", { body: { postId: id } });
+    const { data, error } = await supabase.functions.invoke("linkedin-publish", {
+      body: { postId: id, advisory: true },
+    });
     setBusy(null);
     const payload = data as any;
     const message = `${payload?.error || ""} ${error?.message || ""}`.toLowerCase();
@@ -241,15 +243,6 @@ const Compose: React.FC = () => {
       setPostUrl((payload?.postUrl as string) || null);
       setDoneVariant("posted");
       setStep(6);
-      return;
-    }
-    if (payload?.blocked === true) {
-      if (message.includes("quality check unavailable")) {
-        setGate({ skipped: true });
-        setPublishDisabled(false);
-      } else {
-        setGate({ weaknesses: (payload?.weaknesses as string[]) || [] });
-      }
       return;
     }
     if (message.includes("not connected")) {
@@ -267,7 +260,6 @@ const Compose: React.FC = () => {
     setRows([]);
     setShowingAll(false);
     setContent("");
-    setGate(null);
     setNotice(null);
     setPostUrl(null);
     setPublishDisabled(false);
@@ -365,11 +357,10 @@ const Compose: React.FC = () => {
           lang={lang}
           writeLang={writeLang}
           content={content}
-          gate={gate}
+          onContentChange={setContent}
           busy={busy}
           notice={notice}
           publishDisabled={publishDisabled}
-          onFixWeakness={(w) => generate({ extraInstruction: `Strengthen this post by addressing: ${w}`, baseContent: content })}
           onSwitchLanguage={() => {
             const other: Lang = writeLang === "ar" ? "en" : "ar";
             setWriteLang(other);

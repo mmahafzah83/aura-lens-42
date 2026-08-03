@@ -4,7 +4,7 @@ export type Lang = "en" | "ar";
 export const S = {
   stepLabels: {
     en: ["Start", "Choose", "Check", "Write", "Review", "Done"],
-    ar: ["البداية", "الاختيار", "المراجعة", "الكتابة", "التحسين", "تم"],
+    ar: ["البداية", "الاختيار", "التحقق", "الكتابة", "المراجعة", "تم"],
   },
   signIn: { en: "Please sign in", ar: "من فضلك سجّل الدخول" },
   signInLink: { en: "Go to sign in", ar: "اذهب لتسجيل الدخول" },
@@ -63,6 +63,7 @@ export const S = {
     ar: ["نقرأ ما حفظته", "نطابق طريقتك في الكتابة", "نراجعه قبل أن تراه"],
   },
   s4Help: { en: "You can wait here — it takes about 20 seconds.", ar: "يمكنك الانتظار هنا — يستغرق حوالي 20 ثانية." },
+  s4AlmostThere: { en: "Almost there…", ar: "اقتربنا…" },
   s4Error: { en: "Something went wrong on our side. Please try once more.", ar: "حدث خطأ من جهتنا. جرّب مرة أخرى من فضلك." },
   tryAgain: { en: "Try again", ar: "حاول مرة أخرى" },
 
@@ -84,7 +85,10 @@ export const S = {
   s5SwitchNote: { en: "This rewrites it in the other language.", ar: "هذا يعيد كتابته باللغة الأخرى." },
   s5Post: { en: "Post it to LinkedIn", ar: "انشره على لينكدإن" },
   s5Save: { en: "Save for later", ar: "احفظه لوقت لاحق" },
-  s5Posting: { en: "Posting…", ar: "جارٍ النشر…" },
+  s5Posting: {
+    en: "Posting to LinkedIn — this can take up to a minute.",
+    ar: "جارٍ النشر على لينكدإن — قد يستغرق حتى دقيقة.",
+  },
   s5Saving: { en: "Saving…", ar: "جارٍ الحفظ…" },
   s5NotConnected: {
     en: "You need to connect LinkedIn once before posting. You can save this and connect from your settings.",
