@@ -482,6 +482,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
     skipped?: boolean;
   } | null>(null);
   const [gateBlocked, setGateBlocked] = useState(false);
+  const [gateNoticeDismissed, setGateNoticeDismissed] = useState(false);
   const [provenanceOpen, setProvenanceOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return window.matchMedia?.("(min-width: 768px)").matches ?? true;
@@ -2330,23 +2331,56 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                               Ready to publish — quality threshold met.
                             </div>
                           )}
-                          {/* Character count + reading time — table-stakes per AuthoredUp/Taplio/Buffer */}
-                          {(() => {
-                            const plain = stripMarkdown(displayedOutput || "");
-                            const chars = plain.length;
-                            const words = plain.split(/\s+/).filter(Boolean).length;
-                            const minutes = Math.max(1, Math.ceil(words / 200));
-                            const over = chars > 3000;
-                            return (
-                              <div
-                                className={`text-xs tabular-nums pt-1 ${over ? "font-medium text-[color:var(--error)]" : "text-[color:hsl(var(--muted-foreground))]"}`}
-                              >
-                                {chars.toLocaleString()} / 3,000 chars · ~{minutes} min read
-                              </div>
-                            );
-                          })()}
                         </div>
                       )}
+
+                      {/* Gate could not answer — never hide the reason behind the flag */}
+                      {gateSkipped && !gateNoticeDismissed && (
+                        <div className="border-t border-border/10 px-4 py-3 space-y-2">
+                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground font-semibold">
+                            We could not check this post
+                          </p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            That is our problem, not yours — your writing is fine. You can post it now, or ask us to check again.
+                          </p>
+                          <div className="flex gap-2 pt-0.5">
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => setGateNoticeDismissed(true)}
+                            >
+                              Post it anyway
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isGeneratingAny || !!actionLoading}
+                              className="h-7 text-xs border-[color:var(--act-fill)]/40 text-[color:var(--act)]"
+                              onClick={() => generate()}
+                            >
+                              Check again
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Character count + reading time — always shown, whatever the gate did */}
+                      <div className="border-t border-border/10 px-4 py-2">
+                        {(() => {
+                          const plain = stripMarkdown(displayedOutput || "");
+                          const chars = plain.length;
+                          const words = plain.split(/\s+/).filter(Boolean).length;
+                          const minutes = Math.max(1, Math.ceil(words / 200));
+                          const over = chars > 3000;
+                          return (
+                            <div
+                              className={`text-xs tabular-nums ${over ? "font-medium text-[color:var(--error)]" : "text-[color:hsl(var(--muted-foreground))]"}`}
+                            >
+                              {chars.toLocaleString()} / 3,000 chars · ~{minutes} min read
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </div>
                   );
                 })()}
