@@ -272,7 +272,7 @@ export const ZoneInspector: React.FC<{
                 onClick={() => onMove(slide.index, slide.index - 1)}
                 style={{ ...smallBtn, opacity: canMoveEarlier ? 1 : 0.55, cursor: canMoveEarlier ? "pointer" : "not-allowed" }}
               >
-                ← {T.moveEarlier[lang]}
+                {lang === "ar" ? `${T.moveEarlier[lang]} →` : `← ${T.moveEarlier[lang]}`}
               </button>
               <button
                 type="button"
@@ -280,7 +280,7 @@ export const ZoneInspector: React.FC<{
                 onClick={() => onMove(slide.index, slide.index + 1)}
                 style={{ ...smallBtn, opacity: canMoveLater ? 1 : 0.55, cursor: canMoveLater ? "pointer" : "not-allowed" }}
               >
-                {T.moveLater[lang]} →
+                {lang === "ar" ? `← ${T.moveLater[lang]}` : `${T.moveLater[lang]} →`}
               </button>
             </div>
             {!canMoveEarlier && (

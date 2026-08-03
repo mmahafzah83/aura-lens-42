@@ -159,9 +159,9 @@ export const T = {
   openThisPiece: { en: "Open this piece", ar: "افتح هذا العمل" },
   openLook: { en: "Open colours and length", ar: "افتح الألوان والطول" },
   openSlideEditor: { en: "Open the slide editor", ar: "افتح محرّر الشريحة" },
-  phoneNoActionYet: {
-    en: "There is nothing to do here until the step above is finished.",
-    ar: "لا شيء لتفعله هنا حتى تنتهي الخطوة أعلاه.",
+  phoneNeedWords: {
+    en: "Write something first, then you can carry on.",
+    ar: "اكتب شيئاً أولاً، ثم يمكنك المتابعة.",
   },
 
   // Zone: inspector

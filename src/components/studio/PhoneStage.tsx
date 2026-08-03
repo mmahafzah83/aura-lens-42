@@ -39,12 +39,18 @@ export const PhoneStage: React.FC<{
   mountRef: React.MutableRefObject<HTMLDivElement | null>;
   boxRef: React.MutableRefObject<HTMLDivElement | null>;
   showCanvas: boolean;
+  /** Height in px the slide row may occupy right now. Never zero, never covered. */
+  slideH: number;
+  /** Height in px of the whole non-scrolling column. */
+  columnH: number;
   empty?: React.ReactNode;
   footer?: React.ReactNode;
-}> = ({ lang, deck, theme, width, current, onCurrent, onFit, mountRef, boxRef, showCanvas, empty, footer }) => {
+}> = ({ lang, deck, theme, width, current, onCurrent, onFit, mountRef, boxRef, showCanvas, slideH, columnH, empty, footer }) => {
   const count = deck?.slides.length ?? 0;
-  const dir = deck?.dir ?? (lang === "ar" ? "rtl" : "ltr");
   const rtl = lang === "ar";
+  // J5 — the filmstrip mirrors on the INTERFACE language, not on the language
+  // the deck happens to be written in.
+  const dir = rtl ? "rtl" : "ltr";
   const atStart = current <= 0;
   const atEnd = current >= count - 1;
 
@@ -72,11 +78,21 @@ export const PhoneStage: React.FC<{
   );
 
   return (
-    <div ref={boxRef} style={{ display: "grid", gap: 12, minWidth: 0 }}>
+    <div
+      ref={boxRef}
+      style={{
+        display: "grid",
+        gridTemplateRows: "auto 1fr",
+        gap: 10,
+        minWidth: 0,
+        height: columnH,
+        overflow: "hidden",
+      }}
+    >
       {!deck && (
         <div
           style={{
-            aspectRatio: "4 / 5",
+            height: slideH,
             display: "grid",
             placeItems: "center",
             background: "var(--surface-card)",
@@ -95,12 +111,15 @@ export const PhoneStage: React.FC<{
 
       {deck && (
         <>
-          {showCanvas && (
-            <div style={{ width: "100%", aspectRatio: "4 / 5", overflow: "hidden", borderRadius: 14 }}>
+          {/* Row 1, pinned: the slide, sized to the space actually left over. */}
+          <div style={{ height: slideH, display: "grid", placeItems: "center", overflow: "hidden", borderRadius: 14 }}>
+            {showCanvas && (
               <StudioCanvas deck={deck} theme={theme} width={width} current={current} onFit={onFit} mountRef={mountRef} />
-            </div>
-          )}
+            )}
+          </div>
 
+          {/* Row 2: the filmstrip and the two wide steps. */}
+          <div style={{ display: "grid", gap: 8, alignContent: "start", overflow: "hidden" }}>
           <div
             dir={dir}
             style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 2 }}
@@ -136,6 +155,7 @@ export const PhoneStage: React.FC<{
 
           <div dir={rtl ? "rtl" : "ltr"} style={{ display: "flex", gap: 10 }}>
             {rtl ? [next, prev] : [prev, next]}
+          </div>
           </div>
         </>
       )}

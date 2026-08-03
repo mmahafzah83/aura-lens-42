@@ -13,6 +13,13 @@ export const ACTION_BAR_HEIGHT = 64;
 /** Anything anchored above the action bar starts here. */
 export const ABOVE_ACTION_BAR = `calc(64px + env(safe-area-inset-bottom, 0px) + ${ACTION_BAR_HEIGHT}px)`;
 
+/**
+ * The width every exported slide is rasterised at, on ANY device. The preview
+ * width follows the screen; the output resolution never does — a member who
+ * exports from a phone gets the same file as a member who exports from a desk.
+ */
+export const EXPORT_WIDTH = 720;
+
 /** True while the viewport is phone-shaped. Desktop never sees the phone tree. */
 export function useIsPhone(): boolean {
   const [phone, setPhone] = useState(

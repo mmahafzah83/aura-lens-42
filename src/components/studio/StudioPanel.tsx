@@ -38,7 +38,7 @@ import PhoneProgress from "@/components/studio/PhoneProgress";
 import PhoneActionBar from "@/components/studio/PhoneActionBar";
 import PhoneSheet from "@/components/studio/PhoneSheet";
 import PhoneStage from "@/components/studio/PhoneStage";
-import { useIsPhone, PHONE_MAX_WIDTH } from "@/components/studio/usePhone";
+import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 /** Slides need enough words to divide up. Below this the option is refused. */
@@ -203,6 +203,12 @@ export default function StudioPanel() {
   const [undoStack, setUndoStack] = useState<Array<{ content: string; deck: DeckIR | null }>>([]);
 
   const mountRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * J4 — the mount the PDF is rasterised from. It is ALWAYS off-screen and
+   * ALWAYS `EXPORT_WIDTH` wide, so the preview width (which follows the
+   * screen) can never lower the resolution of the file a member downloads.
+   */
+  const exportMountRef = useRef<HTMLDivElement | null>(null);
   const canvasBoxRef = useRef<HTMLDivElement | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(520);
   const [narrow, setNarrow] = useState(false);
@@ -214,6 +220,11 @@ export default function StudioPanel() {
   /** Which bottom sheet is open on a phone. Only ever one at a time. */
   const [sheet, setSheet] = useState<null | "inspector" | "look" | "piece">(null);
   const [sheetTall, setSheetTall] = useState(false);
+  /** J6 — a breakpoint change closes any sheet; it must never reopen itself. */
+  useEffect(() => { setSheet(null); setSheetTall(false); }, [isPhone]);
+  /** The top of the pinned step-3 column, measured, so the column can end exactly at the action bar. */
+  const [stageTop, setStageTop] = useState(220);
+  const [viewportH, setViewportH] = useState(() => (typeof window === "undefined" ? 740 : window.innerHeight));
 
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
@@ -263,6 +274,7 @@ export default function StudioPanel() {
   useEffect(() => {
     const measure = () => {
       setNarrow(window.innerWidth < 900);
+      setViewportH(window.innerHeight);
       const w = canvasBoxRef.current?.clientWidth ?? 520;
       const gutter = window.innerWidth < PHONE_MAX_WIDTH ? 0 : 28;
       setCanvasWidth(Math.max(260, Math.min(720, w - gutter)));
@@ -271,6 +283,17 @@ export default function StudioPanel() {
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [deck, step, isPhone, sheet]);
+
+  /**
+   * J2 — the step-3 phone column starts where it actually sits on screen and
+   * ends at the action bar, so nothing below the fold has to be scrolled to.
+   */
+  useEffect(() => {
+    if (!isPhone || step !== 3) return;
+    const el = canvasBoxRef.current;
+    if (!el) return;
+    setStageTop(Math.max(120, Math.round(el.getBoundingClientRect().top)));
+  }, [isPhone, step, format, deck, sheet, sheetTall, viewportH]);
 
   /* ---------- bring back the piece -------------------------------- */
   const restoredRef = useRef(false);
@@ -1007,13 +1030,14 @@ export default function StudioPanel() {
   const exportFile = useCallback(async () => {
     // Never fails silently: if it cannot run, the member is told why.
     if (!deck) { setProblem(T.exportNoDeck[lang]); return; }
-    if (!mountRef.current) { setProblem(T.exportNotReady[lang]); return; }
+    // Always the fixed-width export mount, never the on-screen preview.
+    if (!exportMountRef.current) { setProblem(T.exportNotReady[lang]); return; }
     setBusy("export");
     setProblem(null);
     setStatus(null);
     setBusyMessage(T.exporting[lang]);
     try {
-      const nodes = collectSlideNodes(mountRef.current);
+      const nodes = collectSlideNodes(exportMountRef.current);
       if (nodes.length === 0) { setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
       setExported(true);
@@ -1264,14 +1288,46 @@ export default function StudioPanel() {
   };
 
   /** M8 — a refused control always says why, in words, beside it. */
+  /**
+   * J3 — the note and the primary are ONE expression. If a primary is enabled
+   * anywhere on this screen, there is no note; if it is refused, the note says
+   * why in the words of the state the member is actually in.
+   */
+  const phonePrimaryEnabled =
+    step === 4
+      ? !(format === "slides" && deck) && !published && !confirmingPost
+        && Boolean(content.trim()) && content.length <= POST_MAX_CHARS
+        && busy !== "post" && !notReady
+      : stageOwnsPrimary
+        ? !deckBusy
+        : canContinue && !generating;
+
   const phoneBarNote =
-    step < 4 && !canContinue
-      ? step === 1
+    phonePrimaryEnabled || busyMessage
+      ? null
+      : step === 1
         ? T.chooseHelp[lang]
         : step === 2
-          ? T.slidesNeedPost[lang]
-          : T.phoneNoActionYet[lang]
-      : null;
+          ? T.phoneNeedWords[lang]
+          : step === 3
+            ? T.slidesNeedPost[lang]
+            : null;
+
+  /* ---------- J2: the step-3 phone column, in numbers ---------------- */
+  /** 64px shell navigation + 64px action bar + 8px of air. */
+  const PHONE_BOTTOM_RESERVE = 136;
+  /** Filmstrip, counter and the two wide steps under the slide. */
+  const PHONE_NAV_ROW = 200;
+  const phoneColumnH = Math.max(320, viewportH - stageTop - PHONE_BOTTOM_RESERVE);
+  const phoneSheetH = sheet
+    ? Math.max(
+        180,
+        Math.min(Math.round(viewportH * (sheetTall ? 0.78 : 0.42)), phoneColumnH - (sheetTall ? 160 : 200)),
+      )
+    : 0;
+  // The slide keeps whatever the sheet is not using: it shrinks, never hides.
+  const phoneSlideH = Math.max(140, sheet ? phoneColumnH - phoneSheetH : phoneColumnH - PHONE_NAV_ROW);
+  const phoneSlideWidth = Math.max(200, Math.min(canvasWidth, Math.round(phoneSlideH * 0.8)));
 
   return shell(
     <>
@@ -1336,7 +1392,7 @@ export default function StudioPanel() {
       {/* M1 — on a phone the pinned four-pill header IS the journey map: same
           behaviour, clickable in any order, and it never scrolls away. */}
       {isPhone ? (
-        <PhoneProgress lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtl={rtlShell} />
+        <PhoneProgress lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
       ) : (
         <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
       )}
@@ -1844,12 +1900,14 @@ export default function StudioPanel() {
               to be a column is now a sheet, and the sheet is anchored below
               the slide so the slide is never covered. */}
           {format === "slides" && isPhone && (
-            <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+            <div style={{ marginTop: 12 }}>
               <PhoneStage
                 lang={lang}
                 deck={deck}
                 theme={theme}
-                width={canvasWidth}
+                width={phoneSlideWidth}
+                slideH={phoneSlideH}
+                columnH={phoneColumnH}
                 current={current}
                 onCurrent={setCurrent}
                 onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
@@ -1857,36 +1915,34 @@ export default function StudioPanel() {
                 boxRef={canvasBoxRef}
                 showCanvas={canvasInStage}
                 empty={<span>{T.noSlidesYet[lang]}</span>}
-              />
-
-              {/* Collapsed rows. None of them consumes height until asked. */}
-              {([
+                footer={
+                  <div style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingTop: 4 }}>
+                    {([
                 ["inspector", T.openSlideEditor[lang], !deck],
                 ["look", T.openLook[lang], false],
                 ["piece", T.openThisPiece[lang], false],
-              ] as Array<["inspector" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
-                <div key={key} style={{ display: "grid", gap: 4 }}>
-                  <button
+                    ] as Array<["inspector" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
+                      <button
+                    key={key}
                     type="button"
                     disabled={refused}
                     onClick={() => { setSheet(key); setSheetTall(false); }}
+                    title={refused ? T.noSlidesYet[lang] : undefined}
                     style={{
-                      width: "100%", minHeight: 52, padding: "0 14px", borderRadius: 12,
-                      textAlign: rtlShell ? "right" : "left", cursor: refused ? "not-allowed" : "pointer",
+                      flex: "0 0 auto", minHeight: 48, padding: "0 14px", borderRadius: 12,
+                      cursor: refused ? "not-allowed" : "pointer",
                       opacity: refused ? 0.6 : 1,
                       background: "var(--surface-card)", border: "1px solid var(--border-default)",
-                      fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 600, color: "var(--text-primary)",
+                      fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)",
+                      whiteSpace: "nowrap",
                     }}
-                  >
+                      >
                     {label}
-                  </button>
-                  {refused && (
-                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
-                      {T.noSlidesYet[lang]}
-                    </p>
-                  )}
-                </div>
-              ))}
+                      </button>
+                    ))}
+                  </div>
+                }
+              />
             </div>
           )}
 
@@ -2219,6 +2275,7 @@ export default function StudioPanel() {
             open={sheet === "inspector"}
             title={T.zoneInspector[lang]}
             expanded={sheetTall}
+            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
@@ -2243,6 +2300,7 @@ export default function StudioPanel() {
             open={sheet === "look"}
             title={T.lookHead[lang]}
             expanded={sheetTall}
+            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
@@ -2262,9 +2320,55 @@ export default function StudioPanel() {
             open={sheet === "piece"}
             title={T.zonePiece[lang]}
             expanded={sheetTall}
+            height={phoneSheetH}
             onExpanded={setSheetTall}
             onClose={() => setSheet(null)}
           >
+            {/* J7 — the two controls the phone had lost live here, where there
+                is room for them: undo, and writing the piece in the other language. */}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+              <ButtonGhost onClick={undo} disabled={undoStack.length === 0} style={{ minHeight: 44 }}>
+                {T.undo[lang]}
+              </ButtonGhost>
+              <ButtonGhost
+                onClick={() => {
+                  const other: Lang = writeLang === "ar" ? "en" : "ar";
+                  const ownWords = content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
+                  if (ownWords) { setAskLangSwitch(other); return; }
+                  setWriteLang(other);
+                  setNotReady(null);
+                  void generate(undefined, other);
+                }}
+                disabled={generating || !choice}
+                style={{ minHeight: 44 }}
+              >
+                {writeLang === "ar" ? T.writeAgainEn[lang] : T.writeAgainAr[lang]}
+              </ButtonGhost>
+            </div>
+            {askLangSwitch && (
+              <div style={{ marginBottom: 12, background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12 }}>
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                  {askLangSwitch === "ar" ? T.langSwitchHeadAr[lang] : T.langSwitchHeadEn[lang]}
+                </p>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <ButtonPrimary
+                    onClick={() => {
+                      const other = askLangSwitch;
+                      setAskLangSwitch(null);
+                      setWriteLang(other);
+                      setNotReady(null);
+                      void generate(undefined, other);
+                    }}
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.langSwitchYes[lang]}
+                  </ButtonPrimary>
+                  <ButtonGhost onClick={() => setAskLangSwitch(null)} style={{ minHeight: 44 }}>
+                    {T.langSwitchNo[lang]}
+                  </ButtonGhost>
+                </div>
+              </div>
+            )}
             <ZonePiece
               lang={lang}
               writeLang={writeLang}
@@ -2291,17 +2395,17 @@ export default function StudioPanel() {
             }
             primary={
               step === 3 && format === "slides" && !deck ? (
-                <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 50, width: "100%" }}>
+                <ButtonPrimary onClick={() => void makeSlides()} disabled={!phonePrimaryEnabled} style={{ minHeight: 50, width: "100%" }}>
                   {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
                 </ButtonPrimary>
               ) : step < 4 ? (
-                <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 50, width: "100%" }}>
+                <ButtonPrimary onClick={onContinue} disabled={!phonePrimaryEnabled} style={{ minHeight: 50, width: "100%" }}>
                   {T.continue[lang]} {rtlShell ? "←" : "→"}
                 </ButtonPrimary>
               ) : !(format === "slides" && deck) && !published && !confirmingPost ? (
                 <ButtonPrimary
                   onClick={requestPost}
-                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post" || Boolean(notReady)}
+                  disabled={!phonePrimaryEnabled}
                   style={{ minHeight: 50, width: "100%" }}
                 >
                   {T.postItNow[lang]}
@@ -2312,24 +2416,23 @@ export default function StudioPanel() {
         </>
       )}
 
-      {/* The deck mount, kept alive with real layout whenever a deck exists.
-          Portalled to <body>: the dashboard tab container clips its overflow
-          and creates a positioning ancestor, and the PDF export needs this
-          mount to have real, unclipped layout. */}
-      {deck && !canvasInStage &&
+      {/* J4 — THE EXPORT MOUNT. Always off-screen, always EXPORT_WIDTH wide,
+          whatever the screen is. Portalled to <body> so no ancestor can clip
+          it. The on-screen preview keeps its own, screen-sized mount. */}
+      {deck &&
         createPortal(
           <div
             aria-hidden="true"
             dir="ltr"
-            style={{ position: "absolute", left: -99999, top: 0, width: canvasWidth }}
+            style={{ position: "absolute", left: -99999, top: 0, width: EXPORT_WIDTH }}
           >
             <StudioCanvas
               deck={deck}
               theme={theme}
-              width={canvasWidth}
+              width={EXPORT_WIDTH}
               current={current}
-              onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
-              mountRef={mountRef}
+              onFit={() => { /* fitting is reported by the on-screen preview only */ }}
+              mountRef={exportMountRef}
             />
           </div>,
           document.body,
