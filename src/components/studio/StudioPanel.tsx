@@ -1128,7 +1128,6 @@ export default function StudioPanel() {
   const shell = (children: React.ReactNode) => (
     <div
       dir={rtlShell ? "rtl" : "ltr"}
-      className={isPhone ? "pb-[188px] md:pb-0" : "pb-[152px] md:pb-0"}
       style={{ maxWidth: 1360, margin: "0 auto" }}
     >
       {children}
@@ -1354,21 +1353,8 @@ export default function StudioPanel() {
       {/* One journey map, at every width. */}
       <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
 
-      {/* On a phone the forward and save controls live in the one thumb zone
-          instead, so this strip carries only what Aura has to say. */}
-      {isPhone ? (
-        <div style={{ display: "grid", gap: 4, padding: "0 0 10px" }}>
-          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--machine-text)" }}>
-            {busyMessage ? `… ${busyMessage}` : ""}
-          </span>
-          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)" }}>
-            {status ? `✓ ${status}` : ""}
-          </span>
-          <span role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", lineHeight: 1.6 }}>
-            {problem ?? ""}
-          </span>
-        </div>
-      ) : (
+      {/* One status strip, at every width: what Aura is doing, what it has
+          done, and what is in the way. */}
       <div
         style={{
           display: "flex",
@@ -1428,7 +1414,6 @@ export default function StudioPanel() {
           </ButtonPrimary>
         )}
       </div>
-      )}
 
       {/* Motion for anything in flight, on every step. */}
       {busyMessage && <BusyBar message={busyMessage} />}
