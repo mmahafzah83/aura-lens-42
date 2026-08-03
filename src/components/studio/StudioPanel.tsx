@@ -488,7 +488,6 @@ export default function StudioPanel({
     setConfirmingPost(false);
     setAskReplace(false);
     setAskLangSwitch(null);
-    setUndoStack([]);
     preselectedRef.current = Boolean(next?.choice);
     draftPrefillRef.current = null;
     liveRef.current = {
@@ -522,7 +521,6 @@ export default function StudioPanel({
   /* ---------- step 1: the drafts already waiting ------------------ */
   const openDraft = useCallback(
     async (d: StudioDraft, source: string) => {
-      remember();
       setDraftId(d.id);
       setDraftSource(d._source);
       // A new piece is in the room: forget the row the last one created.
@@ -717,7 +715,6 @@ export default function StudioPanel({
       if (runId !== genRunId.current) return;
       const text = json?.content;
       if (!res.ok || !text) { setGenError("failed"); return; }
-      remember();
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
       setContent(generated);
       generatedTextRef.current = generated;
@@ -735,7 +732,7 @@ export default function StudioPanel({
       window.clearTimeout(timer);
       if (runId === genRunId.current) { setGenerating(false); setBusyMessage(null); }
     }
-  }, [choice, writeLang, remember, lang]);
+  }, [choice, writeLang, lang]);
 
   /* ---------- the draft row --------------------------------------- */
   /** The subject, written as a title so the Library never shows a raw line. */
@@ -1024,7 +1021,6 @@ export default function StudioPanel({
       }
       const parsed = DeckIRSchema.safeParse(result.deck);
       if (!parsed.success) { setDeckFailures([T.slidesFailedShape[lang]]); return; }
-      remember();
       setDeck({ ...parsed.data, theme });
       setDeckSource(builtFrom);
       setExported(false);
@@ -1036,7 +1032,7 @@ export default function StudioPanel({
       setDeckBusy(false);
       setBusyMessage(null);
     }
-  }, [choice, content, theme, deckLength, writeLang, lang, saveDraft, remember]);
+  }, [choice, content, theme, deckLength, writeLang, lang, saveDraft]);
 
   const changeThisLine = useCallback(async () => {
     if (!deck) return;
@@ -1053,13 +1049,12 @@ export default function StudioPanel({
       const candidate = replaceSlide(deck, current, result.slide);
       const parsed = DeckIRSchema.safeParse(candidate);
       if (!parsed.success) { setProblem(T.lineChangeFailed[lang]); return; }
-      remember();
       setDeck({ ...parsed.data, theme });
     } catch {
       setProblem(T.lineChangeFailed[lang]);
     }
     finally { setChangingLine(false); setBusyMessage(null); }
-  }, [deck, current, theme, lang, remember]);
+  }, [deck, current, theme, lang]);
 
   const uploadPicture = useCallback(async (file: File) => {
     setPictureNotice(null);
@@ -1084,14 +1079,13 @@ export default function StudioPanel({
       .from("deck-media")
       .createSignedUrl(path, 60 * 60 * 24 * 365);
     if (signErr || !signed) { setPictureNotice(T.picUploadFailed[lang]); return; }
-    remember();
     setDeck((d) => (d ? setSlidePhoto(d, current, signed.signedUrl) : d));
     } catch {
       setPictureNotice(T.picUploadFailed[lang]);
     } finally {
       setBusyMessage(null);
     }
-  }, [deck, current, lang, remember]);
+  }, [deck, current, lang]);
 
   const move = useCallback((from: number, to: number) => {
     setDeck((d) => {
@@ -1442,8 +1436,7 @@ export default function StudioPanel({
       if (pasted.trim()) {
         // Words already written are never replaced without being asked.
         if (content.trim() && !askReplace) { setAskReplace(true); return; }
-        remember();
-        setChoice((c) => c ?? { id: null, title: typedTopic.trim() || pasted.trim().slice(0, 60), insight: "" });
+          setChoice((c) => c ?? { id: null, title: typedTopic.trim() || pasted.trim().slice(0, 60), insight: "" });
         setContent(fixArabicDirectionalSymbols(stripMarkdown(pasted), writeLang));
         setPasted("");
         setAskReplace(false);
@@ -2036,7 +2029,7 @@ export default function StudioPanel({
                 writeLang={writeLang}
                 deck={deck}
                 current={current}
-                onDeck={(next) => { remember(); setDeck(next); }}
+                onDeck={(next) => { setDeck(next); }}
                 attention={attention}
                 onChangeLine={() => void changeThisLine()}
                 changing={changingLine}
