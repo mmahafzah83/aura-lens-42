@@ -737,7 +737,7 @@ export default function Studio() {
           .catch(() => { /* never surfaced */ });
       }
     },
-    [pieceMeta, draftSource, draftId, userId, content, writeLang],
+    [pieceMeta, userId, content, writeLang],
   );
 
   /* ---------- step 3: the slides, right here ---------------------- */
