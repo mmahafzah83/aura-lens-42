@@ -154,11 +154,20 @@ const Compose: React.FC = () => {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 60000);
     try {
+      // Always use a fresh token — the one captured at mount may have expired.
+      const { data: sess } = await supabase.auth.getSession();
+      const freshToken = sess?.session?.access_token;
+      if (!freshToken) {
+        window.clearTimeout(timer);
+        setGenError("session");
+        return;
+      }
+      setToken(freshToken);
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${freshToken}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         signal: controller.signal,
