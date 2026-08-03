@@ -155,9 +155,15 @@ export default function Studio() {
       setLang(seeded);
       setWriteLang(seeded);
       setReady(true);
+      // The composer opening is the first number the company reads.
+      void track("composer_opened", {
+        source: searchParams.get("draft") ? "studio_deep_link" : "studio",
+        signal_id: searchParams.get("signal") || null,
+        move_state: null,
+      });
     })();
     return () => { dead = true; };
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     try {
@@ -189,9 +195,14 @@ export default function Studio() {
       if (!raw) return;
       const saved = JSON.parse(raw) as {
         content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
-        step?: unknown; format?: unknown;
+        step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
       };
       let restoredAnything = false;
+      // Without the row id a reload inserts a second row for the same piece.
+      if (typeof saved.draftId === "string" && saved.draftId) setDraftId(saved.draftId);
+      if (saved.draftSource === "content_items" || saved.draftSource === "linkedin_posts") {
+        setDraftSource(saved.draftSource);
+      }
       if (typeof saved.content === "string" && saved.content.trim()) {
         setContent(saved.content);
         restoredAnything = true;
@@ -235,11 +246,14 @@ export default function Studio() {
     // changes save themselves, so no live region fires on every keystroke.
     const t = window.setTimeout(() => {
       try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ content, deck, choice, writeLang, step, format }));
+        localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({ content, deck, choice, writeLang, step, format, draftId, draftSource }),
+        );
       } catch { /* quota never blocks editing */ }
     }, 1500);
     return () => window.clearTimeout(t);
-  }, [content, deck, choice, writeLang, step, format]);
+  }, [content, deck, choice, writeLang, step, format, draftId, draftSource]);
 
   /* A success note fades; a problem does not. */
   useEffect(() => {
