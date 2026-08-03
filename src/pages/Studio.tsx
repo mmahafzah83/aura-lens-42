@@ -198,11 +198,15 @@ export default function Studio() {
       setWriteLang(seeded);
       setReady(true);
       // The composer opening is the first number the company reads.
-      void track("composer_opened", {
-        source: searchParams.get("draft") ? "studio_deep_link" : "studio",
-        signal_id: searchParams.get("signal") || null,
-        move_state: null,
-      });
+      // Once per session: a query-param change must never inflate the metric.
+      if (!openedTrackedRef.current) {
+        openedTrackedRef.current = true;
+        void track("composer_opened", {
+          source: searchParams.get("draft") ? "studio_deep_link" : "studio",
+          signal_id: searchParams.get("signal") || null,
+          move_state: null,
+        });
+      }
     })();
     return () => { dead = true; };
   }, [searchParams]);
