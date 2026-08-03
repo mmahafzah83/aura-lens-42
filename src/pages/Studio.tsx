@@ -299,6 +299,78 @@ export default function Studio() {
     return () => { dead = true; };
   }, [userId, posture]);
 
+  /* ---------- step 1: the drafts already waiting ------------------ */
+  const openDraft = useCallback(
+    async (d: StudioDraft, source: string) => {
+      remember();
+      setDraftId(d.id);
+      setDraftSource(d._source);
+      setContent(d.body);
+      setWriteLang(d.language);
+      setNotReady(null);
+      if (d.signalId || d.title || d.topic) {
+        setChoice({ id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" });
+      }
+      setStep(2);
+      setStatus(T.draftOpened[lang]);
+      void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
+    },
+    [remember, lang],
+  );
+
+  useEffect(() => {
+    if (!userId) return;
+    let dead = false;
+    setDraftsLoading(true);
+    (async () => {
+      const rows = await loadStudioDrafts();
+      if (dead) return;
+      setDrafts(rows);
+      setDraftsLoading(false);
+    })();
+    return () => { dead = true; };
+  }, [userId]);
+
+  /* The lifecycle emails deep-link straight into one draft. */
+  const deepLinkRef = useRef(false);
+  useEffect(() => {
+    if (!userId || deepLinkRef.current) return;
+    const id = searchParams.get("draft");
+    if (!id) return;
+    deepLinkRef.current = true;
+    (async () => {
+      const d = await loadStudioDraft(id);
+      if (!d) { setProblem(T.draftMissing[lang]); return; }
+      await openDraft(d, "lifecycle_email");
+    })();
+  }, [userId, searchParams, openDraft, lang]);
+
+  /* Every subject, on request. The three ranked cards are a shortcut, not a cap. */
+  useEffect(() => {
+    if (!showAllSubjects || !userId || allSignals.length > 0) return;
+    let dead = false;
+    (async () => {
+      const { data } = await supabase
+        .from("strategic_signals")
+        .select("id, signal_title, explanation, what_it_means_for_you, strength_score")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .order("strength_score", { ascending: false })
+        .limit(200);
+      if (dead) return;
+      setAllSignals(
+        ((data as any[]) || [])
+          .filter((s) => s.signal_title)
+          .map((s) => ({
+            id: s.id as string,
+            title: s.signal_title as string,
+            insight: (s.what_it_means_for_you || s.explanation || "") as string,
+          })),
+      );
+    })();
+    return () => { dead = true; };
+  }, [showAllSubjects, userId, allSignals.length]);
+
   /* ---------- step 2: the words ----------------------------------- */
   const generate = useCallback(async (picked?: Choice) => {
     const target = picked ?? choice;
