@@ -603,7 +603,11 @@ export default function Studio() {
     <button
       key={key}
       type="button"
-      onClick={() => setSub(key)}
+      onClick={() => {
+        if (key === "start") { setStep(1); setSub("start"); return; }
+        setSub(key);
+        if (key === "build") setShowing(deck ? "slides" : "post");
+      }}
       style={{
         minHeight: 44,
         padding: "0 4px",
