@@ -625,10 +625,7 @@ export default function Studio() {
     <button
       key={key}
       type="button"
-      onClick={() => {
-        setSub(key);
-        if (key === "build") setShowing(deck ? "slides" : "post");
-      }}
+      onClick={() => setSub(key)}
       style={{
         minHeight: 44,
         padding: "0 4px",
@@ -673,13 +670,9 @@ export default function Studio() {
     </div>
   ) : null;
 
+  /* The centre editor. Step 2 only. */
   const writeArea = (
     <>
-      {generating && (
-        <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--machine-text)", background: "var(--machine-tint)", padding: "10px 12px", borderRadius: 10, margin: "0 0 12px" }}>
-          {T.writing[lang]}
-        </p>
-      )}
       {genError && (
         <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--error)", margin: "0 0 12px" }}>
           {genError === "session" ? T.sessionEnded[lang] : T.writeFailed[lang]}{" "}
@@ -712,25 +705,35 @@ export default function Studio() {
         {content.length} {T.characters[lang]}
         {content.length > 2800 ? ` — ${T.tooLong[lang]}` : ""}
       </p>
-      {confirmPanel}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
-          {T.optPost[lang]}
-        </ButtonPrimary>
-        <ButtonGhost onClick={() => void makeSlides()} disabled={!content.trim() || !choice?.id} style={{ minHeight: 44 }}>
-          {T.optSlides[lang]}
-        </ButtonGhost>
-        <ButtonGhost onClick={() => void keepForLater()} disabled={!content.trim()} style={{ minHeight: 44 }}>
-          {T.optLater[lang]}
-        </ButtonGhost>
-      </div>
-      {!choice?.id && content.trim() && (
-        <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "8px 0 0" }}>
-          {T.typedTopicNoSlides[lang]}
-        </p>
-      )}
+      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>
+        {T.editHint[lang]}
+      </p>
     </>
   );
+
+  /* One way forward. The label never changes; the step does. */
+  const canContinue =
+    step === 1 ? Boolean(choice) || Boolean(pasted.trim())
+      : step === 2 ? content.trim().length > 0
+        : step === 3 ? format === "post" || Boolean(deck)
+          : false;
+
+  const onContinue = () => {
+    if (step === 1) {
+      if (pasted.trim()) {
+        remember();
+        setChoice((c) => c ?? { id: null, title: typedTopic.trim() || pasted.trim().slice(0, 60), insight: "" });
+        setContent(fixArabicDirectionalSymbols(stripMarkdown(pasted), writeLang));
+        setStep(2);
+        return;
+      }
+      if (content.trim()) { setStep(2); return; }
+      void generate();
+      return;
+    }
+    if (step === 2) { setStep(3); return; }
+    if (step === 3) { setStep(4); }
+  };
 
   return shell(
     <>
