@@ -1580,7 +1580,6 @@ export default function StudioPanel() {
                   setTypedTopic(e.target.value);
                   setChoice(e.target.value.trim() ? { id: null, title: e.target.value.trim(), insight: "" } : null);
                 }}
-                onFocus={scrollFocused}
                 placeholder={T.chooseOwnPlaceholder[lang]}
                 style={{
                   flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 10,
@@ -1635,7 +1634,6 @@ export default function StudioPanel() {
                 rows={6}
                 dir={rtlWrite ? "rtl" : "ltr"}
                 onChange={(e) => setPasted(e.target.value)}
-                onFocus={scrollFocused}
                 placeholder={T.pastePlaceholder[lang]}
                 style={{
                   width: "100%", background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
@@ -1689,7 +1687,6 @@ export default function StudioPanel() {
           <textarea
             value={content}
             onChange={(e) => changeContent(e.target.value)}
-            onFocus={scrollFocused}
             rows={18}
             dir={rtlWrite ? "rtl" : "ltr"}
             aria-label={T.writeHead[lang]}
@@ -2166,7 +2163,6 @@ export default function StudioPanel() {
                       id="studio-link-phone"
                       value={linkInput}
                       onChange={(e) => setLinkInput(e.target.value)}
-                      onFocus={scrollFocused}
                       placeholder={T.linkPlaceholder[lang]}
                       style={{
                         width: "100%", minHeight: 48, padding: "0 12px", borderRadius: 10,
