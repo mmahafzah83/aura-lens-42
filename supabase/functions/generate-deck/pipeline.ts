@@ -755,7 +755,7 @@ export async function writeSlides(
       ].join("\n")
     : "";
   const user = [
-    adaptation,
+    ...(adaptation ? [adaptation] : []),
     voiceBlock(ctx.voice, ctx.voiceRhythmOnly),
     "",
     contextBlock(ctx),

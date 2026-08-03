@@ -221,11 +221,13 @@ async function generate(
   requestedLength: number | undefined,
   theme: string,
   requestedLang?: "en" | "ar",
+  sourceText?: string,
 ) {
   const started = Date.now();
   const deckId = crypto.randomUUID();
 
   const ctx = await readContext(db, signalId, userId);
+  if (typeof sourceText === "string" && sourceText.trim()) ctx.sourceText = sourceText.trim();
   const langHint: "en" | "ar" =
     requestedLang ?? ((ctx.profile.content_language ?? "en") === "ar" ? "ar" : "en");
   // One voice DNA, matched to the deck language, chosen before any writing.
