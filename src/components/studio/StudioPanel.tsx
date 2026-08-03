@@ -8,6 +8,7 @@
  * and it never sets a page height, page padding or a page-level `dir`.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
@@ -49,6 +50,23 @@ function sourceStamp(text: string): string {
 
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
+/**
+ * `composer_opened` is one event per PIECE per session. The studio is a tab
+ * now, so it unmounts on every navigation — a ref guard would reset each time
+ * and inflate the number. The session, not the component, remembers.
+ */
+const OPEN_KEY = "aura_studio_opened_v1";
+function alreadyOpened(pieceKey: string): boolean {
+  try {
+    const seen = JSON.parse(sessionStorage.getItem(OPEN_KEY) || "[]") as unknown;
+    const list = Array.isArray(seen) ? (seen as string[]) : [];
+    if (list.includes(pieceKey)) return true;
+    sessionStorage.setItem(OPEN_KEY, JSON.stringify([...list, pieceKey].slice(-50)));
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * The quality gate, said as one sentence a member can act on. Never a list,
@@ -125,8 +143,6 @@ export default function StudioPanel() {
   const generatedTextRef = useRef<string | null>(null);
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
-  /** composer_opened fires once per session, never per navigation. */
-  const openedTrackedRef = useRef(false);
   /**
    * The linkedin_posts row this piece lives in. Held in a ref, not state, so an
    * async sequence never re-reads a null captured at render and inserts twice.
@@ -199,7 +215,7 @@ export default function StudioPanel() {
       setUserId(session.user.id);
       const { data: profile } = await supabase
         .from("diagnostic_profiles")
-        .select("content_language, first_name, avatar_url")
+        .select("content_language")
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (dead) return;
@@ -211,8 +227,7 @@ export default function StudioPanel() {
       // Once per session: a query-param change must never inflate the metric.
       // A `?draft=` deep link is reported by `openDraft` instead, so the boot
       // emit stands aside — one open, one event.
-      if (!openedTrackedRef.current && !searchParams.get("draft")) {
-        openedTrackedRef.current = true;
+      if (!searchParams.get("draft") && !alreadyOpened("new")) {
         void track("composer_opened", {
           source: "studio",
           signal_id: searchParams.get("signal") || null,
@@ -302,23 +317,46 @@ export default function StudioPanel() {
   }, [restoredFlag, ready, lang]);
 
   /* ---------- keep the piece ------------------------------------- */
+  /**
+   * The studio is a TAB. One tap on any navigation item unmounts it, so a
+   * debounced save must always be able to flush the very latest values
+   * synchronously. `liveRef` holds them; `persistNow` writes them.
+   */
+  const liveRef = useRef({ content, deck, choice, writeLang, step, format, draftId, draftSource });
+  liveRef.current = { content, deck, choice, writeLang, step, format, draftId, draftSource };
+
+  const persistNow = useCallback((overrides?: Partial<typeof liveRef.current>) => {
+    const v = { ...liveRef.current, ...(overrides || {}) };
+    // Written straight through, so a caller mid-update never persists stale words.
+    liveRef.current = v;
+    if (!v.content && !v.deck && !postRowRef.current) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...v, postRowId: postRowRef.current }));
+    } catch { /* quota never blocks editing */ }
+  }, []);
+
   useEffect(() => {
     if (!content && !deck) return;
     // Debounced, and silent: `T.editHint` already tells the member their
     // changes save themselves, so no live region fires on every keystroke.
-    const t = window.setTimeout(() => {
-      try {
-        localStorage.setItem(
-          DRAFT_KEY,
-          JSON.stringify({
-            content, deck, choice, writeLang, step, format, draftId, draftSource,
-            postRowId: postRowRef.current,
-          }),
-        );
-      } catch { /* quota never blocks editing */ }
-    }, 1500);
+    const t = window.setTimeout(persistNow, 1500);
     return () => window.clearTimeout(t);
-  }, [content, deck, choice, writeLang, step, format, draftId, draftSource]);
+  }, [content, deck, choice, writeLang, step, format, draftId, draftSource, persistNow]);
+
+  /* Backgrounding the tab or closing the page is also a disappearance. */
+  useEffect(() => {
+    const flush = () => persistNow();
+    const onHide = () => { if (document.visibilityState === "hidden") persistNow(); };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", flush);
+      // RULE: a debounced save always flushes before the component can vanish.
+      // Tapping a navigation item unmounts this tab; the last words still land.
+      persistNow();
+    };
+  }, [persistNow]);
 
   /* A success note fades; a problem does not. */
   useEffect(() => {
@@ -374,6 +412,15 @@ export default function StudioPanel() {
       postRowRef.current = d._source === "linkedin_posts" ? d.id : null;
       originDraftRef.current = null;
       generatedTextRef.current = null;
+      persistNow({
+        content: d.body,
+        deck: null,
+        writeLang: d.language,
+        step: 2,
+        draftId: d.id,
+        draftSource: d._source,
+        choice: { id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" },
+      });
       setContent(d.body);
       setWriteLang(d.language);
       setNotReady(null);
@@ -382,12 +429,11 @@ export default function StudioPanel() {
       }
       setStep(2);
       setStatus(T.draftOpened[lang]);
-      if (!openedTrackedRef.current) {
-        openedTrackedRef.current = true;
+      if (!alreadyOpened(`draft:${d.id}`)) {
         void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
       }
     },
-    [remember, lang],
+    [remember, lang, persistNow],
   );
 
   useEffect(() => {
@@ -412,7 +458,14 @@ export default function StudioPanel() {
     deepLinkRef.current = true;
     (async () => {
       const d = await loadStudioDraft(id);
-      if (!d) { setProblem(T.draftMissing[lang]); return; }
+      if (!d) {
+        setProblem(T.draftMissing[lang]);
+        // An open that could not land is still an open: count it once, and say so.
+        if (!alreadyOpened(`draft:${id}`)) {
+          void track("composer_opened", { source: "lifecycle_email_missing", signal_id: null, move_state: null });
+        }
+        return;
+      }
       await openDraft(d, "lifecycle_email");
     })();
   }, [userId, searchParams, openDraft, lang]);
@@ -578,8 +631,10 @@ export default function StudioPanel() {
     setDraftId(id);
     setDraftSource("linkedin_posts");
     postRowRef.current = id;
+    // An identifier that must survive a reload is written the moment it exists.
+    persistNow();
     return id;
-  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta]);
+  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow]);
 
   /**
    * Publishing to LinkedIn from a content_items draft needs a linkedin_posts
@@ -613,12 +668,13 @@ export default function StudioPanel() {
       if (error) return null;
       const newId = (ins as any)?.id as string;
       postRowRef.current = newId;
+      persistNow();
       return newId;
     }
     const id = await saveDraft();
-    if (id) postRowRef.current = id;
+    if (id) { postRowRef.current = id; persistNow(); }
     return id;
-  }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft]);
+  }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft, persistNow]);
 
   /**
    * INVARIANT — WHAT IS ON SCREEN IS WHAT PUBLISHES.
@@ -1004,13 +1060,20 @@ export default function StudioPanel() {
   const canvasInStage = step === 3 && format === "slides" && Boolean(deck);
 
   /* ---------- content wrapper --------------------------------------
-   * Page content only. No height, no page padding, no page-level `dir` —
-   * the Aura shell owns all three. The bottom padding exists solely so the
-   * studio's own action rows cannot sit under the mobile navigation bar,
-   * which the shell renders below `md`.
+   * Page content only: no height, no page padding, no page background — the
+   * Aura shell owns those. DIRECTION, however, is the panel's own: the shell
+   * sets no `dir` anywhere, and this panel branches on `rtlShell` for text
+   * alignment and arrow glyphs, so an Arabic member needs a real RTL box here
+   * or they get half-RTL, which is worse than either.
+   * The bottom padding clears BOTH the mobile navigation bar and the capture
+   * button that floats above it, so no studio control sits underneath them.
    */
   const shell = (children: React.ReactNode) => (
-    <div className="pb-[84px] md:pb-0" style={{ maxWidth: 1360, margin: "0 auto" }}>
+    <div
+      dir={rtlShell ? "rtl" : "ltr"}
+      className="pb-[152px] md:pb-0"
+      style={{ maxWidth: 1360, margin: "0 auto" }}
+    >
       {children}
     </div>
   );
@@ -1866,19 +1929,28 @@ export default function StudioPanel() {
         </StageCard>
       )}
 
-      {/* The deck mount, kept alive with real layout whenever a deck exists. */}
-      {deck && !canvasInStage && (
-        <div aria-hidden="true" style={{ position: "absolute", left: -99999, top: 0, width: canvasWidth }}>
-          <StudioCanvas
-            deck={deck}
-            theme={theme}
-            width={canvasWidth}
-            current={current}
-            onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
-            mountRef={mountRef}
-          />
-        </div>
-      )}
+      {/* The deck mount, kept alive with real layout whenever a deck exists.
+          Portalled to <body>: the dashboard tab container clips its overflow
+          and creates a positioning ancestor, and the PDF export needs this
+          mount to have real, unclipped layout. */}
+      {deck && !canvasInStage &&
+        createPortal(
+          <div
+            aria-hidden="true"
+            dir="ltr"
+            style={{ position: "absolute", left: -99999, top: 0, width: canvasWidth }}
+          >
+            <StudioCanvas
+              deck={deck}
+              theme={theme}
+              width={canvasWidth}
+              current={current}
+              onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
+              mountRef={mountRef}
+            />
+          </div>,
+          document.body,
+        )}
     </>,
   );
 }
