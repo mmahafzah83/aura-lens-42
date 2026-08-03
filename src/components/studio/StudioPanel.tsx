@@ -274,6 +274,7 @@ export default function StudioPanel() {
   useEffect(() => {
     const measure = () => {
       setNarrow(window.innerWidth < 900);
+      setViewportH(window.innerHeight);
       const w = canvasBoxRef.current?.clientWidth ?? 520;
       const gutter = window.innerWidth < PHONE_MAX_WIDTH ? 0 : 28;
       setCanvasWidth(Math.max(260, Math.min(720, w - gutter)));
@@ -282,6 +283,17 @@ export default function StudioPanel() {
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [deck, step, isPhone, sheet]);
+
+  /**
+   * J2 — the step-3 phone column starts where it actually sits on screen and
+   * ends at the action bar, so nothing below the fold has to be scrolled to.
+   */
+  useEffect(() => {
+    if (!isPhone || step !== 3) return;
+    const el = canvasBoxRef.current;
+    if (!el) return;
+    setStageTop(Math.max(120, Math.round(el.getBoundingClientRect().top)));
+  }, [isPhone, step, format, deck, sheet, sheetTall, viewportH]);
 
   /* ---------- bring back the piece -------------------------------- */
   const restoredRef = useRef(false);
