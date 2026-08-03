@@ -150,8 +150,10 @@ export const PhoneStage: React.FC<{
             <div
               ref={slideBoxRef}
               style={{
+                // Height first, ratio second: an aspect-ratio box with two max
+                // constraints and no definite size collapses to zero.
+                height: "100%",
                 aspectRatio: "4 / 5",
-                maxHeight: "100%",
                 maxWidth: "100%",
                 display: "grid",
                 placeItems: "center",

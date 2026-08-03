@@ -30,7 +30,7 @@ export const PHONE_ROWS_BELOW_SHEET = 96;
 /** The sheet, collapsed. Leaves the slide above 40% of the column at 640px. */
 export const PHONE_SHEET_H = "calc(40dvh - 96px)";
 /** The sheet, expanded. Visibly shrinks the slide; never hides it. */
-export const PHONE_SHEET_H_TALL = "calc(54dvh - 96px)";
+export const PHONE_SHEET_H_TALL = "calc(50dvh - 96px)";
 
 /**
  * The RESOLUTION the preview canvas is rasterised at — not a layout value.
