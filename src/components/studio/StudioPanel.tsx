@@ -1121,9 +1121,9 @@ export default function StudioPanel() {
    * sets no `dir` anywhere, and this panel branches on `rtlShell` for text
    * alignment and arrow glyphs, so an Arabic member needs a real RTL box here
    * or they get half-RTL, which is worse than either.
-   * The bottom padding clears BOTH the mobile navigation bar and the capture
-   * button that floats above it, so no studio control sits underneath them.
-   * On a phone it must clear the one-thumb action bar as well.
+   * R2 — the bottom padding that clears the shell navigation belongs to the
+   * Dashboard tab container (`pb-[88px] md:pb-12`). The panel adds no second
+   * offset of its own.
    */
   const shell = (children: React.ReactNode) => (
     <div
