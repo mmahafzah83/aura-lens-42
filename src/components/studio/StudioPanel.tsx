@@ -1577,6 +1577,43 @@ export default function StudioPanel({
         </div>
       )}
 
+      {/* THE RESTORE — announced, never assumed. Nothing below is populated
+          until the member says "Carry on". */}
+      {pendingRestore && !content && !deck && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            background: "var(--surface-card)", border: "1px solid var(--border-default)",
+            borderRadius: 12, padding: 12, margin: "0 0 12px",
+            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)" }}>
+            {T.restoreLine[lang]
+              .replace(
+                "{subject}",
+                ((pendingRestore.choice as Choice | undefined)?.title ||
+                  (typeof pendingRestore.content === "string"
+                    ? pendingRestore.content.trim().split("\n")[0]?.slice(0, 60)
+                    : "") ||
+                  T.restoreSubjectUnknown[lang]),
+              )
+              .replace(
+                "{when}",
+                typeof pendingRestore.savedAt === "string" ? savedAgo(pendingRestore.savedAt, lang) : "",
+              )}
+          </span>
+          <span style={{ flex: 1 }} />
+          <ButtonPrimary onClick={carryOnRestore} style={{ minHeight: 44 }}>
+            {T.restoreCarryOn[lang]}
+          </ButtonPrimary>
+          <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
+            {T.restoreStartNew[lang]}
+          </ButtonGhost>
+        </div>
+      )}
+
       {/* One journey map, at every width. */}
       <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
 
