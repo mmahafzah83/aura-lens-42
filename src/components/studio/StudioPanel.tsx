@@ -2094,6 +2094,222 @@ export default function StudioPanel() {
         </StageCard>
       )}
 
+      {/* M6 — STEP 4 ON A PHONE: one numbered card per action, in order, each
+          carrying exactly one control. Never two primaries on screen. */}
+      {step === 4 && isPhone && (
+        <div style={{ display: "grid", gap: 12 }}>
+          {published && (
+            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
+              {T.postedHead[lang]} {T.postedHelp[lang]}{" "}
+              {postUrl && (
+                <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
+                  {T.seeOnLinkedIn[lang]}
+                </a>
+              )}
+            </p>
+          )}
+
+          {confirmPanel}
+
+          <p
+            dir={rtlWrite ? "rtl" : "ltr"}
+            style={{
+              whiteSpace: "pre-wrap", background: "var(--surface-subtle)",
+              border: "1px solid var(--border-default)", borderRadius: 12, padding: 14,
+              fontFamily: "var(--ff-ui)", fontSize: 16, lineHeight: rtlWrite ? 2 : 1.85,
+              textAlign: rtlWrite ? "right" : "left", color: "var(--text-primary)", margin: 0,
+            }}
+          >
+            {content}
+          </p>
+
+          {content.length > POST_MAX_CHARS && (
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, color: "var(--error)", margin: 0 }}>
+              {T.overLimitHead[lang]} {content.length - POST_MAX_CHARS} {T.overLimitTail[lang]}
+            </p>
+          )}
+          {notReady && (
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, lineHeight: 1.75, color: "var(--error)", margin: 0 }}>
+              {notReady}
+            </p>
+          )}
+
+          {/* Words only: the single way out is the primary in the thumb zone. */}
+          {format === "slides" && deck && (
+            <>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
+                {T.whySlidesManual[lang]}
+              </p>
+              {([
+                [1, T.captionHead[lang], "", (
+                  <ButtonGhost key="c" onClick={() => void copyCaption()} style={{ minHeight: 48, width: "100%" }}>
+                    {T.copyCaption[lang]}
+                  </ButtonGhost>
+                )],
+                [2, T.s4Get[lang], "", (
+                  <ButtonGhost key="g" onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 48, width: "100%" }}>
+                    {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
+                  </ButtonGhost>
+                )],
+                [3, T.s4Open[lang], "", (
+                  <ButtonGhost key="o" onClick={() => void openLinkedIn()} style={{ minHeight: 48, width: "100%" }}>
+                    {T.openLinkedIn[lang]}
+                  </ButtonGhost>
+                )],
+                [4, T.s4Link[lang], T.whyLink[lang], (
+                  <div key="l" style={{ display: "grid", gap: 10 }}>
+                    <label htmlFor="studio-link-phone" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+                      {T.linkPlaceholder[lang]}
+                    </label>
+                    <input
+                      id="studio-link-phone"
+                      value={linkInput}
+                      onChange={(e) => setLinkInput(e.target.value)}
+                      onFocus={scrollFocused}
+                      placeholder={T.linkPlaceholder[lang]}
+                      style={{
+                        width: "100%", minHeight: 48, padding: "0 12px", borderRadius: 10,
+                        background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                        fontFamily: "var(--ff-ui)", fontSize: 16, color: "var(--text-primary)",
+                        textAlign: rtlShell ? "right" : "left",
+                      }}
+                    />
+                    <ButtonGhost onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 48, width: "100%" }}>
+                      {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
+                    </ButtonGhost>
+                    {!linkInput.trim() && (
+                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+                        {T.linkPlaceholder[lang]}
+                      </p>
+                    )}
+                  </div>
+                )],
+              ] as Array<[number, string, string, React.ReactNode]>).map(([n, head, why, control]) => (
+                <div
+                  key={n}
+                  style={{
+                    background: "var(--surface-card)", border: "1px solid var(--border-default)",
+                    borderRadius: 14, padding: 14, display: "grid", gap: 10,
+                  }}
+                >
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                    {n} · {head}
+                  </p>
+                  {why && (
+                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
+                      {why}
+                    </p>
+                  )}
+                  {control}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ---- the phone sheets: one column of the desktop grid at a time ---- */}
+      {isPhone && (
+        <>
+          <PhoneSheet
+            lang={lang}
+            rtl={rtlShell}
+            open={sheet === "inspector"}
+            title={T.zoneInspector[lang]}
+            expanded={sheetTall}
+            onExpanded={setSheetTall}
+            onClose={() => setSheet(null)}
+          >
+            <ZoneInspector
+              lang={lang}
+              writeLang={writeLang}
+              deck={deck}
+              current={current}
+              onDeck={(next) => { remember(); setDeck(next); }}
+              attention={attention}
+              onChangeLine={() => void changeThisLine()}
+              changing={changingLine}
+              onUploadPicture={uploadPicture}
+              pictureNotice={pictureNotice}
+              onMove={move}
+            />
+          </PhoneSheet>
+
+          <PhoneSheet
+            lang={lang}
+            rtl={rtlShell}
+            open={sheet === "look"}
+            title={T.lookHead[lang]}
+            expanded={sheetTall}
+            onExpanded={setSheetTall}
+            onClose={() => setSheet(null)}
+          >
+            <ZoneLook
+              lang={lang}
+              theme={theme}
+              onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
+              length={deckLength}
+              onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
+              hasDeck={Boolean(deck)}
+            />
+          </PhoneSheet>
+
+          <PhoneSheet
+            lang={lang}
+            rtl={rtlShell}
+            open={sheet === "piece"}
+            title={T.zonePiece[lang]}
+            expanded={sheetTall}
+            onExpanded={setSheetTall}
+            onClose={() => setSheet(null)}
+          >
+            <ZonePiece
+              lang={lang}
+              writeLang={writeLang}
+              subject={choice?.title || typedTopic}
+              content={content}
+              onContentChange={changeContent}
+              todo={{
+                words: content.trim().length > 0,
+                slides: Boolean(deck),
+                cover: Boolean(deck?.slides.some((s) => s.slots.media?.src)),
+                published,
+              }}
+            />
+          </PhoneSheet>
+
+          {/* M2 — the only floating thing on a phone. At most two controls. */}
+          <PhoneActionBar
+            rtl={rtlShell}
+            note={phoneBarNote}
+            secondary={
+              <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 50, width: "100%" }}>
+                {busy === "save" ? T.savingPiece[lang] : T.saveLater[lang]}
+              </ButtonGhost>
+            }
+            primary={
+              step === 3 && format === "slides" && !deck ? (
+                <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 50, width: "100%" }}>
+                  {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
+                </ButtonPrimary>
+              ) : step < 4 ? (
+                <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 50, width: "100%" }}>
+                  {T.continue[lang]} {rtlShell ? "←" : "→"}
+                </ButtonPrimary>
+              ) : !(format === "slides" && deck) && !published && !confirmingPost ? (
+                <ButtonPrimary
+                  onClick={requestPost}
+                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post" || Boolean(notReady)}
+                  style={{ minHeight: 50, width: "100%" }}
+                >
+                  {T.postItNow[lang]}
+                </ButtonPrimary>
+              ) : undefined
+            }
+          />
+        </>
+      )}
+
       {/* The deck mount, kept alive with real layout whenever a deck exists.
           Portalled to <body>: the dashboard tab container clips its overflow
           and creates a positioning ancestor, and the PDF export needs this
