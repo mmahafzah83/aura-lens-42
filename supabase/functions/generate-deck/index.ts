@@ -36,6 +36,35 @@ const corsHeaders = {
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
 
+/**
+ * Array caps live in the schema; a model that overshoots them should not cost
+ * the member a whole regeneration. Truncate to the cap, drop empty text nodes.
+ */
+const ARRAY_CAPS: Record<string, number> = { body: 3, checklist: 4 };
+
+function nonEmptyNode(n: unknown): boolean {
+  const runs = (n as { runs?: Array<{ t?: string }> } | null)?.runs;
+  if (!Array.isArray(runs) || runs.length === 0) return false;
+  return runs.some((r) => typeof r?.t === "string" && r.t.trim().length > 0);
+}
+
+export function clampSlots(candidate: unknown): unknown {
+  const slides = (candidate as { slides?: unknown[] } | null)?.slides;
+  if (!Array.isArray(slides)) return candidate;
+  for (const slide of slides) {
+    const slots = (slide as { slots?: Record<string, unknown> } | null)?.slots;
+    if (!slots || typeof slots !== "object") continue;
+    for (const [key, cap] of Object.entries(ARRAY_CAPS)) {
+      const arr = slots[key];
+      if (!Array.isArray(arr)) continue;
+      const cleaned = arr.filter(nonEmptyNode).slice(0, cap);
+      if (cleaned.length === 0) delete slots[key];
+      else slots[key] = cleaned;
+    }
+  }
+  return candidate;
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
