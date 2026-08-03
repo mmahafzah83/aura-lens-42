@@ -1244,7 +1244,8 @@ export default function StudioPanel() {
           borderRadius: 12,
           padding: 14,
           fontFamily: "var(--ff-ui)",
-          fontSize: 15,
+          // R2 — 16px on a small screen, so iOS does not zoom the page on focus.
+          fontSize: isPhone ? 16 : 15,
           lineHeight: rtlWrite ? 1.9 : 1.75,
           textAlign: rtlWrite ? "right" : "left",
           color: "var(--text-primary)",
