@@ -755,12 +755,20 @@ export default function Studio() {
         : step === 3 ? format === "post" || Boolean(deck)
           : false;
 
+  /* Exactly one primary per screen. On step 3 the slide-making button in the
+     stage IS the primary, so the strip does not offer a second one. */
+  const stageOwnsPrimary = step === 3 && format === "slides" && !deck;
+
   const onContinue = () => {
     if (step === 1) {
       if (pasted.trim()) {
+        // Words already written are never replaced without being asked.
+        if (content.trim() && !askReplace) { setAskReplace(true); return; }
         remember();
         setChoice((c) => c ?? { id: null, title: typedTopic.trim() || pasted.trim().slice(0, 60), insight: "" });
         setContent(fixArabicDirectionalSymbols(stripMarkdown(pasted), writeLang));
+        setPasted("");
+        setAskReplace(false);
         setStep(2);
         return;
       }
@@ -883,7 +891,7 @@ export default function Studio() {
             {T.saveLaterNote[lang]}
           </span>
         </span>
-        {step < 4 && (
+        {step < 4 && !stageOwnsPrimary && (
           <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
             {T.continue[lang]} {rtlShell ? "←" : "→"}
           </ButtonPrimary>
@@ -968,7 +976,36 @@ export default function Studio() {
             </div>
           </div>
 
-          {posture === "author" && (
+          <div style={{ marginTop: 18 }}>
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px" }}>
+              {T.writeLangLabel[lang]}
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {([["en", T.langEn[lang]], ["ar", T.langAr[lang]]] as Array<[Lang, string]>).map(([key, label]) => {
+                const on = writeLang === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setWriteLang(key)}
+                    style={{
+                      minHeight: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer",
+                      fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
+                      background: on ? "var(--act-tint)" : "var(--surface-subtle)",
+                      color: on ? "var(--act)" : "var(--text-secondary)",
+                      border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Own words are offered to everyone, whatever posture. */}
+          {(
             <div style={{ marginTop: 18 }}>
               <label htmlFor="studio-paste" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
                 {T.pasteHead[lang]}
@@ -990,6 +1027,19 @@ export default function Studio() {
                   color: "var(--text-primary)", resize: "vertical",
                 }}
               />
+              {askReplace && (
+                <div style={{ marginTop: 10, background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12 }}>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                    {T.replaceHead[lang]}
+                  </p>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <ButtonPrimary onClick={onContinue} style={{ minHeight: 44 }}>{T.replaceYes[lang]}</ButtonPrimary>
+                    <ButtonGhost onClick={() => { setAskReplace(false); setPasted(""); }} style={{ minHeight: 44 }}>
+                      {T.replaceNo[lang]}
+                    </ButtonGhost>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </StageCard>
@@ -1000,8 +1050,7 @@ export default function Studio() {
           title={T.writeHead[lang]}
           subtitle={T.writeHelp[lang]}
           align={rtlShell ? "right" : "left"}
-          defaultOpen={posture !== "delegator" || content.length > 0}
-          collapsible
+          lang={lang}
         >
           {writeArea}
         </StageCard>
@@ -1017,18 +1066,21 @@ export default function Studio() {
                 ["slides", T.formatSlides[lang], T.formatSlidesHelp[lang]],
               ] as Array<[Format, string, string]>).map(([key, label, help]) => {
                 const on = format === key;
+                const shortForSlides = key === "slides" && content.trim().length < SLIDES_MIN_CHARS;
+                const noSignalForSlides = key === "slides" && !choice?.id;
+                const refused = shortForSlides || noSignalForSlides;
+                const why = shortForSlides ? T.slidesTooShort[lang] : noSignalForSlides ? T.typedTopicNoSlides[lang] : "";
                 return (
                   <button
                     key={key}
                     type="button"
                     aria-pressed={on}
-                    onClick={() => {
-                      setFormat(key);
-                      if (key === "slides" && !deck && !deckBusy && content.trim()) void makeSlides();
-                    }}
+                    disabled={refused}
+                    onClick={() => setFormat(key)}
                     style={{
                       textAlign: rtlShell ? "right" : "left",
-                      cursor: "pointer",
+                      cursor: refused ? "not-allowed" : "pointer",
+                      opacity: refused ? 0.7 : 1,
                       background: on ? "var(--act-tint)" : "var(--surface-subtle)",
                       border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
                       borderRadius: 12,
@@ -1041,17 +1093,17 @@ export default function Studio() {
                     <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", marginTop: 4 }}>
                       {help}
                     </span>
+                    {refused && (
+                      <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, fontWeight: 600, color: "var(--error)", marginTop: 6 }}>
+                        {why}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
           </StageCard>
 
-          {deckBusy && (
-            <div style={{ margin: "12px 0" }}>
-              <BusyBar message={T.makingSlides[lang]} />
-            </div>
-          )}
           {format === "slides" && deckFailures.length > 0 && (
             <div role="status" aria-live="polite" style={{ background: "var(--error-tint)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 700, color: "var(--error)", margin: 0 }}>
@@ -1061,6 +1113,17 @@ export default function Studio() {
                 {attentionText(deckFailures[0], lang)}
               </p>
               <ButtonGhost onClick={() => void makeSlides()} style={{ minHeight: 44 }}>{T.tryAgain[lang]}</ButtonGhost>
+            </div>
+          )}
+
+          {format === "slides" && deck && deckSource !== null && sourceStamp(deckSource) !== sourceStamp(content) && (
+            <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--deadline)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                {T.slidesStale[lang]}
+              </p>
+              <ButtonGhost onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
+                {T.slidesRemake[lang]}
+              </ButtonGhost>
             </div>
           )}
 
@@ -1076,7 +1139,10 @@ export default function Studio() {
           >
             <ZonePiece
               lang={lang}
+              writeLang={writeLang}
               subject={choice?.title || typedTopic}
+              content={content}
+              onContentChange={setContent}
               todo={{
                 words: content.trim().length > 0,
                 slides: Boolean(deck),
@@ -1095,18 +1161,15 @@ export default function Studio() {
               mountRef={mountRef}
               boxRef={canvasBoxRef}
               showCanvas={canvasInStage}
-              empty={
-                <span>
-                  {content.trim() && choice?.id ? (
-                    <ButtonPrimary onClick={() => void makeSlides()} style={{ minHeight: 44 }}>
-                      {T.makeSlides[lang]}
-                    </ButtonPrimary>
-                  ) : (
-                    choice?.id ? T.slidesNeedPost[lang] : T.typedTopicNoSlides[lang]
-                  )}
-                </span>
-              }
+              empty={<span>{T.noSlidesYet[lang]}</span>}
             />
+            {!deck && (
+              <div style={{ gridColumn: narrow ? "auto" : "2", marginTop: 4 }}>
+                <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
+                  {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
+                </ButtonPrimary>
+              </div>
+            )}
             {sub === "look" ? (
               <ZoneLook
                 lang={lang}
@@ -1152,7 +1215,7 @@ export default function Studio() {
           {confirmPanel}
 
           {/* ONE path, decided by what the member actually made. */}
-          {!deck ? (
+          {!(format === "slides" && deck) ? (
             <>
               <p
                 dir={rtlWrite ? "rtl" : "ltr"}
@@ -1165,8 +1228,17 @@ export default function Studio() {
               >
                 {content}
               </p>
+              {content.length > POST_MAX_CHARS && (
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: "0 0 10px" }}>
+                  {T.overLimitHead[lang]} {content.length - POST_MAX_CHARS} {T.overLimitTail[lang]}
+                </p>
+              )}
               {!published && !confirmingPost && (
-                <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post"} style={{ minHeight: 44 }}>
+                <ButtonPrimary
+                  onClick={requestPost}
+                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post"}
+                  style={{ minHeight: 44 }}
+                >
                   {T.postItNow[lang]}
                 </ButtonPrimary>
               )}
@@ -1193,12 +1265,22 @@ export default function Studio() {
                 </ButtonGhost>
               </div>
 
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "0 0 14px" }}>
+                {T.whySlidesManual[lang]}
+              </p>
+
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
                 1 · {T.s4Get[lang]}
               </p>
-              <ButtonPrimary onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
-                {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
-              </ButtonPrimary>
+              {exported ? (
+                <ButtonGhost onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
+                  {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
+                </ButtonGhost>
+              ) : (
+                <ButtonPrimary onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
+                  {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
+                </ButtonPrimary>
+              )}
 
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 8px" }}>
                 2 · {T.s4Open[lang]}
@@ -1229,9 +1311,15 @@ export default function Studio() {
                     textAlign: rtlShell ? "right" : "left",
                   }}
                 />
-                <ButtonPrimary onClick={() => void saveLink()} disabled={!linkInput.trim()} style={{ minHeight: 44 }}>
-                  {T.linkSave[lang]}
-                </ButtonPrimary>
+                {exported ? (
+                  <ButtonPrimary onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                    {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
+                  </ButtonPrimary>
+                ) : (
+                  <ButtonGhost onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                    {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
+                  </ButtonGhost>
+                )}
               </div>
             </>
           )}
