@@ -1,9 +1,11 @@
 /**
- * /studio — one room.
+ * StudioPanel — one room, rendered as ordinary page content INSIDE the Aura
+ * shell (Dashboard tab `studio`).
  *
  * A member chooses a subject, gets a post, turns it into slides and puts it on
- * LinkedIn without ever leaving this address. Nothing here navigates away, and
- * nothing here is shared with any other member-facing screen.
+ * LinkedIn without ever leaving the page. This component renders no app-level
+ * navigation, wordmark, avatar or member name — the shell owns all of that —
+ * and it never sets a page height, page padding or a page-level `dir`.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -91,7 +93,7 @@ interface Choice {
   insight: string;
 }
 
-export default function Studio() {
+export default function StudioPanel() {
   const [searchParams] = useSearchParams();
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
