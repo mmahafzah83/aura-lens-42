@@ -889,6 +889,8 @@ export default function Studio() {
     setBusyMessage(T.posting[lang]);
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
+    // What is on screen is what publishes.
+    await syncRowToScreen(id);
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
       body: { postId: id },
     });
@@ -916,7 +918,7 @@ export default function Studio() {
       return;
     }
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
-  }, [ensurePostRow, finalisePublished, choice, lang]);
+  }, [ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
   /** Save and come back later: says where it went, and keeps the step. */
   const saveAndComeBack = useCallback(async () => {
@@ -968,6 +970,8 @@ export default function Studio() {
     setProblem(null);
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
+    // What is on screen is what publishes.
+    await syncRowToScreen(id);
     await finalisePublished(id, url);
     void track("post_published", { signal_id: choice?.id || null, route: "manual" });
     setBusy(null);
@@ -975,7 +979,7 @@ export default function Studio() {
     setPublished(true);
     setPostUrl(url);
     setStatus(T.linkSaved[lang]);
-  }, [linkInput, ensurePostRow, finalisePublished, choice, lang]);
+  }, [linkInput, ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
