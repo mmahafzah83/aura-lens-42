@@ -516,7 +516,7 @@ export default function Studio() {
         // created only when the piece is actually published.
         await supabase
           .from("content_items")
-          .update({ body: content, language: writeLang } as any)
+          .update({ body: content, language: writeLang, ...(title ? { title } : {}) } as any)
           .eq("id", draftId);
         return draftId;
       }
@@ -560,6 +560,7 @@ export default function Studio() {
     const id = (ins as any)?.id as string;
     setDraftId(id);
     setDraftSource("linkedin_posts");
+    postRowRef.current = id;
     return id;
   }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta]);
 
@@ -570,6 +571,8 @@ export default function Studio() {
    */
   const originDraftRef = useRef<{ id: string; source: "content_items" | "linkedin_posts" } | null>(null);
   const ensurePostRow = useCallback(async (): Promise<string | null> => {
+    // Idempotent for the whole session: one piece, one row.
+    if (postRowRef.current) return postRowRef.current;
     if (draftId && draftSource === "content_items") {
       originDraftRef.current = { id: draftId, source: "content_items" };
       const title = pieceTitle();
@@ -591,7 +594,9 @@ export default function Studio() {
         .select("id")
         .single();
       if (error) return null;
-      return (ins as any)?.id as string;
+      const newId = (ins as any)?.id as string;
+      postRowRef.current = newId;
+      return newId;
     }
     return saveDraft();
   }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft]);
