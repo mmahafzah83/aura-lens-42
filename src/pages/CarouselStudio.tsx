@@ -793,7 +793,7 @@ export default function CarouselStudio() {
                     onClick={() => setCurrent((c) => Math.max(0, c - 1))}
                     style={{
                       minWidth: 34, minHeight: 34, borderRadius: 8,
-                      border: "1px solid var(--border)", background: "transparent",
+                      border: "1px solid var(--border-default)", background: "transparent",
                       color: "var(--act)", fontSize: 16,
                       cursor: current === 0 ? "not-allowed" : "pointer",
                       opacity: current === 0 ? 0.4 : 1,
@@ -813,7 +813,7 @@ export default function CarouselStudio() {
                     onClick={() => setCurrent((c) => Math.min(deck.slides.length - 1, c + 1))}
                     style={{
                       minWidth: 34, minHeight: 34, borderRadius: 8,
-                      border: "1px solid var(--border)", background: "transparent",
+                      border: "1px solid var(--border-default)", background: "transparent",
                       color: "var(--act)", fontSize: 16,
                       cursor: current === deck.slides.length - 1 ? "not-allowed" : "pointer",
                       opacity: current === deck.slides.length - 1 ? 0.4 : 1,
