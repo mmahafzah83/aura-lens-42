@@ -38,7 +38,7 @@ import PhoneProgress from "@/components/studio/PhoneProgress";
 import PhoneActionBar from "@/components/studio/PhoneActionBar";
 import PhoneSheet from "@/components/studio/PhoneSheet";
 import PhoneStage from "@/components/studio/PhoneStage";
-import { useIsPhone, PHONE_MAX_WIDTH } from "@/components/studio/usePhone";
+import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 /** Slides need enough words to divide up. Below this the option is refused. */
@@ -203,6 +203,12 @@ export default function StudioPanel() {
   const [undoStack, setUndoStack] = useState<Array<{ content: string; deck: DeckIR | null }>>([]);
 
   const mountRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * J4 — the mount the PDF is rasterised from. It is ALWAYS off-screen and
+   * ALWAYS `EXPORT_WIDTH` wide, so the preview width (which follows the
+   * screen) can never lower the resolution of the file a member downloads.
+   */
+  const exportMountRef = useRef<HTMLDivElement | null>(null);
   const canvasBoxRef = useRef<HTMLDivElement | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(520);
   const [narrow, setNarrow] = useState(false);
@@ -214,6 +220,11 @@ export default function StudioPanel() {
   /** Which bottom sheet is open on a phone. Only ever one at a time. */
   const [sheet, setSheet] = useState<null | "inspector" | "look" | "piece">(null);
   const [sheetTall, setSheetTall] = useState(false);
+  /** J6 — a breakpoint change closes any sheet; it must never reopen itself. */
+  useEffect(() => { setSheet(null); setSheetTall(false); }, [isPhone]);
+  /** The top of the pinned step-3 column, measured, so the column can end exactly at the action bar. */
+  const [stageTop, setStageTop] = useState(220);
+  const [viewportH, setViewportH] = useState(() => (typeof window === "undefined" ? 740 : window.innerHeight));
 
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
