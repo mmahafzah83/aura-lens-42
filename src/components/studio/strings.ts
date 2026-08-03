@@ -49,7 +49,6 @@ export const T = {
   },
 
   // Sub navigation
-  subStart: { en: "Start", ar: "البداية" },
   subBuild: { en: "Build", ar: "البناء" },
   subLook: { en: "Look", ar: "المظهر" },
   savedMoment: { en: "Saved a moment ago", ar: "حُفظ قبل لحظات" },
