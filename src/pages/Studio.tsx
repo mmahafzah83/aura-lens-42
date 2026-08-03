@@ -346,7 +346,7 @@ export default function Studio() {
   }, [userId, content, draftId, choice, typedTopic, writeLang]);
 
   /* ---------- step 3: the slides, right here ---------------------- */
-  const makeSlides = useCallback(async () => {
+  const makeSlides = useCallback(async (lengthOverride?: 5 | 7 | 10) => {
     if (!choice?.id || !content.trim()) return;
     setStep(3);
     setSub("build");
@@ -363,7 +363,7 @@ export default function Studio() {
       const call = supabase.functions.invoke("generate-deck", {
         body: {
           signal_id: choice.id,
-          length: deckLength,
+          length: lengthOverride ?? deckLength,
           theme,
           lang: writeLang,
           // Always: the slides adapt the words the member approved.
