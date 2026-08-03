@@ -28,12 +28,13 @@ import ZonePiece, { type ShowingKey } from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
-import { T, attentionText, startReason, type Lang, type Posture } from "@/components/studio/strings";
+import { T, attentionText, pictureProblem, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
 
-type SubNav = "start" | "build" | "look";
+/** Two tabs that both do something. There is no third. */
+type SubNav = "build" | "look";
 
 interface Choice {
   id: string | null;
@@ -86,7 +87,7 @@ export default function Studio() {
 
   /* ---------- the piece ------------------------------------------ */
   const [step, setStep] = useState(1);
-  const [sub, setSub] = useState<SubNav>("start");
+  const [sub, setSub] = useState<SubNav>("build");
   const [showing, setShowing] = useState<ShowingKey>("post");
 
   const [cards, setCards] = useState<StartCard[]>([]);
@@ -112,7 +113,11 @@ export default function Studio() {
 
   const [draftId, setDraftId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  /** In flight. Never a tick — the action has not finished. */
+  const [busyMessage, setBusyMessage] = useState<string | null>(null);
   /** Failures. Never a tick, never overwritten by an autosave. */
+  /** Set when a draft came back, rendered once the language is known. */
+  const [restoredFlag, setRestoredFlag] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirmingPost, setConfirmingPost] = useState(false);
   const [busy, setBusy] = useState<null | "post" | "save" | "export">(null);
@@ -206,10 +211,18 @@ export default function Studio() {
       if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
       if (restoredAnything) {
         setStep(2);
-        setStatus(T.draftRestored[lang]);
+        // The language is not resolved yet at this point, so the message is
+        // raised later, from whatever `lang` is then.
+        setRestoredFlag(true);
       }
     } catch { /* an unreadable draft is simply not restored */ }
-  }, [lang]);
+  }, []);
+
+  useEffect(() => {
+    if (!restoredFlag || !ready) return;
+    setStatus(T.draftRestored[lang]);
+    setRestoredFlag(false);
+  }, [restoredFlag, ready, lang]);
 
   /* ---------- keep the piece ------------------------------------- */
   useEffect(() => {
