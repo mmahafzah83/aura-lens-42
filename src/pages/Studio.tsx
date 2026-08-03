@@ -872,9 +872,17 @@ export default function Studio() {
             {cards.map((c) => {
               const on = choice?.id === c.signalId;
               return (
-                <div
+                <button
                   key={c.signalId}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    setChoice({ id: c.signalId, title: c.title, insight: c.insight });
+                    setTypedTopic("");
+                  }}
                   style={{
+                    textAlign: rtlShell ? "right" : "left",
+                    cursor: "pointer",
                     background: on ? "var(--act-tint)" : "var(--surface-subtle)",
                     border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
                     borderRadius: 12,
@@ -892,23 +900,10 @@ export default function Studio() {
                       {c.insight}
                     </p>
                   )}
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
-                    <ButtonPrimary
-                      onClick={() => {
-                        const next = { id: c.signalId, title: c.title, insight: c.insight };
-                        setChoice(next);
-                        setTypedTopic("");
-                        void generate(next);
-                      }}
-                      style={{ minHeight: 44 }}
-                    >
-                      {T.chooseUse[lang]}
-                    </ButtonPrimary>
-                    <span style={{ fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)" }}>
-                      {c.fragmentCount} {T.sources[lang]}
-                    </span>
-                  </div>
-                </div>
+                  <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>
+                    {c.fragmentCount} {T.sources[lang]}
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -921,7 +916,10 @@ export default function Studio() {
               <input
                 id="studio-topic"
                 value={typedTopic}
-                onChange={(e) => { setTypedTopic(e.target.value); if (e.target.value) setChoice(null); }}
+                onChange={(e) => {
+                  setTypedTopic(e.target.value);
+                  setChoice(e.target.value.trim() ? { id: null, title: e.target.value.trim(), insight: "" } : null);
+                }}
                 placeholder={T.chooseOwnPlaceholder[lang]}
                 style={{
                   flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 10,
@@ -930,17 +928,6 @@ export default function Studio() {
                   textAlign: rtlShell ? "right" : "left",
                 }}
               />
-              <ButtonGhost
-                disabled={!typedTopic.trim()}
-                onClick={() => {
-                  const next = { id: null, title: typedTopic.trim(), insight: "" };
-                  setChoice(next);
-                  void generate(next);
-                }}
-                style={{ minHeight: 44 }}
-              >
-                {T.chooseUse[lang]}
-              </ButtonGhost>
             </div>
           </div>
 
@@ -966,21 +953,6 @@ export default function Studio() {
                   color: "var(--text-primary)", resize: "vertical",
                 }}
               />
-              <div style={{ marginTop: 10 }}>
-                <ButtonPrimary
-                  disabled={!pasted.trim()}
-                  onClick={() => {
-                    remember();
-                    setChoice((c) => c ?? { id: null, title: typedTopic.trim() || pasted.trim().slice(0, 60), insight: "" });
-                    setContent(fixArabicDirectionalSymbols(stripMarkdown(pasted), writeLang));
-                    setStep(2);
-                    setSub("build");
-                  }}
-                  style={{ minHeight: 44 }}
-                >
-                  {T.pasteUse[lang]}
-                </ButtonPrimary>
-              </div>
             </div>
           )}
         </StageCard>
