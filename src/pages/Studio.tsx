@@ -28,12 +28,13 @@ import ZonePiece, { type ShowingKey } from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
-import { T, attentionText, startReason, type Lang, type Posture } from "@/components/studio/strings";
+import { T, attentionText, pictureProblem, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
 
-type SubNav = "start" | "build" | "look";
+/** Two tabs that both do something. There is no third. */
+type SubNav = "build" | "look";
 
 interface Choice {
   id: string | null;
@@ -86,7 +87,7 @@ export default function Studio() {
 
   /* ---------- the piece ------------------------------------------ */
   const [step, setStep] = useState(1);
-  const [sub, setSub] = useState<SubNav>("start");
+  const [sub, setSub] = useState<SubNav>("build");
   const [showing, setShowing] = useState<ShowingKey>("post");
 
   const [cards, setCards] = useState<StartCard[]>([]);
@@ -112,7 +113,11 @@ export default function Studio() {
 
   const [draftId, setDraftId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  /** In flight. Never a tick — the action has not finished. */
+  const [busyMessage, setBusyMessage] = useState<string | null>(null);
   /** Failures. Never a tick, never overwritten by an autosave. */
+  /** Set when a draft came back, rendered once the language is known. */
+  const [restoredFlag, setRestoredFlag] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirmingPost, setConfirmingPost] = useState(false);
   const [busy, setBusy] = useState<null | "post" | "save" | "export">(null);
@@ -206,10 +211,18 @@ export default function Studio() {
       if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
       if (restoredAnything) {
         setStep(2);
-        setStatus(T.draftRestored[lang]);
+        // The language is not resolved yet at this point, so the message is
+        // raised later, from whatever `lang` is then.
+        setRestoredFlag(true);
       }
     } catch { /* an unreadable draft is simply not restored */ }
-  }, [lang]);
+  }, []);
+
+  useEffect(() => {
+    if (!restoredFlag || !ready) return;
+    setStatus(T.draftRestored[lang]);
+    setRestoredFlag(false);
+  }, [restoredFlag, ready, lang]);
 
   /* ---------- keep the piece ------------------------------------- */
   useEffect(() => {
@@ -354,6 +367,8 @@ export default function Studio() {
     setDeckBusy(true);
     setDeckFailures([]);
     setProblem(null);
+    setStatus(null);
+    setBusyMessage(T.makingSlides[lang]);
     let timedOut = false;
     const timeout = new Promise<"timeout">((resolve) => {
       window.setTimeout(() => { timedOut = true; resolve("timeout"); }, 90000);
@@ -392,6 +407,7 @@ export default function Studio() {
       setDeckFailures([plainFailure("failed")]);
     } finally {
       setDeckBusy(false);
+      setBusyMessage(null);
     }
   }, [choice, content, theme, deckLength, writeLang, lang, saveDraft, remember]);
 
@@ -399,6 +415,7 @@ export default function Studio() {
     if (!deck) return;
     setChangingLine(true);
     setProblem(null);
+    setBusyMessage(T.changingLine[lang]);
     try {
       const { data } = await supabase.functions.invoke("generate-deck", {
         body: { signal_id: deck.signal_id, rewrite_slide: current, deck },
@@ -414,7 +431,7 @@ export default function Studio() {
     } catch {
       setProblem(T.lineChangeFailed[lang]);
     }
-    finally { setChangingLine(false); }
+    finally { setChangingLine(false); setBusyMessage(null); }
   }, [deck, current, theme, lang, remember]);
 
   const uploadPicture = useCallback(async (file: File) => {
@@ -423,7 +440,9 @@ export default function Studio() {
     const slide = deck.slides[Math.min(current, deck.slides.length - 1)];
     if (mediaSupport(slide.archetype) === "none") { setPictureNotice(T.noPictureHere[lang]); return; }
     const imageProblem = await checkImage(file, SLIDE_MEDIA_LIMITS);
-    if (imageProblem) { setPictureNotice(imageProblem); return; }
+    if (imageProblem) { setPictureNotice(pictureProblem(imageProblem, lang)); return; }
+    setBusyMessage(T.uploading[lang]);
+    try {
     const { data: sess } = await supabase.auth.getSession();
     const uid = sess.session?.user?.id;
     if (!uid) { setPictureNotice(T.sessionEnded[lang]); return; }
@@ -432,13 +451,19 @@ export default function Studio() {
     const { error: upErr } = await supabase.storage
       .from("deck-media")
       .upload(path, clean, { upsert: true, contentType: "image/jpeg" });
-    if (upErr) { setPictureNotice(upErr.message); return; }
+    // A provider's message is never shown to a member.
+    if (upErr) { setPictureNotice(T.picUploadFailed[lang]); return; }
     const { data: signed, error: signErr } = await supabase.storage
       .from("deck-media")
       .createSignedUrl(path, 60 * 60 * 24 * 365);
-    if (signErr || !signed) { setPictureNotice(upErr?.message ?? T.exportFailed[lang]); return; }
+    if (signErr || !signed) { setPictureNotice(T.picUploadFailed[lang]); return; }
     remember();
     setDeck((d) => (d ? setSlidePhoto(d, current, signed.signedUrl) : d));
+    } catch {
+      setPictureNotice(T.picUploadFailed[lang]);
+    } finally {
+      setBusyMessage(null);
+    }
   }, [deck, current, lang, remember]);
 
   const move = useCallback((from: number, to: number) => {
@@ -453,17 +478,32 @@ export default function Studio() {
   }, []);
 
   /* ---------- step 4: LinkedIn ------------------------------------ */
-  const postText = useCallback(async () => {
+  /**
+   * The ONLY way to reach LinkedIn. Every button that could publish calls
+   * this; it opens the confirmation and nothing else.
+   */
+  const requestPost = useCallback(() => {
+    setProblem(null);
+    setConfirmingPost(true);
+  }, []);
+
+  /**
+   * Publishes for real. Called from exactly one place: the confirm panel's
+   * "Post it". No other call site exists.
+   */
+  const publishNow = useCallback(async () => {
     setConfirmingPost(false);
     setBusy("post");
     setProblem(null);
-    setStatus(T.posting[lang]);
+    setStatus(null);
+    setBusyMessage(T.posting[lang]);
     const id = await saveDraft();
-    if (!id) { setBusy(null); setStatus(null); setProblem(T.postFailed[lang]); return; }
+    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
       body: { postId: id, advisory: true },
     });
     setBusy(null);
+    setBusyMessage(null);
     const payload = data as any;
     const message = `${payload?.error || ""} ${error?.message || ""}`.toLowerCase();
     if (payload?.success === true) {
@@ -472,7 +512,6 @@ export default function Studio() {
       setStatus(T.postedHelp[lang]);
       return;
     }
-    setStatus(null);
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
   }, [saveDraft, lang]);
 
@@ -491,17 +530,18 @@ export default function Studio() {
     if (!mountRef.current) { setProblem(T.exportNotReady[lang]); return; }
     setBusy("export");
     setProblem(null);
-    setStatus(T.exporting[lang]);
+    setStatus(null);
+    setBusyMessage(T.exporting[lang]);
     try {
       const nodes = collectSlideNodes(mountRef.current);
-      if (nodes.length === 0) { setStatus(null); setProblem(T.exportNotReady[lang]); return; }
+      if (nodes.length === 0) { setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
       setStatus(T.exportDone[lang]);
     } catch {
-      setStatus(null);
       setProblem(T.exportFailed[lang]);
     } finally {
       setBusy(null);
+      setBusyMessage(null);
     }
   }, [deck, lang]);
 
@@ -612,7 +652,6 @@ export default function Studio() {
       key={key}
       type="button"
       onClick={() => {
-        if (key === "start") { setStep(1); setSub("start"); return; }
         setSub(key);
         if (key === "build") setShowing(deck ? "slides" : "post");
       }}
@@ -632,6 +671,33 @@ export default function Studio() {
       {label}
     </button>
   );
+
+  /* One confirmation, shared by every path that can publish. */
+  const confirmPanel = confirmingPost ? (
+    <div
+      style={{
+        background: "var(--surface-subtle)",
+        border: "1px solid var(--act)",
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 12,
+        display: "grid",
+        gap: 10,
+      }}
+    >
+      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
+        {T.confirmPostHead[lang]}
+      </p>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <ButtonPrimary onClick={() => { setStep(4); void publishNow(); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
+          {T.confirmPostYes[lang]}
+        </ButtonPrimary>
+        <ButtonGhost onClick={() => setConfirmingPost(false)} style={{ minHeight: 44 }}>
+          {T.confirmPostNo[lang]}
+        </ButtonGhost>
+      </div>
+    </div>
+  ) : null;
 
   const writeArea = (
     <>
@@ -672,33 +738,9 @@ export default function Studio() {
         {content.length} {T.characters[lang]}
         {content.length > 2800 ? ` — ${T.tooLong[lang]}` : ""}
       </p>
-      {confirmingPost && (
-        <div
-          style={{
-            background: "var(--surface-subtle)",
-            border: "1px solid var(--act)",
-            borderRadius: 12,
-            padding: 14,
-            marginBottom: 12,
-            display: "grid",
-            gap: 10,
-          }}
-        >
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
-            {T.confirmPostHead[lang]}
-          </p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <ButtonPrimary onClick={() => { setStep(4); void postText(); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
-              {T.confirmPostYes[lang]}
-            </ButtonPrimary>
-            <ButtonGhost onClick={() => setConfirmingPost(false)} style={{ minHeight: 44 }}>
-              {T.confirmPostNo[lang]}
-            </ButtonGhost>
-          </div>
-        </div>
-      )}
+      {confirmPanel}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <ButtonPrimary onClick={() => setConfirmingPost(true)} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
+        <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
           {T.optPost[lang]}
         </ButtonPrimary>
         <ButtonGhost onClick={() => void makeSlides()} disabled={!content.trim() || !choice?.id} style={{ minHeight: 44 }}>
@@ -740,10 +782,17 @@ export default function Studio() {
         }}
       >
         {/* The tabs only exist where they change what is on screen. */}
-        {step === 3 && subLink("start", T.subStart[lang])}
         {step === 3 && subLink("build", T.subBuild[lang])}
         {step === 3 && subLink("look", T.subLook[lang])}
         <span style={{ flex: 1 }} />
+        {/* In flight: no tick, because nothing has finished. */}
+        <span
+          role="status"
+          aria-live="polite"
+          style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--machine-text)" }}
+        >
+          {busyMessage ? `… ${busyMessage}` : ""}
+        </span>
         <span
           role="status"
           aria-live="polite"
@@ -1025,8 +1074,9 @@ export default function Studio() {
             </p>
           )}
 
+          {confirmPanel}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
-            <ButtonPrimary onClick={() => void postText()} disabled={!content.trim() || busy === "post"} style={{ minHeight: 44 }}>
+            <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
               {T.publishAsPost[lang]}
             </ButtonPrimary>
           </div>
@@ -1131,7 +1181,7 @@ export default function Studio() {
           <ButtonGhost onClick={() => void exportFile()} disabled={!deck || busy === "export"} style={{ minHeight: 44 }}>
             {T.exportFile[lang]}
           </ButtonGhost>
-          <ButtonPrimary onClick={() => { setStep(4); setSub("look"); }} disabled={step === 4} style={{ minHeight: 44 }}>
+          <ButtonPrimary onClick={() => setStep(4)} disabled={step === 4} style={{ minHeight: 44 }}>
             {T.putOnLinkedIn[lang]} →
           </ButtonPrimary>
         </span>

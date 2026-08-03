@@ -49,7 +49,6 @@ export const T = {
   },
 
   // Sub navigation
-  subStart: { en: "Start", ar: "البداية" },
   subBuild: { en: "Build", ar: "البناء" },
   subLook: { en: "Look", ar: "المظهر" },
   savedMoment: { en: "Saved a moment ago", ar: "حُفظ قبل لحظات" },
@@ -92,7 +91,6 @@ export const T = {
   },
   sessionEnded: { en: "Your sign-in ended. Sign in again and try once more.", ar: "انتهت جلستك. سجّل الدخول وحاول مرة أخرى." },
   tryAgain: { en: "Try again", ar: "حاول مرة أخرى" },
-  writeAskAura: { en: "Ask Aura to write it", ar: "اطلب من أورا أن تكتبه" },
   optPost: { en: "Put this on LinkedIn", ar: "انشر هذا على لينكدإن" },
   optSlides: { en: "Also make slides", ar: "اصنع شرائح أيضاً" },
   optLater: { en: "Keep it for later", ar: "احتفظ به لوقت لاحق" },
@@ -110,7 +108,6 @@ export const T = {
   showing: { en: "Showing", ar: "المعروض" },
   showPost: { en: "The post", ar: "المنشور" },
   showSlides: { en: "The slides", ar: "الشرائح" },
-  showPicture: { en: "A picture", ar: "صورة" },
   stillToDo: { en: "Still to do", ar: "ما تبقّى" },
   todoWords: { en: "Words approved", ar: "الكلمات معتمدة" },
   todoSlides: { en: "Slides made", ar: "الشرائح جاهزة" },
@@ -205,8 +202,6 @@ export const T = {
   // Step 4 chooser
   publishHead: { en: "Put it on LinkedIn", ar: "انشره على لينكدإن" },
   publishAsPost: { en: "Send the words as a post", ar: "أرسل الكلمات كمنشور" },
-  publishAsSlides: { en: "Put the slides up", ar: "انشر الشرائح" },
-  publishNoDraft: { en: "Write something first.", ar: "اكتب شيئاً أولاً." },
   fileSteps: { en: "a PDF of your", ar: "ملف PDF من" },
   slidesWord: { en: "slides", ar: "شريحة" },
   captionNote: { en: "we open LinkedIn with your caption already copied.", ar: "نفتح لينكدإن ونصّك المرافق منسوخ بالفعل." },
@@ -253,7 +248,33 @@ export const T = {
     ar: "الشرائح تُبنى من موضوع محفوظ. اختر واحداً من موادك المحفوظة لصنع الشرائح.",
   },
   draftRestored: { en: "We brought back what you were writing.", ar: "أعدنا ما كنت تكتبه." },
+
+  // Picture problems — our own words, never a provider's
+  picTypeBad: {
+    en: "That file type isn't supported. Please use a JPG, PNG, or WebP picture.",
+    ar: "نوع الملف غير مدعوم. استخدم صورة JPG أو PNG أو WebP.",
+  },
+  picTooBig: { en: "That picture is too large. Please use a smaller one.", ar: "الصورة كبيرة جداً. استخدم صورة أصغر." },
+  picUnreadable: { en: "We couldn't open that picture. Please try a different one.", ar: "لم نستطع فتح هذه الصورة. جرّب صورة أخرى." },
+  picTooSmall: { en: "This picture is too small to stay sharp — try a larger one.", ar: "هذه الصورة صغيرة جداً لتبقى واضحة — جرّب صورة أكبر." },
+  picUploadFailed: {
+    en: "The picture could not be added just now. Please try once more.",
+    ar: "تعذّر إضافة الصورة الآن. جرّب مرة أخرى من فضلك.",
+  },
 } as const;
+
+/**
+ * Turn a `checkImage` result into one of our own sentences, by cause.
+ * A provider message is never shown to a member.
+ */
+export function pictureProblem(englishFromChecker: string, lang: Lang): string {
+  const s = englishFromChecker.toLowerCase();
+  if (s.includes("file type")) return T.picTypeBad[lang];
+  if (s.includes("mb")) return T.picTooBig[lang];
+  if (s.includes("couldn't open") || s.includes("could not open")) return T.picUnreadable[lang];
+  if (s.includes("too small")) return T.picTooSmall[lang];
+  return T.picUploadFailed[lang];
+}
 
 /** Arabic names for the slot labels rendered by the inspector. */
 export const slotLabelAr: Record<string, string> = {
@@ -317,7 +338,13 @@ export function startReason(kind: string, count: number, english: string, lang: 
   if (lang !== "ar") return english;
   if (kind === "new_evidence") return `${count} مصدراً يقف خلف هذا الآن — بعضها وصل بعد آخر منشور لك عنه.`;
   if (kind === "accelerating") return `يكتسب زخماً — ${count} مصدراً وما زال يتصاعد.`;
-  if (kind === "never_written") return `أقوى إشاراتك ولم تكتب عنها بعد — ${count} مصدراً.`;
+  if (kind === "never_written") {
+    // Two English forms exist for this kind; the Arabic must claim exactly what
+    // the English claims, never more.
+    return /strongest/i.test(english)
+      ? `أقوى إشاراتك ولم تنشر عنها قط — ${count} مصدراً.`
+      : `لم تكتب عنه بعد — ${count} مصدراً يقف خلفه.`;
+  }
   return english;
 }
 

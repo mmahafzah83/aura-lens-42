@@ -106,10 +106,7 @@ export const ZoneStage: React.FC<{
             >
               ‹
             </button>
-            <span
-              role="status"
-              style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)" }}
-            >
+            <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)" }}>
               {T.slideOf[lang]} {current + 1} {T.of[lang]} {count}
             </span>
             <button
