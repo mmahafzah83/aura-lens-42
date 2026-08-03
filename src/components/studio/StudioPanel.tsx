@@ -34,10 +34,6 @@ import ZonePiece from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
-import PhoneProgress from "@/components/studio/PhoneProgress";
-import PhoneActionBar from "@/components/studio/PhoneActionBar";
-import PhoneLayer from "@/components/studio/PhoneLayer";
-import PhoneStage from "@/components/studio/PhoneStage";
 import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
