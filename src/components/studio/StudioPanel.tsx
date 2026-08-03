@@ -70,19 +70,41 @@ function alreadyOpened(pieceKey: string): boolean {
 }
 
 /**
- * The quality gate, said as one sentence a member can act on. Never a list,
- * never a score, never a verdict. In Arabic the English weakness is not shown
- * at all — a plain Arabic sentence stands in its place.
+ * P1 — THE GATE SPEAKS IN OUR SENTENCES, NEVER IN THE JUDGE'S.
+ *
+ * The server sends a CATEGORY, never prose. Four sentences exist and one of
+ * them is chosen. No string produced by the judge — no weakness, no verdict,
+ * no score — can reach a member through this function, because no string
+ * produced by the judge is an input to it.
  */
-function gateSentence(firstWeakness: string | undefined, lang: Lang): string {
-  const w = (firstWeakness || "").trim();
-  if (lang === "ar" || !w) return T.notReadyPlain[lang];
-  // Only ever show a number the member can verify. Any digit at all, a
-  // percentage or a score means the judge is arguing with a measurement the
-  // member cannot check, so the plain sentence stands in its place instead.
-  if (/\d|%|score/i.test(w)) return T.notReadyPlain[lang];
-  const tidy = w.replace(/\s+/g, " ").replace(/^[-•.\s]+/, "");
-  return `${T.notReadyLead.en} ${tidy.endsWith(".") ? tidy : `${tidy}.`}`;
+export type GateCategory = "unsupported_number" | "language" | "generic" | "other";
+
+function gateSentence(category: unknown, lang: Lang): string {
+  switch (category) {
+    case "unsupported_number":
+      return T.gateUnsupportedNumber[lang];
+    case "language":
+      return T.gateLanguage[lang];
+    case "generic":
+      return T.gateGeneric[lang];
+    default:
+      // No category, or one we do not know: the last sentence stands.
+      return T.gateOther[lang];
+  }
+}
+
+/**
+ * P3 — how long each kind of work normally takes, in seconds. The bar fills
+ * toward this and the countdown reads from it. A guess that ends beats a
+ * decoration that loops.
+ */
+function etaFor(message: string, lang: Lang): number {
+  if (message === T.writing[lang]) return 30;
+  if (message === T.makingSlides[lang]) return 45;
+  if (message === T.posting[lang]) return 20;
+  if (message === T.exporting[lang] || message === T.exportSettling[lang]) return 15;
+  if (message === T.changingLine[lang]) return 15;
+  return 12;
 }
 
 /** A relative "saved …" stamp that never leaks English into the Arabic shell. */
@@ -217,7 +239,12 @@ export default function StudioPanel({
   const [published, setPublished] = useState(false);
   const [linkInput, setLinkInput] = useState("");
 
-  const [undoStack, setUndoStack] = useState<Array<{ content: string; deck: DeckIR | null }>>([]);
+  /**
+   * P1c — set the moment the member CHOOSES a writing language. From then on a
+   * language complaint from the gate is the tool contradicting itself, so it
+   * is suppressed entirely.
+   */
+  const langChosenRef = useRef(false);
 
   const mountRef = useRef<HTMLDivElement | null>(null);
   /**
@@ -412,21 +439,27 @@ export default function StudioPanel({
     return () => window.clearTimeout(t);
   }, [status]);
 
-  const remember = useCallback(() => {
-    setUndoStack((s) => [...s.slice(-9), { content, deck }]);
-  }, [content, deck]);
+  /**
+   * P5 — UNDO IS GONE.
+   *
+   * It restored a snapshot that was not always the last member-visible change,
+   * so it sometimes worked and sometimes did not. A control that sometimes
+   * works is worse than no control. "Save and come back later" is the honest
+   * way back, and it is still here.
+   */
 
-  const undo = useCallback(() => {
-    setUndoStack((s) => {
-      const last = s[s.length - 1];
-      if (!last) return s;
-      setContent(last.content);
-      setDeck(last.deck);
-      setCurrent(0);
-      setFits({});
-      return s.slice(0, -1);
-    });
-  }, []);
+  /**
+   * P1a — one place decides what the member is told, and whether they are told
+   * anything at all. `category` comes from the server; nothing else does.
+   */
+  const applyGate = useCallback((category: unknown) => {
+    if (category === "language" && langChosenRef.current) {
+      // The member chose this language. We do not argue with their choice.
+      setNotReady(null);
+      return;
+    }
+    setNotReady(gateSentence(category, lang));
+  }, [lang]);
 
   /**
    * N1 — ONE reset for a NEW piece.
@@ -469,7 +502,7 @@ export default function StudioPanel({
     setConfirmingPost(false);
     setAskReplace(false);
     setAskLangSwitch(null);
-    setUndoStack([]);
+    langChosenRef.current = false;
     preselectedRef.current = Boolean(next?.choice);
     draftPrefillRef.current = null;
     liveRef.current = {
@@ -503,7 +536,6 @@ export default function StudioPanel({
   /* ---------- step 1: the drafts already waiting ------------------ */
   const openDraft = useCallback(
     async (d: StudioDraft, source: string) => {
-      remember();
       setDraftId(d.id);
       setDraftSource(d._source);
       // A new piece is in the room: forget the row the last one created.
@@ -542,7 +574,7 @@ export default function StudioPanel({
         void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
       }
     },
-    [remember, lang, persistNow],
+    [lang, persistNow],
   );
 
   useEffect(() => {
@@ -698,17 +730,15 @@ export default function StudioPanel({
       if (runId !== genRunId.current) return;
       const text = json?.content;
       if (!res.ok || !text) { setGenError("failed"); return; }
-      remember();
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
       setContent(generated);
       generatedTextRef.current = generated;
       // The gate already ran at generation. If it held the post, the words stay
       // fully editable and only the publish action waits.
       if (json?.blocked === true) {
-        const weak: string[] = Array.isArray(json?.quality_gate?.weaknesses)
-          ? json.quality_gate.weaknesses.filter((w: unknown) => typeof w === "string" && w.trim())
-          : [];
-        setNotReady(gateSentence(weak[0], lang));
+        // Only a category is ever read. If this surface cannot supply one,
+        // the last of our four sentences stands.
+        applyGate(json?.gate_category ?? json?.quality_gate?.category);
       }
     } catch {
       if (runId === genRunId.current) setGenError("failed");
@@ -716,7 +746,7 @@ export default function StudioPanel({
       window.clearTimeout(timer);
       if (runId === genRunId.current) { setGenerating(false); setBusyMessage(null); }
     }
-  }, [choice, writeLang, remember, lang]);
+  }, [choice, writeLang, lang, applyGate]);
 
   /* ---------- the draft row --------------------------------------- */
   /** The subject, written as a title so the Library never shows a raw line. */
@@ -972,7 +1002,6 @@ export default function StudioPanel({
     setDeckFailures([]);
     setProblem(null);
     setStatus(null);
-    setBusyMessage(T.makingSlides[lang]);
     let timedOut = false;
     const timeout = new Promise<"timeout">((resolve) => {
       window.setTimeout(() => { timedOut = true; resolve("timeout"); }, 90000);
@@ -1005,7 +1034,6 @@ export default function StudioPanel({
       }
       const parsed = DeckIRSchema.safeParse(result.deck);
       if (!parsed.success) { setDeckFailures([T.slidesFailedShape[lang]]); return; }
-      remember();
       setDeck({ ...parsed.data, theme });
       setDeckSource(builtFrom);
       setExported(false);
@@ -1015,9 +1043,8 @@ export default function StudioPanel({
       setDeckFailures([T.connectionDropped[lang]]);
     } finally {
       setDeckBusy(false);
-      setBusyMessage(null);
     }
-  }, [choice, content, theme, deckLength, writeLang, lang, saveDraft, remember]);
+  }, [choice, content, theme, deckLength, writeLang, lang, saveDraft]);
 
   const changeThisLine = useCallback(async () => {
     if (!deck) return;
@@ -1034,13 +1061,12 @@ export default function StudioPanel({
       const candidate = replaceSlide(deck, current, result.slide);
       const parsed = DeckIRSchema.safeParse(candidate);
       if (!parsed.success) { setProblem(T.lineChangeFailed[lang]); return; }
-      remember();
       setDeck({ ...parsed.data, theme });
     } catch {
       setProblem(T.lineChangeFailed[lang]);
     }
     finally { setChangingLine(false); setBusyMessage(null); }
-  }, [deck, current, theme, lang, remember]);
+  }, [deck, current, theme, lang]);
 
   const uploadPicture = useCallback(async (file: File) => {
     setPictureNotice(null);
@@ -1065,14 +1091,13 @@ export default function StudioPanel({
       .from("deck-media")
       .createSignedUrl(path, 60 * 60 * 24 * 365);
     if (signErr || !signed) { setPictureNotice(T.picUploadFailed[lang]); return; }
-    remember();
     setDeck((d) => (d ? setSlidePhoto(d, current, signed.signedUrl) : d));
     } catch {
       setPictureNotice(T.picUploadFailed[lang]);
     } finally {
       setBusyMessage(null);
     }
-  }, [deck, current, lang, remember]);
+  }, [deck, current, lang]);
 
   const move = useCallback((from: number, to: number) => {
     setDeck((d) => {
@@ -1099,7 +1124,7 @@ export default function StudioPanel({
    * Publishes for real. Called from exactly one place: the confirm panel's
    * "Post it". No other call site exists.
    */
-  const publishNow = useCallback(async () => {
+  const publishNow = useCallback(async (override = false) => {
     setConfirmingPost(false);
     setBusy("post");
     setProblem(null);
@@ -1111,8 +1136,11 @@ export default function StudioPanel({
     // What is on screen is what publishes.
     await syncRowToScreen(id);
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
-      body: { postId: id },
+      // P1b — the member always decides. `advisory` publishes past the gate
+      // and the override is recorded as its own event.
+      body: { postId: id, advisory: override },
     });
+    if (override) void track("gate_overridden", { signal_id: choice?.id || null, route: "linkedin" });
     setBusy(null);
     setBusyMessage(null);
     const payload = data as any;
@@ -1128,16 +1156,24 @@ export default function StudioPanel({
     }
     if (payload?.blocked === true) {
       // Held by the gate. The member stays here, with their words editable.
-      const weak: string[] = Array.isArray(payload?.weaknesses)
-        ? payload.weaknesses.filter((w: unknown) => typeof w === "string" && w.trim())
-        : [];
+      const category = payload?.gate_category;
+      // P1c — the member already chose this language. Their choice wins, and
+      // the post goes out rather than being argued with.
+      if (category === "language" && langChosenRef.current && !override) {
+        void publishNowRef.current?.(true);
+        return;
+      }
       // One sentence, one place: the banner beside the words it concerns.
-      setNotReady(gateSentence(weak[0], lang));
+      applyGate(category);
       setStep(2);
       return;
     }
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
-  }, [ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
+  }, [ensurePostRow, syncRowToScreen, finalisePublished, choice, lang, applyGate]);
+
+  /** Lets the gate branch above retry itself once, with the override on. */
+  const publishNowRef = useRef<((override?: boolean) => Promise<void>) | null>(null);
+  publishNowRef.current = publishNow;
 
   /** Save and come back later: says where it went, and keeps the step. */
   const saveAndComeBack = useCallback(async () => {
@@ -1226,6 +1262,13 @@ export default function StudioPanel({
     setStatus(T.linkSaved[lang]);
   }, [linkInput, ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
+  /** P9 — the onward choices. The shell owns navigation; we only ask. */
+  const goTab = useCallback((tab: "library" | "influence") => {
+    try {
+      window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab } }));
+    } catch { /* navigation is never allowed to throw at a member */ }
+  }, []);
+
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
     const fit = fits[current];
@@ -1234,8 +1277,16 @@ export default function StudioPanel({
   }, [fits, current, lang]);
 
   const doneMap = useMemo(
-    () => ({ 1: Boolean(choice), 2: content.trim().length > 0, 3: Boolean(deck), 4: published }),
-    [choice, content, deck, published],
+    () => ({
+      // P2 — every tick is derived from what the post actually IS: a subject
+      // chosen, words written, a format decided (and, for slides, a deck that
+      // exists), a link on LinkedIn. Never from the highest step visited.
+      1: Boolean(choice),
+      2: content.trim().length > 0,
+      3: Boolean(format) && (format === "post" || Boolean(deck)),
+      4: published,
+    }),
+    [choice, content, deck, format, published],
   );
 
   /**
@@ -1423,8 +1474,7 @@ export default function StudioPanel({
       if (pasted.trim()) {
         // Words already written are never replaced without being asked.
         if (content.trim() && !askReplace) { setAskReplace(true); return; }
-        remember();
-        setChoice((c) => c ?? { id: null, title: typedTopic.trim() || pasted.trim().slice(0, 60), insight: "" });
+          setChoice((c) => c ?? { id: null, title: typedTopic.trim() || pasted.trim().slice(0, 60), insight: "" });
         setContent(fixArabicDirectionalSymbols(stripMarkdown(pasted), writeLang));
         setPasted("");
         setAskReplace(false);
@@ -1543,9 +1593,6 @@ export default function StudioPanel({
             {T.cancel[lang]}
           </ButtonGhost>
         )}
-        <ButtonGhost onClick={undo} disabled={undoStack.length === 0} style={{ minHeight: 44 }}>
-          {T.undo[lang]}
-        </ButtonGhost>
         <span style={{ display: "grid", gap: 2 }}>
           <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 44 }}>
             {T.saveLater[lang]}
@@ -1562,7 +1609,13 @@ export default function StudioPanel({
       </div>
 
       {/* Motion for anything in flight, on every step. */}
-      {busyMessage && <BusyBar message={busyMessage} />}
+      {busyMessage && (
+        <BusyBar
+          message={busyMessage}
+          etaSeconds={etaFor(busyMessage, lang)}
+          remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
+        />
+      )}
 
       {step === 1 && (
         <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
@@ -1759,7 +1812,7 @@ export default function StudioPanel({
                     key={key}
                     type="button"
                     aria-pressed={on}
-                    onClick={() => setWriteLang(key)}
+                    onClick={() => { langChosenRef.current = true; setWriteLang(key); }}
                     style={{
                       minHeight: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer",
                       fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
@@ -1836,7 +1889,14 @@ export default function StudioPanel({
               {notReady}
             </p>
           )}
-          {/* Change the language of the piece without going back a step. */}
+          {notReady && !(format === "slides" && deck) && (
+            <div style={{ margin: "0 0 12px" }}>
+              <ButtonGhost onClick={() => { setNotReady(null); setStep(4); void publishNow(true); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
+                {T.postAnyway[lang]}
+              </ButtonGhost>
+            </div>
+          )}
+          {/* Change the writing language without going back a step. */}
           <div style={{ marginBottom: 12 }}>
             <ButtonGhost
               onClick={() => {
@@ -1845,6 +1905,7 @@ export default function StudioPanel({
                 const ownWords =
                   content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
                 if (ownWords) { setAskLangSwitch(other); return; }
+                langChosenRef.current = true;
                 setWriteLang(other);
                 setNotReady(null);
                 void generate(undefined, other);
@@ -1869,7 +1930,8 @@ export default function StudioPanel({
                     onClick={() => {
                       const other = askLangSwitch;
                       setAskLangSwitch(null);
-                      setWriteLang(other);
+                      langChosenRef.current = true;
+                setWriteLang(other);
                       setNotReady(null);
                       void generate(undefined, other);
                     }}
@@ -1981,6 +2043,7 @@ export default function StudioPanel({
                 cover: Boolean(deck?.slides.some((s) => s.slots.media?.src)),
                 published,
               }}
+              showWords={false}
             />
             <ZoneStage
               lang={lang}
@@ -1993,7 +2056,19 @@ export default function StudioPanel({
               mountRef={mountRef}
               boxRef={canvasBoxRef}
               showCanvas={canvasInStage}
-              empty={<span>{T.noSlidesYet[lang]}</span>}
+              empty={
+                deckBusy ? (
+                  <div style={{ width: "100%", maxWidth: 360 }}>
+                    <BusyBar
+                      message={T.makingSlides[lang]}
+                      etaSeconds={45}
+                      remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
+                    />
+                  </div>
+                ) : (
+                  <span>{T.noSlidesYet[lang]}</span>
+                )
+              }
               footer={
                 !deck ? (
                   <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
@@ -2017,7 +2092,7 @@ export default function StudioPanel({
                 writeLang={writeLang}
                 deck={deck}
                 current={current}
-                onDeck={(next) => { remember(); setDeck(next); }}
+                onDeck={(next) => { setDeck(next); }}
                 attention={attention}
                 onChangeLine={() => void changeThisLine()}
                 changing={changingLine}
@@ -2033,34 +2108,42 @@ export default function StudioPanel({
 
       {step === 4 && (
         <StageCard title={T.publishHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+          {/* P9 — THE ENDING. Whichever route the member took, the cycle closes
+              here, in the main column, with three ways onward. Nothing on this
+              panel can be pressed twice into a second post. */}
           {published && (
-            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)", margin: "0 0 10px" }}>
-              {T.postedHead[lang]} {T.postedHelp[lang]}{" "}
-              {postUrl && (
-                <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
-                  {T.seeOnLinkedIn[lang]}
-                </a>
-              )}
-            </p>
-          )}
-
-          {published && (
-            /* N1 — the explicit way to begin a new piece. One reset, no stale row. */
-            <button
-              type="button"
-              onClick={() => startNewPiece()}
+            <div
+              role="status"
+              aria-live="polite"
               style={{
-                minHeight: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer",
-                background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600,
-                color: "var(--text-primary)", margin: "0 0 12px",
+                background: "var(--surface-subtle)", border: "1px solid var(--act)",
+                borderRadius: 12, padding: 14, margin: "0 0 16px", display: "grid", gap: 10,
               }}
             >
-              {lang === "ar" ? "اكتب قطعة جديدة" : "Write another"}
-            </button>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                {T.cycleDoneHead[lang]}
+              </p>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
+                {T.cycleDoneBody[lang]}{" "}
+                {postUrl && (
+                  <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
+                    {T.seeOnLinkedIn[lang]}
+                  </a>
+                )}
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
+                  {T.writeAnother[lang]}
+                </ButtonPrimary>
+                <ButtonGhost onClick={() => goTab("library")} style={{ minHeight: 44 }}>
+                  {T.goToLibrary[lang]}
+                </ButtonGhost>
+                <ButtonGhost onClick={() => goTab("influence")} style={{ minHeight: 44 }}>
+                  {T.seePerformance[lang]}
+                </ButtonGhost>
+              </div>
+            </div>
           )}
-
-          {confirmPanel}
 
           {/* ONE path, decided by what the member actually made. */}
           {!(format === "slides" && deck) ? (
@@ -2081,20 +2164,34 @@ export default function StudioPanel({
                   {T.overLimitHead[lang]} {content.length - POST_MAX_CHARS} {T.overLimitTail[lang]}
                 </p>
               )}
-              {!published && !confirmingPost && (
+              {!published && (
                 <>
-                {notReady && (
-                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: "0 0 10px", lineHeight: 1.75 }}>
-                    {notReady}
-                  </p>
-                )}
-                <ButtonPrimary
-                  onClick={requestPost}
-                  disabled={!content.trim() || content.length > POST_MAX_CHARS || busy === "post" || Boolean(notReady)}
-                  style={{ minHeight: 44 }}
-                >
-                  {T.postItNow[lang]}
-                </ButtonPrimary>
+                  {notReady && (
+                    <div style={{ display: "grid", gap: 10, margin: "0 0 12px" }}>
+                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: 0, lineHeight: 1.75 }}>
+                        {notReady}
+                      </p>
+                      {/* P1b — Aura advises, the member decides. Always a way out. */}
+                      <div>
+                        <ButtonGhost onClick={() => { setNotReady(null); void publishNow(true); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
+                          {T.postAnyway[lang]}
+                        </ButtonGhost>
+                      </div>
+                    </div>
+                  )}
+                  {/* P4 — ONE POSITION. The trigger never moves and never leaves
+                      the layout; the confirmation opens directly beneath it. */}
+                  <ButtonPrimary
+                    onClick={requestPost}
+                    disabled={
+                      !content.trim() || content.length > POST_MAX_CHARS ||
+                      busy === "post" || confirmingPost || Boolean(notReady)
+                    }
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.postItNow[lang]}
+                  </ButtonPrimary>
+                  <div style={{ marginTop: 12 }}>{confirmPanel}</div>
                 </>
               )}
             </>
@@ -2159,6 +2256,7 @@ export default function StudioPanel({
                   value={linkInput}
                   onChange={(e) => setLinkInput(e.target.value)}
                   placeholder={T.linkPlaceholder[lang]}
+                  disabled={published}
                   style={{
                     flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
                     background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
@@ -2167,11 +2265,11 @@ export default function StudioPanel({
                   }}
                 />
                 {exported ? (
-                  <ButtonPrimary onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                  <ButtonPrimary onClick={() => void saveLink()} disabled={published || !linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
                     {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
                   </ButtonPrimary>
                 ) : (
-                  <ButtonGhost onClick={() => void saveLink()} disabled={!linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                  <ButtonGhost onClick={() => void saveLink()} disabled={published || !linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
                     {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
                   </ButtonGhost>
                 )}

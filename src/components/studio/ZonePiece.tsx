@@ -11,7 +11,7 @@ const heading: React.CSSProperties = {
   margin: 0,
 };
 
-/** LEFT zone — the subject of this piece, and where you are. Nothing else. */
+/** LEFT zone — the subject of this post, and where you are. Nothing else. */
 export const ZonePiece: React.FC<{
   lang: Lang;
   writeLang: Lang;
@@ -20,7 +20,12 @@ export const ZonePiece: React.FC<{
   content: string;
   onContentChange: (next: string) => void;
   todo: { words: boolean; slides: boolean; cover: boolean; published: boolean };
-}> = ({ lang, writeLang, subject, content, onContentChange, todo }) => {
+  /**
+   * P6 — on the slides path the words are the PREVIOUS step and belong there.
+   * This panel then shows the subject and what is still to do, nothing else.
+   */
+  showWords?: boolean;
+}> = ({ lang, writeLang, subject, content, onContentChange, todo, showWords = true }) => {
   const [editing, setEditing] = useState(false);
   const rtl = writeLang === "ar";
   // M4 — never below 16px on a phone, or iOS zooms the page on focus.
@@ -59,6 +64,7 @@ export const ZonePiece: React.FC<{
         </p>
       </div>
 
+      {showWords && (
       <div>
         <p style={heading}>{T.yourWords[lang]}</p>
         {editing ? (
@@ -123,6 +129,7 @@ export const ZonePiece: React.FC<{
           </p>
         )}
       </div>
+      )}
 
       <div>
         <p style={heading}>{T.stillToDo[lang]}</p>
