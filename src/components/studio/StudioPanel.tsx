@@ -412,7 +412,15 @@ export default function StudioPanel() {
       postRowRef.current = d._source === "linkedin_posts" ? d.id : null;
       originDraftRef.current = null;
       generatedTextRef.current = null;
-      persistNow();
+      persistNow({
+        content: d.body,
+        deck: null,
+        writeLang: d.language,
+        step: 2,
+        draftId: d.id,
+        draftSource: d._source,
+        choice: { id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" },
+      });
       setContent(d.body);
       setWriteLang(d.language);
       setNotReady(null);
