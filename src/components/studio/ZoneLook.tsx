@@ -55,12 +55,13 @@ export const ZoneLook: React.FC<{
             type="button"
             aria-label={t}
             aria-pressed={t === theme}
+            disabled={t === theme}
             onClick={() => onTheme(t)}
             style={{
               width: 46,
               height: 58,
               borderRadius: 10,
-              cursor: "pointer",
+              cursor: t === theme ? "default" : "pointer",
               background: THEMES[t].bg,
               border: `2px solid ${t === theme ? "var(--act)" : "var(--border-default)"}`,
             }}
@@ -73,7 +74,14 @@ export const ZoneLook: React.FC<{
       <p style={heading}>{T.lookLength[lang]}</p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {([5, 7, 10] as const).map((n) => (
-          <button key={n} type="button" onClick={() => onLength(n)} style={pill(n === length)}>
+          <button
+            key={n}
+            type="button"
+            aria-pressed={n === length}
+            disabled={n === length}
+            onClick={() => onLength(n)}
+            style={{ ...pill(n === length), cursor: n === length ? "default" : "pointer" }}
+          >
             {n}
           </button>
         ))}

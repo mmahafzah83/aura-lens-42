@@ -131,13 +131,15 @@ export const ZoneStage: React.FC<{
               <button
                 key={s.index}
                 type="button"
+                aria-current={s.index === current ? "true" : undefined}
+                disabled={s.index === current}
                 onClick={() => onCurrent(s.index)}
                 aria-label={`${T.slideOf[lang]} ${s.index + 1}`}
                 style={{
                   minWidth: 44,
                   minHeight: 44,
                   borderRadius: 8,
-                  cursor: "pointer",
+                  cursor: s.index === current ? "default" : "pointer",
                   fontFamily: "var(--ff-mono)",
                   fontSize: 12,
                   background: s.index === current ? "var(--act-tint)" : "var(--surface-subtle)",

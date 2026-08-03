@@ -72,13 +72,15 @@ export const ZonePiece: React.FC<{
             <button
               key={r.key}
               type="button"
+              aria-pressed={showing === r.key}
+              disabled={showing === r.key}
               onClick={() => onShowing(r.key)}
               style={{
                 minHeight: 44,
                 textAlign: lang === "ar" ? "right" : "left",
                 padding: "0 10px",
                 borderRadius: 9,
-                cursor: "pointer",
+                cursor: showing === r.key ? "default" : "pointer",
                 fontFamily: "var(--ff-ui)",
                 fontSize: 13.5,
                 fontWeight: showing === r.key ? 700 : 500,
