@@ -488,12 +488,15 @@ export default function Studio() {
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
   }, [saveDraft, lang]);
 
-  const keepForLater = useCallback(async () => {
+  /** Save and come back later: says where it went, and keeps the step. */
+  const saveAndComeBack = useCallback(async () => {
     setBusy("save");
     setProblem(null);
+    setBusyMessage(T.savingPiece[lang]);
     const id = await saveDraft();
     setBusy(null);
-    if (id) setStatus(T.savedForLater[lang]);
+    setBusyMessage(null);
+    if (id) setStatus(T.saveLaterNote[lang]);
     else setProblem(T.postFailed[lang]);
   }, [saveDraft, lang]);
 
@@ -518,10 +521,13 @@ export default function Studio() {
     }
   }, [deck, lang]);
 
-  const openLinkedIn = useCallback(async () => {
+  const copyCaption = useCallback(async () => {
     try { await navigator.clipboard.writeText(content); setStatus(T.captionCopied[lang]); } catch { /* nothing copied */ }
-    window.open("https://www.linkedin.com/feed/", "_blank", "noopener,noreferrer");
   }, [content, lang]);
+
+  const openLinkedIn = useCallback(() => {
+    window.open("https://www.linkedin.com/feed/", "_blank", "noopener,noreferrer");
+  }, []);
 
   const saveLink = useCallback(async () => {
     const url = linkInput.trim();
@@ -560,18 +566,13 @@ export default function Studio() {
     [choice, content, deck, published],
   );
 
-  const cameFromLine = useMemo(() => {
-    const slide = deck?.slides[Math.min(current, (deck?.slides.length ?? 1) - 1)];
-    return slide ? bestSourceLine(content, slide.slots) : "";
-  }, [deck, current, content]);
-
   /**
    * The exporter reads real DOM nodes, so the deck mount must exist with real
    * layout for as long as a deck exists — not only while step 3 is on screen.
    * When the stage is not showing it, the same mount is rendered off to the
    * side of the viewport (never display:none, never visibility:hidden).
    */
-  const canvasInStage = step === 3 && showing === "slides" && Boolean(deck);
+  const canvasInStage = step === 3 && format === "slides" && Boolean(deck);
 
   /* ---------- shell ------------------------------------------------ */
   const shell = (children: React.ReactNode) => (
