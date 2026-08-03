@@ -281,6 +281,12 @@ const StepReview: React.FC<Props> = ({
         </div>
       )}
 
+      {format === "deck" && (
+        <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.8, color: "var(--text-muted)", margin: "16px 0 0", textAlign: rtl ? "right" : "left" }}>
+          {S.s5DeckNote[lang]}
+        </p>
+      )}
+
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 22, flexWrap: "wrap" }}>
         {format === "deck" ? (
           <ButtonPrimary onClick={onMakeDeck} disabled={busy !== null}>
