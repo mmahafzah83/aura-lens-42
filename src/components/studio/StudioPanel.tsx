@@ -334,6 +334,21 @@ export default function StudioPanel({
   }, [deck, step, isPhone]);
 
   /* ---------- bring back the piece -------------------------------- */
+  /**
+   * THE RESTORE — NEVER SILENT.
+   *
+   * A saved draft is read on mount but is NEVER applied. It is held here,
+   * announced in one line, and only becomes state when the member says so.
+   * RULE: state the member did not create in this session is announced,
+   * never assumed.
+   */
+  type SavedPiece = {
+    content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
+    step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
+    postRowId?: unknown; savedAt?: unknown;
+  };
+  const [pendingRestore, setPendingRestore] = useState<SavedPiece | null>(null);
+
   const restoredRef = useRef(false);
   useEffect(() => {
     if (restoredRef.current) return;
@@ -341,49 +356,41 @@ export default function StudioPanel({
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
-      const saved = JSON.parse(raw) as {
-        content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
-        step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
-        postRowId?: unknown;
-      };
-      let restoredAnything = false;
-      // Without the row id a reload inserts a second row for the same piece.
-      if (typeof saved.draftId === "string" && saved.draftId) setDraftId(saved.draftId);
-      // And without the linkedin_posts row id a content_items piece blocked by
-      // the gate would insert a SECOND twin row after a reload.
-      if (typeof saved.postRowId === "string" && saved.postRowId) postRowRef.current = saved.postRowId;
-      if (saved.draftSource === "content_items" || saved.draftSource === "linkedin_posts") {
-        setDraftSource(saved.draftSource);
-      }
-      if (typeof saved.content === "string" && saved.content.trim()) {
-        setContent(saved.content);
-        restoredAnything = true;
-      }
-      if (saved.deck) {
-        // A corrupt deck is ignored, never thrown.
-        const parsed = DeckIRSchema.safeParse(saved.deck);
-        if (parsed.success) {
-          setDeck(parsed.data);
-          setTheme(parsed.data.theme as ThemeName);
-          restoredAnything = true;
-        }
-      }
-      if (saved.choice && typeof saved.choice === "object") {
-        const c = saved.choice as Choice;
-        if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
-      }
-      if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
-      if (saved.format === "post" || saved.format === "slides") setFormat(saved.format);
-      if (restoredAnything) {
-        // Reopen exactly where they stopped.
-        const s = Number(saved.step);
-        setStep(s >= 1 && s <= 4 ? s : 2);
-        // The language is not resolved yet at this point, so the message is
-        // raised later, from whatever `lang` is then.
-        setRestoredFlag(true);
-      }
+      const saved = JSON.parse(raw) as SavedPiece;
+      const hasWords = typeof saved.content === "string" && saved.content.trim().length > 0;
+      const hasDeck = Boolean(saved.deck);
+      // Only real work is worth announcing. Anything else is not progress.
+      if (!hasWords && !hasDeck) { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } return; }
+      setPendingRestore(saved);
     } catch { /* an unreadable draft is simply not restored */ }
   }, []);
+
+  /** "Carry on" — and only then does the saved work become this session's. */
+  const carryOnRestore = useCallback(() => {
+    const saved = pendingRestore;
+    if (!saved) return;
+    setPendingRestore(null);
+    if (typeof saved.draftId === "string" && saved.draftId) setDraftId(saved.draftId);
+    if (typeof saved.postRowId === "string" && saved.postRowId) postRowRef.current = saved.postRowId;
+    if (saved.draftSource === "content_items" || saved.draftSource === "linkedin_posts") {
+      setDraftSource(saved.draftSource);
+    }
+    if (typeof saved.content === "string") setContent(saved.content);
+    if (saved.deck) {
+      // A corrupt deck is ignored, never thrown.
+      const parsed = DeckIRSchema.safeParse(saved.deck);
+      if (parsed.success) { setDeck(parsed.data); setTheme(parsed.data.theme as ThemeName); }
+    }
+    if (saved.choice && typeof saved.choice === "object") {
+      const c = saved.choice as Choice;
+      if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
+    }
+    if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
+    if (saved.format === "post" || saved.format === "slides") setFormat(saved.format);
+    const s = Number(saved.step);
+    setStep(s >= 1 && s <= 4 ? s : 2);
+    setRestoredFlag(true);
+  }, [pendingRestore]);
 
   useEffect(() => {
     if (!restoredFlag || !ready) return;
