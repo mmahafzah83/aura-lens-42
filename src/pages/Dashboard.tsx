@@ -1132,7 +1132,6 @@ const Dashboard = () => {
       {/* ── Mobile Bottom Nav ── */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
         <div
-          data-shell-nav="true"
           className="fixed left-0 right-0 md:hidden"
           style={{ bottom: 0, zIndex: 50 }}
         >

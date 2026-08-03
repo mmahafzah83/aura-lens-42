@@ -2279,4 +2279,3 @@ button[aria-disabled="true"],
  * below the layer (z-index 70) anyway; this removes it from the page entirely
  * so it cannot be reached at all.
  */
-body[data-studio-layer="open"] [data-shell-nav] { display: none !important; }
