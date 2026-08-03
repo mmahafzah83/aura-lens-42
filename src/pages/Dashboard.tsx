@@ -962,7 +962,7 @@ const Dashboard = () => {
         </div>
         <div
           className={
-            activeTab === "intelligence"
+            activeTab === "intelligence" || activeTab === "studio"
               ? "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12"
               : "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12 overflow-hidden"
           }
