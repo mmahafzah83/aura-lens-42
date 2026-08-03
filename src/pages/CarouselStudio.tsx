@@ -288,12 +288,7 @@ export default function CarouselStudio() {
     if (!signal) return;
     setError(null);
     setFailures([]);
-    setExported(null);
-    setPublished(false);
-    setPostUrl(null);
-    setCaption("");
     setFits({});
-    setVoiceFlags([]);
     setStage(0);
     const ticker = window.setInterval(() => setStage((s) => (s === null ? 0 : Math.min(s + 1, STAGES.length - 1))), 2600);
     try {
@@ -319,6 +314,9 @@ export default function CarouselStudio() {
       // Only now is the previous deck replaced: a failed run above leaves the
       // member's existing deck untouched on screen.
       setDeck({ ...parsed.data, theme });
+      setExported(null);
+      setPublished(false);
+      setPostUrl(null);
       setCaption(typeof result.caption === "string" ? result.caption : "");
       setVoiceFlags(Array.isArray(result.quality?.flags) ? result.quality.flags : []);
       setCurrent(0);
