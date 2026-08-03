@@ -70,19 +70,27 @@ function alreadyOpened(pieceKey: string): boolean {
 }
 
 /**
- * The quality gate, said as one sentence a member can act on. Never a list,
- * never a score, never a verdict. In Arabic the English weakness is not shown
- * at all — a plain Arabic sentence stands in its place.
+ * P1 — THE GATE SPEAKS IN OUR SENTENCES, NEVER IN THE JUDGE'S.
+ *
+ * The server sends a CATEGORY, never prose. Four sentences exist and one of
+ * them is chosen. No string produced by the judge — no weakness, no verdict,
+ * no score — can reach a member through this function, because no string
+ * produced by the judge is an input to it.
  */
-function gateSentence(firstWeakness: string | undefined, lang: Lang): string {
-  const w = (firstWeakness || "").trim();
-  if (lang === "ar" || !w) return T.notReadyPlain[lang];
-  // Only ever show a number the member can verify. Any digit at all, a
-  // percentage or a score means the judge is arguing with a measurement the
-  // member cannot check, so the plain sentence stands in its place instead.
-  if (/\d|%|score/i.test(w)) return T.notReadyPlain[lang];
-  const tidy = w.replace(/\s+/g, " ").replace(/^[-•.\s]+/, "");
-  return `${T.notReadyLead.en} ${tidy.endsWith(".") ? tidy : `${tidy}.`}`;
+export type GateCategory = "unsupported_number" | "language" | "generic" | "other";
+
+function gateSentence(category: unknown, lang: Lang): string {
+  switch (category) {
+    case "unsupported_number":
+      return T.gateUnsupportedNumber[lang];
+    case "language":
+      return T.gateLanguage[lang];
+    case "generic":
+      return T.gateGeneric[lang];
+    default:
+      // No category, or one we do not know: the last sentence stands.
+      return T.gateOther[lang];
+  }
 }
 
 /** A relative "saved …" stamp that never leaks English into the Arabic shell. */
