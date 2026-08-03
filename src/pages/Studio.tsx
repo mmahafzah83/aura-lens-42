@@ -373,7 +373,10 @@ export default function Studio() {
       }
       setStep(2);
       setStatus(T.draftOpened[lang]);
-      void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
+      if (!openedTrackedRef.current) {
+        openedTrackedRef.current = true;
+        void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
+      }
     },
     [remember, lang],
   );
