@@ -660,6 +660,33 @@ export default function Studio() {
     </button>
   );
 
+  /* One confirmation, shared by every path that can publish. */
+  const confirmPanel = confirmingPost ? (
+    <div
+      style={{
+        background: "var(--surface-subtle)",
+        border: "1px solid var(--act)",
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 12,
+        display: "grid",
+        gap: 10,
+      }}
+    >
+      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
+        {T.confirmPostHead[lang]}
+      </p>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <ButtonPrimary onClick={() => { setStep(4); void publishNow(); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
+          {T.confirmPostYes[lang]}
+        </ButtonPrimary>
+        <ButtonGhost onClick={() => setConfirmingPost(false)} style={{ minHeight: 44 }}>
+          {T.confirmPostNo[lang]}
+        </ButtonGhost>
+      </div>
+    </div>
+  ) : null;
+
   const writeArea = (
     <>
       {generating && (
@@ -699,33 +726,9 @@ export default function Studio() {
         {content.length} {T.characters[lang]}
         {content.length > 2800 ? ` — ${T.tooLong[lang]}` : ""}
       </p>
-      {confirmingPost && (
-        <div
-          style={{
-            background: "var(--surface-subtle)",
-            border: "1px solid var(--act)",
-            borderRadius: 12,
-            padding: 14,
-            marginBottom: 12,
-            display: "grid",
-            gap: 10,
-          }}
-        >
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
-            {T.confirmPostHead[lang]}
-          </p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <ButtonPrimary onClick={() => { setStep(4); void postText(); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
-              {T.confirmPostYes[lang]}
-            </ButtonPrimary>
-            <ButtonGhost onClick={() => setConfirmingPost(false)} style={{ minHeight: 44 }}>
-              {T.confirmPostNo[lang]}
-            </ButtonGhost>
-          </div>
-        </div>
-      )}
+      {confirmPanel}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <ButtonPrimary onClick={() => setConfirmingPost(true)} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
+        <ButtonPrimary onClick={requestPost} disabled={!content.trim() || busy === "post" || confirmingPost} style={{ minHeight: 44 }}>
           {T.optPost[lang]}
         </ButtonPrimary>
         <ButtonGhost onClick={() => void makeSlides()} disabled={!content.trim() || !choice?.id} style={{ minHeight: 44 }}>
