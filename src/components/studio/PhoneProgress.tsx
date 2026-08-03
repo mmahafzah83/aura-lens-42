@@ -15,8 +15,7 @@ export const PhoneProgress: React.FC<{
   step: number;
   done: Record<number, boolean>;
   onStep: (n: number) => void;
-  rtl: boolean;
-}> = ({ lang, step, done, onStep, rtl }) => {
+}> = ({ lang, step, done, onStep }) => {
   const labels = [T.step1[lang], T.step2[lang], T.step3[lang], T.step4[lang]];
   const name = labels[Math.min(Math.max(step, 1), 4) - 1];
   const filled = Math.round((Math.min(Math.max(step, 1), 4) / 4) * 100);
@@ -107,7 +106,6 @@ export const PhoneProgress: React.FC<{
           );
         })}
       </ol>
-      <span style={{ display: "none" }}>{rtl ? "rtl" : "ltr"}</span>
     </div>
   );
 };
