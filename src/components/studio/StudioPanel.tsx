@@ -2045,6 +2045,22 @@ export default function StudioPanel({
             </p>
           )}
 
+          {published && (
+            /* N1 — the explicit way to begin a new piece. One reset, no stale row. */
+            <button
+              type="button"
+              onClick={() => startNewPiece()}
+              style={{
+                minHeight: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer",
+                background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600,
+                color: "var(--text-primary)", margin: "0 0 12px",
+              }}
+            >
+              {lang === "ar" ? "اكتب قطعة جديدة" : "Write another"}
+            </button>
+          )}
+
           {confirmPanel}
 
           {/* ONE path, decided by what the member actually made. */}
