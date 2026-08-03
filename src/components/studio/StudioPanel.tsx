@@ -9,7 +9,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
@@ -132,7 +132,6 @@ export default function StudioPanel({
   onDraftPrefillConsumed,
   onOpenCapture,
 }: StudioPanelProps = {}) {
-  const [searchParams] = useSearchParams();
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
