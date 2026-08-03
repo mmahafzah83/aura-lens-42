@@ -36,7 +36,7 @@ import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
 import PhoneProgress from "@/components/studio/PhoneProgress";
 import PhoneActionBar from "@/components/studio/PhoneActionBar";
-import PhoneSheet from "@/components/studio/PhoneSheet";
+import PhoneLayer from "@/components/studio/PhoneLayer";
 import PhoneStage from "@/components/studio/PhoneStage";
 import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
@@ -217,11 +217,13 @@ export default function StudioPanel() {
    * desktop tree renders exactly as before; below it a different shape.
    */
   const isPhone = useIsPhone();
-  /** Which bottom sheet is open on a phone. Only ever one at a time. */
-  const [sheet, setSheet] = useState<null | "inspector" | "look" | "piece">(null);
-  const [sheetTall, setSheetTall] = useState(false);
-  /** J6 — a breakpoint change closes any sheet; it must never reopen itself. */
-  useEffect(() => { setSheet(null); setSheetTall(false); }, [isPhone]);
+  /**
+   * L1 — which FULL-SCREEN layer is open on a phone. Only ever one at a time,
+   * and never on a desktop.
+   */
+  const [layer, setLayer] = useState<null | "editor" | "look" | "piece">(null);
+  /** J6 — a breakpoint change closes any layer; it must never reopen itself. */
+  useEffect(() => { setLayer(null); }, [isPhone]);
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
 
