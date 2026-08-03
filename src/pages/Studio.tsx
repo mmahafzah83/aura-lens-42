@@ -552,6 +552,14 @@ export default function Studio() {
     return slide ? bestSourceLine(content, slide.slots) : "";
   }, [deck, current, content]);
 
+  /**
+   * The exporter reads real DOM nodes, so the deck mount must exist with real
+   * layout for as long as a deck exists — not only while step 3 is on screen.
+   * When the stage is not showing it, the same mount is rendered off to the
+   * side of the viewport (never display:none, never visibility:hidden).
+   */
+  const canvasInStage = step === 3 && showing === "slides" && Boolean(deck);
+
   /* ---------- shell ------------------------------------------------ */
   const shell = (children: React.ReactNode) => (
     <div
