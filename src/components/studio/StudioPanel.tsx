@@ -486,26 +486,58 @@ export default function StudioPanel({
     return () => { dead = true; };
   }, [userId]);
 
-  /* The lifecycle emails deep-link straight into one draft. */
-  const deepLinkRef = useRef(false);
+  /**
+   * C3 — ONE owner of `?draft=`. Dashboard resolves the row (from BOTH
+   * `content_items` and `linkedin_posts`, honouring `src=`) and hands it here
+   * as `draftPrefill`. The studio no longer reads or deletes the parameter.
+   */
+  const draftPrefillRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!userId || deepLinkRef.current) return;
-    const id = searchParams.get("draft");
-    if (!id) return;
-    deepLinkRef.current = true;
+    if (!userId || !draftPrefill?.id) return;
+    if (draftPrefillRef.current === draftPrefill.id) return;
+    draftPrefillRef.current = draftPrefill.id;
     (async () => {
-      const d = await loadStudioDraft(id);
-      if (!d) {
+      const d: StudioDraft = {
+        id: draftPrefill.id,
+        body: draftPrefill.body || "",
+        language: draftPrefill.language === "ar" ? "ar" : "en",
+        type: draftPrefill.type === "carousel" ? "carousel" : draftPrefill.type === "framework" ? "framework" : "linkedin_post",
+        topic: draftPrefill.topic ?? null,
+        _source: draftPrefill._source === "content_items" ? "content_items" : "linkedin_posts",
+        title: draftPrefill.title ?? draftPrefill.topic ?? null,
+        created_at: draftPrefill.created_at ?? new Date().toISOString(),
+        signalId: draftPrefill.signalId ?? null,
+      };
+      // The shell may hand over a stub; the full row is authoritative.
+      const full = (await loadStudioDraft(d.id)) ?? (d.body ? d : null);
+      if (!full) {
         setProblem(T.draftMissing[lang]);
-        // An open that could not land is still an open: count it once, and say so.
-        if (!alreadyOpened(`draft:${id}`)) {
+        if (!alreadyOpened(`draft:${d.id}`)) {
           void track("composer_opened", { source: "lifecycle_email_missing", signal_id: null, move_state: null });
         }
+        onDraftPrefillConsumed?.();
         return;
       }
-      await openDraft(d, "lifecycle_email");
+      await openDraft(full, "dashboard_draft");
+      onDraftPrefillConsumed?.();
     })();
-  }, [userId, searchParams, openDraft, lang]);
+  }, [userId, draftPrefill, openDraft, lang, onDraftPrefillConsumed]);
+
+  /**
+   * C2 — a subject handed over by Home, My Story, Signals or TrendDetail.
+   * A carousel request lands on the deck format.
+   */
+  useEffect(() => {
+    if (!signalPrefill) return;
+    const title: string = signalPrefill.topic || signalPrefill.signalTitle || signalPrefill.trendHeadline || "";
+    if (title) {
+      preselectedRef.current = true;
+      setChoice({ id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" });
+      setTypedTopic("");
+    }
+    if (signalPrefill.contentFormat === "carousel") setFormat("slides");
+    onSignalPrefillConsumed?.();
+  }, [signalPrefill, onSignalPrefillConsumed]);
 
   /* Every subject, on request. The three ranked cards are a shortcut, not a cap. */
   useEffect(() => {
