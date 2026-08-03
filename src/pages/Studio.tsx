@@ -122,6 +122,8 @@ export default function Studio() {
   const generatedTextRef = useRef<string | null>(null);
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
+  /** composer_opened fires once per session, never per navigation. */
+  const openedTrackedRef = useRef(false);
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
