@@ -1084,6 +1084,20 @@ export default function Studio() {
         </StageCard>
       )}
 
+      {/* The deck mount, kept alive with real layout whenever a deck exists. */}
+      {deck && !canvasInStage && (
+        <div aria-hidden="true" style={{ position: "absolute", left: -99999, top: 0, width: canvasWidth }}>
+          <StudioCanvas
+            deck={deck}
+            theme={theme}
+            width={canvasWidth}
+            current={current}
+            onFit={(state) => setFits((f) => ({ ...f, [current]: state }))}
+            mountRef={mountRef}
+          />
+        </div>
+      )}
+
       <div
         style={{
           position: "sticky",
