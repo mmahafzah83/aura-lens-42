@@ -1690,7 +1690,15 @@ export default function StudioPanel({
                       key={s.id}
                       type="button"
                       aria-pressed={on}
-                      onClick={() => { setChoice({ id: s.id, title: s.title, insight: s.insight }); setTypedTopic(""); }}
+                      onClick={() => {
+                        const next = { id: s.id, title: s.title, insight: s.insight };
+                        if (choice?.id !== s.id && (published || draftId || content.trim())) {
+                          startNewPiece({ choice: next });
+                          return;
+                        }
+                        setChoice(next);
+                        setTypedTopic("");
+                      }}
                       style={{
                         textAlign: rtlShell ? "right" : "left", cursor: "pointer",
                         background: on ? "var(--act-tint)" : "var(--surface-subtle)",
