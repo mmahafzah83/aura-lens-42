@@ -523,6 +523,16 @@ export default function StudioPanel({
       setContent(d.body);
       setWriteLang(d.language);
       setNotReady(null);
+      // N1 — a draft is a different piece: nothing from the last one survives.
+      setPublished(false);
+      setPostUrl(null);
+      setLinkInput("");
+      setDeck(null);
+      setDeckSource(null);
+      setExported(false);
+      setProblem(null);
+      // N4 — a carousel draft opens on the deck, not on the words.
+      setFormat(d.type === "carousel" ? "slides" : "post");
       if (d.signalId || d.title || d.topic) {
         setChoice({ id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" });
       }
