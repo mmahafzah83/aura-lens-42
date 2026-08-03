@@ -339,7 +339,13 @@ export function startReason(kind: string, count: number, english: string, lang: 
   if (lang !== "ar") return english;
   if (kind === "new_evidence") return `${count} مصدراً يقف خلف هذا الآن — بعضها وصل بعد آخر منشور لك عنه.`;
   if (kind === "accelerating") return `يكتسب زخماً — ${count} مصدراً وما زال يتصاعد.`;
-  if (kind === "never_written") return `لم تكتب عنه بعد — ${count} مصدراً يقف خلفه.`;
+  if (kind === "never_written") {
+    // Two English forms exist for this kind; the Arabic must claim exactly what
+    // the English claims, never more.
+    return /strongest/i.test(english)
+      ? `أقوى إشاراتك ولم تنشر عنها قط — ${count} مصدراً.`
+      : `لم تكتب عنه بعد — ${count} مصدراً يقف خلفه.`;
+  }
   return english;
 }
 
