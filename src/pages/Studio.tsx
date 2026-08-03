@@ -731,9 +731,10 @@ export default function Studio() {
           marginBottom: 14,
         }}
       >
-        {subLink("start", T.subStart[lang])}
-        {subLink("build", T.subBuild[lang])}
-        {subLink("look", T.subLook[lang])}
+        {/* The tabs only exist where they change what is on screen. */}
+        {step === 3 && subLink("start", T.subStart[lang])}
+        {step === 3 && subLink("build", T.subBuild[lang])}
+        {step === 3 && subLink("look", T.subLook[lang])}
         <span style={{ flex: 1 }} />
         <span
           role="status"
@@ -742,6 +743,18 @@ export default function Studio() {
         >
           {status ? `✓ ${status}` : ""}
         </span>
+        <span
+          role="status"
+          aria-live="polite"
+          style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, fontWeight: 600, color: "var(--error)" }}
+        >
+          {problem ?? ""}
+        </span>
+        {problem && (
+          <ButtonGhost onClick={() => setProblem(null)} style={{ minHeight: 44 }}>
+            {T.cancel[lang]}
+          </ButtonGhost>
+        )}
         <ButtonGhost onClick={undo} disabled={undoStack.length === 0} style={{ minHeight: 44 }}>
           {T.undo[lang]}
         </ButtonGhost>
