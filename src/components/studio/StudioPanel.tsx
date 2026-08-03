@@ -429,6 +429,57 @@ export default function StudioPanel({
     });
   }, []);
 
+  /**
+   * N1 — ONE reset for a NEW piece.
+   *
+   * RULE: any identifier that binds the interface to a database row must be
+   * cleared at the exact moment the subject changes. A stale row id is worse
+   * than no row id — `ensurePostRow` would hand back the PREVIOUS piece's
+   * `linkedin_posts` id, `syncRowToScreen` would overwrite it with the new
+   * words and `finalisePublished` would re-stamp it, destroying the published
+   * record of the piece before it.
+   *
+   * Called only when a NEW piece begins. Never while merely editing.
+   */
+  const startNewPiece = useCallback((next?: { choice?: Choice | null; format?: Format | null }) => {
+    setContent("");
+    setDeck(null);
+    setDeckSource(null);
+    setDeckFailures([]);
+    setCurrent(0);
+    setFits({});
+    setExported(false);
+    setChoice(next?.choice ?? null);
+    setTypedTopic("");
+    setPasted("");
+    setFormat(next?.format ?? null);
+    setStep(1);
+    setSub("build");
+    setDraftId(null);
+    setDraftSource(null);
+    postRowRef.current = null;
+    originDraftRef.current = null;
+    generatedTextRef.current = null;
+    setPublished(false);
+    setPostUrl(null);
+    setLinkInput("");
+    setNotReady(null);
+    setProblem(null);
+    setStatus(null);
+    setGenError(null);
+    setConfirmingPost(false);
+    setAskReplace(false);
+    setAskLangSwitch(null);
+    setUndoStack([]);
+    preselectedRef.current = Boolean(next?.choice);
+    draftPrefillRef.current = null;
+    liveRef.current = {
+      content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
+      step: 1, format: next?.format ?? null, draftId: null, draftSource: null,
+    };
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* quota never blocks editing */ }
+  }, []);
+
   /* ---------- step 1: the subject --------------------------------- */
   const preselectedRef = useRef(false);
   useEffect(() => {
