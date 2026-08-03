@@ -9,7 +9,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
@@ -132,7 +132,6 @@ export default function StudioPanel({
   onDraftPrefillConsumed,
   onOpenCapture,
 }: StudioPanelProps = {}) {
-  const [searchParams] = useSearchParams();
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -240,7 +239,20 @@ export default function StudioPanel({
   const rtlWrite = writeLang === "ar";
 
   /* ---------- boot ------------------------------------------------ */
+  /**
+   * N2 — ONCE PER MOUNT. This effect seeds the language from the profile.
+   * Dashboard strips `?draft=` after resolving a deep link, which mutates
+   * `searchParams`; if this effect depended on it, the re-run would clobber
+   * the language `openDraft` just set from the row. Query parameters are
+   * read from `window.location.search` at first run instead.
+   * RULE: an effect that seeds state from a profile runs once; an effect that
+   * reacts to the URL must not also seed state.
+   */
+  const bootedRef = useRef(false);
   useEffect(() => {
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+    const firstQuery = new URLSearchParams(window.location.search);
     let dead = false;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -259,20 +271,18 @@ export default function StudioPanel({
       setReady(true);
       // The composer opening is the first number the company reads.
       // Once per session: a query-param change must never inflate the metric.
-      // A `?draft=` deep link is reported by `openDraft` instead, so the boot
-      // emit stands aside — one open, one event.
       // A `?draft=` deep link is opened by Dashboard and reported by
       // `openDraft`, so the boot emit stands aside — one open, one event.
-      if (!searchParams.has("draft") && !alreadyOpened("new")) {
+      if (!firstQuery.has("draft") && !alreadyOpened("new")) {
         void track("composer_opened", {
           source: "studio",
-          signal_id: searchParams.get("signal") || null,
+          signal_id: firstQuery.get("signal") || null,
           move_state: null,
         });
       }
     })();
     return () => { dead = true; };
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     try {
@@ -418,6 +428,57 @@ export default function StudioPanel({
     });
   }, []);
 
+  /**
+   * N1 — ONE reset for a NEW piece.
+   *
+   * RULE: any identifier that binds the interface to a database row must be
+   * cleared at the exact moment the subject changes. A stale row id is worse
+   * than no row id — `ensurePostRow` would hand back the PREVIOUS piece's
+   * `linkedin_posts` id, `syncRowToScreen` would overwrite it with the new
+   * words and `finalisePublished` would re-stamp it, destroying the published
+   * record of the piece before it.
+   *
+   * Called only when a NEW piece begins. Never while merely editing.
+   */
+  const startNewPiece = useCallback((next?: { choice?: Choice | null; format?: Format | null }) => {
+    setContent("");
+    setDeck(null);
+    setDeckSource(null);
+    setDeckFailures([]);
+    setCurrent(0);
+    setFits({});
+    setExported(false);
+    setChoice(next?.choice ?? null);
+    setTypedTopic("");
+    setPasted("");
+    setFormat(next?.format ?? null);
+    setStep(1);
+    setSub("build");
+    setDraftId(null);
+    setDraftSource(null);
+    postRowRef.current = null;
+    originDraftRef.current = null;
+    generatedTextRef.current = null;
+    setPublished(false);
+    setPostUrl(null);
+    setLinkInput("");
+    setNotReady(null);
+    setProblem(null);
+    setStatus(null);
+    setGenError(null);
+    setConfirmingPost(false);
+    setAskReplace(false);
+    setAskLangSwitch(null);
+    setUndoStack([]);
+    preselectedRef.current = Boolean(next?.choice);
+    draftPrefillRef.current = null;
+    liveRef.current = {
+      content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
+      step: 1, format: next?.format ?? null, draftId: null, draftSource: null,
+    };
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* quota never blocks editing */ }
+  }, []);
+
   /* ---------- step 1: the subject --------------------------------- */
   const preselectedRef = useRef(false);
   useEffect(() => {
@@ -454,6 +515,7 @@ export default function StudioPanel({
         deck: null,
         writeLang: d.language,
         step: 2,
+        format: d.type === "carousel" ? "slides" : "post",
         draftId: d.id,
         draftSource: d._source,
         choice: { id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" },
@@ -461,6 +523,16 @@ export default function StudioPanel({
       setContent(d.body);
       setWriteLang(d.language);
       setNotReady(null);
+      // N1 — a draft is a different piece: nothing from the last one survives.
+      setPublished(false);
+      setPostUrl(null);
+      setLinkInput("");
+      setDeck(null);
+      setDeckSource(null);
+      setExported(false);
+      setProblem(null);
+      // N4 — a carousel draft opens on the deck, not on the words.
+      setFormat(d.type === "carousel" ? "slides" : "post");
       if (d.signalId || d.title || d.topic) {
         setChoice({ id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" });
       }
@@ -526,18 +598,38 @@ export default function StudioPanel({
   /**
    * C2 — a subject handed over by Home, My Story, Signals or TrendDetail.
    * A carousel request lands on the deck format.
+   *
+   * N1 — an ARRIVING subject that is not the one on screen is a NEW piece:
+   * reset everything first, so the row id of the piece just published can
+   * never be reused for this one.
    */
+  const choiceRef = useRef<Choice | null>(null);
+  choiceRef.current = choice;
   useEffect(() => {
     if (!signalPrefill) return;
     const title: string = signalPrefill.topic || signalPrefill.signalTitle || signalPrefill.trendHeadline || "";
-    if (title) {
+    const nextFormat: Format | null = signalPrefill.contentFormat === "carousel" ? "slides" : null;
+    const cur = choiceRef.current;
+    const same =
+      Boolean(cur) &&
+      (signalPrefill.signalId
+        ? cur!.id === signalPrefill.signalId
+        : Boolean(title) && cur!.title === title);
+    if (title && !same) {
+      startNewPiece({
+        choice: { id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" },
+        format: nextFormat,
+      });
+    } else if (title) {
       preselectedRef.current = true;
       setChoice({ id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" });
       setTypedTopic("");
+      if (nextFormat) setFormat(nextFormat);
+    } else if (nextFormat) {
+      setFormat(nextFormat);
     }
-    if (signalPrefill.contentFormat === "carousel") setFormat("slides");
     onSignalPrefillConsumed?.();
-  }, [signalPrefill, onSignalPrefillConsumed]);
+  }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
 
   /* Every subject, on request. The three ranked cards are a shortcut, not a cap. */
   useEffect(() => {
@@ -1533,7 +1625,13 @@ export default function StudioPanel({
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
-                    setChoice({ id: c.signalId, title: c.title, insight: c.insight });
+                    // N1 — changing subject on a finished piece is a new piece.
+                    const next = { id: c.signalId, title: c.title, insight: c.insight };
+                    if (choice?.id !== c.signalId && (published || draftId || content.trim())) {
+                      startNewPiece({ choice: next });
+                      return;
+                    }
+                    setChoice(next);
                     setTypedTopic("");
                   }}
                   style={{
@@ -1591,7 +1689,15 @@ export default function StudioPanel({
                       key={s.id}
                       type="button"
                       aria-pressed={on}
-                      onClick={() => { setChoice({ id: s.id, title: s.title, insight: s.insight }); setTypedTopic(""); }}
+                      onClick={() => {
+                        const next = { id: s.id, title: s.title, insight: s.insight };
+                        if (choice?.id !== s.id && (published || draftId || content.trim())) {
+                          startNewPiece({ choice: next });
+                          return;
+                        }
+                        setChoice(next);
+                        setTypedTopic("");
+                      }}
                       style={{
                         textAlign: rtlShell ? "right" : "left", cursor: "pointer",
                         background: on ? "var(--act-tint)" : "var(--surface-subtle)",
@@ -1618,8 +1724,17 @@ export default function StudioPanel({
                 id="studio-topic"
                 value={typedTopic}
                 onChange={(e) => {
-                  setTypedTopic(e.target.value);
-                  setChoice(e.target.value.trim() ? { id: null, title: e.target.value.trim(), insight: "" } : null);
+                  const v = e.target.value;
+                  const t = v.trim();
+                  // N1 — typing a subject while a finished piece is on screen
+                  // starts a NEW piece. Anything binding us to the old row goes.
+                  if (!typedTopic && t && (published || draftId || content.trim())) {
+                    startNewPiece({ choice: { id: null, title: t, insight: "" } });
+                    setTypedTopic(v);
+                    return;
+                  }
+                  setTypedTopic(v);
+                  setChoice(t ? { id: null, title: t, insight: "" } : null);
                 }}
                 placeholder={T.chooseOwnPlaceholder[lang]}
                 style={{
@@ -1927,6 +2042,22 @@ export default function StudioPanel({
                 </a>
               )}
             </p>
+          )}
+
+          {published && (
+            /* N1 — the explicit way to begin a new piece. One reset, no stale row. */
+            <button
+              type="button"
+              onClick={() => startNewPiece()}
+              style={{
+                minHeight: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer",
+                background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600,
+                color: "var(--text-primary)", margin: "0 0 12px",
+              }}
+            >
+              {lang === "ar" ? "اكتب قطعة جديدة" : "Write another"}
+            </button>
           )}
 
           {confirmPanel}

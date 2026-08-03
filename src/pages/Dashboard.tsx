@@ -72,6 +72,21 @@ type TabValue = typeof NAV_ITEMS[number]["value"];
 
 const isTabValue = (v: string) => NAV_ITEMS.some(n => n.value === v);
 
+// Tab aliases — map external/legacy names to internal tab values.
+// ONE switch, ONE place: both the URL effect and the `aura:switch-tab`
+// listener normalise through this before the guard, so a legacy name
+// dispatched from anywhere in the tree can never be a silently dead button.
+const TAB_ALIAS: Record<string, string> = {
+  strategy: "intelligence",
+  today: "home",
+  publish: "authority",
+  composer: "authority",
+  studio: "authority",
+  impact: "influence",
+  "my-story": "identity",
+};
+const resolveTab = (v: string) => TAB_ALIAS[v] ?? v;
+
 const Dashboard = () => {
   usePageMeta({
     title: "Aura — Dashboard",
@@ -228,9 +243,11 @@ const Dashboard = () => {
         navigate(target === "preferences" ? "/settings?tab=preferences" : "/settings");
         return;
       }
-      if (target && isTabValue(target)) {
-        setActiveTab(target as TabValue);
-        setSearchParams({ tab: target });
+      // N3 — normalise legacy names (studio, composer, publish, …) first.
+      const resolved = target ? resolveTab(target) : null;
+      if (resolved && isTabValue(resolved)) {
+        setActiveTab(resolved as TabValue);
+        setSearchParams({ tab: resolved });
       }
     };
     window.addEventListener("aura:open-capture", openCap);
@@ -244,18 +261,7 @@ const Dashboard = () => {
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    // Tab aliases — map external/legacy names to internal tab values.
-    // Email deep links use friendly names (publish, impact, strategy).
-    const tabAlias: Record<string, string> = {
-      strategy: "intelligence",
-      today: "home",
-      publish: "authority",
-      composer: "authority",
-      studio: "authority",
-      impact: "influence",
-      "my-story": "identity",
-    };
-    const resolvedTab = tabParam ? (tabAlias[tabParam] ?? tabParam) : null;
+    const resolvedTab = tabParam ? resolveTab(tabParam) : null;
     if (resolvedTab && isTabValue(resolvedTab)) {
       setActiveTab(resolvedTab as TabValue);
     }
