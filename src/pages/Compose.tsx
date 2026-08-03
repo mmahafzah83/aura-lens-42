@@ -372,8 +372,11 @@ const Compose: React.FC = () => {
           publishDisabled={publishDisabled}
           deckAvailable={!!selected?.id}
           onMakeDeck={async () => {
-            await insertDraft();
-            navigate(`/carousel-studio?signal=${selected!.id}&autogenerate=1`);
+            const id = await insertDraft();
+            const url =
+              `/carousel-studio?signal=${selected!.id}&autogenerate=1&lang=${writeLang}` +
+              (id ? `&draft=${id}` : "");
+            navigate(url);
           }}
           onSwitchLanguage={() => {
             const other: Lang = writeLang === "ar" ? "en" : "ar";
