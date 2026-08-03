@@ -1060,13 +1060,20 @@ export default function StudioPanel() {
   const canvasInStage = step === 3 && format === "slides" && Boolean(deck);
 
   /* ---------- content wrapper --------------------------------------
-   * Page content only. No height, no page padding, no page-level `dir` —
-   * the Aura shell owns all three. The bottom padding exists solely so the
-   * studio's own action rows cannot sit under the mobile navigation bar,
-   * which the shell renders below `md`.
+   * Page content only: no height, no page padding, no page background — the
+   * Aura shell owns those. DIRECTION, however, is the panel's own: the shell
+   * sets no `dir` anywhere, and this panel branches on `rtlShell` for text
+   * alignment and arrow glyphs, so an Arabic member needs a real RTL box here
+   * or they get half-RTL, which is worse than either.
+   * The bottom padding clears BOTH the mobile navigation bar and the capture
+   * button that floats above it, so no studio control sits underneath them.
    */
   const shell = (children: React.ReactNode) => (
-    <div className="pb-[84px] md:pb-0" style={{ maxWidth: 1360, margin: "0 auto" }}>
+    <div
+      dir={rtlShell ? "rtl" : "ltr"}
+      className="pb-[152px] md:pb-0"
+      style={{ maxWidth: 1360, margin: "0 auto" }}
+    >
       {children}
     </div>
   );
@@ -1922,19 +1929,28 @@ export default function StudioPanel() {
         </StageCard>
       )}
 
-      {/* The deck mount, kept alive with real layout whenever a deck exists. */}
-      {deck && !canvasInStage && (
-        <div aria-hidden="true" style={{ position: "absolute", left: -99999, top: 0, width: canvasWidth }}>
-          <StudioCanvas
-            deck={deck}
-            theme={theme}
-            width={canvasWidth}
-            current={current}
-            onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
-            mountRef={mountRef}
-          />
-        </div>
-      )}
+      {/* The deck mount, kept alive with real layout whenever a deck exists.
+          Portalled to <body>: the dashboard tab container clips its overflow
+          and creates a positioning ancestor, and the PDF export needs this
+          mount to have real, unclipped layout. */}
+      {deck && !canvasInStage &&
+        createPortal(
+          <div
+            aria-hidden="true"
+            dir="ltr"
+            style={{ position: "absolute", left: -99999, top: 0, width: canvasWidth }}
+          >
+            <StudioCanvas
+              deck={deck}
+              theme={theme}
+              width={canvasWidth}
+              current={current}
+              onFit={(i, state) => setFits((f) => ({ ...f, [i]: state }))}
+              mountRef={mountRef}
+            />
+          </div>,
+          document.body,
+        )}
     </>,
   );
 }
