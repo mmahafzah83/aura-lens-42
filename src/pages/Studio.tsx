@@ -48,6 +48,18 @@ function sourceStamp(text: string): string {
 const POSTURE_KEY = "aura_studio_posture";
 const DRAFT_KEY = "aura_studio_draft_v1";
 
+/**
+ * The quality gate, said as one sentence a member can act on. Never a list,
+ * never a score, never a verdict. In Arabic the English weakness is not shown
+ * at all — a plain Arabic sentence stands in its place.
+ */
+function gateSentence(firstWeakness: string | undefined, lang: Lang): string {
+  const w = (firstWeakness || "").trim();
+  if (lang === "ar" || !w) return T.notReadyPlain[lang];
+  const tidy = w.replace(/\s+/g, " ").replace(/^[-•\d.\s]+/, "");
+  return `${T.notReadyLead.en} ${tidy.endsWith(".") ? tidy : `${tidy}.`}`;
+}
+
 /** Two tabs that both do something. There is no third. */
 type SubNav = "build" | "look";
 
