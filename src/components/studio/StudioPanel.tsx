@@ -721,10 +721,9 @@ export default function StudioPanel({
       // The gate already ran at generation. If it held the post, the words stay
       // fully editable and only the publish action waits.
       if (json?.blocked === true) {
-        const weak: string[] = Array.isArray(json?.quality_gate?.weaknesses)
-          ? json.quality_gate.weaknesses.filter((w: unknown) => typeof w === "string" && w.trim())
-          : [];
-        setNotReady(gateSentence(weak[0], lang));
+        // Only a category is ever read. If this surface cannot supply one,
+        // the last of our four sentences stands.
+        applyGate(json?.gate_category ?? json?.quality_gate?.category);
       }
     } catch {
       if (runId === genRunId.current) setGenError("failed");
@@ -1112,7 +1111,7 @@ export default function StudioPanel({
    * Publishes for real. Called from exactly one place: the confirm panel's
    * "Post it". No other call site exists.
    */
-  const publishNow = useCallback(async () => {
+  const publishNow = useCallback(async (override = false) => {
     setConfirmingPost(false);
     setBusy("post");
     setProblem(null);
@@ -1124,8 +1123,11 @@ export default function StudioPanel({
     // What is on screen is what publishes.
     await syncRowToScreen(id);
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
-      body: { postId: id },
+      // P1b — the member always decides. `advisory` publishes past the gate
+      // and the override is recorded as its own event.
+      body: { postId: id, advisory: override },
     });
+    if (override) void track("gate_overridden", { signal_id: choice?.id || null, route: "linkedin" });
     setBusy(null);
     setBusyMessage(null);
     const payload = data as any;
@@ -1141,16 +1143,24 @@ export default function StudioPanel({
     }
     if (payload?.blocked === true) {
       // Held by the gate. The member stays here, with their words editable.
-      const weak: string[] = Array.isArray(payload?.weaknesses)
-        ? payload.weaknesses.filter((w: unknown) => typeof w === "string" && w.trim())
-        : [];
+      const category = payload?.gate_category;
+      // P1c — the member already chose this language. Their choice wins, and
+      // the post goes out rather than being argued with.
+      if (category === "language" && langChosenRef.current && !override) {
+        void publishNowRef.current?.(true);
+        return;
+      }
       // One sentence, one place: the banner beside the words it concerns.
-      setNotReady(gateSentence(weak[0], lang));
+      applyGate(category);
       setStep(2);
       return;
     }
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
-  }, [ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
+  }, [ensurePostRow, syncRowToScreen, finalisePublished, choice, lang, applyGate]);
+
+  /** Lets the gate branch above retry itself once, with the override on. */
+  const publishNowRef = useRef<((override?: boolean) => Promise<void>) | null>(null);
+  publishNowRef.current = publishNow;
 
   /** Save and come back later: says where it went, and keeps the step. */
   const saveAndComeBack = useCallback(async () => {
