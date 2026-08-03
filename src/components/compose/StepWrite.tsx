@@ -13,12 +13,23 @@ interface Props {
 const StepWrite: React.FC<Props> = ({ lang, error, onRetry, onBack }) => {
   const lines = S.s4Lines[lang];
   const [i, setI] = useState(0);
+  const [pct, setPct] = useState(4);
 
   useEffect(() => {
     if (error) return;
     const id = window.setInterval(() => setI((v) => (v + 1) % lines.length), 4000);
     return () => window.clearInterval(id);
   }, [error, lines.length]);
+
+  // Real movement: ~92% over about 20 seconds, then hold.
+  useEffect(() => {
+    if (error) return;
+    const stepMs = 250;
+    const id = window.setInterval(() => {
+      setPct((v) => (v >= 92 ? 92 : Math.min(92, v + (92 - 4) / (20000 / stepMs))));
+    }, stepMs);
+    return () => window.clearInterval(id);
+  }, [error]);
 
   if (error) {
     return (
@@ -51,6 +62,36 @@ const StepWrite: React.FC<Props> = ({ lang, error, onRetry, onBack }) => {
             {lines[i]}
           </span>
         </div>
+
+        <div
+          role="progressbar"
+          aria-valuenow={Math.round(pct)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          style={{
+            marginTop: 14,
+            height: 6,
+            borderRadius: 999,
+            background: "var(--surface-subtle)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${pct}%`,
+              height: "100%",
+              borderRadius: 999,
+              background: "var(--machine)",
+              transition: "width 0.25s linear",
+            }}
+          />
+        </div>
+
+        {pct >= 92 && (
+          <div style={{ marginTop: 10, fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--machine-text)" }}>
+            {S.s4AlmostThere[lang]}
+          </div>
+        )}
       </div>
       <Helper>{S.s4Help[lang]}</Helper>
     </div>
