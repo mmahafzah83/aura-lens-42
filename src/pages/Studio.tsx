@@ -454,10 +454,12 @@ export default function Studio() {
 
   /* ---------- step 4: LinkedIn ------------------------------------ */
   const postText = useCallback(async () => {
+    setConfirmingPost(false);
     setBusy("post");
+    setProblem(null);
     setStatus(T.posting[lang]);
     const id = await saveDraft();
-    if (!id) { setBusy(null); setStatus(T.postFailed[lang]); return; }
+    if (!id) { setBusy(null); setStatus(null); setProblem(T.postFailed[lang]); return; }
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
       body: { postId: id, advisory: true },
     });
@@ -470,26 +472,34 @@ export default function Studio() {
       setStatus(T.postedHelp[lang]);
       return;
     }
-    setStatus(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
+    setStatus(null);
+    setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
   }, [saveDraft, lang]);
 
   const keepForLater = useCallback(async () => {
     setBusy("save");
+    setProblem(null);
     const id = await saveDraft();
     setBusy(null);
-    setStatus(id ? T.savedForLater[lang] : T.postFailed[lang]);
+    if (id) setStatus(T.savedForLater[lang]);
+    else setProblem(T.postFailed[lang]);
   }, [saveDraft, lang]);
 
   const exportFile = useCallback(async () => {
-    if (!deck || !mountRef.current) return;
+    // Never fails silently: if it cannot run, the member is told why.
+    if (!deck) { setProblem(T.exportNoDeck[lang]); return; }
+    if (!mountRef.current) { setProblem(T.exportNotReady[lang]); return; }
     setBusy("export");
+    setProblem(null);
     setStatus(T.exporting[lang]);
     try {
       const nodes = collectSlideNodes(mountRef.current);
+      if (nodes.length === 0) { setStatus(null); setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
       setStatus(T.exportDone[lang]);
     } catch {
-      setStatus(T.exportFailed[lang]);
+      setStatus(null);
+      setProblem(T.exportFailed[lang]);
     } finally {
       setBusy(null);
     }
@@ -502,9 +512,10 @@ export default function Studio() {
 
   const saveLink = useCallback(async () => {
     const url = linkInput.trim();
-    if (!/linkedin\.com/i.test(url)) { setStatus(T.linkBad[lang]); return; }
+    if (!/linkedin\.com/i.test(url)) { setProblem(T.linkBad[lang]); return; }
     const id = draftId ?? (await saveDraft());
-    if (!id) { setStatus(T.postFailed[lang]); return; }
+    if (!id) { setProblem(T.postFailed[lang]); return; }
+    setProblem(null);
     await supabase
       .from("linkedin_posts")
       .update({
