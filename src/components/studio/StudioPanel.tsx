@@ -1626,7 +1626,13 @@ export default function StudioPanel({
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
-                    setChoice({ id: c.signalId, title: c.title, insight: c.insight });
+                    // N1 — changing subject on a finished piece is a new piece.
+                    const next = { id: c.signalId, title: c.title, insight: c.insight };
+                    if (choice?.id !== c.signalId && (published || draftId || content.trim())) {
+                      startNewPiece({ choice: next });
+                      return;
+                    }
+                    setChoice(next);
                     setTypedTopic("");
                   }}
                   style={{
