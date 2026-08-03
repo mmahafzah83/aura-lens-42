@@ -95,6 +95,8 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 
   let postId: string | undefined;
+  let advisory: unknown = false;
+  let quality_note: { overall_score: number; verdict: unknown; blocked_would_have: boolean } | null = null;
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Unauthorized" }, 401);
@@ -105,7 +107,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) return json({ error: "Unauthorized" }, 401);
 
-    ({ postId } = await req.json().catch(() => ({})));
+    ({ postId, advisory } = await req.json().catch(() => ({})));
     if (!postId) return json({ error: "Missing postId" }, 400);
 
     const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -236,14 +238,20 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       }
 
       if (gateError || !gate) {
+        if (advisory === true) {
+          quality_note = { overall_score: overallScore, verdict: gate?.verdict ?? null, blocked_would_have: true };
+        } else {
         return json({
           success: false,
           blocked: true,
           error: "Quality check unavailable — try again",
           weaknesses: [],
         });
-      }
-      if (!passed) {
+        }
+      } else if (!passed) {
+        if (advisory === true) {
+          quality_note = { overall_score: overallScore, verdict: gate?.verdict ?? null, blocked_would_have: true };
+        } else {
         return json({
           success: false,
           blocked: true,
@@ -251,6 +259,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
           weaknesses,
           quality_gate: { overall_score: overallScore, verdict: gate?.verdict ?? null, assertions: gate?.assertions ?? null },
         });
+        }
       }
     }
 
