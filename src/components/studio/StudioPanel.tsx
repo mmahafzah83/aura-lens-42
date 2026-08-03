@@ -225,7 +225,12 @@ export default function StudioPanel({
   const [published, setPublished] = useState(false);
   const [linkInput, setLinkInput] = useState("");
 
-  const [undoStack, setUndoStack] = useState<Array<{ content: string; deck: DeckIR | null }>>([]);
+  /**
+   * P1c — set the moment the member CHOOSES a writing language. From then on a
+   * language complaint from the gate is the tool contradicting itself, so it
+   * is suppressed entirely.
+   */
+  const langChosenRef = useRef(false);
 
   const mountRef = useRef<HTMLDivElement | null>(null);
   /**
@@ -420,21 +425,27 @@ export default function StudioPanel({
     return () => window.clearTimeout(t);
   }, [status]);
 
-  const remember = useCallback(() => {
-    setUndoStack((s) => [...s.slice(-9), { content, deck }]);
-  }, [content, deck]);
+  /**
+   * P5 — UNDO IS GONE.
+   *
+   * It restored a snapshot that was not always the last member-visible change,
+   * so it sometimes worked and sometimes did not. A control that sometimes
+   * works is worse than no control. "Save and come back later" is the honest
+   * way back, and it is still here.
+   */
 
-  const undo = useCallback(() => {
-    setUndoStack((s) => {
-      const last = s[s.length - 1];
-      if (!last) return s;
-      setContent(last.content);
-      setDeck(last.deck);
-      setCurrent(0);
-      setFits({});
-      return s.slice(0, -1);
-    });
-  }, []);
+  /**
+   * P1a — one place decides what the member is told, and whether they are told
+   * anything at all. `category` comes from the server; nothing else does.
+   */
+  const applyGate = useCallback((category: unknown) => {
+    if (category === "language" && langChosenRef.current) {
+      // The member chose this language. We do not argue with their choice.
+      setNotReady(null);
+      return;
+    }
+    setNotReady(gateSentence(category, lang));
+  }, [lang]);
 
   /**
    * N1 — ONE reset for a NEW piece.
