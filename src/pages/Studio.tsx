@@ -795,7 +795,7 @@ export default function Studio() {
                     {c.title}
                   </p>
                   <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", margin: "6px 0 0" }}>
-                    {c.reason}
+                    {startReason(c.kind, c.fragmentCount, c.reason, lang)}
                   </p>
                   {c.insight && (
                     <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-muted)", margin: "6px 0 0" }}>
@@ -921,7 +921,7 @@ export default function Studio() {
                 {T.slidesFailedHead[lang]}
               </p>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--error)", margin: "4px 0 8px", lineHeight: 1.7 }}>
-                {deckFailures[0]}
+                {attentionText(deckFailures[0], lang)}
               </p>
               <ButtonGhost onClick={() => void makeSlides()} style={{ minHeight: 44 }}>{T.tryAgain[lang]}</ButtonGhost>
             </div>
