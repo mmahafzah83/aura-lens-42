@@ -124,6 +124,11 @@ export default function Studio() {
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
   /** composer_opened fires once per session, never per navigation. */
   const openedTrackedRef = useRef(false);
+  /**
+   * The linkedin_posts row this piece lives in. Held in a ref, not state, so an
+   * async sequence never re-reads a null captured at render and inserts twice.
+   */
+  const postRowRef = useRef<string | null>(null);
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
