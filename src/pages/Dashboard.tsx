@@ -72,6 +72,21 @@ type TabValue = typeof NAV_ITEMS[number]["value"];
 
 const isTabValue = (v: string) => NAV_ITEMS.some(n => n.value === v);
 
+// Tab aliases — map external/legacy names to internal tab values.
+// ONE switch, ONE place: both the URL effect and the `aura:switch-tab`
+// listener normalise through this before the guard, so a legacy name
+// dispatched from anywhere in the tree can never be a silently dead button.
+const TAB_ALIAS: Record<string, string> = {
+  strategy: "intelligence",
+  today: "home",
+  publish: "authority",
+  composer: "authority",
+  studio: "authority",
+  impact: "influence",
+  "my-story": "identity",
+};
+const resolveTab = (v: string) => TAB_ALIAS[v] ?? v;
+
 const Dashboard = () => {
   usePageMeta({
     title: "Aura — Dashboard",
