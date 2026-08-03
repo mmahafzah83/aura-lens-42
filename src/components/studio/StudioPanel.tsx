@@ -1960,7 +1960,7 @@ export default function StudioPanel() {
         </>
       )}
 
-      {step === 4 && (
+      {step === 4 && !isPhone && (
         <StageCard title={T.publishHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
           {published && (
             <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)", margin: "0 0 10px" }}>
