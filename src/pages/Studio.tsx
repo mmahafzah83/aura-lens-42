@@ -252,10 +252,14 @@ export default function Studio() {
       const saved = JSON.parse(raw) as {
         content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
         step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
+        postRowId?: unknown;
       };
       let restoredAnything = false;
       // Without the row id a reload inserts a second row for the same piece.
       if (typeof saved.draftId === "string" && saved.draftId) setDraftId(saved.draftId);
+      // And without the linkedin_posts row id a content_items piece blocked by
+      // the gate would insert a SECOND twin row after a reload.
+      if (typeof saved.postRowId === "string" && saved.postRowId) postRowRef.current = saved.postRowId;
       if (saved.draftSource === "content_items" || saved.draftSource === "linkedin_posts") {
         setDraftSource(saved.draftSource);
       }
@@ -304,7 +308,10 @@ export default function Studio() {
       try {
         localStorage.setItem(
           DRAFT_KEY,
-          JSON.stringify({ content, deck, choice, writeLang, step, format, draftId, draftSource }),
+          JSON.stringify({
+            content, deck, choice, writeLang, step, format, draftId, draftSource,
+            postRowId: postRowRef.current,
+          }),
         );
       } catch { /* quota never blocks editing */ }
     }, 1500);
