@@ -98,19 +98,19 @@ export const S = {
   s5FormatHead: { en: "How do you want to post this?", ar: "كيف تريد نشره؟" },
   s5FormatPost: { en: "As a post", ar: "كمنشور" },
   s5FormatPostSub: { en: "Your words, exactly as above.", ar: "كلماتك، تماماً كما في الأعلى." },
-  s5FormatDeck: { en: "As a deck", ar: "كشرائح" },
+  s5FormatDeck: { en: "As a carousel", ar: "ككاروسيل" },
   s5FormatDeckSub: {
     en: "Slides people swipe through — the best-performing format on LinkedIn right now.",
     ar: "شرائح يتصفّحها الناس — الأفضل أداءً على لينكدإن حالياً.",
   },
   s5DeckNeedsSignal: {
-    en: "A deck is built from a saved signal. This one was written from a free topic, so a deck isn't available here.",
-    ar: "الشرائح تُبنى من إشارة محفوظة. هذا المنشور من موضوع حر، لذا الشرائح غير متاحة هنا.",
+    en: "A carousel is built from a saved signal. This one was written from a free topic, so a carousel isn't available here.",
+    ar: "الكاروسيل يُبنى من إشارة محفوظة. هذا المنشور من موضوع حر، لذا الكاروسيل غير متاح هنا.",
   },
-  s5OpenDeck: { en: "Open the deck studio →", ar: "افتح استوديو الشرائح ←" },
+  s5OpenDeck: { en: "Open the carousel studio →", ar: "افتح استوديو الكاروسيل ←" },
   s5DeckNote: {
-    en: "Your words are saved as a draft first — the deck is built fresh from your signal.",
-    ar: "تُحفظ كلماتك كمسودّة أولاً — وتُبنى الشرائح من إشارتك من جديد.",
+    en: "Your words are saved as a draft first — the carousel is built fresh from your signal.",
+    ar: "تُحفظ كلماتك كمسودّة أولاً — ويُبنى الكاروسيل من إشارتك من جديد.",
   },
   s5NotConnected: {
     en: "You need to connect LinkedIn once before posting. You can save this and connect from your settings.",

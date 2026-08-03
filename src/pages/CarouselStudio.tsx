@@ -95,6 +95,8 @@ export default function CarouselStudio() {
   const [params] = useSearchParams();
   const preselected = params.get("signal");
   const autogenerate = params.get("autogenerate");
+  const langParam = params.get("lang");
+  const draftParam = params.get("draft");
 
   const [signals, setSignals] = useState<StudioSignal[]>([]);
   const [loadingSignals, setLoadingSignals] = useState(true);
@@ -167,7 +169,9 @@ export default function CarouselStudio() {
           .limit(200),
       ]);
       if (dead) return;
-      if ((prof as any)?.content_language === "ar") setLang("ar");
+      // An explicit handoff choice wins over the stored profile preference.
+      if (langParam === "ar" || langParam === "en") setLang(langParam);
+      else if ((prof as any)?.content_language === "ar") setLang("ar");
       setHasAvatar(Boolean((prof as any)?.avatar_url));
       const list = (rows ?? []) as unknown as StudioSignal[];
       setSignals(list);
@@ -481,6 +485,26 @@ export default function CarouselStudio() {
       }}
     >
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+        {draftParam && (
+          <div style={{ marginBottom: 12 }}>
+            <a
+              href={`/home?tab=authority&draft=${draftParam}&src=linkedin_posts`}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(`/home?tab=authority&draft=${draftParam}&src=linkedin_posts`);
+              }}
+              style={{
+                fontFamily: "var(--ff-ui)",
+                fontSize: 13.5,
+                color: "var(--act)",
+                textDecoration: "none",
+                fontWeight: 600,
+              }}
+            >
+              {lang === "ar" ? "← العودة إلى منشورك" : "← Back to your post"}
+            </a>
+          </div>
+        )}
         <ButtonGhost
           onClick={() => {
             // Inside the studio "Start again" returns to the signal picker.
@@ -586,7 +610,11 @@ export default function CarouselStudio() {
 
             {failures.length > 0 && (
               <div style={{ ...panel, background: "var(--error-tint)", border: "none", display: "grid", gap: 8 }}>
-                <div style={{ ...mono, color: "var(--error)" }}>Aura would not ship this deck</div>
+                <div style={{ ...mono, color: "var(--error)" }}>
+                  {lang === "ar"
+                    ? "لم نتمكن من إتمام الكاروسيل — لنجرّب مرة أخرى."
+                    : "We couldn't finish your carousel — let's try again."}
+                </div>
                 {failures.map((f, i) => (
                   <div key={i} style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.6 }}>{f}</div>
                 ))}
