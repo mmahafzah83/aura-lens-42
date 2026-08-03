@@ -34,9 +34,11 @@ export const ZoneStage: React.FC<{
   empty?: React.ReactNode;
   /** False when the mount lives offscreen instead (so it survives step changes). */
   showCanvas: boolean;
+  /** Rendered inside this wrapper, so the three-zone grid keeps exactly three children. */
+  footer?: React.ReactNode;
 }> = ({
   lang, deck, theme, width, current, onCurrent, onFit, mountRef, boxRef, empty,
-  showCanvas,
+  showCanvas, footer,
 }) => {
   const count = deck?.slides.length ?? 0;
   const dir = deck?.dir ?? (lang === "ar" ? "rtl" : "ltr");
@@ -143,6 +145,8 @@ export const ZoneStage: React.FC<{
           </div>
         </>
       )}
+
+      {footer && <div style={{ marginTop: 12 }}>{footer}</div>}
     </div>
   );
 };

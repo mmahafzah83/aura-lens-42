@@ -56,10 +56,11 @@ const DRAFT_KEY = "aura_studio_draft_v1";
 function gateSentence(firstWeakness: string | undefined, lang: Lang): string {
   const w = (firstWeakness || "").trim();
   if (lang === "ar" || !w) return T.notReadyPlain[lang];
-  // Only ever show a number the member can verify. Judge output that carries a
-  // ratio, a percentage or a score is discarded in favour of the plain sentence.
-  if (/\d\s*\/\s*\d|%|score/i.test(w)) return T.notReadyPlain[lang];
-  const tidy = w.replace(/\s+/g, " ").replace(/^[-•\d.\s]+/, "");
+  // Only ever show a number the member can verify. Any digit at all, a
+  // percentage or a score means the judge is arguing with a measurement the
+  // member cannot check, so the plain sentence stands in its place instead.
+  if (/\d|%|score/i.test(w)) return T.notReadyPlain[lang];
+  const tidy = w.replace(/\s+/g, " ").replace(/^[-•.\s]+/, "");
   return `${T.notReadyLead.en} ${tidy.endsWith(".") ? tidy : `${tidy}.`}`;
 }
 
@@ -206,10 +207,12 @@ export default function Studio() {
       setReady(true);
       // The composer opening is the first number the company reads.
       // Once per session: a query-param change must never inflate the metric.
-      if (!openedTrackedRef.current) {
+      // A `?draft=` deep link is reported by `openDraft` instead, so the boot
+      // emit stands aside — one open, one event.
+      if (!openedTrackedRef.current && !searchParams.get("draft")) {
         openedTrackedRef.current = true;
         void track("composer_opened", {
-          source: searchParams.get("draft") ? "studio_deep_link" : "studio",
+          source: "studio",
           signal_id: searchParams.get("signal") || null,
           move_state: null,
         });
@@ -249,10 +252,14 @@ export default function Studio() {
       const saved = JSON.parse(raw) as {
         content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
         step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
+        postRowId?: unknown;
       };
       let restoredAnything = false;
       // Without the row id a reload inserts a second row for the same piece.
       if (typeof saved.draftId === "string" && saved.draftId) setDraftId(saved.draftId);
+      // And without the linkedin_posts row id a content_items piece blocked by
+      // the gate would insert a SECOND twin row after a reload.
+      if (typeof saved.postRowId === "string" && saved.postRowId) postRowRef.current = saved.postRowId;
       if (saved.draftSource === "content_items" || saved.draftSource === "linkedin_posts") {
         setDraftSource(saved.draftSource);
       }
@@ -301,7 +308,10 @@ export default function Studio() {
       try {
         localStorage.setItem(
           DRAFT_KEY,
-          JSON.stringify({ content, deck, choice, writeLang, step, format, draftId, draftSource }),
+          JSON.stringify({
+            content, deck, choice, writeLang, step, format, draftId, draftSource,
+            postRowId: postRowRef.current,
+          }),
         );
       } catch { /* quota never blocks editing */ }
     }, 1500);
@@ -370,7 +380,10 @@ export default function Studio() {
       }
       setStep(2);
       setStatus(T.draftOpened[lang]);
-      void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
+      if (!openedTrackedRef.current) {
+        openedTrackedRef.current = true;
+        void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
+      }
     },
     [remember, lang],
   );
@@ -606,6 +619,38 @@ export default function Studio() {
   }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft]);
 
   /**
+   * INVARIANT — WHAT IS ON SCREEN IS WHAT PUBLISHES.
+   *
+   * `linkedin-publish` reads `post_text` from the row, not from the request, so
+   * any edit made after the row was created would otherwise be silently
+   * discarded — and a post held by the gate could never be fixed. Every path
+   * that hands the member's work to an external service calls this first.
+   * Always an UPDATE against a known row id, never an INSERT.
+   */
+  const syncRowToScreen = useCallback(
+    async (id: string) => {
+      const title = pieceTitle();
+      const { data: existing } = await supabase
+        .from("linkedin_posts")
+        .select("source_metadata")
+        .eq("id", id)
+        .maybeSingle();
+      const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+      await supabase
+        .from("linkedin_posts")
+        .update({
+          post_text: content,
+          title,
+          topic_label: title || null,
+          source_signal_id: choice?.id || null,
+          source_metadata: { ...prev, ...pieceMeta() },
+        } as any)
+        .eq("id", id);
+    },
+    [content, choice, pieceTitle, pieceMeta],
+  );
+
+  /**
    * A published post must COUNT. The cockpit reads `published_at`, the archive
    * and the metric matcher read `post_url`. Both are written here, on both
    * publishing paths, and the existing source_metadata is merged, never lost.
@@ -628,7 +673,7 @@ export default function Studio() {
           tracking_status: "published",
           ...(fresh ? { published_at: now } : {}),
           acquisition: "published_via_aura",
-          ...(url ? { post_url: url, published_confirmed_at: now } : {}),
+          ...(url ? { post_url: url, ...(fresh ? { published_confirmed_at: now } : {}) } : {}),
           ...(fresh
             ? {
                 like_count: 0,
@@ -692,7 +737,7 @@ export default function Studio() {
           .catch(() => { /* never surfaced */ });
       }
     },
-    [pieceMeta, draftSource, draftId, userId, content, writeLang],
+    [pieceMeta, userId, content, writeLang],
   );
 
   /* ---------- step 3: the slides, right here ---------------------- */
@@ -844,6 +889,8 @@ export default function Studio() {
     setBusyMessage(T.posting[lang]);
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
+    // What is on screen is what publishes.
+    await syncRowToScreen(id);
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
       body: { postId: id },
     });
@@ -871,7 +918,7 @@ export default function Studio() {
       return;
     }
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
-  }, [ensurePostRow, finalisePublished, choice, lang]);
+  }, [ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
   /** Save and come back later: says where it went, and keeps the step. */
   const saveAndComeBack = useCallback(async () => {
@@ -923,6 +970,8 @@ export default function Studio() {
     setProblem(null);
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
+    // What is on screen is what publishes.
+    await syncRowToScreen(id);
     await finalisePublished(id, url);
     void track("post_published", { signal_id: choice?.id || null, route: "manual" });
     setBusy(null);
@@ -930,7 +979,7 @@ export default function Studio() {
     setPublished(true);
     setPostUrl(url);
     setStatus(T.linkSaved[lang]);
-  }, [linkInput, ensurePostRow, finalisePublished, choice, lang]);
+  }, [linkInput, ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
@@ -1642,14 +1691,14 @@ export default function Studio() {
               boxRef={canvasBoxRef}
               showCanvas={canvasInStage}
               empty={<span>{T.noSlidesYet[lang]}</span>}
+              footer={
+                !deck ? (
+                  <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
+                    {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
+                  </ButtonPrimary>
+                ) : null
+              }
             />
-            {!deck && (
-              <div style={{ gridColumn: narrow ? "auto" : "2", marginTop: 4 }}>
-                <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
-                  {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
-                </ButtonPrimary>
-              </div>
-            )}
             {sub === "look" ? (
               <ZoneLook
                 lang={lang}
