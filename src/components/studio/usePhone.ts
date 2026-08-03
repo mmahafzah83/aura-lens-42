@@ -10,27 +10,15 @@ export const PHONE_MAX_WIDTH = 768;
 export const NAV_CLEARANCE = "calc(64px + env(safe-area-inset-bottom, 0px))";
 /** The one-thumb action bar sits directly above the navigation. */
 export const ACTION_BAR_HEIGHT = 64;
-/** Anything anchored above the action bar starts here. */
-export const ABOVE_ACTION_BAR = `calc(64px + env(safe-area-inset-bottom, 0px) + ${ACTION_BAR_HEIGHT}px)`;
 
 /**
- * K2 — THE PHONE STEP-3 COLUMN, IN CSS AND ONLY IN CSS.
+ * L1 — THERE IS NO PHONE COLUMN GEOMETRY ANY MORE.
  *
- * The column is the viewport less the three fixed strips it must never sit
- * under: the studio progress header (56), the one-thumb action bar (64) and
- * the shell navigation (64). Nothing here is measured, so nothing here can go
- * stale on scroll, rotation or a keyboard opening.
+ * Editing on a phone happens inside `PhoneLayer`, a `position: fixed; inset: 0`
+ * surface. Inside it every height is a percentage of the layer itself, so no
+ * constant here can describe — or misdescribe — where the page happens to be
+ * scrolled to.
  */
-export const PHONE_COLUMN_H =
-  "calc(100dvh - 184px - env(safe-area-inset-bottom, 0px))";
-/** The rows under the slide when no sheet is open: filmstrip, steps, openers. */
-export const PHONE_ROWS_BELOW = 152;
-/** The rows under the slide while a sheet is open: filmstrip and steps only. */
-export const PHONE_ROWS_BELOW_SHEET = 96;
-/** The sheet, collapsed. Leaves the slide above 40% of the column at 640px. */
-export const PHONE_SHEET_H = "calc(40dvh - 96px)";
-/** The sheet, expanded. Visibly shrinks the slide; never hides it. */
-export const PHONE_SHEET_H_TALL = "calc(50dvh - 96px)";
 
 /**
  * The RESOLUTION the preview canvas is rasterised at — not a layout value.
