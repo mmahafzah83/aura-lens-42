@@ -1288,14 +1288,46 @@ export default function StudioPanel() {
   };
 
   /** M8 — a refused control always says why, in words, beside it. */
+  /**
+   * J3 — the note and the primary are ONE expression. If a primary is enabled
+   * anywhere on this screen, there is no note; if it is refused, the note says
+   * why in the words of the state the member is actually in.
+   */
+  const phonePrimaryEnabled =
+    step === 4
+      ? !(format === "slides" && deck) && !published && !confirmingPost
+        && Boolean(content.trim()) && content.length <= POST_MAX_CHARS
+        && busy !== "post" && !notReady
+      : stageOwnsPrimary
+        ? !deckBusy
+        : canContinue && !generating;
+
   const phoneBarNote =
-    step < 4 && !canContinue
-      ? step === 1
+    phonePrimaryEnabled || busyMessage
+      ? null
+      : step === 1
         ? T.chooseHelp[lang]
         : step === 2
-          ? T.slidesNeedPost[lang]
-          : T.phoneNoActionYet[lang]
-      : null;
+          ? T.phoneNeedWords[lang]
+          : step === 3
+            ? T.slidesNeedPost[lang]
+            : null;
+
+  /* ---------- J2: the step-3 phone column, in numbers ---------------- */
+  /** 64px shell navigation + 64px action bar + 8px of air. */
+  const PHONE_BOTTOM_RESERVE = 136;
+  /** Filmstrip, counter and the two wide steps under the slide. */
+  const PHONE_NAV_ROW = 140;
+  const phoneColumnH = Math.max(320, viewportH - stageTop - PHONE_BOTTOM_RESERVE);
+  const phoneSheetH = sheet
+    ? Math.max(
+        180,
+        Math.min(Math.round(viewportH * (sheetTall ? 0.78 : 0.42)), phoneColumnH - (sheetTall ? 160 : 200)),
+      )
+    : 0;
+  // The slide keeps whatever the sheet is not using: it shrinks, never hides.
+  const phoneSlideH = Math.max(140, sheet ? phoneColumnH - phoneSheetH : phoneColumnH - PHONE_NAV_ROW);
+  const phoneSlideWidth = Math.max(200, Math.min(canvasWidth, Math.round(phoneSlideH * 0.8)));
 
   return shell(
     <>
