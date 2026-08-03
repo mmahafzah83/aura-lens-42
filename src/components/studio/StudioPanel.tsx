@@ -1021,8 +1021,15 @@ export default function StudioPanel() {
     setBusy("export");
     setProblem(null);
     setStatus(null);
-    setBusyMessage(T.exporting[lang]);
+    // L3 — the mount exists long before it has settled. Wait for every slide
+    // to report a fit, and for those reports to stop changing, before any node
+    // is collected — with the wait visible, and a plain sentence if it never
+    // settles.
+    setBusyMessage(T.exportSettling[lang]);
     try {
+      const settled = await waitForSlidesSettled(deck.slides.length);
+      if (!settled) { setProblem(T.exportNotReady[lang]); return; }
+      setBusyMessage(T.exporting[lang]);
       const nodes = collectSlideNodes(exportMountRef.current);
       if (nodes.length === 0) { setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
@@ -1034,7 +1041,7 @@ export default function StudioPanel() {
       setBusy(null);
       setBusyMessage(null);
     }
-  }, [deck, lang]);
+  }, [deck, lang, waitForSlidesSettled]);
 
   const copyCaption = useCallback(async () => {
     try { await navigator.clipboard.writeText(content); setStatus(T.captionCopied[lang]); } catch { /* nothing copied */ }
