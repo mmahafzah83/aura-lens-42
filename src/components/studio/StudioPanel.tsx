@@ -346,12 +346,13 @@ export default function StudioPanel() {
 
   /* Backgrounding the tab or closing the page is also a disappearance. */
   useEffect(() => {
+    const flush = () => persistNow();
     const onHide = () => { if (document.visibilityState === "hidden") persistNow(); };
     document.addEventListener("visibilitychange", onHide);
-    window.addEventListener("pagehide", persistNow);
+    window.addEventListener("pagehide", flush);
     return () => {
       document.removeEventListener("visibilitychange", onHide);
-      window.removeEventListener("pagehide", persistNow);
+      window.removeEventListener("pagehide", flush);
     };
   }, [persistNow]);
 
