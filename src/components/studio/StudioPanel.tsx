@@ -1878,52 +1878,34 @@ export default function StudioPanel() {
             </div>
           )}
 
-          {/* M3 — the phone shape: the slide is the hero, everything that used
-              to be a column is now a sheet, and the sheet is anchored below
-              the slide so the slide is never covered. */}
-          {format === "slides" && isPhone && (
-            <div style={{ marginTop: 12 }}>
-              <PhoneStage
-                lang={lang}
-                deck={deck}
-                theme={theme}
-                current={current}
-                onCurrent={setCurrent}
-                onFit={reportFit}
-                mountRef={mountRef}
-                boxRef={canvasBoxRef}
-                showCanvas={canvasInStage}
-                sheetOpen={sheet !== null}
-                sheetTall={sheetTall}
-                empty={<span>{T.noSlidesYet[lang]}</span>}
-                footer={
-                  <div style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingTop: 4 }}>
-                    {([
-                ["inspector", T.openSlideEditor[lang], !deck],
+          {/* L1 — SCREEN A on a phone: the format choice, in normal flow, and
+              the doors to the full-screen layers. The slide editor itself is
+              never rendered in the page — it is a layer, below. */}
+          {isPhone && (
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", WebkitOverflowScrolling: "touch", marginTop: 12, paddingBottom: 4 }}>
+              {([
+                ["editor", T.openSlideEditor[lang], format !== "slides" || !deck],
                 ["look", T.openLook[lang], false],
                 ["piece", T.openThisPiece[lang], false],
-                    ] as Array<["inspector" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
-                      <button
-                    key={key}
-                    type="button"
-                    disabled={refused}
-                    onClick={() => { setSheet(key); setSheetTall(false); }}
-                    title={refused ? T.noSlidesYet[lang] : undefined}
-                    style={{
-                      flex: "0 0 auto", minHeight: 48, padding: "0 14px", borderRadius: 12,
-                      cursor: refused ? "not-allowed" : "pointer",
-                      opacity: refused ? 0.6 : 1,
-                      background: "var(--surface-card)", border: "1px solid var(--border-default)",
-                      fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)",
-                      whiteSpace: "nowrap",
-                    }}
-                      >
-                    {label}
-                      </button>
-                    ))}
-                  </div>
-                }
-              />
+              ] as Array<["editor" | "look" | "piece", string, boolean]>).map(([key, label, refused]) => (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={refused}
+                  onClick={() => setLayer(key)}
+                  title={refused ? T.noSlidesYet[lang] : undefined}
+                  style={{
+                    flex: "0 0 auto", minHeight: 48, padding: "0 14px", borderRadius: 12,
+                    cursor: refused ? "not-allowed" : "pointer",
+                    opacity: refused ? 0.6 : 1,
+                    background: "var(--surface-card)", border: "1px solid var(--border-default)",
+                    fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           )}
 
