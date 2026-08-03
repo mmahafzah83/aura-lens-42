@@ -279,7 +279,7 @@ export default function StudioPanel() {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [deck, step, isPhone, sheet]);
+  }, [deck, step, isPhone, layer]);
 
   /* ---------- bring back the piece -------------------------------- */
   const restoredRef = useRef(false);
@@ -2229,42 +2229,56 @@ export default function StudioPanel() {
         </div>
       )}
 
-      {/* ---- the phone sheets: one column of the desktop grid at a time ---- */}
-      {isPhone && (
-        <>
-          <PhoneSheet
-            lang={lang}
-            rtl={rtlShell}
-            open={sheet === "inspector"}
-            title={T.zoneInspector[lang]}
-            expanded={sheetTall}
-            onExpanded={setSheetTall}
-            onClose={() => setSheet(null)}
-          >
-            <ZoneInspector
-              lang={lang}
-              writeLang={writeLang}
-              deck={deck}
-              current={current}
-              onDeck={(next) => { remember(); setDeck(next); }}
-              attention={attention}
-              onChangeLine={() => void changeThisLine()}
-              changing={changingLine}
-              onUploadPicture={uploadPicture}
-              pictureNotice={pictureNotice}
-              onMove={move}
-            />
-          </PhoneSheet>
+      {/* ---- L1: the phone LAYERS. One full screen for one task. ---- */}
+      {isPhone && layer === "editor" && (
+        <PhoneLayer lang={lang} rtl={rtlShell} title={T.slideEditorTitle[lang]} onClose={() => setLayer(null)} tabs={phoneLayerTabs}>
+          {/* The slide takes the room that is left; the fields for the slide
+              sit under it and scroll on their own if they are long. */}
+          <div style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", padding: "8px 12px" }}>
+            <div style={{ flex: "1 1 auto", minHeight: 0 }}>
+              <PhoneStage
+                lang={lang}
+                deck={deck}
+                theme={theme}
+                current={current}
+                onCurrent={setCurrent}
+                onFit={ignoreFit}
+                mountRef={mountRef}
+                boxRef={canvasBoxRef}
+                showCanvas={Boolean(deck)}
+                empty={<span>{T.noSlidesYet[lang]}</span>}
+              />
+            </div>
+            <div style={{ flex: "0 0 auto", maxHeight: "42%", overflowY: "auto", WebkitOverflowScrolling: "touch", marginTop: 8 }}>
+              <ZoneInspector
+                lang={lang}
+                writeLang={writeLang}
+                deck={deck}
+                current={current}
+                onDeck={(next) => { remember(); setDeck(next); }}
+                attention={attention}
+                onChangeLine={() => void changeThisLine()}
+                changing={changingLine}
+                onUploadPicture={uploadPicture}
+                pictureNotice={pictureNotice}
+                onMove={move}
+              />
+            </div>
+            <div style={{ flex: "0 0 auto", display: "flex", gap: 10, paddingTop: 8 }}>
+              <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 50, flex: "1 1 0" }}>
+                {busy === "save" ? T.savingPiece[lang] : T.saveLater[lang]}
+              </ButtonGhost>
+              <ButtonPrimary onClick={() => { setLayer(null); setStep(4); }} style={{ minHeight: 50, flex: "1 1 0" }}>
+                {T.continue[lang]} {rtlShell ? "←" : "→"}
+              </ButtonPrimary>
+            </div>
+          </div>
+        </PhoneLayer>
+      )}
 
-          <PhoneSheet
-            lang={lang}
-            rtl={rtlShell}
-            open={sheet === "look"}
-            title={T.lookHead[lang]}
-            expanded={sheetTall}
-            onExpanded={setSheetTall}
-            onClose={() => setSheet(null)}
-          >
+      {isPhone && layer === "look" && (
+        <PhoneLayer lang={lang} rtl={rtlShell} title={T.lookHead[lang]} onClose={() => setLayer(null)} tabs={phoneLayerTabs}>
+          <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px" }}>
             <ZoneLook
               lang={lang}
               theme={theme}
@@ -2273,17 +2287,13 @@ export default function StudioPanel() {
               onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
               hasDeck={Boolean(deck)}
             />
-          </PhoneSheet>
+          </div>
+        </PhoneLayer>
+      )}
 
-          <PhoneSheet
-            lang={lang}
-            rtl={rtlShell}
-            open={sheet === "piece"}
-            title={T.zonePiece[lang]}
-            expanded={sheetTall}
-            onExpanded={setSheetTall}
-            onClose={() => setSheet(null)}
-          >
+      {isPhone && layer === "piece" && (
+        <PhoneLayer lang={lang} rtl={rtlShell} title={T.zonePiece[lang]} onClose={() => setLayer(null)} tabs={phoneLayerTabs}>
+          <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "12px" }}>
             {/* J7 — the two controls the phone had lost live here, where there
                 is room for them: undo, and writing the piece in the other language. */}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
@@ -2342,9 +2352,13 @@ export default function StudioPanel() {
                 published,
               }}
             />
-          </PhoneSheet>
+          </div>
+        </PhoneLayer>
+      )}
 
-          {/* M2 — the only floating thing on a phone. At most two controls. */}
+      {/* M2 — the only floating thing on a phone. At most two controls. */}
+      {isPhone && (
+        <>
           <PhoneActionBar
             rtl={rtlShell}
             note={phoneBarNote}
