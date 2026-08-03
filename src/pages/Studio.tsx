@@ -1432,7 +1432,7 @@ export default function Studio() {
                 const other: Lang = writeLang === "ar" ? "en" : "ar";
                 setWriteLang(other);
                 setNotReady(null);
-                void generate(other);
+                void generate(undefined, other);
               }}
               disabled={generating || !choice}
               style={{ minHeight: 44 }}
