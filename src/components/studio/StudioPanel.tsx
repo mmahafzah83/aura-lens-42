@@ -574,6 +574,9 @@ export default function StudioPanel({
       setPublished(false);
       setPostUrl(null);
       setLinkInput("");
+      setLinkSaved(false);
+      // The member has explicitly opened work: no stale draft may be offered.
+      setPendingRestore(null);
       setDeck(null);
       setDeckSource(null);
       setExported(false);
