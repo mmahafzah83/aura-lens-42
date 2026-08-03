@@ -559,7 +559,7 @@ export default function StudioPanel({
         void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
       }
     },
-    [remember, lang, persistNow],
+    [lang, persistNow],
   );
 
   useEffect(() => {
@@ -1555,9 +1555,6 @@ export default function StudioPanel({
             {T.cancel[lang]}
           </ButtonGhost>
         )}
-        <ButtonGhost onClick={undo} disabled={undoStack.length === 0} style={{ minHeight: 44 }}>
-          {T.undo[lang]}
-        </ButtonGhost>
         <span style={{ display: "grid", gap: 2 }}>
           <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 44 }}>
             {T.saveLater[lang]}
