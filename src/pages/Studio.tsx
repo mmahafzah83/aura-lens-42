@@ -470,7 +470,9 @@ export default function Studio() {
       const text = json?.content;
       if (!res.ok || !text) { setGenError("failed"); return; }
       remember();
-      setContent(fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang));
+      const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
+      setContent(generated);
+      generatedTextRef.current = generated;
       // The gate already ran at generation. If it held the post, the words stay
       // fully editable and only the publish action waits.
       if (json?.blocked === true) {
@@ -598,7 +600,9 @@ export default function Studio() {
       postRowRef.current = newId;
       return newId;
     }
-    return saveDraft();
+    const id = await saveDraft();
+    if (id) postRowRef.current = id;
+    return id;
   }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft]);
 
   /**
