@@ -30,7 +30,7 @@ export async function loadStudioDrafts(): Promise<StudioDraft[]> {
     const [ci, lp] = await Promise.all([
       supabase
         .from("content_items")
-        .select("id, type, body, language, status, generation_params, created_at")
+        .select("id, type, body, language, status, title, generation_params, created_at")
         .eq("status", "draft")
         .order("created_at", { ascending: false })
         .limit(100),
@@ -56,7 +56,7 @@ export async function loadStudioDrafts(): Promise<StudioDraft[]> {
         type: normaliseType(r.type),
         topic: params.topic ?? null,
         _source: "content_items",
-        title: params.topic ?? null,
+        title: r.title || params.topic || null,
         created_at: r.created_at,
         signalId: params.signal_id ?? null,
       });

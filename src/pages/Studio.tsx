@@ -56,8 +56,26 @@ const DRAFT_KEY = "aura_studio_draft_v1";
 function gateSentence(firstWeakness: string | undefined, lang: Lang): string {
   const w = (firstWeakness || "").trim();
   if (lang === "ar" || !w) return T.notReadyPlain[lang];
+  // Only ever show a number the member can verify. Judge output that carries a
+  // ratio, a percentage or a score is discarded in favour of the plain sentence.
+  if (/\d\s*\/\s*\d|%|score/i.test(w)) return T.notReadyPlain[lang];
   const tidy = w.replace(/\s+/g, " ").replace(/^[-•\d.\s]+/, "");
   return `${T.notReadyLead.en} ${tidy.endsWith(".") ? tidy : `${tidy}.`}`;
+}
+
+/** A relative "saved …" stamp that never leaks English into the Arabic shell. */
+function savedAgo(dateStr: string, lang: Lang): string {
+  if (lang !== "ar") return formatSmartDate(dateStr);
+  const d = new Date(dateStr);
+  if (!dateStr || isNaN(d.getTime())) return "";
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (mins < 1) return "الآن";
+  if (mins < 60) return `قبل ${mins} دقيقة`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `قبل ${hrs} ساعة`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `قبل ${days} يوم`;
+  return d.toLocaleDateString("ar", { month: "short", day: "numeric" });
 }
 
 /** Two tabs that both do something. There is no third. */
@@ -100,6 +118,17 @@ export default function Studio() {
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<null | "failed" | "session">(null);
   const genRunId = useRef(0);
+  /** The exact text Aura last generated. Anything else is the member's own. */
+  const generatedTextRef = useRef<string | null>(null);
+  /** Asked before a language rewrite would replace words the member owns. */
+  const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
+  /** composer_opened fires once per session, never per navigation. */
+  const openedTrackedRef = useRef(false);
+  /**
+   * The linkedin_posts row this piece lives in. Held in a ref, not state, so an
+   * async sequence never re-reads a null captured at render and inserts twice.
+   */
+  const postRowRef = useRef<string | null>(null);
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
@@ -123,6 +152,14 @@ export default function Studio() {
   const [showAllSubjects, setShowAllSubjects] = useState(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
+  /**
+   * No state may disable the action that clears it: editing the words is
+   * exactly the signal that lifts the block. The gate re-runs server-side.
+   */
+  const changeContent = useCallback((next: string) => {
+    setContent(next);
+    setNotReady(null);
+  }, []);
   const [status, setStatus] = useState<string | null>(null);
   /** In flight. Never a tick — the action has not finished. */
   const [busyMessage, setBusyMessage] = useState<string | null>(null);
@@ -168,11 +205,15 @@ export default function Studio() {
       setWriteLang(seeded);
       setReady(true);
       // The composer opening is the first number the company reads.
-      void track("composer_opened", {
-        source: searchParams.get("draft") ? "studio_deep_link" : "studio",
-        signal_id: searchParams.get("signal") || null,
-        move_state: null,
-      });
+      // Once per session: a query-param change must never inflate the metric.
+      if (!openedTrackedRef.current) {
+        openedTrackedRef.current = true;
+        void track("composer_opened", {
+          source: searchParams.get("draft") ? "studio_deep_link" : "studio",
+          signal_id: searchParams.get("signal") || null,
+          move_state: null,
+        });
+      }
     })();
     return () => { dead = true; };
   }, [searchParams]);
@@ -317,6 +358,10 @@ export default function Studio() {
       remember();
       setDraftId(d.id);
       setDraftSource(d._source);
+      // A new piece is in the room: forget the row the last one created.
+      postRowRef.current = d._source === "linkedin_posts" ? d.id : null;
+      originDraftRef.current = null;
+      generatedTextRef.current = null;
       setContent(d.body);
       setWriteLang(d.language);
       setNotReady(null);
@@ -425,7 +470,9 @@ export default function Studio() {
       const text = json?.content;
       if (!res.ok || !text) { setGenError("failed"); return; }
       remember();
-      setContent(fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang));
+      const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
+      setContent(generated);
+      generatedTextRef.current = generated;
       // The gate already ran at generation. If it held the post, the words stay
       // fully editable and only the publish action waits.
       if (json?.blocked === true) {
@@ -471,7 +518,7 @@ export default function Studio() {
         // created only when the piece is actually published.
         await supabase
           .from("content_items")
-          .update({ body: content, language: writeLang } as any)
+          .update({ body: content, language: writeLang, ...(title ? { title } : {}) } as any)
           .eq("id", draftId);
         return draftId;
       }
@@ -515,6 +562,7 @@ export default function Studio() {
     const id = (ins as any)?.id as string;
     setDraftId(id);
     setDraftSource("linkedin_posts");
+    postRowRef.current = id;
     return id;
   }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta]);
 
@@ -525,6 +573,8 @@ export default function Studio() {
    */
   const originDraftRef = useRef<{ id: string; source: "content_items" | "linkedin_posts" } | null>(null);
   const ensurePostRow = useCallback(async (): Promise<string | null> => {
+    // Idempotent for the whole session: one piece, one row.
+    if (postRowRef.current) return postRowRef.current;
     if (draftId && draftSource === "content_items") {
       originDraftRef.current = { id: draftId, source: "content_items" };
       const title = pieceTitle();
@@ -546,9 +596,13 @@ export default function Studio() {
         .select("id")
         .single();
       if (error) return null;
-      return (ins as any)?.id as string;
+      const newId = (ins as any)?.id as string;
+      postRowRef.current = newId;
+      return newId;
     }
-    return saveDraft();
+    const id = await saveDraft();
+    if (id) postRowRef.current = id;
+    return id;
   }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft]);
 
   /**
@@ -557,28 +611,35 @@ export default function Studio() {
    * publishing paths, and the existing source_metadata is merged, never lost.
    */
   const finalisePublished = useCallback(
-    async (id: string, url: string | null) => {
+    async (id: string, url: string | null, alreadyPublished = false) => {
       const now = new Date().toISOString();
       const { data: existing } = await supabase
         .from("linkedin_posts")
-        .select("source_metadata")
+        .select("source_metadata, published_at")
         .eq("id", id)
         .maybeSingle();
       const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+      // A replay of an already-published post must never reset real numbers,
+      // nor stamp a client clock over the server's own publish time.
+      const fresh = !alreadyPublished && !(existing as any)?.published_at;
       await supabase
         .from("linkedin_posts")
         .update({
           tracking_status: "published",
-          published_at: now,
+          ...(fresh ? { published_at: now } : {}),
           acquisition: "published_via_aura",
           ...(url ? { post_url: url, published_confirmed_at: now } : {}),
-          like_count: 0,
-          comment_count: 0,
-          repost_count: 0,
-          engagement_score: 0,
-          source_trust: 100,
-          enriched_by: [],
-          synced_at: now,
+          ...(fresh
+            ? {
+                like_count: 0,
+                comment_count: 0,
+                repost_count: 0,
+                engagement_score: 0,
+                source_trust: 100,
+                enriched_by: [],
+                synced_at: now,
+              }
+            : {}),
           source_metadata: { ...prev, ...pieceMeta(), ...(url ? { external_url: url } : {}) },
         } as any)
         .eq("id", id);
@@ -587,9 +648,9 @@ export default function Studio() {
       const origin = originDraftRef.current;
       if (origin?.source === "content_items") {
         await supabase.from("content_items").update({ status: "published" } as any).eq("id", origin.id);
-      } else if (draftSource === "content_items" && draftId) {
-        await supabase.from("content_items").update({ status: "published" } as any).eq("id", draftId);
       }
+      // Spent. A later publish in this session must not re-mark this twin.
+      originDraftRef.current = null;
 
       // Aura learns from what was actually posted. Best-effort, never blocking.
       try {
@@ -781,7 +842,6 @@ export default function Studio() {
     setStatus(null);
     setNotReady(null);
     setBusyMessage(T.posting[lang]);
-    await saveDraft();
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
@@ -796,7 +856,7 @@ export default function Studio() {
       setPostUrl(url);
       setPublished(true);
       setStatus(T.postedHelp[lang]);
-      await finalisePublished(id, url);
+      await finalisePublished(id, url, payload?.already_published === true);
       void track("post_published", { signal_id: choice?.id || null, route: "linkedin" });
       return;
     }
@@ -805,13 +865,13 @@ export default function Studio() {
       const weak: string[] = Array.isArray(payload?.weaknesses)
         ? payload.weaknesses.filter((w: unknown) => typeof w === "string" && w.trim())
         : [];
+      // One sentence, one place: the banner beside the words it concerns.
       setNotReady(gateSentence(weak[0], lang));
-      setProblem(gateSentence(weak[0], lang));
       setStep(2);
       return;
     }
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
-  }, [saveDraft, ensurePostRow, finalisePublished, choice, lang]);
+  }, [ensurePostRow, finalisePublished, choice, lang]);
 
   /** Save and come back later: says where it went, and keeps the step. */
   const saveAndComeBack = useCallback(async () => {
@@ -861,7 +921,6 @@ export default function Studio() {
     setBusy("link");
     setBusyMessage(T.savingLink[lang]);
     setProblem(null);
-    await saveDraft();
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
     await finalisePublished(id, url);
@@ -871,7 +930,7 @@ export default function Studio() {
     setPublished(true);
     setPostUrl(url);
     setStatus(T.linkSaved[lang]);
-  }, [linkInput, saveDraft, ensurePostRow, finalisePublished, choice, lang]);
+  }, [linkInput, ensurePostRow, finalisePublished, choice, lang]);
 
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
@@ -1002,7 +1061,7 @@ export default function Studio() {
       )}
       <textarea
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={(e) => changeContent(e.target.value)}
         rows={14}
         dir={rtlWrite ? "rtl" : "ltr"}
         aria-label={T.writeHead[lang]}
@@ -1210,7 +1269,7 @@ export default function Studio() {
                       {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
                     </span>
                     <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
-                      {T.draftSaved[lang]} {formatSmartDate(d.created_at)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
+                      {T.draftSaved[lang]} {savedAgo(d.created_at, lang)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
                     </span>
                   </button>
                 ))}
@@ -1430,6 +1489,10 @@ export default function Studio() {
             <ButtonGhost
               onClick={() => {
                 const other: Lang = writeLang === "ar" ? "en" : "ar";
+                // Words the member owns are never silently replaced.
+                const ownWords =
+                  content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
+                if (ownWords) { setAskLangSwitch(other); return; }
                 setWriteLang(other);
                 setNotReady(null);
                 void generate(undefined, other);
@@ -1439,6 +1502,35 @@ export default function Studio() {
             >
               {writeLang === "ar" ? T.writeAgainEn[lang] : T.writeAgainAr[lang]}
             </ButtonGhost>
+            {askLangSwitch && (
+              <div
+                style={{
+                  marginTop: 10, background: "var(--surface-subtle)",
+                  border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
+                }}
+              >
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                  {askLangSwitch === "ar" ? T.langSwitchHeadAr[lang] : T.langSwitchHeadEn[lang]}
+                </p>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <ButtonPrimary
+                    onClick={() => {
+                      const other = askLangSwitch;
+                      setAskLangSwitch(null);
+                      setWriteLang(other);
+                      setNotReady(null);
+                      void generate(undefined, other);
+                    }}
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.langSwitchYes[lang]}
+                  </ButtonPrimary>
+                  <ButtonGhost onClick={() => setAskLangSwitch(null)} style={{ minHeight: 44 }}>
+                    {T.langSwitchNo[lang]}
+                  </ButtonGhost>
+                </div>
+              </div>
+            )}
           </div>
           {writeArea}
         </StageCard>
@@ -1530,7 +1622,7 @@ export default function Studio() {
               writeLang={writeLang}
               subject={choice?.title || typedTopic}
               content={content}
-              onContentChange={setContent}
+              onContentChange={changeContent}
               todo={{
                 words: content.trim().length > 0,
                 slides: Boolean(deck),
