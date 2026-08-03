@@ -107,6 +107,9 @@ export default function CarouselStudio() {
   const [length, setLength] = useState<DeckLength>(7);
   const [hasAvatar, setHasAvatar] = useState(true);
   const [voiceFlags, setVoiceFlags] = useState<string[]>([]);
+  /** The approved post behind this handoff. The carousel adapts it rather than regenerating. */
+  const [sourceText, setSourceText] = useState<string | null>(null);
+  const [sourceReady, setSourceReady] = useState(false);
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
   const [stage, setStage] = useState<number | null>(null);
@@ -193,6 +196,24 @@ export default function CarouselStudio() {
   }, [preselected]);
 
   /* --- restore an unfinished deck --------------------------------- */
+  useEffect(() => {
+    let dead = false;
+    if (!draftParam) { setSourceReady(true); return; }
+    setSourceReady(false);
+    (async () => {
+      const { data } = await supabase
+        .from("linkedin_posts")
+        .select("post_text")
+        .eq("id", draftParam)
+        .maybeSingle();
+      if (dead) return;
+      const text = typeof (data as any)?.post_text === "string" ? (data as any).post_text.trim() : "";
+      setSourceText(text || null);
+      setSourceReady(true);
+    })();
+    return () => { dead = true; };
+  }, [draftParam]);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
