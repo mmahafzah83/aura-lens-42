@@ -1003,13 +1003,15 @@ export default function StudioPanel() {
    */
   const canvasInStage = step === 3 && format === "slides" && Boolean(deck);
 
-  /* ---------- shell ------------------------------------------------ */
+  /* ---------- content wrapper --------------------------------------
+   * Page content only. No height, no page padding, no page-level `dir` —
+   * the Aura shell owns all three. The bottom padding exists solely so the
+   * studio's own action rows cannot sit under the mobile navigation bar,
+   * which the shell renders below `md`.
+   */
   const shell = (children: React.ReactNode) => (
-    <div
-      dir={rtlShell ? "rtl" : "ltr"}
-      style={{ minHeight: "100vh", background: "var(--surface-page)", padding: "20px 18px 120px" }}
-    >
-      <div style={{ maxWidth: 1360, margin: "0 auto" }}>{children}</div>
+    <div className="pb-[84px] md:pb-0" style={{ maxWidth: 1360, margin: "0 auto" }}>
+      {children}
     </div>
   );
 
