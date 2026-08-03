@@ -384,11 +384,11 @@ export default function Studio() {
   }, [showAllSubjects, userId, allSignals.length]);
 
   /* ---------- step 2: the words ----------------------------------- */
-  const generate = useCallback(async (picked?: Choice) => {
+  const generate = useCallback(async (picked?: Choice, langOverride?: Lang) => {
     const target = picked ?? choice;
     if (!target) return;
     const runId = ++genRunId.current;
-    const useLang = writeLang;
+    const useLang = langOverride ?? writeLang;
     setGenError(null);
     setNotReady(null);
     setGenerating(true);
