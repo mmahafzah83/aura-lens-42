@@ -1252,9 +1252,33 @@ export default function StudioPanel() {
     if (step === 3) { setStep(4); }
   };
 
+  /**
+   * M2/M4 — a focused field on a phone scrolls itself into the middle of the
+   * viewport, so the on-screen keyboard can never end up covering the words
+   * being typed or the action bar underneath them.
+   */
+  const scrollFocused = (e: React.FocusEvent<HTMLElement>) => {
+    if (!isPhone) return;
+    const el = e.currentTarget;
+    window.setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 250);
+  };
+
+  /** M8 — a refused control always says why, in words, beside it. */
+  const phoneBarNote =
+    step < 4 && !canContinue
+      ? step === 1
+        ? T.chooseHelp[lang]
+        : step === 2
+          ? T.slidesNeedPost[lang]
+          : T.phoneNoActionYet[lang]
+      : null;
+
   return shell(
     <>
-      {/* One slim strip. This is a page inside Aura; the shell owns navigation. */}
+      {/* One slim strip. This is a page inside Aura; the shell owns navigation.
+          On a phone at the writing step the post is the only thing on screen,
+          so this strip stands down there (M5). */}
+      {(!isPhone || step !== 2) && (
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 6 }}>
         <button
           type="button"
@@ -1279,6 +1303,7 @@ export default function StudioPanel() {
           {T.helpLink[lang]}
         </button>
       </div>
+      )}
 
       {helpOpen && (
         <div
