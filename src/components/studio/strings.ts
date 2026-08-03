@@ -207,6 +207,7 @@ export const T = {
     ar: "لم نتمكن من نشره الآن. كلماتك محفوظة — عدّل ما تشاء وحاول مرة أخرى.",
   },
   savedForLater: { en: "Kept. You will find it with your pieces.", ar: "تم الحفظ. ستجده مع أعمالك." },
+  savingPiece: { en: "Saving your piece…", ar: "نحفظ عملك…" },
 
   // Publish — slides
   captionHead: { en: "Your caption", ar: "النص المرافق" },
