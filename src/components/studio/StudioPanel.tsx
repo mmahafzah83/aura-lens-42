@@ -93,6 +93,20 @@ function gateSentence(category: unknown, lang: Lang): string {
   }
 }
 
+/**
+ * P3 — how long each kind of work normally takes, in seconds. The bar fills
+ * toward this and the countdown reads from it. A guess that ends beats a
+ * decoration that loops.
+ */
+function etaFor(message: string, lang: Lang): number {
+  if (message === T.writing[lang]) return 30;
+  if (message === T.makingSlides[lang]) return 45;
+  if (message === T.posting[lang]) return 20;
+  if (message === T.exporting[lang] || message === T.exportSettling[lang]) return 15;
+  if (message === T.changingLine[lang]) return 15;
+  return 12;
+}
+
 /** A relative "saved …" stamp that never leaks English into the Arabic shell. */
 function savedAgo(dateStr: string, lang: Lang): string {
   if (lang !== "ar") return formatSmartDate(dateStr);
@@ -1588,7 +1602,13 @@ export default function StudioPanel({
       </div>
 
       {/* Motion for anything in flight, on every step. */}
-      {busyMessage && <BusyBar message={busyMessage} />}
+      {busyMessage && (
+        <BusyBar
+          message={busyMessage}
+          etaSeconds={etaFor(busyMessage, lang)}
+          remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
+        />
+      )}
 
       {step === 1 && (
         <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
@@ -2009,6 +2029,7 @@ export default function StudioPanel({
                 cover: Boolean(deck?.slides.some((s) => s.slots.media?.src)),
                 published,
               }}
+              showWords={false}
             />
             <ZoneStage
               lang={lang}
@@ -2021,7 +2042,19 @@ export default function StudioPanel({
               mountRef={mountRef}
               boxRef={canvasBoxRef}
               showCanvas={canvasInStage}
-              empty={<span>{T.noSlidesYet[lang]}</span>}
+              empty={
+                deckBusy ? (
+                  <div style={{ width: "100%", maxWidth: 360 }}>
+                    <BusyBar
+                      message={T.makingSlides[lang]}
+                      etaSeconds={45}
+                      remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
+                    />
+                  </div>
+                ) : (
+                  <span>{T.noSlidesYet[lang]}</span>
+                )
+              }
               footer={
                 !deck ? (
                   <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
