@@ -1322,7 +1322,6 @@ export default function StudioPanel() {
           {T.helpLink[lang]}
         </button>
       </div>
-      )}
 
       {helpOpen && (
         <div
