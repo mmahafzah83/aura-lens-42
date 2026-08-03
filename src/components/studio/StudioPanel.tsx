@@ -325,8 +325,10 @@ export default function StudioPanel() {
   const liveRef = useRef({ content, deck, choice, writeLang, step, format, draftId, draftSource });
   liveRef.current = { content, deck, choice, writeLang, step, format, draftId, draftSource };
 
-  const persistNow = useCallback(() => {
-    const v = liveRef.current;
+  const persistNow = useCallback((overrides?: Partial<typeof liveRef.current>) => {
+    const v = { ...liveRef.current, ...(overrides || {}) };
+    // Written straight through, so a caller mid-update never persists stale words.
+    liveRef.current = v;
     if (!v.content && !v.deck && !postRowRef.current) return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...v, postRowId: postRowRef.current }));
