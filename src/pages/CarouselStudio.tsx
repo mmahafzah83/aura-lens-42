@@ -833,10 +833,31 @@ export default function CarouselStudio() {
                     </div>
                   ) : (
                     <>
-                      <div style={{ ...mono, color: "var(--error)" }}>{allFailures.length} to fix</div>
-                      {allFailures.slice(0, 6).map((f, i) => (
+                      <div style={{ ...mono, color: "var(--error)" }}>
+                        {lang === "ar"
+                          ? `${issues.length} بحاجة إلى إصلاح`
+                          : issues.length === 1
+                            ? "1 thing to fix"
+                            : `${issues.length} things to fix`}
+                      </div>
+                      {issues.slice(0, 6).map((it, i) => (
                         <div key={i} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                          {plainFailure(f)}
+                          {it.text}
+                          {it.index !== undefined && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCurrent(it.index!);
+                                canvasBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                              }}
+                              style={{
+                                marginInlineStart: 8, background: "none", border: "none", padding: 0,
+                                color: "var(--act)", fontFamily: "var(--ff-ui)", fontSize: 12.5, cursor: "pointer",
+                              }}
+                            >
+                              {lang === "ar" ? "أصلح هذا ←" : "Fix this →"}
+                            </button>
+                          )}
                         </div>
                       ))}
                     </>
