@@ -163,6 +163,10 @@ export const T = {
     en: "There is nothing to do here until the step above is finished.",
     ar: "لا شيء لتفعله هنا حتى تنتهي الخطوة أعلاه.",
   },
+  phoneNeedWords: {
+    en: "Write something first, then you can carry on.",
+    ar: "اكتب شيئاً أولاً، ثم يمكنك المتابعة.",
+  },
 
   // Zone: inspector
   zoneInspector: { en: "Change this slide", ar: "غيّر هذه الشريحة" },
