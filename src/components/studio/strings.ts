@@ -320,6 +320,18 @@ export const T = {
   replaceYes: { en: "Replace it", ar: "استبدله" },
   replaceNo: { en: "Keep what I have", ar: "أبقِ ما لديّ" },
 
+  // Switching the writing language over words the member owns
+  langSwitchHeadEn: {
+    en: "This will rewrite your post in English. Your current words will be replaced.",
+    ar: "سيعيد هذا كتابة منشورك بالإنجليزية. سيتم استبدال كلماتك الحالية.",
+  },
+  langSwitchHeadAr: {
+    en: "This will rewrite your post in Arabic. Your current words will be replaced.",
+    ar: "سيعيد هذا كتابة منشورك بالعربية. سيتم استبدال كلماتك الحالية.",
+  },
+  langSwitchYes: { en: "Rewrite it", ar: "أعد كتابته" },
+  langSwitchNo: { en: "Keep what I have", ar: "أبقِ ما لديّ" },
+
   // Failures in our own words
   slidesFailedPlain: {
     en: "A slide did not come out right. Nothing was lost — try once more.",
