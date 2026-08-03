@@ -15,9 +15,12 @@ serve(async (req) => {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  {
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const bearerToken = authHeader.replace("Bearer ", "").trim();
+  const isServiceRole = !!SERVICE_ROLE && bearerToken === SERVICE_ROLE;
+  if (!isServiceRole) {
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data, error } = await sb.auth.getUser(authHeader.replace("Bearer ", ""));
+    const { data, error } = await sb.auth.getUser(bearerToken);
     if (error || !data?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },

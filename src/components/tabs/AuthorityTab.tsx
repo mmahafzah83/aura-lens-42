@@ -482,6 +482,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
     skipped?: boolean;
   } | null>(null);
   const [gateBlocked, setGateBlocked] = useState(false);
+  const [gateNoticeDismissed, setGateNoticeDismissed] = useState(false);
   const [provenanceOpen, setProvenanceOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return window.matchMedia?.("(min-width: 768px)").matches ?? true;
@@ -1958,7 +1959,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                           )}
                         </div>
                         <div className="flex gap-2 mt-0.5">
-                          <Button size="sm" onClick={handlePublishToLinkedIn} disabled={publishingLive || uploadingImage || !previewText.trim() || count > 3000} className="h-8 text-xs">
+                          <Button size="sm" onClick={handlePublishToLinkedIn} disabled={publishingLive || uploadingImage || !previewText.trim() || count > 3000 || gateBlocked} className="h-8 text-xs">
                             {publishingLive ? "Publishing…" : "Publish now"}
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setConfirmLiveOpen(false)} disabled={publishingLive} className="h-8 text-xs">
@@ -2120,12 +2121,16 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         This draft did not pass review, so publishing is paused. The full draft is below — read it, then regenerate.
                       </p>
-                      {(qualityGate?.weaknesses || []).filter(Boolean).length > 0 && (
+                      {(qualityGate?.weaknesses || []).filter(Boolean).length > 0 ? (
                         <ul className="list-disc pl-4 space-y-1 text-xs text-foreground/80">
                           {(qualityGate!.weaknesses || []).filter(Boolean).map((w, i) => (
                             <li key={i}>{w}</li>
                           ))}
                         </ul>
+                      ) : (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          We could not list specific issues. You can publish this and we will look into it.
+                        </p>
                       )}
                       <Button
                         size="sm"
@@ -2207,6 +2212,7 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                   const evidenceCount = sig?.fragment_count ?? 0;
                   const gate = qualityGate;
                   const gateActive = !!gate && !gate.skipped;
+                  const gateSkipped = !!gate && gate.skipped === true;
                   const dims: { key: string; label: string; raw: number }[] = gateActive ? [
                     { key: "voice", label: "Voice", raw: gate!.scores?.voice ?? 0 },
                     { key: "hook", label: "Hook", raw: gate!.scores?.hook ?? 0 },
@@ -2325,23 +2331,56 @@ export const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed,
                               Ready to publish — quality threshold met.
                             </div>
                           )}
-                          {/* Character count + reading time — table-stakes per AuthoredUp/Taplio/Buffer */}
-                          {(() => {
-                            const plain = stripMarkdown(displayedOutput || "");
-                            const chars = plain.length;
-                            const words = plain.split(/\s+/).filter(Boolean).length;
-                            const minutes = Math.max(1, Math.ceil(words / 200));
-                            const over = chars > 3000;
-                            return (
-                              <div
-                                className={`text-xs tabular-nums pt-1 ${over ? "font-medium text-[color:var(--error)]" : "text-[color:hsl(var(--muted-foreground))]"}`}
-                              >
-                                {chars.toLocaleString()} / 3,000 chars · ~{minutes} min read
-                              </div>
-                            );
-                          })()}
                         </div>
                       )}
+
+                      {/* Gate could not answer — never hide the reason behind the flag */}
+                      {gateSkipped && !gateNoticeDismissed && (
+                        <div className="border-t border-border/10 px-4 py-3 space-y-2">
+                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground font-semibold">
+                            We could not check this post
+                          </p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            That is our problem, not yours — your writing is fine. You can post it now, or ask us to check again.
+                          </p>
+                          <div className="flex gap-2 pt-0.5">
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => setGateNoticeDismissed(true)}
+                            >
+                              Post it anyway
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isGeneratingAny || !!actionLoading}
+                              className="h-7 text-xs border-[color:var(--act-fill)]/40 text-[color:var(--act)]"
+                              onClick={() => generate()}
+                            >
+                              Check again
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Character count + reading time — always shown, whatever the gate did */}
+                      <div className="border-t border-border/10 px-4 py-2">
+                        {(() => {
+                          const plain = stripMarkdown(displayedOutput || "");
+                          const chars = plain.length;
+                          const words = plain.split(/\s+/).filter(Boolean).length;
+                          const minutes = Math.max(1, Math.ceil(words / 200));
+                          const over = chars > 3000;
+                          return (
+                            <div
+                              className={`text-xs tabular-nums ${over ? "font-medium text-[color:var(--error)]" : "text-[color:hsl(var(--muted-foreground))]"}`}
+                            >
+                              {chars.toLocaleString()} / 3,000 chars · ~{minutes} min read
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </div>
                   );
                 })()}

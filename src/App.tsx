@@ -136,7 +136,7 @@ const App = () => (
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
             <Route path="/signature" element={<PasswordGate><SignatureStudio /></PasswordGate>} />
-            <Route path="/signature-harness" element={<SignatureHarness />} />
+            <Route path="/signature-harness" element={<PasswordGate><SignatureHarness /></PasswordGate>} />
             {import.meta.env.DEV && (
               <Route path="/carousel-preview" element={<CarouselPreview />} />
             )}
