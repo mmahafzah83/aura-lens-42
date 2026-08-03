@@ -1295,17 +1295,15 @@ export default function StudioPanel({
     return null;
   }, [fits, current, lang]);
 
+  /* THE PIECE STATE. Derived, never stored twice, never inferred from the
+     highest step visited. `deriveDone` owns every tick and clamps the
+     step N / N−1 invariant. */
+  const subjectChosen = Boolean(choice) || pasted.trim().length > 0;
+  const wordsReady = content.trim().length > 0;
+  const slidesMade = deck !== null;
   const doneMap = useMemo(
-    () => ({
-      // P2 — every tick is derived from what the post actually IS: a subject
-      // chosen, words written, a format decided (and, for slides, a deck that
-      // exists), a link on LinkedIn. Never from the highest step visited.
-      1: Boolean(choice),
-      2: content.trim().length > 0,
-      3: Boolean(format) && (format === "post" || Boolean(deck)),
-      4: published,
-    }),
-    [choice, content, deck, format, published],
+    () => deriveDone({ subjectChosen, wordsReady, format, slidesMade, published, linkSaved }),
+    [subjectChosen, wordsReady, format, slidesMade, published, linkSaved],
   );
 
   /**
