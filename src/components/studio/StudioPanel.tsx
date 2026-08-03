@@ -38,7 +38,7 @@ import PhoneProgress from "@/components/studio/PhoneProgress";
 import PhoneActionBar from "@/components/studio/PhoneActionBar";
 import PhoneSheet from "@/components/studio/PhoneSheet";
 import PhoneStage from "@/components/studio/PhoneStage";
-import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH } from "@/components/studio/usePhone";
+import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 /** Slides need enough words to divide up. Below this the option is refused. */
@@ -1295,23 +1295,11 @@ export default function StudioPanel() {
           ? T.phoneNeedWords[lang]
           : step === 3
             ? T.slidesNeedPost[lang]
-            : null;
-
-  /* ---------- J2: the step-3 phone column, in numbers ---------------- */
-  /** 64px shell navigation + 64px action bar + 8px of air. */
-  const PHONE_BOTTOM_RESERVE = 136;
-  /** Filmstrip, counter and the two wide steps under the slide. */
-  const PHONE_NAV_ROW = 200;
-  const phoneColumnH = Math.max(320, viewportH - stageTop - PHONE_BOTTOM_RESERVE);
-  const phoneSheetH = sheet
-    ? Math.max(
-        180,
-        Math.min(Math.round(viewportH * (sheetTall ? 0.78 : 0.42)), phoneColumnH - (sheetTall ? 160 : 200)),
-      )
-    : 0;
-  // The slide keeps whatever the sheet is not using: it shrinks, never hides.
-  const phoneSlideH = Math.max(140, sheet ? phoneColumnH - phoneSheetH : phoneColumnH - PHONE_NAV_ROW);
-  const phoneSlideWidth = Math.max(200, Math.min(canvasWidth, Math.round(phoneSlideH * 0.8)));
+            // K6 — step 4 with slides has no one-tap publish. Where there is no
+            // primary there is a sentence saying why, never an empty bar.
+            : step === 4 && format === "slides" && deck
+              ? T.whySlidesManual[lang]
+              : null;
 
   return shell(
     <>
