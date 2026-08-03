@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { T, type Lang } from "./strings";
 
-export type ShowingKey = "post" | "slides" | "picture";
+export type ShowingKey = "post" | "slides";
 
 const heading: React.CSSProperties = {
   fontFamily: "var(--ff-mono)",
@@ -29,7 +29,6 @@ export const ZonePiece: React.FC<{
   const rows: Array<{ key: ShowingKey; label: string }> = [
     { key: "post", label: T.showPost[lang] },
     { key: "slides", label: `${T.showSlides[lang]} · ${slideCount}` },
-    { key: "picture", label: T.showPicture[lang] },
   ];
 
   const checks: Array<[string, boolean]> = [
