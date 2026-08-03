@@ -1030,13 +1030,14 @@ export default function StudioPanel() {
   const exportFile = useCallback(async () => {
     // Never fails silently: if it cannot run, the member is told why.
     if (!deck) { setProblem(T.exportNoDeck[lang]); return; }
-    if (!mountRef.current) { setProblem(T.exportNotReady[lang]); return; }
+    // Always the fixed-width export mount, never the on-screen preview.
+    if (!exportMountRef.current) { setProblem(T.exportNotReady[lang]); return; }
     setBusy("export");
     setProblem(null);
     setStatus(null);
     setBusyMessage(T.exporting[lang]);
     try {
-      const nodes = collectSlideNodes(mountRef.current);
+      const nodes = collectSlideNodes(exportMountRef.current);
       if (nodes.length === 0) { setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
       setExported(true);
