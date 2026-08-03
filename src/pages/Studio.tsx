@@ -207,10 +207,12 @@ export default function Studio() {
       setReady(true);
       // The composer opening is the first number the company reads.
       // Once per session: a query-param change must never inflate the metric.
-      if (!openedTrackedRef.current) {
+      // A `?draft=` deep link is reported by `openDraft` instead, so the boot
+      // emit stands aside — one open, one event.
+      if (!openedTrackedRef.current && !searchParams.get("draft")) {
         openedTrackedRef.current = true;
         void track("composer_opened", {
-          source: searchParams.get("draft") ? "studio_deep_link" : "studio",
+          source: "studio",
           signal_id: searchParams.get("signal") || null,
           move_state: null,
         });
