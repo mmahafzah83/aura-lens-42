@@ -34,6 +34,11 @@ import ZonePiece from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
+import PhoneProgress from "@/components/studio/PhoneProgress";
+import PhoneActionBar from "@/components/studio/PhoneActionBar";
+import PhoneSheet from "@/components/studio/PhoneSheet";
+import PhoneStage from "@/components/studio/PhoneStage";
+import { useIsPhone, PHONE_MAX_WIDTH } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 
 /** Slides need enough words to divide up. Below this the option is refused. */
@@ -201,6 +206,14 @@ export default function StudioPanel() {
   const canvasBoxRef = useRef<HTMLDivElement | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(520);
   const [narrow, setNarrow] = useState(false);
+  /**
+   * THE phone branch. One breakpoint, one source: `usePhone`. Above it the
+   * desktop tree renders exactly as before; below it a different shape.
+   */
+  const isPhone = useIsPhone();
+  /** Which bottom sheet is open on a phone. Only ever one at a time. */
+  const [sheet, setSheet] = useState<null | "inspector" | "look" | "piece">(null);
+  const [sheetTall, setSheetTall] = useState(false);
 
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
@@ -251,12 +264,13 @@ export default function StudioPanel() {
     const measure = () => {
       setNarrow(window.innerWidth < 900);
       const w = canvasBoxRef.current?.clientWidth ?? 520;
-      setCanvasWidth(Math.max(260, Math.min(720, w - 28)));
+      const gutter = window.innerWidth < PHONE_MAX_WIDTH ? 0 : 28;
+      setCanvasWidth(Math.max(260, Math.min(720, w - gutter)));
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [deck, step]);
+  }, [deck, step, isPhone, sheet]);
 
   /* ---------- bring back the piece -------------------------------- */
   const restoredRef = useRef(false);
