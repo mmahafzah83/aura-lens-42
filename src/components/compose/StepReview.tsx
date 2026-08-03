@@ -93,6 +93,7 @@ const StepReview: React.FC<Props> = ({
 
       {busy && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18 }}>
+          <style>{"@keyframes composeSpin{to{transform:rotate(360deg)}}"}</style>
           <span
             aria-hidden
             style={{
@@ -102,7 +103,7 @@ const StepReview: React.FC<Props> = ({
               border: "2px solid var(--machine)",
               borderTopColor: "transparent",
               display: "inline-block",
-              animation: "spin 0.8s linear infinite",
+              animation: "composeSpin 0.8s linear infinite",
             }}
           />
           <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600, color: "var(--machine-text)" }}>
