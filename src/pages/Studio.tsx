@@ -466,17 +466,32 @@ export default function Studio() {
   }, []);
 
   /* ---------- step 4: LinkedIn ------------------------------------ */
-  const postText = useCallback(async () => {
+  /**
+   * The ONLY way to reach LinkedIn. Every button that could publish calls
+   * this; it opens the confirmation and nothing else.
+   */
+  const requestPost = useCallback(() => {
+    setProblem(null);
+    setConfirmingPost(true);
+  }, []);
+
+  /**
+   * Publishes for real. Called from exactly one place: the confirm panel's
+   * "Post it". No other call site exists.
+   */
+  const publishNow = useCallback(async () => {
     setConfirmingPost(false);
     setBusy("post");
     setProblem(null);
-    setStatus(T.posting[lang]);
+    setStatus(null);
+    setBusyMessage(T.posting[lang]);
     const id = await saveDraft();
-    if (!id) { setBusy(null); setStatus(null); setProblem(T.postFailed[lang]); return; }
+    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
       body: { postId: id, advisory: true },
     });
     setBusy(null);
+    setBusyMessage(null);
     const payload = data as any;
     const message = `${payload?.error || ""} ${error?.message || ""}`.toLowerCase();
     if (payload?.success === true) {
@@ -485,7 +500,6 @@ export default function Studio() {
       setStatus(T.postedHelp[lang]);
       return;
     }
-    setStatus(null);
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
   }, [saveDraft, lang]);
 
@@ -504,17 +518,18 @@ export default function Studio() {
     if (!mountRef.current) { setProblem(T.exportNotReady[lang]); return; }
     setBusy("export");
     setProblem(null);
-    setStatus(T.exporting[lang]);
+    setStatus(null);
+    setBusyMessage(T.exporting[lang]);
     try {
       const nodes = collectSlideNodes(mountRef.current);
-      if (nodes.length === 0) { setStatus(null); setProblem(T.exportNotReady[lang]); return; }
+      if (nodes.length === 0) { setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
       setStatus(T.exportDone[lang]);
     } catch {
-      setStatus(null);
       setProblem(T.exportFailed[lang]);
     } finally {
       setBusy(null);
+      setBusyMessage(null);
     }
   }, [deck, lang]);
 
