@@ -263,6 +263,22 @@ export default function CarouselStudio() {
     [fits],
   );
   const allFailures = [...invariantFailures, ...fitFailures];
+  /**
+   * Every issue, tied to the slide it belongs to, so no line is a dead end.
+   * The invariant strings carry "slide N"; the fit map is keyed by index.
+   */
+  const issues = useMemo(() => {
+    const out: Array<{ text: string; index?: number }> = [];
+    for (const f of invariantFailures) {
+      const m = /slide (\d+)/i.exec(f);
+      out.push({ text: plainFailure(f), index: m ? Number(m[1]) : undefined });
+    }
+    for (const [key, state] of Object.entries(fits)) {
+      if (!state?.failed) continue;
+      out.push({ text: plainFailure(state.reason ?? "A slide does not fit."), index: Number(key) });
+    }
+    return out;
+  }, [invariantFailures, fits]);
   // Voice and taste notes: worth reading, never worth withholding the deck.
   const notes = tiered.warnings;
   const noFigure = Boolean(deck && !deck.slides.some((s) => s.slots.stat_value));
@@ -704,7 +720,7 @@ export default function CarouselStudio() {
                         }}
                       >
                         <span style={{ ...mono, fontSize: 8.5, opacity: locked ? 0.5 : 0.75 }}>
-                          {ARCHETYPE_LABEL[s.archetype] ?? s.archetype}{locked ? " (fixed)" : ""}
+                          {ARCHETYPE_LABEL[s.archetype] ?? s.archetype}
                         </span>
                         <span style={{ ...mono, fontSize: 9, color: bad ? THEMES[theme].alert : THEMES[theme].accent }}>
                           {s.index + 1}/{deck.slides.length}
@@ -712,6 +728,14 @@ export default function CarouselStudio() {
                       </button>
                       {/* Touch and keyboard need an explicit control; drag alone is not enough. */}
                       <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+                        {locked ? (
+                          <span style={{ ...mono, fontSize: 8.5, color: "var(--text-secondary)", textAlign: "center" }}>
+                            {s.index === 0
+                              ? (lang === "ar" ? "تبقى الأولى دائمًا" : "Always first")
+                              : (lang === "ar" ? "تبقى الأخيرة دائمًا" : "Always last")}
+                          </span>
+                        ) : (
+                        <>
                         <button
                           type="button"
                           aria-label={`Move slide ${s.index + 1} earlier`}
@@ -730,6 +754,8 @@ export default function CarouselStudio() {
                         >
                           ›
                         </button>
+                        </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -755,6 +781,49 @@ export default function CarouselStudio() {
                 />
               </div>
 
+              {deck.slides.length > 1 && (
+                <div
+                  dir={deck.dir}
+                  style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "center", marginTop: 10 }}
+                >
+                  <button
+                    type="button"
+                    aria-label={lang === "ar" ? "الشريحة السابقة" : "Previous slide"}
+                    disabled={current === 0}
+                    onClick={() => setCurrent((c) => Math.max(0, c - 1))}
+                    style={{
+                      minWidth: 34, minHeight: 34, borderRadius: 8,
+                      border: "1px solid var(--border)", background: "transparent",
+                      color: "var(--act)", fontSize: 16,
+                      cursor: current === 0 ? "not-allowed" : "pointer",
+                      opacity: current === 0 ? 0.4 : 1,
+                    }}
+                  >
+                    ‹
+                  </button>
+                  <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
+                    {lang === "ar"
+                      ? `الشريحة ${current + 1} من ${deck.slides.length}`
+                      : `Slide ${current + 1} of ${deck.slides.length}`}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={lang === "ar" ? "الشريحة التالية" : "Next slide"}
+                    disabled={current === deck.slides.length - 1}
+                    onClick={() => setCurrent((c) => Math.min(deck.slides.length - 1, c + 1))}
+                    style={{
+                      minWidth: 34, minHeight: 34, borderRadius: 8,
+                      border: "1px solid var(--border)", background: "transparent",
+                      color: "var(--act)", fontSize: 16,
+                      cursor: current === deck.slides.length - 1 ? "not-allowed" : "pointer",
+                      opacity: current === deck.slides.length - 1 ? 0.4 : 1,
+                    }}
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
+
               <div style={{ display: "grid", gap: 16, minWidth: 0 }}>
                 {/* 7 · quality, visible */}
                 <div style={{ ...panel, display: "grid", gap: 8 }}>
@@ -764,10 +833,31 @@ export default function CarouselStudio() {
                     </div>
                   ) : (
                     <>
-                      <div style={{ ...mono, color: "var(--error)" }}>{allFailures.length} to fix</div>
-                      {allFailures.slice(0, 6).map((f, i) => (
+                      <div style={{ ...mono, color: "var(--error)" }}>
+                        {lang === "ar"
+                          ? `${issues.length} بحاجة إلى إصلاح`
+                          : issues.length === 1
+                            ? "1 thing to fix"
+                            : `${issues.length} things to fix`}
+                      </div>
+                      {issues.slice(0, 6).map((it, i) => (
                         <div key={i} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                          {plainFailure(f)}
+                          {it.text}
+                          {it.index !== undefined && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCurrent(it.index!);
+                                canvasBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                              }}
+                              style={{
+                                marginInlineStart: 8, background: "none", border: "none", padding: 0,
+                                color: "var(--act)", fontFamily: "var(--ff-ui)", fontSize: 12.5, cursor: "pointer",
+                              }}
+                            >
+                              {lang === "ar" ? "أصلح هذا ←" : "Fix this →"}
+                            </button>
+                          )}
                         </div>
                       ))}
                     </>
