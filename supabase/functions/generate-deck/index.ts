@@ -240,6 +240,7 @@ async function generate(
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const slides = await writeSlides(ctx, p, manifest, corrections);
     const candidate = assemble(ctx, p, manifest, slides, theme, deckId);
+    clampSlots(candidate);
     const parsed = DeckIRSchema.safeParse(candidate);
     if (!parsed.success) {
       failures = parsed.error.issues.map((i) => `schema: ${i.path.join(".")} — ${i.message}`);
