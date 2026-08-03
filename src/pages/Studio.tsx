@@ -443,10 +443,55 @@ export default function Studio() {
   }, [choice, writeLang, remember, lang]);
 
   /* ---------- the draft row --------------------------------------- */
+  /** The subject, written as a title so the Library never shows a raw line. */
+  const pieceTitle = useCallback((): string => {
+    const t = (choice?.title || typedTopic || "").trim();
+    if (t) return t.slice(0, 120);
+    const line = content.split("\n").map((l) => l.trim()).find(Boolean) || "";
+    return line.slice(0, 120);
+  }, [choice, typedTopic, content]);
+
+  const pieceMeta = useCallback(
+    () => ({
+      source: "studio",
+      topic: choice?.title || typedTopic || null,
+      language: writeLang,
+      _language: writeLang,
+      signal_ids: choice?.id ? [choice.id] : [],
+    }),
+    [choice, typedTopic, writeLang],
+  );
+
   const saveDraft = useCallback(async (): Promise<string | null> => {
     if (!userId || !content.trim()) return null;
+    const title = pieceTitle();
     if (draftId) {
-      await supabase.from("linkedin_posts").update({ post_text: content }).eq("id", draftId);
+      if (draftSource === "content_items") {
+        // A content_items draft keeps its own row; the linkedin_posts twin is
+        // created only when the piece is actually published.
+        await supabase
+          .from("content_items")
+          .update({ body: content, language: writeLang } as any)
+          .eq("id", draftId);
+        return draftId;
+      }
+      // Never overwrite what the edge functions wrote into source_metadata.
+      const { data: existing } = await supabase
+        .from("linkedin_posts")
+        .select("source_metadata")
+        .eq("id", draftId)
+        .maybeSingle();
+      const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+      await supabase
+        .from("linkedin_posts")
+        .update({
+          post_text: content,
+          title,
+          topic_label: title || null,
+          source_signal_id: choice?.id || null,
+          source_metadata: { ...prev, ...pieceMeta() },
+        } as any)
+        .eq("id", draftId);
       return draftId;
     }
     const { data: ins, error } = await supabase
@@ -459,22 +504,135 @@ export default function Studio() {
         tracking_status: "draft",
         source_type: "aura_generated",
         authorship: "aura_drafted",
+        title,
+        topic_label: title || null,
         source_signal_id: choice?.id || null,
-        source_metadata: {
-          source: "studio",
-          topic: choice?.title || typedTopic || null,
-          language: writeLang,
-          _language: writeLang,
-          signal_ids: choice?.id ? [choice.id] : [],
-        },
+        source_metadata: pieceMeta(),
       } as any)
       .select("id")
       .single();
     if (error) return null;
     const id = (ins as any)?.id as string;
     setDraftId(id);
+    setDraftSource("linkedin_posts");
     return id;
-  }, [userId, content, draftId, choice, typedTopic, writeLang]);
+  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta]);
+
+  /**
+   * Publishing to LinkedIn from a content_items draft needs a linkedin_posts
+   * row. This makes one and remembers where the piece came from, so the
+   * content_items twin can be retired the moment the post goes live.
+   */
+  const originDraftRef = useRef<{ id: string; source: "content_items" | "linkedin_posts" } | null>(null);
+  const ensurePostRow = useCallback(async (): Promise<string | null> => {
+    if (draftId && draftSource === "content_items") {
+      originDraftRef.current = { id: draftId, source: "content_items" };
+      const title = pieceTitle();
+      const { data: ins, error } = await supabase
+        .from("linkedin_posts")
+        .insert({
+          user_id: userId,
+          post_text: content,
+          original_generated_text: content,
+          format_type: "post",
+          tracking_status: "draft",
+          source_type: "aura_generated",
+          authorship: "aura_drafted",
+          title,
+          topic_label: title || null,
+          source_signal_id: choice?.id || null,
+          source_metadata: pieceMeta(),
+        } as any)
+        .select("id")
+        .single();
+      if (error) return null;
+      return (ins as any)?.id as string;
+    }
+    return saveDraft();
+  }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft]);
+
+  /**
+   * A published post must COUNT. The cockpit reads `published_at`, the archive
+   * and the metric matcher read `post_url`. Both are written here, on both
+   * publishing paths, and the existing source_metadata is merged, never lost.
+   */
+  const finalisePublished = useCallback(
+    async (id: string, url: string | null) => {
+      const now = new Date().toISOString();
+      const { data: existing } = await supabase
+        .from("linkedin_posts")
+        .select("source_metadata")
+        .eq("id", id)
+        .maybeSingle();
+      const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+      await supabase
+        .from("linkedin_posts")
+        .update({
+          tracking_status: "published",
+          published_at: now,
+          acquisition: "published_via_aura",
+          ...(url ? { post_url: url, published_confirmed_at: now } : {}),
+          like_count: 0,
+          comment_count: 0,
+          repost_count: 0,
+          engagement_score: 0,
+          source_trust: 100,
+          enriched_by: [],
+          synced_at: now,
+          source_metadata: { ...prev, ...pieceMeta(), ...(url ? { external_url: url } : {}) },
+        } as any)
+        .eq("id", id);
+
+      // The content_items twin is retired, or the invariant grows a duplicate.
+      const origin = originDraftRef.current;
+      if (origin?.source === "content_items") {
+        await supabase.from("content_items").update({ status: "published" } as any).eq("id", origin.id);
+      } else if (draftSource === "content_items" && draftId) {
+        await supabase.from("content_items").update({ status: "published" } as any).eq("id", draftId);
+      }
+
+      // Aura learns from what was actually posted. Best-effort, never blocking.
+      try {
+        if (userId && content.trim().length > 50) {
+          const { data: vp } = await supabase
+            .from("authority_voice_profiles")
+            .select("example_posts")
+            .eq("user_id", userId)
+            .eq("language", writeLang)
+            .maybeSingle();
+          const existingExamples = Array.isArray((vp as any)?.example_posts) ? ((vp as any).example_posts as any[]) : [];
+          const updated = [...existingExamples, content].slice(-10);
+          if (vp) {
+            await supabase
+              .from("authority_voice_profiles")
+              .update({ example_posts: updated } as any)
+              .eq("user_id", userId)
+              .eq("language", writeLang);
+          } else {
+            const { data: anyRow } = await supabase
+              .from("authority_voice_profiles")
+              .select("id")
+              .eq("user_id", userId)
+              .limit(1);
+            await supabase.from("authority_voice_profiles").insert({
+              user_id: userId,
+              example_posts: updated,
+              language: writeLang,
+              is_primary: !anyRow || anyRow.length === 0,
+            } as any);
+          }
+        }
+      } catch { /* the member never sees a learning failure */ }
+
+      // The Imprint must keep moving. Fire and forget.
+      if (userId) {
+        void supabase.functions
+          .invoke("calculate-aura-score", { body: { user_id: userId } })
+          .catch(() => { /* never surfaced */ });
+      }
+    },
+    [pieceMeta, draftSource, draftId, userId, content, writeLang],
+  );
 
   /* ---------- step 3: the slides, right here ---------------------- */
   const makeSlides = useCallback(async (lengthOverride?: 5 | 7 | 10) => {
