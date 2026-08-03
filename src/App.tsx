@@ -51,6 +51,7 @@ const CardPreview = lazy(() => import("./pages/CardPreview"));
 const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLeadershipStrategy"));
 const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
 const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
+const Compose = lazy(() => import("./pages/Compose"));
 // Dev-only carousel renderer harness. Registered below only when import.meta.env.DEV.
 const CarouselPreview = lazy(() => import("./carousel/render/CarouselPreview"));
 
@@ -137,6 +138,7 @@ const App = () => (
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
             <Route path="/signature" element={<PasswordGate><SignatureStudio /></PasswordGate>} />
             <Route path="/signature-harness" element={<PasswordGate><SignatureHarness /></PasswordGate>} />
+            <Route path="/compose" element={<PasswordGate><Compose /></PasswordGate>} />
             {import.meta.env.DEV && (
               <Route path="/carousel-preview" element={<CarouselPreview />} />
             )}
