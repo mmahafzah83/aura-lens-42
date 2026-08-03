@@ -625,7 +625,6 @@ export default function Studio() {
       key={key}
       type="button"
       onClick={() => {
-        if (key === "start") { setStep(1); setSub("start"); return; }
         setSub(key);
         if (key === "build") setShowing(deck ? "slides" : "post");
       }}
@@ -753,7 +752,6 @@ export default function Studio() {
         }}
       >
         {/* The tabs only exist where they change what is on screen. */}
-        {step === 3 && subLink("start", T.subStart[lang])}
         {step === 3 && subLink("build", T.subBuild[lang])}
         {step === 3 && subLink("look", T.subLook[lang])}
         <span style={{ flex: 1 }} />
@@ -1144,7 +1142,7 @@ export default function Studio() {
           <ButtonGhost onClick={() => void exportFile()} disabled={!deck || busy === "export"} style={{ minHeight: 44 }}>
             {T.exportFile[lang]}
           </ButtonGhost>
-          <ButtonPrimary onClick={() => { setStep(4); setSub("look"); }} disabled={step === 4} style={{ minHeight: 44 }}>
+          <ButtonPrimary onClick={() => setStep(4)} disabled={step === 4} style={{ minHeight: 44 }}>
             {T.putOnLinkedIn[lang]} →
           </ButtonPrimary>
         </span>
