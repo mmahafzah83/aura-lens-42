@@ -1711,8 +1711,17 @@ export default function StudioPanel({
                 id="studio-topic"
                 value={typedTopic}
                 onChange={(e) => {
-                  setTypedTopic(e.target.value);
-                  setChoice(e.target.value.trim() ? { id: null, title: e.target.value.trim(), insight: "" } : null);
+                  const v = e.target.value;
+                  const t = v.trim();
+                  // N1 — typing a subject while a finished piece is on screen
+                  // starts a NEW piece. Anything binding us to the old row goes.
+                  if (!typedTopic && t && (published || draftId || content.trim())) {
+                    startNewPiece({ choice: { id: null, title: t, insight: "" } });
+                    setTypedTopic(v);
+                    return;
+                  }
+                  setTypedTopic(v);
+                  setChoice(t ? { id: null, title: t, insight: "" } : null);
                 }}
                 placeholder={T.chooseOwnPlaceholder[lang]}
                 style={{
