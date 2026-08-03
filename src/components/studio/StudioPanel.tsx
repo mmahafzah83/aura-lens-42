@@ -2094,34 +2094,42 @@ export default function StudioPanel({
 
       {step === 4 && (
         <StageCard title={T.publishHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+          {/* P9 — THE ENDING. Whichever route the member took, the cycle closes
+              here, in the main column, with three ways onward. Nothing on this
+              panel can be pressed twice into a second post. */}
           {published && (
-            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 14, color: "var(--text-primary)", margin: "0 0 10px" }}>
-              {T.postedHead[lang]} {T.postedHelp[lang]}{" "}
-              {postUrl && (
-                <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
-                  {T.seeOnLinkedIn[lang]}
-                </a>
-              )}
-            </p>
-          )}
-
-          {published && (
-            /* N1 — the explicit way to begin a new piece. One reset, no stale row. */
-            <button
-              type="button"
-              onClick={() => startNewPiece()}
+            <div
+              role="status"
+              aria-live="polite"
               style={{
-                minHeight: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer",
-                background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 600,
-                color: "var(--text-primary)", margin: "0 0 12px",
+                background: "var(--surface-subtle)", border: "1px solid var(--act)",
+                borderRadius: 12, padding: 14, margin: "0 0 16px", display: "grid", gap: 10,
               }}
             >
-              {lang === "ar" ? "اكتب قطعة جديدة" : "Write another"}
-            </button>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                {T.cycleDoneHead[lang]}
+              </p>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
+                {T.cycleDoneBody[lang]}{" "}
+                {postUrl && (
+                  <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
+                    {T.seeOnLinkedIn[lang]}
+                  </a>
+                )}
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
+                  {T.writeAnother[lang]}
+                </ButtonPrimary>
+                <ButtonGhost onClick={() => goTab("library")} style={{ minHeight: 44 }}>
+                  {T.goToLibrary[lang]}
+                </ButtonGhost>
+                <ButtonGhost onClick={() => goTab("influence")} style={{ minHeight: 44 }}>
+                  {T.seePerformance[lang]}
+                </ButtonGhost>
+              </div>
+            </div>
           )}
-
-          {confirmPanel}
 
           {/* ONE path, decided by what the member actually made. */}
           {!(format === "slides" && deck) ? (
