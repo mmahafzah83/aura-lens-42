@@ -215,7 +215,7 @@ export default function StudioPanel() {
       setUserId(session.user.id);
       const { data: profile } = await supabase
         .from("diagnostic_profiles")
-        .select("content_language, first_name, avatar_url")
+        .select("content_language")
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (dead) return;
@@ -227,8 +227,7 @@ export default function StudioPanel() {
       // Once per session: a query-param change must never inflate the metric.
       // A `?draft=` deep link is reported by `openDraft` instead, so the boot
       // emit stands aside — one open, one event.
-      if (!openedTrackedRef.current && !searchParams.get("draft")) {
-        openedTrackedRef.current = true;
+      if (!searchParams.get("draft") && !alreadyOpened("new")) {
         void track("composer_opened", {
           source: "studio",
           signal_id: searchParams.get("signal") || null,
@@ -398,8 +397,7 @@ export default function StudioPanel() {
       }
       setStep(2);
       setStatus(T.draftOpened[lang]);
-      if (!openedTrackedRef.current) {
-        openedTrackedRef.current = true;
+      if (!alreadyOpened(`draft:${d.id}`)) {
         void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
       }
     },
