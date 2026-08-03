@@ -317,23 +317,41 @@ export default function StudioPanel() {
   }, [restoredFlag, ready, lang]);
 
   /* ---------- keep the piece ------------------------------------- */
+  /**
+   * The studio is a TAB. One tap on any navigation item unmounts it, so a
+   * debounced save must always be able to flush the very latest values
+   * synchronously. `liveRef` holds them; `persistNow` writes them.
+   */
+  const liveRef = useRef({ content, deck, choice, writeLang, step, format, draftId, draftSource });
+  liveRef.current = { content, deck, choice, writeLang, step, format, draftId, draftSource };
+
+  const persistNow = useCallback(() => {
+    const v = liveRef.current;
+    if (!v.content && !v.deck && !postRowRef.current) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...v, postRowId: postRowRef.current }));
+    } catch { /* quota never blocks editing */ }
+  }, []);
+
   useEffect(() => {
     if (!content && !deck) return;
     // Debounced, and silent: `T.editHint` already tells the member their
     // changes save themselves, so no live region fires on every keystroke.
-    const t = window.setTimeout(() => {
-      try {
-        localStorage.setItem(
-          DRAFT_KEY,
-          JSON.stringify({
-            content, deck, choice, writeLang, step, format, draftId, draftSource,
-            postRowId: postRowRef.current,
-          }),
-        );
-      } catch { /* quota never blocks editing */ }
-    }, 1500);
-    return () => window.clearTimeout(t);
-  }, [content, deck, choice, writeLang, step, format, draftId, draftSource]);
+    const t = window.setTimeout(persistNow, 1500);
+    // RULE: a debounced save always flushes before the component disappears.
+    return () => { window.clearTimeout(t); persistNow(); };
+  }, [content, deck, choice, writeLang, step, format, draftId, draftSource, persistNow]);
+
+  /* Backgrounding the tab or closing the page is also a disappearance. */
+  useEffect(() => {
+    const onHide = () => { if (document.visibilityState === "hidden") persistNow(); };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", persistNow);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", persistNow);
+    };
+  }, [persistNow]);
 
   /* A success note fades; a problem does not. */
   useEffect(() => {
@@ -426,7 +444,14 @@ export default function StudioPanel() {
     deepLinkRef.current = true;
     (async () => {
       const d = await loadStudioDraft(id);
-      if (!d) { setProblem(T.draftMissing[lang]); return; }
+      if (!d) {
+        setProblem(T.draftMissing[lang]);
+        // An open that could not land is still an open: count it once, and say so.
+        if (!alreadyOpened(`draft:${id}`)) {
+          void track("composer_opened", { source: "lifecycle_email_missing", signal_id: null, move_state: null });
+        }
+        return;
+      }
       await openDraft(d, "lifecycle_email");
     })();
   }, [userId, searchParams, openDraft, lang]);
