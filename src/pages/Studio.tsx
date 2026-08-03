@@ -1269,7 +1269,7 @@ export default function Studio() {
                       {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
                     </span>
                     <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
-                      {T.draftSaved[lang]} {formatSmartDate(d.created_at)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
+                      {T.draftSaved[lang]} {savedAgo(d.created_at, lang)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
                     </span>
                   </button>
                 ))}
