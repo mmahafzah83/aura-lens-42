@@ -52,6 +52,7 @@ import LibraryPage from "@/components/library/LibraryPage";
 import OvernightPage from "@/components/overnight/OvernightPage";
 import MomentumPage from "@/components/momentum/MomentumPage";
 import WidgetsPage from "@/components/widgets/WidgetsPage";
+import StudioPanel from "@/components/studio/StudioPanel";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -68,7 +69,13 @@ const NAV_ITEMS = [
   { value: "identity", label: "My Story", pageHeader: "My Story", icon: User, docTitle: "Aura — My Story" },
 ] as const;
 
-type TabValue = typeof NAV_ITEMS[number]["value"];
+/**
+ * `studio` is a HIDDEN tab: it renders like any other panel but is deliberately
+ * absent from NAV_ITEMS, so no navigation item appears for it.
+ */
+type TabValue = typeof NAV_ITEMS[number]["value"] | "studio";
+
+const isTabValue = (v: string) => v === "studio" || NAV_ITEMS.some(n => n.value === v);
 
 const Dashboard = () => {
   usePageMeta({
@@ -234,7 +241,7 @@ const Dashboard = () => {
         navigate(target === "preferences" ? "/settings?tab=preferences" : "/settings");
         return;
       }
-      if (target && NAV_ITEMS.some(n => n.value === target)) {
+      if (target && isTabValue(target)) {
         setActiveTab(target as TabValue);
         setSearchParams({ tab: target });
       }
@@ -262,7 +269,7 @@ const Dashboard = () => {
       "my-story": "identity",
     };
     const resolvedTab = tabParam ? (tabAlias[tabParam] ?? tabParam) : null;
-    if (resolvedTab && NAV_ITEMS.some(n => n.value === resolvedTab)) {
+    if (resolvedTab && isTabValue(resolvedTab)) {
       setActiveTab(resolvedTab as TabValue);
     }
 
@@ -1084,6 +1091,14 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <WidgetsPage />
+                </ErrorBoundary>
+              </div>
+            )}
+
+            {activeTab === "studio" && (
+              <div className="animate-tab-spring aura-page">
+                <ErrorBoundary>
+                  <StudioPanel />
                 </ErrorBoundary>
               </div>
             )}
