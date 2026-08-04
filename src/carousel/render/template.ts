@@ -21,6 +21,14 @@ export type TypeRamp = {
   body: number;   bodyLhEn: number; bodyLhAr: number;
   chip: number; data: number; source: number;
   gap: number; media: number;
+  /** Identity chrome (highlighter and later families). Optional: instrument has none. */
+  identityName?: number;
+  identitySub?: number;
+  /**
+   * The smallest a size may ever be printed, whatever the fit ladder says.
+   * Enforced at render time — see INV-22 in ../invariants.
+   */
+  floors?: { content: number; meta: number };
 };
 
 export type Geometry = {
@@ -30,6 +38,10 @@ export type Geometry = {
   bandMediaShare: number; bandTypeBoost: number; bandLift: number;
   closeFigureW: number; closeFigureH: number;
   radiusChip: number; radiusPanel: number; radiusMedia: number;
+  /** Where the content column starts, measured from the canvas edge. */
+  contentX?: number;
+  /** The widest a line of type may be set. */
+  maxTextW?: number;
 };
 
 export type FontSet = {
@@ -145,6 +157,7 @@ const INSTRUMENT: TemplateDescriptor = {
 
 export const TEMPLATES: Record<string, TemplateDescriptor> = {
   instrument: INSTRUMENT,
+  highlighter: HIGHLIGHTER,
 };
 
 export const TEMPLATE_IDS: string[] = Object.keys(TEMPLATES);
