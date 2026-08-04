@@ -100,7 +100,8 @@ function gateSentence(category: unknown, lang: Lang): string {
  * decoration that loops.
  */
 function etaFor(message: string, lang: Lang): number {
-  if (message === T.writing[lang]) return 30;
+  // W10 — the number and the words must agree. `T.writing` says 20 seconds.
+  if (message === T.writing[lang]) return 20;
   if (message === T.makingSlides[lang]) return 45;
   if (message === T.posting[lang]) return 20;
   if (message === T.exporting[lang] || message === T.exportSettling[lang]) return 15;
