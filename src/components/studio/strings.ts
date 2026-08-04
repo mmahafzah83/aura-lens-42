@@ -647,8 +647,15 @@ export const themeName: Record<string, { en: string; ar: string }> = {
   paper: { en: "Paper", ar: "ورقيّ" },
 };
 
+/** Any theme without a translation falls back to a title-cased id. */
 export function themeLabel(key: string, lang: Lang): string {
-  return themeName[key]?.[lang] ?? key;
+  const known = themeName[key]?.[lang];
+  if (known) return known;
+  return key
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 export function postureLabel(p: Posture, lang: Lang): string {

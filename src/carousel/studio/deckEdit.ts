@@ -154,7 +154,6 @@ export function isLocked(deck: DeckIR, slide: Slide): boolean {
 
 /** Archetypes this slide could legally become: every required slot already filled. */
 export function swappableArchetypes(deck: DeckIR, slide: Slide): Archetype[] {
-  if (isLocked(deck, slide)) return [];
   const filled = (name: string) => {
     const v = (slide.slots as any)[name];
     if (v === undefined) return false;
@@ -162,6 +161,17 @@ export function swappableArchetypes(deck: DeckIR, slide: Slide): Archetype[] {
     if (typeof v === "string") return v.trim().length > 0;
     return true;
   };
+  /**
+   * The cover is position-locked but not FAMILY-locked: slide 0 may switch
+   * between the two cover archetypes, and nothing else. Both are covers, so
+   * the "cover stays first" lock is untouched.
+   */
+  if (slide.index === 0) {
+    return (["cover_hero", "cover_stat"] as Archetype[]).filter(
+      (a) => a !== slide.archetype && REQUIRED_SLOTS[a].every(filled),
+    );
+  }
+  if (isLocked(deck, slide)) return [];
   const neighbours = new Set(
     [deck.slides[slide.index - 1]?.archetype, deck.slides[slide.index + 1]?.archetype].filter(Boolean),
   );

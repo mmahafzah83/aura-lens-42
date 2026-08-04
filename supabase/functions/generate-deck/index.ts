@@ -33,6 +33,23 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+/**
+ * Registries. Layout and colourway are DATA the client may choose from; the
+ * model never sees either, and never chooses layout.
+ */
+const THEME_REGISTRY = ["midnight", "clay", "gradient", "paper"] as const;
+const DEFAULT_THEME = "midnight";
+const TEMPLATE_REGISTRY = ["instrument"] as const;
+const DEFAULT_TEMPLATE = "instrument";
+
+function resolveTheme(id: unknown): string {
+  return typeof id === "string" && (THEME_REGISTRY as readonly string[]).includes(id) ? id : DEFAULT_THEME;
+}
+
+function resolveTemplate(id: unknown): string {
+  return typeof id === "string" && (TEMPLATE_REGISTRY as readonly string[]).includes(id) ? id : DEFAULT_TEMPLATE;
+}
+
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
 
@@ -222,6 +239,7 @@ async function generate(
   theme: string,
   requestedLang?: "en" | "ar",
   sourceText?: string,
+  template: string = DEFAULT_TEMPLATE,
 ) {
   const started = Date.now();
   const deckId = crypto.randomUUID();
@@ -256,6 +274,8 @@ async function generate(
       hasComparison: p.hasComparison,
       stepCount: p.stepCount,
       lang: p.lang,
+      // The cover leads with the number when the plan produced a real one.
+      hasHeadlineStat: Boolean(p.hasNumber && p.numberValue),
     },
     target,
   );
@@ -271,6 +291,8 @@ async function generate(
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const slides = await writeSlides(ctx, p, manifest, corrections);
     const candidate = assemble(ctx, p, manifest, slides, theme, deckId);
+    // Layout family is written on by the server, never by the model.
+    (candidate as Record<string, unknown>).template = template;
     clampSlots(candidate);
     const parsed = DeckIRSchema.safeParse(candidate);
     if (!parsed.success) {
@@ -315,6 +337,7 @@ async function generate(
       event: "validation_failed",
       lang: p.lang,
       theme,
+      template,
       length: manifest.length,
       invariant_failures: [
         ...failures,
@@ -344,6 +367,7 @@ async function generate(
     event: "generated",
     lang: deck.primary_lang,
     theme: deck.theme,
+    template: deck.template ?? template,
     length: deck.length,
     // Voice flags are logged even on a passing deck so we can measure whether
     // the voice is improving over time.
@@ -428,9 +452,8 @@ serve(async (req) => {
     if (!user) return json({ error: "unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const theme = ["midnight", "clay", "gradient", "paper"].includes(body.theme)
-      ? body.theme
-      : "midnight";
+    const theme = resolveTheme(body.theme);
+    const template = resolveTemplate(body.template);
     const reqLang: "en" | "ar" | undefined =
       body.lang === "ar" ? "ar" : body.lang === "en" ? "en" : undefined;
     const sourceText: string | undefined =
@@ -462,7 +485,7 @@ serve(async (req) => {
       const results = [];
       for (const s of picks) {
         try {
-          const r: any = await generate(db, user.id, s.id, body.length, theme, reqLang);
+          const r: any = await generate(db, user.id, s.id, body.length, theme, reqLang, undefined, template);
           results.push({
             signal_id: s.id,
             signal_title: s.signal_title,
@@ -552,7 +575,7 @@ serve(async (req) => {
       return json(out);
     }
 
-    const result = await generate(db, user.id, body.signal_id, body.length, theme, reqLang, sourceText);
+    const result = await generate(db, user.id, body.signal_id, body.length, theme, reqLang, sourceText, template);
     return json(result);
   } catch (e) {
     return json({ error: String(e instanceof Error ? e.message : e) }, 500);

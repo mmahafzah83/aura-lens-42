@@ -16,6 +16,12 @@ export interface ComposeInput {
   hasComparison: boolean;
   stepCount: number;
   lang: "en" | "ar";
+  /**
+   * A headline figure the cover can actually carry. When present the cover
+   * becomes `cover_stat` rather than `cover_hero` — the archetype exists, is
+   * rendered and is validated, and until now no user path could reach it.
+   */
+  hasHeadlineStat?: boolean;
 }
 
 export interface ManifestSlot {
@@ -93,6 +99,8 @@ function canFill(role: Role, input: ComposeInput): boolean {
 }
 
 function resolve(role: Role, input: ComposeInput): Archetype {
+  // The cover leads with the number when the plan has one worth leading with.
+  if (role === "cover" && input.hasHeadlineStat) return "cover_stat";
   // Evidence needs a number. With none, the slide becomes a definition rather
   // than inventing a statistic.
   if (role === "evidence" && !input.hasNumber) return "definition";
