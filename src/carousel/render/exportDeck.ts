@@ -7,7 +7,7 @@
  * captures them. There is no hidden clone and no export-time re-render, so
  * "looked right, exported wrong" has nowhere to live.
  */
-import { CANVAS_H, CANVAS_W } from "./Slide";
+import { getTemplate, type TemplateDescriptor } from "./template";
 import { ensureCarouselFonts } from "./fontsReady";
 import { inlineImages } from "./inlineImages";
 
@@ -53,6 +53,15 @@ function nextFrame(): Promise<void> {
 }
 
 /**
+ * The layout family a slide node was rendered with. The renderer publishes it
+ * as `data-template`, so the exporter reads the SAME descriptor the preview
+ * used rather than a constant that could drift from it.
+ */
+function templateOf(node: HTMLElement): TemplateDescriptor {
+  return getTemplate(node.dataset.template);
+}
+
+/**
  * The preview shows the 1080x1350 slide through a CSS `scale()` wrapper so it
  * fits on screen. The rasteriser resolves ancestor transforms, so a capture taken
  * through that wrapper lands as a shrunken thumbnail in the corner of the
@@ -64,6 +73,7 @@ function nextFrame(): Promise<void> {
 function unscaleForCapture(nodes: HTMLElement[]): () => void {
   const undo: Array<() => void> = [];
   for (const node of nodes) {
+    const { canvasW, canvasH } = templateOf(node).geometry;
     const scaler = node.parentElement;
     if (scaler?.hasAttribute("data-slide-scaler")) {
       const prev = scaler.style.transform;
@@ -74,8 +84,8 @@ function unscaleForCapture(nodes: HTMLElement[]): () => void {
     if (frame?.hasAttribute("data-slide-frame")) {
       const prevW = frame.style.width;
       const prevH = frame.style.height;
-      frame.style.width = `${CANVAS_W}px`;
-      frame.style.height = `${CANVAS_H}px`;
+      frame.style.width = `${canvasW}px`;
+      frame.style.height = `${canvasH}px`;
       undo.push(() => { frame.style.width = prevW; frame.style.height = prevH; });
     }
   }
@@ -124,10 +134,11 @@ async function captureAll(nodes: HTMLElement[]): Promise<HTMLCanvasElement[]> {
     // slide: one deterministic font payload, no per-slide network work.
     const fontEmbedCSS = await getFontEmbedCSS(nodes[0]);
     for (const node of nodes) {
+      const { canvasW, canvasH } = templateOf(node).geometry;
       await inlineImages(node);
       const canvas = await toCanvas(node, {
-        width: CANVAS_W,
-        height: CANVAS_H,
+        width: canvasW,
+        height: canvasH,
         pixelRatio: 1,
         cacheBust: false,
         fontEmbedCSS,
@@ -135,9 +146,9 @@ async function captureAll(nodes: HTMLElement[]): Promise<HTMLCanvasElement[]> {
         // preview, PNG and PDF can never disagree about the backdrop.
         backgroundColor: backgroundOf(node),
       });
-      if (canvas.width !== CANVAS_W || canvas.height !== CANVAS_H) {
+      if (canvas.width !== canvasW || canvas.height !== canvasH) {
         throw new Error(
-          `Slide ${node.dataset.slideRoot}: captured ${canvas.width}x${canvas.height}, expected ${CANVAS_W}x${CANVAS_H}.`,
+          `Slide ${node.dataset.slideRoot}: captured ${canvas.width}x${canvas.height}, expected ${canvasW}x${canvasH}.`,
         );
       }
       canvases.push(canvas);
@@ -186,11 +197,13 @@ export async function renderDeckPdfBlob(
   const t0 = performance.now();
   const canvases = await captureAll(nodes);
   const { default: jsPDF } = await import("jspdf");
-  const pdf = new jsPDF({ unit: "pt", format: [CANVAS_W, CANVAS_H], orientation: "portrait" });
+  const first = templateOf(nodes[0]).geometry;
+  const pdf = new jsPDF({ unit: "pt", format: [first.canvasW, first.canvasH], orientation: "portrait" });
   canvases.forEach((canvas, i) => {
-    if (i > 0) pdf.addPage([CANVAS_W, CANVAS_H], "portrait");
+    const { canvasW, canvasH } = templateOf(nodes[i]).geometry;
+    if (i > 0) pdf.addPage([canvasW, canvasH], "portrait");
     const page = flatten(canvas, backgroundOf(nodes[i]));
-    pdf.addImage(page.toDataURL("image/jpeg", PDF_JPEG_QUALITY), "JPEG", 0, 0, CANVAS_W, CANVAS_H);
+    pdf.addImage(page.toDataURL("image/jpeg", PDF_JPEG_QUALITY), "JPEG", 0, 0, canvasW, canvasH);
   });
   const blob = pdf.output("blob") as Blob;
   return {

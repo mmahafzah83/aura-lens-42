@@ -17,6 +17,7 @@ export async function logDeckEvent(
   deck: DeckIR,
   extra: {
     theme?: string;
+    template?: string;
     fitSteps?: number;
     durationMs?: number;
     invariantFailures?: string[];
@@ -34,6 +35,7 @@ export async function logDeckEvent(
       event,
       lang: deck.primary_lang,
       theme: extra.theme ?? deck.theme,
+      template: extra.template ?? (deck as { template?: string | null }).template ?? "instrument",
       length: deck.slides.length,
       fit_steps: extra.fitSteps ?? null,
       duration_ms: extra.durationMs ?? null,

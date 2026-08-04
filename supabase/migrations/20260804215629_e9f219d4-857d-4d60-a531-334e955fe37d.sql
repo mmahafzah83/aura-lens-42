@@ -1,0 +1,1 @@
+ALTER TABLE public.deck_events ADD COLUMN IF NOT EXISTS template text;

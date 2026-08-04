@@ -850,6 +850,7 @@ export type Database = {
           length: number | null
           pdf_bytes: number | null
           signal_id: string | null
+          template: string | null
           theme: string | null
           user_id: string
         }
@@ -865,6 +866,7 @@ export type Database = {
           length?: number | null
           pdf_bytes?: number | null
           signal_id?: string | null
+          template?: string | null
           theme?: string | null
           user_id: string
         }
@@ -880,6 +882,7 @@ export type Database = {
           length?: number | null
           pdf_bytes?: number | null
           signal_id?: string | null
+          template?: string | null
           theme?: string | null
           user_id?: string
         }

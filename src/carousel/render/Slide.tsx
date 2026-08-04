@@ -22,76 +22,66 @@ import { getTheme, type Theme, type ThemeName } from "./themes";
 import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
 import { INV_16_MEDIA_IN_DOM } from "../invariants";
 import {
-  BAND_MEDIA_SHARE, BAND_TYPE_BOOST, MEDIA_BY_ARCHETYPE, droppableSlotCount, pictureTextPlan,
+  MEDIA_BY_ARCHETYPE, droppableSlotCount, pictureTextPlan,
   type MediaPlacementMode,
 } from "../slots";
+import {
+  bandMediaHeight, getTemplate, TEMPLATES, type FontSet, type TemplateDescriptor, type TypeRamp,
+} from "./template";
 import { publishMeasuredDrops } from "./measuredDrops";
 
 /* ------------------------------------------------------------------ */
-/* Canvas and type scale                                               */
+/* Canvas and type scale — all of it now DATA, read from the template  */
 /* ------------------------------------------------------------------ */
 
-export const CANVAS_W = 1080;
-export const CANVAS_H = 1350;
-/** Outer padding never drops below this, at any fit step. */
-export const PAD = 82;
+const INSTRUMENT = TEMPLATES.instrument;
 
-/**
- * X3 — THE SAFE AREA.
- *
- * No image may sit under the page numerals, the identity bar, or the bottom
- * edge. A scrim may cross this band; image CONTENT may not. Every media mode
- * is held to it — full bleed included.
- */
-export const SAFE_AREA = {
-  top: PAD,
-  side: PAD,
-  /** Padding plus the footer row: the accent rule and "3 / 8" live in here. */
-  bottom: PAD + 68,
-} as const;
-
-/** The band is lifted clear of the footer so the numbering breathes. */
-export const BAND_LIFT = 26;
-/** Constant height, so the split never varies with the word count. */
-export const BAND_MEDIA_H = Math.round(CANVAS_H * BAND_MEDIA_SHARE) - BAND_LIFT;
-
-const FONT_DISPLAY_EN = '"AuraAnton", Impact, "Arial Narrow", sans-serif';
-const FONT_TEXT_EN = '"AuraInter", Helvetica, Arial, sans-serif';
-const FONT_MONO = '"AuraMono", ui-monospace, "Courier New", monospace';
-/** Anton has no Arabic. Arabic display is Cairo 900 — never a condensed face. */
-const FONT_AR = '"AuraCairo", "Segoe UI", Tahoma, sans-serif';
+/** @deprecated read from TemplateDescriptor.geometry.canvasW */
+export const CANVAS_W = INSTRUMENT.geometry.canvasW;
+/** @deprecated read from TemplateDescriptor.geometry.canvasH */
+export const CANVAS_H = INSTRUMENT.geometry.canvasH;
+/** @deprecated read from TemplateDescriptor.geometry.pad */
+export const PAD = INSTRUMENT.geometry.pad;
+/** @deprecated read from TemplateDescriptor.geometry.safeArea */
+export const SAFE_AREA = INSTRUMENT.geometry.safeArea;
+/** @deprecated read from TemplateDescriptor.geometry.bandLift */
+export const BAND_LIFT = INSTRUMENT.geometry.bandLift;
+/** @deprecated read from bandMediaHeight(TemplateDescriptor) */
+export const BAND_MEDIA_H = bandMediaHeight(INSTRUMENT);
 
 type Lang = "en" | "ar";
 
-function fontFor(lang: Lang, kind: "display" | "text" | "mono"): string {
-  if (lang === "ar") return FONT_AR;
-  if (kind === "display") return FONT_DISPLAY_EN;
-  if (kind === "mono") return FONT_MONO;
-  return FONT_TEXT_EN;
+function fontFor(lang: Lang, kind: "display" | "text" | "mono", fonts: FontSet): string {
+  if (lang === "ar") return fonts.arabic;
+  if (kind === "display") return fonts.displayEn;
+  if (kind === "mono") return fonts.mono;
+  return fonts.textEn;
 }
 
-function scaleOf(s: number) {
+function scaleOf(s: number, ramp: TypeRamp) {
   const px = (n: number) => `${Math.round(n * s)}px`;
   return {
     /** The raw fit scale, so every derived dimension can stay on the ladder. */
     scale: s,
-    heroEn: px(150),
-    heroAr: px(92),
-    stat: px(270),
-    h2: px(54),
-    body: px(38),
-    chip: px(31),
-    data: px(26),
-    source: px(22),
-    gap: Math.round(28 * s),
+    heroEn: px(ramp.heroEn),
+    heroAr: px(ramp.heroAr),
+    stat: px(ramp.stat),
+    h2: px(ramp.h2),
+    body: px(ramp.body),
+    chip: px(ramp.chip),
+    data: px(ramp.data),
+    source: px(ramp.source),
+    gap: Math.round(ramp.gap * s),
     /**
      * A photo band is a dimension like any other: it rides the fit ladder so a
      * dense slide shrinks the image alongside the type instead of overflowing
      * the canvas and reporting the overflow as a text problem.
      */
-    media: Math.round(360 * s),
+    media: Math.round(ramp.media * s),
   };
 }
+
+type Scale = ReturnType<typeof scaleOf>;
 
 /* ------------------------------------------------------------------ */
 /* Bidi-safe text                                                      */
@@ -102,7 +92,7 @@ function scaleOf(s: number) {
  * This is what makes "smart meters" read left-to-right inside an Arabic
  * sentence instead of colliding with the surrounding text.
  */
-function renderRuns(runs: Run[], primary: Lang, kind: "display" | "text" | "mono") {
+function renderRuns(runs: Run[], primary: Lang, kind: "display" | "text" | "mono", fonts: FontSet) {
   return runs.map((run, i) => {
     if (run.lang === primary) return <React.Fragment key={i}>{run.t}</React.Fragment>;
     return (
@@ -110,7 +100,7 @@ function renderRuns(runs: Run[], primary: Lang, kind: "display" | "text" | "mono
         key={i}
         lang={run.lang}
         dir={run.lang === "ar" ? "rtl" : "ltr"}
-        style={{ unicodeBidi: "isolate", fontFamily: fontFor(run.lang, kind) }}
+        style={{ unicodeBidi: "isolate", fontFamily: fontFor(run.lang, kind, fonts) }}
       >
         {run.t}
       </span>
@@ -119,15 +109,16 @@ function renderRuns(runs: Run[], primary: Lang, kind: "display" | "text" | "mono
 }
 
 function Txt({
-  node, primary, kind = "text", style,
+  node, primary, kind = "text", style, tpl,
 }: {
   node?: TextNode | null;
   primary: Lang;
   kind?: "display" | "text" | "mono";
   style?: React.CSSProperties;
+  tpl: TemplateDescriptor;
 }) {
   if (!node) return null;
-  return <div style={style}>{renderRuns(node.runs, primary, kind)}</div>;
+  return <div style={style}>{renderRuns(node.runs, primary, kind, tpl.fonts)}</div>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -173,7 +164,7 @@ const ICON_PATHS: Record<string, string[]> = {
 };
 
 /** `media.src` of "icon:water" resolves here. Unknown keys render nothing. */
-function IconMark({ src, theme, size }: { src?: string; theme: Theme; size: number }) {
+function IconMark({ src, theme, size, tpl }: { src?: string; theme: Theme; size: number; tpl: TemplateDescriptor }) {
   const key = (src ?? "").startsWith("icon:") ? src!.slice(5) : "";
   const paths = ICON_PATHS[key];
   if (!paths) return null;
@@ -181,7 +172,7 @@ function IconMark({ src, theme, size }: { src?: string; theme: Theme; size: numb
     <div
       data-media-node="icon"
       style={{
-        width: size, height: size, borderRadius: 18, flex: "0 0 auto",
+        width: size, height: size, borderRadius: tpl.geometry.radiusPanel, flex: "0 0 auto",
         background: theme.panel, border: `1px solid ${theme.rule}`,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}
@@ -209,8 +200,8 @@ function IconMark({ src, theme, size }: { src?: string; theme: Theme; size: numb
 /* ------------------------------------------------------------------ */
 
 function IdentityBar({
-  deck, theme, s, showAvatar = true,
-}: { deck: DeckIR; theme: Theme; s: ReturnType<typeof scaleOf>; showAvatar?: boolean }) {
+  deck, theme, s, tpl, showAvatar = true,
+}: { deck: DeckIR; theme: Theme; s: Scale; tpl: TemplateDescriptor; showAvatar?: boolean }) {
   const primary = deck.primary_lang;
   // The close slide already carries the standing figure. One photo per slide.
   const avatar = showAvatar ? deck.profile.avatar_url : null;
@@ -237,12 +228,13 @@ function IdentityBar({
         <Txt
           node={deck.profile.name}
           primary={primary}
-          style={{ fontFamily: fontFor(primary, "text"), fontWeight: 700, fontSize: s.chip, color: theme.head, lineHeight: 1.2 }}
+          tpl={tpl}
+          style={{ fontFamily: fontFor(primary, "text", tpl.fonts), fontWeight: 700, fontSize: s.chip, color: theme.head, lineHeight: tpl.ramp.h2Lh }}
         />
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {/* The glyph REPLACES the "in/" prefix. Rendering both yields "inin/handle". */}
           <LinkedInGlyph size={Math.round(parseInt(s.source, 10) * 1.1)} color={theme.dim} />
-          <span style={{ fontFamily: FONT_MONO, fontSize: s.source, color: theme.dim, letterSpacing: ".02em" }} dir="ltr">
+          <span style={{ fontFamily: tpl.fonts.mono, fontSize: s.source, color: theme.dim, letterSpacing: ".02em" }} dir="ltr">
             {deck.profile.handle}
           </span>
         </div>
@@ -255,13 +247,13 @@ function IdentityBar({
 /* Pieces                                                              */
 /* ------------------------------------------------------------------ */
 
-function Chip({ node, primary, theme, s }: { node?: TextNode; primary: Lang; theme: Theme; s: ReturnType<typeof scaleOf> }) {
+function Chip({ node, primary, theme, s, tpl }: { node?: TextNode; primary: Lang; theme: Theme; s: Scale; tpl: TemplateDescriptor }) {
   if (!node) return null;
   return (
     <div
       style={{
         alignSelf: "flex-start",
-        fontFamily: fontFor(primary, "text"),
+        fontFamily: fontFor(primary, "text", tpl.fonts),
         fontWeight: 700,
         fontSize: s.chip,
         color: theme.accentLight,
@@ -269,17 +261,17 @@ function Chip({ node, primary, theme, s }: { node?: TextNode; primary: Lang; the
         letterSpacing: primary === "ar" ? "0" : ".08em",
         paddingInline: 22,
         paddingBlock: 10,
-        borderRadius: 999,
+        borderRadius: tpl.geometry.radiusChip,
         background: theme.panel,
         border: `1px solid ${theme.rule}`,
       }}
     >
-      {renderRuns(node.runs, primary, "text")}
+      {renderRuns(node.runs, primary, "text", tpl.fonts)}
     </div>
   );
 }
 
-function Hero({ lines, primary, theme, s }: { lines?: HeroLine[]; primary: Lang; theme: Theme; s: ReturnType<typeof scaleOf> }) {
+function Hero({ lines, primary, theme, s, tpl }: { lines?: HeroLine[]; primary: Lang; theme: Theme; s: Scale; tpl: TemplateDescriptor }) {
   if (!lines?.length) return null;
   const ar = primary === "ar";
   return (
@@ -293,10 +285,10 @@ function Hero({ lines, primary, theme, s }: { lines?: HeroLine[]; primary: Lang;
             // span reports its font box instead, and the fit ladder then
             // shrinks type that never actually wrapped.
             display: "inline-block",
-            fontFamily: fontFor(primary, "display"),
+            fontFamily: fontFor(primary, "display", tpl.fonts),
             fontWeight: ar ? 900 : 400,
             fontSize: ar ? s.heroAr : s.heroEn,
-            lineHeight: ar ? 1.42 : 0.93,
+            lineHeight: ar ? tpl.ramp.heroArLh : tpl.ramp.heroEnLh,
             // Arabic is never uppercased.
             textTransform: ar ? "none" : "uppercase",
             color: line.highlight ? theme.accentInk : theme.head,
@@ -310,15 +302,15 @@ function Hero({ lines, primary, theme, s }: { lines?: HeroLine[]; primary: Lang;
             marginInlineStart: line.highlight ? -16 : 0,
           }}
         >
-          {renderRuns(line.runs, primary, "display")}
+          {renderRuns(line.runs, primary, "display", tpl.fonts)}
         </span>
       ))}
     </div>
   );
 }
 
-function Body({ nodes, primary, theme, s, hideTails }: {
-  nodes?: TextNode[]; primary: Lang; theme: Theme; s: ReturnType<typeof scaleOf>; hideTails: boolean;
+function Body({ nodes, primary, theme, s, tpl, hideTails }: {
+  nodes?: TextNode[]; primary: Lang; theme: Theme; s: Scale; tpl: TemplateDescriptor; hideTails: boolean;
 }) {
   if (!nodes?.length) return null;
   const visible = hideTails ? nodes.filter((n) => !n.optional_tail) : nodes;
@@ -329,48 +321,48 @@ function Body({ nodes, primary, theme, s, hideTails }: {
         <div
           key={i}
           style={{
-            fontFamily: fontFor(primary, "text"),
+            fontFamily: fontFor(primary, "text", tpl.fonts),
             fontSize: s.body,
-            lineHeight: primary === "ar" ? 1.9 : 1.6,
+            lineHeight: primary === "ar" ? tpl.ramp.bodyLhAr : tpl.ramp.bodyLhEn,
             color: theme.fg,
             textAlign: "start",
           }}
         >
-          {renderRuns(n.runs, primary, "text")}
+          {renderRuns(n.runs, primary, "text", tpl.fonts)}
         </div>
       ))}
     </div>
   );
 }
 
-function H2({ node, primary, theme, s }: { node?: TextNode; primary: Lang; theme: Theme; s: ReturnType<typeof scaleOf> }) {
+function H2({ node, primary, theme, s, tpl }: { node?: TextNode; primary: Lang; theme: Theme; s: Scale; tpl: TemplateDescriptor }) {
   if (!node) return null;
   return (
     <div
       style={{
-        fontFamily: fontFor(primary, "text"),
+        fontFamily: fontFor(primary, "text", tpl.fonts),
         fontWeight: primary === "ar" ? 900 : 800,
         fontSize: s.h2,
-        lineHeight: primary === "ar" ? 1.5 : 1.2,
+        lineHeight: primary === "ar" ? 1.5 : tpl.ramp.h2Lh,
         color: theme.head,
         textAlign: "start",
       }}
     >
-      {renderRuns(node.runs, primary, "text")}
+      {renderRuns(node.runs, primary, "text", tpl.fonts)}
     </div>
   );
 }
 
-function Source({ node, primary, theme, s }: { node?: TextNode; primary: Lang; theme: Theme; s: ReturnType<typeof scaleOf> }) {
+function Source({ node, primary, theme, s, tpl }: { node?: TextNode; primary: Lang; theme: Theme; s: Scale; tpl: TemplateDescriptor }) {
   if (!node) return null;
   return (
-    <div style={{ fontFamily: FONT_MONO, fontSize: s.source, color: theme.dim, letterSpacing: ".03em", textAlign: "start" }}>
-      {renderRuns(node.runs, primary, "mono")}
+    <div style={{ fontFamily: tpl.fonts.mono, fontSize: s.source, color: theme.dim, letterSpacing: ".03em", textAlign: "start" }}>
+      {renderRuns(node.runs, primary, "mono", tpl.fonts)}
     </div>
   );
 }
 
-function Bars({ slide, primary, theme, s }: { slide: SlideIR; primary: Lang; theme: Theme; s: ReturnType<typeof scaleOf> }) {
+function Bars({ slide, primary, theme, s, tpl }: { slide: SlideIR; primary: Lang; theme: Theme; s: Scale; tpl: TemplateDescriptor }) {
   const series = slide.slots.media?.chart?.series ?? [];
   if (!series.length) return null;
   const max = Math.max(...series.map((x) => Math.abs(x.value))) || 1;
@@ -381,15 +373,15 @@ function Bars({ slide, primary, theme, s }: { slide: SlideIR; primary: Lang; the
         return (
           <div key={i} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16 }}>
-              <div style={{ fontFamily: fontFor(primary, "text"), fontWeight: 500, fontSize: s.data, color: theme.fg }}>
-                {renderRuns(item.label.runs, primary, "text")}
+              <div style={{ fontFamily: fontFor(primary, "text", tpl.fonts), fontWeight: 500, fontSize: s.data, color: theme.fg }}>
+                {renderRuns(item.label.runs, primary, "text", tpl.fonts)}
               </div>
-              <div style={{ fontFamily: FONT_MONO, fontWeight: 600, fontSize: s.data, color: colour }} dir="ltr">
+              <div style={{ fontFamily: tpl.fonts.mono, fontWeight: 600, fontSize: s.data, color: colour }} dir="ltr">
                 {item.value}{item.unit ?? ""}
               </div>
             </div>
-            <div style={{ height: 18, borderRadius: 999, background: theme.panel, overflow: "hidden" }}>
-              <div style={{ width: `${(Math.abs(item.value) / max) * 100}%`, height: "100%", borderRadius: 999, background: colour }} />
+            <div style={{ height: 18, borderRadius: tpl.geometry.radiusChip, background: theme.panel, overflow: "hidden" }}>
+              <div style={{ width: `${(Math.abs(item.value) / max) * 100}%`, height: "100%", borderRadius: tpl.geometry.radiusChip, background: colour }} />
             </div>
           </div>
         );
@@ -427,7 +419,7 @@ function photoSrc(slide: SlideIR): string | null {
  * whole reason a deck of band slides reads as designed. It is lifted clear of
  * the footer by `BAND_LIFT`, so it never touches the safe area (X3).
  */
-function MediaBand({ slide, theme }: { slide: SlideIR; theme: Theme }) {
+function MediaBand({ slide, theme, tpl }: { slide: SlideIR; theme: Theme; tpl: TemplateDescriptor }) {
   const src = photoSrc(slide);
   if (!src) return null;
   const media = slide.slots.media!;
@@ -436,10 +428,10 @@ function MediaBand({ slide, theme }: { slide: SlideIR; theme: Theme }) {
       data-media-node="band"
       style={{
         width: "100%",
-        height: BAND_MEDIA_H,
+        height: bandMediaHeight(tpl),
         flex: "0 0 auto",
-        marginBlockEnd: BAND_LIFT,
-        borderRadius: 18,
+        marginBlockEnd: tpl.geometry.bandLift,
+        borderRadius: tpl.geometry.radiusMedia,
         background: theme.panel,
         backgroundImage: `url(${src})`,
         backgroundPosition: "center",
@@ -458,7 +450,7 @@ function MediaBand({ slide, theme }: { slide: SlideIR; theme: Theme }) {
  * keeps its contrast in both directions, and the whole thing sits underneath
  * the content layer rather than inside the flow.
  */
-function MediaCover({ slide, deck, theme }: { slide: SlideIR; deck: DeckIR; theme: Theme }) {
+function MediaCover({ slide, deck, theme, tpl }: { slide: SlideIR; deck: DeckIR; theme: Theme; tpl: TemplateDescriptor }) {
   const src = photoSrc(slide);
   if (!src) return null;
   const from = deck.dir === "rtl" ? "to left" : "to right";
@@ -471,7 +463,7 @@ function MediaCover({ slide, deck, theme }: { slide: SlideIR; deck: DeckIR; them
           // which carries no content, is allowed across the safe area.
           top: 0,
           insetInline: 0,
-          bottom: SAFE_AREA.bottom,
+          bottom: tpl.geometry.safeArea.bottom,
           backgroundImage: `url(${src})`,
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -502,7 +494,8 @@ interface PartProps {
   deck: DeckIR;
   slide: SlideIR;
   theme: Theme;
-  s: ReturnType<typeof scaleOf>;
+  s: Scale;
+  tpl: TemplateDescriptor;
   hideTails: boolean;
 }
 
@@ -527,10 +520,10 @@ function Stack({ children, gap }: { children: React.ReactNode; gap: number }) {
  * cover with no picture. Nothing here is hidden by a count; if the words ever
  * genuinely overflow, the fit ladder — which measures the DOM — says so.
  */
-function CoverBody({ deck, slide, theme, s }: PartProps) {
+function CoverBody({ deck, slide, theme, s, tpl }: PartProps) {
   const p = deck.primary_lang;
   const slots = slide.slots;
-  const common = { primary: p, theme, s } as const;
+  const common = { primary: p, theme, s, tpl } as const;
   return (
     <Stack gap={s.gap}>
       <Chip node={slots.chip} {...common} />
@@ -538,13 +531,13 @@ function CoverBody({ deck, slide, theme, s }: PartProps) {
         ? <Hero lines={slots.hero_lines} {...common} />
         : slots.stat_value
           ? (
-            <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
+            <div dir="ltr" style={{ fontFamily: tpl.fonts.displayEn, fontSize: s.stat, lineHeight: tpl.ramp.statLh, color: theme.accent, textAlign: "start" }}>
               {slots.stat_value}
             </div>
           )
           : null}
       {slide.archetype === "cover_stat" && slots.hero_lines?.length && slots.stat_value ? (
-        <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
+        <div dir="ltr" style={{ fontFamily: tpl.fonts.displayEn, fontSize: s.stat, lineHeight: tpl.ramp.statLh, color: theme.accent, textAlign: "start" }}>
           {slots.stat_value}
         </div>
       ) : null}
@@ -552,17 +545,18 @@ function CoverBody({ deck, slide, theme, s }: PartProps) {
       <Txt
         node={slots.subline}
         primary={p}
-        style={{ fontFamily: fontFor(p, "text"), fontSize: s.body, lineHeight: p === "ar" ? 1.9 : 1.6, color: theme.dim, textAlign: "start" }}
+        tpl={tpl}
+        style={{ fontFamily: fontFor(p, "text", tpl.fonts), fontSize: s.body, lineHeight: p === "ar" ? tpl.ramp.bodyLhAr : tpl.ramp.bodyLhEn, color: theme.dim, textAlign: "start" }}
       />
       <Source node={slots.source} {...common} />
     </Stack>
   );
 }
 
-function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
+function SlideBody({ deck, slide, theme, s, tpl, hideTails }: PartProps) {
   const p = deck.primary_lang;
   const slots = slide.slots;
-  const common = { primary: p, theme, s } as const;
+  const common = { primary: p, theme, s, tpl } as const;
 
   switch (slide.archetype) {
     case "cover_hero":
@@ -570,7 +564,7 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
         <Stack gap={s.gap}>
           <Chip node={slots.chip} {...common} />
           <Hero lines={slots.hero_lines} {...common} />
-          <Txt node={slots.subline} primary={p} style={{ fontFamily: fontFor(p, "text"), fontSize: s.body, lineHeight: p === "ar" ? 1.9 : 1.6, color: theme.dim, textAlign: "start" }} />
+          <Txt node={slots.subline} primary={p} tpl={tpl} style={{ fontFamily: fontFor(p, "text", tpl.fonts), fontSize: s.body, lineHeight: p === "ar" ? tpl.ramp.bodyLhAr : tpl.ramp.bodyLhEn, color: theme.dim, textAlign: "start" }} />
         </Stack>
       );
 
@@ -579,7 +573,7 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
         <Stack gap={s.gap}>
           <Chip node={slots.chip} {...common} />
           {slots.stat_value && (
-            <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
+            <div dir="ltr" style={{ fontFamily: tpl.fonts.displayEn, fontSize: s.stat, lineHeight: tpl.ramp.statLh, color: theme.accent, textAlign: "start" }}>
               {slots.stat_value}
             </div>
           )}
@@ -591,10 +585,10 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
     case "frame":
       return (
         <Stack gap={s.gap}>
-          {slots.media?.kind === "icon" && <IconMark src={slots.media.src} theme={theme} size={Math.round(112 * (parseInt(s.h2, 10) / 54))} />}
+          {slots.media?.kind === "icon" && <IconMark src={slots.media.src} theme={theme} tpl={tpl} size={Math.round(112 * (parseInt(s.h2, 10) / tpl.ramp.h2))} />}
           <Hero lines={slots.hero_lines} {...common} />
           <H2 node={slots.headline} {...common} />
-          <Body nodes={slots.body} primary={p} theme={theme} s={s} hideTails={hideTails} />
+          <Body nodes={slots.body} primary={p} theme={theme} s={s} tpl={tpl} hideTails={hideTails} />
         </Stack>
       );
 
@@ -603,12 +597,12 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
         <Stack gap={s.gap}>
           <Chip node={slots.chip} {...common} />
           {slots.stat_value && (
-            <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
+            <div dir="ltr" style={{ fontFamily: tpl.fonts.displayEn, fontSize: s.stat, lineHeight: tpl.ramp.statLh, color: theme.accent, textAlign: "start" }}>
               {slots.stat_value}
             </div>
           )}
           <H2 node={slots.stat_label} {...common} />
-          <Body nodes={slots.body} primary={p} theme={theme} s={s} hideTails={hideTails} />
+          <Body nodes={slots.body} primary={p} theme={theme} s={s} tpl={tpl} hideTails={hideTails} />
           <Source node={slots.source} {...common} />
         </Stack>
       );
@@ -630,7 +624,8 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
             <Txt
               node={slots.quote}
               primary={p}
-              style={{ fontFamily: fontFor(p, "text"), fontWeight: 500, fontSize: s.h2, lineHeight: p === "ar" ? 1.7 : 1.35, color: theme.head, textAlign: "start" }}
+              tpl={tpl}
+              style={{ fontFamily: fontFor(p, "text", tpl.fonts), fontWeight: 500, fontSize: s.h2, lineHeight: p === "ar" ? 1.7 : 1.35, color: theme.head, textAlign: "start" }}
             />
           </div>
           <Source node={slots.source} {...common} />
@@ -645,11 +640,11 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
           <div style={{ display: "flex", flexDirection: "column", gap: Math.round(s.gap * 0.8) }}>
             {(slots.checklist ?? []).map((item, i) => (
               <div key={i} style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-                <span style={{ fontFamily: FONT_MONO, fontWeight: 600, fontSize: s.data, color: theme.accent, paddingTop: 8, flex: "0 0 auto" }} dir="ltr">
+                <span style={{ fontFamily: tpl.fonts.mono, fontWeight: 600, fontSize: s.data, color: theme.accent, paddingTop: 8, flex: "0 0 auto" }} dir="ltr">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <div style={{ fontFamily: fontFor(p, "text"), fontSize: s.body, lineHeight: p === "ar" ? 1.9 : 1.6, color: theme.fg, textAlign: "start" }}>
-                  {renderRuns(item.runs, p, "text")}
+                <div style={{ fontFamily: fontFor(p, "text", tpl.fonts), fontSize: s.body, lineHeight: p === "ar" ? tpl.ramp.bodyLhAr : tpl.ramp.bodyLhEn, color: theme.fg, textAlign: "start" }}>
+                  {renderRuns(item.runs, p, "text", tpl.fonts)}
                 </div>
               </div>
             ))}
@@ -660,20 +655,22 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
     case "definition":
       return (
         <Stack gap={s.gap}>
-          {slots.media?.kind === "icon" && <IconMark src={slots.media.src} theme={theme} size={Math.round(112 * (parseInt(s.h2, 10) / 54))} />}
+          {slots.media?.kind === "icon" && <IconMark src={slots.media.src} theme={theme} tpl={tpl} size={Math.round(112 * (parseInt(s.h2, 10) / tpl.ramp.h2))} />}
           <Hero lines={slots.hero_lines} {...common} />
           <Txt
             node={slots.term}
             primary={p}
-            style={{ fontFamily: fontFor(p, "text"), fontWeight: p === "ar" ? 900 : 800, fontSize: s.h2, color: theme.accent, textAlign: "start" }}
+            tpl={tpl}
+            style={{ fontFamily: fontFor(p, "text", tpl.fonts), fontWeight: p === "ar" ? 900 : 800, fontSize: s.h2, color: theme.accent, textAlign: "start" }}
           />
           <div style={{ height: 1, background: theme.rule }} />
           <Txt
             node={slots.term_def}
             primary={p}
-            style={{ fontFamily: fontFor(p, "text"), fontSize: s.body, lineHeight: p === "ar" ? 1.9 : 1.6, color: theme.fg, textAlign: "start" }}
+            tpl={tpl}
+            style={{ fontFamily: fontFor(p, "text", tpl.fonts), fontSize: s.body, lineHeight: p === "ar" ? tpl.ramp.bodyLhAr : tpl.ramp.bodyLhEn, color: theme.fg, textAlign: "start" }}
           />
-          <Body nodes={slots.body} primary={p} theme={theme} s={s} hideTails={hideTails} />
+          <Body nodes={slots.body} primary={p} theme={theme} s={s} tpl={tpl} hideTails={hideTails} />
         </Stack>
       );
 
@@ -686,12 +683,11 @@ function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
   }
 }
 
-/** Close: a three-row grid whose figure row is a FIXED height, so text can never overlap it. */
-const CLOSE_FIGURE_H = 470;
-/** The figure occupies a fixed column so the head lands in the same place on every deck. */
-const CLOSE_FIGURE_W = 430;
-
-function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
+/**
+ * Close: a three-row grid whose figure row is a FIXED height, so text can
+ * never overlap it. Both dimensions come from the descriptor.
+ */
+function CloseSlide({ deck, slide, theme, s, tpl, hideTails }: PartProps) {
   const p = deck.primary_lang;
   const slots = slide.slots;
   /**
@@ -707,40 +703,41 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
    * two anyway.
    */
   const figureSrc = deck.profile.avatar_cutout_url || null;
+  const figureH = tpl.geometry.closeFigureH;
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateRows: `auto 1fr ${CLOSE_FIGURE_H}px`,
+        gridTemplateRows: `auto 1fr ${figureH}px`,
         height: "100%",
         rowGap: s.gap,
       }}
     >
       {/* No avatar disc here — the standing figure below is the one photo. */}
-      <IdentityBar deck={deck} theme={theme} s={s} showAvatar={false} />
+      <IdentityBar deck={deck} theme={theme} s={s} tpl={tpl} showAvatar={false} />
       <div style={{ display: "flex", flexDirection: "column", gap: s.gap, minHeight: 0, justifyContent: "center" }}>
-        <Hero lines={slots.hero_lines} primary={p} theme={theme} s={s} />
-        <H2 node={slots.headline} primary={p} theme={theme} s={s} />
-        <Body nodes={slots.body} primary={p} theme={theme} s={s} hideTails={hideTails} />
+        <Hero lines={slots.hero_lines} primary={p} theme={theme} s={s} tpl={tpl} />
+        <H2 node={slots.headline} primary={p} theme={theme} s={s} tpl={tpl} />
+        <Body nodes={slots.body} primary={p} theme={theme} s={s} tpl={tpl} hideTails={hideTails} />
         {slots.cta_pill && (
           <div
             style={{
               alignSelf: "flex-start",
-              fontFamily: fontFor(p, "text"),
+              fontFamily: fontFor(p, "text", tpl.fonts),
               fontWeight: 700,
               fontSize: s.chip,
               color: theme.accentInk,
               background: theme.accent,
-              borderRadius: 999,
+              borderRadius: tpl.geometry.radiusChip,
               paddingInline: 30,
               paddingBlock: 14,
             }}
           >
-            {renderRuns(slots.cta_pill.runs, p, "text")}
+            {renderRuns(slots.cta_pill.runs, p, "text", tpl.fonts)}
           </div>
         )}
       </div>
-      <div style={{ height: CLOSE_FIGURE_H, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32 }}>
+      <div style={{ height: figureH, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32 }}>
         {figureSrc ? (
           // A cut-out figure STANDING in the slide: bottom-anchored, sized by
           // height so the head sits in the upper third of the figure zone, and
@@ -749,7 +746,7 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
           // exists, so nothing has to be dissolved into the background.
           <div
             style={{
-              width: CLOSE_FIGURE_W,
+              width: tpl.geometry.closeFigureW,
               flex: "0 0 auto",
               height: "100%",
               backgroundImage: `url(${figureSrc})`,
@@ -769,16 +766,18 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
             <Txt
               node={deck.profile.name}
               primary={p}
-              style={{ fontFamily: fontFor(p, "text"), fontWeight: 800, fontSize: s.h2, color: theme.head, textAlign: "start" }}
+              tpl={tpl}
+              style={{ fontFamily: fontFor(p, "text", tpl.fonts), fontWeight: 800, fontSize: s.h2, color: theme.head, textAlign: "start" }}
             />
             <Txt
               node={deck.profile.title}
               primary={p}
-              style={{ fontFamily: fontFor(p, "text"), fontSize: s.data, color: theme.dim, textAlign: "start" }}
+              tpl={tpl}
+              style={{ fontFamily: fontFor(p, "text", tpl.fonts), fontSize: s.data, color: theme.dim, textAlign: "start" }}
             />
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <LinkedInGlyph size={Math.round(parseInt(s.source, 10) * 1.1)} color={theme.dim} />
-              <span style={{ fontFamily: FONT_MONO, fontSize: s.source, color: theme.dim }} dir="ltr">
+              <span style={{ fontFamily: tpl.fonts.mono, fontSize: s.source, color: theme.dim }} dir="ltr">
                 {deck.profile.handle}
               </span>
             </div>
@@ -801,6 +800,8 @@ export interface SlideProps {
   deck: DeckIR;
   slide: SlideIR;
   theme?: ThemeName | string | null;
+  /** Layout family. Falls back to the deck's own, then to `instrument`. */
+  template?: string | null;
   /** Reports the fit-ladder outcome so a caller can refuse to ship a failure. */
   onFit?: (state: FitState) => void;
 }
@@ -836,8 +837,10 @@ function useMediaInDom(
   return defect;
 }
 
-export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
+export function Slide({ deck, slide, theme: themeName, template, onFit }: SlideProps) {
   const theme = getTheme(themeName ?? deck.theme);
+  // Resolved ONCE. Every dimension, font and radius below is read from here.
+  const tpl = getTemplate(template ?? (deck as { template?: string | null }).template);
   const ref = useRef<HTMLDivElement | null>(null);
   const photo = photoSrc(slide);
   const variant = variantFor(slide, Boolean(photo));
@@ -868,7 +871,7 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
   const fit = useFitLadder(ref, signature, MAX_FIT_STEP);
   // X1 — in the band variant the type gets LARGER, not smaller: fewer words
   // in less space. It still rides the ladder from that raised starting point.
-  const s = scaleOf(fit.scale * (variant === "band" ? BAND_TYPE_BOOST : 1));
+  const s = scaleOf(fit.scale * (variant === "band" ? tpl.geometry.bandTypeBoost : 1), tpl.ramp);
   const hideTails = fit.step >= 2;
 
   const mediaDefect = useMediaInDom(ref, slide, `${signature}|${fit.step}`);
@@ -922,7 +925,7 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
         ) as SlideIR["slots"],
       }
     : slide;
-  const body = <SlideBody deck={deck} slide={drawnSlide} theme={theme} s={s} hideTails={hideTails} />;
+  const body = <SlideBody deck={deck} slide={drawnSlide} theme={theme} s={s} tpl={tpl} hideTails={hideTails} />;
 
   return (
     <div
@@ -930,33 +933,34 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
       data-fit={fit.step}
       data-slide-root={slide.index}
       data-archetype={slide.archetype}
+      data-template={tpl.id}
       data-bg={theme.bgSolid}
       dir={deck.dir}
       lang={deck.primary_lang}
       style={{
-        // Exactly 1080 x 1350, 82px on every side, at every fit step.
-        width: CANVAS_W,
-        height: CANVAS_H,
-        padding: PAD,
+        // The descriptor's canvas and padding, unchanged at every fit step.
+        width: tpl.geometry.canvasW,
+        height: tpl.geometry.canvasH,
+        padding: tpl.geometry.pad,
         boxSizing: "border-box",
         overflow: "hidden",
         position: "relative",
         background: theme.bg,
         color: theme.fg,
         textAlign: "start",
-        fontFamily: fontFor(deck.primary_lang, "text"),
+        fontFamily: fontFor(deck.primary_lang, "text", tpl.fonts),
         // Western digits everywhere, Arabic included.
         fontVariantNumeric: "lining-nums tabular-nums",
       }}
     >
       {/* Media is drawn HERE, from the table, for every archetype — never from
           inside an archetype's own switch case. */}
-      {variant === "cover" && <MediaCover slide={slide} deck={deck} theme={theme} />}
+      {variant === "cover" && <MediaCover slide={slide} deck={deck} theme={theme} tpl={tpl} />}
       {isClose ? (
-        <CloseSlide deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />
+        <CloseSlide deck={deck} slide={slide} theme={theme} s={s} tpl={tpl} hideTails={hideTails} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: s.gap, position: "relative" }}>
-          <IdentityBar deck={deck} theme={theme} s={s} />
+          <IdentityBar deck={deck} theme={theme} s={s} tpl={tpl} />
           {variant === "band" ? (
             // The picture variant: a FIXED two-zone split. The image share is a
             // constant of the canvas, never a function of the word count, and
@@ -966,18 +970,18 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
               <div style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                 {body}
               </div>
-              <MediaBand slide={slide} theme={theme} />
+              <MediaBand slide={slide} theme={theme} tpl={tpl} />
             </div>
           ) : (
             <div style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
               {variant === "cover"
-                ? <CoverBody deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />
+                ? <CoverBody deck={deck} slide={slide} theme={theme} s={s} tpl={tpl} hideTails={hideTails} />
                 : body}
             </div>
           )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flex: "0 0 auto" }}>
-            <div style={{ height: 4, width: 96, borderRadius: 999, background: theme.accent }} />
-            <span style={{ fontFamily: FONT_MONO, fontSize: s.source, color: theme.dim }} dir="ltr">
+            <div style={{ height: 4, width: 96, borderRadius: tpl.geometry.radiusChip, background: theme.accent }} />
+            <span style={{ fontFamily: tpl.fonts.mono, fontSize: s.source, color: theme.dim }} dir="ltr">
               {slide.index + 1} / {deck.slides.length}
             </span>
           </div>

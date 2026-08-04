@@ -141,7 +141,10 @@ export const DeckIRSchema = z.strictObject({
   primary_lang: z.enum(["en", "ar"]),
   dir: z.enum(["ltr", "rtl"]),
   numerals: z.literal("western"),
-  theme: z.enum(["midnight", "clay", "gradient", "paper"]),
+  /** Theme id, resolved against the theme registry at render time. */
+  theme: z.string().min(1),
+  /** Layout family id, resolved against the template registry at render time. */
+  template: z.string().min(1).default("instrument"),
   length: z.union([z.literal(5), z.literal(7), z.literal(10)]),
   profile: ProfileSchema,
   slides: z.array(SlideSchema).min(1),

@@ -1,6 +1,13 @@
 import React from "react";
-import { THEME_NAMES, THEMES, type ThemeName } from "@/carousel/render/themes";
+import { THEMES, type ThemeName } from "@/carousel/render/themes";
 import { T, themeLabel, type Lang } from "./strings";
+
+/**
+ * Sourced from the registry, not a hand-kept array: a theme added to THEMES
+ * appears here without a second edit, and one removed cannot leave a dead
+ * swatch behind.
+ */
+const THEME_LIST = Object.keys(THEMES) as ThemeName[];
 
 const heading: React.CSSProperties = {
   fontFamily: "var(--ff-mono)",
@@ -49,7 +56,7 @@ export const ZoneLook: React.FC<{
     <div style={{ display: "grid", gap: 8 }}>
       <p style={heading}>{T.lookTheme[lang]}</p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {THEME_NAMES.map((t) => (
+        {THEME_LIST.map((t) => (
           <button
             key={t}
             type="button"

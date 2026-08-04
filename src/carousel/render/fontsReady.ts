@@ -3,19 +3,26 @@
  * measurement, otherwise fallback metrics (much wider than Anton) report a
  * wrap that does not exist. `document.fonts.ready` can settle before these
  * faces are even requested, so each family is loaded explicitly.
+ *
+ * The list is DERIVED from every registered template descriptor. A
+ * hand-written array hand-copies ramp sizes, and with more than one family it
+ * silently drifts — at which point a hero is measured against a fallback face
+ * and ships at the wrong size.
  */
-const SPECS: Array<[string, string]> = [
-  ['400 150px "AuraAnton"', "AGMTW"],
-  ['400 38px "AuraInter"', "AGMTW"],
-  ['500 38px "AuraInter"', "AGMTW"],
-  ['700 31px "AuraInter"', "AGMTW"],
-  ['800 54px "AuraInter"', "AGMTW"],
-  ['400 26px "AuraMono"', "0123"],
-  ['600 26px "AuraMono"', "0123"],
-  ['400 38px "AuraCairo"', "غثقف"],
-  ['700 38px "AuraCairo"', "غثقف"],
-  ['900 92px "AuraCairo"', "غثقف"],
-];
+import { TEMPLATES } from "./template";
+
+function deriveSpecs(): Array<[string, string]> {
+  const seen = new Map<string, [string, string]>();
+  for (const tpl of Object.values(TEMPLATES)) {
+    for (const [spec, sample] of tpl.fonts.gateSpecs) {
+      const key = `${spec}|${sample}`;
+      if (!seen.has(key)) seen.set(key, [spec, sample]);
+    }
+  }
+  return Array.from(seen.values());
+}
+
+const SPECS: Array<[string, string]> = deriveSpecs();
 
 let loaded = false;
 let pending: Promise<void> | null = null;
