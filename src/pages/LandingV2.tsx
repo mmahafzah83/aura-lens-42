@@ -236,7 +236,7 @@ const LANDING_V2_HTML = `
       </div>
     </div>
     <div class="loopwrap">
-      <svg viewBox="0 0 560 560" fill="none">
+      <svg viewBox="0 0 560 578" fill="none">
         <circle cx="280" cy="280" r="245" stroke="#EFF4FA" stroke-width="1.2"/>
         <circle cx="280" cy="280" r="205" stroke="#E4E8EE" stroke-width="1.2"/>
         <circle class="dash" cx="280" cy="280" r="150" stroke="#D2D8E0" stroke-width="1.2"/>
@@ -264,6 +264,7 @@ const LANDING_V2_HTML = `
         <circle cx="280" cy="485" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
         <path d="M284 471l-11 15h9l-3 12 12-16h-9z" fill="#E0A82E"/>
         <text class="nodeL" x="280" y="543" text-anchor="middle">3 · IT WRITES AT NIGHT</text>
+        <text class="nodeS" x="280" y="559" text-anchor="middle">While you sleep.</text>
 
         <circle cx="75" cy="280" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
         <path d="M63 280l8 9 17-19" stroke="#00807B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
