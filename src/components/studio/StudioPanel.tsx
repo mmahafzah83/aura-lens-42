@@ -557,6 +557,7 @@ export default function StudioPanel({
     setTypedTopic("");
     setPasted("");
     setFormat(next?.format ?? null);
+    setFormatDecided(Boolean(next?.format));
     setStep(entryStep(postureRef.current));
     setSub("build");
     setDraftId(null);
@@ -585,7 +586,8 @@ export default function StudioPanel({
     draftPrefillRef.current = null;
     liveRef.current = {
       content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
-      step: entryStep(postureRef.current), format: next?.format ?? null, draftId: null, draftSource: null,
+      step: entryStep(postureRef.current), format: next?.format ?? null,
+      formatDecided: Boolean(next?.format), draftId: null, draftSource: null,
     };
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* quota never blocks editing */ }
   }, []);
