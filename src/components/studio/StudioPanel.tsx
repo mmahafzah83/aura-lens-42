@@ -163,14 +163,25 @@ export default function StudioPanel({
   const [lang, setLang] = useState<Lang>("en");
   const [writeLang, setWriteLang] = useState<Lang>("en");
 
-  const [posture, setPosture] = useState<Posture>("editor");
+  const [posture, setPosture] = useState<Posture>(() => readStoredPosture() ?? "editor");
   const [askingPosture, setAskingPosture] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
   /* ---------- the piece ------------------------------------------ */
-  const [step, setStep] = useState(1);
+  /**
+   * W1 — the FIRST step is a property of the posture, never a constant. The
+   * stored posture is read synchronously so the very first paint is already
+   * the right room: delegator and author open at step 2, editor at step 1.
+   */
+  const [step, setStep] = useState<number>(() => (readStoredPosture() === "editor" || !readStoredPosture() ? 1 : 2));
   const [sub, setSub] = useState<SubNav>("build");
   const [format, setFormat] = useState<Format | null>(null);
+  /**
+   * W3 — a format is only "chosen" when the MEMBER chose it, or when a deck
+   * exists to prove it. Opening an ordinary draft is not a decision, so it may
+   * never tick step 3. This flag is persisted rather than inferred.
+   */
+  const [formatChosen, setFormatChosen] = useState(false);
 
   const [cards, setCards] = useState<StartCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
