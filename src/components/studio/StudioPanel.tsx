@@ -400,7 +400,7 @@ export default function StudioPanel({
   type SavedPiece = {
     content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
     step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
-    postRowId?: unknown; savedAt?: unknown;
+    postRowId?: unknown; savedAt?: unknown; formatDecided?: unknown;
   };
   const [pendingRestore, setPendingRestore] = useState<SavedPiece | null>(null);
 
@@ -441,7 +441,13 @@ export default function StudioPanel({
       if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
     }
     if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
-    if (saved.format === "post" || saved.format === "slides") setFormat(saved.format);
+    // W3 — a format only survives a restore when the member DECIDED it, or a
+    // deck exists to prove the decision. Never inferred from a draft's type.
+    const decided = saved.formatDecided === true || Boolean(saved.deck);
+    if (decided && (saved.format === "post" || saved.format === "slides")) {
+      setFormat(saved.format);
+      setFormatDecided(true);
+    }
     const s = Number(saved.step);
     setStep(s >= 1 && s <= 4 ? s : 2);
     setRestoredFlag(true);
@@ -459,8 +465,8 @@ export default function StudioPanel({
    * debounced save must always be able to flush the very latest values
    * synchronously. `liveRef` holds them; `persistNow` writes them.
    */
-  const liveRef = useRef({ content, deck, choice, writeLang, step, format, draftId, draftSource });
-  liveRef.current = { content, deck, choice, writeLang, step, format, draftId, draftSource };
+  const liveRef = useRef({ content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource });
+  liveRef.current = { content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource };
 
   const persistNow = useCallback((overrides?: Partial<typeof liveRef.current>) => {
     const v = { ...liveRef.current, ...(overrides || {}) };
@@ -481,7 +487,7 @@ export default function StudioPanel({
     // changes save themselves, so no live region fires on every keystroke.
     const t = window.setTimeout(persistNow, 1500);
     return () => window.clearTimeout(t);
-  }, [content, deck, choice, writeLang, step, format, draftId, draftSource, persistNow]);
+  }, [content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource, persistNow]);
 
   /* Backgrounding the tab or closing the page is also a disappearance. */
   useEffect(() => {
