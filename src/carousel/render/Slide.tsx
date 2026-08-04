@@ -816,12 +816,24 @@ function useMediaInDom(
 export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
   const theme = getTheme(themeName ?? deck.theme);
   const ref = useRef<HTMLDivElement | null>(null);
-  const signature = `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}:${plainText(slide.slots.headline)}`;
+  const photo = photoSrc(slide);
+  const variant = variantFor(slide, Boolean(photo));
+  /**
+   * X2 — the ladder must measure the composition that is actually on screen.
+   * The photo and the variant are part of the cache key, so adding or removing
+   * a picture restarts the ladder from step 0 against the NEW budget instead
+   * of inheriting a measurement of a layout that no longer exists.
+   */
+  const signature =
+    `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}` +
+    `:${plainText(slide.slots.headline)}:${variant}:${photo ?? "no-photo"}`;
   const fit = useFitLadder(ref, signature);
-  const s = scaleOf(fit.scale);
+  // X1 — in the band variant the type gets LARGER, not smaller: fewer words
+  // in less space. It still rides the ladder from that raised starting point.
+  const s = scaleOf(fit.scale * (variant === "band" ? BAND_TYPE_BOOST : 1));
   const hideTails = fit.step >= 2;
 
-  const mediaDefect = useMediaInDom(ref, slide, `${signature}|${photoSrc(slide) ?? ""}|${fit.step}`);
+  const mediaDefect = useMediaInDom(ref, slide, `${signature}|${fit.step}`);
   // INV-16 rides the same channel as the fit ladder: a slide that declares
   // media the renderer does not draw is a defect the member must see, not a
   // silent no-op. This is the exact failure that hid "Add image" for months.
@@ -837,7 +849,7 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
   }
 
   const isClose = slide.archetype === "close";
-  const placement = MEDIA_BY_ARCHETYPE[slide.archetype];
+  const body = <SlideBody deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />;
 
   return (
     <div
@@ -866,16 +878,30 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
     >
       {/* Media is drawn HERE, from the table, for every archetype — never from
           inside an archetype's own switch case. */}
-      {placement === "cover" && <MediaCover slide={slide} deck={deck} theme={theme} />}
+      {variant === "cover" && <MediaCover slide={slide} deck={deck} theme={theme} />}
       {isClose ? (
         <CloseSlide deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: s.gap, position: "relative" }}>
           <IdentityBar deck={deck} theme={theme} s={s} />
-          <div style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <SlideBody deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />
-            {placement === "band" && <MediaBand slide={slide} theme={theme} s={s} />}
-          </div>
+          {variant === "band" ? (
+            // The picture variant: a FIXED two-zone split. The image share is a
+            // constant of the canvas, never a function of the word count, and
+            // the text zone clips rather than overflowing or shrinking into
+            // illegibility — the inspector offers to shorten the words instead.
+            <div style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
+              <div style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                {body}
+              </div>
+              <MediaBand slide={slide} theme={theme} />
+            </div>
+          ) : (
+            <div style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              {variant === "cover"
+                ? <CoverBody deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />
+                : body}
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flex: "0 0 auto" }}>
             <div style={{ height: 4, width: 96, borderRadius: 999, background: theme.accent }} />
             <span style={{ fontFamily: FONT_MONO, fontSize: s.source, color: theme.dim }} dir="ltr">
