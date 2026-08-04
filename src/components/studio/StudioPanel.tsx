@@ -627,7 +627,11 @@ export default function StudioPanel({
         deck: null,
         writeLang: d.language,
         step: 2,
-        format: d.type === "carousel" ? "slides" : "post",
+        // W3 — a carousel draft is evidence of a decision; an ordinary draft
+        // is not. An ordinary draft leaves the format UNCHOSEN, so step 3
+        // cannot tick from a single click.
+        format: d.type === "carousel" ? "slides" : null,
+        formatDecided: d.type === "carousel",
         draftId: d.id,
         draftSource: d._source,
         choice: { id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" },
@@ -647,7 +651,8 @@ export default function StudioPanel({
       setExported(false);
       setProblem(null);
       // N4 — a carousel draft opens on the deck, not on the words.
-      setFormat(d.type === "carousel" ? "slides" : "post");
+      setFormat(d.type === "carousel" ? "slides" : null);
+      setFormatDecided(d.type === "carousel");
       if (d.signalId || d.title || d.topic) {
         setChoice({ id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" });
       }
