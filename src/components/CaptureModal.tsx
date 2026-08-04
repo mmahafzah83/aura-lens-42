@@ -1262,6 +1262,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 <button
                   key={key}
                   type="button"
+                  className="cap-tap"
                   disabled={disabled}
                   onClick={() => {
                     if (disabled) return;
@@ -1392,6 +1393,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     fontSize: 12,
                     fontWeight: 600,
                     padding: "5px 10px",
+                    minHeight: 44,
+                    minWidth: 44,
                     cursor: "pointer",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
@@ -1661,6 +1664,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   <div className="grid grid-cols-2" style={{ gap: 8 }}>
                     <button
                       type="button"
+                      className="cap-tap"
                       onClick={() => fileInputRef.current?.click()}
                       style={{
                         display: "inline-flex",
@@ -1680,6 +1684,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     </button>
                     <button
                       type="button"
+                      className="cap-tap"
                       onClick={() => fileInputRef.current?.click()}
                       style={{
                         display: "inline-flex",
@@ -1862,7 +1867,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     style={{
                       fontFamily: "var(--ff-mono)",
                       fontSize: 22,
-                      color: isRecording ? "#00CEC9" : "#0F1519",
+                      color: isRecording ? "#00807B" : "#0F1519",
                       letterSpacing: "-0.02em",
                       lineHeight: 1.5,
                       fontVariantNumeric: "tabular-nums",
@@ -1901,8 +1906,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       fontSize: 14,
                       color: "#0F1519",
                       resize: "none",
-                      outline: "none",
-                      
                     }}
                   />
                 </div>
