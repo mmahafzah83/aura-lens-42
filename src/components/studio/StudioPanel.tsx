@@ -36,6 +36,7 @@ import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
 import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
+import { deriveDone, plausibleLinkedInUrl } from "@/components/studio/journeyState";
 
 /** Slides need enough words to divide up. Below this the option is refused. */
 const SLIDES_MIN_CHARS = 400;
@@ -238,6 +239,8 @@ export default function StudioPanel({
   const [postUrl, setPostUrl] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
   const [linkInput, setLinkInput] = useState("");
+  /** The member's own LinkedIn address for this post, stored. */
+  const [linkSaved, setLinkSaved] = useState(false);
 
   /**
    * P1c — set the moment the member CHOOSES a writing language. From then on a
@@ -333,6 +336,21 @@ export default function StudioPanel({
   }, [deck, step, isPhone]);
 
   /* ---------- bring back the piece -------------------------------- */
+  /**
+   * THE RESTORE — NEVER SILENT.
+   *
+   * A saved draft is read on mount but is NEVER applied. It is held here,
+   * announced in one line, and only becomes state when the member says so.
+   * RULE: state the member did not create in this session is announced,
+   * never assumed.
+   */
+  type SavedPiece = {
+    content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
+    step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
+    postRowId?: unknown; savedAt?: unknown;
+  };
+  const [pendingRestore, setPendingRestore] = useState<SavedPiece | null>(null);
+
   const restoredRef = useRef(false);
   useEffect(() => {
     if (restoredRef.current) return;
@@ -340,49 +358,41 @@ export default function StudioPanel({
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return;
-      const saved = JSON.parse(raw) as {
-        content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
-        step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
-        postRowId?: unknown;
-      };
-      let restoredAnything = false;
-      // Without the row id a reload inserts a second row for the same piece.
-      if (typeof saved.draftId === "string" && saved.draftId) setDraftId(saved.draftId);
-      // And without the linkedin_posts row id a content_items piece blocked by
-      // the gate would insert a SECOND twin row after a reload.
-      if (typeof saved.postRowId === "string" && saved.postRowId) postRowRef.current = saved.postRowId;
-      if (saved.draftSource === "content_items" || saved.draftSource === "linkedin_posts") {
-        setDraftSource(saved.draftSource);
-      }
-      if (typeof saved.content === "string" && saved.content.trim()) {
-        setContent(saved.content);
-        restoredAnything = true;
-      }
-      if (saved.deck) {
-        // A corrupt deck is ignored, never thrown.
-        const parsed = DeckIRSchema.safeParse(saved.deck);
-        if (parsed.success) {
-          setDeck(parsed.data);
-          setTheme(parsed.data.theme as ThemeName);
-          restoredAnything = true;
-        }
-      }
-      if (saved.choice && typeof saved.choice === "object") {
-        const c = saved.choice as Choice;
-        if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
-      }
-      if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
-      if (saved.format === "post" || saved.format === "slides") setFormat(saved.format);
-      if (restoredAnything) {
-        // Reopen exactly where they stopped.
-        const s = Number(saved.step);
-        setStep(s >= 1 && s <= 4 ? s : 2);
-        // The language is not resolved yet at this point, so the message is
-        // raised later, from whatever `lang` is then.
-        setRestoredFlag(true);
-      }
+      const saved = JSON.parse(raw) as SavedPiece;
+      const hasWords = typeof saved.content === "string" && saved.content.trim().length > 0;
+      const hasDeck = Boolean(saved.deck);
+      // Only real work is worth announcing. Anything else is not progress.
+      if (!hasWords && !hasDeck) { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } return; }
+      setPendingRestore(saved);
     } catch { /* an unreadable draft is simply not restored */ }
   }, []);
+
+  /** "Carry on" — and only then does the saved work become this session's. */
+  const carryOnRestore = useCallback(() => {
+    const saved = pendingRestore;
+    if (!saved) return;
+    setPendingRestore(null);
+    if (typeof saved.draftId === "string" && saved.draftId) setDraftId(saved.draftId);
+    if (typeof saved.postRowId === "string" && saved.postRowId) postRowRef.current = saved.postRowId;
+    if (saved.draftSource === "content_items" || saved.draftSource === "linkedin_posts") {
+      setDraftSource(saved.draftSource);
+    }
+    if (typeof saved.content === "string") setContent(saved.content);
+    if (saved.deck) {
+      // A corrupt deck is ignored, never thrown.
+      const parsed = DeckIRSchema.safeParse(saved.deck);
+      if (parsed.success) { setDeck(parsed.data); setTheme(parsed.data.theme as ThemeName); }
+    }
+    if (saved.choice && typeof saved.choice === "object") {
+      const c = saved.choice as Choice;
+      if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
+    }
+    if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
+    if (saved.format === "post" || saved.format === "slides") setFormat(saved.format);
+    const s = Number(saved.step);
+    setStep(s >= 1 && s <= 4 ? s : 2);
+    setRestoredFlag(true);
+  }, [pendingRestore]);
 
   useEffect(() => {
     if (!restoredFlag || !ready) return;
@@ -405,7 +415,10 @@ export default function StudioPanel({
     liveRef.current = v;
     if (!v.content && !v.deck && !postRowRef.current) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...v, postRowId: postRowRef.current }));
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({ ...v, postRowId: postRowRef.current, savedAt: new Date().toISOString() }),
+      );
     } catch { /* quota never blocks editing */ }
   }, []);
 
@@ -495,6 +508,7 @@ export default function StudioPanel({
     setPublished(false);
     setPostUrl(null);
     setLinkInput("");
+    setLinkSaved(false);
     setNotReady(null);
     setProblem(null);
     setStatus(null);
@@ -503,6 +517,7 @@ export default function StudioPanel({
     setAskReplace(false);
     setAskLangSwitch(null);
     langChosenRef.current = false;
+    setPendingRestore(null);
     preselectedRef.current = Boolean(next?.choice);
     draftPrefillRef.current = null;
     liveRef.current = {
@@ -559,6 +574,9 @@ export default function StudioPanel({
       setPublished(false);
       setPostUrl(null);
       setLinkInput("");
+      setLinkSaved(false);
+      // The member has explicitly opened work: no stale draft may be offered.
+      setPendingRestore(null);
       setDeck(null);
       setDeckSource(null);
       setExported(false);
@@ -1245,7 +1263,7 @@ export default function StudioPanel({
 
   const saveLink = useCallback(async () => {
     const url = linkInput.trim();
-    if (!/linkedin\.com/i.test(url)) { setProblem(T.linkBad[lang]); return; }
+    if (!plausibleLinkedInUrl(url)) { setProblem(T.linkBad[lang]); return; }
     setBusy("link");
     setBusyMessage(T.savingLink[lang]);
     setProblem(null);
@@ -1259,6 +1277,7 @@ export default function StudioPanel({
     setBusyMessage(null);
     setPublished(true);
     setPostUrl(url);
+    setLinkSaved(true);
     setStatus(T.linkSaved[lang]);
   }, [linkInput, ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
@@ -1276,17 +1295,15 @@ export default function StudioPanel({
     return null;
   }, [fits, current, lang]);
 
+  /* THE PIECE STATE. Derived, never stored twice, never inferred from the
+     highest step visited. `deriveDone` owns every tick and clamps the
+     step N / N−1 invariant. */
+  const subjectChosen = Boolean(choice) || pasted.trim().length > 0;
+  const wordsReady = content.trim().length > 0;
+  const slidesMade = deck !== null;
   const doneMap = useMemo(
-    () => ({
-      // P2 — every tick is derived from what the post actually IS: a subject
-      // chosen, words written, a format decided (and, for slides, a deck that
-      // exists), a link on LinkedIn. Never from the highest step visited.
-      1: Boolean(choice),
-      2: content.trim().length > 0,
-      3: Boolean(format) && (format === "post" || Boolean(deck)),
-      4: published,
-    }),
-    [choice, content, deck, format, published],
+    () => deriveDone({ subjectChosen, wordsReady, format, slidesMade, published, linkSaved }),
+    [subjectChosen, wordsReady, format, slidesMade, published, linkSaved],
   );
 
   /**
@@ -1458,12 +1475,26 @@ export default function StudioPanel({
     </>
   );
 
-  /* One way forward. The label never changes; the step does. */
-  const canContinue =
-    step === 1 ? Boolean(choice) || Boolean(pasted.trim())
-      : step === 2 ? content.trim().length > 0
-        : step === 3 ? format === "post" || Boolean(deck)
-          : false;
+  /* One way forward, and it is enabled by exactly the CURRENT step's
+     done-condition — never by anything else. When it is off, the reason is
+     printed in words beside it. */
+  const canContinue = step === 1 ? doneMap[1] : step === 2 ? doneMap[2] : step === 3 ? doneMap[3] : false;
+  const continueReason = canContinue
+    ? ""
+    : step === 1
+      ? T.whyNoSubject[lang]
+      : step === 2
+        ? T.whyNoWords[lang]
+        : step === 3
+          ? (format === null ? T.whyNoFormat[lang] : T.whyNoSlides[lang])
+          : "";
+
+  /* Save and come back later: only when there is something a save would keep. */
+  const canSave = wordsReady || slidesMade;
+  /* Make the slides. */
+  const canMakeSlides = wordsReady && format === "slides" && !slidesMade;
+  /* Save the link. */
+  const canSaveLink = plausibleLinkedInUrl(linkInput) && !linkSaved;
 
   /* Exactly one primary per screen. On step 3 the slide-making button in the
      stage IS the primary, so the strip does not offer a second one. */
@@ -1546,6 +1577,43 @@ export default function StudioPanel({
         </div>
       )}
 
+      {/* THE RESTORE — announced, never assumed. Nothing below is populated
+          until the member says "Carry on". */}
+      {pendingRestore && !content && !deck && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            background: "var(--surface-card)", border: "1px solid var(--border-default)",
+            borderRadius: 12, padding: 12, margin: "0 0 12px",
+            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)" }}>
+            {T.restoreLine[lang]
+              .replace(
+                "{subject}",
+                ((pendingRestore.choice as Choice | undefined)?.title ||
+                  (typeof pendingRestore.content === "string"
+                    ? pendingRestore.content.trim().split("\n")[0]?.slice(0, 60)
+                    : "") ||
+                  T.restoreSubjectUnknown[lang]),
+              )
+              .replace(
+                "{when}",
+                typeof pendingRestore.savedAt === "string" ? savedAgo(pendingRestore.savedAt, lang) : "",
+              )}
+          </span>
+          <span style={{ flex: 1 }} />
+          <ButtonPrimary onClick={carryOnRestore} style={{ minHeight: 44 }}>
+            {T.restoreCarryOn[lang]}
+          </ButtonPrimary>
+          <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
+            {T.restoreStartNew[lang]}
+          </ButtonGhost>
+        </div>
+      )}
+
       {/* One journey map, at every width. */}
       <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
 
@@ -1594,17 +1662,28 @@ export default function StudioPanel({
           </ButtonGhost>
         )}
         <span style={{ display: "grid", gap: 2 }}>
-          <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 44 }}>
+          <ButtonGhost onClick={() => void saveAndComeBack()} disabled={!canSave || busy === "save"} style={{ minHeight: 44 }}>
             {T.saveLater[lang]}
           </ButtonGhost>
-          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
-            {T.saveLaterNote[lang]}
-          </span>
+          {/* The precondition, never a promise. The drafts confirmation is
+              transient and appears only after a real save (`saveAndComeBack`). */}
+          {!canSave && (
+            <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
+              {T.nothingToSaveYet[lang]}
+            </span>
+          )}
         </span>
         {step < 4 && !stageOwnsPrimary && (
-          <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
-            {T.continue[lang]} {rtlShell ? "←" : "→"}
-          </ButtonPrimary>
+          <span style={{ display: "grid", gap: 2 }}>
+            <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
+              {T.continue[lang]} {rtlShell ? "←" : "→"}
+            </ButtonPrimary>
+            {!canContinue && continueReason && (
+              <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
+                {continueReason}
+              </span>
+            )}
+          </span>
         )}
       </div>
 
@@ -2071,9 +2150,16 @@ export default function StudioPanel({
               }
               footer={
                 !deck ? (
-                  <ButtonPrimary onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
-                    {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
-                  </ButtonPrimary>
+                  <span style={{ display: "grid", gap: 4, justifyItems: rtlShell ? "end" : "start" }}>
+                    <ButtonPrimary onClick={() => void makeSlides()} disabled={!canMakeSlides || deckBusy} style={{ minHeight: 44 }}>
+                      {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
+                    </ButtonPrimary>
+                    {!canMakeSlides && !deckBusy && (
+                      <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)" }}>
+                        {T.whyNoWords[lang]}
+                      </span>
+                    )}
+                  </span>
                 ) : null
               }
             />
@@ -2256,7 +2342,7 @@ export default function StudioPanel({
                   value={linkInput}
                   onChange={(e) => setLinkInput(e.target.value)}
                   placeholder={T.linkPlaceholder[lang]}
-                  disabled={published}
+                  disabled={linkSaved || published}
                   style={{
                     flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
                     background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
@@ -2265,15 +2351,25 @@ export default function StudioPanel({
                   }}
                 />
                 {exported ? (
-                  <ButtonPrimary onClick={() => void saveLink()} disabled={published || !linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                  <ButtonPrimary onClick={() => void saveLink()} disabled={!canSaveLink || published || busy === "link"} style={{ minHeight: 44 }}>
                     {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
                   </ButtonPrimary>
                 ) : (
-                  <ButtonGhost onClick={() => void saveLink()} disabled={published || !linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                  <ButtonGhost onClick={() => void saveLink()} disabled={!canSaveLink || published || busy === "link"} style={{ minHeight: 44 }}>
                     {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
                   </ButtonGhost>
                 )}
               </div>
+              {!canSaveLink && !linkSaved && (
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", margin: "6px 0 0" }}>
+                  {T.whyNoLink[lang]}
+                </p>
+              )}
+              {linkSaved && (
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", margin: "6px 0 0" }}>
+                  {T.whyLinkAlready[lang]}
+                </p>
+              )}
             </>
           )}
         </StageCard>
