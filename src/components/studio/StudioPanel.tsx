@@ -2196,7 +2196,12 @@ export default function StudioPanel({
                     type="button"
                     aria-pressed={on}
                     disabled={refused}
-                    onClick={() => setFormat(key)}
+                    onClick={() => {
+                      if (key === format) return;
+                      // Slides already made are never thrown away unasked.
+                      if (key === "post" && deck) { setPendingFormat("post"); return; }
+                      setFormat(key);
+                    }}
                     style={{
                       textAlign: rtlShell ? "right" : "left",
                       cursor: refused ? "not-allowed" : "pointer",
@@ -2222,6 +2227,33 @@ export default function StudioPanel({
                 );
               })}
             </div>
+            {pendingFormat === "post" && (
+              <div style={{ marginTop: 12, background: "var(--surface-subtle)", border: "1px solid var(--act)", borderRadius: 12, padding: 12 }}>
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                  {T.confirmDiscardSlidesHead[lang]}
+                </p>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <ButtonPrimary
+                    onClick={() => {
+                      setDeck(null);
+                      setDeckSource(null);
+                      setDeckFailures([]);
+                      setCurrent(0);
+                      setFits({});
+                      setExported(false);
+                      setFormat("post");
+                      setPendingFormat(null);
+                    }}
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.confirmDiscardSlidesYes[lang]}
+                  </ButtonPrimary>
+                  <ButtonGhost onClick={() => setPendingFormat(null)} style={{ minHeight: 44 }}>
+                    {T.replaceNo[lang]}
+                  </ButtonGhost>
+                </div>
+              </div>
+            )}
           </StageCard>
 
           {format === "slides" && deckFailures.length > 0 && (
