@@ -2342,7 +2342,7 @@ export default function StudioPanel({
                   value={linkInput}
                   onChange={(e) => setLinkInput(e.target.value)}
                   placeholder={T.linkPlaceholder[lang]}
-                  disabled={published}
+                  disabled={linkSaved || published}
                   style={{
                     flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
                     background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
@@ -2351,15 +2351,25 @@ export default function StudioPanel({
                   }}
                 />
                 {exported ? (
-                  <ButtonPrimary onClick={() => void saveLink()} disabled={published || !linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                  <ButtonPrimary onClick={() => void saveLink()} disabled={!canSaveLink || published || busy === "link"} style={{ minHeight: 44 }}>
                     {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
                   </ButtonPrimary>
                 ) : (
-                  <ButtonGhost onClick={() => void saveLink()} disabled={published || !linkInput.trim() || busy === "link"} style={{ minHeight: 44 }}>
+                  <ButtonGhost onClick={() => void saveLink()} disabled={!canSaveLink || published || busy === "link"} style={{ minHeight: 44 }}>
                     {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
                   </ButtonGhost>
                 )}
               </div>
+              {!canSaveLink && !linkSaved && (
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", margin: "6px 0 0" }}>
+                  {T.whyNoLink[lang]}
+                </p>
+              )}
+              {linkSaved && (
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", margin: "6px 0 0" }}>
+                  {T.whyLinkAlready[lang]}
+                </p>
+              )}
             </>
           )}
         </StageCard>
