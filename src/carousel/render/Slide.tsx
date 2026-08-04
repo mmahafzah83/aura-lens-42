@@ -29,6 +29,7 @@ import {
   bandMediaHeight, getTemplate, TEMPLATES, type FontSet, type TemplateDescriptor, type TypeRamp,
 } from "./template";
 import { publishMeasuredDrops } from "./measuredDrops";
+import HighlighterSlide from "./Highlighter";
 
 /* ------------------------------------------------------------------ */
 /* Canvas and type scale — all of it now DATA, read from the template  */
