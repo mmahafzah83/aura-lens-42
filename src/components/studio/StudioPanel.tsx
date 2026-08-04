@@ -419,10 +419,30 @@ export default function StudioPanel({
     content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
     step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
     postRowId?: unknown; savedAt?: unknown; formatDecided?: unknown;
+    current?: unknown; scrollY?: unknown;
   };
   const [pendingRestore, setPendingRestore] = useState<SavedPiece | null>(null);
 
+  /**
+   * Y2 — THE FOUR CASES, EACH DISTINCT. One mount effect, four branches.
+   *
+   *  1. SAME SESSION, TAB SWITCHED AWAY AND BACK — this effect does not run at
+   *     all, because the composer is no longer unmounted by the tab container
+   *     (see `Dashboard.tsx`: the authority pane stays mounted and is hidden).
+   *     Pure continuation, nothing announced. They never left.
+   *  2. A LINK — `?piece=` (or `?draft=`, resolved by the shell). The incoming
+   *     intent WINS: it opens, and any unsaved work is saved first, silently,
+   *     and said in one line. Never a dialog, never discarded.
+   *  3. REFRESH OR A RETURN THE SAME DAY — the stored piece is OFFERED in one
+   *     line and applied only on "Carry on". We never open inside it.
+   *  4. A RETURN AFTER MORE THAN 24 HOURS — no offer at all. The draft is one
+   *     item in the drafts list; the composer opens clean.
+   */
   const restoredRef = useRef(false);
+  /** Case 2 — set on mount, before anything else can claim the screen. */
+  const urlPieceRef = useRef<string | null>(
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("piece"),
+  );
   useEffect(() => {
     if (restoredRef.current) return;
     restoredRef.current = true;
@@ -434,9 +454,75 @@ export default function StudioPanel({
       const hasDeck = Boolean(saved.deck);
       // Only real work is worth announcing. Anything else is not progress.
       if (!hasWords && !hasDeck) { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } return; }
+      // CASE 2 — an address that names a piece, or a shell-resolved `?draft=`,
+      // outranks anything stored. Nothing is offered; the link opens.
+      const incoming = urlPieceRef.current || new URLSearchParams(window.location.search).get("draft");
+      if (incoming) {
+        pendingStashRef.current = saved.postRowId || saved.draftId ? null : saved;
+        return;
+      }
+      // CASE 4 — older than a day: not work in progress. It lives in the
+      // drafts list, so the composer opens clean and says nothing.
+      const savedAt = typeof saved.savedAt === "string" ? Date.parse(saved.savedAt) : NaN;
+      if (!Number.isNaN(savedAt) && Date.now() - savedAt > RESUME_WINDOW_MS) {
+        try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+        return;
+      }
+      // CASE 3 — refresh, or a return the same day: offered, never applied.
       setPendingRestore(saved);
     } catch { /* an unreadable draft is simply not restored */ }
   }, []);
+
+  /**
+   * CASE 2, second half — work that had no row yet is written to the drafts
+   * list before the incoming piece takes the screen. Nothing is ever thrown
+   * away to make room for a link.
+   */
+  const pendingStashRef = useRef<SavedPiece | null>(null);
+  useEffect(() => {
+    if (!userId) return;
+    const stash = pendingStashRef.current;
+    if (!stash) return;
+    pendingStashRef.current = null;
+    const words = typeof stash.content === "string" ? stash.content.trim() : "";
+    if (!words) return;
+    (async () => {
+      const title = words.split("\n")[0]?.slice(0, 80) || null;
+      const { error } = await supabase.from("linkedin_posts").insert({
+        user_id: userId,
+        post_text: words,
+        original_generated_text: words,
+        format_type: "post",
+        tracking_status: "draft",
+        source_type: "aura_generated",
+        authorship: "aura_drafted",
+        title,
+        topic_label: title,
+      } as any);
+      if (!error) setStatus(T.savedOtherFirst[lang]);
+    })();
+  }, [userId, lang]);
+
+  /**
+   * CASE 2, first half — the address names a piece, so that piece is what the
+   * page renders. This is the whole of "refresh restores from the URL, not
+   * from a guess", and the whole of a bookmarked or emailed draft.
+   */
+  const urlOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!userId || urlOpenedRef.current) return;
+    const id = urlPieceRef.current;
+    if (!id) return;
+    // The shell owns `?draft=`; two openers for one piece would fight.
+    if (draftPrefill?.id) { urlOpenedRef.current = true; return; }
+    urlOpenedRef.current = true;
+    (async () => {
+      const full = await loadStudioDraft(id);
+      if (!full) { setProblem(T.draftMissing[lang]); return; }
+      await openDraft(full, "url_piece");
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, draftPrefill]);
 
   /** "Carry on" — and only then does the saved work become this session's. */
   const carryOnRestore = useCallback(() => {
