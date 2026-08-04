@@ -1665,8 +1665,8 @@ export default function StudioPanel({
           <ButtonGhost onClick={() => void saveAndComeBack()} disabled={!canSave || busy === "save"} style={{ minHeight: 44 }}>
             {T.saveLater[lang]}
           </ButtonGhost>
-          {/* The precondition, never a promise. "Saved to your drafts" is a
-              transient confirmation and appears only after a real save. */}
+          {/* The precondition, never a promise. The drafts confirmation is
+              transient and appears only after a real save (`saveAndComeBack`). */}
           {!canSave && (
             <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
               {T.nothingToSaveYet[lang]}
