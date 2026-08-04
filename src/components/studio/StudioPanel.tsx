@@ -2546,19 +2546,28 @@ export default function StudioPanel({
                       </div>
                     </div>
                   )}
-                  {/* P4 — ONE POSITION. The trigger never moves and never leaves
-                      the layout; the confirmation opens directly beneath it. */}
-                  <ButtonPrimary
-                    onClick={requestPost}
-                    disabled={
-                      !content.trim() || content.length > POST_MAX_CHARS ||
-                      busy === "post" || confirmingPost || Boolean(notReady)
-                    }
-                    style={{ minHeight: 44 }}
-                  >
-                    {T.postItNow[lang]}
-                  </ButtonPrimary>
-                  <div style={{ marginTop: 12 }}>{confirmPanel}</div>
+                  {/* P4 / W10 — ONE POSITION. The confirmation REPLACES the
+                      button in place, and the progress bar takes the same slot,
+                      so the member's attention never has to travel. */}
+                  {busy === "post" ? (
+                    <BusyBar
+                      message={busyMessage || T.posting[lang]}
+                      etaSeconds={etaFor(busyMessage || T.posting[lang], lang)}
+                      remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
+                    />
+                  ) : confirmingPost ? (
+                    confirmPanel
+                  ) : (
+                    <ButtonPrimary
+                      onClick={requestPost}
+                      disabled={
+                        !content.trim() || content.length > POST_MAX_CHARS || Boolean(notReady)
+                      }
+                      style={{ minHeight: 44 }}
+                    >
+                      {T.postItNow[lang]}
+                    </ButtonPrimary>
+                  )}
                 </>
               )}
             </>
