@@ -2645,6 +2645,7 @@ export default function StudioPanel({
                 onUploadPicture={uploadPicture}
                 pictureNotice={pictureNotice}
                 onMove={move}
+                portraitState={portrait.state}
               />
             )}
           </div>
