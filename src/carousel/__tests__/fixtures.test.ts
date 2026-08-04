@@ -2,15 +2,27 @@ import { describe, expect, it } from "vitest";
 import { DeckIRSchema } from "../deckIR";
 import { checkInvariants } from "../invariants";
 import { compose } from "../compose";
+import { getTemplate } from "../render/template";
+import { THEMES, templateThemes } from "../render/themes";
 
 import enChart from "../__fixtures__/en-7-chart.json";
 import arInlineEn from "../__fixtures__/ar-7-inline-en.json";
 import enNoStat from "../__fixtures__/en-5-no-stat.json";
+import enHighlighter from "../__fixtures__/en-7-highlighter.json";
+import arHighlighter from "../__fixtures__/ar-7-highlighter.json";
 
 const fixtures: Array<[string, unknown]> = [
   ["en-7-chart", enChart],
   ["ar-7-inline-en", arInlineEn],
   ["en-5-no-stat", enNoStat],
+  ["en-7-highlighter", enHighlighter],
+  ["ar-7-highlighter", arHighlighter],
+];
+
+/** The two highlighter fixtures must resolve to the highlighter family. */
+const highlighterFixtures: Array<[string, unknown]> = [
+  ["en-7-highlighter", enHighlighter],
+  ["ar-7-highlighter", arHighlighter],
 ];
 
 describe("DeckIR fixtures", () => {
@@ -23,6 +35,22 @@ describe("DeckIR fixtures", () => {
   it.each(fixtures)("%s passes every invariant", (_name, raw) => {
     const ir = DeckIRSchema.parse(raw);
     expect(checkInvariants(ir)).toEqual([]);
+  });
+
+  it.each(highlighterFixtures)("%s resolves to a registered highlighter template and theme", (_name, raw) => {
+    const ir = DeckIRSchema.parse(raw);
+    expect(ir.template).toBe("highlighter");
+    expect(getTemplate(ir.template).id).toBe("highlighter");
+    expect(templateThemes.highlighter).toContain(ir.theme);
+    expect(ir.theme in THEMES).toBe(true);
+  });
+
+  it("leaves the three original fixtures on the instrument default", () => {
+    for (const raw of [enChart, arInlineEn, enNoStat]) {
+      const ir = DeckIRSchema.parse(raw);
+      expect(ir.template).toBe("instrument");
+      expect(getTemplate(ir.template).id).toBe("instrument");
+    }
   });
 });
 

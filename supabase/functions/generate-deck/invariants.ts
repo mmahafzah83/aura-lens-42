@@ -239,6 +239,19 @@ export function splitByTier(failures: string[]): { blocking: string[]; warnings:
 
 export const HERO_BUDGET: Record<"en" | "ar", number> = { en: 18, ar: 26 };
 
+/**
+ * Per-template budget scaling. The highlighter family sets its hero lines in a
+ * heavier face on a narrower content column, so the same character count wraps.
+ * The scale is a property of the drawing, not of the language.
+ */
+export const TEMPLATE_BUDGET_SCALE: Record<string, number> = { highlighter: 0.85 };
+
+/** The hero-line budget for a language, scaled to the template doing the drawing. */
+export function heroBudget(lang: "en" | "ar", template?: string | null): number {
+  const scale = TEMPLATE_BUDGET_SCALE[String(template ?? "")] ?? 1;
+  return Math.floor(HERO_BUDGET[lang] * scale);
+}
+
 const CONTRAST_ARCHETYPES: Archetype[] = [
   "evidence",
   "cover_stat",
@@ -418,7 +431,7 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     for (const line of slide.slots.hero_lines ?? []) {
       const text = plainText(line);
       const lang: "en" | "ar" = ARABIC_RE.test(text) ? "ar" : "en";
-      const budget = HERO_BUDGET[lang];
+      const budget = heroBudget(lang, deck.template);
       if (text.length > budget) {
         errors.push(
           `INV-13: ${where} hero line "${text}" is ${text.length} characters, over the ${lang} budget of ${budget}.`,

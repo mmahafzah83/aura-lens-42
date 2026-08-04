@@ -21,7 +21,56 @@ import {
 export const INV_02_OVERFLOW = "INV-02";
 /** Checked by the renderer: declared media must actually reach the DOM. */
 export const INV_16_MEDIA_IN_DOM = "INV-16";
-export const RENDER_TIME_RULES = [INV_02_OVERFLOW, INV_16_MEDIA_IN_DOM] as const;
+/**
+ * TYPE FLOOR — no content slot may print below the template's `floors.content`,
+ * and no meta line below `floors.meta`. The fit ladder shrinks type to make a
+ * slide fit; below the floor the slide is legible only to the person who wrote
+ * it, so the ladder must report a failure instead of printing it.
+ *
+ * NAMING NOTE: the brief called this INV-19. INV-19 is already taken by the
+ * specificity floor and INV-20 by the marker-glyph rule, both shipped, both
+ * referenced by `WARNINGS`/`REPAIRABLE` and by live copy. Reusing those codes
+ * would silently retier two existing rules, so these took the next free codes.
+ */
+export const INV_22_TYPE_FLOOR = "INV-22";
+/** The engagement row belongs to the close slide and to no other archetype. */
+export const INV_23_ENGAGEMENT_ROW = "INV-23";
+export const RENDER_TIME_RULES = [
+  INV_02_OVERFLOW, INV_16_MEDIA_IN_DOM, INV_22_TYPE_FLOOR, INV_23_ENGAGEMENT_ROW,
+] as const;
+
+/**
+ * Blocking, render-time. Returns a human-readable failure or null.
+ * `sizes` are the px values the renderer is about to print.
+ */
+export function checkTypeFloor(
+  where: string,
+  sizes: { content: number; meta: number },
+  floors: { content: number; meta: number },
+): string | null {
+  if (sizes.content < floors.content) {
+    return `${INV_22_TYPE_FLOOR}: ${where} would print body type at ${Math.round(sizes.content)}px, below the ${floors.content}px floor. Shorten the words instead.`;
+  }
+  if (sizes.meta < floors.meta) {
+    return `${INV_22_TYPE_FLOOR}: ${where} would print meta type at ${Math.round(sizes.meta)}px, below the ${floors.meta}px floor.`;
+  }
+  return null;
+}
+
+/** Blocking, render-time. The engagement row is a close-slide device only. */
+export function checkEngagementRow(
+  where: string,
+  archetype: string,
+  present: boolean,
+): string | null {
+  if (archetype === "close" && !present) {
+    return `${INV_23_ENGAGEMENT_ROW}: ${where} is the close slide but carries no engagement row.`;
+  }
+  if (archetype !== "close" && present) {
+    return `${INV_23_ENGAGEMENT_ROW}: ${where} draws the engagement row, which belongs to the close slide only.`;
+  }
+  return null;
+}
 
 const BANNED_STRINGS = ["lorem", "tbd", "placeholder", "todo", "\u2026"];
 
@@ -239,6 +288,18 @@ export function splitByTier(failures: string[]): { blocking: string[]; warnings:
 
 export const HERO_BUDGET: Record<"en" | "ar", number> = { en: 18, ar: 26 };
 
+/**
+ * Per-template budget scaling. The highlighter family sets its hero lines in a
+ * heavier face on a narrower content column, so the same character count wraps.
+ */
+export const TEMPLATE_BUDGET_SCALE: Record<string, number> = { highlighter: 0.85 };
+
+/** The hero-line budget for a language, scaled to the template doing the drawing. */
+export function heroBudget(lang: "en" | "ar", template?: string | null): number {
+  const scale = TEMPLATE_BUDGET_SCALE[String(template ?? "")] ?? 1;
+  return Math.floor(HERO_BUDGET[lang] * scale);
+}
+
 const CONTRAST_ARCHETYPES: Archetype[] = [
   "evidence",
   "cover_stat",
@@ -418,7 +479,7 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     for (const line of slide.slots.hero_lines ?? []) {
       const text = plainText(line);
       const lang: "en" | "ar" = ARABIC_RE.test(text) ? "ar" : "en";
-      const budget = HERO_BUDGET[lang];
+      const budget = heroBudget(lang, ir.template);
       if (text.length > budget) {
         errors.push(
           `INV-13: ${where} hero line "${text}" is ${text.length} characters, over the ${lang} budget of ${budget}.`,
