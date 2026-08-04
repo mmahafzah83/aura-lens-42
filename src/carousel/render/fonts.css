@@ -108,3 +108,131 @@
   font-display: block;
   src: url("../../../node_modules/@fontsource/cairo/files/cairo-latin-900-normal.woff2") format("woff2");
 }
+
+/* ------------------------------------------------------------------ */
+/* Faces bundled for the locked template families. Same rules as above:
+ * alias family names, font-display: block, node_modules paths only.      */
+/* ------------------------------------------------------------------ */
+
+/* Montserrat — geometric sans display and text. */
+@font-face {
+  font-family: "AuraMontserrat";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/montserrat/files/montserrat-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraMontserrat";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/montserrat/files/montserrat-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraMontserrat";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/montserrat/files/montserrat-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraMontserrat";
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/montserrat/files/montserrat-latin-800-normal.woff2") format("woff2");
+}
+
+/* Archivo Black — single-weight display face. */
+@font-face {
+  font-family: "AuraArchivo";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/archivo-black/files/archivo-black-latin-400-normal.woff2") format("woff2");
+}
+
+/* Poppins — geometric display and text. */
+@font-face {
+  font-family: "AuraPoppins";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/poppins/files/poppins-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraPoppins";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/poppins/files/poppins-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraPoppins";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/poppins/files/poppins-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraPoppins";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/poppins/files/poppins-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraPoppins";
+  font-style: normal;
+  font-weight: 800;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/poppins/files/poppins-latin-800-normal.woff2") format("woff2");
+}
+
+/* IBM Plex Sans Arabic — Arabic text face, plus its Latin subset for digits. */
+@font-face {
+  font-family: "AuraArabicText";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-400-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: "AuraArabicText";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-600-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: "AuraArabicText";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-700-normal.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: "AuraArabicText";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraArabicText";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "AuraArabicText";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("../../../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-latin-700-normal.woff2") format("woff2");
+}
