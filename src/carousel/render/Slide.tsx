@@ -991,4 +991,20 @@ function InstrumentSlide({ deck, slide, theme: themeName, template, onFit }: Sli
   );
 }
 
+/**
+ * TEMPLATE DISPATCH. One family per renderer, chosen by the descriptor id
+ * BEFORE any hook runs, so each renderer keeps its own hook order. Instrument
+ * is the fallback and its composition below is untouched.
+ */
+const TEMPLATE_RENDERERS: Record<string, React.FC<SlideProps>> = {
+  highlighter: HighlighterSlide,
+};
+
+export function Slide(props: SlideProps) {
+  const tpl = getTemplate(props.template ?? (props.deck as { template?: string | null }).template);
+  const Renderer = TEMPLATE_RENDERERS[tpl.id];
+  if (Renderer) return <Renderer {...props} />;
+  return <InstrumentSlide {...props} />;
+}
+
 export default Slide;
