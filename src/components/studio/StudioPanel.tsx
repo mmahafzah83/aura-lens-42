@@ -1351,9 +1351,12 @@ export default function StudioPanel({
   /* THE PIECE STATE. Derived, never stored twice, never inferred from the
      highest step visited. `deriveDone` owns every tick and clamps the
      step N / N−1 invariant. */
-  const subjectChosen = Boolean(choice) || pasted.trim().length > 0;
+  /** `subject` is the ONE thing that makes step 1 done. Nothing else. */
+  const subjectChosen = choice !== null;
   const wordsReady = content.trim().length > 0;
   const slidesMade = deck !== null;
+  const formatChosen = format !== null;
+  const finished = published || linkSaved;
   const doneMap = useMemo(
     () => deriveDone({ subjectChosen, wordsReady, format, slidesMade, published, linkSaved }),
     [subjectChosen, wordsReady, format, slidesMade, published, linkSaved],
@@ -1545,9 +1548,11 @@ export default function StudioPanel({
   /* Save and come back later: only when there is something a save would keep. */
   const canSave = wordsReady || slidesMade;
   /* Make the slides. */
-  const canMakeSlides = wordsReady && format === "slides" && !slidesMade;
+  const canMakeSlides = format === "slides" && !slidesMade && !deckBusy && wordsReady;
+  /* Write it — the delegator's one primary at step 2. */
+  const canWriteIt = !wordsReady && !generating;
   /* Save the link. */
-  const canSaveLink = plausibleLinkedInUrl(linkInput) && !linkSaved;
+  const canSaveLink = step === 4 && format === "slides" && plausibleLinkedInUrl(linkInput) && !linkSaved;
 
   /* Exactly one primary per screen. On step 3 the slide-making button in the
      stage IS the primary, so the strip does not offer a second one. */
@@ -1566,6 +1571,9 @@ export default function StudioPanel({
         return;
       }
       if (content.trim()) { setStep(2); return; }
+      // The author's own words are the only source in that posture: there is
+      // no generate affordance to reach.
+      if (posture === "author") { setStep(2); return; }
       void generate();
       return;
     }
