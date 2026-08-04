@@ -1357,6 +1357,12 @@ export default function StudioPanel({
   const slidesMade = deck !== null;
   const formatChosen = format !== null;
   const finished = published || linkSaved;
+  /**
+   * "Write another about this subject" is only offered while that signal still
+   * has material left to write from — it is only ever a ranked start card
+   * while unused work remains behind it.
+   */
+  const subjectHasMore = Boolean(choice?.id) && cards.some((c) => c.signalId === choice?.id);
   const doneMap = useMemo(
     () => deriveDone({ subjectChosen, wordsReady, format, slidesMade, published, linkSaved }),
     [subjectChosen, wordsReady, format, slidesMade, published, linkSaved],
