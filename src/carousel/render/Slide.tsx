@@ -827,7 +827,9 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
   const signature =
     `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}` +
     `:${plainText(slide.slots.headline)}:${variant}:${photo ?? "no-photo"}`;
-  const fit = useFitLadder(ref, signature);
+  // A picture variant stops at step 1: the words stay legible and the
+  // inspector offers to shorten them (X2).
+  const fit = useFitLadder(ref, signature, variant === "plain" ? MAX_FIT_STEP : 1);
   // X1 — in the band variant the type gets LARGER, not smaller: fewer words
   // in less space. It still rides the ladder from that raised starting point.
   const s = scaleOf(fit.scale * (variant === "band" ? BAND_TYPE_BOOST : 1));
