@@ -50,7 +50,9 @@ export const JourneyMap: React.FC<{
                   border: `${isCurrent ? 2 : 1}px solid ${isCurrent || isDone ? "var(--act)" : "var(--border-default)"}`,
                 }}
               >
-                <span aria-hidden="true">{isDone && !isCurrent ? "✓" : n}</span>
+                {/* W10 — being here does not un-finish the work: the current
+                    step still shows its tick. */}
+                <span aria-hidden="true">{isDone ? `✓ ${n}` : n}</span>
                 <span>{label}</span>
               </button>
             </li>

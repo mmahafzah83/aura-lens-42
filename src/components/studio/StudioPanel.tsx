@@ -51,6 +51,19 @@ function sourceStamp(text: string): string {
 }
 
 const POSTURE_KEY = "aura_studio_posture";
+
+/**
+ * W1 — the stored posture, read synchronously. The journey's ENTRY STEP is a
+ * property of the posture, so it must be known before the first paint.
+ */
+function readStoredPosture(): Posture | null {
+  try {
+    const saved = localStorage.getItem(POSTURE_KEY);
+    return saved === "delegator" || saved === "editor" || saved === "author" ? saved : null;
+  } catch {
+    return null;
+  }
+}
 const DRAFT_KEY = "aura_studio_draft_v1";
 /**
  * `composer_opened` is one event per PIECE per session. The studio is a tab
@@ -100,7 +113,8 @@ function gateSentence(category: unknown, lang: Lang): string {
  * decoration that loops.
  */
 function etaFor(message: string, lang: Lang): number {
-  if (message === T.writing[lang]) return 30;
+  // W10 — the number and the words must agree. `T.writing` says 20 seconds.
+  if (message === T.writing[lang]) return 20;
   if (message === T.makingSlides[lang]) return 45;
   if (message === T.posting[lang]) return 20;
   if (message === T.exporting[lang] || message === T.exportSettling[lang]) return 15;
@@ -162,14 +176,25 @@ export default function StudioPanel({
   const [lang, setLang] = useState<Lang>("en");
   const [writeLang, setWriteLang] = useState<Lang>("en");
 
-  const [posture, setPosture] = useState<Posture>("editor");
+  const [posture, setPosture] = useState<Posture>(() => readStoredPosture() ?? "editor");
   const [askingPosture, setAskingPosture] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
   /* ---------- the piece ------------------------------------------ */
-  const [step, setStep] = useState(1);
+  /**
+   * W1 — the FIRST step is a property of the posture, never a constant. The
+   * stored posture is read synchronously so the very first paint is already
+   * the right room: delegator and author open at step 2, editor at step 1.
+   */
+  const [step, setStep] = useState<number>(() => (readStoredPosture() === "editor" || !readStoredPosture() ? 1 : 2));
   const [sub, setSub] = useState<SubNav>("build");
   const [format, setFormat] = useState<Format | null>(null);
+  /**
+   * W3 — a format is only "chosen" when the MEMBER chose it, or when a deck
+   * exists to prove it. Opening an ordinary draft is not a decision, so it may
+   * never tick step 3. This flag is persisted rather than inferred.
+   */
+  const [formatDecided, setFormatDecided] = useState(false);
 
   const [cards, setCards] = useState<StartCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
@@ -341,11 +366,10 @@ export default function StudioPanel({
    * The posture's ENTRY STEP, applied once, and only over an empty piece.
    * A posture never moves a member off work they already have.
    */
-  const enteredRef = useRef(false);
   useEffect(() => {
-    if (enteredRef.current) return;
     if (!ready || askingPosture) return;
-    enteredRef.current = true;
+    // W1 — changing posture mid-piece never moves a member off work they have,
+    // but over an EMPTY piece it re-opens the journey where that posture opens.
     if (!content.trim() && !deck && !pendingRestore) setStep(entryStep(posture));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, askingPosture, posture]);
@@ -375,7 +399,7 @@ export default function StudioPanel({
   type SavedPiece = {
     content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
     step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
-    postRowId?: unknown; savedAt?: unknown;
+    postRowId?: unknown; savedAt?: unknown; formatDecided?: unknown;
   };
   const [pendingRestore, setPendingRestore] = useState<SavedPiece | null>(null);
 
@@ -416,7 +440,13 @@ export default function StudioPanel({
       if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
     }
     if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
-    if (saved.format === "post" || saved.format === "slides") setFormat(saved.format);
+    // W3 — a format only survives a restore when the member DECIDED it, or a
+    // deck exists to prove the decision. Never inferred from a draft's type.
+    const decided = saved.formatDecided === true || Boolean(saved.deck);
+    if (decided && (saved.format === "post" || saved.format === "slides")) {
+      setFormat(saved.format);
+      setFormatDecided(true);
+    }
     const s = Number(saved.step);
     setStep(s >= 1 && s <= 4 ? s : 2);
     setRestoredFlag(true);
@@ -434,8 +464,8 @@ export default function StudioPanel({
    * debounced save must always be able to flush the very latest values
    * synchronously. `liveRef` holds them; `persistNow` writes them.
    */
-  const liveRef = useRef({ content, deck, choice, writeLang, step, format, draftId, draftSource });
-  liveRef.current = { content, deck, choice, writeLang, step, format, draftId, draftSource };
+  const liveRef = useRef({ content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource });
+  liveRef.current = { content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource };
 
   const persistNow = useCallback((overrides?: Partial<typeof liveRef.current>) => {
     const v = { ...liveRef.current, ...(overrides || {}) };
@@ -456,7 +486,7 @@ export default function StudioPanel({
     // changes save themselves, so no live region fires on every keystroke.
     const t = window.setTimeout(persistNow, 1500);
     return () => window.clearTimeout(t);
-  }, [content, deck, choice, writeLang, step, format, draftId, draftSource, persistNow]);
+  }, [content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource, persistNow]);
 
   /* Backgrounding the tab or closing the page is also a disappearance. */
   useEffect(() => {
@@ -526,6 +556,7 @@ export default function StudioPanel({
     setTypedTopic("");
     setPasted("");
     setFormat(next?.format ?? null);
+    setFormatDecided(Boolean(next?.format));
     setStep(entryStep(postureRef.current));
     setSub("build");
     setDraftId(null);
@@ -554,7 +585,8 @@ export default function StudioPanel({
     draftPrefillRef.current = null;
     liveRef.current = {
       content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
-      step: entryStep(postureRef.current), format: next?.format ?? null, draftId: null, draftSource: null,
+      step: entryStep(postureRef.current), format: next?.format ?? null,
+      formatDecided: Boolean(next?.format), draftId: null, draftSource: null,
     };
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* quota never blocks editing */ }
   }, []);
@@ -594,7 +626,11 @@ export default function StudioPanel({
         deck: null,
         writeLang: d.language,
         step: 2,
-        format: d.type === "carousel" ? "slides" : "post",
+        // W3 — a carousel draft is evidence of a decision; an ordinary draft
+        // is not. An ordinary draft leaves the format UNCHOSEN, so step 3
+        // cannot tick from a single click.
+        format: d.type === "carousel" ? "slides" : null,
+        formatDecided: d.type === "carousel",
         draftId: d.id,
         draftSource: d._source,
         choice: { id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" },
@@ -614,7 +650,8 @@ export default function StudioPanel({
       setExported(false);
       setProblem(null);
       // N4 — a carousel draft opens on the deck, not on the words.
-      setFormat(d.type === "carousel" ? "slides" : "post");
+      setFormat(d.type === "carousel" ? "slides" : null);
+      setFormatDecided(d.type === "carousel");
       if (d.signalId || d.title || d.topic) {
         setChoice({ id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" });
       }
@@ -650,7 +687,10 @@ export default function StudioPanel({
    */
   const delegatorPreparedRef = useRef(false);
   useEffect(() => {
-    if (posture !== "delegator" || delegatorPreparedRef.current) return;
+    // Leaving the posture arms the preparation again, so returning to it over
+    // an empty piece prepares once more.
+    if (posture !== "delegator") { delegatorPreparedRef.current = false; return; }
+    if (delegatorPreparedRef.current) return;
     if (draftsLoading || !choice?.id || content.trim() || pendingRestore) return;
     delegatorPreparedRef.current = true;
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -707,6 +747,11 @@ export default function StudioPanel({
    */
   const choiceRef = useRef<Choice | null>(null);
   choiceRef.current = choice;
+  /** Read inside the prefill effect without making it depend on every keystroke. */
+  const contentRef = useRef("");
+  contentRef.current = content;
+  const publishedRef = useRef(false);
+  publishedRef.current = published;
   useEffect(() => {
     if (!signalPrefill) return;
     const title: string = signalPrefill.topic || signalPrefill.signalTitle || signalPrefill.trendHeadline || "";
@@ -718,17 +763,24 @@ export default function StudioPanel({
         ? cur!.id === signalPrefill.signalId
         : Boolean(title) && cur!.title === title);
     if (title && !same) {
-      startNewPiece({
-        choice: { id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" },
-        format: nextFormat,
-      });
+      const arriving = { id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" };
+      // W2 — a subject arriving from another screen may not silently replace
+      // words the member already has. It is offered, at step 1, as a choice.
+      if (contentRef.current.trim() || publishedRef.current) {
+        setPendingSubject(arriving);
+        setPendingFormat(null);
+        setStep(1);
+      } else {
+        startNewPiece({ choice: arriving, format: nextFormat });
+      }
     } else if (title) {
       preselectedRef.current = true;
       setChoice({ id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" });
       setTypedTopic("");
-      if (nextFormat) setFormat(nextFormat);
+      if (nextFormat) { setFormat(nextFormat); setFormatDecided(true); }
     } else if (nextFormat) {
       setFormat(nextFormat);
+      setFormatDecided(true);
     }
     onSignalPrefillConsumed?.();
   }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
@@ -908,6 +960,29 @@ export default function StudioPanel({
     if (postRowRef.current) return postRowRef.current;
     if (draftId && draftSource === "content_items") {
       originDraftRef.current = { id: draftId, source: "content_items" };
+      /**
+       * W7 — ONE TWIN PER DRAFT, FOREVER.
+       *
+       * A `?draft=` deep link can be opened in any number of later sessions.
+       * Before inserting, the twin this `content_items` row already produced
+       * is looked up by `source_metadata.origin_draft_id` and reused. With
+       * this lookup no path in the studio can insert a second
+       * `linkedin_posts` row for the same draft: every other path either
+       * already holds `postRowRef` or goes through `saveDraft`, which updates
+       * the row it created.
+       */
+      const { data: twin } = await supabase
+        .from("linkedin_posts")
+        .select("id")
+        .eq("user_id", userId as string)
+        .eq("source_metadata->>origin_draft_id", draftId)
+        .limit(1)
+        .maybeSingle();
+      if ((twin as any)?.id) {
+        postRowRef.current = (twin as any).id as string;
+        persistNow();
+        return postRowRef.current;
+      }
       const title = pieceTitle();
       const { data: ins, error } = await supabase
         .from("linkedin_posts")
@@ -922,7 +997,7 @@ export default function StudioPanel({
           title,
           topic_label: title || null,
           source_signal_id: choice?.id || null,
-          source_metadata: pieceMeta(),
+          source_metadata: { ...(pieceMeta() as Record<string, unknown>), origin_draft_id: draftId },
         } as any)
         .select("id")
         .single();
@@ -1760,8 +1835,9 @@ export default function StudioPanel({
         )}
       </div>
 
-      {/* Motion for anything in flight, on every step. */}
-      {busyMessage && (
+      {/* Motion for anything in flight. W10 — publishing is shown AT the
+          trigger the member is looking at, not up here in the strip. */}
+      {busyMessage && busy !== "post" && (
         <BusyBar
           message={busyMessage}
           etaSeconds={etaFor(busyMessage, lang)}
@@ -1771,6 +1847,12 @@ export default function StudioPanel({
 
       {step === 1 && (
         <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+          {/* W9 — a tick nobody earned must name who earned it. */}
+          {posture === "delegator" && choice?.id && !wordsReady && (
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", margin: "0 0 14px" }}>
+              {T.auraPicked[lang]}
+            </p>
+          )}
           {/* A subject change over written words is asked for, never assumed. */}
           {pendingSubject && (
             <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--act)", borderRadius: 12, padding: 12, marginBottom: 16 }}>
@@ -2062,6 +2144,11 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
                 {wordsReady ? T.delegatorFoundDraft[lang] : T.delegatorWaiting[lang]}
               </p>
+              {choice?.id && !wordsReady && (
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
+                  {T.auraPicked[lang]}
+                </p>
+              )}
               {!wordsReady && (
                 <ButtonPrimary onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
                   {T.writeItNow[lang]}
@@ -2118,9 +2205,21 @@ export default function StudioPanel({
               {notReady}
             </p>
           )}
-          {notReady && !(format === "slides" && deck) && (
+          {/* W8 — EVERY block carries the override, on every path. On the
+              slides path there is nothing to post directly, so the override
+              clears the block and carries the member to the manual screen. */}
+          {notReady && (
             <div style={{ margin: "0 0 12px" }}>
-              <ButtonGhost onClick={() => { setNotReady(null); setStep(4); void publishNow(true); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
+              <ButtonGhost
+                onClick={() => {
+                  setNotReady(null);
+                  setStep(4);
+                  if (format === "slides") { setOverrode(true); return; }
+                  void publishNow(true);
+                }}
+                disabled={busy === "post"}
+                style={{ minHeight: 44 }}
+              >
                 {T.postAnyway[lang]}
               </ButtonGhost>
             </div>
@@ -2207,6 +2306,7 @@ export default function StudioPanel({
                       // Slides already made are never thrown away unasked.
                       if (key === "post" && deck) { setPendingFormat("post"); return; }
                       setFormat(key);
+                      setFormatDecided(true);
                     }}
                     style={{
                       textAlign: rtlShell ? "right" : "left",
@@ -2248,6 +2348,7 @@ export default function StudioPanel({
                       setFits({});
                       setExported(false);
                       setFormat("post");
+                      setFormatDecided(true);
                       setPendingFormat(null);
                     }}
                     style={{ minHeight: 44 }}
@@ -2457,19 +2558,28 @@ export default function StudioPanel({
                       </div>
                     </div>
                   )}
-                  {/* P4 — ONE POSITION. The trigger never moves and never leaves
-                      the layout; the confirmation opens directly beneath it. */}
-                  <ButtonPrimary
-                    onClick={requestPost}
-                    disabled={
-                      !content.trim() || content.length > POST_MAX_CHARS ||
-                      busy === "post" || confirmingPost || Boolean(notReady)
-                    }
-                    style={{ minHeight: 44 }}
-                  >
-                    {T.postItNow[lang]}
-                  </ButtonPrimary>
-                  <div style={{ marginTop: 12 }}>{confirmPanel}</div>
+                  {/* P4 / W10 — ONE POSITION. The confirmation REPLACES the
+                      button in place, and the progress bar takes the same slot,
+                      so the member's attention never has to travel. */}
+                  {busy === "post" ? (
+                    <BusyBar
+                      message={busyMessage || T.posting[lang]}
+                      etaSeconds={etaFor(busyMessage || T.posting[lang], lang)}
+                      remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
+                    />
+                  ) : confirmingPost ? (
+                    confirmPanel
+                  ) : (
+                    <ButtonPrimary
+                      onClick={requestPost}
+                      disabled={
+                        !content.trim() || content.length > POST_MAX_CHARS || Boolean(notReady)
+                      }
+                      style={{ minHeight: 44 }}
+                    >
+                      {T.postItNow[lang]}
+                    </ButtonPrimary>
+                  )}
                 </>
               )}
             </>

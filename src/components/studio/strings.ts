@@ -119,6 +119,11 @@ export const T = {
     ar: "هذه من المواد التي حفظتها. اختر واحدة، أو اكتب موضوعك.",
   },
   sources: { en: "sources", ar: "مصدر" },
+  /** W9 — a tick the member did not earn must say who earned it. */
+  auraPicked: {
+    en: "Aura picked this subject for you — choose a different one below.",
+    ar: "اختارت أورا هذا الموضوع لك — يمكنك اختيار غيره أدناه.",
+  },
   chooseOwn: { en: "Write about something else", ar: "اكتب عن شيء آخر" },
   chooseOwnPlaceholder: { en: "What do you want to write about?", ar: "عن ماذا تريد أن تكتب؟" },
   chooseEmpty: {
