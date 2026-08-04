@@ -74,6 +74,16 @@ export const T = {
     en: "Saved to your drafts. You can reopen it and carry on from this step.",
     ar: "محفوظ في مسوّداتك. يمكنك فتحه والمتابعة من هذه الخطوة.",
   },
+  // Y2 — a link wins, but nothing is lost to make room for it.
+  savedOtherFirst: {
+    en: "We saved the post you had open to your drafts first.",
+    ar: "حفظنا المنشور الذي كان مفتوحاً في مسوّداتك أولاً.",
+  },
+  // Y5 — "come back later" has to take you somewhere.
+  saveLaterGoing: {
+    en: "Saved to your drafts. Taking you there now.",
+    ar: "محفوظ في مسوّداتك. ننقلك إليها الآن.",
+  },
   continue: { en: "Continue", ar: "متابعة" },
 
   // Preconditions — every control says, in words, why it cannot be pressed.
