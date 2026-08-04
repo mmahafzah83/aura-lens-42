@@ -622,7 +622,11 @@ export default function StudioPanel({
       content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
       step: entryStep(postureRef.current), format: next?.format ?? null,
       formatDecided: Boolean(next?.format), draftId: null, draftSource: null,
+      current: 0, scrollY: 0,
     };
+    // Y1 — a new piece is nothing open: the address says so too.
+    pieceRowIdRef.current = null;
+    setPieceRowId(null);
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* quota never blocks editing */ }
   }, []);
 
