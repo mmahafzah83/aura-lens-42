@@ -9,7 +9,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
@@ -65,6 +65,12 @@ function readStoredPosture(): Posture | null {
   }
 }
 const DRAFT_KEY = "aura_studio_draft_v1";
+/**
+ * Y2 — a draft older than this is NOT work in progress. It is an artefact,
+ * and it already sits in the drafts list. Offering to resume it would presume
+ * a continuity the member does not feel, so after this gap we never offer.
+ */
+const RESUME_WINDOW_MS = 24 * 60 * 60 * 1000;
 /**
  * `composer_opened` is one event per PIECE per session. The studio is a tab
  * now, so it unmounts on every navigation — a ref guard would reset each time
