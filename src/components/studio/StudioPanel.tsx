@@ -554,6 +554,14 @@ export default function StudioPanel({
     }
     const s = Number(saved.step);
     setStep(s >= 1 && s <= 4 ? s : 2);
+    // Y3 — the POSITION comes back too: the slide being edited, and the place
+    // on the page. Carrying on means carrying on, not starting the deck again.
+    const slide = Number(saved.current);
+    if (Number.isFinite(slide) && slide >= 0) setCurrent(slide);
+    const y = Number(saved.scrollY);
+    if (Number.isFinite(y) && y > 0) {
+      window.setTimeout(() => window.scrollTo({ top: y, behavior: "auto" }), 60);
+    }
     setRestoredFlag(true);
   }, [pendingRestore]);
 
