@@ -2018,6 +2018,57 @@ export default function StudioPanel({
           align={rtlShell ? "right" : "left"}
           lang={lang}
         >
+          {/* THE POSTURE, MADE REAL. Delegator: a subject already chosen and one
+              primary that writes. Author: no generate affordance at all.
+              Editor: the words arrived from step 1. */}
+          {posture === "delegator" && (
+            <div style={{ display: "grid", gap: 8, justifyItems: rtlShell ? "end" : "start", margin: "0 0 14px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
+                {wordsReady ? T.delegatorFoundDraft[lang] : T.delegatorWaiting[lang]}
+              </p>
+              {!wordsReady && (
+                <ButtonPrimary onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
+                  {T.writeItNow[lang]}
+                </ButtonPrimary>
+              )}
+              {!wordsReady && !choice && (
+                <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)" }}>
+                  {T.whyNoSubject[lang]}
+                </span>
+              )}
+              <ButtonGhost onClick={() => setStep(1)} style={{ minHeight: 44 }}>
+                {T.chooseDifferent[lang]}
+              </ButtonGhost>
+            </div>
+          )}
+
+          {/* Editing words that are already live is a NEW post, and it is asked
+              for first. Nothing published is ever quietly rewritten. */}
+          {published && (
+            <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                {T.editAfterPublishHead[lang]}
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <ButtonPrimary
+                  onClick={() => {
+                    const carried = content;
+                    const keep = choice;
+                    startNewPiece({ choice: keep });
+                    setContent(carried);
+                    setStep(2);
+                  }}
+                  style={{ minHeight: 44 }}
+                >
+                  {T.editAfterPublishYes[lang]}
+                </ButtonPrimary>
+                <ButtonGhost onClick={() => setStep(4)} style={{ minHeight: 44 }}>
+                  {T.keepAsIs[lang]}
+                </ButtonGhost>
+              </div>
+            </div>
+          )}
+
           {notReady && (
             <p
               role="status"
@@ -2038,7 +2089,9 @@ export default function StudioPanel({
               </ButtonGhost>
             </div>
           )}
-          {/* Change the writing language without going back a step. */}
+          {/* Change the writing language without going back a step. This is a
+              generate affordance, so it does not exist in the author posture. */}
+          {posture !== "author" && (
           <div style={{ marginBottom: 12 }}>
             <ButtonGhost
               onClick={() => {
@@ -2088,6 +2141,7 @@ export default function StudioPanel({
               </div>
             )}
           </div>
+          )}
           {writeArea}
         </StageCard>
       )}
