@@ -1,13 +1,21 @@
 import React from "react";
-import { THEMES, type ThemeName } from "@/carousel/render/themes";
+import { THEMES, templateThemes, type ThemeName } from "@/carousel/render/themes";
+import { TEMPLATES } from "@/carousel/render/template";
 import { T, themeLabel, type Lang } from "./strings";
 
 /**
- * Sourced from the registry, not a hand-kept array: a theme added to THEMES
- * appears here without a second edit, and one removed cannot leave a dead
- * swatch behind.
+ * Sourced from the registry, not a hand-kept array. Two filters, both
+ * deliberate: a theme must be allowed for its template (`templateThemes`),
+ * and the template must actually have a registered renderer (`TEMPLATES`).
+ * A token set with no renderer behind it must never reach a swatch — the
+ * member would pick a look that cannot be drawn. Today that resolves to
+ * instrument's four, exactly as before.
  */
-const THEME_LIST = Object.keys(THEMES) as ThemeName[];
+const THEME_LIST = Array.from(
+  new Set(
+    Object.keys(TEMPLATES).flatMap((id) => templateThemes[id] ?? []),
+  ),
+).filter((t): t is ThemeName => t in THEMES);
 
 const heading: React.CSSProperties = {
   fontFamily: "var(--ff-mono)",
