@@ -1262,6 +1262,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 <button
                   key={key}
                   type="button"
+                  className="cap-tap"
                   disabled={disabled}
                   onClick={() => {
                     if (disabled) return;
