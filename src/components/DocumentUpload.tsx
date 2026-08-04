@@ -123,6 +123,8 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
   const [fileName, setFileName] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [duplicate, setDuplicate] = useState<{ filename: string; date: string } | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [queue, setQueue] = useState<{ id: string; name: string; state: "working" | "done" | "error" }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const pollIntervalRef = useRef<number | null>(null);
@@ -136,6 +138,17 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
   const stopPolling = () => {
     if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
     if (pollTimeoutRef.current) { clearTimeout(pollTimeoutRef.current); pollTimeoutRef.current = null; }
+  };
+
+  const setQueueState = (id: string, state: "working" | "done" | "error") =>
+    setQueue((q) => q.map((r) => (r.id === id ? { ...r, state } : r)));
+
+  const handleFiles = async (files: File[]) => {
+    for (const file of files) {
+      // Sequential: each file gets its own watcher/toast + duplicate check.
+      // eslint-disable-next-line no-await-in-loop
+      await handleFile(file);
+    }
   };
 
   const checkDuplicate = async (file: File): Promise<{ filename: string; date: string } | null> => {
@@ -243,6 +256,16 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
 
     console.log(`[DocumentUpload] upload row created doc=${(doc as any).id} status=${(doc as any).status}`);
     dispatchDocumentStatusEvent((doc as any).id, "processing");
+    const queueId = (doc as any).id as string;
+    setQueue((q) => [...q, { id: queueId, name: file.name, state: "working" }]);
+    const onStatus = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { documentId: string; status: string };
+      if (detail?.documentId !== queueId) return;
+      if (detail.status === "completed" || detail.status === "ready") setQueueState(queueId, "done");
+      else if (detail.status === "error" || detail.status === "timeout") setQueueState(queueId, "error");
+    };
+    window.addEventListener(DOCUMENT_STATUS_EVENT, onStatus);
+    window.setTimeout(() => window.removeEventListener(DOCUMENT_STATUS_EVENT, onStatus), 185000);
 
     setStatus("processing");
     startDocumentWatcher({ documentId: (doc as any).id, filename: file.name });
@@ -289,7 +312,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
     idle: <FileUp className="w-8 h-8 text-muted-foreground" />,
     uploading: <Loader2 className="w-8 h-8 text-primary animate-spin" />,
     processing: <Loader2 className="w-8 h-8 text-primary animate-spin" />,
-    done: <CheckCircle className="w-8 h-8" style={{ color: "var(--success)" }} />,
+    done: <CheckCircle className="w-8 h-8" style={{ color: "#12805C" }} />,
     error: <AlertCircle className="w-8 h-8 text-destructive" />,
   };
 
@@ -312,18 +335,25 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
         onChange={async (e) => {
           const files = Array.from(e.target.files || []);
           e.target.value = "";
-          for (const file of files) {
-            // Sequential: await each so upload + ingest trigger fire in order and
-            // each file gets its own watcher/toast + independent duplicate check.
-            // eslint-disable-next-line no-await-in-loop
-            await handleFile(file);
-          }
+          await handleFiles(files);
         }}
       />
 
       <div
+        role="button"
+        tabIndex={0}
         onClick={() => !uploading && !duplicate && fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInputRef.current?.click(); } }}
+        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+        onDragLeave={() => setDragActive(false)}
+        onDrop={async (e) => {
+          e.preventDefault();
+          setDragActive(false);
+          const files = Array.from(e.dataTransfer.files || []);
+          if (files.length) await handleFiles(files);
+        }}
+        style={dragActive ? { borderColor: "#0670C4", background: "#EAF3FB", minHeight: 44 } : { minHeight: 44 }}
+        className={`cap-tap border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
           uploading ? "border-primary/30 bg-primary/5" : "border-border/40 hover:border-primary/50"
         }`}
       >
@@ -335,6 +365,30 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
           <span className="text-xs text-muted-foreground flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Image</span>
         </div>
       </div>
+
+      {queue.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {queue.map((row) => (
+            <div key={row.id} className="flex items-center gap-3 rounded-lg px-3 py-2" style={{ background: "#F2F5F9", border: "1px solid #E2E7EE" }}>
+              <div className="flex-1 min-w-0">
+                <div className="truncate" style={{ fontSize: 12, color: "#0F1519" }}>{row.name}</div>
+                <div className={`cap-queue-bar${row.state === "working" ? "" : " is-done"}`} style={{ marginTop: 6, height: 4, borderRadius: 999, background: "#E2E7EE", overflow: "hidden" }}>
+                  <i style={{ display: "block", height: "100%", borderRadius: 999, width: row.state === "working" ? "45%" : "100%", background: row.state === "error" ? "#C0392B" : row.state === "done" ? "#12805C" : "#00CEC9" }} />
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label={`Remove ${row.name}`}
+                className="cap-tap"
+                onClick={() => { clearWatcher(row.id); setQueue((q) => q.filter((r) => r.id !== row.id)); }}
+                style={{ background: "transparent", border: 0, color: "#5B6673", cursor: "pointer", minWidth: 44, minHeight: 44 }}
+              >
+                <X className="w-4 h-4 mx-auto" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {duplicate && pendingFile && (
         <div
@@ -352,7 +406,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
             <button
               type="button"
               onClick={() => processUpload(pendingFile, ACCEPTED_TYPES[pendingFile.type])}
-              style={{ fontSize: 12, color: "var(--warning-text)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+              style={{ fontSize: 12, color: "#0670C4", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
             >
               Upload again
             </button>

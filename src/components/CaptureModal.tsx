@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, Plus, Camera, FolderOpen, FileText } from "lucide-react";
+import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, Plus, Camera, FolderOpen, FileText, Sparkles, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
@@ -37,6 +37,220 @@ const isValidUrl = (s: string) => {
   }
 };
 
+/* ── System-B "Signal" palette, capture surface only ── */
+const SB = {
+  canvas: "#F2F5F9",
+  card: "#FFFFFF",
+  border: "#E2E7EE",
+  ink: "#0F1519",
+  ink2: "#5B6673",
+  blue: "#0670C4",
+  blueHover: "#04477C",
+  blueTint: "#EAF3FB",
+  cyan: "#00CEC9",
+  cyanText: "#00807B",
+  amber: "#E0A82E",
+  success: "#12805C",
+  error: "#C0392B",
+} as const;
+
+/** Scoped styles: focus-visible, 44px targets, reduced-motion, queue bar. */
+const CAPTURE_CSS = `
+[data-capture-surface] :is(button, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid ${SB.blue};
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+[data-capture-surface] .cap-tap { min-height: 44px; min-width: 44px; }
+[data-capture-surface] .cap-dropzone { transition: border-color 150ms ease, background 150ms ease; }
+[data-capture-surface] .cap-queue-bar {
+  height: 4px; border-radius: 999px; background: ${SB.border}; overflow: hidden;
+}
+[data-capture-surface] .cap-queue-bar > i {
+  display: block; height: 100%; border-radius: 999px; background: ${SB.cyan};
+  width: 40%; animation: cap-indet 1.1s ease-in-out infinite;
+}
+[data-capture-surface] .cap-queue-bar.is-done > i {
+  width: 100%; background: ${SB.success}; animation: none;
+}
+@keyframes cap-indet { 0% { margin-inline-start: -40%; } 100% { margin-inline-start: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  [data-capture-surface] .cap-queue-bar > i { animation: none; width: 100%; }
+  [data-capture-surface] .animate-spin { animation: none; }
+  [data-capture-surface] .capture-wave-bar { animation: none; transform: scaleY(0.7); }
+  [data-capture-surface] .capture-pulse-dot { animation: none; }
+}
+`;
+
+type QueuedImage = { id: string; file: File; preview: string; status: "queued" | "saving" | "done" | "error" };
+type BaselineSnapshot = { signals: Record<string, number>; imprint: number | null };
+type CaptureResult = {
+  since: string;
+  userId: string;
+  title: string;
+  baseline: BaselineSnapshot;
+};
+
+const snapshotBaseline = async (userId: string): Promise<BaselineSnapshot> => {
+  const out: BaselineSnapshot = { signals: {}, imprint: null };
+  try {
+    const [{ data: sigs }, { data: imp }] = await Promise.all([
+      supabase.from("strategic_signals").select("id, strength_score").eq("user_id", userId),
+      supabase.from("imprint_snapshots").select("imprint").eq("user_id", userId)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    (sigs || []).forEach((s: any) => { out.signals[s.id] = Number(s.strength_score) || 0; });
+    if (imp && typeof (imp as any).imprint === "number") out.imprint = (imp as any).imprint;
+  } catch { /* baseline is best-effort */ }
+  return out;
+};
+
+/**
+ * Honest result card. Shows nothing until the pipeline has actually produced
+ * data: evidence first, and the signal state ONLY when a real strength delta
+ * exists for one of this member's own signals.
+ */
+const CaptureResultCard = ({ result, onClose }: { result: CaptureResult; onClose: () => void }) => {
+  const [fragments, setFragments] = useState<number>(0);
+  const [themes, setThemes] = useState<string[]>([]);
+  const [signal, setSignal] = useState<{ id: string; title: string; delta: number; rank: number } | null>(null);
+  const [imprint, setImprint] = useState<{ from: number; to: number } | null>(null);
+
+  useEffect(() => {
+    let stop = false;
+    const tick = async () => {
+      if (stop) return;
+      try {
+        const { data: frags } = await supabase
+          .from("evidence_fragments")
+          .select("id, skill_pillars, tags")
+          .eq("user_id", result.userId)
+          .gte("created_at", result.since);
+        if (frags && frags.length) {
+          setFragments(frags.length);
+          const chips = new Set<string>();
+          frags.forEach((f: any) => {
+            (f.skill_pillars || []).forEach((p: string) => chips.add(p));
+            (f.tags || []).slice(0, 2).forEach((t: string) => chips.add(t));
+          });
+          setThemes(Array.from(chips).slice(0, 4));
+        }
+
+        const { data: sigs } = await supabase
+          .from("strategic_signals")
+          .select("id, signal_title, strength_score")
+          .eq("user_id", result.userId)
+          .order("strength_score", { ascending: false });
+        if (sigs) {
+          for (let i = 0; i < sigs.length; i++) {
+            const s: any = sigs[i];
+            const before = result.baseline.signals[s.id];
+            const now = Number(s.strength_score) || 0;
+            if (before === undefined || now > before) {
+              const delta = before === undefined ? now : now - before;
+              if (delta > 0) {
+                setSignal({ id: s.id, title: s.signal_title, delta: Math.round(delta), rank: i + 1 });
+                break;
+              }
+            }
+          }
+        }
+
+        if (result.baseline.imprint !== null) {
+          const { data: imp } = await supabase
+            .from("imprint_snapshots").select("imprint").eq("user_id", result.userId)
+            .order("created_at", { ascending: false }).limit(1).maybeSingle();
+          const now = (imp as any)?.imprint;
+          if (typeof now === "number" && now !== result.baseline.imprint) {
+            setImprint({ from: result.baseline.imprint, to: now });
+          }
+        }
+      } catch { /* keep waiting */ }
+    };
+    void tick();
+    const iv = window.setInterval(tick, 5000);
+    const to = window.setTimeout(() => window.clearInterval(iv), 180000);
+    return () => { stop = true; window.clearInterval(iv); window.clearTimeout(to); };
+  }, [result]);
+
+  const go = (tab: string) => {
+    onClose();
+    window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab } }));
+  };
+
+  return (
+    <div
+      style={{
+        background: SB.card, border: `1px solid ${SB.border}`, borderRadius: 20,
+        padding: 18, display: "flex", flexDirection: "column", gap: 12,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Sparkles size={16} style={{ color: signal ? SB.blue : SB.cyanText }} />
+        <div style={{ fontSize: 14, fontWeight: 600, color: SB.ink }}>{result.title}</div>
+      </div>
+
+      {fragments === 0 && !signal ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span className="capture-pulse-dot" />
+          <span style={{ fontSize: 13, color: SB.ink2 }}>Aura is reading it. This card fills in as it finishes.</span>
+        </div>
+      ) : (
+        <>
+          {fragments > 0 && (
+            <div style={{ fontFamily: "var(--ff-mono)", fontSize: 12, color: SB.ink2, letterSpacing: "0.04em" }}>
+              {fragments} {fragments === 1 ? "piece" : "pieces"} of evidence extracted
+            </div>
+          )}
+          {themes.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {themes.map((t) => (
+                <span key={t} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 4, background: SB.canvas, color: SB.ink2, border: `1px solid ${SB.border}` }}>{t}</span>
+              ))}
+            </div>
+          )}
+          {signal && (
+            <div style={{ borderTop: `1px solid ${SB.border}`, paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontFamily: "var(--ff-mono)", fontSize: 13, color: SB.ink, fontWeight: 600 }}>
+                +{signal.delta} strength · now #{signal.rank} on your radar
+              </div>
+              <div style={{ fontSize: 13, color: SB.ink2 }}>{signal.title}</div>
+              {imprint && (
+                <div style={{ fontFamily: "var(--ff-mono)", fontSize: 12, color: SB.ink2 }}>
+                  Imprint {imprint.from} → {imprint.to}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 2 }}>
+        <button
+          type="button"
+          className="cap-tap"
+          onClick={() => go(signal ? "intelligence" : "intelligence")}
+          style={{
+            background: SB.blue, color: "#FFFFFF", border: 0, borderRadius: 8,
+            padding: "10px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+            display: "inline-flex", alignItems: "center", gap: 6,
+          }}
+        >
+          {signal ? "Open the signal" : "Open your library"} <ArrowRight size={14} />
+        </button>
+        <button
+          type="button"
+          className="cap-tap"
+          onClick={onClose}
+          style={{ background: "transparent", border: 0, color: SB.ink2, fontSize: 13, cursor: "pointer", padding: "10px 8px" }}
+        >
+          Capture something else
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat, prefillUrl, prefillText, initialType }: CaptureModalProps) => {
   const queryClient = useQueryClient();
   const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
@@ -59,6 +273,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
   const [analyzing, setAnalyzing] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<{ id: string; date: string } | null>(null);
+  const [imageQueue, setImageQueue] = useState<QueuedImage[]>([]);
+  const [imageDragActive, setImageDragActive] = useState(false);
+  const [captureResult, setCaptureResult] = useState<CaptureResult | null>(null);
 
   // ── New UI-only state for v4 design ──
   const [selectedPillar, setSelectedPillar] = useState<string | null>(null);
@@ -163,6 +380,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
     if (open) return;
     setLinkPreview(null);
     setSignalMatch(null);
+    setCaptureResult(null);
+    setImageQueue([]);
   }, [open]);
 
   // a11y: Esc closes (surface-only a11y baseline; does not change capture flow).
@@ -270,6 +489,64 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
     setImagePreview(null);
     setImageAnalysis(null);
     setContent("");
+    setImageQueue([]);
+  };
+
+  /** Accepts one or many images: the first becomes the analysed primary,
+   *  the rest queue up and are ingested after it, each with its own row. */
+  const handleImagesSelect = async (files: File[]) => {
+    const valid: File[] = [];
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) {
+        toast({ title: "Unsupported file", description: "Please upload an image.", variant: "destructive" });
+        continue;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        toast({ title: "Too large", description: "Image must be under 20MB.", variant: "destructive" });
+        continue;
+      }
+      valid.push(file);
+    }
+    if (!valid.length) return;
+    const rows: QueuedImage[] = valid.map((f, i) => ({
+      id: `${Date.now()}-${i}-${f.name}`,
+      file: f,
+      preview: URL.createObjectURL(f),
+      status: "queued",
+    }));
+    const takePrimary = !imageFile;
+    setImageQueue((q) => [...q, ...rows]);
+    if (takePrimary) await handleImageSelect(rows[0].file);
+  };
+
+  const removeQueuedImage = (id: string) => {
+    setImageQueue((q) => {
+      const row = q.find((r) => r.id === id);
+      const next = q.filter((r) => r.id !== id);
+      if (row && row.file === imageFile) {
+        setImageFile(null);
+        setImagePreview(null);
+        setImageAnalysis(null);
+        setContent("");
+        if (next.length) void handleImageSelect(next[0].file);
+      }
+      return next;
+    });
+  };
+
+  /** Uploads + ingests a single extra image (queue items after the primary). */
+  const uploadAndIngestImage = async (file: File, userId: string, accessToken: string) => {
+    const filePath = `${userId}/${Date.now()}-${file.name}`;
+    const { error: upErr } = await supabase.storage.from("capture-images").upload(filePath, file);
+    if (upErr) throw new Error(upErr.message);
+    const { data: urlData } = supabase.storage.from("capture-images").getPublicUrl(filePath);
+    const image_url = urlData.publicUrl;
+    const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ type: "image", content: file.name, metadata: { image_url }, source_url: image_url }),
+    });
+    if (!resp.ok) throw new Error(`Server error (${resp.status})`);
   };
 
   const startRecording = async () => {
@@ -455,6 +732,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         try { sessionStorage.setItem("aura_pending_capture_at", String(Date.now())); } catch { /* noop */ }
         sonnerToast("Saved. Aura is reading it — this usually takes a few minutes.");
 
+        const voiceSince = new Date(Date.now() - 5000).toISOString();
+        const voiceBaseline = await snapshotBaseline(session.user.id);
+        setCaptureResult({ since: voiceSince, userId: session.user.id, title, baseline: voiceBaseline });
+
         setContent("");
         setVoiceAudioUrl(null);
         setTranscriptionFailed(false);
@@ -462,7 +743,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         window.dispatchEvent(new Event("capture-complete"));
         trackCaptureCompleted(captureType, "modal");
         void maybeTriggerFirstCeremony(session.user.id);
-        onOpenChange(false);
 
         // M3-4 identity drift check (frontend only, fire-and-forget)
         bumpCaptureAndCheckDrift(session.user.id);
@@ -537,6 +817,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         setSaving(false);
         return;
       }
+
+      const sinceIso = new Date(Date.now() - 5000).toISOString();
+      const baseline = await snapshotBaseline(session.user.id);
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
         method: "POST",
@@ -642,7 +925,32 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
       // Notify any listening pages (Intelligence, etc.) that a capture completed
       window.dispatchEvent(new Event("capture-complete"));
       trackCaptureCompleted(captureType, "modal");
-      onOpenChange(false);
+
+      // Extra images from the queue, each ingested on its own.
+      const extras = imageQueue.filter((r) => r.file !== imageFile);
+      if (captureType === "image" && extras.length) {
+        for (const row of extras) {
+          setImageQueue((q) => q.map((r) => (r.id === row.id ? { ...r, status: "saving" } : r)));
+          try {
+            await uploadAndIngestImage(row.file, session.user.id, session.access_token);
+            setImageQueue((q) => q.map((r) => (r.id === row.id ? { ...r, status: "done" } : r)));
+            trackCaptureCompleted("image", "modal");
+          } catch (e: any) {
+            setImageQueue((q) => q.map((r) => (r.id === row.id ? { ...r, status: "error" } : r)));
+            sonnerToast.error(`Could not save ${row.file.name}: ${e?.message || "unknown error"}`);
+          }
+        }
+      }
+      setImageFile(null);
+      setImageQueue([]);
+
+      // Honest, in-place result card. Fills in only as real data arrives.
+      setCaptureResult({
+        since: sinceIso,
+        userId: session.user.id,
+        title: data?.extracted_title || (captureType === "link" ? (linkPreview?.domain || "New source") : "New capture"),
+        baseline,
+      });
 
       // M3-4 identity drift check (frontend only, fire-and-forget)
       bumpCaptureAndCheckDrift(session.user.id);
@@ -737,8 +1045,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             maxWidth: 460,
             padding: "44px 36px 32px",
             textAlign: "center",
-            background: "var(--ob-panel)",
-            border: "1px solid var(--hair)",
+            background: "#FFFFFF",
+            border: "1px solid #E2E7EE",
             borderRadius: 16,
             boxShadow: "0 30px 80px -20px rgba(0,0,0,0.5)",
           }}
@@ -749,7 +1057,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             style={{
               position: "absolute", top: 14, left: "50%",
               width: 220, height: 220, transform: "translateX(-50%)",
-              background: "radial-gradient(circle, color-mix(in srgb, var(--live) 22%, transparent) 0%, transparent 65%)",
+              background: "radial-gradient(circle, color-mix(in srgb, #00CEC9 22%, transparent) 0%, transparent 65%)",
               pointerEvents: "none",
             }}
           />
@@ -757,15 +1065,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             className="aura-gold-pulse"
             style={{
               position: "relative", fontSize: 42, lineHeight: 1,
-              color: "var(--live-ink)",
+              color: "#00807B",
               marginBottom: 18,
             }}
           >✦</div>
           <h2
             style={{
-              fontFamily: "var(--font-display)",
+              fontFamily: "var(--ff-ui)",
               fontSize: 26, fontWeight: 500,
-              color: "var(--glass)",
+              color: "#0F1519",
               letterSpacing: "-0.01em",
               margin: "0 0 12px",
             }}
@@ -775,7 +1083,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           <p
             style={{
               fontSize: 14, lineHeight: 1.65,
-              color: "var(--glass-2)",
+              color: "#5B6673",
               margin: "0 auto 20px", maxWidth: 360,
             }}
           >
@@ -790,8 +1098,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "intelligence" } }));
               }}
               style={{
-                background: "var(--act)",
-                color: "var(--text-inverse)",
+                background: "#0670C4",
+                color: "#FFFFFF",
                 border: 0, borderRadius: 8,
                 padding: "10px 22px",
                 fontSize: 14, fontWeight: 600,
@@ -808,7 +1116,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             style={{
               position: "absolute", top: 12, insetInlineEnd: 12,
               background: "transparent", border: 0,
-              color: "var(--glass-2)", cursor: "pointer",
+              color: "#5B6673", cursor: "pointer",
             }}
           >
             <X size={16} />
@@ -843,7 +1151,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
   };
 
   return (
-    <div data-testid="capture-panel" className="fixed inset-0 z-[10000] flex flex-col items-center justify-end" style={{ willChange: "unset" }}>
+    <div data-testid="capture-panel" data-capture-surface className="fixed inset-0 z-[10000] flex flex-col items-center justify-end" style={{ willChange: "unset" }}>
+      <style dangerouslySetInnerHTML={{ __html: CAPTURE_CSS }} />
       {/* Blurred backdrop */}
       <div
         className="fixed inset-0 capture-backdrop"
@@ -857,14 +1166,20 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onPaste={handlePaste}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !e.defaultPrevented && captureType !== "document") {
+            e.preventDefault();
+            void handleSave();
+          }
+        }}
         className="relative flex flex-col w-full overflow-hidden capture-sheet-anim"
         style={{
           maxHeight: "88vh",
           zIndex: 1000,
-          background: "var(--ob-panel)",
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          color: "var(--glass)",
+          background: "#FFFFFF",
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          color: "#0F1519",
           transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,
           transition: swipeY > 0 ? "none" : "transform 0.3s ease-out",
           opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
@@ -873,7 +1188,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
       >
         {/* Sheet handle */}
         <div className="flex justify-center cursor-grab">
-          <div style={{ width: 40, height: 4, background: "var(--hair)", borderRadius: 2, margin: "10px auto 0" }} />
+          <div style={{ width: 40, height: 4, background: "#E2E7EE", borderRadius: 2, margin: "10px auto 0" }} />
         </div>
 
         {/* Header */}
@@ -884,16 +1199,16 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           <div className="flex items-center" style={{ gap: 12 }}>
             <div
               className="flex items-center justify-center shrink-0"
-              style={{ width: 36, height: 36, background: "var(--act)", borderRadius: 11 }}
+              style={{ width: 36, height: 36, background: "#0670C4", borderRadius: 11 }}
             >
-              <Plus className="w-5 h-5" style={{ color: "var(--text-inverse)" }} strokeWidth={2.5} />
+              <Plus className="w-5 h-5" style={{ color: "#FFFFFF" }} strokeWidth={2.5} />
             </div>
             <div>
               <h2
                 style={{
-                  fontFamily: "var(--font-display)",
+                  fontFamily: "var(--ff-ui)",
                   fontSize: 18,
-                  color: "var(--glass)",
+                  color: "#0F1519",
                   margin: 0,
                   lineHeight: 1.375,
                 }}
@@ -903,12 +1218,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               <p
                 style={{
                   fontSize: 12,
-                  color: "var(--glass-2)",
+                  color: "#5B6673",
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
                   fontWeight: 600,
                   margin: "2px 0 0",
-                  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+                  fontFamily: "var(--ff-mono)",
                 }}
               >
                 Something you read, saw or heard
@@ -917,13 +1232,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           </div>
           <button
             onClick={handleClose}
-            className="flex items-center justify-center tactile-press"
+            className="flex items-center justify-center tactile-press cap-tap"
             style={{
-              width: 32,
-              height: 32,
+              width: 44,
+              height: 44,
               borderRadius: "50%",
-              background: "var(--ob-raised)",
-              color: "var(--glass-2)",
+              background: "#F2F5F9",
+              color: "#5B6673",
               border: "none",
             }}
             aria-label="Close capture"
@@ -934,6 +1249,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto" style={{ padding: "12px 20px 20px", display: "flex", flexDirection: "column", gap: 16, minHeight: 0 }}>
+          {captureResult ? (
+            <CaptureResultCard result={captureResult} onClose={() => { setCaptureResult(null); onOpenChange(false); }} />
+          ) : (
+          <>
           {/* Pill tabs */}
           <div className="flex flex-wrap" style={{ gap: 8 }}>
             {types.map(({ key, icon: Icon, label }) => {
@@ -961,11 +1280,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     borderRadius: 10,
                     fontSize: 12,
                     fontWeight: 500,
-                    border: active ? "0.5px solid var(--act)" : "0.5px solid var(--glass-3)",
+                    border: active ? "0.5px solid #0670C4" : "0.5px solid #E2E7EE",
                     background: active
-                      ? "color-mix(in srgb, var(--act) 18%, var(--ob-raised))"
-                      : "var(--ob-raised)",
-                    color: active ? "var(--glass)" : "var(--glass-2)",
+                      ? "color-mix(in srgb, #0670C4 18%, #F2F5F9)"
+                      : "#F2F5F9",
+                    color: active ? "#0F1519" : "#5B6673",
                     opacity: disabled ? 0.5 : 1,
                     cursor: disabled ? "not-allowed" : "pointer",
                     transition: "all 150ms ease",
@@ -979,7 +1298,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       width: 22,
                       height: 22,
                       borderRadius: 6,
-                      background: active ? "color-mix(in srgb, var(--act) 25%, transparent)" : "var(--ob-field)",
+                      background: active ? "color-mix(in srgb, #0670C4 25%, transparent)" : "#FFFFFF",
                     }}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -991,7 +1310,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           </div>
 
           {/* Caption: what Aura wants — a source, not a brief */}
-          <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.5, margin: "-8px 0 0" }}>
+          <p style={{ fontSize: 12, color: "#5B6673", lineHeight: 1.5, margin: "-8px 0 0" }}>
             Give Aura the source — the article, the report, the thing someone said in a meeting. Aura writes from your sources later.
           </p>
 
@@ -1012,13 +1331,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     }
                   }}
                    onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--act)";
-                    e.currentTarget.style.background = "var(--ob-field)";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--act) 30%, transparent)";
+                    e.currentTarget.style.borderColor = "#0670C4";
+                    e.currentTarget.style.background = "#FFFFFF";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, #0670C4 30%, transparent)";
                   }}
                   onBlur={async (e) => {
-                    e.currentTarget.style.borderColor = urlError ? "var(--neg)" : "var(--glass-3)";
-                    e.currentTarget.style.background = "var(--ob-field)";
+                    e.currentTarget.style.borderColor = urlError ? "#C0392B" : "#E2E7EE";
+                    e.currentTarget.style.background = "#FFFFFF";
                     e.currentTarget.style.boxShadow = "none";
                     const url = e.target.value.trim();
                     if (!url || !isValidUrl(url)) return;
@@ -1041,12 +1360,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   }}
                   style={{
                     width: "100%",
-                    background: "var(--ob-field)",
-                    border: urlError ? "0.5px solid var(--neg)" : "0.5px solid var(--glass-3)",
+                    background: "#FFFFFF",
+                    border: urlError ? "0.5px solid #C0392B" : "0.5px solid #E2E7EE",
                     borderRadius: 12,
                     padding: "13px 76px 13px 16px",
                     fontSize: 14,
-                    color: "var(--glass)",
+                    color: "#0F1519",
                     outline: "none",
                     transition: "all 150ms ease",
                   }}
@@ -1066,9 +1385,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     insetInlineEnd: 8,
                     top: "50%",
                     transform: "translateY(-50%)",
-                    background: "var(--ob-raised)",
-                    color: "var(--glass-2)",
-                    border: "0.5px solid var(--glass-3)",
+                    background: "#F2F5F9",
+                    color: "#5B6673",
+                    border: "0.5px solid #E2E7EE",
                     borderRadius: 7,
                     fontSize: 12,
                     fontWeight: 600,
@@ -1076,33 +1395,33 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     cursor: "pointer",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
-                    fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+                    fontFamily: "var(--ff-mono)",
                   }}
                 >
                   Paste
                 </button>
               </div>
 
-              {urlError && <p style={{ fontSize: 12, color: "var(--neg)", margin: 0 }}>{urlError}</p>}
+              {urlError && <p style={{ fontSize: 12, color: "#C0392B", margin: 0 }}>{urlError}</p>}
 
               {linkPreview && (
                 <div
                   style={{
-                    background: "var(--ob-raised)",
-                    border: "0.5px solid var(--hair)",
+                    background: "#F2F5F9",
+                    border: "0.5px solid #E2E7EE",
                     borderRadius: 12,
                     padding: "12px 14px",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
                   }}
                 >
-                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--glass-2)", fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#5B6673", fontFamily: "var(--ff-mono)" }}>
                     {linkPreview.domain}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: "var(--glass)", marginTop: 4, lineHeight: 1.35 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: "#0F1519", marginTop: 4, lineHeight: 1.35 }}>
                     {linkPreview.title}
                   </div>
                   {linkPreview.snippet && (
-                    <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 6, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 12, color: "#5B6673", marginTop: 6, lineHeight: 1.5 }}>
                       {linkPreview.snippet}…
                     </div>
                   )}
@@ -1112,8 +1431,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               {signalMatch && (
                 <div
                   style={{
-                    background: "color-mix(in srgb, var(--live) 15%, var(--ob-raised))",
-                    border: "0.5px solid color-mix(in srgb, var(--live) 35%, transparent)",
+                    background: "color-mix(in srgb, #00CEC9 15%, #F2F5F9)",
+                    border: "0.5px solid color-mix(in srgb, #00CEC9 35%, transparent)",
                     borderRadius: 10,
                     padding: "11px 14px",
                     display: "flex",
@@ -1122,7 +1441,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   }}
                 >
                   <span className="capture-pulse-dot" />
-                  <span style={{ fontSize: 12, color: "var(--glass)", lineHeight: 1.45 }}>
+                  <span style={{ fontSize: 12, color: "#0F1519", lineHeight: 1.45 }}>
                     Aura detected this strengthens your signal <strong>{signalMatch.title}</strong> — adding will reinforce it.
                   </span>
                 </div>
@@ -1131,20 +1450,20 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
               {duplicateInfo && (
                 <div
                   style={{
-                    background: "var(--ob-raised)",
-                    border: "0.5px solid var(--hair)",
+                    background: "#F2F5F9",
+                    border: "0.5px solid #E2E7EE",
                     borderRadius: 10,
                     padding: "10px 14px",
                   }}
                 >
-                  <p style={{ fontSize: 12, color: "var(--glass)", margin: 0 }}>
+                  <p style={{ fontSize: 12, color: "#0F1519", margin: 0 }}>
                     You already captured this source on {duplicateInfo.date}.
                   </p>
                   <div style={{ marginTop: 6 }}>
-                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 12, color: "var(--act)", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
+                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 12, color: "#0670C4", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
                       Capture anyway
                     </button>
-                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 12, color: "var(--glass-2)", background: "transparent", border: "none", marginInlineStart: 12, cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 12, color: "#5B6673", background: "transparent", border: "none", marginInlineStart: 12, cursor: "pointer", padding: 0 }}>
                       Skip
                     </button>
                   </div>
@@ -1169,10 +1488,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                         padding: "5px 12px",
                         borderRadius: 20,
                         background: active
-                          ? "color-mix(in srgb, var(--act) 20%, var(--ob-raised))"
-                          : "var(--ob-raised)",
-                        border: active ? "0.5px solid var(--act)" : "0.5px solid var(--glass-3)",
-                        color: active ? "var(--glass)" : "var(--glass-2)",
+                          ? "color-mix(in srgb, #0670C4 20%, #F2F5F9)"
+                          : "#F2F5F9",
+                        border: active ? "0.5px solid #0670C4" : "0.5px solid #E2E7EE",
+                        color: active ? "#0F1519" : "#5B6673",
                         cursor: "pointer",
                         transition: "all 150ms ease",
                       }}
@@ -1211,23 +1530,23 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 }}
                 dir="auto"
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "var(--act)";
-                  e.currentTarget.style.background = "var(--ob-field)";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--act) 30%, transparent)";
+                  e.currentTarget.style.borderColor = "#0670C4";
+                  e.currentTarget.style.background = "#FFFFFF";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px color-mix(in srgb, #0670C4 30%, transparent)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "var(--glass-3)";
-                  e.currentTarget.style.background = "var(--ob-field)";
+                  e.currentTarget.style.borderColor = "#E2E7EE";
+                  e.currentTarget.style.background = "#FFFFFF";
                   e.currentTarget.style.boxShadow = "none";
                 }}
                 style={{
                   width: "100%",
-                  background: "var(--ob-field)",
-                  border: "0.5px solid var(--glass-3)",
+                  background: "#FFFFFF",
+                  border: "0.5px solid #E2E7EE",
                   borderRadius: 12,
                   padding: "14px 16px",
                   fontSize: 14,
-                  color: "var(--glass)",
+                  color: "#0F1519",
                   minHeight: 120,
                   resize: "none",
                   outline: "none",
@@ -1240,27 +1559,27 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   style={{
                     marginTop: 6,
                     fontSize: 11,
-                    color: content.length >= 15000 ? "var(--neg)" : "var(--glass-2)",
+                    color: content.length >= 15000 ? "#C0392B" : "#5B6673",
                     textAlign: "right",
                     fontVariantNumeric: "tabular-nums",
-                    fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+                    fontFamily: "var(--ff-mono)",
                   }}
                 >
                   {content.length.toLocaleString()} / 15,000
                 </div>
               )}
-              <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.5, margin: "8px 0 0" }}>
+              <p style={{ fontSize: 12, color: "#5B6673", lineHeight: 1.5, margin: "8px 0 0" }}>
                 Not sure what to capture? The last useful thing you read this week.
               </p>
               {/* §16.1 trust line — quiet, caption, muted; bilingual stack */}
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 2 }}>
-                <p style={{ fontSize: 11, lineHeight: 1.6, color: "var(--glass-2)", margin: 0 }}>
+                <p style={{ fontSize: 11, lineHeight: 1.6, color: "#5B6673", margin: 0 }}>
                   What you capture stays yours — used only to build your signals.
                 </p>
                 <p
                   dir="rtl"
                   lang="ar"
-                  style={{ fontSize: 11, lineHeight: 1.6, color: "var(--glass-2)", margin: 0, fontFamily: "var(--font-arabic)" }}
+                  style={{ fontSize: 11, lineHeight: 1.6, color: "#5B6673", margin: 0, fontFamily: "var(--font-arabic)" }}
                 >
                   ما تلتقطه يبقى لك وحدك — يُستخدم لبناء إشاراتك فقط.
                 </p>
@@ -1271,22 +1590,63 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
           {/* ── IMAGE ── */}
           {captureType === "image" && (
             <div className="space-y-3">
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleImageSelect(file); }} />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  e.target.value = "";
+                  if (files.length) void handleImagesSelect(files);
+                }}
+              />
+              {imageQueue.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {imageQueue.map((row) => (
+                    <div key={row.id} style={{ display: "flex", alignItems: "center", gap: 10, background: SB.canvas, border: `1px solid ${SB.border}`, borderRadius: 8, padding: "8px 10px" }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, color: SB.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.file.name}</div>
+                        <div className={`cap-queue-bar${row.status === "done" ? " is-done" : ""}`} style={{ marginTop: 6 }}><i /></div>
+                      </div>
+                      <button
+                        type="button"
+                        className="cap-tap"
+                        aria-label={`Remove ${row.file.name}`}
+                        onClick={() => removeQueuedImage(row.id)}
+                        style={{ background: "transparent", border: 0, color: SB.ink2, cursor: "pointer" }}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               {!imagePreview ? (
                 <>
                   <div
+                    className="cap-dropzone"
                     onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setImageDragActive(true); }}
+                    onDragLeave={() => setImageDragActive(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setImageDragActive(false);
+                      const files = Array.from(e.dataTransfer.files || []);
+                      if (files.length) void handleImagesSelect(files);
+                    }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "var(--act)";
-                      e.currentTarget.style.background = "color-mix(in srgb, var(--act) 10%, var(--ob-field))";
+                      e.currentTarget.style.borderColor = "#0670C4";
+                      e.currentTarget.style.background = "color-mix(in srgb, #0670C4 10%, #FFFFFF)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "var(--glass-3)";
-                      e.currentTarget.style.background = "var(--ob-field)";
+                      e.currentTarget.style.borderColor = imageDragActive ? SB.blue : "#E2E7EE";
+                      e.currentTarget.style.background = imageDragActive ? SB.blueTint : "#FFFFFF";
                     }}
                     style={{
-                      background: "var(--ob-field)",
-                      border: "1.5px dashed var(--glass-3)",
+                      background: imageDragActive ? SB.blueTint : "#FFFFFF",
+                      border: `1.5px dashed ${imageDragActive ? SB.blue : "#E2E7EE"}`,
                       borderRadius: 14,
                       padding: 32,
                       textAlign: "center",
@@ -1294,9 +1654,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       transition: "all 150ms ease",
                     }}
                   >
-                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--glass-2)" }} />
-                    <p style={{ fontSize: 14, color: "var(--glass)", margin: 0 }}>Drop an image or click to upload</p>
-                    <p style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>PNG, JPG up to 20MB</p>
+                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "#5B6673" }} />
+                    <p style={{ fontSize: 14, color: "#0F1519", margin: 0 }}>Drop an image or click to upload</p>
+                    <p style={{ fontSize: 12, color: "#5B6673", marginTop: 4 }}>PNG, JPG up to 20MB</p>
                   </div>
                   <div className="grid grid-cols-2" style={{ gap: 8 }}>
                     <button
@@ -1307,12 +1667,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 6,
-                        border: "0.5px solid var(--glass-3)",
+                        border: "0.5px solid #E2E7EE",
                         borderRadius: 10,
                         padding: "8px 16px",
                         fontSize: 12,
-                        background: "var(--ob-raised)",
-                        color: "var(--glass)",
+                        background: "#F2F5F9",
+                        color: "#0F1519",
                         cursor: "pointer",
                       }}
                     >
@@ -1326,12 +1686,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 6,
-                        border: "0.5px solid var(--glass-3)",
+                        border: "0.5px solid #E2E7EE",
                         borderRadius: 10,
                         padding: "8px 16px",
                         fontSize: 12,
-                        background: "var(--ob-raised)",
-                        color: "var(--glass)",
+                        background: "#F2F5F9",
+                        color: "#0F1519",
                         cursor: "pointer",
                       }}
                     >
@@ -1341,15 +1701,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 </>
               ) : (
                 <div className="relative">
-                  <img src={imagePreview} alt="Preview" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, background: "var(--ob-field)" }} />
-                  <button onClick={clearImage} className="absolute" style={{ top: 8, insetInlineEnd: 8, width: 26, height: 26, borderRadius: "50%", background: "var(--ob-raised)", border: "0.5px solid var(--glass-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <X className="w-3.5 h-3.5" style={{ color: "var(--glass)" }} />
+                  <img src={imagePreview} alt="Preview" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, background: "#FFFFFF" }} />
+                  <button onClick={clearImage} className="absolute" style={{ top: 8, insetInlineEnd: 8, width: 26, height: 26, borderRadius: "50%", background: "#F2F5F9", border: "0.5px solid #E2E7EE", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <X className="w-3.5 h-3.5" style={{ color: "#0F1519" }} />
                   </button>
                 </div>
               )}
               {analyzing && (
-                <div className="flex items-center" style={{ gap: 8, fontSize: 14, color: "var(--glass-2)" }}>
-                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--live)" }} />
+                <div className="flex items-center" style={{ gap: 8, fontSize: 14, color: "#5B6673" }}>
+                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#00CEC9" }} />
                   AI is reading your screenshot…
                 </div>
               )}
@@ -1361,14 +1721,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             <div className="space-y-3">
               {recentDocs.length > 0 && (
                 <div className="space-y-2">
-                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--glass-2)", fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#5B6673", fontFamily: "var(--ff-mono)" }}>
                     Recent documents
                   </div>
                   <div className="space-y-1.5">
                     {recentDocs.map((d) => {
                       const ext = (d.filename || "").split(".").pop()?.toLowerCase() || "";
                       const isPdf = ext === "pdf";
-                      const iconBg = isPdf ? "var(--neg)" : "var(--live)";
+                      const iconBg = isPdf ? "#C0392B" : "#00CEC9";
                       const isProcessed = d.status === "processed";
                       return (
                         <div
@@ -1378,8 +1738,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                             alignItems: "center",
                             gap: 12,
                             padding: "10px 12px",
-                            background: "var(--ob-raised)",
-                            border: "0.5px solid var(--hair)",
+                            background: "#F2F5F9",
+                            border: "0.5px solid #E2E7EE",
                             borderRadius: 12,
                           }}
                         >
@@ -1395,13 +1755,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                               flexShrink: 0,
                             }}
                           >
-                            <FileText className="w-4 h-4" style={{ color: "var(--ink-on-brand)" }} />
+                            <FileText className="w-4 h-4" style={{ color: "#FFFFFF" }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--glass)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div style={{ fontSize: 12, fontWeight: 500, color: "#0F1519", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {d.filename}
                             </div>
-                            <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 2 }}>
+                            <div style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
                               {fmtBytes(d.file_size)} · {new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </div>
                           </div>
@@ -1414,10 +1774,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                               padding: "3px 8px",
                               borderRadius: 6,
                               background: isProcessed
-                                ? "color-mix(in srgb, var(--pos) 18%, var(--ob-raised))"
-                                : "color-mix(in srgb, var(--live) 16%, var(--ob-raised))",
-                              color: isProcessed ? "var(--pos)" : "var(--live-ink)",
-                              fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+                                ? "color-mix(in srgb, #12805C 18%, #F2F5F9)"
+                                : "color-mix(in srgb, #00CEC9 16%, #F2F5F9)",
+                              color: isProcessed ? "#12805C" : "#00807B",
+                              fontFamily: "var(--ff-mono)",
                             }}
                           >
                             {isProcessed ? "Read" : "Reading"}
@@ -1449,15 +1809,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       width: 64,
                       height: 64,
                       borderRadius: "50%",
-                      background: "var(--ob-field)",
+                      background: "#FFFFFF",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <Loader2 className="w-7 h-7 animate-spin" style={{ color: "var(--live)" }} />
+                    <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#00CEC9" }} />
                   </div>
-                  <p style={{ fontSize: 14, color: "var(--glass-2)", margin: 0 }}>Transcribing…</p>
+                  <p style={{ fontSize: 14, color: "#5B6673", margin: 0 }}>Transcribing…</p>
                 </>
               ) : (
                 <>
@@ -1484,25 +1844,25 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: isRecording ? "var(--neg)" : "var(--act)",
+                      background: isRecording ? "#C0392B" : "#0670C4",
                       boxShadow: isRecording
-                        ? "0 4px 20px color-mix(in srgb, var(--neg) 40%, transparent)"
-                        : "0 4px 20px color-mix(in srgb, var(--act) 35%, transparent)",
+                        ? "0 4px 20px color-mix(in srgb, #C0392B 40%, transparent)"
+                        : "0 4px 20px color-mix(in srgb, #0670C4 35%, transparent)",
                       transition: "background 200ms ease",
                     }}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
                   >
                     {isRecording ? (
-                      <Square className="w-6 h-6" style={{ color: "var(--ink-on-brand)" }} fill="currentColor" />
+                      <Square className="w-6 h-6" style={{ color: "#FFFFFF" }} fill="currentColor" />
                     ) : (
-                      <Mic className="w-7 h-7" style={{ color: "var(--text-inverse)" }} />
+                      <Mic className="w-7 h-7" style={{ color: "#FFFFFF" }} />
                     )}
                   </button>
                   <div
                     style={{
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--ff-mono)",
                       fontSize: 22,
-                      color: isRecording ? "var(--live)" : "var(--glass)",
+                      color: isRecording ? "#00CEC9" : "#0F1519",
                       letterSpacing: "-0.02em",
                       lineHeight: 1.5,
                       fontVariantNumeric: "tabular-nums",
@@ -1511,18 +1871,18 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     {fmtMMSS(recordingSeconds)}
                   </div>
                   {!isRecording && (
-                    <p style={{ fontSize: 12, color: "var(--glass-2)", margin: 0 }}>Tap to record</p>
+                    <p style={{ fontSize: 12, color: "#5B6673", margin: 0 }}>Tap to record</p>
                   )}
                 </>
               )}
               {!isRecording && !isTranscribing && (
                 <div className="w-full" style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
                   {transcriptionFailed && (
-                    <p style={{ fontSize: 12, color: "var(--glass)", margin: 0 }}>
+                    <p style={{ fontSize: 12, color: "#0F1519", margin: 0 }}>
                       Auto-transcription unavailable. Type your notes manually.
                     </p>
                   )}
-                  <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--glass-2)", margin: 0, fontFamily: "'IBM Plex Mono', ui-monospace, monospace" }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#5B6673", margin: 0, fontFamily: "var(--ff-mono)" }}>
                     Transcript
                   </p>
                   <textarea
@@ -1534,12 +1894,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     placeholder="Transcript will appear here…"
                     style={{
                       width: "100%",
-                      background: "var(--ob-field)",
-                      border: "0.5px solid var(--glass-3)",
+                      background: "#FFFFFF",
+                      border: "0.5px solid #E2E7EE",
                       borderRadius: 12,
                       padding: "12px 14px",
                       fontSize: 14,
-                      color: "var(--glass)",
+                      color: "#0F1519",
                       resize: "none",
                       outline: "none",
                       
@@ -1552,20 +1912,22 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
 
           {/* Save button (not for document tab — it has its own upload handler) */}
           {captureType !== "document" && (
+            <>
             <button
               type="button"
+              className="cap-tap"
               onClick={handleSave}
               disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
               onMouseEnter={(e) => {
-                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--act-hover)";
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "#04477C";
               }}
               onMouseLeave={(e) => {
-                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--act)";
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "#0670C4";
               }}
               style={{
                 width: "100%",
-                background: "var(--act)",
-                color: "var(--text-inverse)",
+                background: "#0670C4",
+                color: "#FFFFFF",
                 border: "none",
                 borderRadius: 12,
                 padding: 14,
@@ -1590,6 +1952,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                 "Save capture"
               )}
             </button>
+            <p style={{ fontSize: 11, color: SB.ink2, textAlign: "center", margin: "8px 0 0", fontFamily: "var(--ff-mono)" }}>
+              Press ⌘↵ or click to save
+            </p>
+            </>
+          )}
+          </>
           )}
         </div>
       </div>
