@@ -91,3 +91,76 @@ export function wordBudgetFor(archetype: Archetype, hasPicture: boolean): number
   if (mode === "band") return Math.round(PLAIN_WORD_BUDGET * BAND_TEXT_SHARE);
   return PLAIN_WORD_BUDGET;
 }
+
+/* ------------------------------------------------------------------ */
+/* Z2 — THE COMPOSITION RULE, AND WHAT IT COSTS                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A picture slide carries AT MOST TWO text slots: the hook, and one
+ * supporting line. A cover carries one — the hook alone.
+ *
+ * This is a composition rule, not a rendering accident, so it is decided
+ * here, once, and both the renderer and the inspector read the same answer.
+ * The renderer draws `kept`; the inspector NAMES `dropped` to the member.
+ * Nothing may be omitted from a slide without the member being told which
+ * field it was — silently losing somebody's words is the same defect class
+ * as printing a claim they never made.
+ */
+export const PICTURE_TEXT_SLOT_MAX = 2;
+export const COVER_TEXT_SLOT_MAX = 1;
+
+/**
+ * Which slot is the hook, and which supporting slot earns the second place.
+ * Ordered by how much the slide depends on it, most first.
+ */
+export const PICTURE_SLOT_PRIORITY = [
+  "hero_lines",
+  "stat_value",
+  "headline",
+  "quote",
+  "term_def",
+  "body",
+  "stat_label",
+  "subline",
+  "checklist",
+  "callout_body",
+  "callout_label",
+  "term",
+  "chip",
+  "source",
+  "cta_pill",
+] as const;
+
+type LooseSlots = Record<string, unknown>;
+
+function slotIsFilled(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "string") return value.trim().length > 0;
+  return true;
+}
+
+export interface PictureTextPlan {
+  /** Slot names the picture variant draws. */
+  kept: string[];
+  /** Filled slot names the picture variant cannot draw. NEVER silent. */
+  dropped: string[];
+}
+
+/**
+ * What a picture variant can actually show on this slide, and what it cannot.
+ * `plain` slides keep everything: the rule exists because a picture took the
+ * room, so with no picture there is nothing to give up.
+ */
+export function pictureTextPlan(
+  archetype: Archetype,
+  slots: LooseSlots,
+  hasPicture: boolean,
+): PictureTextPlan {
+  const mode = hasPicture ? MEDIA_BY_ARCHETYPE[archetype] : "none";
+  const filled = PICTURE_SLOT_PRIORITY.filter((k) => slotIsFilled(slots[k]));
+  if (mode !== "cover" && mode !== "band") return { kept: filled.slice(), dropped: [] };
+  const max = mode === "cover" ? COVER_TEXT_SLOT_MAX : PICTURE_TEXT_SLOT_MAX;
+  return { kept: filled.slice(0, max), dropped: filled.slice(max) };
+}
