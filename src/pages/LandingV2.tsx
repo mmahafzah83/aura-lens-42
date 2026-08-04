@@ -792,7 +792,7 @@ const LandingV2 = () => {
       else delete alt.dataset.signout;
     }
     if (cta) {
-      cta.textContent = signedIn ? "Open Aura" : "Request a founder seat";
+      cta.innerHTML = `${signedIn ? "Open Aura" : "Request a founder seat"} <span class="a">↗</span>`;
       cta.setAttribute("href", signedIn ? "/home" : "/request-access");
     }
     if (hero) {
