@@ -671,7 +671,19 @@ const CLOSE_FIGURE_W = 430;
 function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
   const p = deck.primary_lang;
   const slots = slide.slots;
-  const figureSrc = deck.profile.avatar_cutout_url || deck.profile.avatar_url || null;
+  /**
+   * X4 — AN ABSOLUTE RULE. The closing slide shows either a proper
+   * background-removed cut-out, or the typographic signature block. There is
+   * no third state: the old fallback rendered the member's raw rectangular
+   * photograph behind a fade mask, and it looked pasted on. `avatar_url` is
+   * deliberately NOT consulted here.
+   *
+   * The portrait is per-member: it comes from that member's own
+   * `diagnostic_profiles` row, carried onto `deck.profile` at generation time.
+   * A member with no cut-out gets the signature, which is the better of the
+   * two anyway.
+   */
+  const figureSrc = deck.profile.avatar_cutout_url || null;
   return (
     <div
       style={{
