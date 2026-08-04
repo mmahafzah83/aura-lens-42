@@ -1495,9 +1495,11 @@ export default function StudioPanel({
       {genError && (
         <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--error)", margin: "0 0 12px" }}>
           {genError === "session" ? T.sessionEnded[lang] : T.writeFailed[lang]}{" "}
+          {posture !== "author" && (
           <button type="button" onClick={() => generate()} style={{ background: "transparent", border: 0, color: "var(--act)", fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
             {T.tryAgain[lang]}
           </button>
+          )}
         </p>
       )}
       <textarea
@@ -1505,6 +1507,8 @@ export default function StudioPanel({
         onChange={(e) => changeContent(e.target.value)}
         rows={14}
         dir={rtlWrite ? "rtl" : "ltr"}
+        disabled={published}
+        placeholder={posture === "author" ? T.authorPlaceholder[lang] : undefined}
         aria-label={T.writeHead[lang]}
         style={{
           width: "100%",
