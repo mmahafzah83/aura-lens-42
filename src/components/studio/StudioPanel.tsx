@@ -366,11 +366,10 @@ export default function StudioPanel({
    * The posture's ENTRY STEP, applied once, and only over an empty piece.
    * A posture never moves a member off work they already have.
    */
-  const enteredRef = useRef(false);
   useEffect(() => {
-    if (enteredRef.current) return;
     if (!ready || askingPosture) return;
-    enteredRef.current = true;
+    // W1 — changing posture mid-piece never moves a member off work they have,
+    // but over an EMPTY piece it re-opens the journey where that posture opens.
     if (!content.trim() && !deck && !pendingRestore) setStep(entryStep(posture));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, askingPosture, posture]);
