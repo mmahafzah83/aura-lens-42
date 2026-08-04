@@ -1888,7 +1888,42 @@ export default function StudioPanel({
         >
           {T.helpLink[lang]}
         </button>
+        {(content.trim().length > 0 || Boolean(deck)) && (
+          <button
+            type="button"
+            onClick={() => setConfirmNewPiece(true)}
+            style={{
+              minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+              fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)",
+            }}
+          >
+            {L.startNewPiece[lang]}
+          </button>
+        )}
       </div>
+
+      {confirmNewPiece && (
+        <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+            {L.newPieceHead[lang]}
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <ButtonPrimary
+              onClick={async () => {
+                if (canSave) await saveAndComeBack();
+                startNewPiece();
+                setConfirmNewPiece(false);
+              }}
+              style={{ minHeight: 44 }}
+            >
+              {L.newPieceYes[lang]}
+            </ButtonPrimary>
+            <ButtonGhost onClick={() => setConfirmNewPiece(false)} style={{ minHeight: 44 }}>
+              {L.newPieceNo[lang]}
+            </ButtonGhost>
+          </div>
+        </div>
+      )}
 
       {helpOpen && (
         <div
@@ -1915,6 +1950,38 @@ export default function StudioPanel({
           <div>
             <ButtonGhost onClick={() => setHelpOpen(false)} style={{ minHeight: 44 }}>{T.helpClose[lang]}</ButtonGhost>
           </div>
+        </div>
+      )}
+
+      {/* THE OVERNIGHT DRAFT — offered, never loaded on the member's behalf.
+          Restore wins when both could show. */}
+      {preparedDraft && !content && !deck && !pendingRestore && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            background: "var(--surface-card)", border: "1px solid var(--border-default)",
+            borderRadius: 12, padding: 12, margin: "0 0 12px",
+            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)" }}>
+            {L.preparedLine[lang].replace("{subject}", preparedDraft.title || preparedDraft.topic || "")}
+          </span>
+          <span style={{ flex: 1 }} />
+          <ButtonPrimary
+            onClick={() => {
+              const d = preparedDraft;
+              setPreparedDraft(null);
+              void openDraft(d, "studio_overnight");
+            }}
+            style={{ minHeight: 44 }}
+          >
+            {L.preparedUse[lang]}
+          </ButtonPrimary>
+          <ButtonGhost onClick={() => setPreparedDraft(null)} style={{ minHeight: 44 }}>
+            {L.preparedFresh[lang]}
+          </ButtonGhost>
         </div>
       )}
 
