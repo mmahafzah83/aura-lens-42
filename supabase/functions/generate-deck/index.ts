@@ -37,13 +37,32 @@ const corsHeaders = {
  * Registries. Layout and colourway are DATA the client may choose from; the
  * model never sees either, and never chooses layout.
  */
-const THEME_REGISTRY = ["midnight", "clay", "gradient", "paper"] as const;
+const THEME_REGISTRY = [
+  "midnight",
+  "clay",
+  "gradient",
+  "paper",
+  "highlighter_orange",
+  "highlighter_green",
+] as const;
 const DEFAULT_THEME = "midnight";
-const TEMPLATE_REGISTRY = ["instrument"] as const;
+const TEMPLATE_REGISTRY = ["instrument", "highlighter"] as const;
 const DEFAULT_TEMPLATE = "instrument";
 
-function resolveTheme(id: unknown): string {
-  return typeof id === "string" && (THEME_REGISTRY as readonly string[]).includes(id) ? id : DEFAULT_THEME;
+/**
+ * A colourway belongs to a family. Asking for a highlighter colour on the
+ * instrument layout (or the reverse) is answered with that family's own
+ * default, never with a colourway the renderer cannot draw.
+ */
+const TEMPLATE_THEMES: Record<string, readonly string[]> = {
+  instrument: ["midnight", "clay", "gradient", "paper"],
+  highlighter: ["highlighter_orange", "highlighter_green"],
+};
+
+function resolveTheme(id: unknown, template: string = DEFAULT_TEMPLATE): string {
+  const allowed = TEMPLATE_THEMES[template] ?? TEMPLATE_THEMES[DEFAULT_TEMPLATE];
+  if (typeof id === "string" && allowed.includes(id)) return id;
+  return allowed[0] ?? DEFAULT_THEME;
 }
 
 function resolveTemplate(id: unknown): string {
