@@ -1824,12 +1824,11 @@ export default function StudioPanel({
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
-                    // N1 — changing subject on a finished piece is a new piece.
+                    // N1 — changing subject over words already written is a NEW
+                    // piece, and it is confirmed before anything is lost.
                     const next = { id: c.signalId, title: c.title, insight: c.insight };
-                    if (choice?.id !== c.signalId && (published || draftId || content.trim())) {
-                      startNewPiece({ choice: next });
-                      return;
-                    }
+                    if (choice?.id === c.signalId) return;
+                    if (published || content.trim()) { setPendingSubject(next); return; }
                     setChoice(next);
                     setTypedTopic("");
                   }}
@@ -1890,10 +1889,8 @@ export default function StudioPanel({
                       aria-pressed={on}
                       onClick={() => {
                         const next = { id: s.id, title: s.title, insight: s.insight };
-                        if (choice?.id !== s.id && (published || draftId || content.trim())) {
-                          startNewPiece({ choice: next });
-                          return;
-                        }
+                        if (choice?.id === s.id) return;
+                        if (published || content.trim()) { setPendingSubject(next); return; }
                         setChoice(next);
                         setTypedTopic("");
                       }}
