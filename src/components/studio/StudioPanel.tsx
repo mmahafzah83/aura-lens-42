@@ -9,7 +9,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
@@ -65,6 +65,12 @@ function readStoredPosture(): Posture | null {
   }
 }
 const DRAFT_KEY = "aura_studio_draft_v1";
+/**
+ * Y2 — a draft older than this is NOT work in progress. It is an artefact,
+ * and it already sits in the drafts list. Offering to resume it would presume
+ * a continuity the member does not feel, so after this gap we never offer.
+ */
+const RESUME_WINDOW_MS = 24 * 60 * 60 * 1000;
 /**
  * `composer_opened` is one event per PIECE per session. The studio is a tab
  * now, so it unmounts on every navigation — a ref guard would reset each time
@@ -215,6 +221,19 @@ export default function StudioPanel({
    * async sequence never re-reads a null captured at render and inserts twice.
    */
   const postRowRef = useRef<string | null>(null);
+  /**
+   * Y1 — THE URL IS THE TRUTH ABOUT WHAT IS OPEN.
+   *
+   * The row id of the piece being worked on is mirrored into the address as
+   * `?piece=<id>&src=<table>`, always with `replace: true` so a keystroke can
+   * never create a history entry. It is removed on a new piece and when the
+   * piece is finished. Everything downstream — refresh, back, bookmark, a link
+   * a member sent themselves — then follows from one rule instead of four
+   * special cases.
+   */
+  const [pieceRowId, setPieceRowId] = useState<string | null>(null);
+  const pieceRowIdRef = useRef<string | null>(null);
+  const [, setSearchParams] = useSearchParams();
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
@@ -400,10 +419,30 @@ export default function StudioPanel({
     content?: unknown; deck?: unknown; choice?: unknown; writeLang?: unknown;
     step?: unknown; format?: unknown; draftId?: unknown; draftSource?: unknown;
     postRowId?: unknown; savedAt?: unknown; formatDecided?: unknown;
+    current?: unknown; scrollY?: unknown;
   };
   const [pendingRestore, setPendingRestore] = useState<SavedPiece | null>(null);
 
+  /**
+   * Y2 — THE FOUR CASES, EACH DISTINCT. One mount effect, four branches.
+   *
+   *  1. SAME SESSION, TAB SWITCHED AWAY AND BACK — this effect does not run at
+   *     all, because the composer is no longer unmounted by the tab container
+   *     (see `Dashboard.tsx`: the authority pane stays mounted and is hidden).
+   *     Pure continuation, nothing announced. They never left.
+   *  2. A LINK — `?piece=` (or `?draft=`, resolved by the shell). The incoming
+   *     intent WINS: it opens, and any unsaved work is saved first, silently,
+   *     and said in one line. Never a dialog, never discarded.
+   *  3. REFRESH OR A RETURN THE SAME DAY — the stored piece is OFFERED in one
+   *     line and applied only on "Carry on". We never open inside it.
+   *  4. A RETURN AFTER MORE THAN 24 HOURS — no offer at all. The draft is one
+   *     item in the drafts list; the composer opens clean.
+   */
   const restoredRef = useRef(false);
+  /** Case 2 — set on mount, before anything else can claim the screen. */
+  const urlPieceRef = useRef<string | null>(
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("piece"),
+  );
   useEffect(() => {
     if (restoredRef.current) return;
     restoredRef.current = true;
@@ -415,9 +454,75 @@ export default function StudioPanel({
       const hasDeck = Boolean(saved.deck);
       // Only real work is worth announcing. Anything else is not progress.
       if (!hasWords && !hasDeck) { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } return; }
+      // CASE 2 — an address that names a piece, or a shell-resolved `?draft=`,
+      // outranks anything stored. Nothing is offered; the link opens.
+      const incoming = urlPieceRef.current || new URLSearchParams(window.location.search).get("draft");
+      if (incoming) {
+        pendingStashRef.current = saved.postRowId || saved.draftId ? null : saved;
+        return;
+      }
+      // CASE 4 — older than a day: not work in progress. It lives in the
+      // drafts list, so the composer opens clean and says nothing.
+      const savedAt = typeof saved.savedAt === "string" ? Date.parse(saved.savedAt) : NaN;
+      if (!Number.isNaN(savedAt) && Date.now() - savedAt > RESUME_WINDOW_MS) {
+        try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+        return;
+      }
+      // CASE 3 — refresh, or a return the same day: offered, never applied.
       setPendingRestore(saved);
     } catch { /* an unreadable draft is simply not restored */ }
   }, []);
+
+  /**
+   * CASE 2, second half — work that had no row yet is written to the drafts
+   * list before the incoming piece takes the screen. Nothing is ever thrown
+   * away to make room for a link.
+   */
+  const pendingStashRef = useRef<SavedPiece | null>(null);
+  useEffect(() => {
+    if (!userId) return;
+    const stash = pendingStashRef.current;
+    if (!stash) return;
+    pendingStashRef.current = null;
+    const words = typeof stash.content === "string" ? stash.content.trim() : "";
+    if (!words) return;
+    (async () => {
+      const title = words.split("\n")[0]?.slice(0, 80) || null;
+      const { error } = await supabase.from("linkedin_posts").insert({
+        user_id: userId,
+        post_text: words,
+        original_generated_text: words,
+        format_type: "post",
+        tracking_status: "draft",
+        source_type: "aura_generated",
+        authorship: "aura_drafted",
+        title,
+        topic_label: title,
+      } as any);
+      if (!error) setStatus(T.savedOtherFirst[lang]);
+    })();
+  }, [userId, lang]);
+
+  /**
+   * CASE 2, first half — the address names a piece, so that piece is what the
+   * page renders. This is the whole of "refresh restores from the URL, not
+   * from a guess", and the whole of a bookmarked or emailed draft.
+   */
+  const urlOpenedRef = useRef(false);
+  useEffect(() => {
+    if (!userId || urlOpenedRef.current) return;
+    const id = urlPieceRef.current;
+    if (!id) return;
+    // The shell owns `?draft=`; two openers for one piece would fight.
+    if (draftPrefill?.id) { urlOpenedRef.current = true; return; }
+    urlOpenedRef.current = true;
+    (async () => {
+      const full = await loadStudioDraft(id);
+      if (!full) { setProblem(T.draftMissing[lang]); return; }
+      await openDraft(full, "url_piece");
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, draftPrefill]);
 
   /** "Carry on" — and only then does the saved work become this session's. */
   const carryOnRestore = useCallback(() => {
@@ -449,6 +554,14 @@ export default function StudioPanel({
     }
     const s = Number(saved.step);
     setStep(s >= 1 && s <= 4 ? s : 2);
+    // Y3 — the POSITION comes back too: the slide being edited, and the place
+    // on the page. Carrying on means carrying on, not starting the deck again.
+    const slide = Number(saved.current);
+    if (Number.isFinite(slide) && slide >= 0) setCurrent(slide);
+    const y = Number(saved.scrollY);
+    if (Number.isFinite(y) && y > 0) {
+      window.setTimeout(() => window.scrollTo({ top: y, behavior: "auto" }), 60);
+    }
     setRestoredFlag(true);
   }, [pendingRestore]);
 
@@ -464,13 +577,29 @@ export default function StudioPanel({
    * debounced save must always be able to flush the very latest values
    * synchronously. `liveRef` holds them; `persistNow` writes them.
    */
-  const liveRef = useRef({ content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource });
-  liveRef.current = { content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource };
+  const liveRef = useRef({
+    content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource,
+    // Y3 — the POSITION is part of the work. Restoring words but landing on
+    // slide 1 of a deck that was being edited at slide 5 reads as starting over.
+    current: 0, scrollY: 0,
+  });
+  liveRef.current = {
+    ...liveRef.current,
+    content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource, current,
+  };
 
   const persistNow = useCallback((overrides?: Partial<typeof liveRef.current>) => {
-    const v = { ...liveRef.current, ...(overrides || {}) };
+    const v = { ...liveRef.current, scrollY: window.scrollY, ...(overrides || {}) };
     // Written straight through, so a caller mid-update never persists stale words.
     liveRef.current = v;
+    // Y1 — the address follows the row id wherever it is created. Every path
+    // that binds this screen to a row calls `persistNow`, so this one line
+    // keeps the URL true without touching a dozen call sites.
+    const rowId = postRowRef.current ?? v.draftId ?? null;
+    if (pieceRowIdRef.current !== rowId) {
+      pieceRowIdRef.current = rowId;
+      setPieceRowId(rowId);
+    }
     if (!v.content && !v.deck && !postRowRef.current) return;
     try {
       localStorage.setItem(
@@ -486,7 +615,7 @@ export default function StudioPanel({
     // changes save themselves, so no live region fires on every keystroke.
     const t = window.setTimeout(persistNow, 1500);
     return () => window.clearTimeout(t);
-  }, [content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource, persistNow]);
+  }, [content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource, current, persistNow]);
 
   /* Backgrounding the tab or closing the page is also a disappearance. */
   useEffect(() => {
@@ -587,7 +716,11 @@ export default function StudioPanel({
       content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
       step: entryStep(postureRef.current), format: next?.format ?? null,
       formatDecided: Boolean(next?.format), draftId: null, draftSource: null,
+      current: 0, scrollY: 0,
     };
+    // Y1 — a new piece is nothing open: the address says so too.
+    pieceRowIdRef.current = null;
+    setPieceRowId(null);
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* quota never blocks editing */ }
   }, []);
 
@@ -1329,8 +1462,19 @@ export default function StudioPanel({
     const id = await saveDraft();
     setBusy(null);
     setBusyMessage(null);
-    if (id) setStatus(T.saveLaterNote[lang]);
-    else setProblem(T.postFailed[lang]);
+    if (!id) { setProblem(T.postFailed[lang]); return; }
+    /**
+     * Y5 — A CONTROL CALLED "COME BACK LATER" HAS TO TAKE YOU SOMEWHERE.
+     *
+     * The act is: save · say where it went · go there. Leaving the member on
+     * the same screen having announced a save is an unfinished sentence.
+     */
+    setStatus(T.saveLaterGoing[lang]);
+    window.setTimeout(() => {
+      try {
+        window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "library" } }));
+      } catch { /* navigation is never allowed to throw at a member */ }
+    }, 450);
   }, [saveDraft, lang]);
 
   /**
@@ -1432,6 +1576,30 @@ export default function StudioPanel({
   const slidesMade = deck !== null;
   const formatChosen = format !== null;
   const finished = published || linkSaved;
+
+  /**
+   * Y1 — THE ADDRESS IS WRITTEN HERE AND NOWHERE ELSE.
+   *
+   * `replace: true` always: a piece is not a place you navigate to per
+   * keystroke. The parameter appears the moment a row id exists, and is
+   * removed on a new piece (`pieceRowId` is nulled by `startNewPiece`) and
+   * when the piece is finished.
+   */
+  useEffect(() => {
+    const want = finished ? null : pieceRowId;
+    const next = new URLSearchParams(window.location.search);
+    const has = next.get("piece");
+    const wantSrc = draftSource ?? (want ? "linkedin_posts" : null);
+    if ((has || null) === (want || null) && (next.get("src") || null) === (want ? wantSrc : null)) return;
+    if (want) {
+      next.set("piece", want);
+      if (wantSrc) next.set("src", wantSrc);
+    } else {
+      next.delete("piece");
+      next.delete("src");
+    }
+    setSearchParams(next, { replace: true });
+  }, [pieceRowId, finished, draftSource, setSearchParams]);
   /**
    * "Write another about this subject" is only offered while that signal still
    * has material left to write from — it is only ever a ranked start card

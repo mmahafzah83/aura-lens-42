@@ -258,6 +258,15 @@ const Dashboard = () => {
     };
   }, [setSearchParams]);
 
+  /**
+   * The composer mounts on first arrival at the authority tab and is never
+   * unmounted again for the rest of the session (Y2, case 1).
+   */
+  const [authorityMounted, setAuthorityMounted] = useState(false);
+  useEffect(() => {
+    if (activeTab === "authority") setAuthorityMounted(true);
+  }, [activeTab]);
+
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -1049,20 +1058,14 @@ const Dashboard = () => {
               </div>
             )}
 
-            {activeTab === "authority" && (
-              <div className="animate-tab-spring aura-page">
-                <ErrorBoundary>
-                  <StudioPanel
-                    signalPrefill={signalDraftPrefill}
-                    onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
-                    draftPrefill={draftPrefill}
-                    onDraftPrefillConsumed={() => setDraftPrefill(null)}
-                    onOpenCapture={() => handleOpenCapture()}
-                  />
-                </ErrorBoundary>
-              </div>
-            )}
-
+            {/*
+              Y2, case 1 — the composer is NOT rendered here.
+              This container is keyed by `activeTab`, so anything inside it is
+              destroyed and rebuilt on every tab switch. Half-written words are
+              work in progress, not a document to reload, so the composer lives
+              outside this container and is merely hidden. Switching away and
+              back is pure continuation: nothing remounts, nothing is announced.
+            */}
             {activeTab === "influence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
@@ -1088,6 +1091,25 @@ const Dashboard = () => {
             )}
 
           </div>
+
+          {/*
+            THE COMPOSER — mounted once, hidden rather than unmounted.
+            It mounts on first arrival at the authority tab and stays mounted
+            for the rest of the session.
+          */}
+          {authorityMounted && (
+            <div hidden={activeTab !== "authority"} className={activeTab === "authority" ? "aura-page" : undefined}>
+              <ErrorBoundary>
+                <StudioPanel
+                  signalPrefill={signalDraftPrefill}
+                  onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
+                  draftPrefill={draftPrefill}
+                  onDraftPrefillConsumed={() => setDraftPrefill(null)}
+                  onOpenCapture={() => handleOpenCapture()}
+                />
+              </ErrorBoundary>
+            </div>
+          )}
         </div>
       </main>
 
