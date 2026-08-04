@@ -254,6 +254,14 @@ export const ZoneInspector: React.FC<{
             {refusal}
           </p>
         )}
+        {/* Z1 — the closing slide reports the real state of the portrait. */}
+        {slide.archetype === "close" && portraitState !== "none" && (
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, margin: 0, color: portraitState === "failed" ? "var(--error)" : "var(--text-muted)" }}>
+            {portraitState === "ready" ? T.portraitShown[lang]
+              : portraitState === "preparing" ? T.portraitPreparing[lang]
+              : T.portraitFailed[lang]}
+          </p>
+        )}
         {/* A picture variant with more words than it can hold. The member is
             told plainly and offered a deterministic trim — or may keep every
             word and drop the picture instead. Nothing is cut behind their back. */}
