@@ -519,26 +519,42 @@ function Stack({ children, gap }: { children: React.ReactNode; gap: number }) {
 }
 
 /**
- * X1 — the COVER variant is a different composition, not a shrunken one.
- * The hero line is the only text on the slide; every other slot is HIDDEN,
- * because a chip, a subline and a source squeezed over a photograph is what
- * makes an image look accidental. For `cover_stat`, whose hero IS the number,
- * the numeral plays the hero's part.
+ * THE COVER KEEPS EVERY WORD. The picture is a full-bleed background behind
+ * two scrims, so it consumes no layout room: the label, the hook and the
+ * framing all render, in the SAME components and at the same type scale as a
+ * cover with no picture. Nothing here is hidden by a count; if the words ever
+ * genuinely overflow, the fit ladder — which measures the DOM — says so.
  */
 function CoverBody({ deck, slide, theme, s }: PartProps) {
   const p = deck.primary_lang;
   const slots = slide.slots;
-  if (slots.hero_lines?.length) {
-    return <Hero lines={slots.hero_lines} primary={p} theme={theme} s={s} />;
-  }
-  if (slots.stat_value) {
-    return (
-      <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
-        {slots.stat_value}
-      </div>
-    );
-  }
-  return null;
+  const common = { primary: p, theme, s } as const;
+  return (
+    <Stack gap={s.gap}>
+      <Chip node={slots.chip} {...common} />
+      {slots.hero_lines?.length
+        ? <Hero lines={slots.hero_lines} {...common} />
+        : slots.stat_value
+          ? (
+            <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
+              {slots.stat_value}
+            </div>
+          )
+          : null}
+      {slide.archetype === "cover_stat" && slots.hero_lines?.length && slots.stat_value ? (
+        <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
+          {slots.stat_value}
+        </div>
+      ) : null}
+      <H2 node={slots.stat_label} {...common} />
+      <Txt
+        node={slots.subline}
+        primary={p}
+        style={{ fontFamily: fontFor(p, "text"), fontSize: s.body, lineHeight: p === "ar" ? 1.9 : 1.6, color: theme.dim, textAlign: "start" }}
+      />
+      <Source node={slots.source} {...common} />
+    </Stack>
+  );
 }
 
 function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
