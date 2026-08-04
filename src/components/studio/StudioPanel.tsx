@@ -440,6 +440,9 @@ export default function StudioPanel({
     current?: unknown; scrollY?: unknown;
   };
   const [pendingRestore, setPendingRestore] = useState<SavedPiece | null>(null);
+  /* An overnight draft is OFFERED, never assumed. */
+  const [preparedDraft, setPreparedDraft] = useState<StudioDraft | null>(null);
+  const [confirmNewPiece, setConfirmNewPiece] = useState(false);
 
   /**
    * Y2 — THE FOUR CASES, EACH DISTINCT. One mount effect, four branches.
