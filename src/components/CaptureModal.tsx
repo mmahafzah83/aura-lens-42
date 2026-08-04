@@ -1393,6 +1393,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     fontSize: 12,
                     fontWeight: 600,
                     padding: "5px 10px",
+                    minHeight: 44,
+                    minWidth: 44,
                     cursor: "pointer",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
@@ -1662,6 +1664,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                   <div className="grid grid-cols-2" style={{ gap: 8 }}>
                     <button
                       type="button"
+                      className="cap-tap"
                       onClick={() => fileInputRef.current?.click()}
                       style={{
                         display: "inline-flex",
@@ -1681,6 +1684,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     </button>
                     <button
                       type="button"
+                      className="cap-tap"
                       onClick={() => fileInputRef.current?.click()}
                       style={{
                         display: "inline-flex",
