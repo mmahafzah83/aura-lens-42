@@ -2376,7 +2376,7 @@ export default function StudioPanel({
           {/* P9 — THE ENDING. Whichever route the member took, the cycle closes
               here, in the main column, with three ways onward. Nothing on this
               panel can be pressed twice into a second post. */}
-          {published && (
+          {finished && (
             <div
               role="status"
               aria-live="polite"
@@ -2386,10 +2386,10 @@ export default function StudioPanel({
               }}
             >
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                {T.cycleDoneHead[lang]}
+                {T.endHead[lang]}
               </p>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
-                {T.cycleDoneBody[lang]}{" "}
+                {T.endBody[lang]}{" "}
                 {postUrl && (
                   <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
                     {T.seeOnLinkedIn[lang]}
@@ -2397,9 +2397,15 @@ export default function StudioPanel({
                 )}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {/* Every label states exactly what survives it. */}
                 <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
-                  {T.writeAnother[lang]}
+                  {T.writeAnotherClears[lang]}
                 </ButtonPrimary>
+                {subjectHasMore && (
+                  <ButtonGhost onClick={() => startNewPiece({ choice })} style={{ minHeight: 44 }}>
+                    {T.writeAnotherSameSubject[lang]}
+                  </ButtonGhost>
+                )}
                 <ButtonGhost onClick={() => goTab("library")} style={{ minHeight: 44 }}>
                   {T.goToLibrary[lang]}
                 </ButtonGhost>
@@ -2410,8 +2416,9 @@ export default function StudioPanel({
             </div>
           )}
 
-          {/* ONE path, decided by what the member actually made. */}
-          {!(format === "slides" && deck) ? (
+          {/* TWO SCREENS, decided by the format the member CHOSE — never by
+              whether a deck happens to exist. */}
+          {format !== "slides" ? (
             <>
               <p
                 dir={rtlWrite ? "rtl" : "ltr"}
