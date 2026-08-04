@@ -34,6 +34,7 @@ import ZonePiece from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
+import { useAvatarCutout } from "@/components/studio/useAvatarCutout";
 import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/components/studio/usePhone";
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 import { deriveDone, plausibleLinkedInUrl } from "@/components/studio/journeyState";
@@ -236,6 +237,23 @@ export default function StudioPanel({
   const [, setSearchParams] = useSearchParams();
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
+  /**
+   * Z1 — the member's own portrait, produced in the background if their row
+   * has a photo but no cut-out yet. Never blocks anything on screen.
+   */
+  const portrait = useAvatarCutout();
+  /**
+   * If the cut-out finishes after slides were generated, the open deck picks
+   * it up in place — the member does not have to regenerate to see it.
+   */
+  useEffect(() => {
+    if (!portrait.cutoutUrl) return;
+    setDeck((d) => (
+      !d || d.profile.avatar_cutout_url === portrait.cutoutUrl
+        ? d
+        : { ...d, profile: { ...d.profile, avatar_cutout_url: portrait.cutoutUrl } }
+    ));
+  }, [portrait.cutoutUrl]);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
   const [deckLength, setDeckLength] = useState<5 | 7 | 10>(7);
   const [deckBusy, setDeckBusy] = useState(false);
@@ -2639,6 +2657,7 @@ export default function StudioPanel({
                 onUploadPicture={uploadPicture}
                 pictureNotice={pictureNotice}
                 onMove={move}
+                portraitState={portrait.state}
               />
             )}
           </div>

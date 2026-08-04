@@ -7,7 +7,9 @@
  * re-run the fit ladder on every keystroke.
  */
 import type { Archetype, DeckIR, HeroLine, Run, Slide, Slots, TextNode } from "../deckIR";
-import { COVER_WORD_BUDGET, MEDIA_BY_ARCHETYPE, REQUIRED_SLOTS, wordBudgetFor } from "../slots";
+import {
+  COVER_WORD_BUDGET, MEDIA_BY_ARCHETYPE, REQUIRED_SLOTS, pictureTextPlan, wordBudgetFor,
+} from "../slots";
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
 const LATIN_RE = /[A-Za-z]/;
@@ -343,4 +345,92 @@ export const HERO_BUDGET = { en: 14, ar: 20 } as const;
 
 export function heroBudgetFor(text: string): number {
   return ARABIC_RE.test(text) ? HERO_BUDGET.ar : HERO_BUDGET.en;
+}
+
+/* ------------------------------------------------------------------ */
+/* Z2 / Z3 — the two ways out, each one press, each naming its field   */
+/* ------------------------------------------------------------------ */
+
+/** The filled slots this slide's picture variant cannot draw, in priority order. */
+export function droppedPictureSlots(slide: Slide): string[] {
+  if (!slideHasPicture(slide)) return [];
+  return pictureTextPlan(slide.archetype, slide.slots as Record<string, unknown>, true).dropped;
+}
+
+/**
+ * Z3 — SHORTEN ONE FIELD. Rewrites ONLY the named slot, deterministically,
+ * out of the member's own words. Every other slot is returned untouched, and
+ * if there is no room to keep even a few words the deck comes back unchanged
+ * so the caller can say so plainly rather than silently emptying a field.
+ */
+export function shortenSlotForPicture(deck: DeckIR, slideIndex: number, slot: string): DeckIR {
+  const lang = deck.primary_lang;
+  let changed = false;
+  const next = {
+    ...deck,
+    slides: deck.slides.map((slide) => {
+      if (slide.index !== slideIndex) return slide;
+      const value = (slide.slots as any)[slot];
+      if (value === undefined || value === null) return slide;
+      // Room left once every slot the variant KEEPS has had its words.
+      const budget = wordBudgetFor(slide.archetype, true);
+      const withoutSlot: any = { ...slide.slots, [slot]: Array.isArray(value) ? [] : undefined };
+      const used = slideWordCount({ ...slide, slots: withoutSlot } as Slide);
+      const room = budget - used;
+      if (room < 3) return slide;
+      const slots: any = { ...slide.slots };
+      if (Array.isArray(value)) {
+        let left = room;
+        slots[slot] = value
+          .map((node: TextNode | HeroLine) => {
+            if (left <= 0) return null;
+            const w = words(textOf(node));
+            const keep = Math.min(w.length, left);
+            left -= keep;
+            if (keep === w.length) return node;
+            return slot === "hero_lines"
+              ? makeHeroLine(w.slice(0, keep).join(" "), lang, node as HeroLine)
+              : makeTextNode(w.slice(0, keep).join(" "), lang, node as TextNode);
+          })
+          .filter(Boolean);
+      } else if (typeof value === "object" && "runs" in value) {
+        slots[slot] = clipNode(value as TextNode, room, lang);
+      } else {
+        return slide;
+      }
+      changed = true;
+      return { ...slide, slots };
+    }),
+  };
+  return changed ? next : deck;
+}
+
+/**
+ * Z2 — MOVE ONE FIELD TO ITS OWN SLIDE. The words the picture variant cannot
+ * hold are lifted onto a new plain slide directly after this one — no
+ * picture, so nothing has to give way — and removed from this slide only
+ * once they exist on the new one. Nothing is invented and nothing is lost.
+ */
+export function moveSlotToOwnSlide(deck: DeckIR, slideIndex: number, slot: string): DeckIR {
+  const lang = deck.primary_lang;
+  const source = deck.slides.find((s) => s.index === slideIndex);
+  if (!source) return deck;
+  const value = (source.slots as any)[slot];
+  const text = Array.isArray(value)
+    ? value.map((n: TextNode | HeroLine) => textOf(n)).filter(Boolean).join(" ")
+    : textOf(value as TextNode | undefined);
+  if (!text.trim()) return deck;
+
+  const slots: any = { ...source.slots };
+  delete slots[slot];
+
+  const carried: Slide = {
+    index: slideIndex + 1,
+    archetype: "frame",
+    slots: { hero_lines: [makeHeroLine(text, lang)] } as any,
+  } as Slide;
+
+  const before = deck.slides.filter((s) => s.index <= slideIndex).map((s) => (s.index === slideIndex ? { ...s, slots } : s));
+  const after = deck.slides.filter((s) => s.index > slideIndex);
+  return { ...deck, slides: reindex([...before, carried, ...after]) };
 }

@@ -3,11 +3,12 @@ import type { Archetype, DeckIR, Slots } from "@/carousel/deckIR";
 import { ARCHETYPE_LABEL, SLOT_LABEL, SLOT_ORDER } from "@/carousel/studio/slotLabels";
 import {
   deleteSlide, editSlotText, heroBudgetFor, isLocked, readSlot, setSlidePhoto,
-  shortenSlideForPicture, overPictureBudget, swapArchetype, swappableArchetypes, type SlotPath,
+  shortenSlideForPicture, shortenSlotForPicture, moveSlotToOwnSlide, droppedPictureSlots,
+  overPictureBudget, swapArchetype, swappableArchetypes, type SlotPath,
 } from "@/carousel/studio/deckEdit";
 import { REQUIRED_SLOTS } from "@/carousel/slots";
 import { mediaSupport } from "@/carousel/render/Slide";
-import { T, archetypeLabelAr, slotLabelAr, type Lang } from "./strings";
+import { T, archetypeLabelAr, slotLabelAr, slotWontFit, type Lang } from "./strings";
 import { useIsPhone } from "./usePhone";
 
 const heading: React.CSSProperties = {
@@ -44,9 +45,11 @@ export const ZoneInspector: React.FC<{
   onUploadPicture: (file: File) => Promise<void>;
   pictureNotice: string | null;
   onMove: (from: number, to: number) => void;
+  /** Z1 — the real state of the member's own portrait, decided upstream. */
+  portraitState?: "ready" | "preparing" | "failed" | "none";
 }> = ({
   lang, writeLang, deck, current, onDeck, attention, onChangeLine, changing,
-  onUploadPicture, pictureNotice, onMove,
+  onUploadPicture, pictureNotice, onMove, portraitState = "none",
 }) => {
   const slotLabel = (key: string) =>
     (lang === "ar" ? slotLabelAr[key] : undefined) ?? SLOT_LABEL[key] ?? key;
@@ -55,6 +58,7 @@ export const ZoneInspector: React.FC<{
 
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [shortenNote, setShortenNote] = useState<string | null>(null);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const rtl = writeLang === "ar";
   // M4 — 16px on a phone, so iOS never zooms the page when a field is focused.
@@ -98,6 +102,15 @@ export const ZoneInspector: React.FC<{
     : slide.archetype === "close" ? T.noPictureClose[lang]
     : T.noPictureHere[lang];
   const tooLong = overPictureBudget(slide);
+  /**
+   * Z2 — WHAT THE PICTURE VARIANT CANNOT DRAW, BY NAME.
+   *
+   * The renderer and this list come from the SAME `pictureTextPlan`, so a
+   * slot can never be missing from the slide without appearing here. A
+   * picture slide carries the hook and one supporting line; anything else the
+   * member filled in is reported, never quietly discarded.
+   */
+  const dropped = droppedPictureSlots(slide);
 
   // A move only happens if the landing position is itself movable, so the
   // button is disabled whenever `moveSlide` would return the deck unchanged.
@@ -241,10 +254,60 @@ export const ZoneInspector: React.FC<{
             {refusal}
           </p>
         )}
+        {/* Z1 — the closing slide reports the real state of the portrait. */}
+        {slide.archetype === "close" && portraitState !== "none" && (
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, margin: 0, color: portraitState === "failed" ? "var(--error)" : "var(--text-muted)" }}>
+            {portraitState === "ready" ? T.portraitShown[lang]
+              : portraitState === "preparing" ? T.portraitPreparing[lang]
+              : T.portraitFailed[lang]}
+          </p>
+        )}
         {/* A picture variant with more words than it can hold. The member is
             told plainly and offered a deterministic trim — or may keep every
             word and drop the picture instead. Nothing is cut behind their back. */}
-        {canHoldPicture && tooLong && (
+        {/* Z2 — a NAMED field that the picture variant cannot draw, with two
+            ways out: shorten that one field, or give it its own slide. */}
+        {canHoldPicture && dropped.length > 0 && (
+          <div style={{ display: "grid", gap: 8 }}>
+            {dropped.map((slot) => (
+              <div key={slot} style={{ display: "grid", gap: 6 }}>
+                <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-primary)", margin: 0 }}>
+                  {slotWontFit(slotLabel(slot), lang)}
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = shortenSlotForPicture(deck, slide.index, slot);
+                      if (next === deck) { setShortenNote(T.shortenFailed[lang]); return; }
+                      setShortenNote(null);
+                      onDeck(next);
+                    }}
+                    style={smallBtn}
+                  >
+                    {`${T.shortenForPicture[lang]} — ${slotLabel(slot)}`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShortenNote(null); onDeck(moveSlotToOwnSlide(deck, slide.index, slot)); }}
+                    style={smallBtn}
+                  >
+                    {T.moveToOwnSlide[lang]}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {shortenNote && (
+              <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--error)", margin: 0 }}>
+                {shortenNote}
+              </p>
+            )}
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+              {T.keepAllWords[lang]}
+            </p>
+          </div>
+        )}
+        {canHoldPicture && tooLong && dropped.length === 0 && (
           <div style={{ display: "grid", gap: 6 }}>
             <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-primary)", margin: 0 }}>
               {T.tooLongForPicture[lang]}

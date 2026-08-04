@@ -220,6 +220,18 @@ export const T = {
   // A picture variant with too many words.
   tooLongForPicture: { en: "With a picture, this slide holds fewer words than it has now.", ar: "مع صورة، تتّسع هذه الشريحة لكلمات أقل مما فيها الآن." },
   shortenForPicture: { en: "Shorten it for me", ar: "اختصرها لي" },
+  moveToOwnSlide: { en: "Move it to its own slide", ar: "انقلها إلى شريحة خاصة بها" },
+  shortenFailed: {
+    en: "There isn't room to shorten that field on this slide. Move it to its own slide instead.",
+    ar: "لا توجد مساحة لاختصار هذا الحقل في هذه الشريحة. انقلها إلى شريحة خاصة بها بدلاً من ذلك.",
+  },
+  // Z1 — the closing slide says the truth about the portrait, in three states.
+  portraitShown: { en: "The closing slide shows your portrait.", ar: "تعرض الشريحة الأخيرة صورتك." },
+  portraitPreparing: { en: "Preparing your portrait.", ar: "نُجهّز صورتك." },
+  portraitFailed: {
+    en: "We couldn't cut out your photo. Try a picture with a clearer background, from your profile.",
+    ar: "لم نتمكن من قص صورتك. جرّب صورة بخلفية أوضح من ملفك الشخصي.",
+  },
   keepAllWords: { en: "Or remove the picture to keep every word.", ar: "أو احذف الصورة للاحتفاظ بكل الكلمات." },
   changeLine: { en: "Change this line only", ar: "غيّر هذا السطر فقط" },
   changingLine: { en: "Changing…", ar: "جارٍ التغيير…" },
@@ -525,6 +537,17 @@ export const T = {
     ar: "اختر كلمات وشرائح أولاً.",
   },
 } as const;
+
+/**
+ * Z2 — the omission is NAMED. A picture slide that cannot hold a field says
+ * which field, in the member's own vocabulary for it.
+ */
+export function slotWontFit(fieldLabel: string, lang: Lang): string {
+  const name = fieldLabel.toLowerCase();
+  return lang === "ar"
+    ? `حقل «${fieldLabel}» لا يتّسع في شريحة تحمل صورة.`
+    : `The ${name} doesn't fit on a slide with a picture.`;
+}
 
 /**
  * Turn a `checkImage` result into one of our own sentences, by cause.
