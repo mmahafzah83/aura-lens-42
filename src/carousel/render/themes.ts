@@ -111,3 +111,122 @@ export const DEFAULT_THEME: ThemeName = "midnight";
 export function getTheme(name?: string | null): Theme {
   return THEMES[(name as ThemeName) in THEMES ? (name as ThemeName) : DEFAULT_THEME];
 }
+
+/* ------------------------------------------------------------------ */
+/* TEMPLATE SCOPING                                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Which colour sets a template is allowed to use. The Look zone reads this,
+ * so a template can never be offered a theme its renderer does not implement.
+ * Only `instrument` has a renderer today, so only `instrument` is listed —
+ * nothing about the existing UI changes.
+ */
+export const templateThemes: Record<string, string[]> = {
+  instrument: ["midnight", "clay", "gradient", "paper"],
+};
+
+/* ------------------------------------------------------------------ */
+/* TOKEN STUBS for the six locked template families                     */
+/*                                                                      */
+/* These are TOKENS ONLY — no renderer consumes them yet. They are a     */
+/* separate discriminated union rather than the 17-field `Theme`         */
+/* interface on purpose: forcing a paper-and-ink palette to invent a     */
+/* `bgSolid`, an `avA` and a `panel` would put fabricated colours in the */
+/* registry and the contrast gate would then be testing fiction.         */
+/* ------------------------------------------------------------------ */
+
+/** A field (solid dark ground) palette. */
+export interface FieldTheme {
+  kind: "field";
+  field: string;
+  fg: string;
+  dim?: string;
+  alt?: string;
+  accent: string;
+  accentInk: string;
+}
+
+/** A paper (light ground, dark ink) palette. */
+export interface PaperTheme {
+  kind: "paper";
+  paper: string;
+  ink: string;
+  /** Optional inversion surface used for full-bleed panels. */
+  dark?: string;
+  accent: string;
+  accentInk: string;
+}
+
+/** A gradient palette: three stops plus the ink that rides on them. */
+export interface GradientTheme {
+  kind: "gradient";
+  g1: string;
+  g2: string;
+  g3: string;
+  fg: string;
+  accent: string;
+  accentInk: string;
+}
+
+export type TemplateTheme = FieldTheme | PaperTheme | GradientTheme;
+
+export const TEMPLATE_THEMES = {
+  salford_navy: {
+    kind: "field",
+    field: "#152436",
+    alt: "#5CE8A4",
+    fg: "#FFFFFF",
+    dim: "#8FA3B8",
+    accent: "#5CE8A4",
+    accentInk: "#152436",
+  },
+  crumple_amber: {
+    kind: "paper",
+    paper: "#F5F3EE",
+    ink: "#161616",
+    accent: "#F2A93B",
+    accentInk: "#161616",
+  },
+  highlighter_orange: {
+    kind: "paper",
+    paper: "#F0EADF",
+    ink: "#1B1B1B",
+    accent: "#F0813C",
+    accentInk: "#1B1B1B",
+  },
+  highlighter_green: {
+    kind: "paper",
+    paper: "#EDF2EB",
+    ink: "#15241C",
+    accent: "#4CC08A",
+    accentInk: "#15241C",
+  },
+  blueprint_violet: {
+    kind: "field",
+    field: "#161616",
+    fg: "#FFFFFF",
+    dim: "#B9B9C4",
+    accent: "#8A7BFF",
+    accentInk: "#FFFFFF",
+  },
+  gridpaper_yellow: {
+    kind: "paper",
+    paper: "#F6EFE2",
+    dark: "#141210",
+    ink: "#141210",
+    accent: "#F0B429",
+    accentInk: "#141210",
+  },
+  concept_violet: {
+    kind: "gradient",
+    g1: "#1A1040",
+    g2: "#4B3AA8",
+    g3: "#7B65E8",
+    accent: "#B8F04A",
+    accentInk: "#1A1040",
+    fg: "#FFFFFF",
+  },
+} satisfies Record<string, TemplateTheme>;
+
+export type TemplateThemeName = keyof typeof TEMPLATE_THEMES;
