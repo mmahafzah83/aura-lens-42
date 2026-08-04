@@ -2181,9 +2181,21 @@ export default function StudioPanel({
               {notReady}
             </p>
           )}
-          {notReady && !(format === "slides" && deck) && (
+          {/* W8 — EVERY block carries the override, on every path. On the
+              slides path there is nothing to post directly, so the override
+              clears the block and carries the member to the manual screen. */}
+          {notReady && (
             <div style={{ margin: "0 0 12px" }}>
-              <ButtonGhost onClick={() => { setNotReady(null); setStep(4); void publishNow(true); }} disabled={busy === "post"} style={{ minHeight: 44 }}>
+              <ButtonGhost
+                onClick={() => {
+                  setNotReady(null);
+                  setStep(4);
+                  if (format === "slides") { setOverrode(true); return; }
+                  void publishNow(true);
+                }}
+                disabled={busy === "post"}
+                style={{ minHeight: 44 }}
+              >
                 {T.postAnyway[lang]}
               </ButtonGhost>
             </div>
