@@ -721,9 +721,9 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
         {figureSrc ? (
           // A cut-out figure STANDING in the slide: bottom-anchored, sized by
           // height so the head sits in the upper third of the figure zone, and
-          // with no frame, border, radius or shadow anywhere near it. A square
-          // avatar has no transparency, so it is dissolved into the background
-          // by a bottom fade rather than stopping at a hard edge.
+          // with no frame, border, radius, shadow or mask anywhere near it.
+          // Reaching this branch at all means a genuine transparent cut-out
+          // exists, so nothing has to be dissolved into the background.
           <div
             style={{
               width: CLOSE_FIGURE_W,
@@ -736,12 +736,6 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
               border: "none",
               borderRadius: 0,
               boxShadow: "none",
-              ...(deck.profile.avatar_cutout_url
-                ? {}
-                : {
-                    maskImage: "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,.55) 82%, rgba(0,0,0,0) 100%)",
-                    WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,.55) 82%, rgba(0,0,0,0) 100%)",
-                  }),
             }}
             role="img"
             aria-label=""
