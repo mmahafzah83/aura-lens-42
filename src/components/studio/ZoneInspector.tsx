@@ -3,7 +3,7 @@ import type { Archetype, DeckIR, Slots } from "@/carousel/deckIR";
 import { ARCHETYPE_LABEL, SLOT_LABEL, SLOT_ORDER } from "@/carousel/studio/slotLabels";
 import {
   deleteSlide, editSlotText, heroBudgetFor, isLocked, readSlot, setSlidePhoto,
-  swapArchetype, swappableArchetypes, type SlotPath,
+  shortenSlideForPicture, overPictureBudget, swapArchetype, swappableArchetypes, type SlotPath,
 } from "@/carousel/studio/deckEdit";
 import { REQUIRED_SLOTS } from "@/carousel/slots";
 import { mediaSupport } from "@/carousel/render/Slide";
@@ -91,6 +91,13 @@ export const ZoneInspector: React.FC<{
   const locked = isLocked(deck, slide);
   const available = swappableArchetypes(deck, slide);
   const canHoldPicture = mediaSupport(slide.archetype) !== "none";
+  // The refusal names the actual reason for THIS slide, not a generic shrug.
+  const refusal =
+    slide.archetype === "benchmark" ? T.noPictureBenchmark[lang]
+    : slide.archetype === "steps" ? T.noPictureSteps[lang]
+    : slide.archetype === "close" ? T.noPictureClose[lang]
+    : T.noPictureHere[lang];
+  const tooLong = overPictureBudget(slide);
 
   // A move only happens if the landing position is itself movable, so the
   // button is disabled whenever `moveSlide` would return the deck unchanged.
@@ -231,8 +238,26 @@ export const ZoneInspector: React.FC<{
         </div>
         {!canHoldPicture && (
           <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
-            {T.noPictureHere[lang]}
+            {refusal}
           </p>
+        )}
+        {/* A picture variant with more words than it can hold. The member is
+            told plainly and offered a deterministic trim — or may keep every
+            word and drop the picture instead. Nothing is cut behind their back. */}
+        {canHoldPicture && tooLong && (
+          <div style={{ display: "grid", gap: 6 }}>
+            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-primary)", margin: 0 }}>
+              {T.tooLongForPicture[lang]}
+            </p>
+            <div>
+              <button type="button" onClick={() => onDeck(shortenSlideForPicture(deck, slide.index))} style={smallBtn}>
+                {T.shortenForPicture[lang]}
+              </button>
+            </div>
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+              {T.keepAllWords[lang]}
+            </p>
+          </div>
         )}
         {pictureNotice && (
           <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--error)", margin: 0 }}>
