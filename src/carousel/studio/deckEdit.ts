@@ -8,7 +8,7 @@
  */
 import type { Archetype, DeckIR, HeroLine, Run, Slide, Slots, TextNode } from "../deckIR";
 import {
-  COVER_WORD_BUDGET, MEDIA_BY_ARCHETYPE, REQUIRED_SLOTS, pictureTextPlan, wordBudgetFor,
+  COVER_TRIM_TARGET, MEDIA_BY_ARCHETYPE, REQUIRED_SLOTS, pictureTextPlan, wordBudgetFor,
 } from "../slots";
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
@@ -301,7 +301,7 @@ export function shortenSlideForPicture(deck: DeckIR, slideIndex: number): DeckIR
         // The hero is the only text the cover variant draws, so that is the
         // only text worth trimming.
         if (Array.isArray(slots.hero_lines) && slots.hero_lines.length) {
-          let left = COVER_WORD_BUDGET;
+          let left = COVER_TRIM_TARGET;
           slots.hero_lines = slots.hero_lines
             .map((line: HeroLine) => {
               if (left <= 0) return null;
