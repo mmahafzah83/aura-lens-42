@@ -587,7 +587,12 @@ export default function StudioPanel({
     if (saved.deck) {
       // A corrupt deck is ignored, never thrown.
       const parsed = DeckIRSchema.safeParse(saved.deck);
-      if (parsed.success) { setDeck(parsed.data); setTheme(parsed.data.theme as ThemeName); }
+      if (parsed.success) {
+        setDeck(parsed.data);
+        setTheme(parsed.data.theme as ThemeName);
+        // A restored deck brings its own family back with it.
+        if (typeof parsed.data.template === "string") setTemplate(parsed.data.template);
+      }
     }
     if (saved.choice && typeof saved.choice === "object") {
       const c = saved.choice as Choice;
