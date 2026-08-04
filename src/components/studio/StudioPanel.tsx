@@ -2282,6 +2282,7 @@ export default function StudioPanel({
                       // Slides already made are never thrown away unasked.
                       if (key === "post" && deck) { setPendingFormat("post"); return; }
                       setFormat(key);
+                      setFormatDecided(true);
                     }}
                     style={{
                       textAlign: rtlShell ? "right" : "left",
@@ -2323,6 +2324,7 @@ export default function StudioPanel({
                       setFits({});
                       setExported(false);
                       setFormat("post");
+                      setFormatDecided(true);
                       setPendingFormat(null);
                     }}
                     style={{ minHeight: 44 }}
