@@ -1556,7 +1556,9 @@ export default function StudioPanel({
 
   /* Exactly one primary per screen. On step 3 the slide-making button in the
      stage IS the primary, so the strip does not offer a second one. */
-  const stageOwnsPrimary = step === 3 && format === "slides" && !deck;
+  const stageOwnsPrimary =
+    (step === 3 && format === "slides" && !deck) ||
+    (step === 2 && posture === "delegator" && !wordsReady);
 
   const onContinue = () => {
     if (step === 1) {
