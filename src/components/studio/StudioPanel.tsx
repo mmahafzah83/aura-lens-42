@@ -2131,6 +2131,11 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
                 {wordsReady ? T.delegatorFoundDraft[lang] : T.delegatorWaiting[lang]}
               </p>
+              {choice?.id && !wordsReady && (
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
+                  {T.auraPicked[lang]}
+                </p>
+              )}
               {!wordsReady && (
                 <ButtonPrimary onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
                   {T.writeItNow[lang]}
