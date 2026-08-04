@@ -3,11 +3,12 @@ import type { Archetype, DeckIR, Slots } from "@/carousel/deckIR";
 import { ARCHETYPE_LABEL, SLOT_LABEL, SLOT_ORDER } from "@/carousel/studio/slotLabels";
 import {
   deleteSlide, editSlotText, heroBudgetFor, isLocked, readSlot, setSlidePhoto,
-  shortenSlideForPicture, overPictureBudget, swapArchetype, swappableArchetypes, type SlotPath,
+  shortenSlideForPicture, shortenSlotForPicture, moveSlotToOwnSlide, droppedPictureSlots,
+  overPictureBudget, swapArchetype, swappableArchetypes, type SlotPath,
 } from "@/carousel/studio/deckEdit";
 import { REQUIRED_SLOTS } from "@/carousel/slots";
 import { mediaSupport } from "@/carousel/render/Slide";
-import { T, archetypeLabelAr, slotLabelAr, type Lang } from "./strings";
+import { T, archetypeLabelAr, slotLabelAr, slotWontFit, type Lang } from "./strings";
 import { useIsPhone } from "./usePhone";
 
 const heading: React.CSSProperties = {
@@ -44,9 +45,11 @@ export const ZoneInspector: React.FC<{
   onUploadPicture: (file: File) => Promise<void>;
   pictureNotice: string | null;
   onMove: (from: number, to: number) => void;
+  /** Z1 — the real state of the member's own portrait, decided upstream. */
+  portraitState?: "ready" | "preparing" | "failed" | "none";
 }> = ({
   lang, writeLang, deck, current, onDeck, attention, onChangeLine, changing,
-  onUploadPicture, pictureNotice, onMove,
+  onUploadPicture, pictureNotice, onMove, portraitState = "none",
 }) => {
   const slotLabel = (key: string) =>
     (lang === "ar" ? slotLabelAr[key] : undefined) ?? SLOT_LABEL[key] ?? key;
@@ -55,6 +58,7 @@ export const ZoneInspector: React.FC<{
 
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [shortenNote, setShortenNote] = useState<string | null>(null);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const rtl = writeLang === "ar";
   // M4 — 16px on a phone, so iOS never zooms the page when a field is focused.
@@ -98,6 +102,15 @@ export const ZoneInspector: React.FC<{
     : slide.archetype === "close" ? T.noPictureClose[lang]
     : T.noPictureHere[lang];
   const tooLong = overPictureBudget(slide);
+  /**
+   * Z2 — WHAT THE PICTURE VARIANT CANNOT DRAW, BY NAME.
+   *
+   * The renderer and this list come from the SAME `pictureTextPlan`, so a
+   * slot can never be missing from the slide without appearing here. A
+   * picture slide carries the hook and one supporting line; anything else the
+   * member filled in is reported, never quietly discarded.
+   */
+  const dropped = droppedPictureSlots(slide);
 
   // A move only happens if the landing position is itself movable, so the
   // button is disabled whenever `moveSlide` would return the deck unchanged.
