@@ -242,6 +242,18 @@ export default function StudioPanel({
    * has a photo but no cut-out yet. Never blocks anything on screen.
    */
   const portrait = useAvatarCutout();
+  /**
+   * If the cut-out finishes after slides were generated, the open deck picks
+   * it up in place — the member does not have to regenerate to see it.
+   */
+  useEffect(() => {
+    if (!portrait.cutoutUrl) return;
+    setDeck((d) => (
+      !d || d.profile.avatar_cutout_url === portrait.cutoutUrl
+        ? d
+        : { ...d, profile: { ...d.profile, avatar_cutout_url: portrait.cutoutUrl } }
+    ));
+  }, [portrait.cutoutUrl]);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
   const [deckLength, setDeckLength] = useState<5 | 7 | 10>(7);
   const [deckBusy, setDeckBusy] = useState(false);
