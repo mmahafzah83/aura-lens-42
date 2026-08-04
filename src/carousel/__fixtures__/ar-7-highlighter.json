@@ -1,0 +1,102 @@
+{
+  "deck_id": "fx-ar-7-highlighter",
+  "signal_id": "sig-port-throughput-2026-ar",
+  "primary_lang": "ar",
+  "dir": "rtl",
+  "numerals": "western",
+  "theme": "highlighter_orange",
+  "template": "highlighter",
+  "length": 7,
+  "profile": {
+    "name": { "runs": [{ "t": "نورة الحسن", "lang": "ar" }] },
+    "title": { "runs": [{ "t": "تشغيل الموانئ", "lang": "ar" }] },
+    "handle": "noura-alhassan",
+    "avatar_url": null,
+    "initials": "NA"
+  },
+  "slides": [
+    {
+      "index": 0,
+      "archetype": "cover_hero",
+      "slots": {
+        "chip": { "runs": [{ "t": "إنتاجية الميناء", "lang": "ar" }] },
+        "hero_lines": [
+          { "runs": [{ "t": "الرصيف", "lang": "ar" }] },
+          { "runs": [{ "t": "هو الطابور", "lang": "ar" }], "highlight": true }
+        ],
+        "subline": { "runs": [{ "t": "أضاف الميناء رافعات عام 2025 وطال الانتظار.", "lang": "ar" }] }
+      }
+    },
+    {
+      "index": 1,
+      "archetype": "frame",
+      "slots": {
+        "headline": { "runs": [{ "t": "الرافعات لم تكن القيد", "lang": "ar" }] },
+        "hero_lines": [{ "runs": [{ "t": "ساعتان", "lang": "ar" }], "highlight": true }],
+        "body": [
+          { "runs": [{ "t": "الرافعة تنقل الحاوية في 90 ثانية. البوابة تصرف شاحنة في 11 دقيقة.", "lang": "ar" }] },
+          { "runs": [{ "t": "راقبت الرقمين أسبوعاً كاملاً قبل أن أصدق الثاني.", "lang": "ar" }] }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "archetype": "evidence",
+      "slots": {
+        "stat_value": "11 min",
+        "stat_label": { "runs": [{ "t": "متوسط تصريف الشاحنة عند البوابة", "lang": "ar" }] },
+        "source": { "runs": [{ "t": "سجلات البوابة، الربع الأول 2026", "lang": "ar" }] }
+      }
+    },
+    {
+      "index": 3,
+      "archetype": "benchmark",
+      "slots": {
+        "headline": { "runs": [{ "t": "أين تذهب الدقائق", "lang": "ar" }] },
+        "media": {
+          "kind": "chart",
+          "placement": "lower",
+          "chart": {
+            "type": "bars",
+            "series": [
+              { "label": { "runs": [{ "t": "البوابة", "lang": "ar" }] }, "value": 11, "unit": " min", "emphasis": "alert" },
+              { "label": { "runs": [{ "t": "الساحة", "lang": "ar" }] }, "value": 4, "unit": " min", "emphasis": "accent" },
+              { "label": { "runs": [{ "t": "الرصيف", "lang": "ar" }] }, "value": 2, "unit": " min", "emphasis": "none" }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "index": 4,
+      "archetype": "quote",
+      "slots": {
+        "quote": { "runs": [{ "t": "اشترينا السرعة عند الرصيف ودفعنا ثمنها عند البوابة.", "lang": "ar" }] },
+        "hero_lines": [{ "runs": [{ "t": "بعبارة واضحة", "lang": "ar" }], "highlight": true }]
+      }
+    },
+    {
+      "index": 5,
+      "archetype": "steps",
+      "slots": {
+        "headline": { "runs": [{ "t": "ما أبدأ بفحصه", "lang": "ar" }] },
+        "checklist": [
+          { "runs": [{ "t": "قِس زمن البوابة. لا الرافعة ولا السفينة.", "lang": "ar" }] },
+          { "runs": [{ "t": "افصل الطابور بالساعة. الصباح ميناء آخر.", "lang": "ar" }] },
+          { "runs": [{ "t": "سعّر ساعة تأخير واحدة. وعلّق الرقم أمام الفريق.", "lang": "ar" }] }
+        ],
+        "hero_lines": [{ "runs": [{ "t": "ثلاثة فحوص", "lang": "ar" }], "highlight": true }]
+      }
+    },
+    {
+      "index": 6,
+      "archetype": "close",
+      "slots": {
+        "headline": { "runs": [{ "t": "إن كان هذا مفيداً", "lang": "ar" }] },
+        "body": [{ "runs": [{ "t": "أكتب عن تشغيل الموانئ كل أسبوع تقريباً.", "lang": "ar" }] }],
+        "cta_pill": { "runs": [{ "t": "تابعني للتالي", "lang": "ar" }] },
+        "hero_lines": [{ "runs": [{ "t": "الخطوة لك", "lang": "ar" }], "highlight": true }]
+      }
+    }
+  ]
+}

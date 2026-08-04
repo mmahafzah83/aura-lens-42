@@ -7,7 +7,7 @@
  * was the reason members were staring at "Aura would not ship this deck".
  */
 import { plainText, type DeckIR } from "./deckIR.ts";
-import { HERO_BUDGET, MARKER_RE } from "./invariants.ts";
+import { heroBudget, MARKER_RE } from "./invariants.ts";
 
 const ARABIC_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
@@ -72,7 +72,7 @@ export function repairDeck(ir: DeckIR): { deck: DeckIR; repaired: string[] } {
     // INV-13 — a hero line over budget is trimmed, never a reason to fail.
     for (const line of s.hero_lines ?? []) {
       const text = plainText(line);
-      const budget = HERO_BUDGET[ARABIC_RE.test(text) ? "ar" : "en"];
+      const budget = heroBudget(ARABIC_RE.test(text) ? "ar" : "en", deck.template);
       if (text.length > budget) {
         line.runs = trimRuns(line.runs ?? [], budget);
         repaired.push(`INV-13: ${where} hero line trimmed to ${budget} characters.`);
