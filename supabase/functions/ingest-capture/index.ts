@@ -248,7 +248,7 @@ Deno.serve(withObserve("ingest-capture", async (req) => {
       // Link path: match the same value we'd write to image_url.
       // Non-link path: match trimmed, whitespace-collapsed content.
       const entryImageUrl = (type === "link") ? (source_url || content) : null;
-      const entryContent = extracted_text?.slice(0, 10000) || content;
+      const entryContent = extracted_text?.slice(0, 15000) || content;
       const dedupeKey = type === "link"
         ? (entryImageUrl || "").trim()
         : (entryContent || "").trim().replace(/\s+/g, " ");
