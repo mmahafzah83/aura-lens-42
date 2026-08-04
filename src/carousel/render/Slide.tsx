@@ -845,12 +845,25 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
    * a picture restarts the ladder from step 0 against the NEW budget instead
    * of inheriting a measurement of a layout that no longer exists.
    */
-  const signature =
+  /**
+   * MEASURED DROPS. A picture slide keeps every filled slot until the DOM
+   * proves otherwise: only when the fit ladder is exhausted and the slide
+   * still overflows does one more slot go, lowest priority first. Reset
+   * whenever the composition changes.
+   */
+  const baseSignature =
     `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}` +
     `:${plainText(slide.slots.headline)}:${variant}:${photo ?? "no-photo"}`;
-  // A picture variant stops at step 1: the words stay legible and the
-  // inspector offers to shorten them (X2).
-  const fit = useFitLadder(ref, signature, variant === "plain" ? MAX_FIT_STEP : 1);
+  const [drops, setDrops] = useState(0);
+  const lastBase = useRef(baseSignature);
+  if (lastBase.current !== baseSignature) {
+    lastBase.current = baseSignature;
+    if (drops !== 0) setDrops(0);
+  }
+  const signature = `${baseSignature}:d${drops}`;
+  // Every variant now gets the FULL ladder: type may shrink to fit before a
+  // single word of the member's is given up.
+  const fit = useFitLadder(ref, signature, MAX_FIT_STEP);
   // X1 — in the band variant the type gets LARGER, not smaller: fewer words
   // in less space. It still rides the ladder from that raised starting point.
   const s = scaleOf(fit.scale * (variant === "band" ? BAND_TYPE_BOOST : 1));
@@ -873,17 +886,32 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
 
   const isClose = slide.archetype === "close";
   /**
-   * Z2 — THE BAND VARIANT DRAWS A DECIDED SET, NOT WHATEVER SURVIVES CLIPPING.
+   * Z2 — THE BAND VARIANT DROPS ONLY WHAT MEASUREMENT PROVED CANNOT FIT.
    *
-   * Previously the text zone simply clipped, so a filled slot could vanish
-   * with nothing said. Now `pictureTextPlan` decides — hook plus one
-   * supporting line — and the inspector reads the SAME function to name every
-   * dropped field to the member. The cover branch is untouched: `CoverBody`
-   * already draws the hook alone, which is what the plan says for a cover.
+   * `drops` comes from the ladder, not from a constant. The inspector reads
+   * the published result of the same measurement, so a field is named to the
+   * member if and only if the slide is genuinely not drawing it. A cover
+   * drops nothing: the photo sits behind the type.
    */
   const bandPlan = variant === "band"
-    ? pictureTextPlan(slide.archetype, slide.slots as Record<string, unknown>, true)
+    ? pictureTextPlan(slide.archetype, slide.slots as Record<string, unknown>, true, drops)
     : null;
+  const droppable = variant === "band" ? droppableSlotCount(slide.slots as Record<string, unknown>) : 0;
+
+  // Escalate ONE slot at a time, and only once the type can shrink no further.
+  useEffect(() => {
+    if (variant !== "band" || !fit.failed || mediaDefect) return;
+    if (drops < droppable) setDrops((d) => d + 1);
+  }, [variant, fit.failed, mediaDefect, drops, droppable]);
+
+  // Publish what measurement decided, for the inspector to name.
+  useEffect(() => {
+    publishMeasuredDrops(deck.deck_id, slide.index, {
+      dropped: bandPlan?.dropped ?? [],
+      overflow: Boolean(fit.failed && !mediaDefect && drops >= droppable),
+    });
+  }, [deck.deck_id, slide.index, bandPlan?.dropped.join("|"), fit.failed, mediaDefect, drops, droppable]);
+
   const drawnSlide: SlideIR = bandPlan && bandPlan.dropped.length
     ? {
         ...slide,
