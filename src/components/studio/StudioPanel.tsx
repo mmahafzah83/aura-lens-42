@@ -221,6 +221,19 @@ export default function StudioPanel({
    * async sequence never re-reads a null captured at render and inserts twice.
    */
   const postRowRef = useRef<string | null>(null);
+  /**
+   * Y1 — THE URL IS THE TRUTH ABOUT WHAT IS OPEN.
+   *
+   * The row id of the piece being worked on is mirrored into the address as
+   * `?piece=<id>&src=<table>`, always with `replace: true` so a keystroke can
+   * never create a history entry. It is removed on a new piece and when the
+   * piece is finished. Everything downstream — refresh, back, bookmark, a link
+   * a member sent themselves — then follows from one rule instead of four
+   * special cases.
+   */
+  const [pieceRowId, setPieceRowId] = useState<string | null>(null);
+  const pieceRowIdRef = useRef<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
