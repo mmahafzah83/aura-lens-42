@@ -2008,7 +2008,13 @@ export default function StudioPanel({
                 value={pasted}
                 rows={6}
                 dir={rtlWrite ? "rtl" : "ltr"}
-                onChange={(e) => setPasted(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setPasted(v);
+                  // The author's subject may simply be the first line they wrote.
+                  const first = v.split("\n").map((l) => l.trim()).find(Boolean) || "";
+                  if (!choice && first) setChoice({ id: null, title: first.slice(0, 80), insight: "" });
+                }}
                 placeholder={T.pastePlaceholder[lang]}
                 style={{
                   width: "100%", background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
