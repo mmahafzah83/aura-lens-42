@@ -7,7 +7,7 @@
  * RULE B — no network fonts. Everything resolves to a bundled face declared
  * in fonts.css.
  */
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "./fonts.css";
 import {
   plainText,
@@ -22,8 +22,10 @@ import { getTheme, type Theme, type ThemeName } from "./themes";
 import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
 import { INV_16_MEDIA_IN_DOM } from "../invariants";
 import {
-  BAND_MEDIA_SHARE, BAND_TYPE_BOOST, MEDIA_BY_ARCHETYPE, pictureTextPlan, type MediaPlacementMode,
+  BAND_MEDIA_SHARE, BAND_TYPE_BOOST, MEDIA_BY_ARCHETYPE, droppableSlotCount, pictureTextPlan,
+  type MediaPlacementMode,
 } from "../slots";
+import { publishMeasuredDrops } from "./measuredDrops";
 
 /* ------------------------------------------------------------------ */
 /* Canvas and type scale                                               */
