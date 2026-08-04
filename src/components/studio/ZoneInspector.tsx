@@ -265,7 +265,49 @@ export const ZoneInspector: React.FC<{
         {/* A picture variant with more words than it can hold. The member is
             told plainly and offered a deterministic trim — or may keep every
             word and drop the picture instead. Nothing is cut behind their back. */}
-        {canHoldPicture && tooLong && (
+        {/* Z2 — a NAMED field that the picture variant cannot draw, with two
+            ways out: shorten that one field, or give it its own slide. */}
+        {canHoldPicture && dropped.length > 0 && (
+          <div style={{ display: "grid", gap: 8 }}>
+            {dropped.map((slot) => (
+              <div key={slot} style={{ display: "grid", gap: 6 }}>
+                <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-primary)", margin: 0 }}>
+                  {slotWontFit(slotLabel(slot), lang)}
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = shortenSlotForPicture(deck, slide.index, slot);
+                      if (next === deck) { setShortenNote(T.shortenFailed[lang]); return; }
+                      setShortenNote(null);
+                      onDeck(next);
+                    }}
+                    style={smallBtn}
+                  >
+                    {`${T.shortenForPicture[lang]} — ${slotLabel(slot)}`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShortenNote(null); onDeck(moveSlotToOwnSlide(deck, slide.index, slot)); }}
+                    style={smallBtn}
+                  >
+                    {T.moveToOwnSlide[lang]}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {shortenNote && (
+              <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--error)", margin: 0 }}>
+                {shortenNote}
+              </p>
+            )}
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+              {T.keepAllWords[lang]}
+            </p>
+          </div>
+        )}
+        {canHoldPicture && tooLong && dropped.length === 0 && (
           <div style={{ display: "grid", gap: 6 }}>
             <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-primary)", margin: 0 }}>
               {T.tooLongForPicture[lang]}
