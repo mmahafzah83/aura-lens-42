@@ -37,9 +37,9 @@ const corsHeaders = {
  * Registries. Layout and colourway are DATA the client may choose from; the
  * model never sees either, and never chooses layout.
  */
-const THEME_REGISTRY = ["midnight", "clay", "gradient", "paper"] as const;
+const THEME_REGISTRY = ["midnight", "clay", "gradient", "paper", "highlighter_orange", "highlighter_green"] as const;
 const DEFAULT_THEME = "midnight";
-const TEMPLATE_REGISTRY = ["instrument"] as const;
+const TEMPLATE_REGISTRY = ["instrument", "highlighter"] as const;
 const DEFAULT_TEMPLATE = "instrument";
 
 function resolveTheme(id: unknown): string {
