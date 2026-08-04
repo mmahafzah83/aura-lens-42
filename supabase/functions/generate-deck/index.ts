@@ -452,8 +452,9 @@ serve(async (req) => {
     if (!user) return json({ error: "unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const theme = resolveTheme(body.theme);
+    // Family first: a colourway is only meaningful inside its template.
     const template = resolveTemplate(body.template);
+    const theme = resolveTheme(body.theme, template);
     const reqLang: "en" | "ar" | undefined =
       body.lang === "ar" ? "ar" : body.lang === "en" ? "en" : undefined;
     const sourceText: string | undefined =
