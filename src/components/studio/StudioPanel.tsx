@@ -241,6 +241,21 @@ export default function StudioPanel({
   const [linkInput, setLinkInput] = useState("");
   /** The member's own LinkedIn address for this post, stored. */
   const [linkSaved, setLinkSaved] = useState(false);
+  /** The member published past the gate. Never carried into the next piece. */
+  const [overrode, setOverrode] = useState(false);
+
+  /* Guarded transitions. Nothing destructive happens without one of these. */
+  const [pendingSubject, setPendingSubject] = useState<Choice | null>(null);
+  const [pendingFormat, setPendingFormat] = useState<Format | null>(null);
+  const [askEditAfterPublish, setAskEditAfterPublish] = useState(false);
+
+  /**
+   * WHERE A POSTURE OPENS. A posture changes who writes, where the journey
+   * starts and what Aura does unasked — never what exists on the screen.
+   */
+  const entryStep = (p: Posture): number => (p === "editor" ? 1 : 2);
+  const postureRef = useRef<Posture>("editor");
+  postureRef.current = posture;
 
   /**
    * P1c — set the moment the member CHOOSES a writing language. From then on a
@@ -321,6 +336,19 @@ export default function StudioPanel({
       else setAskingPosture(true);
     } catch { setAskingPosture(true); }
   }, []);
+
+  /**
+   * The posture's ENTRY STEP, applied once, and only over an empty piece.
+   * A posture never moves a member off work they already have.
+   */
+  const enteredRef = useRef(false);
+  useEffect(() => {
+    if (enteredRef.current) return;
+    if (!ready || askingPosture) return;
+    enteredRef.current = true;
+    if (!content.trim() && !deck && !pendingRestore) setStep(entryStep(posture));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, askingPosture, posture]);
 
   /* ---------- responsive ------------------------------------------ */
   useEffect(() => {
