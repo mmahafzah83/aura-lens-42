@@ -641,6 +641,26 @@ export default function StudioPanel({
   }, [userId]);
 
   /**
+   * DELEGATOR — Aura prepares, it does not spend.
+   *
+   * The subject is picked for the member, and if the overnight run already
+   * wrote about that subject the waiting draft is loaded. Nothing is
+   * generated: zero-click generation on entry spends a member's time and
+   * money on something they did not ask for.
+   */
+  const delegatorPreparedRef = useRef(false);
+  useEffect(() => {
+    if (posture !== "delegator" || delegatorPreparedRef.current) return;
+    if (draftsLoading || !choice?.id || content.trim() || pendingRestore) return;
+    delegatorPreparedRef.current = true;
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const waiting = drafts.find(
+      (d) => d.signalId === choice.id && new Date(d.created_at).getTime() > cutoff,
+    );
+    if (waiting) void openDraft(waiting, "studio_overnight");
+  }, [posture, draftsLoading, drafts, choice, content, pendingRestore, openDraft]);
+
+  /**
    * C3 — ONE owner of `?draft=`. Dashboard resolves the row (from BOTH
    * `content_items` and `linkedin_posts`, honouring `src=`) and hands it here
    * as `draftPrefill`. The studio no longer reads or deletes the parameter.
