@@ -39,6 +39,23 @@ import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/c
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 import { deriveDone, plausibleLinkedInUrl } from "@/components/studio/journeyState";
 
+/* Local copy for this panel only. Same bilingual shape as `T`. */
+const L = {
+  startNewPiece: { en: "Start a new piece", ar: "ابدأ منشوراً جديداً" },
+  newPieceHead: {
+    en: "Start a new piece? This clears the current words.",
+    ar: "هل تبدأ منشوراً جديداً؟ سيُمسح النص الحالي.",
+  },
+  newPieceYes: { en: "Start new", ar: "ابدأ جديداً" },
+  newPieceNo: { en: "Keep working", ar: "تابع العمل" },
+  preparedLine: {
+    en: "Aura prepared a draft on “{subject}” from last night’s run.",
+    ar: "أعدّت أورا مسودة عن «{subject}» من تشغيل الليلة الماضية.",
+  },
+  preparedUse: { en: "Use it", ar: "استخدمها" },
+  preparedFresh: { en: "Start fresh", ar: "ابدأ من جديد" },
+} as const;
+
 /** Slides need enough words to divide up. Below this the option is refused. */
 const SLIDES_MIN_CHARS = 400;
 /** LinkedIn's own ceiling. */
@@ -440,6 +457,9 @@ export default function StudioPanel({
     current?: unknown; scrollY?: unknown;
   };
   const [pendingRestore, setPendingRestore] = useState<SavedPiece | null>(null);
+  /* An overnight draft is OFFERED, never assumed. */
+  const [preparedDraft, setPreparedDraft] = useState<StudioDraft | null>(null);
+  const [confirmNewPiece, setConfirmNewPiece] = useState(false);
 
   /**
    * Y2 — THE FOUR CASES, EACH DISTINCT. One mount effect, four branches.
@@ -728,6 +748,8 @@ export default function StudioPanel({
     setAskLangSwitch(null);
     langChosenRef.current = false;
     setPendingRestore(null);
+    setPreparedDraft(null);
+    setConfirmNewPiece(false);
     preselectedRef.current = Boolean(next?.choice);
     draftPrefillRef.current = null;
     liveRef.current = {
@@ -796,6 +818,7 @@ export default function StudioPanel({
       setLinkSaved(false);
       // The member has explicitly opened work: no stale draft may be offered.
       setPendingRestore(null);
+      setPreparedDraft(null);
       setDeck(null);
       setDeckSource(null);
       setExported(false);
@@ -848,7 +871,8 @@ export default function StudioPanel({
     const waiting = drafts.find(
       (d) => d.signalId === choice.id && new Date(d.created_at).getTime() > cutoff,
     );
-    if (waiting) void openDraft(waiting, "studio_overnight");
+    // Announced, never assumed: the member decides whether to use it.
+    if (waiting) setPreparedDraft(waiting);
   }, [posture, draftsLoading, drafts, choice, content, pendingRestore, openDraft]);
 
   /**
@@ -1881,7 +1905,42 @@ export default function StudioPanel({
         >
           {T.helpLink[lang]}
         </button>
+        {(content.trim().length > 0 || Boolean(deck)) && (
+          <button
+            type="button"
+            onClick={() => setConfirmNewPiece(true)}
+            style={{
+              minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+              fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)",
+            }}
+          >
+            {L.startNewPiece[lang]}
+          </button>
+        )}
       </div>
+
+      {confirmNewPiece && (
+        <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+            {L.newPieceHead[lang]}
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <ButtonPrimary
+              onClick={async () => {
+                if (canSave) await saveAndComeBack();
+                startNewPiece();
+                setConfirmNewPiece(false);
+              }}
+              style={{ minHeight: 44 }}
+            >
+              {L.newPieceYes[lang]}
+            </ButtonPrimary>
+            <ButtonGhost onClick={() => setConfirmNewPiece(false)} style={{ minHeight: 44 }}>
+              {L.newPieceNo[lang]}
+            </ButtonGhost>
+          </div>
+        </div>
+      )}
 
       {helpOpen && (
         <div
@@ -1908,6 +1967,38 @@ export default function StudioPanel({
           <div>
             <ButtonGhost onClick={() => setHelpOpen(false)} style={{ minHeight: 44 }}>{T.helpClose[lang]}</ButtonGhost>
           </div>
+        </div>
+      )}
+
+      {/* THE OVERNIGHT DRAFT — offered, never loaded on the member's behalf.
+          Restore wins when both could show. */}
+      {preparedDraft && !content && !deck && !pendingRestore && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            background: "var(--surface-card)", border: "1px solid var(--border-default)",
+            borderRadius: 12, padding: 12, margin: "0 0 12px",
+            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)" }}>
+            {L.preparedLine[lang].replace("{subject}", preparedDraft.title || preparedDraft.topic || "")}
+          </span>
+          <span style={{ flex: 1 }} />
+          <ButtonPrimary
+            onClick={() => {
+              const d = preparedDraft;
+              setPreparedDraft(null);
+              void openDraft(d, "studio_overnight");
+            }}
+            style={{ minHeight: 44 }}
+          >
+            {L.preparedUse[lang]}
+          </ButtonPrimary>
+          <ButtonGhost onClick={() => setPreparedDraft(null)} style={{ minHeight: 44 }}>
+            {L.preparedFresh[lang]}
+          </ButtonGhost>
         </div>
       )}
 
