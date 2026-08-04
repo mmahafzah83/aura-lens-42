@@ -1945,14 +1945,14 @@ export default function StudioPanel({
                 onChange={(e) => {
                   const v = e.target.value;
                   const t = v.trim();
-                  // N1 — typing a subject while a finished piece is on screen
-                  // starts a NEW piece. Anything binding us to the old row goes.
-                  if (!typedTopic && t && (published || draftId || content.trim())) {
-                    startNewPiece({ choice: { id: null, title: t, insight: "" } });
-                    setTypedTopic(v);
+                  // Typing never destroys words. Over an empty piece the typed
+                  // subject IS the subject; over written words the swap is
+                  // offered as a confirmation instead.
+                  setTypedTopic(v);
+                  if (published || content.trim()) {
+                    setPendingSubject(t ? { id: null, title: t, insight: "" } : null);
                     return;
                   }
-                  setTypedTopic(v);
                   setChoice(t ? { id: null, title: t, insight: "" } : null);
                 }}
                 placeholder={T.chooseOwnPlaceholder[lang]}
