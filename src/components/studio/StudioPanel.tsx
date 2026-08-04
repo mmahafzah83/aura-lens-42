@@ -2522,9 +2522,6 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 6px" }}>
                 3 · {T.s4Link[lang]}
               </p>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "0 0 10px" }}>
-                {T.whyLink[lang]}
-              </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <label htmlFor="studio-link" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
                   {T.linkPlaceholder[lang]}
@@ -2562,6 +2559,10 @@ export default function StudioPanel({
                   {T.whyLinkAlready[lang]}
                 </p>
               )}
+              {/* One sentence on why the link matters, as the member's benefit. */}
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "10px 0 0" }}>
+                {T.whyLink[lang]}
+              </p>
             </>
           )}
         </StageCard>
