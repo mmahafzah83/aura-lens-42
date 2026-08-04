@@ -1462,8 +1462,19 @@ export default function StudioPanel({
     const id = await saveDraft();
     setBusy(null);
     setBusyMessage(null);
-    if (id) setStatus(T.saveLaterNote[lang]);
-    else setProblem(T.postFailed[lang]);
+    if (!id) { setProblem(T.postFailed[lang]); return; }
+    /**
+     * Y5 — A CONTROL CALLED "COME BACK LATER" HAS TO TAKE YOU SOMEWHERE.
+     *
+     * The act is: save · say where it went · go there. Leaving the member on
+     * the same screen having announced a save is an unfinished sentence.
+     */
+    setStatus(T.saveLaterGoing[lang]);
+    window.setTimeout(() => {
+      try {
+        window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "library" } }));
+      } catch { /* navigation is never allowed to throw at a member */ }
+    }, 450);
   }, [saveDraft, lang]);
 
   /**
