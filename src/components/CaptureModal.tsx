@@ -1862,7 +1862,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                     style={{
                       fontFamily: "var(--ff-mono)",
                       fontSize: 22,
-                      color: isRecording ? "#00CEC9" : "#0F1519",
+                      color: isRecording ? "#00807B" : "#0F1519",
                       letterSpacing: "-0.02em",
                       lineHeight: 1.5,
                       fontVariantNumeric: "tabular-nums",
@@ -1901,8 +1901,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
                       fontSize: 14,
                       color: "#0F1519",
                       resize: "none",
-                      outline: "none",
-                      
                     }}
                   />
                 </div>
