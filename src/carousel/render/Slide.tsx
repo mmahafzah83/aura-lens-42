@@ -21,6 +21,9 @@ import {
 import { getTheme, type Theme, type ThemeName } from "./themes";
 import { useFitLadder, type FitState } from "./useFitLadder";
 import { INV_16_MEDIA_IN_DOM } from "../invariants";
+import {
+  BAND_MEDIA_SHARE, BAND_TYPE_BOOST, MEDIA_BY_ARCHETYPE, type MediaPlacementMode,
+} from "../slots";
 
 /* ------------------------------------------------------------------ */
 /* Canvas and type scale                                               */
@@ -30,6 +33,25 @@ export const CANVAS_W = 1080;
 export const CANVAS_H = 1350;
 /** Outer padding never drops below this, at any fit step. */
 export const PAD = 82;
+
+/**
+ * X3 — THE SAFE AREA.
+ *
+ * No image may sit under the page numerals, the identity bar, or the bottom
+ * edge. A scrim may cross this band; image CONTENT may not. Every media mode
+ * is held to it — full bleed included.
+ */
+export const SAFE_AREA = {
+  top: PAD,
+  side: PAD,
+  /** Padding plus the footer row: the accent rule and "3 / 8" live in here. */
+  bottom: PAD + 68,
+} as const;
+
+/** The band is lifted clear of the footer so the numbering breathes. */
+export const BAND_LIFT = 26;
+/** Constant height, so the split never varies with the word count. */
+export const BAND_MEDIA_H = Math.round(CANVAS_H * BAND_MEDIA_SHARE) - BAND_LIFT;
 
 const FONT_DISPLAY_EN = '"AuraAnton", Impact, "Arial Narrow", sans-serif';
 const FONT_TEXT_EN = '"AuraInter", Helvetica, Arial, sans-serif';
