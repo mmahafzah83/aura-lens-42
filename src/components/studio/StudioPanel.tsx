@@ -948,6 +948,29 @@ export default function StudioPanel({
     if (postRowRef.current) return postRowRef.current;
     if (draftId && draftSource === "content_items") {
       originDraftRef.current = { id: draftId, source: "content_items" };
+      /**
+       * W7 — ONE TWIN PER DRAFT, FOREVER.
+       *
+       * A `?draft=` deep link can be opened in any number of later sessions.
+       * Before inserting, the twin this `content_items` row already produced
+       * is looked up by `source_metadata.origin_draft_id` and reused. With
+       * this lookup no path in the studio can insert a second
+       * `linkedin_posts` row for the same draft: every other path either
+       * already holds `postRowRef` or goes through `saveDraft`, which updates
+       * the row it created.
+       */
+      const { data: twin } = await supabase
+        .from("linkedin_posts")
+        .select("id")
+        .eq("user_id", userId as string)
+        .eq("source_metadata->>origin_draft_id", draftId)
+        .limit(1)
+        .maybeSingle();
+      if ((twin as any)?.id) {
+        postRowRef.current = (twin as any).id as string;
+        persistNow();
+        return postRowRef.current;
+      }
       const title = pieceTitle();
       const { data: ins, error } = await supabase
         .from("linkedin_posts")
@@ -962,7 +985,7 @@ export default function StudioPanel({
           title,
           topic_label: title || null,
           source_signal_id: choice?.id || null,
-          source_metadata: pieceMeta(),
+          source_metadata: { ...(pieceMeta() as Record<string, unknown>), origin_draft_id: draftId },
         } as any)
         .select("id")
         .single();
