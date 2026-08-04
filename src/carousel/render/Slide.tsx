@@ -499,8 +499,41 @@ interface PartProps {
   hideTails: boolean;
 }
 
+/** Which of the two compositions this slide is rendering. */
+export type SlideVariant = "plain" | "cover" | "band";
+
+/** A slide is in a picture variant only when it actually carries a picture. */
+export function variantFor(slide: SlideIR, hasPhoto: boolean): SlideVariant {
+  if (!hasPhoto) return "plain";
+  const mode = MEDIA_BY_ARCHETYPE[slide.archetype];
+  return mode === "none" ? "plain" : mode;
+}
+
 function Stack({ children, gap }: { children: React.ReactNode; gap: number }) {
   return <div style={{ display: "flex", flexDirection: "column", gap, alignItems: "stretch" }}>{children}</div>;
+}
+
+/**
+ * X1 — the COVER variant is a different composition, not a shrunken one.
+ * The hero line is the only text on the slide; every other slot is HIDDEN,
+ * because a chip, a subline and a source squeezed over a photograph is what
+ * makes an image look accidental. For `cover_stat`, whose hero IS the number,
+ * the numeral plays the hero's part.
+ */
+function CoverBody({ deck, slide, theme, s }: PartProps) {
+  const p = deck.primary_lang;
+  const slots = slide.slots;
+  if (slots.hero_lines?.length) {
+    return <Hero lines={slots.hero_lines} primary={p} theme={theme} s={s} />;
+  }
+  if (slots.stat_value) {
+    return (
+      <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
+        {slots.stat_value}
+      </div>
+    );
+  }
+  return null;
 }
 
 function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
