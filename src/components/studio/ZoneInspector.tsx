@@ -3,9 +3,10 @@ import type { Archetype, DeckIR, Slots } from "@/carousel/deckIR";
 import { ARCHETYPE_LABEL, SLOT_LABEL, SLOT_ORDER } from "@/carousel/studio/slotLabels";
 import {
   deleteSlide, editSlotText, heroBudgetFor, isLocked, readSlot, setSlidePhoto,
-  shortenSlideForPicture, shortenSlotForPicture, moveSlotToOwnSlide, droppedPictureSlots,
+  shortenSlideForPicture, shortenSlotForPicture, moveSlotToOwnSlide,
   overPictureBudget, swapArchetype, swappableArchetypes, type SlotPath,
 } from "@/carousel/studio/deckEdit";
+import { useMeasuredDrops } from "@/carousel/render/measuredDrops";
 import { REQUIRED_SLOTS } from "@/carousel/slots";
 import { mediaSupport } from "@/carousel/render/Slide";
 import { T, archetypeLabelAr, slotLabelAr, slotWontFit, type Lang } from "./strings";
@@ -66,6 +67,15 @@ export const ZoneInspector: React.FC<{
   const fieldSize = isPhone ? 16 : 14;
 
   const slide = deck?.slides[Math.min(current, (deck?.slides.length ?? 1) - 1)] ?? null;
+  /**
+   * Z2 — WHAT THE SLIDE IS ACTUALLY NOT DRAWING, MEASURED.
+   *
+   * These names come from the renderer's own measurement of this slide, so a
+   * field is reported if and only if it genuinely did not fit. Text that
+   * renders — a label and a framing over a cover picture, for instance — is
+   * never named here, and never offered a shorten button it does not need.
+   */
+  const measured = useMeasuredDrops(deck?.deck_id, slide?.index ?? -1);
 
   const shell = (children: React.ReactNode) => (
     <div
@@ -101,16 +111,8 @@ export const ZoneInspector: React.FC<{
     : slide.archetype === "steps" ? T.noPictureSteps[lang]
     : slide.archetype === "close" ? T.noPictureClose[lang]
     : T.noPictureHere[lang];
-  const tooLong = overPictureBudget(slide);
-  /**
-   * Z2 — WHAT THE PICTURE VARIANT CANNOT DRAW, BY NAME.
-   *
-   * The renderer and this list come from the SAME `pictureTextPlan`, so a
-   * slot can never be missing from the slide without appearing here. A
-   * picture slide carries the hook and one supporting line; anything else the
-   * member filled in is reported, never quietly discarded.
-   */
-  const dropped = droppedPictureSlots(slide);
+  const tooLong = overPictureBudget(slide, measured.overflow);
+  const dropped = measured.dropped;
 
   // A move only happens if the landing position is itself movable, so the
   // button is disabled whenever `moveSlide` would return the deck unchanged.
