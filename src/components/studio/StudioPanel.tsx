@@ -18,7 +18,8 @@ import { track } from "@/lib/track";
 import { formatSmartDate } from "@/lib/formatDate";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
 import { DeckIRSchema, type DeckIR } from "@/carousel/deckIR";
-import { DEFAULT_THEME, type ThemeName } from "@/carousel/render/themes";
+import { DEFAULT_THEME, templateThemes, type ThemeName } from "@/carousel/render/themes";
+import { DEFAULT_TEMPLATE } from "@/carousel/render/template";
 import type { FitState } from "@/carousel/render/useFitLadder";
 import { collectSlideNodes, exportDeckPdf } from "@/carousel/render/exportDeck";
 import { mediaSupport } from "@/carousel/render/Slide";
@@ -276,6 +277,12 @@ export default function StudioPanel({
     ));
   }, [portrait.cutoutUrl]);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
+  /**
+   * The slide family. A free channel: changing it re-draws the deck already in
+   * hand and never calls the model. The theme is clamped to what the chosen
+   * family can actually draw.
+   */
+  const [template, setTemplate] = useState<string>(DEFAULT_TEMPLATE);
   const [deckLength, setDeckLength] = useState<5 | 7 | 10>(7);
   const [deckBusy, setDeckBusy] = useState(false);
   const [deckFailures, setDeckFailures] = useState<string[]>([]);
@@ -2735,6 +2742,14 @@ export default function StudioPanel({
                 lang={lang}
                 theme={theme}
                 onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
+                template={template}
+                onTemplate={(id) => {
+                  const allowed = (templateThemes[id] ?? []).filter((t): t is ThemeName => true);
+                  const next = (allowed.includes(theme) ? theme : allowed[0]) as ThemeName;
+                  setTemplate(id);
+                  setTheme(next);
+                  setDeck((d) => (d ? { ...d, template: id, theme: next } : d));
+                }}
                 length={deckLength}
                 onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
                 hasDeck={Boolean(deck)}
