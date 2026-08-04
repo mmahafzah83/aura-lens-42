@@ -401,32 +401,10 @@ function Bars({ slide, primary, theme, s }: { slide: SlideIR; primary: Lang; the
 /* ------------------------------------------------------------------ */
 
 /**
- * `cover`  — full bleed behind the type, with a scrim. The photo IS the slide.
- * `band`   — a contained block in the content flow, height on the fit ladder.
- * `none`   — this archetype cannot hold a member photo, and says so before the
- *            file picker opens rather than swallowing the upload.
- *
- * Every archetype appears here and the type is a total `Record`, so adding a
- * tenth archetype fails the typecheck until someone makes this decision. That
- * is deliberate: media used to be pasted into a single switch case, and the
- * other eight archetypes inherited silence.
+ * The taxonomy itself lives in `../slots`, because the studio and the edit
+ * operations need it too. Re-exported here so existing callers keep working.
  */
-export type MediaPlacementMode = "cover" | "band" | "none";
-
-export const MEDIA_BY_ARCHETYPE: Record<Archetype, MediaPlacementMode> = {
-  cover_hero: "cover",
-  cover_stat: "cover",
-  frame: "band",
-  evidence: "band",
-  // The chart is this slide's visual; a photo behind bars reads as noise.
-  benchmark: "none",
-  quote: "cover",
-  // The numbered list needs the full column.
-  steps: "none",
-  definition: "band",
-  // The standing figure is the one image on the closing slide.
-  close: "none",
-};
+export { MEDIA_BY_ARCHETYPE, type MediaPlacementMode };
 
 export function mediaSupport(archetype: Archetype): MediaPlacementMode {
   return MEDIA_BY_ARCHETYPE[archetype];
@@ -439,8 +417,15 @@ function photoSrc(slide: SlideIR): string | null {
   return media.src ?? null;
 }
 
-/** A contained band, sized off the same scale object as everything else. */
-function MediaBand({ slide, theme, s }: { slide: SlideIR; theme: Theme; s: ReturnType<typeof scaleOf> }) {
+/**
+ * The lower zone of the BAND variant.
+ *
+ * Its height is a CONSTANT share of the canvas — it does not ride the fit
+ * ladder and it does not respond to the word count. That constancy is the
+ * whole reason a deck of band slides reads as designed. It is lifted clear of
+ * the footer by `BAND_LIFT`, so it never touches the safe area (X3).
+ */
+function MediaBand({ slide, theme }: { slide: SlideIR; theme: Theme }) {
   const src = photoSrc(slide);
   if (!src) return null;
   const media = slide.slots.media!;
@@ -449,9 +434,9 @@ function MediaBand({ slide, theme, s }: { slide: SlideIR; theme: Theme; s: Retur
       data-media-node="band"
       style={{
         width: "100%",
-        height: media.placement === "full" ? Math.round(s.media * 1.6) : s.media,
+        height: BAND_MEDIA_H,
         flex: "0 0 auto",
-        marginBlockStart: s.gap,
+        marginBlockEnd: BAND_LIFT,
         borderRadius: 18,
         background: theme.panel,
         backgroundImage: `url(${src})`,
@@ -480,7 +465,11 @@ function MediaCover({ slide, deck, theme }: { slide: SlideIR; deck: DeckIR; them
       <div
         style={{
           position: "absolute",
-          inset: 0,
+          // X3 — the picture stops short of the numerals. Only the scrim,
+          // which carries no content, is allowed across the safe area.
+          top: 0,
+          insetInline: 0,
+          bottom: SAFE_AREA.bottom,
           backgroundImage: `url(${src})`,
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
