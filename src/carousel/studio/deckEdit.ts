@@ -8,7 +8,7 @@
  */
 import type { Archetype, DeckIR, HeroLine, Run, Slide, Slots, TextNode } from "../deckIR";
 import {
-  COVER_WORD_BUDGET, MEDIA_BY_ARCHETYPE, REQUIRED_SLOTS, pictureTextPlan, wordBudgetFor,
+  COVER_TRIM_TARGET, MEDIA_BY_ARCHETYPE, REQUIRED_SLOTS, pictureTextPlan, wordBudgetFor,
 } from "../slots";
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
@@ -271,10 +271,14 @@ export function slideWordCount(slide: Slide): number {
   return n;
 }
 
-/** True when this slide's words no longer fit the composition it is in. */
-export function overPictureBudget(slide: Slide): boolean {
+/**
+ * True only when MEASUREMENT proved this slide overflows with nothing left to
+ * give up. A word count can never raise this warning on its own: text that is
+ * rendering fine must never be reported as too long.
+ */
+export function overPictureBudget(slide: Slide, measuredOverflow = false): boolean {
   if (!slideHasPicture(slide)) return false;
-  return slideWordCount(slide) > wordBudgetFor(slide.archetype, true);
+  return measuredOverflow;
 }
 
 function clipNode(node: TextNode, limit: number, lang: "en" | "ar"): TextNode {
@@ -301,7 +305,7 @@ export function shortenSlideForPicture(deck: DeckIR, slideIndex: number): DeckIR
         // The hero is the only text the cover variant draws, so that is the
         // only text worth trimming.
         if (Array.isArray(slots.hero_lines) && slots.hero_lines.length) {
-          let left = COVER_WORD_BUDGET;
+          let left = COVER_TRIM_TARGET;
           slots.hero_lines = slots.hero_lines
             .map((line: HeroLine) => {
               if (left <= 0) return null;
@@ -351,10 +355,14 @@ export function heroBudgetFor(text: string): number {
 /* Z2 / Z3 — the two ways out, each one press, each naming its field   */
 /* ------------------------------------------------------------------ */
 
-/** The filled slots this slide's picture variant cannot draw, in priority order. */
-export function droppedPictureSlots(slide: Slide): string[] {
+/**
+ * The filled slots this slide's picture variant is NOT drawing, in priority
+ * order. `overflowDrops` is the measured number published by the renderer —
+ * with no measured overflow this is empty, because nothing was dropped.
+ */
+export function droppedPictureSlots(slide: Slide, overflowDrops = 0): string[] {
   if (!slideHasPicture(slide)) return [];
-  return pictureTextPlan(slide.archetype, slide.slots as Record<string, unknown>, true).dropped;
+  return pictureTextPlan(slide.archetype, slide.slots as Record<string, unknown>, true, overflowDrops).dropped;
 }
 
 /**

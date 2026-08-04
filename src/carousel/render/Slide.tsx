@@ -7,7 +7,7 @@
  * RULE B — no network fonts. Everything resolves to a bundled face declared
  * in fonts.css.
  */
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import "./fonts.css";
 import {
   plainText,
@@ -22,8 +22,10 @@ import { getTheme, type Theme, type ThemeName } from "./themes";
 import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
 import { INV_16_MEDIA_IN_DOM } from "../invariants";
 import {
-  BAND_MEDIA_SHARE, BAND_TYPE_BOOST, MEDIA_BY_ARCHETYPE, pictureTextPlan, type MediaPlacementMode,
+  BAND_MEDIA_SHARE, BAND_TYPE_BOOST, MEDIA_BY_ARCHETYPE, droppableSlotCount, pictureTextPlan,
+  type MediaPlacementMode,
 } from "../slots";
+import { publishMeasuredDrops } from "./measuredDrops";
 
 /* ------------------------------------------------------------------ */
 /* Canvas and type scale                                               */
@@ -481,8 +483,13 @@ function MediaCover({ slide, deck, theme }: { slide: SlideIR; deck: DeckIR; them
           on bare photo. Heavy where the words are, and genuinely transparent
           away from them — a scrim dark enough everywhere is just a tint, and
           then the member cannot tell their photo arrived at all. */}
-      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(${from}, ${theme.bgSolid}F2 0%, ${theme.bgSolid}B3 45%, ${theme.bgSolid}1A 100%)` }} />
-      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, ${theme.bgSolid}CC 0%, ${theme.bgSolid}00 30%, ${theme.bgSolid}00 62%, ${theme.bgSolid}D9 100%)` }} />
+      {/* The cover now carries the label, the hook AND the framing, so the
+          scrim is a legibility GATE, not a hope: deep enough under the whole
+          type column that every one of those three lines clears AA over a
+          light photograph, still genuinely transparent on the far side so the
+          member can see their picture arrived. No solid panel. */}
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(${from}, ${theme.bgSolid}FA 0%, ${theme.bgSolid}EB 40%, ${theme.bgSolid}A6 68%, ${theme.bgSolid}1A 100%)` }} />
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, ${theme.bgSolid}D9 0%, ${theme.bgSolid}59 26%, ${theme.bgSolid}59 62%, ${theme.bgSolid}E6 100%)` }} />
     </div>
   );
 }
@@ -514,26 +521,42 @@ function Stack({ children, gap }: { children: React.ReactNode; gap: number }) {
 }
 
 /**
- * X1 — the COVER variant is a different composition, not a shrunken one.
- * The hero line is the only text on the slide; every other slot is HIDDEN,
- * because a chip, a subline and a source squeezed over a photograph is what
- * makes an image look accidental. For `cover_stat`, whose hero IS the number,
- * the numeral plays the hero's part.
+ * THE COVER KEEPS EVERY WORD. The picture is a full-bleed background behind
+ * two scrims, so it consumes no layout room: the label, the hook and the
+ * framing all render, in the SAME components and at the same type scale as a
+ * cover with no picture. Nothing here is hidden by a count; if the words ever
+ * genuinely overflow, the fit ladder — which measures the DOM — says so.
  */
 function CoverBody({ deck, slide, theme, s }: PartProps) {
   const p = deck.primary_lang;
   const slots = slide.slots;
-  if (slots.hero_lines?.length) {
-    return <Hero lines={slots.hero_lines} primary={p} theme={theme} s={s} />;
-  }
-  if (slots.stat_value) {
-    return (
-      <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
-        {slots.stat_value}
-      </div>
-    );
-  }
-  return null;
+  const common = { primary: p, theme, s } as const;
+  return (
+    <Stack gap={s.gap}>
+      <Chip node={slots.chip} {...common} />
+      {slots.hero_lines?.length
+        ? <Hero lines={slots.hero_lines} {...common} />
+        : slots.stat_value
+          ? (
+            <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
+              {slots.stat_value}
+            </div>
+          )
+          : null}
+      {slide.archetype === "cover_stat" && slots.hero_lines?.length && slots.stat_value ? (
+        <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
+          {slots.stat_value}
+        </div>
+      ) : null}
+      <H2 node={slots.stat_label} {...common} />
+      <Txt
+        node={slots.subline}
+        primary={p}
+        style={{ fontFamily: fontFor(p, "text"), fontSize: s.body, lineHeight: p === "ar" ? 1.9 : 1.6, color: theme.dim, textAlign: "start" }}
+      />
+      <Source node={slots.source} {...common} />
+    </Stack>
+  );
 }
 
 function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
@@ -824,12 +847,25 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
    * a picture restarts the ladder from step 0 against the NEW budget instead
    * of inheriting a measurement of a layout that no longer exists.
    */
-  const signature =
+  /**
+   * MEASURED DROPS. A picture slide keeps every filled slot until the DOM
+   * proves otherwise: only when the fit ladder is exhausted and the slide
+   * still overflows does one more slot go, lowest priority first. Reset
+   * whenever the composition changes.
+   */
+  const baseSignature =
     `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}` +
     `:${plainText(slide.slots.headline)}:${variant}:${photo ?? "no-photo"}`;
-  // A picture variant stops at step 1: the words stay legible and the
-  // inspector offers to shorten them (X2).
-  const fit = useFitLadder(ref, signature, variant === "plain" ? MAX_FIT_STEP : 1);
+  const [drops, setDrops] = useState(0);
+  const lastBase = useRef(baseSignature);
+  if (lastBase.current !== baseSignature) {
+    lastBase.current = baseSignature;
+    if (drops !== 0) setDrops(0);
+  }
+  const signature = `${baseSignature}:d${drops}`;
+  // Every variant now gets the FULL ladder: type may shrink to fit before a
+  // single word of the member's is given up.
+  const fit = useFitLadder(ref, signature, MAX_FIT_STEP);
   // X1 — in the band variant the type gets LARGER, not smaller: fewer words
   // in less space. It still rides the ladder from that raised starting point.
   const s = scaleOf(fit.scale * (variant === "band" ? BAND_TYPE_BOOST : 1));
@@ -852,17 +888,32 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
 
   const isClose = slide.archetype === "close";
   /**
-   * Z2 — THE BAND VARIANT DRAWS A DECIDED SET, NOT WHATEVER SURVIVES CLIPPING.
+   * Z2 — THE BAND VARIANT DROPS ONLY WHAT MEASUREMENT PROVED CANNOT FIT.
    *
-   * Previously the text zone simply clipped, so a filled slot could vanish
-   * with nothing said. Now `pictureTextPlan` decides — hook plus one
-   * supporting line — and the inspector reads the SAME function to name every
-   * dropped field to the member. The cover branch is untouched: `CoverBody`
-   * already draws the hook alone, which is what the plan says for a cover.
+   * `drops` comes from the ladder, not from a constant. The inspector reads
+   * the published result of the same measurement, so a field is named to the
+   * member if and only if the slide is genuinely not drawing it. A cover
+   * drops nothing: the photo sits behind the type.
    */
   const bandPlan = variant === "band"
-    ? pictureTextPlan(slide.archetype, slide.slots as Record<string, unknown>, true)
+    ? pictureTextPlan(slide.archetype, slide.slots as Record<string, unknown>, true, drops)
     : null;
+  const droppable = variant === "band" ? droppableSlotCount(slide.slots as Record<string, unknown>) : 0;
+
+  // Escalate ONE slot at a time, and only once the type can shrink no further.
+  useEffect(() => {
+    if (variant !== "band" || !fit.failed || mediaDefect) return;
+    if (drops < droppable) setDrops((d) => d + 1);
+  }, [variant, fit.failed, mediaDefect, drops, droppable]);
+
+  // Publish what measurement decided, for the inspector to name.
+  useEffect(() => {
+    publishMeasuredDrops(deck.deck_id, slide.index, {
+      dropped: bandPlan?.dropped ?? [],
+      overflow: Boolean(fit.failed && !mediaDefect && drops >= droppable),
+    });
+  }, [deck.deck_id, slide.index, bandPlan?.dropped.join("|"), fit.failed, mediaDefect, drops, droppable]);
+
   const drawnSlide: SlideIR = bandPlan && bandPlan.dropped.length
     ? {
         ...slide,

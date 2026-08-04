@@ -80,14 +80,23 @@ export const BAND_TYPE_BOOST = 1.18;
 
 /** Words a slide may carry with no picture at all. */
 export const PLAIN_WORD_BUDGET = 60;
-/** A cover picture leaves room for one hero line and nothing else. */
-export const COVER_WORD_BUDGET = 10;
+/**
+ * A TRIM TARGET, not a warning threshold. "Shorten it for me" uses this to
+ * decide how far to cut a cover's hero. Nothing warns off it: on a cover the
+ * picture is a full-bleed background behind scrims, so it costs no layout
+ * room and a word count can never prove the slide is too full. Only the fit
+ * ladder — which measures the real DOM — may say a slide overflows.
+ */
+export const COVER_TRIM_TARGET = 10;
 
-/** How many words this slide may carry, given whether it holds a picture. */
+/**
+ * How many words this slide may carry. A picture no longer buys a smaller
+ * budget on a cover (the photo sits behind the type); the band variant keeps
+ * a soft budget used only by the deterministic shorten action.
+ */
 export function wordBudgetFor(archetype: Archetype, hasPicture: boolean): number {
   if (!hasPicture) return PLAIN_WORD_BUDGET;
   const mode = MEDIA_BY_ARCHETYPE[archetype];
-  if (mode === "cover") return COVER_WORD_BUDGET;
   if (mode === "band") return Math.round(PLAIN_WORD_BUDGET * BAND_TEXT_SHARE);
   return PLAIN_WORD_BUDGET;
 }
@@ -97,18 +106,18 @@ export function wordBudgetFor(archetype: Archetype, hasPicture: boolean): number
 /* ------------------------------------------------------------------ */
 
 /**
- * A picture slide carries AT MOST TWO text slots: the hook, and one
- * supporting line. A cover carries one — the hook alone.
+ * NOTHING IS DROPPED BY COUNTING. A picture slide keeps every filled slot
+ * until MEASUREMENT proves the words do not fit: the renderer runs the fit
+ * ladder to exhaustion first, and only then asks for one more slot to be
+ * dropped, lowest priority first. `overflowDrops` is that measured number.
  *
- * This is a composition rule, not a rendering accident, so it is decided
- * here, once, and both the renderer and the inspector read the same answer.
+ * A cover never drops anything at all — the photo is a background behind
+ * scrims and consumes no layout space.
+ *
  * The renderer draws `kept`; the inspector NAMES `dropped` to the member.
  * Nothing may be omitted from a slide without the member being told which
- * field it was — silently losing somebody's words is the same defect class
- * as printing a claim they never made.
+ * field it was.
  */
-export const PICTURE_TEXT_SLOT_MAX = 2;
-export const COVER_TEXT_SLOT_MAX = 1;
 
 /**
  * Which slot is the hook, and which supporting slot earns the second place.
@@ -157,10 +166,20 @@ export function pictureTextPlan(
   archetype: Archetype,
   slots: LooseSlots,
   hasPicture: boolean,
+  /** Measured overflow drops, supplied by the renderer's fit ladder. */
+  overflowDrops = 0,
 ): PictureTextPlan {
   const mode = hasPicture ? MEDIA_BY_ARCHETYPE[archetype] : "none";
   const filled = PICTURE_SLOT_PRIORITY.filter((k) => slotIsFilled(slots[k]));
-  if (mode !== "cover" && mode !== "band") return { kept: filled.slice(), dropped: [] };
-  const max = mode === "cover" ? COVER_TEXT_SLOT_MAX : PICTURE_TEXT_SLOT_MAX;
-  return { kept: filled.slice(0, max), dropped: filled.slice(max) };
+  // No picture, an archetype that refuses one, or a cover: keep everything.
+  if (mode !== "band" || overflowDrops <= 0) return { kept: filled.slice(), dropped: [] };
+  // The hook always survives, so never drop the last remaining slot.
+  const drops = Math.min(overflowDrops, Math.max(0, filled.length - 1));
+  const keepCount = filled.length - drops;
+  return { kept: filled.slice(0, keepCount), dropped: filled.slice(keepCount) };
+}
+
+/** How many slots this slide could still give up before only the hook is left. */
+export function droppableSlotCount(slots: LooseSlots): number {
+  return Math.max(0, PICTURE_SLOT_PRIORITY.filter((k) => slotIsFilled(slots[k])).length - 1);
 }
