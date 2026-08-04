@@ -687,7 +687,10 @@ export default function StudioPanel({
    */
   const delegatorPreparedRef = useRef(false);
   useEffect(() => {
-    if (posture !== "delegator" || delegatorPreparedRef.current) return;
+    // Leaving the posture arms the preparation again, so returning to it over
+    // an empty piece prepares once more.
+    if (posture !== "delegator") { delegatorPreparedRef.current = false; return; }
+    if (delegatorPreparedRef.current) return;
     if (draftsLoading || !choice?.id || content.trim() || pendingRestore) return;
     delegatorPreparedRef.current = true;
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
