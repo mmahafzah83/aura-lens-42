@@ -837,7 +837,7 @@ function useMediaInDom(
   return defect;
 }
 
-export function Slide({ deck, slide, theme: themeName, template, onFit }: SlideProps) {
+function InstrumentSlide({ deck, slide, theme: themeName, template, onFit }: SlideProps) {
   const theme = getTheme(themeName ?? deck.theme);
   // Resolved ONCE. Every dimension, font and radius below is read from here.
   const tpl = getTemplate(template ?? (deck as { template?: string | null }).template);
