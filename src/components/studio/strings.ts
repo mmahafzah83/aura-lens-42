@@ -446,6 +446,60 @@ export const T = {
   writeAnother: { en: "Write another", ar: "اكتب منشوراً آخر" },
   goToLibrary: { en: "Go to your library", ar: "اذهب إلى مكتبتك" },
   seePerformance: { en: "See how it performs", ar: "شاهد أداءه" },
+
+  // THE ENDING — one panel, named actions, nothing ambiguous.
+  endHead: { en: "Your post is live and counted.", ar: "منشورك منشور ومحسوب." },
+  endBody: {
+    en: "Aura will track how it performs and learn from what worked.",
+    ar: "ستتابع أورا أداءه وتتعلّم مما نجح.",
+  },
+  writeAnotherClears: {
+    en: "Write another — clears everything",
+    ar: "اكتب منشوراً آخر — يمسح كل شيء",
+  },
+  writeAnotherSameSubject: {
+    en: "Write another about this subject — keeps the subject, clears the words",
+    ar: "اكتب منشوراً آخر عن هذا الموضوع — يبقي الموضوع ويمسح الكلمات",
+  },
+
+  // The postures, made real
+  writeItNow: { en: "Write it", ar: "اكتبه" },
+  chooseDifferent: { en: "Choose a different one", ar: "اختر موضوعاً آخر" },
+  authorPlaceholder: {
+    en: "Write your post here, or paste it in.",
+    ar: "اكتب منشورك هنا، أو الصقه.",
+  },
+  delegatorWaiting: {
+    en: "Aura has your subject. Nothing has been written yet — press Write it when you are ready.",
+    ar: "لدى أورا موضوعك. لم يُكتب شيء بعد — اضغط اكتبه عندما تكون جاهزاً.",
+  },
+  delegatorFoundDraft: {
+    en: "Aura had already written about this overnight. Here it is.",
+    ar: "كانت أورا قد كتبت عن هذا ليلاً. ها هو.",
+  },
+
+  // Guarded transitions — every destructive move is confirmed first.
+  confirmSubjectHead: {
+    en: "This will replace your post. The new subject is kept and the words start again.",
+    ar: "سيستبدل هذا منشورك. يبقى الموضوع الجديد وتبدأ الكلمات من جديد.",
+  },
+  confirmSubjectYes: { en: "Replace it", ar: "استبدله" },
+  confirmDiscardSlidesHead: {
+    en: "Your slides will be discarded.",
+    ar: "سيتم التخلّص من شرائحك.",
+  },
+  confirmDiscardSlidesYes: { en: "Discard the slides", ar: "تخلّص من الشرائح" },
+  editAfterPublishHead: {
+    en: "This post is already live. Editing starts a new post with these words.",
+    ar: "هذا المنشور منشور بالفعل. التعديل يبدأ منشوراً جديداً بهذه الكلمات.",
+  },
+  editAfterPublishYes: { en: "Start a new post with these words", ar: "ابدأ منشوراً جديداً بهذه الكلمات" },
+  keepAsIs: { en: "Leave it as it is", ar: "اتركه كما هو" },
+  whyNoWriteIt: { en: "The post is already written.", ar: "المنشور مكتوب بالفعل." },
+  whyNoSlidesFormat: {
+    en: "Choose words and slides first.",
+    ar: "اختر كلمات وشرائح أولاً.",
+  },
 } as const;
 
 /**
