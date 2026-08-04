@@ -241,6 +241,21 @@ export default function StudioPanel({
   const [linkInput, setLinkInput] = useState("");
   /** The member's own LinkedIn address for this post, stored. */
   const [linkSaved, setLinkSaved] = useState(false);
+  /** The member published past the gate. Never carried into the next piece. */
+  const [overrode, setOverrode] = useState(false);
+
+  /* Guarded transitions. Nothing destructive happens without one of these. */
+  const [pendingSubject, setPendingSubject] = useState<Choice | null>(null);
+  const [pendingFormat, setPendingFormat] = useState<Format | null>(null);
+  const [askEditAfterPublish, setAskEditAfterPublish] = useState(false);
+
+  /**
+   * WHERE A POSTURE OPENS. A posture changes who writes, where the journey
+   * starts and what Aura does unasked — never what exists on the screen.
+   */
+  const entryStep = (p: Posture): number => (p === "editor" ? 1 : 2);
+  const postureRef = useRef<Posture>("editor");
+  postureRef.current = posture;
 
   /**
    * P1c — set the moment the member CHOOSES a writing language. From then on a
@@ -321,6 +336,19 @@ export default function StudioPanel({
       else setAskingPosture(true);
     } catch { setAskingPosture(true); }
   }, []);
+
+  /**
+   * The posture's ENTRY STEP, applied once, and only over an empty piece.
+   * A posture never moves a member off work they already have.
+   */
+  const enteredRef = useRef(false);
+  useEffect(() => {
+    if (enteredRef.current) return;
+    if (!ready || askingPosture) return;
+    enteredRef.current = true;
+    if (!content.trim() && !deck && !pendingRestore) setStep(entryStep(posture));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, askingPosture, posture]);
 
   /* ---------- responsive ------------------------------------------ */
   useEffect(() => {
@@ -498,7 +526,7 @@ export default function StudioPanel({
     setTypedTopic("");
     setPasted("");
     setFormat(next?.format ?? null);
-    setStep(1);
+    setStep(entryStep(postureRef.current));
     setSub("build");
     setDraftId(null);
     setDraftSource(null);
@@ -509,6 +537,10 @@ export default function StudioPanel({
     setPostUrl(null);
     setLinkInput("");
     setLinkSaved(false);
+    setOverrode(false);
+    setPendingSubject(null);
+    setPendingFormat(null);
+    setAskEditAfterPublish(false);
     setNotReady(null);
     setProblem(null);
     setStatus(null);
@@ -522,7 +554,7 @@ export default function StudioPanel({
     draftPrefillRef.current = null;
     liveRef.current = {
       content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
-      step: 1, format: next?.format ?? null, draftId: null, draftSource: null,
+      step: entryStep(postureRef.current), format: next?.format ?? null, draftId: null, draftSource: null,
     };
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* quota never blocks editing */ }
   }, []);
@@ -607,6 +639,26 @@ export default function StudioPanel({
     })();
     return () => { dead = true; };
   }, [userId]);
+
+  /**
+   * DELEGATOR — Aura prepares, it does not spend.
+   *
+   * The subject is picked for the member, and if the overnight run already
+   * wrote about that subject the waiting draft is loaded. Nothing is
+   * generated: zero-click generation on entry spends a member's time and
+   * money on something they did not ask for.
+   */
+  const delegatorPreparedRef = useRef(false);
+  useEffect(() => {
+    if (posture !== "delegator" || delegatorPreparedRef.current) return;
+    if (draftsLoading || !choice?.id || content.trim() || pendingRestore) return;
+    delegatorPreparedRef.current = true;
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const waiting = drafts.find(
+      (d) => d.signalId === choice.id && new Date(d.created_at).getTime() > cutoff,
+    );
+    if (waiting) void openDraft(waiting, "studio_overnight");
+  }, [posture, draftsLoading, drafts, choice, content, pendingRestore, openDraft]);
 
   /**
    * C3 — ONE owner of `?draft=`. Dashboard resolves the row (from BOTH
@@ -1159,6 +1211,7 @@ export default function StudioPanel({
       body: { postId: id, advisory: override },
     });
     if (override) void track("gate_overridden", { signal_id: choice?.id || null, route: "linkedin" });
+    if (override) setOverrode(true);
     setBusy(null);
     setBusyMessage(null);
     const payload = data as any;
@@ -1298,9 +1351,18 @@ export default function StudioPanel({
   /* THE PIECE STATE. Derived, never stored twice, never inferred from the
      highest step visited. `deriveDone` owns every tick and clamps the
      step N / N−1 invariant. */
-  const subjectChosen = Boolean(choice) || pasted.trim().length > 0;
+  /** `subject` is the ONE thing that makes step 1 done. Nothing else. */
+  const subjectChosen = choice !== null;
   const wordsReady = content.trim().length > 0;
   const slidesMade = deck !== null;
+  const formatChosen = format !== null;
+  const finished = published || linkSaved;
+  /**
+   * "Write another about this subject" is only offered while that signal still
+   * has material left to write from — it is only ever a ranked start card
+   * while unused work remains behind it.
+   */
+  const subjectHasMore = Boolean(choice?.id) && cards.some((c) => c.signalId === choice?.id);
   const doneMap = useMemo(
     () => deriveDone({ subjectChosen, wordsReady, format, slidesMade, published, linkSaved }),
     [subjectChosen, wordsReady, format, slidesMade, published, linkSaved],
@@ -1439,9 +1501,11 @@ export default function StudioPanel({
       {genError && (
         <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--error)", margin: "0 0 12px" }}>
           {genError === "session" ? T.sessionEnded[lang] : T.writeFailed[lang]}{" "}
+          {posture !== "author" && (
           <button type="button" onClick={() => generate()} style={{ background: "transparent", border: 0, color: "var(--act)", fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
             {T.tryAgain[lang]}
           </button>
+          )}
         </p>
       )}
       <textarea
@@ -1449,6 +1513,8 @@ export default function StudioPanel({
         onChange={(e) => changeContent(e.target.value)}
         rows={14}
         dir={rtlWrite ? "rtl" : "ltr"}
+        disabled={published}
+        placeholder={posture === "author" ? T.authorPlaceholder[lang] : undefined}
         aria-label={T.writeHead[lang]}
         style={{
           width: "100%",
@@ -1492,13 +1558,17 @@ export default function StudioPanel({
   /* Save and come back later: only when there is something a save would keep. */
   const canSave = wordsReady || slidesMade;
   /* Make the slides. */
-  const canMakeSlides = wordsReady && format === "slides" && !slidesMade;
+  const canMakeSlides = format === "slides" && !slidesMade && !deckBusy && wordsReady;
+  /* Write it — the delegator's one primary at step 2. */
+  const canWriteIt = !wordsReady && !generating;
   /* Save the link. */
-  const canSaveLink = plausibleLinkedInUrl(linkInput) && !linkSaved;
+  const canSaveLink = step === 4 && format === "slides" && plausibleLinkedInUrl(linkInput) && !linkSaved;
 
   /* Exactly one primary per screen. On step 3 the slide-making button in the
      stage IS the primary, so the strip does not offer a second one. */
-  const stageOwnsPrimary = step === 3 && format === "slides" && !deck;
+  const stageOwnsPrimary =
+    (step === 3 && format === "slides" && !deck) ||
+    (step === 2 && posture === "delegator" && !wordsReady);
 
   const onContinue = () => {
     if (step === 1) {
@@ -1513,6 +1583,9 @@ export default function StudioPanel({
         return;
       }
       if (content.trim()) { setStep(2); return; }
+      // The author's own words are the only source in that posture: there is
+      // no generate affordance to reach.
+      if (posture === "author") { setStep(2); return; }
       void generate();
       return;
     }
@@ -1698,6 +1771,29 @@ export default function StudioPanel({
 
       {step === 1 && (
         <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+          {/* A subject change over written words is asked for, never assumed. */}
+          {pendingSubject && (
+            <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--act)", borderRadius: 12, padding: 12, marginBottom: 16 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                {T.confirmSubjectHead[lang]}
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <ButtonPrimary
+                  onClick={() => {
+                    const next = pendingSubject;
+                    startNewPiece({ choice: next });
+                  }}
+                  style={{ minHeight: 44 }}
+                >
+                  {T.confirmSubjectYes[lang]}
+                </ButtonPrimary>
+                <ButtonGhost onClick={() => setPendingSubject(null)} style={{ minHeight: 44 }}>
+                  {T.replaceNo[lang]}
+                </ButtonGhost>
+              </div>
+            </div>
+          )}
+
           {/* Work already waiting. Nothing a member wrote may become unreachable. */}
           {!draftsLoading && drafts.length > 0 && (
             <div style={{ marginBottom: 20 }}>
@@ -1757,12 +1853,11 @@ export default function StudioPanel({
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
-                    // N1 — changing subject on a finished piece is a new piece.
+                    // N1 — changing subject over words already written is a NEW
+                    // piece, and it is confirmed before anything is lost.
                     const next = { id: c.signalId, title: c.title, insight: c.insight };
-                    if (choice?.id !== c.signalId && (published || draftId || content.trim())) {
-                      startNewPiece({ choice: next });
-                      return;
-                    }
+                    if (choice?.id === c.signalId) return;
+                    if (published || content.trim()) { setPendingSubject(next); return; }
                     setChoice(next);
                     setTypedTopic("");
                   }}
@@ -1823,10 +1918,8 @@ export default function StudioPanel({
                       aria-pressed={on}
                       onClick={() => {
                         const next = { id: s.id, title: s.title, insight: s.insight };
-                        if (choice?.id !== s.id && (published || draftId || content.trim())) {
-                          startNewPiece({ choice: next });
-                          return;
-                        }
+                        if (choice?.id === s.id) return;
+                        if (published || content.trim()) { setPendingSubject(next); return; }
                         setChoice(next);
                         setTypedTopic("");
                       }}
@@ -1858,14 +1951,14 @@ export default function StudioPanel({
                 onChange={(e) => {
                   const v = e.target.value;
                   const t = v.trim();
-                  // N1 — typing a subject while a finished piece is on screen
-                  // starts a NEW piece. Anything binding us to the old row goes.
-                  if (!typedTopic && t && (published || draftId || content.trim())) {
-                    startNewPiece({ choice: { id: null, title: t, insight: "" } });
-                    setTypedTopic(v);
+                  // Typing never destroys words. Over an empty piece the typed
+                  // subject IS the subject; over written words the swap is
+                  // offered as a confirmation instead.
+                  setTypedTopic(v);
+                  if (published || content.trim()) {
+                    setPendingSubject(t ? { id: null, title: t, insight: "" } : null);
                     return;
                   }
-                  setTypedTopic(v);
                   setChoice(t ? { id: null, title: t, insight: "" } : null);
                 }}
                 placeholder={T.chooseOwnPlaceholder[lang]}
@@ -1921,7 +2014,13 @@ export default function StudioPanel({
                 value={pasted}
                 rows={6}
                 dir={rtlWrite ? "rtl" : "ltr"}
-                onChange={(e) => setPasted(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setPasted(v);
+                  // The author's subject may simply be the first line they wrote.
+                  const first = v.split("\n").map((l) => l.trim()).find(Boolean) || "";
+                  if (!choice && first) setChoice({ id: null, title: first.slice(0, 80), insight: "" });
+                }}
                 placeholder={T.pastePlaceholder[lang]}
                 style={{
                   width: "100%", background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
@@ -1955,6 +2054,57 @@ export default function StudioPanel({
           align={rtlShell ? "right" : "left"}
           lang={lang}
         >
+          {/* THE POSTURE, MADE REAL. Delegator: a subject already chosen and one
+              primary that writes. Author: no generate affordance at all.
+              Editor: the words arrived from step 1. */}
+          {posture === "delegator" && (
+            <div style={{ display: "grid", gap: 8, justifyItems: rtlShell ? "end" : "start", margin: "0 0 14px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
+                {wordsReady ? T.delegatorFoundDraft[lang] : T.delegatorWaiting[lang]}
+              </p>
+              {!wordsReady && (
+                <ButtonPrimary onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
+                  {T.writeItNow[lang]}
+                </ButtonPrimary>
+              )}
+              {!wordsReady && !choice && (
+                <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)" }}>
+                  {T.whyNoSubject[lang]}
+                </span>
+              )}
+              <ButtonGhost onClick={() => setStep(1)} style={{ minHeight: 44 }}>
+                {T.chooseDifferent[lang]}
+              </ButtonGhost>
+            </div>
+          )}
+
+          {/* Editing words that are already live is a NEW post, and it is asked
+              for first. Nothing published is ever quietly rewritten. */}
+          {published && (
+            <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                {T.editAfterPublishHead[lang]}
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <ButtonPrimary
+                  onClick={() => {
+                    const carried = content;
+                    const keep = choice;
+                    startNewPiece({ choice: keep });
+                    setContent(carried);
+                    setStep(2);
+                  }}
+                  style={{ minHeight: 44 }}
+                >
+                  {T.editAfterPublishYes[lang]}
+                </ButtonPrimary>
+                <ButtonGhost onClick={() => setStep(4)} style={{ minHeight: 44 }}>
+                  {T.keepAsIs[lang]}
+                </ButtonGhost>
+              </div>
+            </div>
+          )}
+
           {notReady && (
             <p
               role="status"
@@ -1975,7 +2125,9 @@ export default function StudioPanel({
               </ButtonGhost>
             </div>
           )}
-          {/* Change the writing language without going back a step. */}
+          {/* Change the writing language without going back a step. This is a
+              generate affordance, so it does not exist in the author posture. */}
+          {posture !== "author" && (
           <div style={{ marginBottom: 12 }}>
             <ButtonGhost
               onClick={() => {
@@ -2025,6 +2177,7 @@ export default function StudioPanel({
               </div>
             )}
           </div>
+          )}
           {writeArea}
         </StageCard>
       )}
@@ -2049,7 +2202,12 @@ export default function StudioPanel({
                     type="button"
                     aria-pressed={on}
                     disabled={refused}
-                    onClick={() => setFormat(key)}
+                    onClick={() => {
+                      if (key === format) return;
+                      // Slides already made are never thrown away unasked.
+                      if (key === "post" && deck) { setPendingFormat("post"); return; }
+                      setFormat(key);
+                    }}
                     style={{
                       textAlign: rtlShell ? "right" : "left",
                       cursor: refused ? "not-allowed" : "pointer",
@@ -2075,6 +2233,33 @@ export default function StudioPanel({
                 );
               })}
             </div>
+            {pendingFormat === "post" && (
+              <div style={{ marginTop: 12, background: "var(--surface-subtle)", border: "1px solid var(--act)", borderRadius: 12, padding: 12 }}>
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                  {T.confirmDiscardSlidesHead[lang]}
+                </p>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <ButtonPrimary
+                    onClick={() => {
+                      setDeck(null);
+                      setDeckSource(null);
+                      setDeckFailures([]);
+                      setCurrent(0);
+                      setFits({});
+                      setExported(false);
+                      setFormat("post");
+                      setPendingFormat(null);
+                    }}
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.confirmDiscardSlidesYes[lang]}
+                  </ButtonPrimary>
+                  <ButtonGhost onClick={() => setPendingFormat(null)} style={{ minHeight: 44 }}>
+                    {T.replaceNo[lang]}
+                  </ButtonGhost>
+                </div>
+              </div>
+            )}
           </StageCard>
 
           {format === "slides" && deckFailures.length > 0 && (
@@ -2156,7 +2341,7 @@ export default function StudioPanel({
                     </ButtonPrimary>
                     {!canMakeSlides && !deckBusy && (
                       <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)" }}>
-                        {T.whyNoWords[lang]}
+                        {!wordsReady ? T.whyNoWords[lang] : format !== "slides" ? T.whyNoSlidesFormat[lang] : T.whyNoSlides[lang]}
                       </span>
                     )}
                   </span>
@@ -2197,7 +2382,7 @@ export default function StudioPanel({
           {/* P9 — THE ENDING. Whichever route the member took, the cycle closes
               here, in the main column, with three ways onward. Nothing on this
               panel can be pressed twice into a second post. */}
-          {published && (
+          {finished && (
             <div
               role="status"
               aria-live="polite"
@@ -2207,10 +2392,10 @@ export default function StudioPanel({
               }}
             >
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                {T.cycleDoneHead[lang]}
+                {T.endHead[lang]}
               </p>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
-                {T.cycleDoneBody[lang]}{" "}
+                {T.endBody[lang]}{" "}
                 {postUrl && (
                   <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
                     {T.seeOnLinkedIn[lang]}
@@ -2218,9 +2403,15 @@ export default function StudioPanel({
                 )}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {/* Every label states exactly what survives it. */}
                 <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
-                  {T.writeAnother[lang]}
+                  {T.writeAnotherClears[lang]}
                 </ButtonPrimary>
+                {subjectHasMore && (
+                  <ButtonGhost onClick={() => startNewPiece({ choice })} style={{ minHeight: 44 }}>
+                    {T.writeAnotherSameSubject[lang]}
+                  </ButtonGhost>
+                )}
                 <ButtonGhost onClick={() => goTab("library")} style={{ minHeight: 44 }}>
                   {T.goToLibrary[lang]}
                 </ButtonGhost>
@@ -2231,8 +2422,9 @@ export default function StudioPanel({
             </div>
           )}
 
-          {/* ONE path, decided by what the member actually made. */}
-          {!(format === "slides" && deck) ? (
+          {/* TWO SCREENS, decided by the format the member CHOSE — never by
+              whether a deck happens to exist. */}
+          {format !== "slides" ? (
             <>
               <p
                 dir={rtlWrite ? "rtl" : "ltr"}
@@ -2330,9 +2522,6 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 6px" }}>
                 3 · {T.s4Link[lang]}
               </p>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "0 0 10px" }}>
-                {T.whyLink[lang]}
-              </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <label htmlFor="studio-link" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
                   {T.linkPlaceholder[lang]}
@@ -2370,6 +2559,10 @@ export default function StudioPanel({
                   {T.whyLinkAlready[lang]}
                 </p>
               )}
+              {/* One sentence on why the link matters, as the member's benefit. */}
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "10px 0 0" }}>
+                {T.whyLink[lang]}
+              </p>
             </>
           )}
         </StageCard>
