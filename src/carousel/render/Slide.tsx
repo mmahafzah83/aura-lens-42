@@ -481,8 +481,13 @@ function MediaCover({ slide, deck, theme }: { slide: SlideIR; deck: DeckIR; them
           on bare photo. Heavy where the words are, and genuinely transparent
           away from them — a scrim dark enough everywhere is just a tint, and
           then the member cannot tell their photo arrived at all. */}
-      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(${from}, ${theme.bgSolid}F2 0%, ${theme.bgSolid}B3 45%, ${theme.bgSolid}1A 100%)` }} />
-      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, ${theme.bgSolid}CC 0%, ${theme.bgSolid}00 30%, ${theme.bgSolid}00 62%, ${theme.bgSolid}D9 100%)` }} />
+      {/* The cover now carries the label, the hook AND the framing, so the
+          scrim is a legibility GATE, not a hope: deep enough under the whole
+          type column that every one of those three lines clears AA over a
+          light photograph, still genuinely transparent on the far side so the
+          member can see their picture arrived. No solid panel. */}
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(${from}, ${theme.bgSolid}FA 0%, ${theme.bgSolid}EB 40%, ${theme.bgSolid}A6 68%, ${theme.bgSolid}1A 100%)` }} />
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, ${theme.bgSolid}D9 0%, ${theme.bgSolid}59 26%, ${theme.bgSolid}59 62%, ${theme.bgSolid}E6 100%)` }} />
     </div>
   );
 }
