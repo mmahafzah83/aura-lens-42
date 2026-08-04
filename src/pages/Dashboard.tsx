@@ -258,6 +258,15 @@ const Dashboard = () => {
     };
   }, [setSearchParams]);
 
+  /**
+   * The composer mounts on first arrival at the authority tab and is never
+   * unmounted again for the rest of the session (Y2, case 1).
+   */
+  const [authorityMounted, setAuthorityMounted] = useState(false);
+  useEffect(() => {
+    if (activeTab === "authority") setAuthorityMounted(true);
+  }, [activeTab]);
+
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
     const tabParam = searchParams.get("tab");
