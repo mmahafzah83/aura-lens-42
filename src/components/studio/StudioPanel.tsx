@@ -1344,6 +1344,7 @@ export default function StudioPanel({
           signal_id: choice.id,
           length: lengthOverride ?? deckLength,
           theme,
+          template,
           lang: writeLang,
           // Always: the slides adapt the words the member approved.
           source_text: content,
@@ -1365,7 +1366,7 @@ export default function StudioPanel({
       }
       const parsed = DeckIRSchema.safeParse(result.deck);
       if (!parsed.success) { setDeckFailures([T.slidesFailedShape[lang]]); return; }
-      setDeck({ ...parsed.data, theme });
+      setDeck({ ...parsed.data, theme, template });
       setDeckSource(builtFrom);
       setExported(false);
       setCurrent(0);
@@ -1375,7 +1376,7 @@ export default function StudioPanel({
     } finally {
       setDeckBusy(false);
     }
-  }, [choice, content, theme, deckLength, writeLang, lang, saveDraft]);
+  }, [choice, content, theme, template, deckLength, writeLang, lang, saveDraft]);
 
   const changeThisLine = useCallback(async () => {
     if (!deck) return;
@@ -1392,12 +1393,12 @@ export default function StudioPanel({
       const candidate = replaceSlide(deck, current, result.slide);
       const parsed = DeckIRSchema.safeParse(candidate);
       if (!parsed.success) { setProblem(T.lineChangeFailed[lang]); return; }
-      setDeck({ ...parsed.data, theme });
+      setDeck({ ...parsed.data, theme, template });
     } catch {
       setProblem(T.lineChangeFailed[lang]);
     }
     finally { setChangingLine(false); setBusyMessage(null); }
-  }, [deck, current, theme, lang]);
+  }, [deck, current, theme, template, lang]);
 
   const uploadPicture = useCallback(async (file: File) => {
     setPictureNotice(null);
@@ -2744,8 +2745,8 @@ export default function StudioPanel({
                 onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
                 template={template}
                 onTemplate={(id) => {
-                  const allowed = (templateThemes[id] ?? []).filter((t): t is ThemeName => true);
-                  const next = (allowed.includes(theme) ? theme : allowed[0]) as ThemeName;
+                  const allowed = (templateThemes[id] ?? []) as ThemeName[];
+                  const next = allowed.includes(theme) ? theme : allowed[0];
                   setTemplate(id);
                   setTheme(next);
                   setDeck((d) => (d ? { ...d, template: id, theme: next } : d));
