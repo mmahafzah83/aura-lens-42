@@ -851,7 +851,27 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
   }
 
   const isClose = slide.archetype === "close";
-  const body = <SlideBody deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />;
+  /**
+   * Z2 — THE BAND VARIANT DRAWS A DECIDED SET, NOT WHATEVER SURVIVES CLIPPING.
+   *
+   * Previously the text zone simply clipped, so a filled slot could vanish
+   * with nothing said. Now `pictureTextPlan` decides — hook plus one
+   * supporting line — and the inspector reads the SAME function to name every
+   * dropped field to the member. The cover branch is untouched: `CoverBody`
+   * already draws the hook alone, which is what the plan says for a cover.
+   */
+  const bandPlan = variant === "band"
+    ? pictureTextPlan(slide.archetype, slide.slots as Record<string, unknown>, true)
+    : null;
+  const drawnSlide: SlideIR = bandPlan && bandPlan.dropped.length
+    ? {
+        ...slide,
+        slots: Object.fromEntries(
+          Object.entries(slide.slots).filter(([k]) => k === "media" || !bandPlan.dropped.includes(k)),
+        ) as SlideIR["slots"],
+      }
+    : slide;
+  const body = <SlideBody deck={deck} slide={drawnSlide} theme={theme} s={s} hideTails={hideTails} />;
 
   return (
     <div
