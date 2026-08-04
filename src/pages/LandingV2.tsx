@@ -167,7 +167,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .join-in{position:relative;max-width:470px;margin:0 auto;text-align:center}
 .aura-v2 .join h2{color:#fff;margin-top:16px}
 .aura-v2 .join p{color:#A7B0BC;font-size:15.5px;line-height:1.6;margin-top:14px}
-.aura-v2 .dark .jf,.aura-v2 .dark .seatline{display:block;width:100%;text-align:center}
+.aura-v2 .dark .jf,.aura-v2 .dark .seatline{display:block;width:100%;max-width:none;margin-left:auto;margin-right:auto;text-align:center}
 .aura-v2 .jf{font-family:var(--mono);font-size:10px;color:#65707E;letter-spacing:.09em;margin-top:16px;line-height:1.8}
 .aura-v2 .founder{display:flex;gap:15px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:19px;margin:18px auto 0;max-width:640px}
 .aura-v2 .founder img{width:48px;height:48px;border-radius:999px;object-fit:cover;flex-shrink:0}
