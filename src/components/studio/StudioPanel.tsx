@@ -51,6 +51,19 @@ function sourceStamp(text: string): string {
 }
 
 const POSTURE_KEY = "aura_studio_posture";
+
+/**
+ * W1 — the stored posture, read synchronously. The journey's ENTRY STEP is a
+ * property of the posture, so it must be known before the first paint.
+ */
+function readStoredPosture(): Posture | null {
+  try {
+    const saved = localStorage.getItem(POSTURE_KEY);
+    return saved === "delegator" || saved === "editor" || saved === "author" ? saved : null;
+  } catch {
+    return null;
+  }
+}
 const DRAFT_KEY = "aura_studio_draft_v1";
 /**
  * `composer_opened` is one event per PIECE per session. The studio is a tab
