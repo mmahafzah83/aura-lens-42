@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { createPortal } from "react-dom";
 import {
   Link, Type, FileUp, Mic, ImageIcon, Search, Pin, PinOff, Trash2,
@@ -547,10 +548,39 @@ const SourcesSubTab = ({
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<FilterKey>("all");
+  /**
+   * THE URL IS THE TRUTH ABOUT WHAT IS OPEN (Y6).
+   *
+   * The search term, the type filter and the open item are member-made
+   * selections, so they live in the address, not in this component. A refresh
+   * lands on the same list; the back button walks the selections; a link sent
+   * to yourself opens the same thing.
+   *
+   * Typing replaces the entry (no history per keystroke); a filter or an item
+   * opening pushes one, so Back means "close that".
+   */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get("lq") ?? "";
+  const rawFilter = searchParams.get("lfilter");
+  const filter: FilterKey =
+    FILTER_LABELS.some((f) => f.key === rawFilter) ? (rawFilter as FilterKey) : "all";
+  const expandedId = searchParams.get("lopen");
+  const writeParam = useCallback(
+    (key: string, value: string | null, replace: boolean) => {
+      const next = new URLSearchParams(window.location.search);
+      if (value) next.set(key, value);
+      else next.delete(key);
+      setSearchParams(next, { replace });
+    },
+    [setSearchParams],
+  );
+  const setSearch = useCallback((v: string) => writeParam("lq", v || null, true), [writeParam]);
+  const setFilter = useCallback(
+    (v: FilterKey) => writeParam("lfilter", v === "all" ? null : v, false),
+    [writeParam],
+  );
+  const setExpandedId = useCallback((v: string | null) => writeParam("lopen", v, false), [writeParam]);
   const [sortKey, setSortKey] = useState<SortKey>("recent");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   // Optimistic "Retrying…" flag per document id — cleared once the row's status
   // flips out of "processing" on the next loadEntries.
