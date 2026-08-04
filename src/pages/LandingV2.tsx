@@ -202,16 +202,23 @@ const LANDING_V2_CSS = `
 `;
 
 const LANDING_V2_HTML = `
-<nav class="nav"><div class="nav-in">
-  <a class="logo" href="#" data-p="home"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10.2" stroke="#0B1220" stroke-width="1.5"/><circle cx="12" cy="12" r="3.4" fill="#0670C4"/><path d="M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3" stroke="#00CEC9" stroke-width="1.5" stroke-linecap="round"/></svg> Aura</a>
-  <div class="tabs">
-    <button data-p="home" class="on">Home</button><button data-p="how">How it works</button><button data-p="get">What you get</button><button data-p="why">Why now</button><button data-p="cmp">Compare</button><button data-p="faq">Questions</button>
-  </div>
-  <div class="navwrap">
+<svg style="display:none"><symbol id="m" viewBox="0 0 64 64"><g stroke="currentColor" fill="currentColor" stroke-linecap="round"><circle cx="32" cy="32" r="6.85" stroke="none"/><line x1="32" y1="18.89" x2="32" y2="8.77" stroke-width="1.2"/><line x1="39.09" y1="20.97" x2="44.56" y2="12.45" stroke-width="1.2"/><line x1="43.92" y1="26.56" x2="53.13" y2="22.35" stroke-width="1.2"/><line x1="44.97" y1="33.87" x2="55" y2="35.31" stroke-width="1.2"/><line x1="41.91" y1="40.58" x2="49.56" y2="47.22" stroke-width="1.2"/><line x1="35.69" y1="44.58" x2="38.55" y2="54.29" stroke-width="1.2"/><line x1="28.31" y1="44.58" x2="25.45" y2="54.29" stroke-width="1.2"/><line x1="22.09" y1="40.58" x2="14.44" y2="47.22" stroke-width="1.2"/><line x1="19.03" y1="33.87" x2="9" y2="35.31" stroke-width="1.2"/><line x1="20.08" y1="26.56" x2="10.87" y2="22.35" stroke-width="1.2"/><line x1="24.91" y1="20.97" x2="19.44" y2="12.45" stroke-width="1.2"/></g><g stroke="#00CEC9" fill="#00CEC9" stroke-linecap="round"><line x1="40.07" y1="21.67" x2="49.24" y2="9.94" stroke-width="1.55"/><circle cx="49.24" cy="9.94" r="1.61"/></g></symbol></svg>
+
+<div class="navshell">
+  <nav class="nav">
+    <a class="brand" href="#" data-p="home"><svg class="mark"><use href="#m"/></svg><span class="bn">Aura</span></a>
+    <div class="links">
+      <button data-p="home" class="on">Home</button>
+      <button data-p="how">How it works</button>
+      <button data-p="get">What you get</button>
+      <button data-p="why">Why now</button>
+      <button data-p="cmp">Compare</button>
+      <button data-p="faq">Questions</button>
+    </div>
     <a class="navalt" id="navalt" href="/auth">Sign in</a>
-    <a class="navcta" id="navcta" href="/request-access">Request a founder seat</a>
-  </div>
-</div></nav>
+    <a class="navcta" id="navcta" href="/request-access">Request a founder seat <span class="a">↗</span></a>
+  </nav>
+</div>
 
 <div class="stage">
 
@@ -229,38 +236,39 @@ const LANDING_V2_HTML = `
       </div>
     </div>
     <div class="loopwrap">
-      <svg viewBox="0 0 500 500" fill="none">
-        <circle cx="250" cy="250" r="185" stroke="#E4E8EE" stroke-width="1.2"/>
-        <circle class="dash" cx="250" cy="250" r="150" stroke="#D2D8E0" stroke-width="1.2"/>
+      <svg viewBox="0 0 560 560" fill="none">
+        <circle cx="280" cy="280" r="245" stroke="#EFF4FA" stroke-width="1.2"/>
+        <circle cx="280" cy="280" r="205" stroke="#E4E8EE" stroke-width="1.2"/>
+        <circle class="dash" cx="280" cy="280" r="150" stroke="#D2D8E0" stroke-width="1.2"/>
         <defs>
           <linearGradient id="arcg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0670C4"/><stop offset="1" stop-color="#00CEC9"/></linearGradient>
         </defs>
-        <path d="M250 65a185 185 0 0 1 185 185" stroke="url(#arcg)" stroke-width="3" stroke-linecap="round"/>
-        <g class="orb"><circle cx="435" cy="250" r="6" fill="#00CEC9"/></g>
-        <path class="dash" d="M250 178V128M322 250h50M250 322v50M178 250h-50" stroke="#D2D8E0" stroke-width="1.2"/>
-        <circle cx="250" cy="250" r="72" fill="#0B1220"/>
-        <text x="250" y="243" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="36" font-weight="600" fill="#FFFFFF">85</text>
-        <text x="250" y="262" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.6" fill="#00CEC9">YOUR IMPRINT</text>
-        <text x="250" y="277" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" fill="#8E99A6">rises every week</text>
+        <circle cx="280" cy="280" r="205" stroke="url(#arcg)" stroke-width="3" stroke-linecap="round" fill="none" stroke-dasharray="876 1288" transform="rotate(-96 280 280)"/>
+        <g class="orb"><circle cx="485" cy="280" r="12" fill="#00CEC9" fill-opacity=".18"/><circle cx="485" cy="280" r="6" fill="#00CEC9"/></g>
+        <path class="dash" d="M280 192 V119    M368 280 H441    M280 368 V441    M192 280 H119" stroke="#D2D8E0" stroke-width="1.2"/>
+        <circle cx="280" cy="280" r="76" fill="#0B1220"/>
+        <text x="280" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="36" font-weight="600" fill="#FFFFFF">85</text>
+        <text x="280" y="289" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.6" fill="#00CEC9">YOUR IMPRINT</text>
+        <text x="280" y="306" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" fill="#8E99A6">rises every week</text>
 
-        <circle cx="250" cy="95" r="40" fill="#FFFFFF" stroke="#E4E8EE"/>
-        <g stroke="#0670C4" stroke-width="1.6" stroke-linecap="round"><path d="M236 88h28M236 95h28M236 102h18"/></g>
-        <text class="nodeL" x="250" y="42" text-anchor="middle">1 · YOU READ</text>
-        <text class="nodeS" x="250" y="58" text-anchor="middle">One tap. One second.</text>
+        <circle cx="280" cy="75" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <g stroke="#0670C4" stroke-width="1.6" stroke-linecap="round"><path d="M266 68h28M266 75h28M266 82h18"/></g>
+        <text class="nodeL" x="280" y="133" text-anchor="middle">1 · YOU READ</text>
+        <text class="nodeS" x="280" y="149" text-anchor="middle">One tap. One second.</text>
 
-        <circle cx="405" cy="250" r="40" fill="#FFFFFF" stroke="#E4E8EE"/>
-        <g class="pulse"><circle cx="405" cy="250" r="13" stroke="#0670C4" stroke-width="1.6" fill="none"/><circle cx="405" cy="250" r="4.5" fill="#00CEC9"/></g>
-        <text class="nodeL" x="405" y="196" text-anchor="middle">2 · IT LEARNS</text>
-        <text class="nodeS" x="405" y="212" text-anchor="middle">Your subjects, your voice.</text>
+        <circle cx="485" cy="280" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <g class="pulse"><circle cx="485" cy="280" r="13" stroke="#0670C4" stroke-width="1.6" fill="none"/><circle cx="485" cy="280" r="4.5" fill="#00CEC9"/></g>
+        <text class="nodeL" x="485" y="338" text-anchor="middle">2 · IT LEARNS</text>
+        <text class="nodeS" x="485" y="354" text-anchor="middle">Your subjects, your voice.</text>
 
-        <circle cx="250" cy="405" r="40" fill="#FFFFFF" stroke="#E4E8EE"/>
-        <path d="M254 391l-11 15h9l-3 12 12-16h-9z" fill="#E0A82E"/>
-        <text class="nodeL" x="250" y="464" text-anchor="middle">3 · IT WRITES AT NIGHT</text>
+        <circle cx="280" cy="485" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <path d="M284 471l-11 15h9l-3 12 12-16h-9z" fill="#E0A82E"/>
+        <text class="nodeL" x="280" y="543" text-anchor="middle">3 · IT WRITES AT NIGHT</text>
 
-        <circle cx="95" cy="250" r="40" fill="#FFFFFF" stroke="#E4E8EE"/>
-        <path d="M83 250l8 9 17-19" stroke="#00807B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <text class="nodeL" x="95" y="196" text-anchor="middle">4 · YOU APPROVE</text>
-        <text class="nodeS" x="95" y="212" text-anchor="middle">One click. It is live.</text>
+        <circle cx="75" cy="280" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <path d="M63 280l8 9 17-19" stroke="#00807B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <text class="nodeL" x="75" y="338" text-anchor="middle">4 · YOU APPROVE</text>
+        <text class="nodeS" x="75" y="354" text-anchor="middle">One click. It is live.</text>
       </svg>
     </div>
   </div>
