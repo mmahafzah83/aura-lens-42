@@ -194,7 +194,7 @@ export default function StudioPanel({
    * exists to prove it. Opening an ordinary draft is not a decision, so it may
    * never tick step 3. This flag is persisted rather than inferred.
    */
-  const [formatChosen, setFormatChosen] = useState(false);
+  const [formatDecided, setFormatDecided] = useState(false);
 
   const [cards, setCards] = useState<StartCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
