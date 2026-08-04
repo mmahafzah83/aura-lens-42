@@ -19,7 +19,7 @@ import {
   type TextNode,
 } from "../deckIR";
 import { getTheme, type Theme, type ThemeName } from "./themes";
-import { useFitLadder, type FitState } from "./useFitLadder";
+import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
 import { INV_16_MEDIA_IN_DOM } from "../invariants";
 import {
   BAND_MEDIA_SHARE, BAND_TYPE_BOOST, MEDIA_BY_ARCHETYPE, type MediaPlacementMode,
