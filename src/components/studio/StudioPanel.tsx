@@ -233,7 +233,7 @@ export default function StudioPanel({
    */
   const [pieceRowId, setPieceRowId] = useState<string | null>(null);
   const pieceRowIdRef = useRef<string | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useSearchParams();
 
   const [deck, setDeck] = useState<DeckIR | null>(null);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
