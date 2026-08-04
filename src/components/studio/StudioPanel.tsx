@@ -1576,6 +1576,30 @@ export default function StudioPanel({
   const slidesMade = deck !== null;
   const formatChosen = format !== null;
   const finished = published || linkSaved;
+
+  /**
+   * Y1 — THE ADDRESS IS WRITTEN HERE AND NOWHERE ELSE.
+   *
+   * `replace: true` always: a piece is not a place you navigate to per
+   * keystroke. The parameter appears the moment a row id exists, and is
+   * removed on a new piece (`pieceRowId` is nulled by `startNewPiece`) and
+   * when the piece is finished.
+   */
+  useEffect(() => {
+    const want = finished ? null : pieceRowId;
+    const next = new URLSearchParams(window.location.search);
+    const has = next.get("piece");
+    const wantSrc = draftSource ?? (want ? "linkedin_posts" : null);
+    if ((has || null) === (want || null) && (next.get("src") || null) === (want ? wantSrc : null)) return;
+    if (want) {
+      next.set("piece", want);
+      if (wantSrc) next.set("src", wantSrc);
+    } else {
+      next.delete("piece");
+      next.delete("src");
+    }
+    setSearchParams(next, { replace: true });
+  }, [pieceRowId, finished, draftSource, setSearchParams]);
   /**
    * "Write another about this subject" is only offered while that signal still
    * has material left to write from — it is only ever a ranked start card
