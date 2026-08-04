@@ -202,6 +202,15 @@ export const T = {
   removePicture: { en: "Remove the picture", ar: "احذف الصورة" },
   uploading: { en: "Adding…", ar: "جارٍ الإضافة…" },
   noPictureHere: { en: "This slide has no room for a picture. Pick another slide.", ar: "لا مساحة لصورة في هذه الشريحة. اختر شريحة أخرى." },
+  // Why THIS slide refuses a picture — the real reason, per archetype, said
+  // before the file picker opens rather than after the upload disappears.
+  noPictureBenchmark: { en: "This slide already has its own chart. A photograph behind it would fight with the bars.", ar: "هذه الشريحة تحمل رسمها البياني. الصورة خلفه ستزاحمه." },
+  noPictureSteps: { en: "This slide is a numbered list and needs the full column.", ar: "هذه الشريحة قائمة مرقّمة وتحتاج العمود كاملاً." },
+  noPictureClose: { en: "The last slide shows your own portrait and your link. It takes no other picture.", ar: "الشريحة الأخيرة تعرض صورتك ورابطك، ولا تقبل صورة أخرى." },
+  // A picture variant with too many words.
+  tooLongForPicture: { en: "With a picture, this slide holds fewer words than it has now.", ar: "مع صورة، تتّسع هذه الشريحة لكلمات أقل مما فيها الآن." },
+  shortenForPicture: { en: "Shorten it for me", ar: "اختصرها لي" },
+  keepAllWords: { en: "Or remove the picture to keep every word.", ar: "أو احذف الصورة للاحتفاظ بكل الكلمات." },
   changeLine: { en: "Change this line only", ar: "غيّر هذا السطر فقط" },
   changingLine: { en: "Changing…", ar: "جارٍ التغيير…" },
   removeSlide: { en: "Remove slide", ar: "احذف الشريحة" },

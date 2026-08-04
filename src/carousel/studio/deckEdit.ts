@@ -7,7 +7,7 @@
  * re-run the fit ladder on every keystroke.
  */
 import type { Archetype, DeckIR, HeroLine, Run, Slide, Slots, TextNode } from "../deckIR";
-import { REQUIRED_SLOTS } from "../slots";
+import { COVER_WORD_BUDGET, MEDIA_BY_ARCHETYPE, REQUIRED_SLOTS, wordBudgetFor } from "../slots";
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
 const LATIN_RE = /[A-Za-z]/;
@@ -211,16 +211,126 @@ export function replaceSlide(deck: DeckIR, slideIndex: number, slide: Slide): De
   };
 }
 
-/** A member photo. `credit: null` means explicitly "the member's own work" (INV-15). */
+/**
+ * A member photo. `credit: null` means explicitly "the member's own work"
+ * (INV-15).
+ *
+ * `placement` is now DERIVED from the one media taxonomy and is what the
+ * renderer actually reads, so the stored value and the drawn composition can
+ * never disagree. It used to be hard-coded to "lower" while the renderer
+ * ignored it entirely — a value nothing reads is a lie in the data.
+ *
+ * An archetype that refuses pictures is returned unchanged; the studio states
+ * the real reason before the file picker ever opens.
+ */
 export function setSlidePhoto(deck: DeckIR, slideIndex: number, src: string | null): DeckIR {
   return {
     ...deck,
     slides: deck.slides.map((s) => {
       if (s.index !== slideIndex) return s;
       const slots: any = { ...s.slots };
-      if (!src) delete slots.media;
-      else slots.media = { kind: "photo", placement: "lower", src, credit: null };
+      if (!src) { delete slots.media; return { ...s, slots }; }
+      const mode = MEDIA_BY_ARCHETYPE[s.archetype];
+      if (mode === "none") return s;
+      slots.media = { kind: "photo", placement: mode === "cover" ? "full" : "lower", src, credit: null };
       return { ...s, slots };
+    }),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Picture variants — the words have to know they have less room       */
+/* ------------------------------------------------------------------ */
+
+function words(text: string): string[] {
+  return text.split(/\s+/).filter(Boolean);
+}
+
+function nodeWords(node: { runs: Run[] } | undefined | null): number {
+  return words(textOf(node)).length;
+}
+
+export function slideHasPicture(slide: Slide): boolean {
+  const media = slide.slots.media;
+  return Boolean(media && media.kind !== "chart" && media.kind !== "icon" && media.src);
+}
+
+/** Every word the member can see on this slide, in its current variant. */
+export function slideWordCount(slide: Slide): number {
+  const s = slide.slots;
+  const cover = slideHasPicture(slide) && MEDIA_BY_ARCHETYPE[slide.archetype] === "cover";
+  let n = (s.hero_lines ?? []).reduce((a, l) => a + nodeWords(l), 0);
+  if (cover) return n || words(String(s.stat_value ?? "")).length;
+  for (const key of ["chip", "headline", "subline", "stat_label", "term", "term_def", "quote", "cta_pill"] as const) {
+    n += nodeWords(s[key] as TextNode | undefined);
+  }
+  n += (s.body ?? []).reduce((a, node) => a + nodeWords(node), 0);
+  n += (s.checklist ?? []).reduce((a, node) => a + nodeWords(node), 0);
+  return n;
+}
+
+/** True when this slide's words no longer fit the composition it is in. */
+export function overPictureBudget(slide: Slide): boolean {
+  if (!slideHasPicture(slide)) return false;
+  return slideWordCount(slide) > wordBudgetFor(slide.archetype, true);
+}
+
+function clipNode(node: TextNode, limit: number, lang: "en" | "ar"): TextNode {
+  const w = words(textOf(node));
+  if (w.length <= limit) return node;
+  return makeTextNode(w.slice(0, Math.max(1, limit)).join(" "), lang, node);
+}
+
+/**
+ * Shorten ONE slide's text so it fits its picture variant. Deterministic and
+ * local: nothing is invented, the member's own words are only trimmed, and the
+ * member is free to ignore the offer and keep every word.
+ */
+export function shortenSlideForPicture(deck: DeckIR, slideIndex: number): DeckIR {
+  const lang = deck.primary_lang;
+  return {
+    ...deck,
+    slides: deck.slides.map((slide) => {
+      if (slide.index !== slideIndex || !slideHasPicture(slide)) return slide;
+      const mode = MEDIA_BY_ARCHETYPE[slide.archetype];
+      const slots: any = { ...slide.slots };
+
+      if (mode === "cover") {
+        // The hero is the only text the cover variant draws, so that is the
+        // only text worth trimming.
+        if (Array.isArray(slots.hero_lines) && slots.hero_lines.length) {
+          let left = COVER_WORD_BUDGET;
+          slots.hero_lines = slots.hero_lines
+            .map((line: HeroLine) => {
+              if (left <= 0) return null;
+              const w = words(textOf(line));
+              const keep = Math.min(w.length, left);
+              left -= keep;
+              return keep === w.length ? line : makeHeroLine(w.slice(0, keep).join(" "), lang, line);
+            })
+            .filter(Boolean);
+        }
+        return { ...slide, slots };
+      }
+
+      // Band: drop the optional tail first, then the trailing body nodes, then
+      // clip what remains. Structural slots are never removed.
+      const budget = wordBudgetFor(slide.archetype, true);
+      if (Array.isArray(slots.body) && slots.body.length) {
+        let kept: TextNode[] = slots.body.filter((n: TextNode) => !n.optional_tail);
+        if (!kept.length) kept = [slots.body[0]];
+        let used = slideWordCount({ ...slide, slots: { ...slots, body: [] } } as Slide);
+        const out: TextNode[] = [];
+        for (const node of kept) {
+          const room = budget - used;
+          if (room <= 3) break;
+          const clipped = clipNode(node, room, lang);
+          out.push(clipped);
+          used += nodeWords(clipped);
+        }
+        slots.body = out;
+      }
+      return { ...slide, slots };
     }),
   };
 }

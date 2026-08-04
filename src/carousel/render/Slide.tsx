@@ -19,8 +19,11 @@ import {
   type TextNode,
 } from "../deckIR";
 import { getTheme, type Theme, type ThemeName } from "./themes";
-import { useFitLadder, type FitState } from "./useFitLadder";
+import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
 import { INV_16_MEDIA_IN_DOM } from "../invariants";
+import {
+  BAND_MEDIA_SHARE, BAND_TYPE_BOOST, MEDIA_BY_ARCHETYPE, type MediaPlacementMode,
+} from "../slots";
 
 /* ------------------------------------------------------------------ */
 /* Canvas and type scale                                               */
@@ -30,6 +33,25 @@ export const CANVAS_W = 1080;
 export const CANVAS_H = 1350;
 /** Outer padding never drops below this, at any fit step. */
 export const PAD = 82;
+
+/**
+ * X3 — THE SAFE AREA.
+ *
+ * No image may sit under the page numerals, the identity bar, or the bottom
+ * edge. A scrim may cross this band; image CONTENT may not. Every media mode
+ * is held to it — full bleed included.
+ */
+export const SAFE_AREA = {
+  top: PAD,
+  side: PAD,
+  /** Padding plus the footer row: the accent rule and "3 / 8" live in here. */
+  bottom: PAD + 68,
+} as const;
+
+/** The band is lifted clear of the footer so the numbering breathes. */
+export const BAND_LIFT = 26;
+/** Constant height, so the split never varies with the word count. */
+export const BAND_MEDIA_H = Math.round(CANVAS_H * BAND_MEDIA_SHARE) - BAND_LIFT;
 
 const FONT_DISPLAY_EN = '"AuraAnton", Impact, "Arial Narrow", sans-serif';
 const FONT_TEXT_EN = '"AuraInter", Helvetica, Arial, sans-serif';
@@ -379,32 +401,10 @@ function Bars({ slide, primary, theme, s }: { slide: SlideIR; primary: Lang; the
 /* ------------------------------------------------------------------ */
 
 /**
- * `cover`  — full bleed behind the type, with a scrim. The photo IS the slide.
- * `band`   — a contained block in the content flow, height on the fit ladder.
- * `none`   — this archetype cannot hold a member photo, and says so before the
- *            file picker opens rather than swallowing the upload.
- *
- * Every archetype appears here and the type is a total `Record`, so adding a
- * tenth archetype fails the typecheck until someone makes this decision. That
- * is deliberate: media used to be pasted into a single switch case, and the
- * other eight archetypes inherited silence.
+ * The taxonomy itself lives in `../slots`, because the studio and the edit
+ * operations need it too. Re-exported here so existing callers keep working.
  */
-export type MediaPlacementMode = "cover" | "band" | "none";
-
-export const MEDIA_BY_ARCHETYPE: Record<Archetype, MediaPlacementMode> = {
-  cover_hero: "cover",
-  cover_stat: "cover",
-  frame: "band",
-  evidence: "band",
-  // The chart is this slide's visual; a photo behind bars reads as noise.
-  benchmark: "none",
-  quote: "cover",
-  // The numbered list needs the full column.
-  steps: "none",
-  definition: "band",
-  // The standing figure is the one image on the closing slide.
-  close: "none",
-};
+export { MEDIA_BY_ARCHETYPE, type MediaPlacementMode };
 
 export function mediaSupport(archetype: Archetype): MediaPlacementMode {
   return MEDIA_BY_ARCHETYPE[archetype];
@@ -417,8 +417,15 @@ function photoSrc(slide: SlideIR): string | null {
   return media.src ?? null;
 }
 
-/** A contained band, sized off the same scale object as everything else. */
-function MediaBand({ slide, theme, s }: { slide: SlideIR; theme: Theme; s: ReturnType<typeof scaleOf> }) {
+/**
+ * The lower zone of the BAND variant.
+ *
+ * Its height is a CONSTANT share of the canvas — it does not ride the fit
+ * ladder and it does not respond to the word count. That constancy is the
+ * whole reason a deck of band slides reads as designed. It is lifted clear of
+ * the footer by `BAND_LIFT`, so it never touches the safe area (X3).
+ */
+function MediaBand({ slide, theme }: { slide: SlideIR; theme: Theme }) {
   const src = photoSrc(slide);
   if (!src) return null;
   const media = slide.slots.media!;
@@ -427,9 +434,9 @@ function MediaBand({ slide, theme, s }: { slide: SlideIR; theme: Theme; s: Retur
       data-media-node="band"
       style={{
         width: "100%",
-        height: media.placement === "full" ? Math.round(s.media * 1.6) : s.media,
+        height: BAND_MEDIA_H,
         flex: "0 0 auto",
-        marginBlockStart: s.gap,
+        marginBlockEnd: BAND_LIFT,
         borderRadius: 18,
         background: theme.panel,
         backgroundImage: `url(${src})`,
@@ -458,7 +465,11 @@ function MediaCover({ slide, deck, theme }: { slide: SlideIR; deck: DeckIR; them
       <div
         style={{
           position: "absolute",
-          inset: 0,
+          // X3 — the picture stops short of the numerals. Only the scrim,
+          // which carries no content, is allowed across the safe area.
+          top: 0,
+          insetInline: 0,
+          bottom: SAFE_AREA.bottom,
           backgroundImage: `url(${src})`,
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -488,8 +499,41 @@ interface PartProps {
   hideTails: boolean;
 }
 
+/** Which of the two compositions this slide is rendering. */
+export type SlideVariant = "plain" | "cover" | "band";
+
+/** A slide is in a picture variant only when it actually carries a picture. */
+export function variantFor(slide: SlideIR, hasPhoto: boolean): SlideVariant {
+  if (!hasPhoto) return "plain";
+  const mode = MEDIA_BY_ARCHETYPE[slide.archetype];
+  return mode === "none" ? "plain" : mode;
+}
+
 function Stack({ children, gap }: { children: React.ReactNode; gap: number }) {
   return <div style={{ display: "flex", flexDirection: "column", gap, alignItems: "stretch" }}>{children}</div>;
+}
+
+/**
+ * X1 — the COVER variant is a different composition, not a shrunken one.
+ * The hero line is the only text on the slide; every other slot is HIDDEN,
+ * because a chip, a subline and a source squeezed over a photograph is what
+ * makes an image look accidental. For `cover_stat`, whose hero IS the number,
+ * the numeral plays the hero's part.
+ */
+function CoverBody({ deck, slide, theme, s }: PartProps) {
+  const p = deck.primary_lang;
+  const slots = slide.slots;
+  if (slots.hero_lines?.length) {
+    return <Hero lines={slots.hero_lines} primary={p} theme={theme} s={s} />;
+  }
+  if (slots.stat_value) {
+    return (
+      <div dir="ltr" style={{ fontFamily: FONT_DISPLAY_EN, fontSize: s.stat, lineHeight: 0.84, color: theme.accent, textAlign: "start" }}>
+        {slots.stat_value}
+      </div>
+    );
+  }
+  return null;
 }
 
 function SlideBody({ deck, slide, theme, s, hideTails }: PartProps) {
@@ -627,7 +671,19 @@ const CLOSE_FIGURE_W = 430;
 function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
   const p = deck.primary_lang;
   const slots = slide.slots;
-  const figureSrc = deck.profile.avatar_cutout_url || deck.profile.avatar_url || null;
+  /**
+   * X4 — AN ABSOLUTE RULE. The closing slide shows either a proper
+   * background-removed cut-out, or the typographic signature block. There is
+   * no third state: the old fallback rendered the member's raw rectangular
+   * photograph behind a fade mask, and it looked pasted on. `avatar_url` is
+   * deliberately NOT consulted here.
+   *
+   * The portrait is per-member: it comes from that member's own
+   * `diagnostic_profiles` row, carried onto `deck.profile` at generation time.
+   * A member with no cut-out gets the signature, which is the better of the
+   * two anyway.
+   */
+  const figureSrc = deck.profile.avatar_cutout_url || null;
   return (
     <div
       style={{
@@ -665,9 +721,9 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
         {figureSrc ? (
           // A cut-out figure STANDING in the slide: bottom-anchored, sized by
           // height so the head sits in the upper third of the figure zone, and
-          // with no frame, border, radius or shadow anywhere near it. A square
-          // avatar has no transparency, so it is dissolved into the background
-          // by a bottom fade rather than stopping at a hard edge.
+          // with no frame, border, radius, shadow or mask anywhere near it.
+          // Reaching this branch at all means a genuine transparent cut-out
+          // exists, so nothing has to be dissolved into the background.
           <div
             style={{
               width: CLOSE_FIGURE_W,
@@ -680,12 +736,6 @@ function CloseSlide({ deck, slide, theme, s, hideTails }: PartProps) {
               border: "none",
               borderRadius: 0,
               boxShadow: "none",
-              ...(deck.profile.avatar_cutout_url
-                ? {}
-                : {
-                    maskImage: "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,.55) 82%, rgba(0,0,0,0) 100%)",
-                    WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,.55) 82%, rgba(0,0,0,0) 100%)",
-                  }),
             }}
             role="img"
             aria-label=""
@@ -766,12 +816,26 @@ function useMediaInDom(
 export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
   const theme = getTheme(themeName ?? deck.theme);
   const ref = useRef<HTMLDivElement | null>(null);
-  const signature = `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}:${plainText(slide.slots.headline)}`;
-  const fit = useFitLadder(ref, signature);
-  const s = scaleOf(fit.scale);
+  const photo = photoSrc(slide);
+  const variant = variantFor(slide, Boolean(photo));
+  /**
+   * X2 — the ladder must measure the composition that is actually on screen.
+   * The photo and the variant are part of the cache key, so adding or removing
+   * a picture restarts the ladder from step 0 against the NEW budget instead
+   * of inheriting a measurement of a layout that no longer exists.
+   */
+  const signature =
+    `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}` +
+    `:${plainText(slide.slots.headline)}:${variant}:${photo ?? "no-photo"}`;
+  // A picture variant stops at step 1: the words stay legible and the
+  // inspector offers to shorten them (X2).
+  const fit = useFitLadder(ref, signature, variant === "plain" ? MAX_FIT_STEP : 1);
+  // X1 — in the band variant the type gets LARGER, not smaller: fewer words
+  // in less space. It still rides the ladder from that raised starting point.
+  const s = scaleOf(fit.scale * (variant === "band" ? BAND_TYPE_BOOST : 1));
   const hideTails = fit.step >= 2;
 
-  const mediaDefect = useMediaInDom(ref, slide, `${signature}|${photoSrc(slide) ?? ""}|${fit.step}`);
+  const mediaDefect = useMediaInDom(ref, slide, `${signature}|${fit.step}`);
   // INV-16 rides the same channel as the fit ladder: a slide that declares
   // media the renderer does not draw is a defect the member must see, not a
   // silent no-op. This is the exact failure that hid "Add image" for months.
@@ -787,7 +851,7 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
   }
 
   const isClose = slide.archetype === "close";
-  const placement = MEDIA_BY_ARCHETYPE[slide.archetype];
+  const body = <SlideBody deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />;
 
   return (
     <div
@@ -816,16 +880,30 @@ export function Slide({ deck, slide, theme: themeName, onFit }: SlideProps) {
     >
       {/* Media is drawn HERE, from the table, for every archetype — never from
           inside an archetype's own switch case. */}
-      {placement === "cover" && <MediaCover slide={slide} deck={deck} theme={theme} />}
+      {variant === "cover" && <MediaCover slide={slide} deck={deck} theme={theme} />}
       {isClose ? (
         <CloseSlide deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: s.gap, position: "relative" }}>
           <IdentityBar deck={deck} theme={theme} s={s} />
-          <div style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <SlideBody deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />
-            {placement === "band" && <MediaBand slide={slide} theme={theme} s={s} />}
-          </div>
+          {variant === "band" ? (
+            // The picture variant: a FIXED two-zone split. The image share is a
+            // constant of the canvas, never a function of the word count, and
+            // the text zone clips rather than overflowing or shrinking into
+            // illegibility — the inspector offers to shorten the words instead.
+            <div style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
+              <div style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                {body}
+              </div>
+              <MediaBand slide={slide} theme={theme} />
+            </div>
+          ) : (
+            <div style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              {variant === "cover"
+                ? <CoverBody deck={deck} slide={slide} theme={theme} s={s} hideTails={hideTails} />
+                : body}
+            </div>
+          )}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flex: "0 0 auto" }}>
             <div style={{ height: 4, width: 96, borderRadius: 999, background: theme.accent }} />
             <span style={{ fontFamily: FONT_MONO, fontSize: s.source, color: theme.dim }} dir="ltr">

@@ -53,7 +53,15 @@ function overflows(root: HTMLElement): string | null {
 export function useFitLadder(
   ref: React.RefObject<HTMLElement | null>,
   signature: string,
+  /**
+   * X2 — a picture variant stops the ladder early. Shrinking type to 78% of a
+   * scale that is already reduced by the split makes the words unreadable, so
+   * the slide clips gracefully and the inspector offers to shorten the text
+   * instead of the renderer quietly destroying it.
+   */
+  maxStep: number = MAX_FIT_STEP,
 ): FitState {
+  const ceiling = Math.max(0, Math.min(maxStep, MAX_FIT_STEP));
   const [state, setState] = useState<FitState>({ step: 0, scale: FIT_SCALES[0], failed: false, reason: null });
   const lastSignature = useRef(signature);
 
@@ -86,13 +94,13 @@ export function useFitLadder(
       if (state.failed || state.reason) setState((s) => ({ ...s, failed: false, reason: null }));
       return;
     }
-    if (state.step < MAX_FIT_STEP) {
+    if (state.step < ceiling) {
       const next = state.step + 1;
       setState({ step: next, scale: FIT_SCALES[next], failed: false, reason: null });
       return;
     }
-    // Step 2 and still short of room. Report rather than render broken.
-    if (!state.failed) setState({ step: MAX_FIT_STEP, scale: FIT_SCALES[MAX_FIT_STEP], failed: true, reason });
+    // Ladder exhausted and still short of room. Report rather than render broken.
+    if (!state.failed) setState({ step: ceiling, scale: FIT_SCALES[ceiling], failed: true, reason });
   });
 
   return state;
