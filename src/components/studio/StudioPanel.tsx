@@ -1834,6 +1834,12 @@ export default function StudioPanel({
 
       {step === 1 && (
         <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+          {/* W9 — a tick nobody earned must name who earned it. */}
+          {posture === "delegator" && choice?.id && !wordsReady && (
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", margin: "0 0 14px" }}>
+              {T.auraPicked[lang]}
+            </p>
+          )}
           {/* A subject change over written words is asked for, never assumed. */}
           {pendingSubject && (
             <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--act)", borderRadius: 12, padding: 12, marginBottom: 16 }}>
