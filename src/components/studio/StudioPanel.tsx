@@ -2341,7 +2341,7 @@ export default function StudioPanel({
                     </ButtonPrimary>
                     {!canMakeSlides && !deckBusy && (
                       <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)" }}>
-                        {T.whyNoWords[lang]}
+                        {!wordsReady ? T.whyNoWords[lang] : format !== "slides" ? T.whyNoSlidesFormat[lang] : T.whyNoSlides[lang]}
                       </span>
                     )}
                   </span>
