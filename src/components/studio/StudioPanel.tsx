@@ -18,7 +18,8 @@ import { track } from "@/lib/track";
 import { formatSmartDate } from "@/lib/formatDate";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
 import { DeckIRSchema, type DeckIR } from "@/carousel/deckIR";
-import { DEFAULT_THEME, type ThemeName } from "@/carousel/render/themes";
+import { DEFAULT_THEME, templateThemes, type ThemeName } from "@/carousel/render/themes";
+import { DEFAULT_TEMPLATE } from "@/carousel/render/template";
 import type { FitState } from "@/carousel/render/useFitLadder";
 import { collectSlideNodes, exportDeckPdf } from "@/carousel/render/exportDeck";
 import { mediaSupport } from "@/carousel/render/Slide";
@@ -276,6 +277,12 @@ export default function StudioPanel({
     ));
   }, [portrait.cutoutUrl]);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
+  /**
+   * The slide family. A free channel: changing it re-draws the deck already in
+   * hand and never calls the model. The theme is clamped to what the chosen
+   * family can actually draw.
+   */
+  const [template, setTemplate] = useState<string>(DEFAULT_TEMPLATE);
   const [deckLength, setDeckLength] = useState<5 | 7 | 10>(7);
   const [deckBusy, setDeckBusy] = useState(false);
   const [deckFailures, setDeckFailures] = useState<string[]>([]);
@@ -580,7 +587,12 @@ export default function StudioPanel({
     if (saved.deck) {
       // A corrupt deck is ignored, never thrown.
       const parsed = DeckIRSchema.safeParse(saved.deck);
-      if (parsed.success) { setDeck(parsed.data); setTheme(parsed.data.theme as ThemeName); }
+      if (parsed.success) {
+        setDeck(parsed.data);
+        setTheme(parsed.data.theme as ThemeName);
+        // A restored deck brings its own family back with it.
+        if (typeof parsed.data.template === "string") setTemplate(parsed.data.template);
+      }
     }
     if (saved.choice && typeof saved.choice === "object") {
       const c = saved.choice as Choice;
@@ -1337,6 +1349,7 @@ export default function StudioPanel({
           signal_id: choice.id,
           length: lengthOverride ?? deckLength,
           theme,
+          template,
           lang: writeLang,
           // Always: the slides adapt the words the member approved.
           source_text: content,
@@ -1358,7 +1371,7 @@ export default function StudioPanel({
       }
       const parsed = DeckIRSchema.safeParse(result.deck);
       if (!parsed.success) { setDeckFailures([T.slidesFailedShape[lang]]); return; }
-      setDeck({ ...parsed.data, theme });
+      setDeck({ ...parsed.data, theme, template });
       setDeckSource(builtFrom);
       setExported(false);
       setCurrent(0);
@@ -1368,7 +1381,7 @@ export default function StudioPanel({
     } finally {
       setDeckBusy(false);
     }
-  }, [choice, content, theme, deckLength, writeLang, lang, saveDraft]);
+  }, [choice, content, theme, template, deckLength, writeLang, lang, saveDraft]);
 
   const changeThisLine = useCallback(async () => {
     if (!deck) return;
@@ -1385,12 +1398,12 @@ export default function StudioPanel({
       const candidate = replaceSlide(deck, current, result.slide);
       const parsed = DeckIRSchema.safeParse(candidate);
       if (!parsed.success) { setProblem(T.lineChangeFailed[lang]); return; }
-      setDeck({ ...parsed.data, theme });
+      setDeck({ ...parsed.data, theme, template });
     } catch {
       setProblem(T.lineChangeFailed[lang]);
     }
     finally { setChangingLine(false); setBusyMessage(null); }
-  }, [deck, current, theme, lang]);
+  }, [deck, current, theme, template, lang]);
 
   const uploadPicture = useCallback(async (file: File) => {
     setPictureNotice(null);
@@ -2735,6 +2748,14 @@ export default function StudioPanel({
                 lang={lang}
                 theme={theme}
                 onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
+                template={template}
+                onTemplate={(id) => {
+                  const allowed = (templateThemes[id] ?? []) as ThemeName[];
+                  const next = allowed.includes(theme) ? theme : allowed[0];
+                  setTemplate(id);
+                  setTheme(next);
+                  setDeck((d) => (d ? { ...d, template: id, theme: next } : d));
+                }}
                 length={deckLength}
                 onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
                 hasDeck={Boolean(deck)}
