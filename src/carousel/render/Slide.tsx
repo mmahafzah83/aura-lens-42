@@ -22,7 +22,7 @@ import { getTheme, type Theme, type ThemeName } from "./themes";
 import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
 import { INV_16_MEDIA_IN_DOM } from "../invariants";
 import {
-  BAND_MEDIA_SHARE, BAND_TYPE_BOOST, MEDIA_BY_ARCHETYPE, type MediaPlacementMode,
+  BAND_MEDIA_SHARE, BAND_TYPE_BOOST, MEDIA_BY_ARCHETYPE, pictureTextPlan, type MediaPlacementMode,
 } from "../slots";
 
 /* ------------------------------------------------------------------ */
