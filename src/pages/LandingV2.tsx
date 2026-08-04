@@ -13,19 +13,28 @@ import { signOutAndLand } from "@/lib/signOut";
 const LANDING_V2_CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
 .aura-v2{--ink:#0B1220;--ink2:#37424F;--ink3:#66707D;--ink4:#9AA4B0;--line:#E4E8EE;--line2:#D2D8E0;--white:#FFF;--canvas:#F7F9FC;--tint:#EFF4FA;--blue:#0670C4;--blue2:#04477C;--bluetint:#E7F1FB;--cyan:#00CEC9;--cyanT:#00807B;--cyantint:#E0F7F6;--amber:#E0A82E;--amberT:#95690F;--ambertint:#FDF3DF;--red:#C0392B;--green:#12805C;--greentint:#E4F6EC;--ui:"Inter",system-ui,sans-serif;--mono:"IBM Plex Mono",monospace;--sp:cubic-bezier(.16,1,.3,1);font-family:var(--ui);background:var(--canvas);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
-.aura-v2 .nav{position:sticky;top:0;z-index:60;background:rgba(247,249,252,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
-.aura-v2 .nav-in{max-width:1240px;margin:0 auto;padding:0 34px;height:66px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-.aura-v2 .logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;letter-spacing:-.02em;cursor:pointer;color:var(--ink);text-decoration:none}
-.aura-v2 .tabs{display:flex;gap:2px}
-.aura-v2 .tabs button{font-family:var(--ui);font-size:13.5px;font-weight:500;color:var(--ink3);background:none;border:none;padding:9px 15px;border-radius:8px;cursor:pointer;transition:160ms var(--sp);white-space:nowrap}
-.aura-v2 .tabs button:hover{color:var(--ink);background:var(--tint)}
-.aura-v2 .tabs button.on{color:var(--blue);background:var(--bluetint);font-weight:600}
-.aura-v2 .navwrap{display:flex;align-items:center;gap:10px}
-.aura-v2 .navalt{font-size:13px;color:var(--ink3);text-decoration:none;padding:8px 10px}
-.aura-v2 .navalt:hover{color:var(--ink)}
-.aura-v2 .navcta{font-weight:600;font-size:13.5px;background:var(--ink);color:#fff;border:none;padding:11px 19px;border-radius:8px;cursor:pointer;text-decoration:none;transition:180ms var(--sp);display:inline-block}
-.aura-v2 .navcta:hover{background:var(--blue);transform:translateY(-1px)}
-.aura-v2 .stage{max-width:1240px;margin:0 auto;padding:46px 34px 76px}
+.aura-v2 .navshell{position:sticky;top:0;z-index:60;padding:16px 20px;display:flex;justify-content:center;pointer-events:none;background:linear-gradient(var(--canvas) 55%,rgba(247,249,252,0))}
+.aura-v2 .nav{pointer-events:auto;display:flex;align-items:center;gap:2px;background:var(--ink);border-radius:999px;padding:7px 7px 7px 18px;box-shadow:0 20px 46px -20px rgba(15,21,25,.55);max-width:calc(100vw - 40px)}
+.aura-v2 .brand{display:flex;align-items:center;gap:9px;margin-right:16px;text-decoration:none;cursor:pointer}
+.aura-v2 .mark{width:24px;height:24px;flex:0 0 24px;color:#fff}
+.aura-v2 .bn{font-family:"Newsreader",Georgia,serif;color:#fff;font-size:21px;line-height:1}
+.aura-v2 .links{display:flex;align-items:center;gap:1px}
+.aura-v2 .links button{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.58);background:none;border:0;cursor:pointer;padding:11px 12px;border-radius:999px;transition:.2s;white-space:nowrap}
+.aura-v2 .links button:hover{color:#fff;background:rgba(255,255,255,.08)}
+.aura-v2 .links button.on{color:#fff;background:rgba(255,255,255,.12)}
+.aura-v2 .navalt{margin-left:8px;display:inline-flex;align-items:center;background:rgba(255,255,255,.12);color:#fff;border:0;cursor:pointer;font-family:var(--ui);border-radius:999px;padding:11px 14px;font-size:13.5px;font-weight:600;white-space:nowrap;text-decoration:none;transition:.2s}
+.aura-v2 .navalt:hover{background:rgba(255,255,255,.2)}
+.aura-v2 .navcta{margin-left:8px;display:flex;align-items:center;gap:9px;background:#fff;color:var(--ink);border-radius:999px;padding:11px 16px;font-size:14px;font-weight:600;white-space:nowrap;text-decoration:none;transition:.2s}
+.aura-v2 .navcta:hover{transform:translateY(-1px);box-shadow:0 10px 22px -10px rgba(0,0,0,.45)}
+.aura-v2 .navcta .a{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--tint);font-size:10px}
+@media(max-width:1100px){
+ .aura-v2 .nav{padding:5px 5px 5px 12px;flex-wrap:wrap;border-radius:22px;justify-content:center}
+ .aura-v2 .brand{margin-right:8px}
+ .aura-v2 .links{order:3;width:100%;justify-content:center;flex-wrap:wrap;padding-top:4px}
+ .aura-v2 .navalt,.aura-v2 .navcta{margin-left:5px;padding:9px 11px;font-size:12px}
+ .aura-v2 .navcta .a{display:none}
+}
+.aura-v2 .stage{max-width:1240px;margin:0 auto;padding:26px 34px 76px}
 .aura-v2 .pg{display:none}
 .aura-v2 .pg.on{display:block;animation:auraIn .45s var(--sp)}
 @keyframes auraIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -62,7 +71,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .hero{display:grid;grid-template-columns:1.02fr 1fr;gap:52px;align-items:center}
 .aura-v2 .loopwrap{display:flex;align-items:center;justify-content:center}
 .aura-v2 .loopwrap svg{width:100%;max-width:470px;height:auto;overflow:visible}
-.aura-v2 .orb{animation:auraSpin 44s linear infinite;transform-origin:250px 250px}
+.aura-v2 .orb{animation:auraSpin 44s linear infinite;transform-origin:280px 280px}
 @keyframes auraSpin{to{transform:rotate(360deg)}}
 .aura-v2 .nodeL{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.11em;fill:var(--ink2)}
 .aura-v2 .nodeS{font-family:var(--ui);font-size:11px;fill:var(--ink4)}
@@ -185,9 +194,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .bene:last-child{border-bottom:none}
 .aura-v2 .sv{padding:0 0 20px;border-right:none;border-bottom:1px solid rgba(255,255,255,.11)}
 .aura-v2 .sv:last-child{border-bottom:none;padding-bottom:0}
-.aura-v2 .nav-in{flex-wrap:wrap;height:auto;padding:12px 18px;gap:10px}
-.aura-v2 .tabs{order:3;width:100%;overflow-x:auto}
-.aura-v2 .stage{padding:28px 18px 50px}
+.aura-v2 .stage{padding:18px 18px 50px}
 .aura-v2 .slides{grid-template-columns:repeat(2,1fr)}
 .aura-v2 .cmp{overflow-x:auto}
 .aura-v2 .cmp table{min-width:640px}
@@ -195,16 +202,23 @@ const LANDING_V2_CSS = `
 `;
 
 const LANDING_V2_HTML = `
-<nav class="nav"><div class="nav-in">
-  <a class="logo" href="#" data-p="home"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10.2" stroke="#0B1220" stroke-width="1.5"/><circle cx="12" cy="12" r="3.4" fill="#0670C4"/><path d="M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3" stroke="#00CEC9" stroke-width="1.5" stroke-linecap="round"/></svg> Aura</a>
-  <div class="tabs">
-    <button data-p="home" class="on">Home</button><button data-p="how">How it works</button><button data-p="get">What you get</button><button data-p="why">Why now</button><button data-p="cmp">Compare</button><button data-p="faq">Questions</button>
-  </div>
-  <div class="navwrap">
+<svg style="display:none"><symbol id="m" viewBox="0 0 64 64"><g stroke="currentColor" fill="currentColor" stroke-linecap="round"><circle cx="32" cy="32" r="6.85" stroke="none"/><line x1="32" y1="18.89" x2="32" y2="8.77" stroke-width="1.2"/><line x1="39.09" y1="20.97" x2="44.56" y2="12.45" stroke-width="1.2"/><line x1="43.92" y1="26.56" x2="53.13" y2="22.35" stroke-width="1.2"/><line x1="44.97" y1="33.87" x2="55" y2="35.31" stroke-width="1.2"/><line x1="41.91" y1="40.58" x2="49.56" y2="47.22" stroke-width="1.2"/><line x1="35.69" y1="44.58" x2="38.55" y2="54.29" stroke-width="1.2"/><line x1="28.31" y1="44.58" x2="25.45" y2="54.29" stroke-width="1.2"/><line x1="22.09" y1="40.58" x2="14.44" y2="47.22" stroke-width="1.2"/><line x1="19.03" y1="33.87" x2="9" y2="35.31" stroke-width="1.2"/><line x1="20.08" y1="26.56" x2="10.87" y2="22.35" stroke-width="1.2"/><line x1="24.91" y1="20.97" x2="19.44" y2="12.45" stroke-width="1.2"/></g><g stroke="#00CEC9" fill="#00CEC9" stroke-linecap="round"><line x1="40.07" y1="21.67" x2="49.24" y2="9.94" stroke-width="1.55"/><circle cx="49.24" cy="9.94" r="1.61"/></g></symbol></svg>
+
+<div class="navshell">
+  <nav class="nav">
+    <a class="brand" href="#" data-p="home"><svg class="mark"><use href="#m"/></svg><span class="bn">Aura</span></a>
+    <div class="links">
+      <button data-p="home" class="on">Home</button>
+      <button data-p="how">How it works</button>
+      <button data-p="get">What you get</button>
+      <button data-p="why">Why now</button>
+      <button data-p="cmp">Compare</button>
+      <button data-p="faq">Questions</button>
+    </div>
     <a class="navalt" id="navalt" href="/auth">Sign in</a>
-    <a class="navcta" id="navcta" href="/request-access">Request a founder seat</a>
-  </div>
-</div></nav>
+    <a class="navcta" id="navcta" href="/request-access">Request a founder seat <span class="a">↗</span></a>
+  </nav>
+</div>
 
 <div class="stage">
 
@@ -222,38 +236,39 @@ const LANDING_V2_HTML = `
       </div>
     </div>
     <div class="loopwrap">
-      <svg viewBox="0 0 500 500" fill="none">
-        <circle cx="250" cy="250" r="185" stroke="#E4E8EE" stroke-width="1.2"/>
-        <circle class="dash" cx="250" cy="250" r="150" stroke="#D2D8E0" stroke-width="1.2"/>
+      <svg viewBox="0 0 560 560" fill="none">
+        <circle cx="280" cy="280" r="245" stroke="#EFF4FA" stroke-width="1.2"/>
+        <circle cx="280" cy="280" r="205" stroke="#E4E8EE" stroke-width="1.2"/>
+        <circle class="dash" cx="280" cy="280" r="150" stroke="#D2D8E0" stroke-width="1.2"/>
         <defs>
           <linearGradient id="arcg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0670C4"/><stop offset="1" stop-color="#00CEC9"/></linearGradient>
         </defs>
-        <path d="M250 65a185 185 0 0 1 185 185" stroke="url(#arcg)" stroke-width="3" stroke-linecap="round"/>
-        <g class="orb"><circle cx="435" cy="250" r="6" fill="#00CEC9"/></g>
-        <path class="dash" d="M250 178V128M322 250h50M250 322v50M178 250h-50" stroke="#D2D8E0" stroke-width="1.2"/>
-        <circle cx="250" cy="250" r="72" fill="#0B1220"/>
-        <text x="250" y="243" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="36" font-weight="600" fill="#FFFFFF">85</text>
-        <text x="250" y="262" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.6" fill="#00CEC9">YOUR IMPRINT</text>
-        <text x="250" y="277" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" fill="#8E99A6">rises every week</text>
+        <circle cx="280" cy="280" r="205" stroke="url(#arcg)" stroke-width="3" stroke-linecap="round" fill="none" stroke-dasharray="876 1288" transform="rotate(-96 280 280)"/>
+        <g class="orb"><circle cx="485" cy="280" r="12" fill="#00CEC9" fill-opacity=".18"/><circle cx="485" cy="280" r="6" fill="#00CEC9"/></g>
+        <path class="dash" d="M280 192 V119    M368 280 H441    M280 368 V441    M192 280 H119" stroke="#D2D8E0" stroke-width="1.2"/>
+        <circle cx="280" cy="280" r="76" fill="#0B1220"/>
+        <text x="280" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="36" font-weight="600" fill="#FFFFFF">85</text>
+        <text x="280" y="289" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.6" fill="#00CEC9">YOUR IMPRINT</text>
+        <text x="280" y="306" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" fill="#8E99A6">rises every week</text>
 
-        <circle cx="250" cy="95" r="40" fill="#FFFFFF" stroke="#E4E8EE"/>
-        <g stroke="#0670C4" stroke-width="1.6" stroke-linecap="round"><path d="M236 88h28M236 95h28M236 102h18"/></g>
-        <text class="nodeL" x="250" y="42" text-anchor="middle">1 · YOU READ</text>
-        <text class="nodeS" x="250" y="58" text-anchor="middle">One tap. One second.</text>
+        <circle cx="280" cy="75" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <g stroke="#0670C4" stroke-width="1.6" stroke-linecap="round"><path d="M266 68h28M266 75h28M266 82h18"/></g>
+        <text class="nodeL" x="280" y="133" text-anchor="middle">1 · YOU READ</text>
+        <text class="nodeS" x="280" y="149" text-anchor="middle">One tap. One second.</text>
 
-        <circle cx="405" cy="250" r="40" fill="#FFFFFF" stroke="#E4E8EE"/>
-        <g class="pulse"><circle cx="405" cy="250" r="13" stroke="#0670C4" stroke-width="1.6" fill="none"/><circle cx="405" cy="250" r="4.5" fill="#00CEC9"/></g>
-        <text class="nodeL" x="405" y="196" text-anchor="middle">2 · IT LEARNS</text>
-        <text class="nodeS" x="405" y="212" text-anchor="middle">Your subjects, your voice.</text>
+        <circle cx="485" cy="280" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <g class="pulse"><circle cx="485" cy="280" r="13" stroke="#0670C4" stroke-width="1.6" fill="none"/><circle cx="485" cy="280" r="4.5" fill="#00CEC9"/></g>
+        <text class="nodeL" x="485" y="338" text-anchor="middle">2 · IT LEARNS</text>
+        <text class="nodeS" x="485" y="354" text-anchor="middle">Your subjects, your voice.</text>
 
-        <circle cx="250" cy="405" r="40" fill="#FFFFFF" stroke="#E4E8EE"/>
-        <path d="M254 391l-11 15h9l-3 12 12-16h-9z" fill="#E0A82E"/>
-        <text class="nodeL" x="250" y="464" text-anchor="middle">3 · IT WRITES AT NIGHT</text>
+        <circle cx="280" cy="485" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <path d="M284 471l-11 15h9l-3 12 12-16h-9z" fill="#E0A82E"/>
+        <text class="nodeL" x="280" y="543" text-anchor="middle">3 · IT WRITES AT NIGHT</text>
 
-        <circle cx="95" cy="250" r="40" fill="#FFFFFF" stroke="#E4E8EE"/>
-        <path d="M83 250l8 9 17-19" stroke="#00807B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <text class="nodeL" x="95" y="196" text-anchor="middle">4 · YOU APPROVE</text>
-        <text class="nodeS" x="95" y="212" text-anchor="middle">One click. It is live.</text>
+        <circle cx="75" cy="280" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <path d="M63 280l8 9 17-19" stroke="#00807B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <text class="nodeL" x="75" y="338" text-anchor="middle">4 · YOU APPROVE</text>
+        <text class="nodeS" x="75" y="354" text-anchor="middle">One click. It is live.</text>
       </svg>
     </div>
   </div>
@@ -777,7 +792,7 @@ const LandingV2 = () => {
       else delete alt.dataset.signout;
     }
     if (cta) {
-      cta.textContent = signedIn ? "Open Aura" : "Request a founder seat";
+      cta.innerHTML = `${signedIn ? "Open Aura" : "Request a founder seat"} <span class="a">↗</span>`;
       cta.setAttribute("href", signedIn ? "/home" : "/request-access");
     }
     if (hero) {
@@ -885,7 +900,7 @@ const LandingV2 = () => {
       e.preventDefault();
       const id = b.dataset.p!;
       root.querySelectorAll<HTMLElement>(".pg").forEach(s => s.classList.toggle("on", s.id === id));
-      root.querySelectorAll<HTMLElement>(".tabs button").forEach(x => x.classList.toggle("on", x.dataset.p === id));
+      root.querySelectorAll<HTMLElement>(".links button").forEach(x => x.classList.toggle("on", x.dataset.p === id));
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
     root.addEventListener("click", onClick);
