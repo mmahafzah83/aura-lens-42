@@ -1211,6 +1211,7 @@ export default function StudioPanel({
       body: { postId: id, advisory: override },
     });
     if (override) void track("gate_overridden", { signal_id: choice?.id || null, route: "linkedin" });
+    if (override) setOverrode(true);
     setBusy(null);
     setBusyMessage(null);
     const payload = data as any;
