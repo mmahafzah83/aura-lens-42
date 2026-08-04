@@ -4,17 +4,18 @@ import { TEMPLATES } from "@/carousel/render/template";
 import { T, themeLabel, type Lang } from "./strings";
 
 /**
- * Sourced from the registry, not a hand-kept array. A template reaches the UI
- * only when it has a registered renderer, and a colour set only when its
- * template allows it. A token set with no renderer behind it must never reach
- * a swatch — the member would pick a look that cannot be drawn.
+ * Sourced from the registry, not a hand-kept array. Two filters, both
+ * deliberate: a theme must be allowed for its template (`templateThemes`),
+ * and the template must actually have a registered renderer (`TEMPLATES`).
+ * A token set with no renderer behind it must never reach a swatch — the
+ * member would pick a look that cannot be drawn. Today that resolves to
+ * instrument's four, exactly as before.
  */
-const TEMPLATE_LIST = Object.keys(TEMPLATES).filter((id) => (templateThemes[id] ?? []).length > 0);
-
-function themesFor(template: string): ThemeName[] {
-  const allowed = templateThemes[template] ?? [];
-  return allowed.filter((t): t is ThemeName => t in THEMES);
-}
+const THEME_LIST = Array.from(
+  new Set(
+    Object.keys(TEMPLATES).flatMap((id) => templateThemes[id] ?? []),
+  ),
+).filter((t): t is ThemeName => t in THEMES);
 
 const heading: React.CSSProperties = {
   fontFamily: "var(--ff-mono)",
@@ -43,12 +44,10 @@ export const ZoneLook: React.FC<{
   lang: Lang;
   theme: ThemeName;
   onTheme: (t: ThemeName) => void;
-  template: string;
-  onTemplate: (id: string) => void;
   length: 5 | 7 | 10;
   onLength: (n: 5 | 7 | 10) => void;
   hasDeck: boolean;
-}> = ({ lang, theme, onTheme, template, onTemplate, length, onLength, hasDeck }) => (
+}> = ({ lang, theme, onTheme, length, onLength, hasDeck }) => (
   <div
     style={{
       background: "var(--surface-card)",
@@ -63,31 +62,9 @@ export const ZoneLook: React.FC<{
     <p style={heading}>{T.lookHead[lang]}</p>
 
     <div style={{ display: "grid", gap: 8 }}>
-      <p style={heading}>{T.lookTemplate[lang]}</p>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {TEMPLATE_LIST.map((id) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={id === template}
-            onClick={() => onTemplate(id)}
-            style={pill(id === template)}
-          >
-            {TEMPLATES[id].label[lang === "ar" ? "ar" : "en"]}
-          </button>
-        ))}
-      </div>
-      {/* Free, and instant: switching the family re-draws the slides that
-          already exist. Nothing is sent anywhere and nothing is re-written. */}
-      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
-        {T.lookTemplateNote[lang]}
-      </p>
-    </div>
-
-    <div style={{ display: "grid", gap: 8 }}>
       <p style={heading}>{T.lookTheme[lang]}</p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {themesFor(template).map((t) => (
+        {THEME_LIST.map((t) => (
           <button
             key={t}
             type="button"

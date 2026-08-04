@@ -21,14 +21,6 @@ export type TypeRamp = {
   body: number;   bodyLhEn: number; bodyLhAr: number;
   chip: number; data: number; source: number;
   gap: number; media: number;
-  /** Identity chrome (highlighter and later families). Optional: instrument has none. */
-  identityName?: number;
-  identitySub?: number;
-  /**
-   * The smallest a size may ever be printed, whatever the fit ladder says.
-   * Enforced at render time — see INV-22 in ../invariants.
-   */
-  floors?: { content: number; meta: number };
 };
 
 export type Geometry = {
@@ -38,10 +30,6 @@ export type Geometry = {
   bandMediaShare: number; bandTypeBoost: number; bandLift: number;
   closeFigureW: number; closeFigureH: number;
   radiusChip: number; radiusPanel: number; radiusMedia: number;
-  /** Where the content column starts, measured from the canvas edge. */
-  contentX?: number;
-  /** The widest a line of type may be set. */
-  maxTextW?: number;
 };
 
 export type FontSet = {
@@ -155,83 +143,8 @@ const INSTRUMENT: TemplateDescriptor = {
   heroHighlight: "block",
 };
 
-/* ------------------------------------------------------------------ */
-/* highlighter — paper ground, marker emphasis, dashed arrows          */
-/* ------------------------------------------------------------------ */
-
-const HIGHLIGHTER_RAMP: TypeRamp = {
-  // The cover display face and the headline face are the two display sizes.
-  heroEn: 104, heroEnLh: 1.12,
-  heroAr: 88,  heroArLh: 1.5,
-  stat: 104,   statLh: 1.12,
-  h2: 76,      h2Lh: 1.14,
-  body: 40,    bodyLhEn: 1.8, bodyLhAr: 1.8,
-  chip: 29, data: 28, source: 27,
-  gap: 28, media: 360,
-  identityName: 38,
-  identitySub: 29,
-  floors: { content: 38, meta: 22 },
-};
-
-const FONT_POPPINS = '"AuraPoppins", "Helvetica Neue", Helvetica, Arial, sans-serif';
-/** Poppins has no Arabic. Arabic is IBM Plex Sans Arabic, 700 display / 400 body. */
-const FONT_AR_TEXT = '"AuraArabicText", "Segoe UI", Tahoma, sans-serif';
-
-const HIGHLIGHTER_FONTS_BASE = {
-  displayEn: FONT_POPPINS,
-  textEn: FONT_POPPINS,
-  // Meta is Poppins too: this family has no monospace voice.
-  mono: FONT_POPPINS,
-  arabic: FONT_AR_TEXT,
-};
-
-/** Derived from the ramp, exactly as instrument's is. Never hand-copied. */
-function highlighterGateSpecs(ramp: TypeRamp, fonts: Omit<FontSet, "gateSpecs">): Array<[string, string]> {
-  const d = head(fonts.displayEn);
-  const t = head(fonts.textEn);
-  const a = head(fonts.arabic);
-  return [
-    [`800 ${ramp.heroEn}px ${d}`, LATIN_SAMPLE],
-    [`800 ${ramp.h2}px ${d}`, LATIN_SAMPLE],
-    [`500 ${ramp.body}px ${t}`, LATIN_SAMPLE],
-    [`600 ${ramp.chip}px ${t}`, LATIN_SAMPLE],
-    [`700 ${ramp.heroAr}px ${a}`, ARABIC_SAMPLE],
-    [`400 ${ramp.body}px ${a}`, ARABIC_SAMPLE],
-  ];
-}
-
-const HIGHLIGHTER: TemplateDescriptor = {
-  id: "highlighter",
-  label: { en: "Highlighter", ar: "القلم" },
-  ramp: HIGHLIGHTER_RAMP,
-  geometry: {
-    canvasW: 1080,
-    canvasH: 1350,
-    pad: 96,
-    safeArea: { top: 96, side: 96, bottom: 96 + 68 },
-    bandMediaShare: BAND_MEDIA_SHARE,
-    bandTypeBoost: BAND_TYPE_BOOST,
-    bandLift: 26,
-    closeFigureW: 430,
-    closeFigureH: 470,
-    radiusChip: 999,
-    radiusPanel: 18,
-    radiusMedia: 18,
-    contentX: 120,
-    maxTextW: 860,
-  },
-  fonts: {
-    ...HIGHLIGHTER_FONTS_BASE,
-    gateSpecs: highlighterGateSpecs(HIGHLIGHTER_RAMP, HIGHLIGHTER_FONTS_BASE),
-  },
-  media: MEDIA_BY_ARCHETYPE,
-  coverAlign: "start",
-  heroHighlight: "block",
-};
-
 export const TEMPLATES: Record<string, TemplateDescriptor> = {
   instrument: INSTRUMENT,
-  highlighter: HIGHLIGHTER,
 };
 
 export const TEMPLATE_IDS: string[] = Object.keys(TEMPLATES);

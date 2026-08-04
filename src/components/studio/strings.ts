@@ -321,11 +321,6 @@ export const T = {
   // Look tab
   lookHead: { en: "How it looks", ar: "شكل العمل" },
   lookTheme: { en: "Colours", ar: "الألوان" },
-  lookTemplate: { en: "Slide family", ar: "عائلة الشرائح" },
-  lookTemplateNote: {
-    en: "Changes the drawing only. Your words stay exactly as they are.",
-    ar: "يغيّر الرسم فقط. تبقى كلماتك كما هي تماماً.",
-  },
   lookLength: { en: "How many slides", ar: "عدد الشرائح" },
   lookLengthNote: {
     en: "Changing this makes the slides again from your post.",

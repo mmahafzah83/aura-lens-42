@@ -37,15 +37,22 @@ const corsHeaders = {
  * Registries. Layout and colourway are DATA the client may choose from; the
  * model never sees either, and never chooses layout.
  */
-const THEME_REGISTRY = ["midnight", "clay", "gradient", "paper", "highlighter_orange", "highlighter_green"] as const;
+const THEME_REGISTRY = [
+  "midnight",
+  "clay",
+  "gradient",
+  "paper",
+  "highlighter_orange",
+  "highlighter_green",
+] as const;
 const DEFAULT_THEME = "midnight";
 const TEMPLATE_REGISTRY = ["instrument", "highlighter"] as const;
 const DEFAULT_TEMPLATE = "instrument";
 
 /**
  * A colourway belongs to a family. Asking for a highlighter colour on the
- * instrument layout (or the reverse) is answered with that family's default
- * rather than a failure — the member never sees a broken pick.
+ * instrument layout (or the reverse) is answered with that family's own
+ * default, never with a colourway the renderer cannot draw.
  */
 const TEMPLATE_THEMES: Record<string, readonly string[]> = {
   instrument: ["midnight", "clay", "gradient", "paper"],
@@ -464,8 +471,9 @@ serve(async (req) => {
     if (!user) return json({ error: "unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const theme = resolveTheme(body.theme);
+    // Family first: a colourway is only meaningful inside its template.
     const template = resolveTemplate(body.template);
+    const theme = resolveTheme(body.theme, template);
     const reqLang: "en" | "ar" | undefined =
       body.lang === "ar" ? "ar" : body.lang === "en" ? "en" : undefined;
     const sourceText: string | undefined =

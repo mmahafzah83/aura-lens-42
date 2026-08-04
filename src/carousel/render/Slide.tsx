@@ -29,7 +29,6 @@ import {
   bandMediaHeight, getTemplate, TEMPLATES, type FontSet, type TemplateDescriptor, type TypeRamp,
 } from "./template";
 import { publishMeasuredDrops } from "./measuredDrops";
-import HighlighterSlide from "./Highlighter";
 
 /* ------------------------------------------------------------------ */
 /* Canvas and type scale — all of it now DATA, read from the template  */
@@ -838,7 +837,7 @@ function useMediaInDom(
   return defect;
 }
 
-function InstrumentSlide({ deck, slide, theme: themeName, template, onFit }: SlideProps) {
+export function Slide({ deck, slide, theme: themeName, template, onFit }: SlideProps) {
   const theme = getTheme(themeName ?? deck.theme);
   // Resolved ONCE. Every dimension, font and radius below is read from here.
   const tpl = getTemplate(template ?? (deck as { template?: string | null }).template);
@@ -990,22 +989,6 @@ function InstrumentSlide({ deck, slide, theme: themeName, template, onFit }: Sli
       )}
     </div>
   );
-}
-
-/**
- * TEMPLATE DISPATCH. One family per renderer, chosen by the descriptor id
- * BEFORE any hook runs, so each renderer keeps its own hook order. Instrument
- * is the fallback and its composition below is untouched.
- */
-const TEMPLATE_RENDERERS: Record<string, React.FC<SlideProps>> = {
-  highlighter: HighlighterSlide,
-};
-
-export function Slide(props: SlideProps) {
-  const tpl = getTemplate(props.template ?? (props.deck as { template?: string | null }).template);
-  const Renderer = TEMPLATE_RENDERERS[tpl.id];
-  if (Renderer) return <Renderer {...props} />;
-  return <InstrumentSlide {...props} />;
 }
 
 export default Slide;

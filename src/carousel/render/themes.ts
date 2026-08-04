@@ -30,7 +30,7 @@ export interface Theme {
   avInk: string;
 }
 
-const INSTRUMENT_THEMES = {
+export const THEMES = {
   midnight: {
     bg: "radial-gradient(125% 95% at 15% -5%, #1E2F39 0%, #101A20 45%, #0B1216 100%)",
     bgSolid: "#101A20",
@@ -101,63 +101,7 @@ const INSTRUMENT_THEMES = {
   },
 } satisfies Record<string, Theme>;
 
-/* ------------------------------------------------------------------ */
-/* highlighter — the second family with a renderer                      */
-/*                                                                      */
-/* These are the SAME token values as the `highlighter_orange` /        */
-/* `highlighter_green` stubs below, widened to the 17-field `Theme`     */
-/* shape the render pipeline reads. Nothing is invented that carries    */
-/* text: `alert` is the ink, because this template has no red — the     */
-/* worst bar in a benchmark is drawn in ink, per the approved spec.     */
-/* ------------------------------------------------------------------ */
-
-const HIGHLIGHTER_THEMES = {
-  highlighter_orange: {
-    bg: "#F0EADF",
-    bgSolid: "#F0EADF",
-    fg: "#1B1B1B",
-    dim: "#575552",
-    head: "#1B1B1B",
-    accent: "#F0813C",
-    accentLight: "#F7B98A",
-    accentInk: "#1B1B1B",
-    // No red in this template. Ink IS the alert.
-    alert: "#1B1B1B",
-    neutral: "#D8CEBE",
-    panel: "rgba(27,27,27,.06)",
-    rule: "rgba(27,27,27,.16)",
-    avA: "#F0813C",
-    avB: "#C25E22",
-    avInk: "#1B1B1B",
-  },
-  highlighter_green: {
-    bg: "#EDF2EB",
-    bgSolid: "#EDF2EB",
-    fg: "#15241C",
-    dim: "#515E56",
-    head: "#15241C",
-    accent: "#4CC08A",
-    accentLight: "#A6DFC4",
-    accentInk: "#15241C",
-    alert: "#15241C",
-    neutral: "#D3DED4",
-    panel: "rgba(21,36,28,.06)",
-    rule: "rgba(21,36,28,.16)",
-    avA: "#4CC08A",
-    avB: "#2E8A5F",
-    avInk: "#15241C",
-  },
-} satisfies Record<string, Theme>;
-
-export const THEMES = {
-  ...INSTRUMENT_THEMES,
-  ...HIGHLIGHTER_THEMES,
-};
-
 export type ThemeName = keyof typeof THEMES;
-
-/** True when a theme is a light-ground (paper) set. Drives ink-on-paper chrome. */
-export const PAPER_THEMES: readonly string[] = ["paper", "highlighter_orange", "highlighter_green"];
 
 export const THEME_NAMES = ["midnight", "clay", "gradient", "paper"] as const;
 
@@ -180,7 +124,6 @@ export function getTheme(name?: string | null): Theme {
  */
 export const templateThemes: Record<string, string[]> = {
   instrument: ["midnight", "clay", "gradient", "paper"],
-  highlighter: ["highlighter_orange", "highlighter_green"],
 };
 
 /* ------------------------------------------------------------------ */
