@@ -97,9 +97,11 @@ const LANDING_V2_CSS = `
 .aura-v2 .sv .ico{margin-bottom:14px}
 .aura-v2 .sv .n{font-family:var(--mono);font-size:clamp(26px,3vw,36px);font-weight:600;letter-spacing:-.04em;line-height:1}
 .aura-v2 .sv.h .n{color:#fff}.aura-v2 .sv.m .n{color:var(--cyan)}.aura-v2 .sv.d .n{color:var(--amber)}
+.aura-v2 .sv .n.word{font-family:var(--ui);font-weight:700;letter-spacing:-.02em}
 .aura-v2 .sv .l{font-size:13.5px;color:#A7B0BC;line-height:1.5;margin-top:9px}
 .aura-v2 .sv .l b{color:#fff;font-weight:600}
 .aura-v2 .strike{position:relative;display:inline-block;color:#5D6874}
+.aura-v2 .strike + .strike{margin-left:10px}
 .aura-v2 .strike::after{content:"";position:absolute;left:-2px;right:-2px;top:52%;height:1.5px;background:var(--red)}
 .aura-v2 .pill{font-size:12.5px;font-weight:500;padding:8px 13px;border-radius:999px;background:var(--bluetint);color:var(--blue2)}
 .aura-v2 .quote{border-left:3px solid var(--blue);padding:4px 0 4px 16px;font-size:15px;color:var(--ink2);line-height:1.6}
@@ -129,7 +131,8 @@ const LANDING_V2_CSS = `
 .aura-v2 .sl:hover{transform:translateY(-5px)}
 .aura-v2 .sl .n{font-family:var(--mono);font-size:8px;opacity:.72;position:relative}
 .aura-v2 .sl .t{font-size:11.5px;font-weight:700;line-height:1.32;position:relative}
-.aura-v2 .sl .shape{position:absolute;pointer-events:none}
+.aura-v2 .sl .shape{position:absolute;pointer-events:none;z-index:0;opacity:.30}
+.aura-v2 .sl .n,.aura-v2 .sl .t{position:relative;z-index:1}
 .aura-v2 .chipg{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .aura-v2 .chipg span{font-family:var(--mono);font-size:10px;padding:7px 11px;border-radius:999px;background:var(--greentint);color:var(--green)}
 .aura-v2 .cmp{background:var(--white);border:1px solid var(--line);border-radius:18px;overflow:hidden}
@@ -164,6 +167,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .join-in{position:relative;max-width:470px;margin:0 auto;text-align:center}
 .aura-v2 .join h2{color:#fff;margin-top:16px}
 .aura-v2 .join p{color:#A7B0BC;font-size:15.5px;line-height:1.6;margin-top:14px}
+.aura-v2 .dark .jf,.aura-v2 .dark .seatline{display:block;width:100%;text-align:center}
 .aura-v2 .jf{font-family:var(--mono);font-size:10px;color:#65707E;letter-spacing:.09em;margin-top:16px;line-height:1.8}
 .aura-v2 .founder{display:flex;gap:15px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:19px;margin:18px auto 0;max-width:640px}
 .aura-v2 .founder img{width:48px;height:48px;border-radius:999px;object-fit:cover;flex-shrink:0}
@@ -404,9 +408,9 @@ const LANDING_V2_HTML = `
   <div class="dark rv"><div class="dark-in">
     <div><h3>Why the order<br><em>matters.</em></h3><p>It is the part no other tool has.</p></div>
     <div class="savegrid">
-      <div class="sv h"><div class="n" style="font-size:24px">Learns first</div><div class="l">A tool that writes before it knows you hands everyone <b>the same paragraph.</b></div></div>
-      <div class="sv m"><div class="n" style="font-size:24px">Then writes</div><div class="l">Your subjects, your evidence, <b>the way you open and close an idea.</b></div></div>
-      <div class="sv d"><div class="n" style="font-size:24px">Then grows</div><div class="l">Month six sounds far more like you <b>than month one did.</b></div></div>
+      <div class="sv h"><div class="n word" style="font-size:24px">Learns first</div><div class="l">A tool that writes before it knows you hands everyone <b>the same paragraph.</b></div></div>
+      <div class="sv m"><div class="n word" style="font-size:24px">Then writes</div><div class="l">Your subjects, your evidence, <b>the way you open and close an idea.</b></div></div>
+      <div class="sv d"><div class="n word" style="font-size:24px">Then grows</div><div class="l">Month six sounds far more like you <b>than month one did.</b></div></div>
     </div>
   </div></div>
 </section>
@@ -503,7 +507,7 @@ const LANDING_V2_HTML = `
             <span class="n">01</span><span class="t">The twin was<br><span style="color:#00CEC9">never the asset</span></span>
           </div>
           <div class="sl" style="background:#0670C4;color:#fff">
-            <svg class="shape" style="bottom:8px;right:8px" width="56" height="42" viewBox="0 0 56 42" fill="none"><rect x="2" y="24" width="10" height="16" rx="2" fill="#fff" fill-opacity=".3"/><rect x="16" y="16" width="10" height="24" rx="2" fill="#fff" fill-opacity=".45"/><rect x="30" y="8" width="10" height="32" rx="2" fill="#fff" fill-opacity=".6"/><rect x="44" y="2" width="10" height="38" rx="2" fill="#fff" fill-opacity=".8"/></svg>
+            <svg class="shape" style="right:10px;top:26px" width="56" height="42" viewBox="0 0 56 42" fill="none"><rect x="2" y="24" width="10" height="16" rx="2" fill="#fff" fill-opacity=".3"/><rect x="16" y="16" width="10" height="24" rx="2" fill="#fff" fill-opacity=".45"/><rect x="30" y="8" width="10" height="32" rx="2" fill="#fff" fill-opacity=".6"/><rect x="44" y="2" width="10" height="38" rx="2" fill="#fff" fill-opacity=".8"/></svg>
             <span class="n">02</span><span class="t" style="font-size:19px">85m spent<br><span style="font-size:10px;font-weight:500;opacity:.85">over 18 months</span></span>
           </div>
           <div class="sl" style="background:#EFF4FA;border:1px solid #D2D8E0;color:#0B1220">
@@ -511,7 +515,7 @@ const LANDING_V2_HTML = `
             <span class="n">03</span><span class="t">Operations still<br>use the old system</span>
           </div>
           <div class="sl" style="background:#0B1220;color:#00CEC9">
-            <svg class="shape" style="bottom:-6px;right:-6px" width="66" height="66" viewBox="0 0 66 66" fill="none"><path d="M12 46L48 14M32 14h16v16" stroke="#00CEC9" stroke-opacity=".3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg class="shape" style="right:10px;top:26px" width="66" height="66" viewBox="0 0 66 66" fill="none"><path d="M12 46L48 14M32 14h16v16" stroke="#00CEC9" stroke-opacity=".3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span class="n">04</span><span class="t">Trust in the data<br>is the real asset</span>
           </div>
         </div>
@@ -543,16 +547,16 @@ const LANDING_V2_HTML = `
       </defs>
       <text x="10" y="20" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.5" fill="#9AA4B0">TODAY, WITHOUT AURA</text>
       <rect x="10" y="32" width="600" height="46" rx="10" fill="url(#fade)"/>
-      <text x="30" y="61" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF">260 hours of reading</text>
+      <text x="30" y="61" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#FFFFFF" id="dHours">260 hours of reading</text>
       <path class="dash" d="M618 55h100" stroke="#C0392B" stroke-width="1.4"/>
       <circle cx="760" cy="55" r="34" fill="#FDECEA" stroke="#C0392B" stroke-width="1.4"/>
       <text x="760" y="63" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="24" font-weight="600" fill="#C0392B">0</text>
       <text x="822" y="59" font-family="Inter, sans-serif" font-size="12" fill="#66707D">posts written</text>
-      <text x="10" y="100" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.3" fill="#C0392B">= SAR 78,000 OF YOUR OWN TIME, AND NOTHING TO SHOW</text>
+      <text x="10" y="100" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.3" fill="#C0392B" id="dCost">= SAR 78,000 OF YOUR OWN TIME, AND NOTHING TO SHOW</text>
       <path d="M10 122h880" stroke="#E4E8EE"/>
       <text x="10" y="152" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.5" fill="#00807B">WITH AURA</text>
       <rect x="10" y="164" width="600" height="46" rx="10" fill="url(#rise)"/>
-      <text x="30" y="193" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#0B1220">the same 260 hours</text>
+      <text x="30" y="193" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#0B1220" id="dHours2">the same 260 hours</text>
       <path d="M618 187h100" stroke="#00CEC9" stroke-width="1.8"/>
       <circle cx="760" cy="187" r="34" fill="#0B1220"/>
       <text x="760" y="195" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="20" font-weight="600" fill="#00CEC9">50+</text>
@@ -794,6 +798,11 @@ const LandingV2 = () => {
     const own = root.querySelector<HTMLElement>("#own");
     const cost = root.querySelector<HTMLElement>("#cost");
     const kicker = root.querySelector<HTMLElement>("#kick");
+    // The diagram is not a second calculation — it reads the same source as
+    // the calculator, so the two can never disagree.
+    const dHours = root.querySelector<SVGTextElement>("#dHours");
+    const dHours2 = root.querySelector<SVGTextElement>("#dHours2");
+    const dCost = root.querySelector<SVGTextElement>("#dCost");
     const currBtns = Array.from(root.querySelectorAll<HTMLButtonElement>(".curr button"));
     let curr = "SAR";
 
@@ -806,6 +815,10 @@ const LandingV2 = () => {
       if (rateOut) rateOut.textContent = money(curr, r);
       if (own) own.textContent = `${Math.round(annual).toLocaleString("en-US")} hrs`;
       if (cost) cost.textContent = money(curr, annual * r);
+      const annualRounded = Math.round(annual).toLocaleString("en-US");
+      if (dHours) dHours.textContent = `${annualRounded} hours of reading`;
+      if (dHours2) dHours2.textContent = `the same ${annualRounded} hours`;
+      if (dCost) dCost.textContent = `= ${money(curr, annual * r)} OF YOUR OWN TIME, AND NOTHING TO SHOW`;
       if (kicker) {
         const weeks = annual / 40;
         const months = weeks / 4.33;
