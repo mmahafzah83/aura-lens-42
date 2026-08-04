@@ -731,6 +731,8 @@ export default function StudioPanel({
     setAskLangSwitch(null);
     langChosenRef.current = false;
     setPendingRestore(null);
+    setPreparedDraft(null);
+    setConfirmNewPiece(false);
     preselectedRef.current = Boolean(next?.choice);
     draftPrefillRef.current = null;
     liveRef.current = {
@@ -799,6 +801,7 @@ export default function StudioPanel({
       setLinkSaved(false);
       // The member has explicitly opened work: no stale draft may be offered.
       setPendingRestore(null);
+      setPreparedDraft(null);
       setDeck(null);
       setDeckSource(null);
       setExported(false);
@@ -851,7 +854,8 @@ export default function StudioPanel({
     const waiting = drafts.find(
       (d) => d.signalId === choice.id && new Date(d.created_at).getTime() > cutoff,
     );
-    if (waiting) void openDraft(waiting, "studio_overnight");
+    // Announced, never assumed: the member decides whether to use it.
+    if (waiting) setPreparedDraft(waiting);
   }, [posture, draftsLoading, drafts, choice, content, pendingRestore, openDraft]);
 
   /**
