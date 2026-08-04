@@ -483,13 +483,29 @@ export default function StudioPanel({
    * debounced save must always be able to flush the very latest values
    * synchronously. `liveRef` holds them; `persistNow` writes them.
    */
-  const liveRef = useRef({ content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource });
-  liveRef.current = { content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource };
+  const liveRef = useRef({
+    content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource,
+    // Y3 — the POSITION is part of the work. Restoring words but landing on
+    // slide 1 of a deck that was being edited at slide 5 reads as starting over.
+    current: 0, scrollY: 0,
+  });
+  liveRef.current = {
+    ...liveRef.current,
+    content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource, current,
+  };
 
   const persistNow = useCallback((overrides?: Partial<typeof liveRef.current>) => {
-    const v = { ...liveRef.current, ...(overrides || {}) };
+    const v = { ...liveRef.current, scrollY: window.scrollY, ...(overrides || {}) };
     // Written straight through, so a caller mid-update never persists stale words.
     liveRef.current = v;
+    // Y1 — the address follows the row id wherever it is created. Every path
+    // that binds this screen to a row calls `persistNow`, so this one line
+    // keeps the URL true without touching a dozen call sites.
+    const rowId = postRowRef.current ?? v.draftId ?? null;
+    if (pieceRowIdRef.current !== rowId) {
+      pieceRowIdRef.current = rowId;
+      setPieceRowId(rowId);
+    }
     if (!v.content && !v.deck && !postRowRef.current) return;
     try {
       localStorage.setItem(
@@ -505,7 +521,7 @@ export default function StudioPanel({
     // changes save themselves, so no live region fires on every keystroke.
     const t = window.setTimeout(persistNow, 1500);
     return () => window.clearTimeout(t);
-  }, [content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource, persistNow]);
+  }, [content, deck, choice, writeLang, step, format, formatDecided, draftId, draftSource, current, persistNow]);
 
   /* Backgrounding the tab or closing the page is also a disappearance. */
   useEffect(() => {
