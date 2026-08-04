@@ -54,6 +54,10 @@ const L = {
   },
   preparedUse: { en: "Use it", ar: "استخدمها" },
   preparedFresh: { en: "Start fresh", ar: "ابدأ من جديد" },
+  auraPickedNamed: {
+    en: "Aura chose “{subject}” for you — choose a different one below.",
+    ar: "اختارت أورا «{subject}» لك — اختر موضوعاً آخر أدناه.",
+  },
 } as const;
 
 /** Slides need enough words to divide up. Below this the option is refused. */
@@ -2409,7 +2413,7 @@ export default function StudioPanel({
       {step === 2 && (
         <StageCard
           title={T.writeHead[lang]}
-          subtitle={T.writeHelp[lang]}
+          subtitle={wordsReady ? T.writeHelp[lang] : undefined}
           align={rtlShell ? "right" : "left"}
           lang={lang}
         >
@@ -2423,7 +2427,7 @@ export default function StudioPanel({
               </p>
               {choice?.id && !wordsReady && (
                 <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
-                  {T.auraPicked[lang]}
+                  {L.auraPickedNamed[lang].replace("{subject}", choice?.title || "")}
                 </p>
               )}
               {!wordsReady && (
