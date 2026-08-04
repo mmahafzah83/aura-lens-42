@@ -747,6 +747,11 @@ export default function StudioPanel({
    */
   const choiceRef = useRef<Choice | null>(null);
   choiceRef.current = choice;
+  /** Read inside the prefill effect without making it depend on every keystroke. */
+  const contentRef = useRef("");
+  contentRef.current = content;
+  const publishedRef = useRef(false);
+  publishedRef.current = published;
   useEffect(() => {
     if (!signalPrefill) return;
     const title: string = signalPrefill.topic || signalPrefill.signalTitle || signalPrefill.trendHeadline || "";
