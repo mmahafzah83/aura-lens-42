@@ -208,7 +208,7 @@ export const TEMPLATE_THEMES = {
     fg: "#FFFFFF",
     dim: "#B9B9C4",
     accent: "#8A7BFF",
-    accentInk: "#FFFFFF",
+    accentInk: "#161616",
   },
   gridpaper_yellow: {
     kind: "paper",
@@ -222,7 +222,7 @@ export const TEMPLATE_THEMES = {
     kind: "gradient",
     g1: "#1A1040",
     g2: "#4B3AA8",
-    g3: "#7B65E8",
+    g3: "#6F58E0",
     accent: "#B8F04A",
     accentInk: "#1A1040",
     fg: "#FFFFFF",
