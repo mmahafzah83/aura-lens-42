@@ -39,6 +39,23 @@ import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/c
 import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
 import { deriveDone, plausibleLinkedInUrl } from "@/components/studio/journeyState";
 
+/* Local copy for this panel only. Same bilingual shape as `T`. */
+const L = {
+  startNewPiece: { en: "Start a new piece", ar: "ابدأ منشوراً جديداً" },
+  newPieceHead: {
+    en: "Start a new piece? This clears the current words.",
+    ar: "هل تبدأ منشوراً جديداً؟ سيُمسح النص الحالي.",
+  },
+  newPieceYes: { en: "Start new", ar: "ابدأ جديداً" },
+  newPieceNo: { en: "Keep working", ar: "تابع العمل" },
+  preparedLine: {
+    en: "Aura prepared a draft on “{subject}” from last night’s run.",
+    ar: "أعدّت أورا مسودة عن «{subject}» من تشغيل الليلة الماضية.",
+  },
+  preparedUse: { en: "Use it", ar: "استخدمها" },
+  preparedFresh: { en: "Start fresh", ar: "ابدأ من جديد" },
+} as const;
+
 /** Slides need enough words to divide up. Below this the option is refused. */
 const SLIDES_MIN_CHARS = 400;
 /** LinkedIn's own ceiling. */
