@@ -539,6 +539,17 @@ export const T = {
 } as const;
 
 /**
+ * Z2 — the omission is NAMED. A picture slide that cannot hold a field says
+ * which field, in the member's own vocabulary for it.
+ */
+export function slotWontFit(fieldLabel: string, lang: Lang): string {
+  const name = fieldLabel.toLowerCase();
+  return lang === "ar"
+    ? `حقل «${fieldLabel}» لا يتّسع في شريحة تحمل صورة.`
+    : `The ${name} doesn't fit on a slide with a picture.`;
+}
+
+/**
  * Turn a `checkImage` result into one of our own sentences, by cause.
  * A provider message is never shown to a member.
  */
