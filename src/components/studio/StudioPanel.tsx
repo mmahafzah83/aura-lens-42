@@ -758,17 +758,24 @@ export default function StudioPanel({
         ? cur!.id === signalPrefill.signalId
         : Boolean(title) && cur!.title === title);
     if (title && !same) {
-      startNewPiece({
-        choice: { id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" },
-        format: nextFormat,
-      });
+      const arriving = { id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" };
+      // W2 — a subject arriving from another screen may not silently replace
+      // words the member already has. It is offered, at step 1, as a choice.
+      if (contentRef.current.trim() || publishedRef.current) {
+        setPendingSubject(arriving);
+        setPendingFormat(null);
+        setStep(1);
+      } else {
+        startNewPiece({ choice: arriving, format: nextFormat });
+      }
     } else if (title) {
       preselectedRef.current = true;
       setChoice({ id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" });
       setTypedTopic("");
-      if (nextFormat) setFormat(nextFormat);
+      if (nextFormat) { setFormat(nextFormat); setFormatDecided(true); }
     } else if (nextFormat) {
       setFormat(nextFormat);
+      setFormatDecided(true);
     }
     onSignalPrefillConsumed?.();
   }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
