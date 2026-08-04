@@ -900,7 +900,7 @@ const LandingV2 = () => {
       e.preventDefault();
       const id = b.dataset.p!;
       root.querySelectorAll<HTMLElement>(".pg").forEach(s => s.classList.toggle("on", s.id === id));
-      root.querySelectorAll<HTMLElement>(".tabs button").forEach(x => x.classList.toggle("on", x.dataset.p === id));
+      root.querySelectorAll<HTMLElement>(".links button").forEach(x => x.classList.toggle("on", x.dataset.p === id));
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
     root.addEventListener("click", onClick);
