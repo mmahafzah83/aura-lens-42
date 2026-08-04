@@ -1823,8 +1823,9 @@ export default function StudioPanel({
         )}
       </div>
 
-      {/* Motion for anything in flight, on every step. */}
-      {busyMessage && (
+      {/* Motion for anything in flight. W10 — publishing is shown AT the
+          trigger the member is looking at, not up here in the strip. */}
+      {busyMessage && busy !== "post" && (
         <BusyBar
           message={busyMessage}
           etaSeconds={etaFor(busyMessage, lang)}
