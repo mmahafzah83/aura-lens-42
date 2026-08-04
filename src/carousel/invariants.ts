@@ -479,7 +479,7 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     for (const line of slide.slots.hero_lines ?? []) {
       const text = plainText(line);
       const lang: "en" | "ar" = ARABIC_RE.test(text) ? "ar" : "en";
-      const budget = heroBudget(lang, deck.template);
+      const budget = heroBudget(lang, ir.template);
       if (text.length > budget) {
         errors.push(
           `INV-13: ${where} hero line "${text}" is ${text.length} characters, over the ${lang} budget of ${budget}.`,
