@@ -100,9 +100,11 @@ describe("export safety — patterns rasterize", () => {
     const folds = container.querySelectorAll("[data-fold-line]");
     expect(folds.length).toBe(5);
     for (const f of Array.from(folds)) {
-      expect(f.getAttribute("style") ?? "").toMatch(/linear-gradient/);
+      // jsdom discards gradient values from `style`, so the CSS the renderer
+      // will actually print is mirrored onto data-css and asserted there.
+      expect(f.getAttribute("data-css") ?? "").toMatch(/linear-gradient/);
     }
-    expect(container.querySelector("[data-vignette]")?.getAttribute("style") ?? "").toMatch(/radial-gradient/);
+    expect(container.querySelector("[data-vignette]")?.getAttribute("data-css") ?? "").toMatch(/radial-gradient/);
   });
 
   it("crumple rotates its slab, and mirrors the rotation in RTL", () => {
@@ -118,8 +120,8 @@ describe("export safety — patterns rasterize", () => {
   it("gridpaper draws the graph rule and a halftone corner, all as gradients", () => {
     const deck = DeckIRSchema.parse(enGridpaper);
     const { container } = render(<Slide deck={deck} slide={deck.slides[0]} />);
-    expect(container.querySelector("[data-grid]")?.getAttribute("style") ?? "").toMatch(/repeating-linear-gradient/);
-    expect(container.querySelector("[data-halftone]")?.getAttribute("style") ?? "").toMatch(/radial-gradient/);
+    expect(container.querySelector("[data-grid]")?.getAttribute("data-css") ?? "").toMatch(/repeating-linear-gradient/);
+    expect(container.querySelector("[data-halftone]")?.getAttribute("data-css") ?? "").toMatch(/radial-gradient/);
   });
 
   it("gridpaper reports the slide's real ground to the exporter", () => {

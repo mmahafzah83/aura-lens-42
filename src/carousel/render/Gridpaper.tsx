@@ -30,6 +30,7 @@ import { getTemplate, GRIDPAPER_GRID_PITCH, type FontSet, type TemplateDescripto
 import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
 import { checkEngagementRow, checkTypeFloor } from "../invariants";
 import EngagementRow from "./EngagementRow";
+import { gridpaperHalftone, gridpaperHalftoneMask, gridpaperRule } from "./paperPatterns";
 
 type Lang = "en" | "ar";
 
@@ -182,24 +183,25 @@ function QuoteMarks({ size, color, rtl }: { size: number; color: string; rtl: bo
 
 /** The halftone corner. Two radial-gradient dot fields, no filter. */
 function HalftoneCorner({ color, rtl }: { color: string; rtl: boolean }) {
+  const dots = gridpaperHalftone(color);
+  const mask = gridpaperHalftoneMask(rtl);
   return (
     <div
       aria-hidden
       data-halftone=""
+      data-css={dots}
       style={{
         position: "absolute",
         bottom: 0,
         [rtl ? "left" : "right"]: 0,
         width: 320,
         height: 320,
-        backgroundImage:
-          `radial-gradient(${color} 3.4px, transparent 3.6px), ` +
-          `radial-gradient(${color} 1.8px, transparent 2px)`,
+        backgroundImage: dots,
         backgroundSize: "26px 26px, 26px 26px",
         backgroundPosition: "0 0, 13px 13px",
         // A gradient mask, so the field fades instead of stopping on an edge.
-        maskImage: `radial-gradient(120% 120% at ${rtl ? "0% 100%" : "100% 100%"}, #000 10%, transparent 68%)`,
-        WebkitMaskImage: `radial-gradient(120% 120% at ${rtl ? "0% 100%" : "100% 100%"}, #000 10%, transparent 68%)`,
+        maskImage: mask,
+        WebkitMaskImage: mask,
       }}
     />
   );
@@ -327,21 +329,11 @@ function Footer({ deck, slide, s, tpl, ink, isCover }: {
 
 function Background({ ink, dark }: { ink: Ink; dark: boolean }) {
   const line = dark ? "rgba(246,239,226,.09)" : "rgba(20,18,16,.09)";
-  const pitch = GRIDPAPER_GRID_PITCH;
+  const rule = gridpaperRule(line, GRIDPAPER_GRID_PITCH);
   return (
     <>
       <div aria-hidden style={{ position: "absolute", inset: 0, background: ink.ground }} />
-      <div
-        aria-hidden
-        data-grid=""
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            `repeating-linear-gradient(90deg, ${line} 0 1.5px, transparent 1.5px ${pitch}px), ` +
-            `repeating-linear-gradient(180deg, ${line} 0 1.5px, transparent 1.5px ${pitch}px)`,
-        }}
-      />
+      <div aria-hidden data-grid="" data-css={rule} style={{ position: "absolute", inset: 0, backgroundImage: rule }} />
     </>
   );
 }
