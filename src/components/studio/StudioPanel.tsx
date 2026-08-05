@@ -1694,6 +1694,23 @@ export default function StudioPanel({
     return null;
   }, [fits, current, lang]);
 
+  /**
+   * GENERATION FAILURE IS NOT A PICTURE FAILURE.
+   *
+   * The top banner reports one thing only: the last attempt to BUILD the
+   * slides. Adding a picture never calls the generator, so a banner left
+   * standing from an earlier build reads as if the picture had failed. It is
+   * cleared on the way into the Look step, and again the moment a picture
+   * action starts. A picture's own problems surface on the small notice line
+   * beside the control, never up here.
+   */
+  useEffect(() => {
+    if (sub !== "look") return;
+    setDeckFailures([]);
+    setFits({});
+    fitsRef.current = {};
+  }, [sub]);
+
   /* THE PIECE STATE. Derived, never stored twice, never inferred from the
      highest step visited. `deriveDone` owns every tick and clamps the
      step N / N−1 invariant. */
