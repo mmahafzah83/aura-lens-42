@@ -118,6 +118,25 @@ async function countUniqueSources(
   return Math.max(ids.size, 1);
 }
 
+/* Effective evidence: each distinct source contributes at most `cap` fragments */
+const PER_SOURCE_CAP = 3;
+async function countEffectiveEvidence(admin: any, fragmentIds: string[], cap = PER_SOURCE_CAP): Promise<number> {
+  if (fragmentIds.length === 0) return 0;
+  const perSource = new Map<string, number>();
+  for (const batch of chunkIds(fragmentIds)) {
+    const { data, error } = await admin
+      .from("evidence_fragments").select("source_registry_id").in("id", batch);
+    if (error) throw new Error("countEffectiveEvidence batch failed: " + error.message);
+    (data || []).forEach((f: any) => {
+      const k = f.source_registry_id || "__null__";
+      perSource.set(k, (perSource.get(k) || 0) + 1);
+    });
+  }
+  let eff = 0;
+  for (const n of perSource.values()) eff += Math.min(n, cap);
+  return eff;
+}
+
 async function calcPriorityScore(
   confidence: number,
   updatedAt: string,
@@ -501,6 +520,7 @@ ${identityCtx}`;
       const newFragCount = mergedEvidence.length;
       const newUniqueOrgs = await countUniqueOrgs(admin, mergedEvidence);
       const newUniqueSources = await countUniqueSources(admin, mergedEvidence);
+      const effEvidence = await countEffectiveEvidence(admin, mergedEvidence);
       const now = new Date().toISOString();
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newUniqueSources, newUniqueOrgs, now);
       const mergedTags = canonicalizeTags([...(signalRow.theme_tags || []), ...newTags]);
@@ -510,7 +530,7 @@ ${identityCtx}`;
         supporting_evidence_ids: mergedEvidence,
         fragment_count: newFragCount,
         unique_orgs: newUniqueOrgs,
-        strength_score: computeStrength(newUniqueOrgs, newFragCount),
+        strength_score: computeStrength(newUniqueOrgs, effEvidence),
         confidence,
         confidence_explanation,
         what_it_means_for_you: whatItMeans,
@@ -609,6 +629,7 @@ ${identityCtx}`;
           const nowIso = new Date().toISOString();
           const uOrgs = await countUniqueOrgs(admin, clusterFragIds);
           const uSources = await countUniqueSources(admin, clusterFragIds);
+          const effEvidence = await countEffectiveEvidence(admin, clusterFragIds);
           const { confidence: fbConf, confidence_explanation: fbExpl } =
             calcConfidence(0.3, uSources, uOrgs, nowIso);
 
@@ -627,7 +648,7 @@ ${identityCtx}`;
             supporting_evidence_ids: clusterFragIds,
             fragment_count: clusterFragIds.length,
             unique_orgs: uOrgs,
-            strength_score: computeStrength(uOrgs, clusterFragIds.length),
+            strength_score: computeStrength(uOrgs, effEvidence),
           }).select("id").single();
 
           if (dormErr) throw new Error(`Dormant insert: ${dormErr.message}`);
@@ -676,6 +697,7 @@ ${identityCtx}`;
       const now = new Date().toISOString();
       const initialUniqueOrgs = await countUniqueOrgs(admin, clusterFragIds);
       const initialUniqueSources = await countUniqueSources(admin, clusterFragIds);
+      const effEvidence = await countEffectiveEvidence(admin, clusterFragIds);
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, initialUniqueSources, initialUniqueOrgs, now);
       const priorityScore = await calcPriorityScore(confidence, now, 1.0, clusterFragIds.length, admin, user_id, newTags, contentGap);
 
@@ -694,7 +716,7 @@ ${identityCtx}`;
         supporting_evidence_ids: clusterFragIds,
         fragment_count: clusterFragIds.length,
         unique_orgs: initialUniqueOrgs,
-        strength_score: computeStrength(initialUniqueOrgs, clusterFragIds.length),
+        strength_score: computeStrength(initialUniqueOrgs, effEvidence),
       }).select("id").single();
 
       if (insErr) throw new Error(`Insert: ${insErr.message}`);
