@@ -80,8 +80,6 @@ export function resolveIdentityFrom(conn: any, prof: any): Identity {
   const name = override || fromLinkedIn || assembled || "Member";
   const name_source: IdentitySource = override ? "override" : fromLinkedIn ? "linkedin" : "profile";
 
-  const linkedinHandle = bareHandle(conn?.handle) ?? bareHandle(conn?.profile_url);
-  const profileHandle = bareHandle(prof?.linkedin_handle) ?? bareHandle(prof?.linkedin_url);
   // The member's OWN explicit handle wins. A connection URL is a fallback,
   // never an override of what the member typed for themselves.
   const handle =
@@ -92,7 +90,6 @@ export function resolveIdentityFrom(conn: any, prof: any): Identity {
     ?? "member";
   const handle_source: IdentitySource =
     (prof?.linkedin_handle || prof?.linkedin_url) ? "profile" : "linkedin";
-  void linkedinHandle; void profileHandle;
 
   return {
     name,
