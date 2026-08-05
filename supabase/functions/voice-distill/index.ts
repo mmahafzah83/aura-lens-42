@@ -585,24 +585,14 @@ Deno.serve(async (req) => {
       const existingNotes = existingVocab.notes;
       const existingTone: string = typeof existing?.tone === "string" ? existing.tone : "";
 
-      const seen = new Set<string>();
-      const mergedAvoid: any[] = [];
-      for (const entry of existingAvoidRaw) {
-        const k = norm(entry);
-        if (!k || seen.has(k)) continue;
-        seen.add(k);
-        mergedAvoid.push(entry);
-      }
-      for (const entry of newAvoid) {
-        const k = norm(entry);
-        if (!k || seen.has(k)) continue;
-        seen.add(k);
-        mergedAvoid.push(entry);
-      }
-
+      // Rules that say the same thing in different words are merged, and both
+      // lists are capped, so the prompt carries twelve distinct constraints
+      // rather than ninety near-duplicates.
+      const mergedAvoid = dedupeRules([...existingAvoidRaw, ...newAvoid]);
+      const { vocabulary: cleanedExisting } = sanitizeVocabulary(existingVocab);
       const mergedVocabulary: Record<string, unknown> = {
-        ...existingVocab,
-        use: newUse,
+        ...cleanedExisting,
+        use: dedupeRules(newUse),
         avoid: mergedAvoid,
         rhythm: newRhythm,
       };
