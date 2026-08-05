@@ -199,7 +199,7 @@ export type ProvenanceRow = {
   publish_attempted_at?: string | null;
   authorship?: string | null;
   acquisition?: string | null;
-  source_metadata?: Record<string, unknown> | null;
+  source_metadata?: Record<string, unknown> | null;  // legacy, no longer read
   /** Present when the row came from the SQL view or home_record_timeline. */
   provenance?: Provenance | null;
 };
