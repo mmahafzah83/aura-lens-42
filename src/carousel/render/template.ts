@@ -380,11 +380,207 @@ const GRIDPAPER: TemplateDescriptor = {
   heroHighlight: "slab",
 };
 
+/* ------------------------------------------------------------------ */
+/* Shared derivation for the field / gradient families                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Same contract as `paperGateSpecs`: the WEIGHTS differ per family, but every
+ * SIZE is read from the ramp, so a ramp change can never leave the fit ladder
+ * measuring a fallback face.
+ */
+function fieldGateSpecs(
+  ramp: TypeRamp,
+  fonts: Omit<FontSet, "gateSpecs">,
+  w: { display: number; body: number; meta: number; arDisplay: number; arBody: number },
+): Array<[string, string]> {
+  return paperGateSpecs(ramp, fonts, w);
+}
+
+/** Montserrat carries salford's display at 800 and its meta at 500/600. */
+const FONT_MONTSERRAT = '"AuraMontserrat", "Helvetica Neue", Helvetica, Arial, sans-serif';
+
+/* ------------------------------------------------------------------ */
+/* salford — flat navy and mint, alternating, Montserrat 800           */
+/* ------------------------------------------------------------------ */
+
+const SALFORD_RAMP: TypeRamp = {
+  heroEn: 102, heroEnLh: 1.06,
+  heroAr: 88,  heroArLh: 1.44,
+  stat: 102,   statLh: 1.06,
+  h2: 82,      h2Lh: 1.1,
+  body: 40,    bodyLhEn: 1.7, bodyLhAr: 1.75,
+  chip: 30, data: 30, source: 26,
+  gap: 28, media: 360,
+  identityName: 38,
+  identitySub: 29,
+  floors: { content: 38, meta: 22 },
+};
+
+const SALFORD_FONTS_BASE = {
+  displayEn: FONT_MONTSERRAT,
+  textEn: FONT_MONTSERRAT,
+  // Montserrat is the whole voice. This family has no monospace.
+  mono: FONT_MONTSERRAT,
+  arabic: FONT_AR,
+};
+
+/** The dot-matrix pitch, in px at 1080×1350. Read by the renderer, not typed in it. */
+export const SALFORD_DOT_PITCH = 26;
+
+const SALFORD: TemplateDescriptor = {
+  id: "salford",
+  label: { en: "Salford", ar: "سالفورد" },
+  ramp: SALFORD_RAMP,
+  geometry: {
+    canvasW: 1080,
+    canvasH: 1350,
+    pad: 96,
+    safeArea: { top: 96, side: 96, bottom: 96 + 68 },
+    bandMediaShare: BAND_MEDIA_SHARE,
+    bandTypeBoost: BAND_TYPE_BOOST,
+    bandLift: 26,
+    closeFigureW: 430,
+    closeFigureH: 470,
+    radiusChip: 999,
+    radiusPanel: 0,
+    radiusMedia: 0,
+    contentX: 112,
+    maxTextW: 856,
+  },
+  fonts: {
+    ...SALFORD_FONTS_BASE,
+    gateSpecs: fieldGateSpecs(SALFORD_RAMP, SALFORD_FONTS_BASE, {
+      display: 800, body: 500, meta: 600, arDisplay: 900, arBody: 400,
+    }),
+  },
+  media: MEDIA_BY_ARCHETYPE,
+  coverAlign: "start",
+  heroHighlight: "block",
+};
+
+/* ------------------------------------------------------------------ */
+/* blueprint — near-black field, hairline grid, Poppins 700            */
+/* ------------------------------------------------------------------ */
+
+const BLUEPRINT_RAMP: TypeRamp = {
+  heroEn: 100, heroEnLh: 1.08,
+  heroAr: 86,  heroArLh: 1.48,
+  stat: 100,   statLh: 1.08,
+  h2: 78,      h2Lh: 1.12,
+  body: 40,    bodyLhEn: 1.7, bodyLhAr: 1.75,
+  chip: 28, data: 28, source: 26,
+  gap: 28, media: 360,
+  identityName: 37,
+  identitySub: 28,
+  floors: { content: 38, meta: 22 },
+};
+
+const BLUEPRINT_FONTS_BASE = {
+  displayEn: FONT_POPPINS,
+  textEn: FONT_POPPINS,
+  mono: FONT_POPPINS,
+  arabic: FONT_AR_TEXT,
+};
+
+/** The hairline grid pitch, in px at 1080×1350. */
+export const BLUEPRINT_GRID_PITCH = 98;
+
+const BLUEPRINT: TemplateDescriptor = {
+  id: "blueprint",
+  label: { en: "Blueprint", ar: "المخطط" },
+  ramp: BLUEPRINT_RAMP,
+  geometry: {
+    canvasW: 1080,
+    canvasH: 1350,
+    // A multiple of the 98px hairline, so the column lands on the grid.
+    pad: 98,
+    safeArea: { top: 98, side: 98, bottom: 98 + 68 },
+    bandMediaShare: BAND_MEDIA_SHARE,
+    bandTypeBoost: BAND_TYPE_BOOST,
+    bandLift: 26,
+    closeFigureW: 430,
+    closeFigureH: 470,
+    radiusChip: 999,
+    radiusPanel: 0,
+    radiusMedia: 0,
+    contentX: 98,
+    maxTextW: 884,
+  },
+  fonts: {
+    ...BLUEPRINT_FONTS_BASE,
+    gateSpecs: fieldGateSpecs(BLUEPRINT_RAMP, BLUEPRINT_FONTS_BASE, {
+      display: 700, body: 400, meta: 500, arDisplay: 700, arBody: 400,
+    }),
+  },
+  media: MEDIA_BY_ARCHETYPE,
+  coverAlign: "start",
+  heroHighlight: "underline",
+};
+
+/* ------------------------------------------------------------------ */
+/* concept — violet gradient, nested wireframes, Inter 700             */
+/* ------------------------------------------------------------------ */
+
+const CONCEPT_RAMP: TypeRamp = {
+  heroEn: 100, heroEnLh: 1.08,
+  heroAr: 86,  heroArLh: 1.46,
+  stat: 100,   statLh: 1.08,
+  h2: 80,      h2Lh: 1.12,
+  body: 40,    bodyLhEn: 1.7, bodyLhAr: 1.75,
+  chip: 29, data: 28, source: 26,
+  gap: 28, media: 360,
+  identityName: 38,
+  identitySub: 29,
+  floors: { content: 38, meta: 22 },
+};
+
+const CONCEPT_FONTS_BASE = {
+  displayEn: FONT_TEXT_EN,
+  textEn: FONT_TEXT_EN,
+  mono: FONT_TEXT_EN,
+  arabic: FONT_AR,
+};
+
+const CONCEPT: TemplateDescriptor = {
+  id: "concept",
+  label: { en: "Concept", ar: "التصور" },
+  ramp: CONCEPT_RAMP,
+  geometry: {
+    canvasW: 1080,
+    canvasH: 1350,
+    pad: 96,
+    safeArea: { top: 96, side: 96, bottom: 96 + 68 },
+    bandMediaShare: BAND_MEDIA_SHARE,
+    bandTypeBoost: BAND_TYPE_BOOST,
+    bandLift: 26,
+    closeFigureW: 430,
+    closeFigureH: 470,
+    radiusChip: 999,
+    radiusPanel: 28,
+    radiusMedia: 28,
+    contentX: 112,
+    maxTextW: 856,
+  },
+  fonts: {
+    ...CONCEPT_FONTS_BASE,
+    gateSpecs: fieldGateSpecs(CONCEPT_RAMP, CONCEPT_FONTS_BASE, {
+      display: 700, body: 400, meta: 600, arDisplay: 900, arBody: 400,
+    }),
+  },
+  media: MEDIA_BY_ARCHETYPE,
+  coverAlign: "start",
+  heroHighlight: "block",
+};
+
 export const TEMPLATES: Record<string, TemplateDescriptor> = {
   instrument: INSTRUMENT,
   highlighter: HIGHLIGHTER,
   crumple: CRUMPLE,
   gridpaper: GRIDPAPER,
+  salford: SALFORD,
+  blueprint: BLUEPRINT,
+  concept: CONCEPT,
 };
 
 export const TEMPLATE_IDS: string[] = Object.keys(TEMPLATES);
