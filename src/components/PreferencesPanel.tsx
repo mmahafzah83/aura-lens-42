@@ -236,7 +236,7 @@ export default function PreferencesPanel({
   }, [open, userId]);
 
   const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;
-  const weeklyBriefOn = prefs.weekly_brief !== false; // default true
+  const weeklyBriefOn = prefs.email_weekly_brief !== false; // default true
   const dailyNudgesOn = prefs.daily_nudges !== false; // default true
   const overnightReadingOn = prefs.overnight_reading_enabled !== false; // default true
   const sharedLearningOn = profile?.shared_learning_consent === true;
@@ -266,6 +266,8 @@ export default function PreferencesPanel({
   };
 
   const updateSharedLearning = async (value: boolean) => {
+    if (!userId) return;
+    const previous = profile?.shared_learning_consent ?? null;
     if (!userId) return;
     const previous = profile?.shared_learning_consent ?? null;
     setProfile((p) => (p ? { ...p, shared_learning_consent: value } : p));
