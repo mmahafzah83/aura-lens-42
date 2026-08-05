@@ -30,7 +30,9 @@ export function bareHandle(value?: string | null): string | null {
   const fromUrl = v.match(/linkedin\.com\/in\/([^/?#]+)/i);
   const raw = fromUrl ? fromUrl[1] : v.replace(/^@/, "");
   const cleaned = decodeURIComponent(raw).replace(/[^A-Za-z0-9\u0600-\u06FF._-]/g, "").trim();
-  return cleaned.length ? cleaned : null;
+  // A slug never starts or ends with a separator: "-mahafdhah" is a fragment.
+  const trimmed = cleaned.replace(/^[.\-_]+/, "").replace(/[.\-_]+$/, "");
+  return trimmed.length ? trimmed : null;
 }
 
 /** The public profile URL for a vanity name. */
