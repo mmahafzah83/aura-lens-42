@@ -2719,7 +2719,7 @@ export default function StudioPanel({
                 deckBusy ? (
                   <div style={{ width: "100%", maxWidth: 360 }}>
                     <BusyBar
-                      message={T.makingSlides[lang]}
+                      message={T.makingSlidesHonest[lang]}
                       indeterminate
                     />
                   </div>
