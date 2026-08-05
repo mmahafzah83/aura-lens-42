@@ -1,0 +1,1 @@
+ALTER VIEW public.post_provenance SET (security_invoker = true);
