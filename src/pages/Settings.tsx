@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import { getPublication, validate as validatePublication, type PublicationConfig
 import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 import CountryPicker from "@/components/CountryPicker";
 import PreferencesPanel from "@/components/PreferencesPanel";
+import EditProfileModal, { type EditProfileField } from "@/components/EditProfileModal";
 import AccountPanel from "@/components/settings/AccountPanel";
 import SlideDefaultsCard from "@/components/settings/SlideDefaultsCard";
 import WhatsAppPairingCard from "@/components/settings/WhatsAppPairingCard";
@@ -66,6 +67,8 @@ export default function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") === "preferences" ? "preferences" : "account";
   const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
+  /** Which profile field the member asked to edit. Null means the modal is shut. */
+  const [editField, setEditField] = useState<EditProfileField | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,46 +113,49 @@ const handleDeleteAccount = async () => {
   }
 };
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user?.id) {
-          if (!cancelled) {
-            setLoading(false);
-            setError("Not signed in.");
-          }
-          return;
-        }
-        const { data, error: qErr } = await supabase
-          .from("diagnostic_profiles")
-          .select(
-            "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets, country, country_code"
-          )
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-        if (cancelled) return;
-        if (qErr) throw qErr;
-        setProfile((data as ProfileData) || null);
-        setSignatures(Array.isArray((data as any)?.signature_presets) ? (data as any).signature_presets : []);
-        {
-          const p = (data as any) || {};
-          const initialPub = getPublication(
-            { identity_intelligence: p.identity_intelligence || {} },
-            "en",
-            p.first_name,
-          );
-          setPublicationState(initialPub);
-        }
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Failed to load profile.");
-      } finally {
-        if (!cancelled) setLoading(false);
+  /**
+   * ONE READ, CALLABLE TWICE.
+   *
+   * The read-only summary below is the same data the edit modal writes, so
+   * saving has to be able to re-run this. It was an anonymous effect body;
+   * it is now a named load the modal can call on save, which is why a change
+   * made in the modal shows up in the summary without a page reload.
+   */
+  const loadProfile = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        setLoading(false);
+        setError("Not signed in.");
+        return;
       }
-    })();
-    return () => { cancelled = true; };
+      const { data, error: qErr } = await supabase
+        .from("diagnostic_profiles")
+        .select(
+          "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets, country, country_code"
+        )
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (qErr) throw qErr;
+      setProfile((data as ProfileData) || null);
+      setSignatures(Array.isArray((data as any)?.signature_presets) ? (data as any).signature_presets : []);
+      {
+        const p = (data as any) || {};
+        const initialPub = getPublication(
+          { identity_intelligence: p.identity_intelligence || {} },
+          "en",
+          p.first_name,
+        );
+        setPublicationState(initialPub);
+      }
+    } catch (e: any) {
+      setError(e?.message || "Failed to load profile.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { void loadProfile(); }, [loadProfile]);
 
   const loadLinkedInStatus = async () => {
     setLinkedInBusy(true);
@@ -402,9 +408,9 @@ const handleDeleteAccount = async () => {
           <SettingsIcon className="w-5 h-5" style={{ color: "var(--action)" }} />
           <h1
             style={{
-              fontFamily: "var(--serif)",
+              fontFamily: "var(--font-display)",
               fontSize: 28,
-              fontWeight: 500,
+              fontWeight: 700,
               letterSpacing: "0.02em",
             }}
           >
@@ -443,6 +449,7 @@ const handleDeleteAccount = async () => {
             onClose={() => {}}
             userId={authUser?.id ?? null}
             email={authUser?.email}
+            onEditField={(f) => setEditField(f)}
             onSignOut={() => { void signOutAndLand(navigate); }}
           />
         ) : (
