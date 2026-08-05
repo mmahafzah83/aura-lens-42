@@ -448,7 +448,13 @@ export const RecordLens: React.FC<RecordLensProps> = ({
                 <div key={`q-${r.at}-${idx}`} style={{ position: "relative", marginBlockEnd: 16 }}>
                   <Knot tone="quiet" />
                   <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--text-muted)" }}>
-                    {r.n === 1 ? "One quiet night." : `${r.n} quiet nights.`} Aura read and found nothing worth writing.
+                    {r.state === "night"
+                      ? (r.n === 1
+                        ? "Aura read that night and found nothing worth writing."
+                        : `${r.n} nights: Aura read and found nothing worth writing.`)
+                      : (r.n === 1
+                        ? "Nothing happened this day."
+                        : `${r.n} days with nothing on them.`)}
                   </p>
                 </div>
               );
@@ -473,12 +479,14 @@ export const RecordLens: React.FC<RecordLensProps> = ({
               );
             }
 
-            if (r.kind === "publish") {
+            if (r.kind === "pubday") {
               return (
-                <div key={`p-${r.p.id}`} style={{ position: "relative", marginBlockEnd: 16 }}>
+                <div key={`pd-${r.at}`} style={{ position: "relative", marginBlockEnd: 16 }}>
                   <Knot tone="pub" />
                   <RowLabel>{dayLabel(r.at)}</RowLabel>
-                  <div style={{ marginBlockStart: 6 }}><PublishedLine p={r.p} /></div>
+                  <div style={{ marginBlockStart: 6, display: "grid", gap: 10 }}>
+                    {r.ps.map((p) => <PublishedLine key={p.id} p={p} />)}
+                  </div>
                 </div>
               );
             }
