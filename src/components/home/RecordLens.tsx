@@ -534,7 +534,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
                     </>
                   ) : (
                     <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>
-                      Captured {b.cap} · Aura wrote {b.drafts} ·{" "}
+                      Saved {b.cap} · Aura wrote {b.drafts} ·{" "}
                       <strong style={{ color: "var(--act)", fontWeight: 700 }}>You published {b.pub}</strong>
                     </p>
                   )}
@@ -565,17 +565,21 @@ export const RecordLens: React.FC<RecordLensProps> = ({
         </div>
       </div>
 
-      <div style={{
-        borderBlockStart: "1px solid var(--rule-divider)", padding: "16px 20px",
-        display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
-      }}>
-        <Counter n={daysOnRecord ?? "—"} label="days on the record" />
-        <Counter n={t.fragmentsTotal} label="fragments held" />
-        <Counter n={t.themesTotal} label="themes formed" />
-        <Counter n={`${nightsProduced}/7`} label="nights that produced something" />
-        <Counter n={t.publishedTotal} label="live on LinkedIn" blue />
-        <Counter n={t.publishedThroughAura} label="made with Aura" blue />
-        <Counter n={t.publishedSentFromAura} label="sent from Aura" blue />
+      <div style={{ borderBlockStart: "1px solid var(--rule-divider)", padding: "16px 20px", display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))" }}>
+          <Counter n={daysOnRecord ?? "—"} label="days using Aura" />
+          <Counter n={t.fragmentsTotal} label="pieces of knowledge saved" />
+          <Counter n={t.themesTotal} label="topics found in them" />
+          <Counter n={`${nightsProduced}/7`} label="nights Aura found something to write" />
+          <Counter n={t.publishedTotal} label="posts live on LinkedIn" blue />
+          <Counter n={t.publishedThroughAura} label="written with Aura" blue />
+          <Counter n={t.publishedSentFromAura} label="posted by Aura for you" blue />
+        </div>
+        {t.publishedReturned < t.publishedTotal && (
+          <Muted style={{ fontSize: 12.5 }}>
+            Showing your most recent {t.publishedReturned} posts.
+          </Muted>
+        )}
       </div>
     </Card>
   );
