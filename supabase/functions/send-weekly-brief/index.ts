@@ -290,6 +290,31 @@ serve(async (req) => {
     let sentCount = 0;
     const errors: Array<{ user_id: string; error: string }> = [];
 
+    /**
+     * Local-time parts for a member's own timezone. Null/invalid falls back to
+     * Riyadh, so a member who never set one keeps today's behaviour.
+     */
+    const WEEKDAY_INDEX: Record<string, number> = {
+      Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+    };
+    function localParts(tz: string | null | undefined, at: Date): { weekday: number; hour: number; dateKey: string } {
+      const zone = tz && String(tz).trim() ? String(tz).trim() : "Asia/Riyadh";
+      const build = (z: string) =>
+        new Intl.DateTimeFormat("en-CA", {
+          timeZone: z, weekday: "short", hour: "2-digit", hour12: false,
+          year: "numeric", month: "2-digit", day: "2-digit",
+        }).formatToParts(at);
+      let parts: Intl.DateTimeFormatPart[];
+      try { parts = build(zone); } catch { parts = build("Asia/Riyadh"); }
+      const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+      const hourRaw = get("hour");
+      return {
+        weekday: WEEKDAY_INDEX[get("weekday").slice(0, 3)] ?? 0,
+        hour: hourRaw === "24" ? 0 : parseInt(hourRaw, 10) || 0,
+        dateKey: `${get("year")}-${get("month")}-${get("day")}`,
+      };
+    }
+
     for (const userId of userIds) {
       try {
         const { data: userRes, error: userErr } = await admin.auth.admin.getUserById(userId);
@@ -301,7 +326,7 @@ serve(async (req) => {
 
         const { data: profile } = await admin
           .from("diagnostic_profiles")
-          .select("first_name, firm, sector_focus, notification_prefs")
+          .select("first_name, firm, sector_focus, notification_prefs, timezone")
           .eq("user_id", userId)
           .maybeSingle();
 
@@ -309,6 +334,20 @@ serve(async (req) => {
         if (prefs.email_weekly_brief === false) {
           continue;
         }
+
+        // Monday 07:00 where the member actually is. Safe to run hourly:
+        // every other hour falls straight through with no send and no log.
+        const lp = localParts(profile?.timezone as string | null | undefined, now);
+        if (!(lp.weekday === 1 && lp.hour === 7)) continue;
+
+        const wkKey = `weekly_brief:${lp.dateKey}`;
+        const { data: wkAlready } = await admin
+          .from("lifecycle_email_log")
+          .select("user_id")
+          .eq("message_key", wkKey)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (wkAlready) continue;
 
         const firstName = (profile?.first_name as string | undefined)?.trim()
           || (email.split("@")[0] ?? "there");
@@ -595,6 +634,9 @@ Rules:
           errors.push({ user_id: userId, error: `resend ${resendRes.status}: ${errText.slice(0, 200)}` });
           continue;
         }
+
+        // Only AFTER a successful send do we burn the idempotency key.
+        await admin.from("lifecycle_email_log").insert({ user_id: userId, message_key: wkKey });
 
         await admin.from("notification_events").insert({
           user_id: userId,
