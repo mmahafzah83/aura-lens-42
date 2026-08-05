@@ -44,11 +44,28 @@ const THEME_REGISTRY = [
   "paper",
   "highlighter_orange",
   "highlighter_green",
+  "highlighter_blue",
+  "highlighter_magenta",
   "crumple_amber",
+  "crumple_oxblood",
+  "crumple_ink",
+  "crumple_teal",
   "gridpaper_yellow",
+  "gridpaper_red",
+  "gridpaper_blue",
+  "gridpaper_green",
   "salford_navy",
+  "salford_plum",
+  "salford_amber",
+  "salford_teal",
   "blueprint_violet",
+  "blueprint_cyan",
+  "blueprint_amber",
+  "blueprint_green",
   "concept_violet",
+  "concept_indigo",
+  "concept_teal",
+  "concept_crimson",
 ] as const;
 const DEFAULT_THEME = "midnight";
 const TEMPLATE_REGISTRY = [
@@ -63,12 +80,12 @@ const DEFAULT_TEMPLATE = "instrument";
  */
 const TEMPLATE_THEMES: Record<string, readonly string[]> = {
   instrument: ["midnight", "clay", "gradient", "paper"],
-  highlighter: ["highlighter_orange", "highlighter_green"],
-  crumple: ["crumple_amber"],
-  gridpaper: ["gridpaper_yellow"],
-  salford: ["salford_navy"],
-  blueprint: ["blueprint_violet"],
-  concept: ["concept_violet"],
+  highlighter: ["highlighter_orange", "highlighter_green", "highlighter_blue", "highlighter_magenta"],
+  crumple: ["crumple_amber", "crumple_oxblood", "crumple_ink", "crumple_teal"],
+  gridpaper: ["gridpaper_yellow", "gridpaper_red", "gridpaper_blue", "gridpaper_green"],
+  salford: ["salford_navy", "salford_plum", "salford_amber", "salford_teal"],
+  blueprint: ["blueprint_violet", "blueprint_cyan", "blueprint_amber", "blueprint_green"],
+  concept: ["concept_violet", "concept_indigo", "concept_teal", "concept_crimson"],
 };
 
 function resolveTheme(id: unknown, template: string = DEFAULT_TEMPLATE): string {
