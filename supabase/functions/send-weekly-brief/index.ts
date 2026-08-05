@@ -338,7 +338,7 @@ serve(async (req) => {
         // Monday 07:00 where the member actually is. Safe to run hourly:
         // every other hour falls straight through with no send and no log.
         const lp = localParts(profile?.timezone as string | null | undefined, now);
-        if (lp.weekday !== 1 || lp.hour !== 7) continue;
+        if (!(lp.weekday === 1 && lp.hour === 7)) continue;
 
         const wkKey = `weekly_brief:${lp.dateKey}`;
         const { data: wkAlready } = await admin
