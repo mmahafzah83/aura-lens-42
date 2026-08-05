@@ -1,20 +1,7 @@
 import React from "react";
-import { THEMES, templateThemes, type ThemeName } from "@/carousel/render/themes";
-import { TEMPLATES } from "@/carousel/render/template";
-import { T, themeLabel, type Lang } from "./strings";
-
-/**
- * Sourced from the registry, not a hand-kept array. A template reaches the UI
- * only when it has a registered renderer, and a colour set only when its
- * template allows it. A token set with no renderer behind it must never reach
- * a swatch — the member would pick a look that cannot be drawn.
- */
-const TEMPLATE_LIST = Object.keys(TEMPLATES).filter((id) => (templateThemes[id] ?? []).length > 0);
-
-function themesFor(template: string): ThemeName[] {
-  const allowed = templateThemes[template] ?? [];
-  return allowed.filter((t): t is ThemeName => t in THEMES);
-}
+import { type ThemeName } from "@/carousel/render/themes";
+import { T, type Lang } from "./strings";
+import { ColourPicker, TemplatePicker } from "./LookPickers";
 
 const heading: React.CSSProperties = {
   fontFamily: "var(--ff-mono)",
@@ -64,19 +51,7 @@ export const ZoneLook: React.FC<{
 
     <div style={{ display: "grid", gap: 8 }}>
       <p style={heading}>{T.lookTemplate[lang]}</p>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {TEMPLATE_LIST.map((id) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={id === template}
-            onClick={() => onTemplate(id)}
-            style={pill(id === template)}
-          >
-            {TEMPLATES[id].label[lang === "ar" ? "ar" : "en"]}
-          </button>
-        ))}
-      </div>
+      <TemplatePicker lang={lang} value={template} onChange={onTemplate} />
       {/* Free, and instant: switching the family re-draws the slides that
           already exist. Nothing is sent anywhere and nothing is re-written. */}
       <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
@@ -86,48 +61,7 @@ export const ZoneLook: React.FC<{
 
     <div style={{ display: "grid", gap: 8 }}>
       <p style={heading}>{T.lookTheme[lang]}</p>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {themesFor(template).map((t) => (
-          <button
-            key={t}
-            type="button"
-            aria-label={themeLabel(t, lang)}
-            aria-pressed={t === theme}
-            onClick={() => onTheme(t)}
-            style={{
-              display: "grid",
-              gap: 4,
-              justifyItems: "center",
-              padding: 0,
-              background: "transparent",
-              border: 0,
-              cursor: "pointer",
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                display: "block",
-                width: 46,
-                height: 58,
-                borderRadius: 10,
-                background: THEMES[t].bg,
-                border: `2px solid ${t === theme ? "var(--act)" : "var(--border-default)"}`,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "var(--ff-ui)",
-                fontSize: 11.5,
-                fontWeight: t === theme ? 700 : 500,
-                color: t === theme ? "var(--act)" : "var(--text-secondary)",
-              }}
-            >
-              {themeLabel(t, lang)}
-            </span>
-          </button>
-        ))}
-      </div>
+      <ColourPicker lang={lang} template={template} value={theme} onChange={onTheme} />
     </div>
 
     <div style={{ display: "grid", gap: 8 }}>
