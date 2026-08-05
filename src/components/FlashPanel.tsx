@@ -92,6 +92,7 @@ interface FlashResult {
   variation: number;
   text: string;
   copied?: boolean;
+  unsourcedRemoved?: number;
   saving?: boolean;
   publishing?: boolean;
   previewOpen?: boolean;
@@ -235,7 +236,10 @@ export default function FlashPanel() {
     return lang === "ar" ? s.ar : s.en;
   };
 
-  const callOnce = async (variation: number, accessToken: string): Promise<string> => {
+  const callOnce = async (
+    variation: number,
+    accessToken: string,
+  ): Promise<{ text: string; unsourcedRemoved: number }> => {
     const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
       method: "POST",
       headers: {
@@ -266,7 +270,10 @@ export default function FlashPanel() {
     });
     if (!resp.ok) throw new Error(`Generation failed (${resp.status})`);
     const data = await resp.json();
-    return data?.content || "";
+    return {
+      text: data?.content || "",
+      unsourcedRemoved: Number(data?.unsourced_numbers_removed) || 0,
+    };
   };
 
   const runGeneration = async () => {
@@ -281,9 +288,9 @@ export default function FlashPanel() {
         callOnce(3, session.access_token),
       ]);
       setResults([
-        { variation: 1, text: a },
-        { variation: 2, text: b },
-        { variation: 3, text: c },
+        { variation: 1, text: a.text, unsourcedRemoved: a.unsourcedRemoved },
+        { variation: 2, text: b.text, unsourcedRemoved: b.unsourcedRemoved },
+        { variation: 3, text: c.text, unsourcedRemoved: c.unsourcedRemoved },
       ]);
     } catch (e: any) {
       toast.error(e.message || "Generation failed");
@@ -324,7 +331,7 @@ export default function FlashPanel() {
           theme: selectedTheme || null,
           sector: sectorPayloadValue() || null,
         },
-        ...generationMetadata(displayText(r.text), { contentType: postType || "post" }),
+        ...generationMetadata(displayText(r.text), { contentType: postType || "post", unsourcedRemoved: r.unsourcedRemoved }),
       });
       if (error) throw error;
       toast.success(t.saved);
@@ -386,7 +393,7 @@ export default function FlashPanel() {
             theme: selectedTheme || null,
             sector: sectorPayloadValue() || null,
           },
-          ...generationMetadata(r.text, { contentType: postType || "post" }),
+          ...generationMetadata(r.text, { contentType: postType || "post", unsourcedRemoved: r.unsourcedRemoved }),
         })
         .select("id")
         .single();

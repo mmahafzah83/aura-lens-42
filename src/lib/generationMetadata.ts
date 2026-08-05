@@ -1,14 +1,36 @@
 /**
  * Generation metadata for every post Aura writes.
  *
- * The repetition machinery can only see patterns it was told about, so a
- * generated row must always carry how it opened, how it closed, the position
- * it took and what kind of piece it is. Nothing here is optional: when a
- * value can't be read from the text we write "unspecified" so coverage stays
- * auditable rather than silently null.
+ * Labels are chosen from FIXED vocabularies, never invented per generation,
+ * and they are read off the text that was actually produced — a post ending in
+ * a question is labelled `question`, always. Nothing here is optional: when a
+ * value cannot be read we fall back to the vocabulary's neutral member so the
+ * repetition machinery never sees a null.
  */
 
-export const UNSPECIFIED = "unspecified";
+export const HOOK_VOCAB = [
+  "scene",
+  "number",
+  "confession",
+  "claim",
+  "question",
+  "dialogue",
+  "contrast",
+] as const;
+export type HookStyle = (typeof HOOK_VOCAB)[number];
+
+export const ENDING_VOCAB = [
+  "hanging_line",
+  "equation",
+  "number",
+  "reframe",
+  "question",
+  "signature",
+] as const;
+export type EndingType = (typeof ENDING_VOCAB)[number];
+
+export const STANCE_VOCAB = ["asserts", "story", "teaches", "doubts", "analysis"] as const;
+export type Stance = (typeof STANCE_VOCAB)[number];
 
 const firstLine = (text: string) =>
   text.split("\n").map((l) => l.trim()).find(Boolean) ?? "";
@@ -18,46 +40,58 @@ const lastLine = (text: string) => {
   return lines[lines.length - 1] ?? "";
 };
 
+const hasDigit = (s: string) => /[0-9٠-٩۰-۹]/.test(s);
+
 /** How the piece opens. */
-export function hookStyleOf(text: string): string {
+export function hookStyleOf(text: string): HookStyle {
   const line = firstLine(text || "");
-  if (!line) return UNSPECIFIED;
+  if (!line) return "claim";
   if (/[?؟]\s*$/.test(line)) return "question";
-  if (/\d+\s*%|\d[\d,.]{2,}|\b\d+x\b/i.test(line)) return "statistic";
-  if (/^["“«]/.test(line)) return "quote";
-  if (/\b(I|my|we|our|أنا|كنت)\b/.test(line) && /\b(was|were|had|remember|كنت|حين)\b/i.test(line)) return "story";
-  if (/\b(most|everyone|nobody|stop|forget|wrong|myth|لا أحد|توقف)\b/i.test(line)) return "contrarian";
-  return "statement";
+  if (/^["“«"']/.test(line) || /["“«][^"”»]{8,}["”»]/.test(line)) return "dialogue";
+  if (hasDigit(line)) return "number";
+  if (/\b(i (?:was wrong|got it wrong|used to|never|failed|admit)|i'?ve been wrong|confession)\b/i.test(line) ||
+      /(أعترف|كنت مخطئاً|أخطأت)/.test(line)) return "confession";
+  if (/\b(most|everyone|nobody|no one|stop|forget|wrong|myth|but not|isn'?t)\b/i.test(line) ||
+      /(لا أحد|معظم|توقف|ليس)/.test(line)) return "contrast";
+  if (/\b(i|we|my|our)\b/i.test(line) && /\b(was|were|had|walked|sat|stood|remember|arrived)\b/i.test(line)) return "scene";
+  if (/(كنت|جلست|وقفت|حين|عندما)/.test(line)) return "scene";
+  return "claim";
 }
 
 /** How the piece closes. */
-export function endingTypeOf(text: string): string {
+export function endingTypeOf(text: string): EndingType {
   const line = lastLine(text || "");
-  if (!line) return UNSPECIFIED;
+  if (!line) return "hanging_line";
   if (/[?؟]\s*$/.test(line)) return "question";
-  if (/\b(comment|share|follow|dm|message me|let me know|tell me|شاركني|تابعني|علّق)\b/i.test(line)) return "call_to_action";
-  if (/\b(lesson|takeaway|that'?s why|in short|الخلاصة|الدرس)\b/i.test(line)) return "takeaway";
-  return "reflection";
+  if (/[=＝]|\s\+\s|\s×\s/.test(line)) return "equation";
+  if (/\b(comment|share|follow|dm|message me|let me know|tell me)\b/i.test(line) ||
+      /(شاركني|تابعني|علّق)/.test(line)) return "signature";
+  if (hasDigit(line)) return "number";
+  if (/\b(isn'?t about|not about|the real (?:question|problem)|that'?s not|it'?s not)\b/i.test(line) ||
+      /(ليست عن|المسألة ليست|السؤال الحقيقي)/.test(line)) return "reframe";
+  if (/\b(lesson|takeaway|in short|that'?s why)\b/i.test(line) || /(الخلاصة|الدرس)/.test(line)) return "equation";
+  return "hanging_line";
 }
 
 /** The position the piece takes. */
-export function stanceOf(text: string): string {
+export function stanceOf(text: string): Stance {
   const t = (text || "").toLowerCase();
-  if (!t.trim()) return UNSPECIFIED;
-  if (/\b(disagree|myth|wrong|isn'?t true|contrary|stop believing)\b/.test(t)) return "contrarian";
-  if (/\b(caution|risk|careful|beware|danger|warning)\b/.test(t)) return "cautionary";
-  if (/\b(should|must|recommend|do this|start|adopt)\b/.test(t)) return "advocacy";
-  if (/\b(i learned|i realised|i realized|my experience|when i)\b/.test(t)) return "personal";
-  return "analysis";
+  if (!t.trim()) return "analysis";
+  if (/\b(i learned|i realised|i realized|my experience|when i|years ago)\b/.test(t) || /(تجربتي|تعلمت|قبل سنوات)/.test(text)) return "story";
+  if (/\b(step \d|here'?s how|start by|do this|the framework|checklist)\b/.test(t) || /(الخطوة|إليك كيف|ابدأ بـ)/.test(text)) return "teaches";
+  if (/\b(caution|risk|careful|beware|danger|warning|i'?m not sure|maybe we)\b/.test(t) || /(تحذير|مخاطرة|احذر)/.test(text)) return "doubts";
+  if (/\b(the pattern|across|data|evidence|three reasons|because)\b/.test(t) || /(النمط|الأدلة|السبب)/.test(text)) return "analysis";
+  return "asserts";
 }
 
 export interface GenerationMetadata {
-  hook_style: string;
-  ending_type: string;
-  stance: string;
+  hook_style: HookStyle;
+  ending_type: EndingType;
+  stance: Stance;
   content_type: string;
   original_generated_text: string;
   source_signal_id: string | null;
+  unsourced_numbers_removed: number;
 }
 
 /**
@@ -66,7 +100,11 @@ export interface GenerationMetadata {
  */
 export function generationMetadata(
   originalText: string,
-  opts: { contentType?: string | null; signalId?: string | null } = {},
+  opts: {
+    contentType?: string | null;
+    signalId?: string | null;
+    unsourcedRemoved?: number | null;
+  } = {},
 ): GenerationMetadata {
   const text = String(originalText ?? "");
   return {
@@ -76,5 +114,6 @@ export function generationMetadata(
     content_type: (opts.contentType ?? "").trim() || "post",
     original_generated_text: text,
     source_signal_id: opts.signalId || null,
+    unsourced_numbers_removed: Number(opts.unsourcedRemoved) > 0 ? Number(opts.unsourcedRemoved) : 0,
   };
 }

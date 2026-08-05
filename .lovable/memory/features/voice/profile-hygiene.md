@@ -9,3 +9,14 @@ type: feature
 - Used by `voice-distill`, `_shared/voiceRefresh.ts`, and the re-runnable backfill `voice-profile-cleanup` (service-role/cron only).
 
 Generation metadata: every `linkedin_posts` insert with `source_type='aura_generated'` must spread `generationMetadata()` (`src/lib/generationMetadata.ts`, Deno copy `_shared/generationMeta.ts`), which always writes `hook_style`, `ending_type`, `stance`, `content_type`, `original_generated_text` and `source_signal_id`, using 'unspecified' rather than null. `original_generated_text` is written at generation time only — user edits change `post_text` only, never the original.
+
+## Style fields describe HOW, never WHAT (2026-08)
+- Style fields = `tone`, `preferred_structures`, `storytelling_patterns`, and `vocabulary_preferences.rhythm/.texture/.notes`.
+- `_shared/voiceStyle.ts` is the single gate: it strips figures, currency, percentages, dates and organisation names from every style field on write, on read in the generator, and in the backfill. `example_posts` is exempt.
+- Ending mandates are never stored in a style field. They are lifted into `authority_voice_profiles.allowed_endings` (text[]); the generator picks one per post. A profile with fewer than two detected mandates gets the whole ending vocabulary.
+- Controlled vocabularies (DB check constraints on `linkedin_posts`):
+  - hook_style: scene | number | confession | claim | question | dialogue | contrast
+  - ending_type: hanging_line | equation | number | reframe | question | signature
+  - stance: asserts | story | teaches | doubts | analysis
+- Provenance guard (`_shared/numberGuard.ts`): after generation, any percentage, currency amount, magnitude, date or large count not traceable to the driving evidence is removed and counted in `linkedin_posts.unsourced_numbers_removed`.
+- `dedupeRules` merges by concept first (hedging, jargon, CTA, promo, motivational, …) then token overlap, so twelve entries mean twelve distinct constraints.

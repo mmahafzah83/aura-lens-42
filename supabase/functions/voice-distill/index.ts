@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { detectLang, groupByLang } from "../_shared/lang.ts";
 import { dedupeRules, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "../_shared/voiceVocab.ts";
+import { sanitizeStyleFields } from "../_shared/voiceStyle.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,6 +42,10 @@ Return a JSON object with exactly these fields:
   "posts_analyzed": <number of posts analyzed>,
   "distilled_at": "<ISO timestamp>"
 }
+
+ABSTRACTION RULE (highest priority): describe patterns abstractly. Never quote a figure, an amount, a percentage, a date, or an organisation name in tone, preferred_structures, storytelling_patterns or vocabulary.sentence_rhythm. Write "uses a specific number as the turning point", never "uses 45 million riyal". Those fields describe HOW the writer writes, never WHAT is true.
+
+ENDING RULE: never state a fixed ending mandate (e.g. "ends with a provocative question"). Describe how the writer closes in general terms only; the ending is chosen per post elsewhere.
 
 Return ONLY valid JSON. No markdown, no explanation, no wrapper text.`;
 
@@ -557,7 +562,7 @@ Deno.serve(async (req) => {
       // MERGE into the (user_id, L) row.
       const { data: existing, error: existErr } = await supabase
         .from("authority_voice_profiles")
-        .select("id, tone, vocabulary_preferences")
+        .select("id, tone, vocabulary_preferences, allowed_endings")
         .eq("user_id", user_id)
         .eq("language", L)
         .maybeSingle();
@@ -602,11 +607,23 @@ Deno.serve(async (req) => {
         ? existingTone
         : (distillation.tone ?? "");
 
-      const writePayload = {
+      // Style fields describe HOW the member writes. Facts (figures, amounts,
+      // dates, organisations) and ending mandates are stripped out here, before
+      // anything is persisted, so no generation can ever read them back as truth.
+      const style = sanitizeStyleFields({
         tone: mergedTone,
         preferred_structures: distillation.preferred_structures ?? [],
         storytelling_patterns: distillation.storytelling_patterns ?? [],
         vocabulary_preferences: mergedVocabulary,
+        allowed_endings: (existing as any)?.allowed_endings ?? [],
+      });
+
+      const writePayload = {
+        tone: style.tone,
+        preferred_structures: style.preferred_structures,
+        storytelling_patterns: style.storytelling_patterns,
+        vocabulary_preferences: style.vocabulary_preferences,
+        allowed_endings: style.allowed_endings,
         updated_at: new Date().toISOString(),
       };
 

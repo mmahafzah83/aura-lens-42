@@ -11,6 +11,7 @@
  */
 import { scriptOf } from "./linkedinPost.ts";
 import { dedupeRules, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "./voiceVocab.ts";
+import { sanitizeStyleText } from "./voiceStyle.ts";
 
 const OWN_SOURCES = ["linkedin_export", "linkedin_own", "aura_generated"];
 const MAX_EXAMPLES = EXAMPLE_CAP;
@@ -44,39 +45,44 @@ function sentencesOf(text: string): string[] {
     .filter((s) => s.length > 1);
 }
 
-/** A plain-English description of how this member actually writes. */
+/**
+ * A plain-English description of how this member actually writes.
+ *
+ * Deliberately qualitative: a style field must never carry a figure, because
+ * the generator has been caught reproducing style metadata as fact.
+ */
 function describeRhythm(posts: PostRow[], lang: string): string {
   const texts = posts.map((p) => p.post_text!).filter(Boolean);
   if (!texts.length) return "";
   const sentences = texts.flatMap(sentencesOf);
   const words = sentences.map((s) => s.split(/\s+/).length);
-  const avg = Math.round(words.reduce((a, b) => a + b, 0) / Math.max(1, words.length));
-  const shortShare = Math.round(
-    (words.filter((w) => w <= 8).length / Math.max(1, words.length)) * 100,
-  );
+  const avg = words.reduce((a, b) => a + b, 0) / Math.max(1, words.length);
+  const shortShare = words.filter((w) => w <= 8).length / Math.max(1, words.length);
   const paras = texts.flatMap((t) => t.split(/\n{2,}/));
-  const oneLineShare = Math.round(
-    (paras.filter((p) => !p.includes("\n") && p.trim().length > 0).length /
-      Math.max(1, paras.length)) * 100,
-  );
+  const oneLineShare =
+    paras.filter((p) => !p.includes("\n") && p.trim().length > 0).length / Math.max(1, paras.length);
   const openers = texts.map((t) => sentencesOf(t)[0] ?? "");
-  const questionOpeners = Math.round(
-    (openers.filter((o) => /[?؟]\s*$/.test(o)).length / Math.max(1, openers.length)) * 100,
-  );
+  const questionOpeners = openers.filter((o) => /[?؟]\s*$/.test(o)).length / Math.max(1, openers.length);
   const markers = ["📍", "◆", "↲", "⚠️", "→", "—"].filter((m) =>
     texts.filter((t) => t.includes(m)).length >= 2
   );
 
+  const length = avg <= 10 ? "clipped" : avg <= 16 ? "medium-length" : "long";
+  const shortWord = shortShare >= 0.6 ? "most" : shortShare >= 0.3 ? "many" : "few";
+  const paraWord = oneLineShare >= 0.6 ? "Most" : oneLineShare >= 0.3 ? "Many" : "Few";
+
   const parts = [
-    `Average sentence ${avg} words; ${shortShare}% of sentences are eight words or fewer.`,
-    `${oneLineShare}% of paragraphs are a single line.`,
-    questionOpeners < 15
+    `Sentences are ${length}; ${shortWord} of them are very short.`,
+    `${paraWord} paragraphs are a single line.`,
+    questionOpeners < 0.15
       ? "Almost never opens with a question."
-      : `Opens with a question in ${questionOpeners}% of posts.`,
+      : questionOpeners < 0.4
+        ? "Sometimes opens with a question."
+        : "Often opens with a question.",
   ];
   if (markers.length) parts.push(`Recurring markers: ${markers.join(" ")}.`);
-  parts.push(`Observed from ${texts.length} of the member's own ${lang} posts.`);
-  return parts.join(" ");
+  parts.push(`Observed from the member's own ${lang} posts.`);
+  return sanitizeStyleText(parts.join(" "));
 }
 
 /**

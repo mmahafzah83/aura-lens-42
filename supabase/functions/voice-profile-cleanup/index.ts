@@ -10,6 +10,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "../_shared/voiceVocab.ts";
+import { sanitizeStyleFields } from "../_shared/voiceStyle.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
 
   const { data: rows, error } = await admin
     .from("authority_voice_profiles")
-    .select("id, vocabulary_preferences, example_posts");
+    .select("id, tone, preferred_structures, storytelling_patterns, vocabulary_preferences, example_posts, allowed_endings");
   if (error) return json({ error: "load_failed", details: error.message }, 500);
 
   const summary = { profiles: (rows ?? []).length, updated: 0, failed: 0, examples_dropped: 0, rules_dropped: 0 };
@@ -45,7 +46,10 @@ Deno.serve(async (req) => {
       (Array.isArray((row as any).vocabulary_preferences?.use) ? (row as any).vocabulary_preferences.use.length : 0);
     const beforeExamples = Array.isArray((row as any).example_posts) ? (row as any).example_posts.length : 0;
 
-    const { vocabulary, promotedExamples } = sanitizeVocabulary((row as any).vocabulary_preferences);
+    // Style fields describe HOW the member writes: facts out, ending mandates
+    // lifted into allowed_endings.
+    const style = sanitizeStyleFields(row as any);
+    const { vocabulary, promotedExamples } = sanitizeVocabulary(style.vocabulary_preferences);
     const examples = normalizeExamples(
       [...(Array.isArray((row as any).example_posts) ? (row as any).example_posts : []), ...promotedExamples],
       EXAMPLE_CAP,
@@ -54,6 +58,10 @@ Deno.serve(async (req) => {
     const { error: updErr } = await admin
       .from("authority_voice_profiles")
       .update({
+        tone: style.tone,
+        preferred_structures: style.preferred_structures,
+        storytelling_patterns: style.storytelling_patterns,
+        allowed_endings: style.allowed_endings,
         vocabulary_preferences: vocabulary,
         example_posts: examples,
         updated_at: new Date().toISOString(),
