@@ -1000,6 +1000,16 @@ const handleDeleteAccount = async () => {
           <ReportDocument data={report} />
         </div>
       ) : null}
+
+      {/* Editing a field re-reads the profile, so the read-only summary
+          above never disagrees with what was just saved. */}
+      <EditProfileModal
+        open={!!editField}
+        focusField={editField ?? undefined}
+        userId={authUser?.id ?? null}
+        onClose={() => setEditField(null)}
+        onSaved={() => { setEditField(null); void loadProfile(); }}
+      />
     </div>
   );
 }
