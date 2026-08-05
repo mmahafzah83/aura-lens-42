@@ -66,6 +66,12 @@ function pairsFor(name: string, t: Record<string, unknown>): Pair[] {
   if (isHex(t.accent) && isHex(t.accentInk)) {
     out.push({ theme: name, a: "accent", b: "accentInk", av: t.accent, bv: t.accentInk });
   }
+  // (invert, accent) — the accent word printed ON the inversion ground. A
+  // declared pair for any family that alternates a dark slide, and the one
+  // pairing the GROUNDS/INKS loop cannot see, because accent is neither.
+  if (isHex(t.invert) && isHex(t.accent)) {
+    out.push({ theme: name, a: "invert", b: "accent", av: t.invert, bv: t.accent });
+  }
   for (const g of GROUNDS) {
     const gv = t[g];
     if (!isHex(gv)) continue;
