@@ -57,7 +57,7 @@ const hasDigit = (s: string) => /[0-9٠-٩۰-۹]/.test(s);
 export function hookStyleOf(text: string): HookStyle {
   const line = firstLine(text || "");
   if (!line) return "claim";
-  // Text that ends in a question mark is a question ending. No exceptions.
+  // An opening line that ends in a question mark is a question hook. No exceptions.
   if (/[?؟]$/.test(line)) return "question";
   if (/^["“«"']/.test(line) || /["“«][^"”»]{8,}["”»]/.test(line)) return "dialogue";
   if (hasDigit(line)) return "number";
