@@ -277,8 +277,23 @@ serve(async (req) => {
       .in("user_id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]);
     const alreadySent = new Set((already || []).map((r) => r.user_id as string));
 
+    // Opt-out gate: overnight_reading_enabled defaults to true; only an explicit
+    // false silences a member. No lifecycle rows are written for those skipped.
+    const optedOut = new Set<string>();
+    if (userIds.length) {
+      const { data: prefRows } = await admin
+        .from("diagnostic_profiles")
+        .select("user_id, notification_prefs")
+        .in("user_id", userIds);
+      for (const r of (prefRows || []) as Array<{ user_id: string; notification_prefs: Record<string, unknown> | null }>) {
+        if (r?.notification_prefs?.overnight_reading_enabled === false) optedOut.add(r.user_id);
+      }
+    }
+
     for (const uid of userIds) {
       try {
+        if (optedOut.has(uid)) { results.push({ user_id: uid, outcome: "skipped_opted_out" }); continue; }
+
         const to = emails.get(uid);
         if (!to) { results.push({ user_id: uid, outcome: "skipped_no_email_or_test" }); continue; }
 
