@@ -2211,14 +2211,8 @@ export default function StudioPanel({
         {step === 3 && subLink("build", T.subBuild[lang])}
         {step === 3 && subLink("look", T.subLook[lang])}
         <span style={{ flex: 1 }} />
-        {/* In flight: no tick, because nothing has finished. */}
-        <span
-          role="status"
-          aria-live="polite"
-          style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--machine-text)" }}
-        >
-          {busyMessage ? `… ${busyMessage}` : ""}
-        </span>
+        {/* In flight state lives in the BusyBar only — message, bar, percent
+            and countdown in one place. No mirrored header line. */}
         <span
           role="status"
           aria-live="polite"
