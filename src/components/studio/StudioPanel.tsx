@@ -238,6 +238,8 @@ export default function StudioPanel({
   const genRunId = useRef(0);
   /** The exact text Aura last generated. Anything else is the member's own. */
   const generatedTextRef = useRef<string | null>(null);
+  // Figures the provenance guard removed from the last generation.
+  const unsourcedRemovedRef = useRef<number>(0);
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
   /**
