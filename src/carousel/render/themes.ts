@@ -36,6 +36,15 @@ export interface Theme {
    */
   invert?: string;
   invertFg?: string;
+  /**
+   * THE ACCENT ROLE ON THE INVERSION GROUND. On a family that alternates, the
+   * colour that plays "accent" on the alternate slide is not always the same
+   * colour as `accent` — salford's alternate ground IS the mint, so the accent
+   * role there falls to the navy; concept's alternate ground is light, so the
+   * acid is replaced by the deep violet ink. Declared rather than assumed,
+   * because the contrast gate tests exactly the pair the renderer draws.
+   */
+  invertAccent?: string;
 }
 
 const INSTRUMENT_THEMES = {
@@ -218,11 +227,113 @@ const GRIDPAPER_THEMES = {
   },
 } satisfies Record<string, Theme>;
 
+/* ------------------------------------------------------------------ */
+/* salford — flat navy and mint, ALTERNATING                            */
+/*                                                                      */
+/* Widened from the `salford_navy` stub below. Derived fields follow    */
+/* the INSTRUMENT `midnight` precedent for a dark ground: bgSolid IS    */
+/* the declared field, panel/rule are low-alpha white, alert is         */
+/* instrument's red (the one red already proven on a dark ground).      */
+/* `accentLight` repeats the accent, the `paper` precedent, rather than */
+/* inventing a tint. The mint is the inversion ground, so the accent    */
+/* ROLE on a mint slide is the navy.                                    */
+/* ------------------------------------------------------------------ */
+
+const SALFORD_THEMES = {
+  salford_navy: {
+    bg: "#152436",
+    bgSolid: "#152436",
+    fg: "#FFFFFF",
+    dim: "#8FA3B8",
+    head: "#FFFFFF",
+    accent: "#5CE8A4",
+    accentLight: "#5CE8A4",
+    accentInk: "#152436",
+    alert: "#E8674F",
+    neutral: "rgba(255,255,255,.16)",
+    panel: "rgba(255,255,255,.06)",
+    rule: "rgba(255,255,255,.18)",
+    avA: "#5CE8A4",
+    avB: "#5CE8A4",
+    avInk: "#152436",
+    invert: "#5CE8A4",
+    invertFg: "#152436",
+    invertAccent: "#152436",
+  },
+} satisfies Record<string, Theme>;
+
+/* ------------------------------------------------------------------ */
+/* blueprint — near-black ground, hairline grid, violet                 */
+/*                                                                      */
+/* Widened from `blueprint_violet`. No inversion: every slide is the    */
+/* same dark field. The violet is TEXT on black or a fill carrying the  */
+/* dark ink — it is never a ground under white text, so no white-on-    */
+/* violet pair is declared, because none is drawn.                      */
+/* ------------------------------------------------------------------ */
+
+const BLUEPRINT_THEMES = {
+  blueprint_violet: {
+    bg: "#161616",
+    bgSolid: "#161616",
+    fg: "#FFFFFF",
+    dim: "#B9B9C4",
+    head: "#FFFFFF",
+    accent: "#8A7BFF",
+    accentLight: "#8A7BFF",
+    accentInk: "#161616",
+    alert: "#E8674F",
+    neutral: "rgba(255,255,255,.14)",
+    panel: "rgba(255,255,255,.05)",
+    rule: "rgba(255,255,255,.16)",
+    avA: "#8A7BFF",
+    avB: "#8A7BFF",
+    avInk: "#161616",
+  },
+} satisfies Record<string, Theme>;
+
+/* ------------------------------------------------------------------ */
+/* concept — the violet gradient, with LIGHT interiors                  */
+/*                                                                      */
+/* Widened from `concept_violet`. `bg` is the declared three-stop ramp; */
+/* `bgSolid` is its middle stop, because JPEG has no alpha and the PDF  */
+/* exporter must composite onto a real colour. The light interior is    */
+/* the inversion ground — white, a colour already declared on this      */
+/* palette as `fg`, carrying the deep violet as ink. The acid never     */
+/* prints on the light ground, so `invertAccent` is the violet.         */
+/* g3 is #6F58E0, the contrast-corrected stop. Never #7B65E8.           */
+/* ------------------------------------------------------------------ */
+
+const CONCEPT_THEMES = {
+  concept_violet: {
+    bg: "linear-gradient(158deg,#1A1040 0%,#4B3AA8 52%,#6F58E0 100%)",
+    bgSolid: "#4B3AA8",
+    fg: "#FFFFFF",
+    dim: "rgba(255,255,255,.74)",
+    head: "#FFFFFF",
+    accent: "#B8F04A",
+    accentLight: "#B8F04A",
+    accentInk: "#1A1040",
+    alert: "#E8674F",
+    neutral: "rgba(255,255,255,.20)",
+    panel: "rgba(255,255,255,.10)",
+    rule: "rgba(255,255,255,.30)",
+    avA: "#B8F04A",
+    avB: "#B8F04A",
+    avInk: "#1A1040",
+    invert: "#FFFFFF",
+    invertFg: "#1A1040",
+    invertAccent: "#1A1040",
+  },
+} satisfies Record<string, Theme>;
+
 export const THEMES = {
   ...INSTRUMENT_THEMES,
   ...HIGHLIGHTER_THEMES,
   ...CRUMPLE_THEMES,
   ...GRIDPAPER_THEMES,
+  ...SALFORD_THEMES,
+  ...BLUEPRINT_THEMES,
+  ...CONCEPT_THEMES,
 };
 
 export type ThemeName = keyof typeof THEMES;
@@ -260,6 +371,9 @@ export const templateThemes: Record<string, string[]> = {
   highlighter: ["highlighter_orange", "highlighter_green"],
   crumple: ["crumple_amber"],
   gridpaper: ["gridpaper_yellow"],
+  salford: ["salford_navy"],
+  blueprint: ["blueprint_violet"],
+  concept: ["concept_violet"],
 };
 
 /* ------------------------------------------------------------------ */

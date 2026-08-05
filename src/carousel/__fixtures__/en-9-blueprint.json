@@ -1,0 +1,397 @@
+{
+  "deck_id": "fx-en-9-blueprint",
+  "signal_id": "sig-grid-outages-2026",
+  "primary_lang": "en",
+  "dir": "ltr",
+  "numerals": "western",
+  "theme": "blueprint_violet",
+  "template": "blueprint",
+  "length": 10,
+  "profile": {
+    "name": {
+      "runs": [
+        {
+          "t": "Tomas Reid",
+          "lang": "en"
+        }
+      ]
+    },
+    "title": {
+      "runs": [
+        {
+          "t": "Grid operations",
+          "lang": "en"
+        }
+      ]
+    },
+    "handle": "tomas-reid",
+    "avatar_url": null,
+    "initials": "TR"
+  },
+  "slides": [
+    {
+      "index": 0,
+      "archetype": "cover_hero",
+      "slots": {
+        "chip": {
+          "runs": [
+            {
+              "t": "Grid outages",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "The outage",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "began at 4pm",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ],
+        "subline": {
+          "runs": [
+            {
+              "t": "We rebuilt the substation in 2025 and the outages got longer.",
+              "lang": "en"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "index": 1,
+      "archetype": "frame",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "The transformer was never the constraint",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Two faults",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ],
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "A breaker resets in 40 seconds. A crew reaches a rural pole in 90 minutes.",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "I logged both for a season before I believed the second one.",
+                "lang": "en"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "archetype": "evidence",
+      "slots": {
+        "stat_value": "90 min",
+        "stat_label": {
+          "runs": [
+            {
+              "t": "average crew travel to a rural fault",
+              "lang": "en"
+            }
+          ]
+        },
+        "source": {
+          "runs": [
+            {
+              "t": "Dispatch logs, Q1 2026",
+              "lang": "en"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "index": 3,
+      "archetype": "benchmark",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "Where the minutes go",
+              "lang": "en"
+            }
+          ]
+        },
+        "media": {
+          "kind": "chart",
+          "placement": "lower",
+          "chart": {
+            "type": "bars",
+            "series": [
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "Travel",
+                      "lang": "en"
+                    }
+                  ]
+                },
+                "value": 90,
+                "unit": " min",
+                "emphasis": "alert"
+              },
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "Switching",
+                      "lang": "en"
+                    }
+                  ]
+                },
+                "value": 22,
+                "unit": " min",
+                "emphasis": "accent"
+              },
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "Repair",
+                      "lang": "en"
+                    }
+                  ]
+                },
+                "value": 18,
+                "unit": " min",
+                "emphasis": "none"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "index": 4,
+      "archetype": "quote",
+      "slots": {
+        "quote": {
+          "runs": [
+            {
+              "t": "We hardened the substation and paid for it on the road.",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Said plainly",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "archetype": "steps",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "What I would check first",
+              "lang": "en"
+            }
+          ]
+        },
+        "checklist": [
+          {
+            "runs": [
+              {
+                "t": "Time the drive. Not the breaker, and not the transformer.",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "Split faults by district. The north is a different grid.",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "Price one hour of dark. Put that figure on the wall.",
+                "lang": "en"
+              }
+            ]
+          }
+        ],
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Three checks",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 6,
+      "archetype": "definition",
+      "slots": {
+        "term": {
+          "runs": [
+            {
+              "t": "Travel time",
+              "lang": "en"
+            }
+          ]
+        },
+        "term_def": {
+          "runs": [
+            {
+              "t": "The minutes between a crew being dispatched and reaching the pole.",
+              "lang": "en"
+            }
+          ]
+        },
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "Nobody on the substation team owns this number, which is why it drifted to 90 minutes.",
+                "lang": "en"
+              }
+            ]
+          }
+        ],
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "One number",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 7,
+      "archetype": "cover_stat",
+      "slots": {
+        "stat_value": "64%",
+        "stat_label": {
+          "runs": [
+            {
+              "t": "of restoration time is spent driving",
+              "lang": "en"
+            }
+          ]
+        },
+        "source": {
+          "runs": [
+            {
+              "t": "Dispatch logs, Q1 2026",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "of the dark",
+                "lang": "en"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 8,
+      "archetype": "close",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "If this was useful",
+              "lang": "en"
+            }
+          ]
+        },
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "I write about grid operations most weeks.",
+                "lang": "en"
+              }
+            ]
+          }
+        ],
+        "cta_pill": {
+          "runs": [
+            {
+              "t": "Follow for the next one",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Your move",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    }
+  ]
+}

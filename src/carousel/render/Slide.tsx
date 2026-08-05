@@ -32,6 +32,9 @@ import { publishMeasuredDrops } from "./measuredDrops";
 import HighlighterSlide from "./Highlighter";
 import CrumpleSlide from "./Crumple";
 import GridpaperSlide from "./Gridpaper";
+import SalfordSlide from "./Salford";
+import BlueprintSlide from "./Blueprint";
+import ConceptSlide from "./Concept";
 
 /* ------------------------------------------------------------------ */
 /* Canvas and type scale — all of it now DATA, read from the template  */
@@ -1003,6 +1006,9 @@ const TEMPLATE_RENDERERS: Record<string, React.FC<SlideProps>> = {
   highlighter: HighlighterSlide,
   crumple: CrumpleSlide,
   gridpaper: GridpaperSlide,
+  salford: SalfordSlide,
+  blueprint: BlueprintSlide,
+  concept: ConceptSlide,
 };
 
 export function Slide(props: SlideProps) {

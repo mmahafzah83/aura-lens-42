@@ -1,0 +1,397 @@
+{
+  "deck_id": "fx-en-9-salford",
+  "signal_id": "sig-theatre-lists-2026",
+  "primary_lang": "en",
+  "dir": "ltr",
+  "numerals": "western",
+  "theme": "salford_navy",
+  "template": "salford",
+  "length": 10,
+  "profile": {
+    "name": {
+      "runs": [
+        {
+          "t": "Imogen Blake",
+          "lang": "en"
+        }
+      ]
+    },
+    "title": {
+      "runs": [
+        {
+          "t": "Theatre scheduling",
+          "lang": "en"
+        }
+      ]
+    },
+    "handle": "imogen-blake",
+    "avatar_url": null,
+    "initials": "IB"
+  },
+  "slides": [
+    {
+      "index": 0,
+      "archetype": "cover_hero",
+      "slots": {
+        "chip": {
+          "runs": [
+            {
+              "t": "Theatre lists",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "The theatre",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "sat empty",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ],
+        "subline": {
+          "runs": [
+            {
+              "t": "We added a surgeon in 2025 and the waiting list grew.",
+              "lang": "en"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "index": 1,
+      "archetype": "frame",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "Staffing was never the constraint",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Two lists",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ],
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "A theatre turns over a case in 25 minutes. A bed is freed in four hours.",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "I timed both for a month before I believed the second one.",
+                "lang": "en"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "archetype": "evidence",
+      "slots": {
+        "stat_value": "4 hrs",
+        "stat_label": {
+          "runs": [
+            {
+              "t": "average bed release after a case",
+              "lang": "en"
+            }
+          ]
+        },
+        "source": {
+          "runs": [
+            {
+              "t": "Theatre logs, Q1 2026",
+              "lang": "en"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "index": 3,
+      "archetype": "benchmark",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "Where the hours go",
+              "lang": "en"
+            }
+          ]
+        },
+        "media": {
+          "kind": "chart",
+          "placement": "lower",
+          "chart": {
+            "type": "bars",
+            "series": [
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "Recovery bed",
+                      "lang": "en"
+                    }
+                  ]
+                },
+                "value": 4,
+                "unit": " hr",
+                "emphasis": "alert"
+              },
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "Cleaning",
+                      "lang": "en"
+                    }
+                  ]
+                },
+                "value": 1,
+                "unit": " hr",
+                "emphasis": "accent"
+              },
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "Anaesthetic",
+                      "lang": "en"
+                    }
+                  ]
+                },
+                "value": 1,
+                "unit": " hr",
+                "emphasis": "none"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "index": 4,
+      "archetype": "quote",
+      "slots": {
+        "quote": {
+          "runs": [
+            {
+              "t": "We bought a surgeon and paid for it on the ward.",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Said plainly",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "archetype": "steps",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "What I would check first",
+              "lang": "en"
+            }
+          ]
+        },
+        "checklist": [
+          {
+            "runs": [
+              {
+                "t": "Time the ward. Not the theatre, and not the surgeon.",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "Split the list by day. Mondays are a different hospital.",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "Price one idle hour. Put that figure on the wall.",
+                "lang": "en"
+              }
+            ]
+          }
+        ],
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Three checks",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 6,
+      "archetype": "definition",
+      "slots": {
+        "term": {
+          "runs": [
+            {
+              "t": "Bed release",
+              "lang": "en"
+            }
+          ]
+        },
+        "term_def": {
+          "runs": [
+            {
+              "t": "The hours between a case ending and the bed taking the next patient.",
+              "lang": "en"
+            }
+          ]
+        },
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "Nobody on the theatre team owns this number, which is why it drifted to four hours.",
+                "lang": "en"
+              }
+            ]
+          }
+        ],
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "One number",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 7,
+      "archetype": "cover_stat",
+      "slots": {
+        "stat_value": "58%",
+        "stat_label": {
+          "runs": [
+            {
+              "t": "of theatre idle time is waiting for a bed",
+              "lang": "en"
+            }
+          ]
+        },
+        "source": {
+          "runs": [
+            {
+              "t": "Theatre logs, Q1 2026",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "of the wait",
+                "lang": "en"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 8,
+      "archetype": "close",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "If this was useful",
+              "lang": "en"
+            }
+          ]
+        },
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "I write about theatre scheduling most weeks.",
+                "lang": "en"
+              }
+            ]
+          }
+        ],
+        "cta_pill": {
+          "runs": [
+            {
+              "t": "Follow for the next one",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Your move",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    }
+  ]
+}

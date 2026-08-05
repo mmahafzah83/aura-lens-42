@@ -250,6 +250,12 @@ export const TEMPLATE_BUDGET_SCALE: Record<string, number> = {
   // the same narrow column, so they wrap on the same terms.
   crumple: 0.85,
   gridpaper: 0.85,
+  // salford (Montserrat 800, caps), blueprint (Poppins 700) and concept
+  // (Inter 700) all set their covers heavy on the same narrow column. Same
+  // wrap, same scale — this is a property of the drawing, not the family.
+  salford: 0.85,
+  blueprint: 0.85,
+  concept: 0.85,
 };
 
 /** The hero-line budget for a language, scaled to the template doing the drawing. */
