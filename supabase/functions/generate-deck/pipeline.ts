@@ -5,6 +5,8 @@
 import type { DeckIR } from "./deckIR.ts";
 import { type ComposeResult } from "./compose.ts";
 import { REQUIRED_SLOTS, OPTIONAL_SLOTS } from "./slots.ts";
+// ONE definition of handle parsing, shared with the identity resolver.
+import { bareHandle as sharedBareHandle } from "../_shared/identity.ts";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
@@ -188,11 +190,9 @@ export function voiceBlock(
   ].join("\n");
 }
 
+/** Thin wrapper over the shared parser: "" instead of null, for `||` chains. */
 export function bareHandle(raw: unknown): string {
-  const s = String(raw ?? "").trim();
-  if (!s) return "";
-  const m = s.match(/(?:linkedin\.com\/)?(?:in\/)?([A-Za-z0-9-]+)\/?$/);
-  return m ? m[1] : "";
+  return sharedBareHandle(raw == null ? null : String(raw)) ?? "";
 }
 
 /**
