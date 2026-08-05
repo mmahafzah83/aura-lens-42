@@ -1618,7 +1618,10 @@ serve(withObserve("fetch-industry-trends", async (req) => {
 
     // ── Phase B: self-invoked enrichment ──
     if (phase === "enrich") {
-      const isServiceCall = authHeader.includes(serviceKey);
+      // Strict equality on the extracted bearer token (matches compute-imprint).
+      const apiKeyHeader = req.headers.get("apikey") ?? "";
+      const bearer = authHeader.replace("Bearer ", "");
+      const isServiceCall = (!!bearer && bearer === serviceKey) || apiKeyHeader === serviceKey;
       let userId = bodyEnrichUserId;
       if (!isServiceCall) {
         const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
