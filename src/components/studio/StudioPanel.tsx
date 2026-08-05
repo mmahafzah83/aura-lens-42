@@ -850,6 +850,25 @@ export default function StudioPanel({
       if (!alreadyOpened(`draft:${d.id}`)) {
         void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
       }
+      // Slides that were made before are still this piece's slides.
+      if (d._source === "linkedin_posts") {
+        try {
+          const { data: row } = await supabase
+            .from("linkedin_posts")
+            .select("source_metadata")
+            .eq("id", d.id)
+            .maybeSingle();
+          const saved = ((row as any)?.source_metadata as Record<string, unknown> | null)?.deck;
+          if (saved) {
+            const parsed = DeckIRSchema.safeParse(saved);
+            if (parsed.success) {
+              setDeck(parsed.data);
+              setTheme(parsed.data.theme as ThemeName);
+              if (typeof parsed.data.template === "string") setTemplate(parsed.data.template);
+            }
+          }
+        } catch { /* a missing deck is simply no deck */ }
+      }
     },
     [lang, persistNow],
   );
