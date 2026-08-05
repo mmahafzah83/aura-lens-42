@@ -625,7 +625,7 @@ serve(async (req) => {
       : "unknown";
     // A failure that leaves no trace is a failure we cannot fix. Best effort,
     // but on the error path it is actually reached.
-    if (dbRef) {
+    if (dbRef && userRef) {
       await logEvent(dbRef, {
         user_id: userRef,
         deck_id: attempt.deck_id,
