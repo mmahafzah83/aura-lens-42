@@ -146,7 +146,24 @@ export default function WhatsAppPairingCard({ userId }: { userId: string | null 
     return (
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Not available yet.</div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Not available yet.</div>
+            <span
+              style={{
+                background: "var(--paper-2)",
+                border: "0.5px solid var(--rule)",
+                color: "var(--ink-3)",
+                fontSize: 10,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                borderRadius: 999,
+                padding: "2px 8px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Coming soon
+            </span>
+          </div>
           <div className="mt-1 text-sm" style={mutedText}>
             The Aura WhatsApp number isn't live yet. This turns on the moment it is.
           </div>

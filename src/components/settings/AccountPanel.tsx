@@ -310,17 +310,9 @@ export default function AccountPanel({ userId, email }: Props) {
                     Set or change the password you use to sign in.
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setPasswordOpen(true)}
-                  style={{
-                    background: "transparent", border: "0.5px solid var(--rule)", borderRadius: 8,
-                    paddingBlock: 8, paddingInline: 14, fontSize: 13, fontWeight: 500,
-                    color: "var(--ink)", cursor: "pointer",
-                  }}
-                >
+                <Button variant="outline" size="sm" onClick={() => setPasswordOpen(true)}>
                   Change password
-                </button>
+                </Button>
               </div>
 
               <div>
@@ -352,19 +344,15 @@ export default function AccountPanel({ userId, email }: Props) {
                     </div>
                   )}
                 </div>
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleExport}
+                  loading={exporting}
                   disabled={exporting}
-                  style={{
-                    background: "transparent", border: "0.5px solid var(--rule)", borderRadius: 8,
-                    paddingBlock: 8, paddingInline: 14, fontSize: 13, fontWeight: 500,
-                    color: "var(--ink)", cursor: exporting ? "default" : "pointer",
-                    whiteSpace: "nowrap",
-                  }}
                 >
                   {exporting ? "Preparing…" : "Export my data"}
-                </button>
+                </Button>
               </div>
             </div>
           )}
