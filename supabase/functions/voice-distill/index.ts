@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { detectLang, groupByLang } from "../_shared/lang.ts";
+import { dedupeRules, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "../_shared/voiceVocab.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -239,7 +240,7 @@ Deno.serve(async (req) => {
     // /teach path so the LinkedIn re-distill branch can't bloat example_posts.
     const storeSamples = useAdHoc && body?.store_samples === true;
     if (storeSamples) {
-      const SAMPLE_CAP = 20;
+      const SAMPLE_CAP = EXAMPLE_CAP;
       for (const L of ["en", "ar"] as const) {
         const langPosts = grouped[L];
         if (langPosts.length === 0) continue;
@@ -258,14 +259,8 @@ Deno.serve(async (req) => {
             source: "teach",
             added_at: new Date().toISOString(),
           }));
-          // Keep the 20 most recent by added_at (oldest dropped).
-          const combined = [...existingSamples, ...newEntries];
-          const sorted = combined.slice().sort((a: any, b: any) => {
-            const ta = Date.parse(a?.added_at ?? a?.updated_at ?? "") || 0;
-            const tb = Date.parse(b?.added_at ?? b?.updated_at ?? "") || 0;
-            return ta - tb; // oldest first
-          });
-          const trimmed = sorted.slice(Math.max(0, sorted.length - SAMPLE_CAP));
+          // One shape, no junk, the most recent kept (oldest dropped).
+          const trimmed = normalizeExamples([...existingSamples, ...newEntries], SAMPLE_CAP);
           if (rowL) {
             const { error: upErr } = await supabase
               .from("authority_voice_profiles")
