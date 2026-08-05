@@ -1194,17 +1194,26 @@ async function runPhaseA(opts: {
   const candidateIds = (inserted ?? []).map((r: any) => r.id);
   console.log(`[phaseA] queued ${candidateIds.length} placeholders`);
 
-  // Fire-and-forget self-invoke to Phase B (no await on the body).
+  // Self-invoke Phase B. MUST be wrapped in EdgeRuntime.waitUntil — without it
+  // the isolate is torn down at response time and the request never leaves,
+  // stranding placeholders in status='enriching' until the TTL sweep deletes them.
   const enrichUrl = `${supabaseUrl}/functions/v1/fetch-industry-trends`;
-  fetch(enrichUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${serviceKey}`,
-      "Content-Type": "application/json",
-      apikey: serviceKey,
-    },
-    body: JSON.stringify({ phase: "enrich", user_id: userId, candidate_ids: candidateIds, mode }),
-  }).catch(e => console.error("[phaseA] self-invoke fetch error (non-fatal)", e));
+  // @ts-ignore EdgeRuntime.waitUntil
+  EdgeRuntime.waitUntil((async () => {
+    try {
+      await fetch(enrichUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          apikey: serviceKey,
+        },
+        body: JSON.stringify({ phase: "enrich", user_id: userId, candidate_ids: candidateIds, mode }),
+      });
+    } catch (e) {
+      console.error("[phaseA] self-invoke fetch error (non-fatal)", (e as Error).message);
+    }
+  })());
 
   return { status: "enriching", discovered: candidates.length, queued: candidateIds.length };
 }
