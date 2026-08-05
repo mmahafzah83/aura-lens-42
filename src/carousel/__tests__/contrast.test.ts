@@ -36,8 +36,8 @@ function isHex(v: unknown): v is string {
   return typeof v === "string" && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(v.trim());
 }
 
-const GROUNDS = ["paper", "field", "dark", "g1", "g2", "g3", "bgSolid"] as const;
-const INKS = ["ink", "fg"] as const;
+const GROUNDS = ["paper", "field", "dark", "g1", "g2", "g3", "bgSolid", "invert"] as const;
+const INKS = ["ink", "fg", "invertFg"] as const;
 
 /**
  * LEGACY EXEMPTION — closed list, do not extend.
