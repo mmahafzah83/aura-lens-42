@@ -32,8 +32,15 @@ export function numericTokens(text: string): Set<string> {
 }
 
 /** Claim-shaped numeric mentions: the figure plus the unit attached to it. */
-const CLAIM_RE =
-  /(?:[$€£¥]\s*)?[0-9٠-٩۰-۹][0-9٠-٩۰-۹,.]*\s*(?:%|٪|percent|per cent|بالمئة|في المئة|بالمائة|million|billion|trillion|thousand|مليون|مليار|تريليون|ألف|x|×|أضعاف|SAR|AED|USD|EUR|GBP|riyals?|ريال|dollars?|دولار|درهم|يورو)?/gi;
+const UNIT =
+  "(?:%|٪|percent|per cent|بالمئة|في المئة|بالمائة|million|billion|trillion|thousand|مليون|مليار|تريليون|ألف|x|×|أضعاف|SAR|AED|USD|EUR|GBP|riyals?|ريال|dollars?|دولار|درهم|يورو)";
+
+// A figure plus everything attached to it, so "45 million riyal" leaves no
+// orphan unit behind.
+const CLAIM_RE = new RegExp(
+  `(?:[$€£¥]\\s*)?[0-9٠-٩۰-۹][0-9٠-٩۰-۹,.]*(?:\\s*${UNIT})?(?:\\s*${UNIT})?`,
+  "gi",
+);
 
 function isClaimFigure(match: string, index: number, text: string): boolean {
   const value = Number(toWesternDigits(match).replace(/[^\d.]/g, "").replace(/\.$/, ""));
@@ -81,7 +88,7 @@ export function stripUnsourcedNumbers(draft: string, evidenceText: string): Guar
       line
         .replace(/\s{2,}/g, " ")
         .replace(/\s+([,.،؛;:%])/g, "$1")
-        .replace(/(^|[.!?؟]\s*)[\s,،-]+/g, "$1")
+        .replace(/(^|[.!?؟]\s+)[,،-]+\s*/g, "$1")
         .trimEnd(),
     )
     // A line that lost its only content is noise, not a post.
