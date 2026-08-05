@@ -369,9 +369,9 @@ export const RecordLens: React.FC<RecordLensProps> = ({
   return (
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-        <Kicker>The record</Kicker>
-        <SectionTitle>What has actually happened</SectionTitle>
-        <Muted>Every line below is an event, not a projection.</Muted>
+        <Kicker>What happened</Kicker>
+        <SectionTitle>What happened</SectionTitle>
+        <Muted>Everything here already happened. Nothing here is a guess.</Muted>
       </div>
 
       {/* the year strip */}
@@ -413,18 +413,15 @@ export const RecordLens: React.FC<RecordLensProps> = ({
             <div style={{ position: "relative", marginBlockEnd: 20 }}>
               <Knot tone="plain" />
               <RowLabel>Today</RowLabel>
-              {draft && !draftDismissed ? (
+              {draft && draftIsFresh && !draftDismissed ? (
                 <div style={{
                   marginBlockStart: 10, border: "1px solid var(--rule-outer)", borderRadius: 12,
                   padding: 14, background: "var(--surface-page)",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBlockEnd: 8 }}>
                     <MachineDot />
-                    <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>Aura wrote this overnight from your themes.</span>
+                    <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>Aura wrote this for you last night.</span>
                   </div>
-                  <p style={{ margin: "0 0 12px", fontSize: 14.5, lineHeight: 1.55, color: "var(--text-primary)", fontWeight: 600 }}>
-                    {draft.title || "A draft is waiting"}
-                  </p>
                   <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                     <PublishPill onClick={() => onPublishDraft(draft.id)}>Publish</PublishPill>
                     <TextButton onClick={() => onDismissDraft(draft.id)}>Not this one</TextButton>
@@ -432,9 +429,9 @@ export const RecordLens: React.FC<RecordLensProps> = ({
                 </div>
               ) : (
                 <Body style={{ marginBlockStart: 8 }}>
-                  {draft && draftDismissed
+                  {draft && draftIsFresh && draftDismissed
                     ? "You passed on last night's draft. It stays in Composer."
-                    : "No draft came out of last night."}
+                    : "No new draft this morning."}
                 </Body>
               )}
             </div>
