@@ -245,10 +245,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         } as ProfileRow);
       }
       
-      // Same total as ScoreBreakdown: components from latest score_snapshots row.
+      // score_snapshots is used ONLY for the component breakdown bars.
+      // The headline number/tier comes from imprint_snapshots via useTierFromImprint.
       try {
         const { data: snap } = await (supabase.from("score_snapshots" as any) as any)
-          .select("components, composite_score")
+          .select("components, score")
           .eq("user_id", uid)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -258,9 +259,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           const sig = Number(c.signal_score) || 0;
           const con = Number(c.content_score) || 0;
           const cap = Number(c.capture_score) || 0;
-          // Total comes from the snapshot's persisted composite_score (EF aura_score),
-          // never a local re-sum.
-          const total = Number((snap as any).composite_score) || null;
+          // Persisted snapshot total (breakdown context only — never the headline).
+          const total = Number((snap as any).score) || null;
           setScoreTotal(total);
           setScoreComponents({ signal: sig, content: con, capture: cap });
         }
