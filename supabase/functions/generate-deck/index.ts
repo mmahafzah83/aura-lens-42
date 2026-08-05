@@ -612,6 +612,32 @@ serve(async (req) => {
     const result = await generate(db, user.id, body.signal_id, body.length, theme, reqLang, sourceText, template);
     return json(result);
   } catch (e) {
-    return json({ error: String(e instanceof Error ? e.message : e) }, 500);
+    const message = String(e instanceof Error ? e.message : e);
+    const low = message.toLowerCase();
+    const code = low.includes("credits_exhausted")
+      ? "credits_exhausted"
+      : low.includes("rate_limited") || low.includes("429")
+      ? "rate_limited"
+      : low.includes("signal") && (low.includes("not found") || low.includes("missing"))
+      ? "signal_missing"
+      : low.includes("gateway") || low.includes("model") || low.includes("tool call")
+      ? "model_error"
+      : "unknown";
+    // A failure that leaves no trace is a failure we cannot fix. Best effort,
+    // but on the error path it is actually reached.
+    if (dbRef) {
+      await logEvent(dbRef, {
+        user_id: userRef,
+        deck_id: attempt.deck_id,
+        signal_id: attempt.signal_id,
+        event: "error",
+        lang: attempt.lang,
+        theme: attempt.theme,
+        template: attempt.template,
+        invariant_failures: [`${code}: ${message}`],
+        duration_ms: Date.now() - startedAt,
+      });
+    }
+    return json({ ok: false, error: message, code }, 500);
   }
 });
