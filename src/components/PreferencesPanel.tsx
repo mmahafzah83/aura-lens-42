@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { EditProfileField } from "@/components/EditProfileModal";
 
 interface PreferencesPanelProps {
@@ -25,6 +26,7 @@ interface Profile {
   last_name: string | null;
   firm: string | null;
   sector_focus: string | null;
+  level: string | null;
   notification_prefs: Record<string, unknown> | null;
   shared_learning_consent: boolean | null;
 }
@@ -223,7 +225,7 @@ export default function PreferencesPanel({
     (async () => {
       const { data } = await (supabase
         .from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, notification_prefs, shared_learning_consent")
+        .select("first_name, last_name, firm, sector_focus, level, notification_prefs, shared_learning_consent")
         .eq("user_id", userId)
         .maybeSingle();
       if (!cancelled) {
@@ -239,21 +241,43 @@ export default function PreferencesPanel({
   const overnightReadingOn = prefs.overnight_reading_enabled !== false; // default true
   const sharedLearningOn = profile?.shared_learning_consent === true;
 
+  /**
+   * A SWITCH THAT DID NOT SAVE MUST NOT LOOK SAVED.
+   *
+   * The toggle moves first because that is what makes it feel instant, but an
+   * optimistic move is a promise. If the write fails the switch goes back to
+   * where it was and we say so — a member who returns tomorrow to a setting
+   * they believed they had changed is worse served than one told plainly.
+   */
   const updatePref = async (key: string, value: boolean) => {
     if (!userId) return;
+    const previous = prefs;
     const next = { ...prefs, [key]: value };
     setProfile((p) => (p ? { ...p, notification_prefs: next } : p));
-    await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({ notification_prefs: next })
-      .eq("user_id", userId);
+    try {
+      const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ notification_prefs: next })
+        .eq("user_id", userId);
+      if (error) throw error;
+    } catch {
+      setProfile((p) => (p ? { ...p, notification_prefs: previous } : p));
+      toast.error("Couldn't save — try again");
+    }
   };
 
   const updateSharedLearning = async (value: boolean) => {
     if (!userId) return;
+    const previous = profile?.shared_learning_consent ?? null;
     setProfile((p) => (p ? { ...p, shared_learning_consent: value } : p));
-    await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({ shared_learning_consent: value })
-      .eq("user_id", userId);
+    try {
+      const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ shared_learning_consent: value })
+        .eq("user_id", userId);
+      if (error) throw error;
+    } catch {
+      setProfile((p) => (p ? { ...p, shared_learning_consent: previous } : p));
+      toast.error("Couldn't save — try again");
+    }
   };
 
   const displayName = useMemo(() => {
@@ -270,6 +294,7 @@ export default function PreferencesPanel({
       {/* YOUR PROFILE */}
       <SectionHeader>Your profile</SectionHeader>
       <Row label="Name" value={displayName} onClick={onEditField ? () => onEditField("first_name") : undefined} />
+      <Row label="Title" value={profile?.level?.trim() || "Not set"} onClick={onEditField ? () => onEditField("level") : undefined} />
       <Row label="Firm" value={profile?.firm?.trim() || "Not set"} onClick={onEditField ? () => onEditField("firm") : undefined} />
       <Row label="Sector" value={profile?.sector_focus?.trim() || "Not set"} onClick={onEditField ? () => onEditField("sector_focus") : undefined} />
 
