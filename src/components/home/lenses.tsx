@@ -1,13 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import {
-  MONO, Card, Kicker, Body, Muted, GhostButton, Skeleton,
+  MONO, Card, Kicker, Body, Muted, TextButton,
   SectionTitle, titleCaseFacet,
 } from "./homeAtoms";
 import type { HomeFacts } from "@/hooks/useHomeAddress";
-import { useRoomSources, useShapePast } from "@/hooks/useHomeExtras";
+import { useShapePast } from "@/hooks/useHomeExtras";
 
 /**
- * The three lenses. Each renders only from facts and real rows — nothing
+ * The two lenses. Each renders only from facts and real rows — nothing
  * here invents a name, a competitor or a number.
  */
 
@@ -16,93 +16,24 @@ import { useRoomSources, useShapePast } from "@/hooks/useHomeExtras";
 export { RecordLens } from "./RecordLens";
 export type { RecordLensProps, RecordZoom } from "./RecordLens";
 
-// ── THE ROOM ───────────────────────────────────────────────────────────────
+// ── THE SHAPE ──────────────────────────────────────────────────────────────
 
-export interface RoomLensProps {
-  facts: HomeFacts | null;
-  userId: string | null | undefined;
-  memberName: string;
-  onWriteOnSignal: () => void;
-}
-
-const shortDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-
-export const RoomLens: React.FC<RoomLensProps> = ({ facts, userId, memberName, onWriteOnSignal }) => {
-  const top = facts?.top_signal ?? null;
-  const room = useRoomSources(userId, top?.id ?? null);
-
-  return (
-    <Card style={{ padding: 0 }}>
-      <div style={{ padding: "20px 22px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-        <Kicker>The room</Kicker>
-        <SectionTitle>{top?.title ?? "No theme is leading yet"}</SectionTitle>
-        {top ? (
-          <Muted>
-            <span style={{ ...MONO }}>{top.fragment_count}</span>{" "}
-            {top.fragment_count === 1 ? "fragment backs" : "fragments back"} this theme
-            {top.gained_last_7d ? " — it gained evidence this week." : "."}
-          </Muted>
-        ) : (
-          <Muted>Keep a few more things and one theme will pull ahead. The room draws itself from that theme.</Muted>
-        )}
-      </div>
-
-      {top && (
-        <div style={{ padding: "6px 0" }}>
-          {room.loading && (
-            <div style={{ padding: "14px 22px", display: "grid", gap: 8 }}>
-              <Skeleton h={13} w="70%" /><Skeleton h={13} w="52%" />
-            </div>
-          )}
-
-          {!room.loading && room.sources.length === 0 && (
-            <div style={{ padding: "14px 22px" }}>
-              <Body>No source Aura tracks published on this theme this week. You would be first.</Body>
-            </div>
-          )}
-
-          {!room.loading && room.sources.map((s, i) => (
-            <div key={s.id} style={{
-              padding: "14px 22px", display: "grid", gap: 4,
-              borderBlockStart: i === 0 ? undefined : "1px solid var(--rule-divider)",
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
-                <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>{s.source}</span>
-                <span style={{ ...MONO, fontSize: 11.5, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                  {shortDate(s.date)}
-                </span>
-              </div>
-              {s.title && <Muted>{s.title}</Muted>}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div style={{ padding: "18px 22px", borderBlockStart: "1px solid var(--rule-divider)" }}>
-        {/* his own row — the empty chair */}
-        <div style={{
-          border: "1px solid var(--act)", borderRadius: 12, padding: 14,
-          background: "var(--act-tint)", display: "grid", gap: 6,
-        }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{memberName}</div>
-          {room.memberPublished ? (
-            <Body>You published on this theme{room.memberPostTitle ? ` — "${room.memberPostTitle}".` : "."}</Body>
-          ) : (
-            <Body>You have not published on this theme.</Body>
-          )}
-          {top && !room.memberPublished && (
-            <div style={{ marginBlockStart: 6 }}>
-              <GhostButton onClick={onWriteOnSignal}>Write on this theme</GhostButton>
-            </div>
-          )}
-        </div>
-      </div>
-    </Card>
-  );
+/** Plain-English names and one sentence each. Unmapped keys fall back. */
+const FACET_WORDS: Record<string, { name: string; line: string }> = {
+  conviction:  { name: "Confidence", line: "How sure your writing sounds." },
+  discernment: { name: "Perception", line: "How well you read what is changing." },
+  edge:        { name: "Expertise",  line: "How specific your knowledge is." },
+  voice:       { name: "Voice",      line: "How much your writing sounds like you." },
+  focus:       { name: "Focus",      line: "How much you stay on your main topics." },
+  identity:    { name: "Identity",   line: "How clear it is what you stand for." },
+  audience:    { name: "Audience",   line: "How well your topics match who you want to reach." },
 };
 
-// ── THE SHAPE ──────────────────────────────────────────────────────────────
+const facetWords = (key: string) =>
+  FACET_WORDS[key] ?? { name: titleCaseFacet(key), line: null as string | null };
+
+const longDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 
 export interface ShapeLensProps {
   facts: HomeFacts | null;
