@@ -6,6 +6,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { withObserve } from "../_shared/observe.ts";
 import { logError } from "../_shared/logError.ts";
+import { generationMetadata } from "../_shared/generationMeta.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -169,13 +170,12 @@ Deno.serve(withObserve("ghost-draft-writer", async (req) => {
       const { error: insErr } = await admin.from("linkedin_posts").insert({
         user_id: userId,
         post_text: body,
-        original_generated_text: body,
         format_type: "post",
         tracking_status: "draft",
         source_type: "aura_generated",
         authorship: "aura_drafted",
-        source_signal_id: null,
         framework_type: null,
+        ...generationMetadata(body, { contentType: "linkedin_post", signalId: null }),
         source_metadata: {
           source: "ghost_draft",
           topic: topic || null,
