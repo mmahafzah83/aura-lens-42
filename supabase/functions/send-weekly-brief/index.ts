@@ -326,7 +326,7 @@ serve(async (req) => {
 
         const { data: profile } = await admin
           .from("diagnostic_profiles")
-          .select("first_name, firm, sector_focus, notification_prefs")
+          .select("first_name, firm, sector_focus, notification_prefs, timezone")
           .eq("user_id", userId)
           .maybeSingle();
 
@@ -334,6 +334,20 @@ serve(async (req) => {
         if (prefs.email_weekly_brief === false) {
           continue;
         }
+
+        // Monday 07:00 where the member actually is. Safe to run hourly:
+        // every other hour falls straight through with no send and no log.
+        const lp = localParts(profile?.timezone as string | null | undefined, now);
+        if (lp.weekday !== 1 || lp.hour !== 7) continue;
+
+        const wkKey = `weekly_brief:${lp.dateKey}`;
+        const { data: wkAlready } = await admin
+          .from("lifecycle_email_log")
+          .select("user_id")
+          .eq("message_key", wkKey)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (wkAlready) continue;
 
         const firstName = (profile?.first_name as string | undefined)?.trim()
           || (email.split("@")[0] ?? "there");
