@@ -275,7 +275,12 @@ export const RecordLens: React.FC<RecordLensProps> = ({
     }));
 
     if (zoom === "published") {
-      t.published.forEach((p) => out.push({ kind: "publish", at: String(p.at).slice(0, 10), p }));
+      const byDay = new Map<string, RecordPublished[]>();
+      t.published.forEach((p) => {
+        const k = String(p.at).slice(0, 10);
+        byDay.set(k, [...(byDay.get(k) ?? []), p]);
+      });
+      byDay.forEach((ps, k) => out.push({ kind: "pubday", at: k, ps }));
       out.push(...milestoneRows);
       return out.sort((a, b) => (a.at < b.at ? 1 : -1));
     }
@@ -283,20 +288,29 @@ export const RecordLens: React.FC<RecordLensProps> = ({
     if (zoom === "days") {
       // last 30 days, calendar-complete so quiet runs can collapse
       const byDay = new Map(t.days.map((b) => [b.d, b]));
+      const floor = t.signupAt ? String(t.signupAt).slice(0, 10) : null;
       let quiet: string[] = [];
+      let quietState: "night" | "zero" | null = null;
       const flush = () => {
-        if (quiet.length === 0) return;
-        out.push({ kind: "quiet", at: quiet[0], from: quiet[quiet.length - 1], to: quiet[0], n: quiet.length });
-        quiet = [];
+        if (quiet.length === 0 || !quietState) return;
+        out.push({
+          kind: "quiet", at: quiet[0], from: quiet[quiet.length - 1], to: quiet[0],
+          n: quiet.length, state: quietState,
+        });
+        quiet = []; quietState = null;
       };
       for (let i = 0; i <= 30; i++) {
         const key = iso(new Date(Date.now() - i * DAY));
         if (key > today) continue;
+        if (floor && key < floor) break;
         const b = byDay.get(key);
         if (b && !isEmpty(b)) {
           flush();
           out.push({ kind: "bucket", at: key, grain: "day", b, pubs: pubByDay.get(key) ?? [] });
         } else {
+          const state: "night" | "zero" = (b?.nights ?? 0) > 0 ? "night" : "zero";
+          if (quietState && quietState !== state) flush();
+          quietState = state;
           quiet.push(key);
         }
       }
@@ -318,7 +332,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
 
     out.push(...milestoneRows);
     return out.sort((a, b) => (a.at < b.at ? 1 : -1));
-  }, [t.loading, t.days, t.weeks, t.months, t.published, t.milestones, zoom, pubByDay, pubsIn]);
+  }, [t.loading, t.days, t.weeks, t.months, t.published, t.milestones, t.signupAt, zoom, pubByDay, pubsIn]);
 
   const visible = rows.slice(0, shown);
 
