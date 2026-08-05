@@ -4,6 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY } from "../_shared/contentDNA.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
+import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR } from "../_shared/voiceStyle.ts";
+import { stripUnsourcedNumbers } from "../_shared/numberGuard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -248,7 +250,13 @@ serve(withObserve("generate-authority-content", async (req) => {
         .eq("user_id", effectiveUserId).maybeSingle(),
     ]);
 
-    const voiceProfile = voiceRes.data;
+    // A voice profile describes HOW the member writes. Even if an older row
+    // still carries a figure or an ending mandate, it is scrubbed here before
+    // a single character of it reaches a prompt.
+    const rawVoiceProfile = voiceRes.data as any;
+    const voiceProfile = rawVoiceProfile
+      ? { ...rawVoiceProfile, ...sanitizeStyleFields(rawVoiceProfile) }
+      : rawVoiceProfile;
     const profile = profileRes.data;
     const texture = (voiceProfile?.vocabulary_preferences as any)?.texture;
     const effTexture = texture === "qawarish" || texture === "daheeh" ? texture : "clean";
@@ -439,6 +447,13 @@ FORMATTING RULES (mandatory):
         if (chosen) postTypeInstruction = `\n\n${chosen}`;
       }
 
+      // The ending is a rotatable value the profile allows — never an
+      // instruction read out of a style field.
+      const chosenEnding = pickEnding(voiceProfile?.allowed_endings);
+      const endingDirective = effectiveLanguage === "ar"
+        ? `\n\nالخاتمة لهذا البوست: ${ENDING_DIRECTIVE_AR[chosenEnding]}`
+        : `\n\nENDING FOR THIS POST: ${ENDING_DIRECTIVE_EN[chosenEnding]}`;
+
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
 ${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription })}
@@ -455,7 +470,7 @@ ${identityContext}
 ${formatInstructions[content_type] || formatInstructions.post}
 ${langLabel}
 ${frameworkInstruction}
-${extraInstruction}${flashAddendum}
+${extraInstruction}${flashAddendum}${endingDirective}
 
 Write with conviction. No generic statements. Every line should demonstrate strategic depth.
 
@@ -740,12 +755,35 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       // failing verdict blocks; a timeout / invoke error returns the draft free.
       const gateBlocked = (gatePayload && !gatePayload.skipped) ? gatePayload.pass === false : false;
 
+      // Provenance guard: a member is never handed a number the system cannot
+      // trace back to the evidence that drove this generation.
+      const evidenceText = [
+        groundingSignal?.signal_title || "",
+        groundingSignal?.explanation || "",
+        typeof groundingSignal?.strategic_implications === "string"
+          ? groundingSignal.strategic_implications
+          : JSON.stringify(groundingSignal?.strategic_implications || ""),
+        ...groundingFragments.map((f: any) => `${f.title || ""} ${f.content || ""}`),
+        typeof context === "string" ? context : "",
+        typeof topic === "string" ? topic : "",
+      ].join("\n");
+      const guarded = stripUnsourcedNumbers(content, evidenceText);
+      content = guarded.text;
+      if (guarded.removed > 0) {
+        console.warn(
+          `[generate-authority-content] removed ${guarded.removed} unsourced figure(s):`,
+          guarded.removed_values.join(" | "),
+        );
+      }
+
       return new Response(JSON.stringify({
         content,
         success: true,
         framework_used: (framework && FRAMEWORK_PROMPTS[framework]) ? framework : null,
         quality_gate: gatePayload,
         blocked: gateBlocked,
+        ending_type: chosenEnding,
+        unsourced_numbers_removed: guarded.removed,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
