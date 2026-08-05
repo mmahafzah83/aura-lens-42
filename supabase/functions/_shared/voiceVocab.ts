@@ -48,8 +48,40 @@ function overlap(a: Set<string>, b: Set<string>): number {
 }
 
 /**
- * Merge rules that express the same constraint in different words, then keep
- * the most specific ones (longest, most concrete) up to `cap`.
+ * The constraints members actually keep restating. Two rules that hit the same
+ * concept ARE the same rule, however differently they are worded — this is what
+ * makes the merge semantic rather than a truncation at twelve.
+ */
+const CONCEPTS: { id: string; re: RegExp }[] = [
+  { id: "hedging", re: /\b(hedg\w*|perhaps|maybe|might|possibly|tentative|qualifier|wishy|softener|caveat)\b/i },
+  { id: "jargon", re: /\b(jargon|buzzword\w*|corporate\s?speak|management\s?speak|consultant\s?speak|cliché\w*|cliche\w*|platitude\w*)\b/i },
+  { id: "emoji", re: /\b(emoji\w*|emoticon\w*)\b|[\u{1F300}-\u{1FAFF}]/iu },
+  { id: "hashtag", re: /\b(hashtag\w*)\b/i },
+  { id: "exclamation", re: /\b(exclamation|hype|hyperbol\w*|shout\w*|all\s?caps)\b/i },
+  { id: "self_promo", re: /\b(self[-\s]?promot\w*|humble\s?brag|brag\w*|boast\w*)\b/i },
+  { id: "cta", re: /\b(call\s?to\s?action|cta|engagement\s?bait|like\s?and\s?share|follow\s?me)\b/i },
+  { id: "abstraction", re: /\b(abstract\w*|vague\w*|generic\w*|generalit\w*|fluff|filler)\b/i },
+  { id: "listicle", re: /\b(listicle|numbered\s?list|bullet\s?point\w*)\b/i },
+  { id: "motivational", re: /\b(motivat\w*|inspiration\w*|guru|preach\w*|lectur\w*)\b/i },
+  { id: "long_sentence", re: /\b(long\s?sentence\w*|run[-\s]?on|dense\s?paragraph\w*|wall\s?of\s?text)\b/i },
+  { id: "first_person_absence", re: /\b(third\s?person|impersonal|passive\s?voice)\b/i },
+  { id: "question_opener", re: /\b(question\s?(?:opener|hook)|open\w*\s+with\s+a\s+question)\b/i },
+  { id: "apology", re: /\b(apolog\w*|sorry|excuse)\b/i },
+  { id: "hedging_ar", re: /(ربما|قد يكون|تحفظ|تردد)/ },
+  { id: "jargon_ar", re: /(مصطلحات|لغة تسويقية|كلام إنشائي|عبارات جاهزة)/ },
+  { id: "emoji_ar", re: /(إيموجي|رموز تعبيرية)/ },
+  { id: "motivational_ar", re: /(تحفيزي|وعظ|خطابة)/ },
+];
+
+function conceptOf(rule: string): string | null {
+  for (const c of CONCEPTS) if (c.re.test(rule)) return c.id;
+  return null;
+}
+
+/**
+ * Merge rules that express the same constraint in different words — first by
+ * concept, then by token overlap — and keep the most specific survivor of each
+ * group, up to `cap`. Nothing is dropped that still means something new.
  */
 export function dedupeRules(input: unknown, cap = RULE_CAP): string[] {
   const raw = (Array.isArray(input) ? input : [])
@@ -63,12 +95,16 @@ export function dedupeRules(input: unknown, cap = RULE_CAP): string[] {
     return sb - sa || b.length - a.length;
   });
 
-  const kept: { text: string; tokens: Set<string> }[] = [];
+  const kept: { text: string; tokens: Set<string>; concept: string | null }[] = [];
+  const seenConcepts = new Set<string>();
   for (const rule of ranked) {
     const tokens = tokenSet(rule);
-    const dup = kept.some((k) => k.tokens.size && overlap(tokens, k.tokens) >= 0.6);
+    const concept = conceptOf(rule);
+    if (concept && seenConcepts.has(concept)) continue;
+    const dup = kept.some((k) => k.tokens.size && overlap(tokens, k.tokens) >= 0.45);
     if (dup) continue;
-    kept.push({ text: rule, tokens });
+    if (concept) seenConcepts.add(concept);
+    kept.push({ text: rule, tokens, concept });
     if (kept.length >= cap) break;
   }
   return kept.map((k) => k.text);
