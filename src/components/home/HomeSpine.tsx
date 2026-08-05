@@ -9,7 +9,7 @@ import {
   type HomeLens, type HomeMove,
 } from "@/hooks/useHomeAddress";
 import { MONO, Kicker, Card, Body, Muted, ActButton, Skeleton } from "./homeAtoms";
-import { RecordLens, RoomLens, ShapeLens } from "./lenses";
+import { RecordLens, ShapeLens } from "./lenses";
 import {
   buildShelf, MovesCard, StandCard, OwnCard, NightCard, WidgetsCard,
   type ShelfKey, type OwnedTheme,
@@ -31,9 +31,9 @@ export interface HomeSpineProps {
 }
 
 const LENS_LABEL: Record<HomeLens, string> = {
-  record: "The Record", room: "The Room", shape: "The Shape",
+  record: "What happened", shape: "Where you stand",
 };
-const LENSES: HomeLens[] = ["record", "room", "shape"];
+const LENSES: HomeLens[] = ["record", "shape"];
 
 const collapseKey = (uid: string) => `aura_home_address_collapsed_${uid}`;
 const lensKey = (uid: string) => `aura_home_lens_${uid}`;
@@ -71,7 +71,7 @@ const Prose: React.FC<{ md: string }> = ({ md }) => (
   </div>
 );
 
-export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOpenDraft }: HomeSpineProps) {
+export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpineProps) {
   const uid = userId ?? "anon";
   const address = useHomeAddress(userId);
   const facts = address.facts;
@@ -80,7 +80,6 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
   const [layout, setLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
   const [metrics, setMetrics] = useState<WidgetMetrics | null>(null);
   const [themes, setThemes] = useState<OwnedTheme[]>([]);
-  const [memberName, setMemberName] = useState<string>("You");
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(collapseKey(uid)) === "1"; } catch { return false; }
@@ -101,22 +100,19 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
     if (!userId) return;
     let alive = true;
     (async () => {
-      const [l, m, sigs, prof] = await Promise.all([
+      const [l, m, sigs] = await Promise.all([
         loadLayout(userId),
         loadWidgetMetrics(userId),
         (supabase.from("strategic_signals" as any) as any)
           .select("id, signal_title, fragment_count, velocity_status")
           .eq("user_id", userId).eq("status", "active")
           .order("fragment_count", { ascending: false, nullsFirst: false }).limit(6),
-        supabase.from("diagnostic_profiles").select("first_name, last_name").eq("user_id", userId).maybeSingle(),
       ]);
       if (!alive) return;
       setLayout(l); setMetrics(m);
       setThemes(((sigs?.data as any[]) || []).map((s) => ({
         id: s.id, title: s.signal_title, fragments: s.fragment_count ?? 0, velocity: s.velocity_status ?? null,
       })));
-      const p: any = prof?.data;
-      if (p) setMemberName([p.first_name, p.last_name].filter(Boolean).join(" ") || "You");
     })();
     return () => { alive = false; };
   }, [userId]);
@@ -204,12 +200,6 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
     [facts, moves, themes.length, layout, metrics],
   );
 
-  const writeOnTopSignal = useCallback(() => {
-    const t = facts?.top_signal;
-    if (!t) return;
-    onStartSignalPost({ topic: t.title, context: "", signalId: t.id, signalTitle: t.title });
-  }, [facts?.top_signal, onStartSignalPost]);
-
   const generatedAt = address.row?.generated_at ?? null;
   const generatedLabel = generatedAt
     ? new Date(generatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
@@ -233,10 +223,6 @@ export default function HomeSpine({ userId, onSwitchTab, onStartSignalPost, onOp
           onOpenSignals={() => onSwitchTab("intelligence")}
         />
       );
-    }
-    if (activeLens === "room") {
-      if (empty) return null;
-      return <RoomLens facts={facts} userId={userId} memberName={memberName} onWriteOnSignal={writeOnTopSignal} />;
     }
     return <ShapeLens facts={facts} userId={userId} />;
   })();
