@@ -224,25 +224,61 @@ export async function callTool(
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-      tools: [{ type: "function", function: tool }],
-      tool_choice: { type: "function", function: { name: tool.name } },
-    }),
+  const payload = JSON.stringify({
+    model: MODEL,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    tools: [{ type: "function", function: tool }],
+    tool_choice: { type: "function", function: { name: tool.name } },
   });
 
-  if (res.status === 429) throw new Error("rate_limited");
-  if (res.status === 402) throw new Error("credits_exhausted");
-  if (!res.ok) throw new Error(`gateway ${res.status}: ${await res.text()}`);
+  /**
+   * One slow gateway call must not eat the whole edge budget: 25s per attempt,
+   * two retries on a transient refusal, none on an exhausted account.
+   */
+  const BACKOFF_MS = [500, 1500];
+  let data: any = null;
+  for (let attempt = 0; ; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 25_000);
+    let res: Response;
+    try {
+      res = await fetch(GATEWAY, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: payload,
+        signal: controller.signal,
+      });
+    } catch (e) {
+      clearTimeout(timer);
+      if (attempt < BACKOFF_MS.length) {
+        await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt]));
+        continue;
+      }
+      throw new Error(`gateway unreachable: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    clearTimeout(timer);
 
-  const data = await res.json();
+    // An exhausted account is not transient: retrying only wastes the wall clock.
+    if (res.status === 402) throw new Error("credits_exhausted");
+
+    if ((res.status === 429 || res.status >= 500) && attempt < BACKOFF_MS.length) {
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const wait = Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 5000)
+        : BACKOFF_MS[attempt];
+      await new Promise((r) => setTimeout(r, wait));
+      continue;
+    }
+
+    if (res.status === 429) throw new Error("rate_limited");
+    if (!res.ok) throw new Error(`gateway ${res.status}: ${await res.text()}`);
+    data = await res.json();
+    break;
+  }
+
   const args = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
   if (typeof args !== "string") throw new Error("model returned no tool call");
   return JSON.parse(args);

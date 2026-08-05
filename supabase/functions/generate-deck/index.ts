@@ -459,6 +459,14 @@ async function rewriteSlide(
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
 
+  // Held outside the try so the error path can still say what was being made.
+  const startedAt = Date.now();
+  let dbRef: any = null;
+  let userRef: string | null = null;
+  const attempt: Record<string, unknown> = {
+    deck_id: null, signal_id: null, lang: null, theme: null, template: null,
+  };
+
   try {
     const authHeader = req.headers.get("Authorization") || "";
     const db = createClient(
@@ -466,9 +474,11 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
+    dbRef = db;
     const { data: userData } = await db.auth.getUser(authHeader.replace("Bearer ", ""));
     const user = userData?.user;
     if (!user) return json({ error: "unauthorized" }, 401);
+    userRef = user.id;
 
     const body = await req.json().catch(() => ({}));
     // Family first: a colourway is only meaningful inside its template.
@@ -476,6 +486,10 @@ serve(async (req) => {
     const theme = resolveTheme(body.theme, template);
     const reqLang: "en" | "ar" | undefined =
       body.lang === "ar" ? "ar" : body.lang === "en" ? "en" : undefined;
+    attempt.signal_id = typeof body.signal_id === "string" ? body.signal_id : null;
+    attempt.theme = theme;
+    attempt.template = template;
+    attempt.lang = reqLang ?? null;
     const sourceText: string | undefined =
       typeof body.source_text === "string" && body.source_text.trim()
         ? String(body.source_text).slice(0, 8000)
@@ -598,6 +612,32 @@ serve(async (req) => {
     const result = await generate(db, user.id, body.signal_id, body.length, theme, reqLang, sourceText, template);
     return json(result);
   } catch (e) {
-    return json({ error: String(e instanceof Error ? e.message : e) }, 500);
+    const message = String(e instanceof Error ? e.message : e);
+    const low = message.toLowerCase();
+    const code = low.includes("credits_exhausted")
+      ? "credits_exhausted"
+      : low.includes("rate_limited") || low.includes("429")
+      ? "rate_limited"
+      : low.includes("signal") && (low.includes("not found") || low.includes("missing"))
+      ? "signal_missing"
+      : low.includes("gateway") || low.includes("model") || low.includes("tool call")
+      ? "model_error"
+      : "unknown";
+    // A failure that leaves no trace is a failure we cannot fix. Best effort,
+    // but on the error path it is actually reached.
+    if (dbRef && userRef) {
+      await logEvent(dbRef, {
+        user_id: userRef,
+        deck_id: attempt.deck_id,
+        signal_id: attempt.signal_id,
+        event: "error",
+        lang: attempt.lang,
+        theme: attempt.theme,
+        template: attempt.template,
+        invariant_failures: [`${code}: ${message}`],
+        duration_ms: Date.now() - startedAt,
+      });
+    }
+    return json({ ok: false, error: message, code }, 500);
   }
 });

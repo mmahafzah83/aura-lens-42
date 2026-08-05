@@ -850,6 +850,25 @@ export default function StudioPanel({
       if (!alreadyOpened(`draft:${d.id}`)) {
         void track("composer_opened", { source, signal_id: d.signalId ?? null, move_state: "drafted" });
       }
+      // Slides that were made before are still this piece's slides.
+      if (d._source === "linkedin_posts") {
+        try {
+          const { data: row } = await supabase
+            .from("linkedin_posts")
+            .select("source_metadata")
+            .eq("id", d.id)
+            .maybeSingle();
+          const saved = ((row as any)?.source_metadata as Record<string, unknown> | null)?.deck;
+          if (saved) {
+            const parsed = DeckIRSchema.safeParse(saved);
+            if (parsed.success) {
+              setDeck(parsed.data);
+              setTheme(parsed.data.theme as ThemeName);
+              if (typeof parsed.data.template === "string") setTemplate(parsed.data.template);
+            }
+          }
+        } catch { /* a missing deck is simply no deck */ }
+      }
     },
     [lang, persistNow],
   );
@@ -1326,6 +1345,42 @@ export default function StudioPanel({
   );
 
   /* ---------- step 3: the slides, right here ---------------------- */
+  /**
+   * A failure is named for what it was. A server refusal is not a dropped
+   * connection, and saying so once cost us a founder's afternoon.
+   */
+  const slidesFailureSentence = useCallback(async (err: unknown): Promise<string> => {
+    const ctx = (err as { context?: unknown })?.context;
+    const res = ctx as Response | undefined;
+    // No HTTP response at all: the only case that is genuinely the network.
+    if (!res || typeof res.status !== "number") return T.connectionDropped[lang];
+    let body: Record<string, unknown> = {};
+    try { body = (await res.clone().json()) as Record<string, unknown>; } catch { /* a body is a bonus */ }
+    const code = String(body.code ?? "");
+    const text = String(body.error ?? "").toLowerCase();
+    if (res.status === 429 || code === "rate_limited") return T.slidesRateLimited[lang];
+    if (res.status === 402 || code === "credits_exhausted") return T.slidesCreditsOut[lang];
+    if (code === "signal_missing" || /signal|context/.test(text) && /not found|missing/.test(text)) {
+      return T.slidesSignalMissing[lang];
+    }
+    return T.slidesFailedPlain[lang];
+  }, [lang]);
+
+  /** The slides survive a reload: they live on the draft row, not in memory. */
+  const persistDeck = useCallback(async (rowId: string | null, d: DeckIR, th: string, tpl: string) => {
+    if (!rowId) return;
+    const { data: existing } = await supabase
+      .from("linkedin_posts")
+      .select("source_metadata")
+      .eq("id", rowId)
+      .maybeSingle();
+    const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+    await supabase
+      .from("linkedin_posts")
+      .update({ source_metadata: { ...prev, deck: { ...d, theme: th, template: tpl } } } as any)
+      .eq("id", rowId);
+  }, []);
+
   const makeSlides = useCallback(async (lengthOverride?: 5 | 7 | 10) => {
     // Never silent: every refusal says why.
     if (!content.trim()) { setProblem(T.slidesNeedPost[lang]); return; }
@@ -1339,11 +1394,18 @@ export default function StudioPanel({
     setProblem(null);
     setStatus(null);
     let timedOut = false;
+    // A cutoff that only stops watching is not a cutoff: the call is cancelled.
+    const controller = new AbortController();
+    let timer = 0;
     const timeout = new Promise<"timeout">((resolve) => {
-      window.setTimeout(() => { timedOut = true; resolve("timeout"); }, 90000);
+      timer = window.setTimeout(() => {
+        timedOut = true;
+        try { controller.abort(); } catch { /* an abort never fails loudly */ }
+        resolve("timeout");
+      }, 90000);
     });
     try {
-      await saveDraft();
+      const rowId = await saveDraft();
       const call = supabase.functions.invoke("generate-deck", {
         body: {
           signal_id: choice.id,
@@ -1354,6 +1416,7 @@ export default function StudioPanel({
           // Always: the slides adapt the words the member approved.
           source_text: content,
         },
+        signal: controller.signal,
       });
       const raced = await Promise.race([call, timeout]);
       if (raced === "timeout" || timedOut) {
@@ -1376,12 +1439,17 @@ export default function StudioPanel({
       setExported(false);
       setCurrent(0);
       setFits({});
-    } catch {
-      setDeckFailures([T.connectionDropped[lang]]);
+      // Fire and forget: a save failure never withholds the slides.
+      void persistDeck(rowId ?? draftId, parsed.data, theme, template).catch((e) =>
+        console.warn("deck not persisted", e),
+      );
+    } catch (err) {
+      setDeckFailures([await slidesFailureSentence(err)]);
     } finally {
+      window.clearTimeout(timer);
       setDeckBusy(false);
     }
-  }, [choice, content, theme, template, deckLength, writeLang, lang, saveDraft]);
+  }, [choice, content, theme, template, deckLength, writeLang, lang, saveDraft, draftId, persistDeck, slidesFailureSentence]);
 
   const changeThisLine = useCallback(async () => {
     if (!deck) return;
@@ -2719,9 +2787,8 @@ export default function StudioPanel({
                 deckBusy ? (
                   <div style={{ width: "100%", maxWidth: 360 }}>
                     <BusyBar
-                      message={T.makingSlides[lang]}
-                      etaSeconds={45}
-                      remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
+                      message={T.makingSlidesHonest[lang]}
+                      indeterminate
                     />
                   </div>
                 ) : (
