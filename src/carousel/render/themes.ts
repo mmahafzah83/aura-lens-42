@@ -162,10 +162,6 @@ export const THEMES = {
   ...HIGHLIGHTER_THEMES,
 };
 
-export type ThemeName = keyof typeof THEMES;
-
-/** True when a theme is a light-ground (paper) set. Drives ink-on-paper chrome. */
-export const PAPER_THEMES: readonly string[] = ["paper", "highlighter_orange", "highlighter_green"];
 
 export const THEME_NAMES = ["midnight", "clay", "gradient", "paper"] as const;
 
