@@ -14,7 +14,7 @@ import { sanitizeStyleFields } from "../_shared/voiceStyle.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret, x-cleanup-token",
 };
 
 const json = (body: unknown, status = 200) =>
@@ -27,9 +27,12 @@ Deno.serve(async (req) => {
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const CRON_SECRET = Deno.env.get("cron_secret") || Deno.env.get("CRON_SECRET") || "";
 
+  const CLEANUP_TOKEN = Deno.env.get("VOICE_CLEANUP_TOKEN") || "";
   const bearer = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
   const isCron = !!CRON_SECRET && req.headers.get("x-cron-secret") === CRON_SECRET;
-  if (!isCron && bearer !== SERVICE_KEY) return json({ error: "Unauthorized" }, 401);
+  // One-off maintenance token, used to run the backfill and then removed.
+  const isMaintenance = !!CLEANUP_TOKEN && req.headers.get("x-cleanup-token") === CLEANUP_TOKEN;
+  if (!isCron && !isMaintenance && bearer !== SERVICE_KEY) return json({ error: "Unauthorized" }, 401);
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
