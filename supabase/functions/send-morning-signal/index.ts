@@ -294,24 +294,19 @@ serve(async (req) => {
       emails.set(uid, em);
     }
 
-    // Already-sent map for today
-    const { data: already } = await admin
-      .from("lifecycle_email_log")
-      .select("user_id")
-      .eq("message_key", messageKey)
-      .in("user_id", userIds.length ? userIds : ["00000000-0000-0000-0000-000000000000"]);
-    const alreadySent = new Set((already || []).map((r) => r.user_id as string));
-
     // Opt-out gate: overnight_reading_enabled defaults to true; only an explicit
     // false silences a member. No lifecycle rows are written for those skipped.
+    // Timezone rides along: 07:00 must mean 07:00 where the member actually is.
     const optedOut = new Set<string>();
+    const tzByUser = new Map<string, string | null>();
     if (userIds.length) {
       const { data: prefRows } = await admin
         .from("diagnostic_profiles")
-        .select("user_id, notification_prefs")
+        .select("user_id, notification_prefs, timezone")
         .in("user_id", userIds);
-      for (const r of (prefRows || []) as Array<{ user_id: string; notification_prefs: Record<string, unknown> | null }>) {
+      for (const r of (prefRows || []) as Array<{ user_id: string; notification_prefs: Record<string, unknown> | null; timezone: string | null }>) {
         if (r?.notification_prefs?.overnight_reading_enabled === false) optedOut.add(r.user_id);
+        tzByUser.set(r.user_id, r.timezone ?? null);
       }
     }
 
@@ -322,9 +317,20 @@ serve(async (req) => {
         const to = emails.get(uid);
         if (!to) { results.push({ user_id: uid, outcome: "skipped_no_email_or_test" }); continue; }
 
-        if (alreadySent.has(uid)) {
+        // 07:00 in THIS member's timezone, and an idempotency key on THEIR local date.
+        const lp = localParts(tzByUser.get(uid) ?? null, now);
+        if (lp.hour !== 7) { results.push({ user_id: uid, outcome: "skipped_off_hour" }); continue; }
+        const userKey = `morning_signal:${lp.dateKey}`;
+
+        const { data: alreadyRow } = await admin
+          .from("lifecycle_email_log")
+          .select("user_id")
+          .eq("message_key", userKey)
+          .eq("user_id", uid)
+          .maybeSingle();
+        if (alreadyRow) {
           skippedAlready++;
-          results.push({ user_id: uid, outcome: "skipped_already_sent", message_key: messageKey });
+          results.push({ user_id: uid, outcome: "skipped_already_sent", message_key: userKey });
           continue;
         }
 
@@ -344,14 +350,14 @@ serve(async (req) => {
           continue;
         }
 
-        const { status, resendId } = await sendResend(RESEND_KEY, to, subject, html, text, uid, messageKey);
+        const { status, resendId } = await sendResend(RESEND_KEY, to, subject, html, text, uid, userKey);
         // Only AFTER a successful send do we burn the idempotency key.
-        await admin.from("lifecycle_email_log").insert({ user_id: uid, message_key: messageKey });
+        await admin.from("lifecycle_email_log").insert({ user_id: uid, message_key: userKey });
         await admin.from("lifecycle_emails").insert({
           user_id: uid,
           email_type: "morning_signal",
           metadata: {
-            message_key: messageKey,
+            message_key: userKey,
             finding_ids: [lead.id, ...others.slice(0, 3).map((o) => o.id)],
             lead_finding_id: lead.id,
             subject,
