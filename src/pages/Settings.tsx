@@ -17,6 +17,7 @@ import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broads
 import CountryPicker from "@/components/CountryPicker";
 import PreferencesPanel from "@/components/PreferencesPanel";
 import AccountPanel from "@/components/settings/AccountPanel";
+import SlideDefaultsCard from "@/components/settings/SlideDefaultsCard";
 import WhatsAppPairingCard from "@/components/settings/WhatsAppPairingCard";
 import { WHATSAPP_PAIRING_ALLOWLIST } from "@/config/whatsapp";
 
@@ -722,6 +723,7 @@ const handleDeleteAccount = async () => {
         {/* Profile summary */}
         <SectionHeader
           label="Profile summary"
+
           subtitle="A read-only summary of what Aura knows about your profile, brand, and capabilities."
         />
 
