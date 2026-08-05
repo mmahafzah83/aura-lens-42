@@ -2720,8 +2720,7 @@ export default function StudioPanel({
                   <div style={{ width: "100%", maxWidth: 360 }}>
                     <BusyBar
                       message={T.makingSlides[lang]}
-                      etaSeconds={45}
-                      remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
+                      indeterminate
                     />
                   </div>
                 ) : (
