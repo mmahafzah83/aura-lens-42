@@ -172,21 +172,23 @@ const ThemeChip: React.FC<{
 // ── the year strip ─────────────────────────────────────────────────────────
 
 const YearStrip: React.FC<{ months: RecordBucket[]; onPick: (key: string) => void }> = ({ months, onPick }) => {
+  const [all, setAll] = useState(false);
   const asc = useMemo(() => months.slice().sort((a, b) => (a.d < b.d ? -1 : 1)), [months]);
+  const shownMonths = useMemo(() => (all ? asc : asc.slice(-18)), [asc, all]);
   if (asc.length === 0) return null;
   const max = Math.max(1, ...asc.map((m) => m.cap));
   const nowKey = iso(new Date()).slice(0, 7);
   return (
     <div style={{ display: "grid", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "flex-end", gap: 6, overflowX: "auto", paddingBlockEnd: 2 }}>
-        {asc.map((m) => {
+        {shownMonths.map((m) => {
           const current = m.d.slice(0, 7) === nowKey;
           const bg = m.pub > 0 ? "var(--act)" : current ? "var(--surface-inverse)" : "var(--border-strong)";
           return (
             <button
               key={m.d} type="button" onClick={() => onPick(m.d)}
-              title={`${monthLabel(m.d)} — ${m.cap} captured, ${m.pub} published`}
-              aria-label={`${monthLabel(m.d)}: ${m.cap} captured, ${m.pub} published`}
+              title={`${monthLabel(m.d)} — ${m.cap} saved, ${m.pub} posted`}
+              aria-label={`${monthLabel(m.d)}: ${m.cap} saved, ${m.pub} posted`}
               style={{
                 display: "grid", gap: 5, justifyItems: "center", background: "none", border: 0,
                 padding: 0, cursor: "pointer", fontFamily: "var(--font-body)",
@@ -202,8 +204,13 @@ const YearStrip: React.FC<{ months: RecordBucket[]; onPick: (key: string) => voi
         })}
       </div>
       <Muted style={{ fontSize: 12 }}>
-        Bar height is what you captured that month. Blue means you published in it.
+        Each bar is one month. Taller means you saved more that month. Blue means you posted something that month.
       </Muted>
+      {!all && asc.length > 18 && (
+        <TextButton onClick={() => setAll(true)} style={{ justifySelf: "start", fontSize: 12.5 }}>
+          Show all months
+        </TextButton>
+      )}
     </div>
   );
 };
