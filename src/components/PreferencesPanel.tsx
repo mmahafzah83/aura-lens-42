@@ -268,8 +268,6 @@ export default function PreferencesPanel({
   const updateSharedLearning = async (value: boolean) => {
     if (!userId) return;
     const previous = profile?.shared_learning_consent ?? null;
-    if (!userId) return;
-    const previous = profile?.shared_learning_consent ?? null;
     setProfile((p) => (p ? { ...p, shared_learning_consent: value } : p));
     try {
       const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
