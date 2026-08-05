@@ -185,16 +185,21 @@ function ArrowMark({ size, color, rtl }: { size: number; color: string; rtl: boo
  * anywhere in this file: it is read from the deck the requesting member's own
  * signal produced, and when the deck carries none, nothing is printed.
  */
-function firstThemeTag(deck: DeckIR): string | null {
+function firstThemeTag(deck: DeckIR): { text: string; hash: boolean } | null {
   for (const slide of deck.slides) {
     const chip = plainText(slide.slots.chip).trim();
     if (!chip) continue;
-    const joined = chip
-      .split(/[^\p{L}\p{N}]+/u)
-      .filter(Boolean)
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join("");
-    if (joined) return joined;
+    const words = chip.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    if (!words.length) continue;
+    // A hashtag only reads as one in a single Latin word. A multi-word label,
+    // or any Arabic label, stays a plain chip with its spaces intact — fusing
+    // the words together makes it unreadable.
+    const single = words.length === 1 && deck.primary_lang !== "ar" && !/[\u0600-\u06FF]/.test(chip);
+    if (single) {
+      const w = words[0];
+      return { text: w.charAt(0).toUpperCase() + w.slice(1), hash: true };
+    }
+    return { text: words.join(" "), hash: false };
   }
   return null;
 }
@@ -218,8 +223,11 @@ function Header({ deck, theme, s, tpl }: { deck: DeckIR; theme: Theme; s: Sizes;
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 14, flex: "0 0 auto" }}>
         {tag && (
-          <span style={{ fontFamily: tpl.fonts.textEn, fontWeight: 700, fontSize: s.identitySub, color: theme.fg }} dir="ltr">
-            #{tag}
+          <span
+            style={{ fontFamily: tag.hash ? tpl.fonts.textEn : fontFor(p, tpl.fonts), fontWeight: 700, fontSize: s.identitySub, color: theme.fg }}
+            dir={tag.hash ? "ltr" : deck.dir}
+          >
+            {tag.hash ? `#${tag.text}` : tag.text}
           </span>
         )}
         <SaveIcon size={40} color={theme.accent} />

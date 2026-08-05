@@ -9,6 +9,7 @@ import React, { useRef, useState } from "react";
 import { ImagePlus, RefreshCw, Trash2 } from "lucide-react";
 import type { Archetype, DeckIR, Slide, Slots } from "../deckIR";
 import { ARCHETYPE_LABEL, SLOT_LABEL, SLOT_ORDER } from "./slotLabels";
+import { REQUIRED_SLOTS, OPTIONAL_SLOTS } from "../slots";
 import {
   deleteSlide, editSlotText, heroBudgetFor, isLocked, readSlot,
   setHeroHighlight, setSlidePhoto, swapArchetype, swappableArchetypes, type SlotPath,
@@ -92,7 +93,14 @@ export function EditPanel({
   const canHoldPhoto = mediaSupport !== "none";
 
   const fields: Array<{ key: string; label: string; path: SlotPath; budget?: number; rows?: number; right?: React.ReactNode }> = [];
+  // A field is only editable if the archetype contract actually draws it.
+  // A stray slot the model emitted has no renderer, so editing it changes nothing.
+  const allowed = new Set<string>([
+    ...(REQUIRED_SLOTS[slide.archetype] ?? []),
+    ...(OPTIONAL_SLOTS[slide.archetype] ?? []),
+  ]);
   for (const slot of SLOT_ORDER) {
+    if (!allowed.has(slot as string)) continue;
     const value = (slide.slots as Slots)[slot];
     if (value === undefined) continue;
     if (Array.isArray(value)) {

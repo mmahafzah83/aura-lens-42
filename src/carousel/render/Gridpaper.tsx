@@ -244,7 +244,7 @@ function Header({ deck, s, tpl, ink, isCover }: {
   const p = deck.primary_lang;
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 32, flex: "0 0 auto" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 14, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "baseline", minWidth: 0 }}>
         <span
           style={{
             fontFamily: fontFor(p, tpl.fonts),
@@ -257,23 +257,22 @@ function Header({ deck, s, tpl, ink, isCover }: {
         >
           {renderRuns(deck.profile.name.runs, p, tpl.fonts)}
         </span>
-        {/* The masthead mark. A template constant, never a member string. */}
-        <span style={{ fontFamily: tpl.fonts.textEn, fontWeight: 700, fontSize: s.identitySub, letterSpacing: ".22em", color: ink.dim }} dir="ltr">
-          ✕✕✕
-        </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 14, flex: "0 0 auto" }}>
+        {/* The masthead mark, held in the opposite corner so it never reads as
+            part of the member's name. A template constant, never a member string. */}
         <span
           style={{
-            fontFamily: fontFor(p, tpl.fonts),
-            fontWeight: 500,
+            fontFamily: tpl.fonts.textEn,
+            fontWeight: 700,
             fontSize: s.identitySub,
-            letterSpacing: p === "ar" ? "0" : ".1em",
-            textTransform: p === "ar" ? "none" : "uppercase",
+            letterSpacing: ".22em",
             color: ink.dim,
+            opacity: 0.55,
           }}
+          dir="ltr"
         >
-          {p === "ar" ? "شريحة" : "Deck"}
+          ✕✕✕
         </span>
         {isCover && <SaveIcon size={40} color={ink.head} />}
       </div>
@@ -285,7 +284,6 @@ function Footer({ deck, slide, s, tpl, ink, isCover }: {
   deck: DeckIR; slide: SlideIR; s: Sizes; tpl: TemplateDescriptor; ink: Ink; isCover: boolean;
 }) {
   const rtl = deck.dir === "rtl";
-  const p = deck.primary_lang;
   const n = slide.index + 1;
   // DeckIR declares western numerals only.
   const numeral = String(n).padStart(2, "0");
@@ -315,7 +313,7 @@ function Footer({ deck, slide, s, tpl, ink, isCover }: {
             whiteSpace: "nowrap",
           }}
         >
-          {p === "ar" ? `صفحة ${numeral}` : `page ${numeral}`}
+          {numeral}
         </span>
         {isCover && <ArrowMark size={54} color={ink.head} rtl={rtl} />}
       </div>

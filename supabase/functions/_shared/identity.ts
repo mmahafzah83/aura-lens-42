@@ -30,7 +30,9 @@ export function bareHandle(value?: string | null): string | null {
   const fromUrl = v.match(/linkedin\.com\/in\/([^/?#]+)/i);
   const raw = fromUrl ? fromUrl[1] : v.replace(/^@/, "");
   const cleaned = decodeURIComponent(raw).replace(/[^A-Za-z0-9\u0600-\u06FF._-]/g, "").trim();
-  return cleaned.length ? cleaned : null;
+  // A slug never starts or ends with a separator: "-mahafdhah" is a fragment.
+  const trimmed = cleaned.replace(/^[.\-_]+/, "").replace(/[.\-_]+$/, "");
+  return trimmed.length ? trimmed : null;
 }
 
 /** The public profile URL for a vanity name. */
@@ -80,10 +82,16 @@ export function resolveIdentityFrom(conn: any, prof: any): Identity {
   const name = override || fromLinkedIn || assembled || "Member";
   const name_source: IdentitySource = override ? "override" : fromLinkedIn ? "linkedin" : "profile";
 
-  const linkedinHandle = bareHandle(conn?.handle) ?? bareHandle(conn?.profile_url);
-  const profileHandle = bareHandle(prof?.linkedin_handle) ?? bareHandle(prof?.linkedin_url);
-  const handle = linkedinHandle ?? profileHandle ?? "member";
-  const handle_source: IdentitySource = linkedinHandle ? "linkedin" : "profile";
+  // The member's OWN explicit handle wins. A connection URL is a fallback,
+  // never an override of what the member typed for themselves.
+  const handle =
+    bareHandle(prof?.linkedin_handle)
+    ?? bareHandle(conn?.handle)
+    ?? bareHandle(conn?.profile_url)
+    ?? bareHandle(prof?.linkedin_url)
+    ?? "member";
+  const handle_source: IdentitySource =
+    (prof?.linkedin_handle || prof?.linkedin_url) ? "profile" : "linkedin";
 
   return {
     name,

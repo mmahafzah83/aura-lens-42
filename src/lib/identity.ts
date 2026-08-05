@@ -24,7 +24,8 @@ export function bareHandle(value?: string | null): string | null {
   const fromUrl = v.match(/linkedin\.com\/in\/([^/?#]+)/i);
   const raw = fromUrl ? fromUrl[1] : v.replace(/^@/, "");
   const cleaned = decodeURIComponent(raw).replace(/[^A-Za-z0-9\u0600-\u06FF._-]/g, "").trim();
-  return cleaned.length ? cleaned : null;
+  const trimmed = cleaned.replace(/^[.\-_]+/, "").replace(/[.\-_]+$/, "");
+  return trimmed.length ? trimmed : null;
 }
 
 export function resolveIdentityFrom(conn: any, prof: any): Identity {
@@ -33,16 +34,20 @@ export function resolveIdentityFrom(conn: any, prof: any): Identity {
   const assembled = [prof?.first_name, prof?.last_name].filter(Boolean).join(" ").trim();
 
   const name = override || fromLinkedIn || assembled || "Member";
-  const linkedinHandle = bareHandle(conn?.handle) ?? bareHandle(conn?.profile_url);
-  const profileHandle = bareHandle(prof?.linkedin_handle) ?? bareHandle(prof?.linkedin_url);
-  const handle = linkedinHandle ?? profileHandle ?? "member";
+  // The member's own explicit handle wins over anything a connection carries.
+  const handle =
+    bareHandle(prof?.linkedin_handle)
+    ?? bareHandle(conn?.handle)
+    ?? bareHandle(conn?.profile_url)
+    ?? bareHandle(prof?.linkedin_url)
+    ?? "member";
 
   return {
     name,
     handle,
     profile_url: conn?.profile_url ?? (handle !== "member" ? `https://www.linkedin.com/in/${handle}` : null),
     name_source: override ? "override" : fromLinkedIn ? "linkedin" : "profile",
-    handle_source: linkedinHandle ? "linkedin" : "profile",
+    handle_source: (prof?.linkedin_handle || prof?.linkedin_url) ? "profile" : "linkedin",
   };
 }
 
