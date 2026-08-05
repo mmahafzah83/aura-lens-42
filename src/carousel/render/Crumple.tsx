@@ -32,6 +32,7 @@ import { getTemplate, type FontSet, type TemplateDescriptor } from "./template";
 import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
 import { checkEngagementRow, checkTypeFloor } from "../invariants";
 import EngagementRow from "./EngagementRow";
+import { CRUMPLE_FOLDS, CRUMPLE_VIGNETTE, crumpleFoldLayer } from "./paperPatterns";
 
 type Lang = "en" | "ar";
 
@@ -265,43 +266,25 @@ function Footer({ deck, theme, s, tpl, isCover }: {
 /* Deterministic gradients only: no filter, no blend mode.              */
 /* ------------------------------------------------------------------ */
 
-/** Where the five creases fall, as a percentage across the sheet. */
-const FOLDS = [
-  { pos: 17, vertical: true },
-  { pos: 41, vertical: false },
-  { pos: 58, vertical: true },
-  { pos: 73, vertical: false },
-  { pos: 88, vertical: true },
-] as const;
-
 function Background({ theme }: { theme: Theme }) {
   return (
     <>
       <div aria-hidden style={{ position: "absolute", inset: 0, background: theme.bgSolid }} />
-      {FOLDS.map((f, i) => (
+      {CRUMPLE_FOLDS.map((f, i) => (
         <div
           key={i}
           aria-hidden
           data-fold-line={i}
-          style={{
-            position: "absolute",
-            inset: 0,
-            // Crease then catch-light, both plain linear gradients.
-            backgroundImage:
-              `linear-gradient(${f.vertical ? "90deg" : "180deg"}, ` +
-              `transparent ${f.pos - 0.35}%, rgba(22,22,22,.10) ${f.pos}%, ` +
-              `rgba(255,255,255,.85) ${f.pos + 0.32}%, transparent ${f.pos + 0.9}%)`,
-          }}
+          // Crease then catch-light, both plain linear gradients.
+          data-css={crumpleFoldLayer(f.pos, f.vertical)}
+          style={{ position: "absolute", inset: 0, backgroundImage: crumpleFoldLayer(f.pos, f.vertical) }}
         />
       ))}
       <div
         aria-hidden
         data-vignette=""
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "radial-gradient(130% 105% at 50% 42%, transparent 58%, rgba(110,95,60,.10))",
-        }}
+        data-css={CRUMPLE_VIGNETTE}
+        style={{ position: "absolute", inset: 0, background: CRUMPLE_VIGNETTE }}
       />
     </>
   );
