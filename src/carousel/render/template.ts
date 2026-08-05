@@ -381,21 +381,13 @@ const GRIDPAPER: TemplateDescriptor = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Shared derivation for the field / gradient families                 */
+/* The field and gradient families                                     */
+/*                                                                     */
+/* `paperGateSpecs` is not paper-specific — it derives gate specs from  */
+/* a ramp and a weight set, which is exactly what these three need too. */
+/* Reusing it is what keeps the fit ladder honest across seven          */
+/* families; a second copy would be a second thing to forget.           */
 /* ------------------------------------------------------------------ */
-
-/**
- * Same contract as `paperGateSpecs`: the WEIGHTS differ per family, but every
- * SIZE is read from the ramp, so a ramp change can never leave the fit ladder
- * measuring a fallback face.
- */
-function fieldGateSpecs(
-  ramp: TypeRamp,
-  fonts: Omit<FontSet, "gateSpecs">,
-  w: { display: number; body: number; meta: number; arDisplay: number; arBody: number },
-): Array<[string, string]> {
-  return paperGateSpecs(ramp, fonts, w);
-}
 
 /** Montserrat carries salford's display at 800 and its meta at 500/600. */
 const FONT_MONTSERRAT = '"AuraMontserrat", "Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -450,7 +442,7 @@ const SALFORD: TemplateDescriptor = {
   },
   fonts: {
     ...SALFORD_FONTS_BASE,
-    gateSpecs: fieldGateSpecs(SALFORD_RAMP, SALFORD_FONTS_BASE, {
+    gateSpecs: paperGateSpecs(SALFORD_RAMP, SALFORD_FONTS_BASE, {
       display: 800, body: 500, meta: 600, arDisplay: 900, arBody: 400,
     }),
   },
@@ -509,7 +501,7 @@ const BLUEPRINT: TemplateDescriptor = {
   },
   fonts: {
     ...BLUEPRINT_FONTS_BASE,
-    gateSpecs: fieldGateSpecs(BLUEPRINT_RAMP, BLUEPRINT_FONTS_BASE, {
+    gateSpecs: paperGateSpecs(BLUEPRINT_RAMP, BLUEPRINT_FONTS_BASE, {
       display: 700, body: 400, meta: 500, arDisplay: 700, arBody: 400,
     }),
   },
@@ -564,8 +556,10 @@ const CONCEPT: TemplateDescriptor = {
   },
   fonts: {
     ...CONCEPT_FONTS_BASE,
-    gateSpecs: fieldGateSpecs(CONCEPT_RAMP, CONCEPT_FONTS_BASE, {
-      display: 700, body: 400, meta: 600, arDisplay: 900, arBody: 400,
+    // Inter ships 400/500/700/800 — meta is 500, never a 600 that would
+    // silently synthesise.
+    gateSpecs: paperGateSpecs(CONCEPT_RAMP, CONCEPT_FONTS_BASE, {
+      display: 700, body: 400, meta: 500, arDisplay: 900, arBody: 400,
     }),
   },
   media: MEDIA_BY_ARCHETYPE,
