@@ -157,29 +157,41 @@ serve(withObserve("calculate-aura-score", async (req) => {
       console.error("[calculate-aura-score] agent-signal filter failed", (e as Error).message);
     }
 
+    // Eligibility: only genuinely strong signals feed the Signal component.
+    // Mirrors signal-decay-engine's visibleStrong (STRENGTH_FLOOR 0.45 + top-6 cold-start
+    // guarantee) so weak fresh 'emerging' signals can't volume-max depth (G3/G6).
+    const STRENGTH_ELIGIBILITY = 0.45;
+    const TOP_N_GUARANTEE = 6;
+    const rankedByStrength = [...activeSignalsForScore].sort(
+      (a: any, b: any) => (Number(b.strength_score) || 0) - (Number(a.strength_score) || 0),
+    );
+    const eligibleIds = new Set(
+      rankedByStrength
+        .filter((s: any, i: number) => (Number(s.strength_score) || 0) >= STRENGTH_ELIGIBILITY || i < TOP_N_GUARANTEE)
+        .map((s: any) => s.id),
+    );
+    const eligibleSignals = activeSignalsForScore.filter((s: any) => eligibleIds.has(s.id));
+
     const TIER_WEIGHT: Record<string, number> = { live: 1.0, evergreen: 0.6, emerging: 0.3 };
-    let liveEvergreenStrengthSum = 0;
-    const weightedStrengthSum = activeSignalsForScore.reduce((sum: number, s: any) => {
-      const w = TIER_WEIGHT[s.lifecycle_tier] ?? 0.6; // default evergreen-equivalent
+    let liveStrengthSum = 0;
+    const weightedStrengthSum = eligibleSignals.reduce((sum: number, s: any) => {
+      const w = TIER_WEIGHT[s.lifecycle_tier] ?? 0.6;
       const strength = (Number(s.strength_score) || 0) * w;
-      if (s.lifecycle_tier === "live" || s.lifecycle_tier === "evergreen") {
-        liveEvergreenStrengthSum += strength;
-      }
+      if (s.lifecycle_tier === "live") liveStrengthSum += strength; // freshness = LIVE only
       return sum + strength;
     }, 0);
 
     const uniqueThemes = new Set<string>();
-    activeSignalsForScore.forEach((s: any) =>
+    eligibleSignals.forEach((s: any) =>
       (s.theme_tags || []).forEach((t: string) => uniqueThemes.add(t)),
     );
 
-    // depth 0–60: weightedStrengthSum normalized; D* calibration constant
-    const D_STAR = 8;
+    const D_STAR = 12; // raised from 8, anchored to a strong portfolio (h-index style) so depth discriminates instead of pinning
     const depth = 60 * Math.min(weightedStrengthSum / D_STAR, 1);
-    // breadth 0–30: soft saturation over distinct themes, no hard cap
     const breadth = 30 * (1 - Math.exp(-uniqueThemes.size / 6));
-    // liveness 0–10: continuous share of strength in live/evergreen tiers
-    const liveShare = liveEvergreenStrengthSum / Math.max(weightedStrengthSum, 0.0001);
+    // liveness = share of strong-set strength that is LIVE (fresh). Using live-only (not
+    // live+evergreen) keeps the term meaningful after the eligibility floor.
+    const liveShare = liveStrengthSum / Math.max(weightedStrengthSum, 0.0001);
     const liveness = 10 * Math.min(liveShare, 1);
     const signalScore = Math.min(Math.round(depth + breadth + liveness), 100);
 
