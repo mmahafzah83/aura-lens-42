@@ -298,9 +298,23 @@ export default function PreferencesPanel({
     }
   };
 
-  const updateSharedLearning = async (value: boolean) => {
+  /** Top-level column write; same optimistic + rollback contract as updatePref. */
+  const persistTimezone = async (tz: string) => {
     if (!userId) return;
-    const previous = profile?.shared_learning_consent ?? null;
+    const previousTz = profile?.timezone ?? null;
+    setProfile((p) => (p ? { ...p, timezone: tz } : p));
+    try {
+      const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ timezone: tz })
+        .eq("user_id", userId);
+      if (error) throw error;
+    } catch {
+      setProfile((p) => (p ? { ...p, timezone: previousTz } : p));
+      toast.error("Couldn't save — try again");
+    }
+  };
+
+  const updateSharedLearning = async (value: boolean) => {
     if (!userId) return;
     const previous = profile?.shared_learning_consent ?? null;
     setProfile((p) => (p ? { ...p, shared_learning_consent: value } : p));
