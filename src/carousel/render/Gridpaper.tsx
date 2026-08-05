@@ -284,12 +284,23 @@ function Footer({ deck, slide, s, tpl, ink, isCover }: {
   deck: DeckIR; slide: SlideIR; s: Sizes; tpl: TemplateDescriptor; ink: Ink; isCover: boolean;
 }) {
   const rtl = deck.dir === "rtl";
+  const p = deck.primary_lang;
   const n = slide.index + 1;
   // DeckIR declares western numerals only.
   const numeral = String(n).padStart(2, "0");
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 32, flex: "0 0 auto" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      {/* The signature block: who signed this, then where to find them. */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, minWidth: 0 }}>
+        <span style={{ fontFamily: tpl.fonts.textEn, fontWeight: 700, fontSize: Math.round(s.meta * 1.2), color: ink.head }}>
+          {renderRuns(deck.profile.name.runs, p, tpl.fonts)}
+        </span>
+        {deck.profile.title && (
+          <span style={{ fontFamily: tpl.fonts.textEn, fontWeight: 400, fontSize: s.meta, color: ink.dim }}>
+            {renderRuns(deck.profile.title.runs, p, tpl.fonts)}
+          </span>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {/* The glyph REPLACES "in/". Never both. */}
         <LinkedInGlyph size={Math.round(s.meta * 1.1)} color={ink.fg} />
         {deck.profile.handle && (
@@ -297,6 +308,7 @@ function Footer({ deck, slide, s, tpl, ink, isCover }: {
             {deck.profile.handle}
           </span>
         )}
+        </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 20, flex: "0 0 auto" }}>
         {/* The rotated pagination mark. Mirrors with the reading direction. */}

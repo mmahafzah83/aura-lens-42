@@ -240,10 +240,21 @@ function Footer({ deck, theme, s, tpl, isCover }: {
   deck: DeckIR; theme: Theme; s: Sizes; tpl: TemplateDescriptor; isCover: boolean;
 }) {
   const rtl = deck.dir === "rtl";
+  const p = deck.primary_lang;
   const year = new Date().getFullYear();
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 32, flex: "0 0 auto" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      {/* The signature block: who signed this, then where to find them. */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, minWidth: 0 }}>
+        <span style={{ fontFamily: tpl.fonts.textEn, fontWeight: 700, fontSize: Math.round(s.meta * 1.2), color: theme.head }}>
+          {renderRuns(deck.profile.name.runs, p, tpl.fonts)}
+        </span>
+        {deck.profile.title && (
+          <span style={{ fontFamily: tpl.fonts.textEn, fontWeight: 400, fontSize: s.meta, color: theme.dim }}>
+            {renderRuns(deck.profile.title.runs, p, tpl.fonts)}
+          </span>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {/* The glyph REPLACES "in/". Never both. */}
         <LinkedInGlyph size={Math.round(s.meta * 1.1)} color={theme.fg} />
         {deck.profile.handle && (
@@ -251,6 +262,7 @@ function Footer({ deck, theme, s, tpl, isCover }: {
             {deck.profile.handle}
           </span>
         )}
+        </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 16 }}>
         {/* The arrow lives on the cover and nowhere else — never inside the
