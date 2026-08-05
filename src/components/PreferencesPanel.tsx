@@ -29,7 +29,23 @@ interface Profile {
   level: string | null;
   notification_prefs: Record<string, unknown> | null;
   shared_learning_consent: boolean | null;
+  timezone: string | null;
 }
+
+const FALLBACK_TIMEZONES = [
+  "Asia/Riyadh", "Asia/Dubai", "Asia/Qatar", "Asia/Bahrain", "Asia/Kuwait",
+  "Asia/Muscat", "Asia/Amman", "Asia/Beirut", "Africa/Cairo",
+  "Europe/London", "Europe/Paris", "America/New_York", "America/Los_Angeles",
+];
+
+const TIMEZONES: string[] = (() => {
+  try {
+    const supported = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf;
+    const list = typeof supported === "function" ? supported("timeZone") : null;
+    if (list && list.length) return list;
+  } catch { /* fall through */ }
+  return FALLBACK_TIMEZONES;
+})();
 
 const SectionHeader = ({ children }: { children: React.ReactNode }) => (
   <div
@@ -225,7 +241,7 @@ export default function PreferencesPanel({
     (async () => {
       const { data } = await (supabase
         .from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, level, notification_prefs, shared_learning_consent")
+        .select("first_name, last_name, firm, sector_focus, level, notification_prefs, shared_learning_consent, timezone")
         .eq("user_id", userId)
         .maybeSingle();
       if (!cancelled) {
@@ -278,6 +294,22 @@ export default function PreferencesPanel({
       if (error) throw error;
     } catch {
       setProfile((p) => (p ? { ...p, notification_prefs: previous } : p));
+      toast.error("Couldn't save — try again");
+    }
+  };
+
+  /** Top-level column write; same optimistic + rollback contract as updatePref. */
+  const persistTimezone = async (tz: string) => {
+    if (!userId) return;
+    const previousTz = profile?.timezone ?? null;
+    setProfile((p) => (p ? { ...p, timezone: tz } : p));
+    try {
+      const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ timezone: tz })
+        .eq("user_id", userId);
+      if (error) throw error;
+    } catch {
+      setProfile((p) => (p ? { ...p, timezone: previousTz } : p));
       toast.error("Couldn't save — try again");
     }
   };
@@ -335,6 +367,43 @@ export default function PreferencesPanel({
         on={overnightReadingOn}
         onChange={(v) => updatePref("overnight_reading_enabled", v)}
       />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          padding: "14px 24px",
+          borderTop: "0.5px solid var(--rule)",
+          fontFamily: "var(--font-body)",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3 }}>Time zone</div>
+          <div style={{ fontSize: 12.5, color: "var(--ink-2)", marginTop: 4, lineHeight: 1.45 }}>
+            When your Monday brief and overnight email arrive. Defaults to Riyadh.
+          </div>
+        </div>
+        <select
+          aria-label="Time zone"
+          value={profile?.timezone || "Asia/Riyadh"}
+          onChange={(e) => persistTimezone(e.target.value)}
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            color: "var(--ink)",
+            background: "var(--paper-2)",
+            border: "0.5px solid var(--rule)",
+            borderRadius: 8,
+            padding: "8px 10px",
+            minHeight: 44,
+            maxWidth: 220,
+          }}
+        >
+          {TIMEZONES.map((tz) => (
+            <option key={tz} value={tz}>{tz}</option>
+          ))}
+        </select>
+      </div>
 
       {/* PRIVACY */}
       <SectionHeader>Privacy</SectionHeader>
