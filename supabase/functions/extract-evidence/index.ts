@@ -239,6 +239,33 @@ const handler = async (req: Request): Promise<Response> => {
     // Fetch source content
     const { content, title } = await fetchSourceContent(adminClient, registry.source_type, registry.source_id);
 
+    // Prune stale fragment ids out of signals' supporting_evidence_ids and
+    // adjust fragment_count DOWN. Single definition, called from both the
+    // document and non-document branches.
+    async function pruneStaleFragmentIds(oldFragmentIds: string[]) {
+      if (!oldFragmentIds.length) return;
+      const removedSet = new Set(oldFragmentIds);
+      const { data: sigs } = await adminClient
+        .from("strategic_signals")
+        .select("id, supporting_evidence_ids")
+        .eq("user_id", registry.user_id)
+        .overlaps("supporting_evidence_ids", oldFragmentIds);
+      for (const s of (sigs || []) as any[]) {
+        const current: string[] = s.supporting_evidence_ids || [];
+        const pruned = current.filter((fid) => !removedSet.has(fid));
+        if (pruned.length === current.length) continue;
+        await adminClient
+          .from("strategic_signals")
+          .update({
+            supporting_evidence_ids: pruned,
+            fragment_count: pruned.length,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", s.id)
+          .eq("user_id", registry.user_id);
+      }
+    }
+
     // ── Document path: hand off to the sliced map-reduce pipeline. ──
     // A single invocation cannot read a 384-chunk PDF; we enqueue an evidence_job
     // and kick extract-evidence-slice, which is resumable across invocations.
@@ -259,22 +286,7 @@ const handler = async (req: Request): Promise<Response> => {
         const oldFragmentIds: string[] = (oldFragRows || []).map((r: any) => r.id);
         if (oldFragmentIds.length) {
           await adminClient.from("evidence_fragments").delete().eq("source_registry_id", registryId);
-          const removedSet = new Set(oldFragmentIds);
-          const { data: sigs } = await adminClient
-            .from("strategic_signals")
-            .select("id, supporting_evidence_ids")
-            .eq("user_id", registry.user_id)
-            .overlaps("supporting_evidence_ids", oldFragmentIds);
-          for (const s of (sigs || []) as any[]) {
-            const cur: string[] = s.supporting_evidence_ids || [];
-            const pruned = cur.filter((fid) => !removedSet.has(fid));
-            if (pruned.length === cur.length) continue;
-            await adminClient.from("strategic_signals").update({
-              supporting_evidence_ids: pruned,
-              fragment_count: pruned.length,
-              updated_at: new Date().toISOString(),
-            }).eq("id", s.id);
-          }
+          await pruneStaleFragmentIds(oldFragmentIds);
         }
 
         const { count: totalChunks } = await adminClient
@@ -398,49 +410,44 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
 
     // Prune stale ids from signals' supporting_evidence_ids + recompute fragment_count DOWN.
     // NEW fragment ids are re-added downstream by detect-signals-v2's union path.
-    if (oldFragmentIds.length) {
-      const removedSet = new Set(oldFragmentIds);
-      const { data: sigs } = await adminClient
-        .from("strategic_signals")
-        .select("id, supporting_evidence_ids")
-        .eq("user_id", registry.user_id)
-        .overlaps("supporting_evidence_ids", oldFragmentIds);
-      for (const s of (sigs || []) as any[]) {
-        const current: string[] = s.supporting_evidence_ids || [];
-        const pruned = current.filter((fid) => !removedSet.has(fid));
-        if (pruned.length === current.length) continue;
-        await adminClient
-          .from("strategic_signals")
-          .update({
-            supporting_evidence_ids: pruned,
-            fragment_count: pruned.length,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", s.id)
-          .eq("user_id", registry.user_id);
-      }
-    }
+    await pruneStaleFragmentIds(oldFragmentIds);
 
-    // Insert new fragments
-    const inserted = [];
-    for (const frag of fragments) {
-      const { data: row, error: fragErr } = await adminClient
+    // Insert new fragments — ONE batched insert. A partial/failed write must be
+    // loud: fragment_count is derived from this and would otherwise under-report.
+    const fragmentRows = (fragments as any[]).map((frag: any) => ({
+      user_id: registry.user_id,
+      source_registry_id: registryId,
+      fragment_type: frag.fragment_type || "insight",
+      title: frag.title,
+      content: frag.content,
+      confidence: frag.confidence || 0.7,
+      skill_pillars: frag.skill_pillars || [],
+      tags: frag.tags || [],
+      entities: frag.entities || [],
+      metadata: { source_title: title },
+    }));
+
+    let inserted: any[] = [];
+    if (fragmentRows.length > 0) {
+      const { data: insRows, error: insErr } = await adminClient
         .from("evidence_fragments")
-        .insert({
+        .insert(fragmentRows)
+        .select();
+      inserted = insRows || [];
+      if (insErr || inserted.length < fragmentRows.length) {
+        await logEfError(adminClient, {
+          function_name: "extract-evidence",
+          error: insErr ?? new Error("evidence_fragments batch insert returned fewer rows than sent"),
+          severity: "high",
           user_id: registry.user_id,
-          source_registry_id: registryId,
-          fragment_type: frag.fragment_type || "insight",
-          title: frag.title,
-          content: frag.content,
-          confidence: frag.confidence || 0.7,
-          skill_pillars: frag.skill_pillars || [],
-          tags: frag.tags || [],
-          entities: frag.entities || [],
-          metadata: { source_title: title },
-        })
-        .select()
-        .single();
-      if (!fragErr && row) inserted.push(row);
+          context: {
+            source_registry_id: registryId,
+            user_id: registry.user_id,
+            expected_count: fragmentRows.length,
+            actual_count: inserted.length,
+          },
+        });
+      }
     }
 
     // Generate embeddings for newly inserted fragments (non-blocking on failure).
