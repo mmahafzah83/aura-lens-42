@@ -10,7 +10,14 @@ const SECTOR_OPTIONS = [
   "Healthcare", "Telecom", "Real Estate", "Manufacturing", "Other",
 ];
 
-export type EditProfileField = "first_name" | "firm" | "sector_focus";
+export type EditProfileField =
+  | "first_name"
+  | "last_name"
+  | "firm"
+  | "sector_focus"
+  | "level"
+  | "core_practice"
+  | "north_star_goal";
 
 interface Props {
   open: boolean;
@@ -28,11 +35,18 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
   const [firm, setFirm] = useState("");
   const [sectorFocus, setSectorFocus] = useState("");
   const [sectorOther, setSectorOther] = useState("");
+  const [level, setLevel] = useState("");
+  const [corePractice, setCorePractice] = useState("");
+  const [northStar, setNorthStar] = useState("");
   const [country, setCountry] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const firmRef = useRef<HTMLInputElement>(null);
   const sectorRef = useRef<HTMLSelectElement>(null);
+  const lastNameRef = useRef<HTMLInputElement>(null);
+  const levelRef = useRef<HTMLInputElement>(null);
+  const practiceRef = useRef<HTMLInputElement>(null);
+  const northStarRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -52,7 +66,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     setLoading(true);
     (async () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, country, country_code")
+        .select("first_name, last_name, firm, sector_focus, level, core_practice, north_star_goal, country, country_code")
         .eq("user_id", userId)
         .maybeSingle();
       if (cancelled) return;
@@ -60,6 +74,9 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
       setFirstName(p.first_name || "");
       setLastName(p.last_name || "");
       setFirm(p.firm || "");
+      setLevel(p.level || "");
+      setCorePractice(p.core_practice || "");
+      setNorthStar(p.north_star_goal || "");
       setCountry(p.country || null);
       setCountryCode(p.country_code || null);
       const sf = p.sector_focus || "";
@@ -80,6 +97,10 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     requestAnimationFrame(() => {
       if (focusField === "firm") firmRef.current?.focus();
       else if (focusField === "sector_focus") sectorRef.current?.focus();
+      else if (focusField === "last_name") lastNameRef.current?.focus();
+      else if (focusField === "level") levelRef.current?.focus();
+      else if (focusField === "core_practice") practiceRef.current?.focus();
+      else if (focusField === "north_star_goal") northStarRef.current?.focus();
       else firstNameRef.current?.focus();
     });
   }, [open, loading, focusField]);
@@ -94,6 +115,9 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
         last_name: lastName.trim() || null,
         firm: firm.trim() || null,
         sector_focus: resolvedSector || null,
+        level: level.trim() || null,
+        core_practice: corePractice.trim() || null,
+        north_star_goal: northStar.trim() || null,
         country: country || null,
         country_code: countryCode || null,
       })
@@ -185,12 +209,20 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
               </div>
               <div>
                 <label style={label}>Last name</label>
-                <input value={lastName} onChange={(e) => setLastName(e.target.value)} style={input} />
+                <input ref={lastNameRef} value={lastName} onChange={(e) => setLastName(e.target.value)} style={input} />
               </div>
             </div>
             <div>
               <label style={label}>Firm</label>
               <input ref={firmRef} value={firm} onChange={(e) => setFirm(e.target.value)} style={input} />
+            </div>
+            <div>
+              <label style={label}>Title</label>
+              <input ref={levelRef} value={level} onChange={(e) => setLevel(e.target.value)} style={input} />
+            </div>
+            <div>
+              <label style={label}>Core practice</label>
+              <input ref={practiceRef} value={corePractice} onChange={(e) => setCorePractice(e.target.value)} style={input} />
             </div>
             <div>
               <label style={label}>Sector</label>
@@ -211,6 +243,16 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
                   style={{ ...input, marginTop: 8 }}
                 />
               )}
+            </div>
+            <div>
+              <label style={label}>North-star goal</label>
+              <textarea
+                ref={northStarRef}
+                value={northStar}
+                onChange={(e) => setNorthStar(e.target.value)}
+                rows={3}
+                style={{ ...input, resize: "vertical", lineHeight: 1.5 }}
+              />
             </div>
             <div>
               <CountryPicker
