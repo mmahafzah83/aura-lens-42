@@ -19,6 +19,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "npm:zod@3.23.8": [
+        "./node_modules/zod"
       ]
     },
     "skipLibCheck": true,

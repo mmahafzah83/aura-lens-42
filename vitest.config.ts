@@ -11,6 +11,11 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      // Edge-function modules are written for Deno; map its npm: specifiers so
+      // the same source can be tested here without a second copy.
+      "npm:zod@3.23.8": "zod",
+    },
   },
 });

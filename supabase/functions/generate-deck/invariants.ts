@@ -217,7 +217,7 @@ export function nearlyContains(a: string, b: string): boolean {
 export type InvariantTier = "error" | "repair" | "warn";
 
 /** Deterministically repairable by `repairDeck` before the deck is judged. */
-const REPAIRABLE = ["INV-04", "INV-05", "INV-13", "INV-20"];
+const REPAIRABLE = ["INV-04", "INV-05", "INV-07", "INV-13", "INV-20"];
 /** Voice and taste rules: reported to the member, never a reason to ship nothing. */
 const WARNINGS = ["INV-06", "INV-10", "INV-12", "INV-18", "INV-19"];
 
