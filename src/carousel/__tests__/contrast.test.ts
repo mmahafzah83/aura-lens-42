@@ -40,6 +40,19 @@ const GROUNDS = ["paper", "field", "dark", "g1", "g2", "g3", "bgSolid", "invert"
 const INKS = ["ink", "fg", "invertFg"] as const;
 
 /**
+ * WHICH INK RIDES ON WHICH GROUND.
+ *
+ * The inversion ground carries `invertFg` — that is what the field MEANS. It
+ * does not carry `fg`, which is the ink for the PRIMARY ground, and pairing
+ * the two would be inventing a combination no renderer draws. Every other
+ * ground carries the primary ink. Where a theme leaves a field undeclared the
+ * pair simply is not generated, exactly as before.
+ */
+function inksFor(ground: string): readonly string[] {
+  return ground === "invert" ? ["invertFg"] : ["ink", "fg"];
+}
+
+/**
  * LEGACY EXEMPTION — closed list, do not extend.
  *
  * `gradient` is an instrument theme that ships today and fails the gate at
