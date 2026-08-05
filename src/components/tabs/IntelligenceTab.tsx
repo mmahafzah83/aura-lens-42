@@ -1187,6 +1187,17 @@ export const EditorialReadingList = ({
 /* ═══════════════════════════════════════════
    MAIN
    ═══════════════════════════════════════════ */
+/* Canonical "strongest" ordering: strength first, then breadth, confidence, recency. */
+const byStrength = (a: Signal, b: Signal) => {
+  const s = (b.strength_score ?? 0) - (a.strength_score ?? 0);
+  if (s !== 0) return s;
+  const o = ((b as any).sourceCount ?? (b as any).unique_orgs ?? 0) - ((a as any).sourceCount ?? (a as any).unique_orgs ?? 0);
+  if (o !== 0) return o;
+  const c = (b.confidence ?? 0) - (a.confidence ?? 0);
+  if (c !== 0) return c;
+  return new Date((b as any).last_evidence_at ?? 0).getTime() - new Date((a as any).last_evidence_at ?? 0).getTime();
+};
+
 const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }: IntelligenceTabProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user: authUser } = useAuthReady();
@@ -1216,7 +1227,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       const [signalsRes, entriesRes, documentsRes, evidenceRes] = await Promise.all([
         supabase.from("strategic_signals")
           .select("*, signal_velocity, velocity_status, commercial_validation_score")
-          .eq("status", "active").order("confidence", { ascending: false }).limit(50),
+          .eq("status", "active").order("strength_score", { ascending: false, nullsFirst: false }).limit(50),
         supabase.from("entries").select("id", { count: "exact", head: true }),
         supabase.from("documents").select("id", { count: "exact", head: true }),
         supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", user.id),
@@ -1231,7 +1242,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       setSignals(loaded);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setEvidenceCount(evidenceRes.count || 0);
-      if (loaded.length > 0 && !selectedSignalId) setSelectedSignalId(loaded[0].id);
+      if (loaded.length > 0 && !selectedSignalId) setSelectedSignalId([...loaded].sort(byStrength)[0].id);
     } catch (e) {
       console.error("[IntelligenceTab]", e);
       setLoadError(true); showQueryErrorToast();
@@ -1306,9 +1317,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     await loadSignals();
   };
 
+  const strongestSignal = useMemo(() => [...signals].sort(byStrength)[0] || null, [signals]);
+
   const selectedSignal = useMemo(() =>
-    sortedByConfidence.find(s => s.id === selectedSignalId) || sortedByConfidence[0] || null,
-    [sortedByConfidence, selectedSignalId]);
+    signals.find(s => s.id === selectedSignalId) || strongestSignal || null,
+    [signals, selectedSignalId, strongestSignal]);
 
   const draftFromSignal = async (s: Signal) => {
     await supabase.from("strategic_signals").update({ priority_score: (s.priority_score || 0) + 0.05 }).eq("id", s.id);
