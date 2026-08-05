@@ -175,12 +175,17 @@ export function filterCatalogRows<T extends PostLike>(
 // ---------------------------------------------------------------------------
 // CANONICAL PROVENANCE — mirror of the SQL view `public.post_provenance`.
 //
-// A row is in scope only if `published_at` is set. Every published row then
-// falls into exactly one of three buckets, in this order:
+// The columns `authorship` and `acquisition` on `linkedin_posts` are the
+// source of truth. A row is in scope only if `published_at` is set. Every
+// published row then falls into exactly one of three buckets, in this order:
 //
-//   aura_published — publish_attempted_at IS NOT NULL   (Aura made the call)
-//   aura_drafted   — source_metadata has a 'source' key (written here)
-//   linkedin_only  — everything else                    (the sync found it)
+//   aura_published — acquisition = 'published_via_aura' (or the legacy
+//                    publish_attempted_at stamp): Aura made the call.
+//   aura_drafted   — authorship = 'aura_drafted' | 'aura_assisted'.
+//   linkedin_only  — everything else: the sync found it.
+//
+// The old `source_metadata has a 'source' key` rule is RETIRED and must not
+// be re-introduced here or anywhere else.
 //
 // THE TWO FIGURES, and they are NEVER merged into one:
 //   Live on LinkedIn = all three.
@@ -192,6 +197,8 @@ export type Provenance = "aura_published" | "aura_drafted" | "linkedin_only";
 export type ProvenanceRow = {
   published_at?: string | null;
   publish_attempted_at?: string | null;
+  authorship?: string | null;
+  acquisition?: string | null;
   source_metadata?: Record<string, unknown> | null;
   /** Present when the row came from the SQL view or home_record_timeline. */
   provenance?: Provenance | null;
@@ -200,12 +207,10 @@ export type ProvenanceRow = {
 /** Null when the post is not live on LinkedIn (a draft). */
 export function provenanceOf(p: ProvenanceRow | null | undefined): Provenance | null {
   if (!p) return null;
-  if (p.provenance) return p.provenance;
-  if (!p.published_at) return null;
-  if (p.publish_attempted_at) return "aura_published";
-  if (p.source_metadata && Object.prototype.hasOwnProperty.call(p.source_metadata, "source")) {
-    return "aura_drafted";
-  }
+  if (p.provenance) return p.provenance;                 // already classified by the view/RPC
+  if (!p.published_at) return null;                      // a draft, not live on LinkedIn
+  if (p.acquisition === "published_via_aura" || p.publish_attempted_at) return "aura_published";
+  if (p.authorship === "aura_drafted" || p.authorship === "aura_assisted") return "aura_drafted";
   return "linkedin_only";
 }
 
