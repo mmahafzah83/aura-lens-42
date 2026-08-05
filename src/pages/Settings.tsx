@@ -17,6 +17,7 @@ import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broads
 import CountryPicker from "@/components/CountryPicker";
 import PreferencesPanel from "@/components/PreferencesPanel";
 import AccountPanel from "@/components/settings/AccountPanel";
+import SlideDefaultsCard from "@/components/settings/SlideDefaultsCard";
 import WhatsAppPairingCard from "@/components/settings/WhatsAppPairingCard";
 import { WHATSAPP_PAIRING_ALLOWLIST } from "@/config/whatsapp";
 
@@ -717,6 +718,17 @@ const handleDeleteAccount = async () => {
             </div>
           </AuraCard>
         </div>
+        </section>
+
+        {/* Slides */}
+        <section id="slides" style={{ scrollMarginTop: 96 }}>
+          <SectionHeader
+            label="Slides"
+            subtitle="The family and colour your slides open in. You can still change either inside any post."
+          />
+          <div className="space-y-4">
+            <SlideDefaultsCard userId={authUser?.id ?? null} />
+          </div>
         </section>
 
         {/* Profile summary */}

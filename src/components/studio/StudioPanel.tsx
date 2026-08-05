@@ -278,6 +278,44 @@ export default function StudioPanel({
   }, [portrait.cutoutUrl]);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
   /**
+   * A LOOK THE MEMBER HAS ALREADY DECIDED — either by choosing one in this
+   * post, or by opening a post that already carries one. Once true, the
+   * member's saved default must never overwrite it: a default seeds a new
+   * post, it does not reach into work already in progress.
+   */
+  const lookDecided = useRef(false);
+  /**
+   * THE MEMBER'S OWN DEFAULT LOOK, read at request time from their own row.
+   * It seeds a post that has not been given a look yet and stops there: if a
+   * deck is already open, or the member has already picked, the default is
+   * dropped on the floor rather than clobbering the work.
+   */
+  const defaultLook = useRef<{ template: string; theme: ThemeName } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return;
+      const { data } = await supabase
+        .from("diagnostic_profiles")
+        .select("default_template, default_theme")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (cancelled || lookDecided.current) return;
+      const fam = (data as { default_template?: string | null } | null)?.default_template;
+      const col = (data as { default_theme?: string | null } | null)?.default_theme;
+      if (!fam || !(fam in templateThemes)) return;
+      const allowed = (templateThemes[fam] ?? []) as ThemeName[];
+      if (!allowed.length) return;
+      const pick = col && allowed.includes(col as ThemeName) ? (col as ThemeName) : allowed[0];
+      defaultLook.current = { template: fam, theme: pick };
+      setTemplate(fam);
+      setTheme(pick);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  /**
    * The slide family. A free channel: changing it re-draws the deck already in
    * hand and never calls the model. The theme is clamped to what the chosen
    * family can actually draw.
@@ -589,6 +627,7 @@ export default function StudioPanel({
       const parsed = DeckIRSchema.safeParse(saved.deck);
       if (parsed.success) {
         setDeck(parsed.data);
+        lookDecided.current = true;
         setTheme(parsed.data.theme as ThemeName);
         // A restored deck brings its own family back with it.
         if (typeof parsed.data.template === "string") setTemplate(parsed.data.template);
@@ -728,6 +767,13 @@ export default function StudioPanel({
    * Called only when a NEW piece begins. Never while merely editing.
    */
   const startNewPiece = useCallback((next?: { choice?: Choice | null; format?: Format | null }) => {
+    // A new post starts on the member's own default look again, not on
+    // whatever the last post happened to be set to.
+    lookDecided.current = false;
+    if (defaultLook.current) {
+      setTemplate(defaultLook.current.template);
+      setTheme(defaultLook.current.theme);
+    }
     setContent("");
     setDeck(null);
     setDeckSource(null);
@@ -863,6 +909,7 @@ export default function StudioPanel({
             const parsed = DeckIRSchema.safeParse(saved);
             if (parsed.success) {
               setDeck(parsed.data);
+              lookDecided.current = true;
               setTheme(parsed.data.theme as ThemeName);
               if (typeof parsed.data.template === "string") setTemplate(parsed.data.template);
             }
@@ -1475,6 +1522,9 @@ export default function StudioPanel({
 
   const uploadPicture = useCallback(async (file: File) => {
     setPictureNotice(null);
+    // The picture path is client-side only. Whatever the last build said, it
+    // is not about this action — retire the banner before we start.
+    setDeckFailures([]);
     if (!deck) return;
     const slide = deck.slides[Math.min(current, deck.slides.length - 1)];
     if (mediaSupport(slide.archetype) === "none") { setPictureNotice(T.noPictureHere[lang]); return; }
@@ -1693,6 +1743,23 @@ export default function StudioPanel({
     if (fit?.failed) return attentionText(plainFailure(fit.reason ?? "A slide does not fit."), lang);
     return null;
   }, [fits, current, lang]);
+
+  /**
+   * GENERATION FAILURE IS NOT A PICTURE FAILURE.
+   *
+   * The top banner reports one thing only: the last attempt to BUILD the
+   * slides. Adding a picture never calls the generator, so a banner left
+   * standing from an earlier build reads as if the picture had failed. It is
+   * cleared on the way into the Look step, and again the moment a picture
+   * action starts. A picture's own problems surface on the small notice line
+   * beside the control, never up here.
+   */
+  useEffect(() => {
+    if (sub !== "look") return;
+    setDeckFailures([]);
+    setFits({});
+    fitsRef.current = {};
+  }, [sub]);
 
   /* THE PIECE STATE. Derived, never stored twice, never inferred from the
      highest step visited. `deriveDone` owns every tick and clamps the
@@ -2814,11 +2881,12 @@ export default function StudioPanel({
               <ZoneLook
                 lang={lang}
                 theme={theme}
-                onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
+                onTheme={(t) => { lookDecided.current = true; setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
                 template={template}
                 onTemplate={(id) => {
                   const allowed = (templateThemes[id] ?? []) as ThemeName[];
                   const next = allowed.includes(theme) ? theme : allowed[0];
+                  lookDecided.current = true;
                   setTemplate(id);
                   setTheme(next);
                   setDeck((d) => (d ? { ...d, template: id, theme: next } : d));
