@@ -635,6 +635,9 @@ Rules:
           continue;
         }
 
+        // Only AFTER a successful send do we burn the idempotency key.
+        await admin.from("lifecycle_email_log").insert({ user_id: userId, message_key: wkKey });
+
         await admin.from("notification_events").insert({
           user_id: userId,
           type: "weekly_brief",
