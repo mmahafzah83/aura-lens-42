@@ -68,9 +68,9 @@ type Grain = "day" | "week" | "month";
 
 type Row =
   | { kind: "bucket"; at: string; grain: Grain; b: RecordBucket; pubs: RecordPublished[] }
-  | { kind: "quiet"; at: string; from: string; to: string; n: number }
+  | { kind: "quiet"; at: string; from: string; to: string; n: number; state: "night" | "zero" }
   | { kind: "milestone"; at: string; m: RecordMilestone }
-  | { kind: "publish"; at: string; p: RecordPublished };
+  | { kind: "pubday"; at: string; ps: RecordPublished[] };
 
 const periodEnd = (key: string, grain: Grain) => {
   const a = parse(key);
@@ -86,17 +86,17 @@ function milestoneText(m: RecordMilestone): { head: string; sub: string } {
     const band = String(m.value ?? "").replace(/_/g, " ");
     const top = /presence/i.test(band);
     return {
-      head: `You crossed into ${band}.`,
+      head: m.direction === "down" ? `You moved down to ${band}.` : `You moved up to ${band}.`,
       sub: top
         ? "The top band. Held by publishing, not by reading."
         : "The band moved because the record moved.",
     };
   }
   if (m.kind === "first_publish") {
-    return { head: "Your first published entry.", sub: postTitle(m.value) };
+    return { head: "Your first post written with Aura.", sub: postTitle(m.value) };
   }
   return {
-    head: `A theme reached ${m.n ?? 25} fragments.`,
+    head: `One topic reached ${m.n ?? 25} pieces of knowledge.`,
     sub: postTitle(m.value),
   };
 }
@@ -151,17 +151,17 @@ const ThemeChip: React.FC<{
     }}>
       <MachineDot size={6} />
       <span aria-hidden style={{ ...MONO, fontSize: 10 }}>{open ? "▾" : "▸"}</span>
-      {plural(n, "theme formed", "themes formed")}
+      {plural(n, "topic found", "topics found")}
     </button>
     {open && (
       <div style={{ display: "grid", gap: 4, paddingInlineStart: 4 }}>
-        {loading && <Muted style={{ fontSize: 12.5 }}>Reading the themes…</Muted>}
+        {loading && <Muted style={{ fontSize: 12.5 }}>Reading the topics…</Muted>}
         {!loading && titles.slice(0, 10).map((t, i) => (
           <p key={i} style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{t}</p>
         ))}
         {!loading && n > titles.length && (
           <TextButton onClick={onOpenSignals} style={{ justifySelf: "start", fontSize: 12.5 }}>
-            …and {n - titles.length} more — open the signals board
+            …and {n - titles.length} more — open the topics board
           </TextButton>
         )}
       </div>
@@ -172,21 +172,23 @@ const ThemeChip: React.FC<{
 // ── the year strip ─────────────────────────────────────────────────────────
 
 const YearStrip: React.FC<{ months: RecordBucket[]; onPick: (key: string) => void }> = ({ months, onPick }) => {
+  const [all, setAll] = useState(false);
   const asc = useMemo(() => months.slice().sort((a, b) => (a.d < b.d ? -1 : 1)), [months]);
+  const shownMonths = useMemo(() => (all ? asc : asc.slice(-18)), [asc, all]);
   if (asc.length === 0) return null;
   const max = Math.max(1, ...asc.map((m) => m.cap));
   const nowKey = iso(new Date()).slice(0, 7);
   return (
     <div style={{ display: "grid", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "flex-end", gap: 6, overflowX: "auto", paddingBlockEnd: 2 }}>
-        {asc.map((m) => {
+        {shownMonths.map((m) => {
           const current = m.d.slice(0, 7) === nowKey;
           const bg = m.pub > 0 ? "var(--act)" : current ? "var(--surface-inverse)" : "var(--border-strong)";
           return (
             <button
               key={m.d} type="button" onClick={() => onPick(m.d)}
-              title={`${monthLabel(m.d)} — ${m.cap} captured, ${m.pub} published`}
-              aria-label={`${monthLabel(m.d)}: ${m.cap} captured, ${m.pub} published`}
+              title={`${monthLabel(m.d)} — ${m.cap} saved, ${m.pub} posted`}
+              aria-label={`${monthLabel(m.d)}: ${m.cap} saved, ${m.pub} posted`}
               style={{
                 display: "grid", gap: 5, justifyItems: "center", background: "none", border: 0,
                 padding: 0, cursor: "pointer", fontFamily: "var(--font-body)",
@@ -202,8 +204,13 @@ const YearStrip: React.FC<{ months: RecordBucket[]; onPick: (key: string) => voi
         })}
       </div>
       <Muted style={{ fontSize: 12 }}>
-        Bar height is what you captured that month. Blue means you published in it.
+        Each bar is one month. Taller means you saved more that month. Blue means you posted something that month.
       </Muted>
+      {!all && asc.length > 18 && (
+        <TextButton onClick={() => setAll(true)} style={{ justifySelf: "start", fontSize: 12.5 }}>
+          Show all months
+        </TextButton>
+      )}
     </div>
   );
 };
@@ -233,6 +240,18 @@ export const RecordLens: React.FC<RecordLensProps> = ({
   const themes = useThemeTitles();
   const uid = userId ?? "anon";
   const draft = facts?.last_night?.newest_signal_draft ?? null;
+
+  // Only last night's draft counts as "this morning". When the row carries no
+  // timestamp the overnight run is, by definition, last night's.
+  const draftIsFresh = useMemo(() => {
+    if (!draft) return false;
+    const created = (draft as any).created_at as string | undefined;
+    if (!created) return true;
+    const yesterday = new Date();
+    yesterday.setHours(0, 0, 0, 0);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return new Date(created).getTime() >= yesterday.getTime();
+  }, [draft]);
 
   const [zoom, setZoom] = useState<RecordZoom>(() => {
     try {
@@ -275,7 +294,12 @@ export const RecordLens: React.FC<RecordLensProps> = ({
     }));
 
     if (zoom === "published") {
-      t.published.forEach((p) => out.push({ kind: "publish", at: String(p.at).slice(0, 10), p }));
+      const byDay = new Map<string, RecordPublished[]>();
+      t.published.forEach((p) => {
+        const k = String(p.at).slice(0, 10);
+        byDay.set(k, [...(byDay.get(k) ?? []), p]);
+      });
+      byDay.forEach((ps, k) => out.push({ kind: "pubday", at: k, ps }));
       out.push(...milestoneRows);
       return out.sort((a, b) => (a.at < b.at ? 1 : -1));
     }
@@ -283,20 +307,29 @@ export const RecordLens: React.FC<RecordLensProps> = ({
     if (zoom === "days") {
       // last 30 days, calendar-complete so quiet runs can collapse
       const byDay = new Map(t.days.map((b) => [b.d, b]));
+      const floor = t.signupAt ? String(t.signupAt).slice(0, 10) : null;
       let quiet: string[] = [];
+      let quietState: "night" | "zero" | null = null;
       const flush = () => {
-        if (quiet.length === 0) return;
-        out.push({ kind: "quiet", at: quiet[0], from: quiet[quiet.length - 1], to: quiet[0], n: quiet.length });
-        quiet = [];
+        if (quiet.length === 0 || !quietState) return;
+        out.push({
+          kind: "quiet", at: quiet[0], from: quiet[quiet.length - 1], to: quiet[0],
+          n: quiet.length, state: quietState,
+        });
+        quiet = []; quietState = null;
       };
       for (let i = 0; i <= 30; i++) {
         const key = iso(new Date(Date.now() - i * DAY));
         if (key > today) continue;
+        if (floor && key < floor) break;
         const b = byDay.get(key);
         if (b && !isEmpty(b)) {
           flush();
           out.push({ kind: "bucket", at: key, grain: "day", b, pubs: pubByDay.get(key) ?? [] });
         } else {
+          const state: "night" | "zero" = (b?.nights ?? 0) > 0 ? "night" : "zero";
+          if (quietState && quietState !== state) flush();
+          quietState = state;
           quiet.push(key);
         }
       }
@@ -318,7 +351,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
 
     out.push(...milestoneRows);
     return out.sort((a, b) => (a.at < b.at ? 1 : -1));
-  }, [t.loading, t.days, t.weeks, t.months, t.published, t.milestones, zoom, pubByDay, pubsIn]);
+  }, [t.loading, t.days, t.weeks, t.months, t.published, t.milestones, t.signupAt, zoom, pubByDay, pubsIn]);
 
   const visible = rows.slice(0, shown);
 
@@ -348,9 +381,9 @@ export const RecordLens: React.FC<RecordLensProps> = ({
   return (
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-        <Kicker>The record</Kicker>
-        <SectionTitle>What has actually happened</SectionTitle>
-        <Muted>Every line below is an event, not a projection.</Muted>
+        <Kicker>What happened</Kicker>
+        <SectionTitle>What happened</SectionTitle>
+        <Muted>Everything here already happened. Nothing here is a guess.</Muted>
       </div>
 
       {/* the year strip */}
@@ -392,18 +425,15 @@ export const RecordLens: React.FC<RecordLensProps> = ({
             <div style={{ position: "relative", marginBlockEnd: 20 }}>
               <Knot tone="plain" />
               <RowLabel>Today</RowLabel>
-              {draft && !draftDismissed ? (
+              {draft && draftIsFresh && !draftDismissed ? (
                 <div style={{
                   marginBlockStart: 10, border: "1px solid var(--rule-outer)", borderRadius: 12,
                   padding: 14, background: "var(--surface-page)",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBlockEnd: 8 }}>
                     <MachineDot />
-                    <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>Aura wrote this overnight from your themes.</span>
+                    <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>Aura wrote this for you last night.</span>
                   </div>
-                  <p style={{ margin: "0 0 12px", fontSize: 14.5, lineHeight: 1.55, color: "var(--text-primary)", fontWeight: 600 }}>
-                    {draft.title || "A draft is waiting"}
-                  </p>
                   <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                     <PublishPill onClick={() => onPublishDraft(draft.id)}>Publish</PublishPill>
                     <TextButton onClick={() => onDismissDraft(draft.id)}>Not this one</TextButton>
@@ -411,9 +441,9 @@ export const RecordLens: React.FC<RecordLensProps> = ({
                 </div>
               ) : (
                 <Body style={{ marginBlockStart: 8 }}>
-                  {draft && draftDismissed
+                  {draft && draftIsFresh && draftDismissed
                     ? "You passed on last night's draft. It stays in Composer."
-                    : "No draft came out of last night."}
+                    : "No new draft this morning."}
                 </Body>
               )}
             </div>
@@ -434,7 +464,13 @@ export const RecordLens: React.FC<RecordLensProps> = ({
                 <div key={`q-${r.at}-${idx}`} style={{ position: "relative", marginBlockEnd: 16 }}>
                   <Knot tone="quiet" />
                   <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--text-muted)" }}>
-                    {r.n === 1 ? "One quiet night." : `${r.n} quiet nights.`} Aura read and found nothing worth writing.
+                    {r.state === "night"
+                      ? (r.n === 1
+                        ? "Aura read that night and found nothing worth writing."
+                        : `${r.n} nights: Aura read and found nothing worth writing.`)
+                      : (r.n === 1
+                        ? "Nothing happened this day."
+                        : `${r.n} days with nothing on them.`)}
                   </p>
                 </div>
               );
@@ -459,12 +495,14 @@ export const RecordLens: React.FC<RecordLensProps> = ({
               );
             }
 
-            if (r.kind === "publish") {
+            if (r.kind === "pubday") {
               return (
-                <div key={`p-${r.p.id}`} style={{ position: "relative", marginBlockEnd: 16 }}>
+                <div key={`pd-${r.at}`} style={{ position: "relative", marginBlockEnd: 16 }}>
                   <Knot tone="pub" />
                   <RowLabel>{dayLabel(r.at)}</RowLabel>
-                  <div style={{ marginBlockStart: 6 }}><PublishedLine p={r.p} /></div>
+                  <div style={{ marginBlockStart: 6, display: "grid", gap: 10 }}>
+                    {r.ps.map((p) => <PublishedLine key={p.id} p={p} />)}
+                  </div>
                 </div>
               );
             }
@@ -496,7 +534,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
                     </>
                   ) : (
                     <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>
-                      Captured {b.cap} · Aura wrote {b.drafts} ·{" "}
+                      Saved {b.cap} · Aura wrote {b.drafts} ·{" "}
                       <strong style={{ color: "var(--act)", fontWeight: 700 }}>You published {b.pub}</strong>
                     </p>
                   )}
@@ -527,17 +565,21 @@ export const RecordLens: React.FC<RecordLensProps> = ({
         </div>
       </div>
 
-      <div style={{
-        borderBlockStart: "1px solid var(--rule-divider)", padding: "16px 20px",
-        display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
-      }}>
-        <Counter n={daysOnRecord ?? "—"} label="days on the record" />
-        <Counter n={t.fragmentsTotal} label="fragments held" />
-        <Counter n={t.themesTotal} label="themes formed" />
-        <Counter n={`${nightsProduced}/7`} label="nights that produced something" />
-        <Counter n={t.publishedTotal} label="live on LinkedIn" blue />
-        <Counter n={t.publishedThroughAura} label="made with Aura" blue />
-        <Counter n={t.publishedSentFromAura} label="sent from Aura" blue />
+      <div style={{ borderBlockStart: "1px solid var(--rule-divider)", padding: "16px 20px", display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))" }}>
+          <Counter n={daysOnRecord ?? "—"} label="days using Aura" />
+          <Counter n={t.fragmentsTotal} label="pieces of knowledge saved" />
+          <Counter n={t.themesTotal} label="topics found in them" />
+          <Counter n={`${nightsProduced}/7`} label="nights Aura found something to write" />
+          <Counter n={t.publishedTotal} label="posts live on LinkedIn" blue />
+          <Counter n={t.publishedThroughAura} label="written with Aura" blue />
+          <Counter n={t.publishedSentFromAura} label="posted by Aura for you" blue />
+        </div>
+        {t.publishedReturned < t.publishedTotal && (
+          <Muted style={{ fontSize: 12.5 }}>
+            Showing your most recent {t.publishedReturned} posts.
+          </Muted>
+        )}
       </div>
     </Card>
   );
