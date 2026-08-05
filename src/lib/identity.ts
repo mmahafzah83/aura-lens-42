@@ -24,7 +24,8 @@ export function bareHandle(value?: string | null): string | null {
   const fromUrl = v.match(/linkedin\.com\/in\/([^/?#]+)/i);
   const raw = fromUrl ? fromUrl[1] : v.replace(/^@/, "");
   const cleaned = decodeURIComponent(raw).replace(/[^A-Za-z0-9\u0600-\u06FF._-]/g, "").trim();
-  return cleaned.length ? cleaned : null;
+  const trimmed = cleaned.replace(/^[.\-_]+/, "").replace(/[.\-_]+$/, "");
+  return trimmed.length ? trimmed : null;
 }
 
 export function resolveIdentityFrom(conn: any, prof: any): Identity {
