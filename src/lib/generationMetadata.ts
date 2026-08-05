@@ -32,11 +32,22 @@ export type EndingType = (typeof ENDING_VOCAB)[number];
 export const STANCE_VOCAB = ["asserts", "story", "teaches", "doubts", "analysis"] as const;
 export type Stance = (typeof STANCE_VOCAB)[number];
 
+/**
+ * Trailing quotes, brackets, emoji and stray spaces hide the real terminal
+ * punctuation, which is how a question-ending post ended up labelled
+ * `hanging_line`. Every derivation reads the trimmed form.
+ */
+const TRAILING_NOISE = /[\s"\u201d\u00bb'\u2019)\]}\u2026]*$/u;
+const EMOJI_GLYPH = /[\u{1F000}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{20E3}\u{2190}-\u{21FF}\u{2300}-\u{23FF}]/gu;
+
+const normalizeLine = (line: string) =>
+  line.replace(EMOJI_GLYPH, "").replace(TRAILING_NOISE, "").trim();
+
 const firstLine = (text: string) =>
-  text.split("\n").map((l) => l.trim()).find(Boolean) ?? "";
+  normalizeLine(text.split("\n").map((l) => l.trim()).find(Boolean) ?? "");
 
 const lastLine = (text: string) => {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = text.split("\n").map((l) => normalizeLine(l)).filter(Boolean);
   return lines[lines.length - 1] ?? "";
 };
 
@@ -46,7 +57,8 @@ const hasDigit = (s: string) => /[0-9٠-٩۰-۹]/.test(s);
 export function hookStyleOf(text: string): HookStyle {
   const line = firstLine(text || "");
   if (!line) return "claim";
-  if (/[?؟]\s*$/.test(line)) return "question";
+  // Text that ends in a question mark is a question ending. No exceptions.
+  if (/[?؟]$/.test(line)) return "question";
   if (/^["“«"']/.test(line) || /["“«][^"”»]{8,}["”»]/.test(line)) return "dialogue";
   if (hasDigit(line)) return "number";
   if (/\b(i (?:was wrong|got it wrong|used to|never|failed|admit)|i'?ve been wrong|confession)\b/i.test(line) ||
@@ -62,7 +74,8 @@ export function hookStyleOf(text: string): HookStyle {
 export function endingTypeOf(text: string): EndingType {
   const line = lastLine(text || "");
   if (!line) return "hanging_line";
-  if (/[?؟]\s*$/.test(line)) return "question";
+  // Text that ends in a question mark is a question ending. No exceptions.
+  if (/[?؟]$/.test(line)) return "question";
   if (/[=＝]|\s\+\s|\s×\s/.test(line)) return "equation";
   if (/\b(comment|share|follow|dm|message me|let me know|tell me)\b/i.test(line) ||
       /(شاركني|تابعني|علّق)/.test(line)) return "signature";
