@@ -302,6 +302,17 @@
               }
             ]
           }
+        ],
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "واحدة بعينها",
+                "lang": "ar"
+              }
+            ],
+            "highlight": true
+          }
         ]
       },
       "index": 6
