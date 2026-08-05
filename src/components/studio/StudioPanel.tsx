@@ -596,6 +596,7 @@ export default function StudioPanel({
       const parsed = DeckIRSchema.safeParse(saved.deck);
       if (parsed.success) {
         setDeck(parsed.data);
+        lookDecided.current = true;
         setTheme(parsed.data.theme as ThemeName);
         // A restored deck brings its own family back with it.
         if (typeof parsed.data.template === "string") setTemplate(parsed.data.template);
@@ -870,6 +871,7 @@ export default function StudioPanel({
             const parsed = DeckIRSchema.safeParse(saved);
             if (parsed.success) {
               setDeck(parsed.data);
+              lookDecided.current = true;
               setTheme(parsed.data.theme as ThemeName);
               if (typeof parsed.data.template === "string") setTemplate(parsed.data.template);
             }
@@ -2841,11 +2843,12 @@ export default function StudioPanel({
               <ZoneLook
                 lang={lang}
                 theme={theme}
-                onTheme={(t) => { setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
+                onTheme={(t) => { lookDecided.current = true; setTheme(t); setDeck((d) => (d ? { ...d, theme: t } : d)); }}
                 template={template}
                 onTemplate={(id) => {
                   const allowed = (templateThemes[id] ?? []) as ThemeName[];
                   const next = allowed.includes(theme) ? theme : allowed[0];
+                  lookDecided.current = true;
                   setTemplate(id);
                   setTheme(next);
                   setDeck((d) => (d ? { ...d, template: id, theme: next } : d));
