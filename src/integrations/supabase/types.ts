@@ -3088,6 +3088,58 @@ export type Database = {
         }
         Relationships: []
       }
+      post_events: {
+        Row: {
+          actor: string
+          at: string
+          details: Json
+          event: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          actor: string
+          at?: string
+          details?: Json
+          event: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          actor?: string
+          at?: string
+          details?: Json
+          event?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_events_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "influence_dashboard_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_events_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "linkedin_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_events_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "post_provenance"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_events: {
         Row: {
           event: string
@@ -4490,7 +4542,9 @@ export type Database = {
           title: string
         }[]
       }
-      home_record_timeline: { Args: { p_uid?: string }; Returns: Json }
+      home_record_timeline:
+        | { Args: { p_uid?: string }; Returns: Json }
+        | { Args: { p_tz?: string; p_uid?: string }; Returns: Json }
       is_current_user_admin: { Args: never; Returns: boolean }
       momentum_funnel: {
         Args: never
@@ -4600,6 +4654,7 @@ export type Database = {
           type: string
         }[]
       }
+      tier_rank: { Args: { t: string }; Returns: number }
       whatsapp_mint_pair_token: {
         Args: never
         Returns: {
