@@ -215,8 +215,11 @@ export function sanitizeStyleFields(row: {
     preferred_structures: cleanList(row.preferred_structures),
     storytelling_patterns: cleanList(row.storytelling_patterns),
     vocabulary_preferences: vocabIn,
-    // Nothing detected means the member is not locked to one close.
-    allowed_endings: endings.size ? [...endings] : [...ENDING_VOCAB],
+    // A single detected mandate is still a lock, so anything under two
+    // endings opens back up to the whole vocabulary, detected ones first.
+    allowed_endings: endings.size >= 2
+      ? [...endings]
+      : [...new Set([...endings, ...ENDING_VOCAB])],
   };
 }
 
