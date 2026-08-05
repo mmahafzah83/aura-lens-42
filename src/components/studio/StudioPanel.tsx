@@ -1110,6 +1110,7 @@ export default function StudioPanel({
       if (runId !== genRunId.current) return;
       const text = json?.content;
       if (!res.ok || !text) { setGenError("failed"); return; }
+      unsourcedRemovedRef.current = Number(json?.unsourced_numbers_removed) || 0;
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
       setContent(generated);
       generatedTextRef.current = generated;
@@ -1192,7 +1193,7 @@ export default function StudioPanel({
         title,
         topic_label: title || null,
         source_metadata: pieceMeta(),
-        ...generationMetadata(content, { signalId: choice?.id || null }),
+        ...generationMetadata(content, { signalId: choice?.id || null, unsourcedRemoved: unsourcedRemovedRef.current }),
       } as any)
       .select("id")
       .single();
@@ -1253,7 +1254,7 @@ export default function StudioPanel({
           title,
           topic_label: title || null,
           source_metadata: { ...(pieceMeta() as Record<string, unknown>), origin_draft_id: draftId },
-          ...generationMetadata(content, { signalId: choice?.id || null }),
+          ...generationMetadata(content, { signalId: choice?.id || null, unsourcedRemoved: unsourcedRemovedRef.current }),
         } as any)
         .select("id")
         .single();
