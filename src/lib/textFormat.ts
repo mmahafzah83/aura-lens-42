@@ -10,13 +10,17 @@ export function stripMarkdown(text: string): string {
     .replace(/`(.+?)`/g, "$1");
 }
 
-/** Flips directional glyphs so Arabic text reads the right way. */
+/**
+ * Flips directional glyphs so Arabic text reads the right way.
+ * The sub-point arrows are left-to-right glyphs with no correct RTL form, so
+ * Arabic gets a neutral dash marker instead of ↳ / ↲.
+ */
 export function fixArabicDirectionalSymbols(text: string, lang?: "en" | "ar"): string {
   if (!text) return text;
   if (!(lang === "ar" || isArabicText(text))) return text;
   return text
     .replace(/→/g, "←")
-    .replace(/↳/g, "↲")
+    .replace(/[↳↲]/g, "–")
     .replace(/->/g, "<-")
     .replace(/⟶/g, "⟵");
 }
