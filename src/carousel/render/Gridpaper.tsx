@@ -285,7 +285,8 @@ function Footer({ deck, slide, s, tpl, ink, isCover }: {
   const rtl = deck.dir === "rtl";
   const p = deck.primary_lang;
   const n = slide.index + 1;
-  const numeral = deck.numerals === "arabic" ? n.toLocaleString("ar-EG") : String(n).padStart(2, "0");
+  // DeckIR declares western numerals only.
+  const numeral = String(n).padStart(2, "0");
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 32, flex: "0 0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -642,7 +643,7 @@ function GridpaperBody(props: PartProps) {
     /* 7 — numbered rows, the numeral alternating dark and cream. */
     case "steps": {
       const rows = (slots.checklist ?? []).slice(0, 4);
-      const numeral = (n: number) => (deck.numerals === "arabic" ? n.toLocaleString("ar-EG") : String(n).padStart(2, "0"));
+      const numeral = (n: number) => String(n).padStart(2, "0");
       return (
         <Stack gap={s.gap}>
           <Headline node={slots.headline} {...common} />

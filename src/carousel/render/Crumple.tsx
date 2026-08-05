@@ -627,7 +627,8 @@ function CrumpleBody(props: PartProps) {
     /* 7 — slab-numbered rows. */
     case "steps": {
       const rows = (slots.checklist ?? []).slice(0, 4);
-      const numeral = (n: number) => (deck.numerals === "arabic" ? n.toLocaleString("ar-EG") : String(n));
+      // DeckIR declares western numerals only, so there is one branch, not two.
+      const numeral = (n: number) => String(n);
       return (
         <Stack gap={s.gap}>
           <Headline node={slots.headline} {...common} />
