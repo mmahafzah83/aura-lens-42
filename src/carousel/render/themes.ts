@@ -28,6 +28,14 @@ export interface Theme {
   avA: string;
   avB: string;
   avInk: string;
+  /**
+   * OPTIONAL INVERSION GROUND. Families that alternate a dark slide against a
+   * light one (gridpaper) declare the dark surface and the ink that rides on
+   * it here. A family with no dark slide leaves both absent rather than
+   * inventing a colour the renderer never draws.
+   */
+  invert?: string;
+  invertFg?: string;
 }
 
 const INSTRUMENT_THEMES = {
