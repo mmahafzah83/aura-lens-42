@@ -139,7 +139,6 @@ Deno.serve(async (req) => {
       const velocity_status = velocityMap[lifecycle_tier];
 
       const { error: upErr } = await admin.from("strategic_signals").update({
-        confidence: strength,
         momentum: momentum,
         lifecycle_tier: lifecycle_tier,
         velocity_status: velocity_status,
