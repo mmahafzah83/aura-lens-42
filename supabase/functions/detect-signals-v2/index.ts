@@ -268,14 +268,18 @@ Deno.serve(withObserve("detect-signals-v2", async (req) => {
       });
     }
 
-    // Fetch the actual fragment data
-    const { data: fragments, error: fragErr } = await admin
-      .from("evidence_fragments")
-      .select("id, title, content, fragment_type, tags, skill_pillars, confidence, entities, created_at")
-      .in("id", targetFragmentIds)
-      .eq("user_id", user_id);
+    // Fetch the actual fragment data (chunked so large batches can't truncate)
+    const fragments: any[] = [];
+    for (const batch of chunkIds(targetFragmentIds)) {
+      const { data, error: fragErr } = await admin
+        .from("evidence_fragments")
+        .select("id, title, content, fragment_type, tags, skill_pillars, confidence, entities, created_at")
+        .in("id", batch)
+        .eq("user_id", user_id);
+      if (fragErr) throw new Error(`Fragment fetch: ${fragErr.message}`);
+      if (data) fragments.push(...data);
+    }
 
-    if (fragErr) throw new Error(`Fragment fetch: ${fragErr.message}`);
     if (!fragments || fragments.length === 0) {
       return new Response(JSON.stringify({ skipped: true, reason: "fragments not found" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
