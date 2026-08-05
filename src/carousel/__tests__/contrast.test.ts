@@ -79,16 +79,25 @@ function pairsFor(name: string, t: Record<string, unknown>): Pair[] {
   if (isHex(t.accent) && isHex(t.accentInk)) {
     out.push({ theme: name, a: "accent", b: "accentInk", av: t.accent, bv: t.accentInk });
   }
-  // (invert, accent) — the accent word printed ON the inversion ground. A
-  // declared pair for any family that alternates a dark slide, and the one
-  // pairing the GROUNDS/INKS loop cannot see, because accent is neither.
-  if (isHex(t.invert) && isHex(t.accent)) {
-    out.push({ theme: name, a: "invert", b: "accent", av: t.invert, bv: t.accent });
+  // The accent word printed ON the inversion ground. The one pairing the
+  // GROUNDS/INKS loop cannot see, because accent is neither a ground nor an
+  // ink. A theme whose alternate slide replaces the accent with another
+  // colour DECLARES that colour as `invertAccent`, and we test what is drawn
+  // rather than what we assumed would be.
+  const invAccent = isHex(t.invertAccent) ? t.invertAccent : t.accent;
+  if (isHex(t.invert) && isHex(invAccent) && t.invert.toLowerCase() !== invAccent.toLowerCase()) {
+    out.push({
+      theme: name,
+      a: "invert",
+      b: isHex(t.invertAccent) ? "invertAccent" : "accent",
+      av: t.invert,
+      bv: invAccent,
+    });
   }
   for (const g of GROUNDS) {
     const gv = t[g];
     if (!isHex(gv)) continue;
-    for (const i of INKS) {
+    for (const i of inksFor(g)) {
       const iv = t[i];
       if (!isHex(iv)) continue;
       if (gv.toLowerCase() === iv.toLowerCase()) continue;
