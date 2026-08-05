@@ -74,7 +74,7 @@ const FACT_PATTERNS: RegExp[] = [
   new RegExp(`\\b(?:19|20)${DIGIT}{2}\\b`, "g"),
   // Multiples and scale words attached to a figure.
   new RegExp(`${DIGIT}[\\d٠-٩۰-۹,.]*\\s*(?:x|×|أضعاف|ضعف)`, "gi"),
-  // Named organisations: capitalised name plus a corporate/公 suffix.
+  // Named organisations: capitalised name plus a corporate suffix.
   new RegExp(`\\b(?:[A-Z][\\w&'-]*\\s+){0,3}${ORG_SUFFIX}\\b`, "g"),
   new RegExp(`\\b${ORG_SUFFIX}\\s+(?:of\\s+)?(?:[A-Z][\\w&'-]*\\s*){1,3}`, "g"),
   // Arabic organisation heads plus the following one or two words.
