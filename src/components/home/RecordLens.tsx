@@ -247,8 +247,10 @@ export const RecordLens: React.FC<RecordLensProps> = ({
   // timestamp the overnight run is, by definition, last night's.
   const draftIsFresh = useMemo(() => {
     if (!draft) return false;
+    const status = (draft as any).signal_status as string | undefined;
+    if (status === "merged" || status === "archived") return false;   // retired theme, never offer it
     const created = (draft as any).created_at as string | undefined;
-    if (!created) return true;
+    if (!created) return true;                                         // edge fn already scopes to last night
     const yesterday = new Date();
     yesterday.setHours(0, 0, 0, 0);
     yesterday.setDate(yesterday.getDate() - 1);
