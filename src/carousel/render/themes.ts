@@ -36,6 +36,15 @@ export interface Theme {
    */
   invert?: string;
   invertFg?: string;
+  /**
+   * THE ACCENT ROLE ON THE INVERSION GROUND. On a family that alternates, the
+   * colour that plays "accent" on the alternate slide is not always the same
+   * colour as `accent` — salford's alternate ground IS the mint, so the accent
+   * role there falls to the navy; concept's alternate ground is light, so the
+   * acid is replaced by the deep violet ink. Declared rather than assumed,
+   * because the contrast gate tests exactly the pair the renderer draws.
+   */
+  invertAccent?: string;
 }
 
 const INSTRUMENT_THEMES = {
