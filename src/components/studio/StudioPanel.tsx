@@ -285,6 +285,34 @@ export default function StudioPanel({
    */
   const lookDecided = useRef(false);
   /**
+   * THE MEMBER'S OWN DEFAULT LOOK, read at request time from their own row.
+   * It seeds a post that has not been given a look yet and stops there: if a
+   * deck is already open, or the member has already picked, the default is
+   * dropped on the floor rather than clobbering the work.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id;
+      if (!uid) return;
+      const { data } = await supabase
+        .from("diagnostic_profiles")
+        .select("default_template, default_theme")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (cancelled || lookDecided.current) return;
+      const fam = (data as { default_template?: string | null } | null)?.default_template;
+      const col = (data as { default_theme?: string | null } | null)?.default_theme;
+      if (!fam || !(fam in templateThemes)) return;
+      const allowed = (templateThemes[fam] ?? []) as ThemeName[];
+      if (!allowed.length) return;
+      setTemplate(fam);
+      setTheme(col && allowed.includes(col as ThemeName) ? (col as ThemeName) : allowed[0]);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  /**
    * The slide family. A free channel: changing it re-draws the deck already in
    * hand and never calls the model. The theme is clamped to what the chosen
    * family can actually draw.
