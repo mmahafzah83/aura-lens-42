@@ -236,7 +236,7 @@ export default function PreferencesPanel({
   }, [open, userId]);
 
   const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;
-  const weeklyBriefOn = prefs.weekly_brief !== false; // default true
+  const weeklyBriefOn = prefs.email_weekly_brief !== false; // default true
   const dailyNudgesOn = prefs.daily_nudges !== false; // default true
   const overnightReadingOn = prefs.overnight_reading_enabled !== false; // default true
   const sharedLearningOn = profile?.shared_learning_consent === true;
@@ -253,6 +253,23 @@ export default function PreferencesPanel({
     if (!userId) return;
     const previous = prefs;
     const next = { ...prefs, [key]: value };
+    setProfile((p) => (p ? { ...p, notification_prefs: next } : p));
+    try {
+      const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ notification_prefs: next })
+        .eq("user_id", userId);
+      if (error) throw error;
+    } catch {
+      setProfile((p) => (p ? { ...p, notification_prefs: previous } : p));
+      toast.error("Couldn't save — try again");
+    }
+  };
+
+  /** Same contract as updatePref, for settings that live under more than one key. */
+  const updatePrefs = async (patch: Record<string, boolean>) => {
+    if (!userId) return;
+    const previous = prefs;
+    const next = { ...prefs, ...patch };
     setProfile((p) => (p ? { ...p, notification_prefs: next } : p));
     try {
       const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
@@ -304,7 +321,7 @@ export default function PreferencesPanel({
         label="Monday intelligence brief"
         description="Signals, rhythm, and one recommended move. Every Monday."
         on={weeklyBriefOn}
-        onChange={(v) => updatePref("weekly_brief", v)}
+        onChange={(v) => updatePrefs({ email_weekly_brief: v, weekly_brief: v })}
       />
       <ToggleRow
         label="Daily nudges"
