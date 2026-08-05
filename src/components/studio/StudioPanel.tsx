@@ -290,6 +290,7 @@ export default function StudioPanel({
    * deck is already open, or the member has already picked, the default is
    * dropped on the floor rather than clobbering the work.
    */
+  const defaultLook = useRef<{ template: string; theme: ThemeName } | null>(null);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -307,8 +308,10 @@ export default function StudioPanel({
       if (!fam || !(fam in templateThemes)) return;
       const allowed = (templateThemes[fam] ?? []) as ThemeName[];
       if (!allowed.length) return;
+      const pick = col && allowed.includes(col as ThemeName) ? (col as ThemeName) : allowed[0];
+      defaultLook.current = { template: fam, theme: pick };
       setTemplate(fam);
-      setTheme(col && allowed.includes(col as ThemeName) ? (col as ThemeName) : allowed[0]);
+      setTheme(pick);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -764,6 +767,13 @@ export default function StudioPanel({
    * Called only when a NEW piece begins. Never while merely editing.
    */
   const startNewPiece = useCallback((next?: { choice?: Choice | null; format?: Format | null }) => {
+    // A new post starts on the member's own default look again, not on
+    // whatever the last post happened to be set to.
+    lookDecided.current = false;
+    if (defaultLook.current) {
+      setTemplate(defaultLook.current.template);
+      setTheme(defaultLook.current.theme);
+    }
     setContent("");
     setDeck(null);
     setDeckSource(null);
