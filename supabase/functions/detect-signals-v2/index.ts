@@ -118,6 +118,25 @@ async function countUniqueSources(
   return Math.max(ids.size, 1);
 }
 
+/* Effective evidence: each distinct source contributes at most `cap` fragments */
+const PER_SOURCE_CAP = 3;
+async function countEffectiveEvidence(admin: any, fragmentIds: string[], cap = PER_SOURCE_CAP): Promise<number> {
+  if (fragmentIds.length === 0) return 0;
+  const perSource = new Map<string, number>();
+  for (const batch of chunkIds(fragmentIds)) {
+    const { data, error } = await admin
+      .from("evidence_fragments").select("source_registry_id").in("id", batch);
+    if (error) throw new Error("countEffectiveEvidence batch failed: " + error.message);
+    (data || []).forEach((f: any) => {
+      const k = f.source_registry_id || "__null__";
+      perSource.set(k, (perSource.get(k) || 0) + 1);
+    });
+  }
+  let eff = 0;
+  for (const n of perSource.values()) eff += Math.min(n, cap);
+  return eff;
+}
+
 async function calcPriorityScore(
   confidence: number,
   updatedAt: string,
