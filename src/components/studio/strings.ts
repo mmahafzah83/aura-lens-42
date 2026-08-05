@@ -424,6 +424,22 @@ export const T = {
     en: "Your connection dropped. Nothing was lost — try once more.",
     ar: "انقطع اتصالك. لم يُفقد شيء — جرّب مرة أخرى.",
   },
+  slidesRateLimited: {
+    en: "Aura is busy right now. Wait a moment and make the slides again.",
+    ar: "أورا مشغولة الآن. انتظر لحظة ثم اصنع الشرائح مرة أخرى.",
+  },
+  slidesCreditsOut: {
+    en: "Slide generation is paused on this account. This is on our side, not yours.",
+    ar: "صناعة الشرائح متوقفة مؤقتاً على هذا الحساب. الأمر من جهتنا، لا من جهتك.",
+  },
+  slidesSignalMissing: {
+    en: "Aura could not read the signal behind this post. Reopen it from Signals and try again.",
+    ar: "لم تتمكن أورا من قراءة الإشارة خلف هذا المنشور. افتحه من الإشارات وحاول مرة أخرى.",
+  },
+  makingSlidesHonest: {
+    en: "Making your slides — up to a minute",
+    ar: "نصنع شرائحك — حتى دقيقة",
+  },
 
   // Step 4
   savingLink: { en: "Saving the link…", ar: "نحفظ الرابط…" },
