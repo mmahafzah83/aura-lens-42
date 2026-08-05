@@ -200,12 +200,13 @@ export default function FlashPanel() {
 
   const hasSignals = (signalCount ?? 0) > 0;
 
-  // Flip directional arrows for RTL display + copy in Arabic mode.
+  // Flip directional arrows for RTL display + copy in Arabic mode. The
+  // sub-point arrows have no correct RTL form, so Arabic gets a neutral dash.
   const displayText = (text: string): string => {
     if (lang !== "ar" || !text) return text;
     return text
       .replace(/→/g, "←")
-      .replace(/↳/g, "↲")
+      .replace(/[↳↲]/g, "–")
       .replace(/->/g, "<-")
       .replace(/⟶/g, "⟵");
   };
