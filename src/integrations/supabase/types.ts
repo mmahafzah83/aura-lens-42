@@ -377,6 +377,7 @@ export type Database = {
       authority_voice_profiles: {
         Row: {
           admired_posts: Json
+          allowed_endings: string[]
           created_at: string
           example_posts: Json
           id: string
@@ -391,6 +392,7 @@ export type Database = {
         }
         Insert: {
           admired_posts?: Json
+          allowed_endings?: string[]
           created_at?: string
           example_posts?: Json
           id?: string
@@ -405,6 +407,7 @@ export type Database = {
         }
         Update: {
           admired_posts?: Json
+          allowed_endings?: string[]
           created_at?: string
           example_posts?: Json
           id?: string
@@ -2597,6 +2600,7 @@ export type Database = {
           tone: string | null
           topic_label: string | null
           tracking_status: string
+          unsourced_numbers_removed: number
           user_id: string
           visual_strategy_type: string | null
           visual_style: string | null
@@ -2645,6 +2649,7 @@ export type Database = {
           tone?: string | null
           topic_label?: string | null
           tracking_status?: string
+          unsourced_numbers_removed?: number
           user_id: string
           visual_strategy_type?: string | null
           visual_style?: string | null
@@ -2693,6 +2698,7 @@ export type Database = {
           tone?: string | null
           topic_label?: string | null
           tracking_status?: string
+          unsourced_numbers_removed?: number
           user_id?: string
           visual_strategy_type?: string | null
           visual_style?: string | null
