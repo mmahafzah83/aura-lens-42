@@ -182,7 +182,6 @@ export default function Publish({
         .insert({
           user_id: uid,
           post_text: trimmedCaption,
-          content_type: "signature_card",
           format_type: "post",
           source_type: "aura_generated",
           authorship: "aura_drafted",
@@ -200,6 +199,7 @@ export default function Publish({
             designDecision: (decision as any) || null,
             emphasisOff: !!emphasisOff,
           },
+          ...generationMetadata(trimmedCaption, { contentType: "signature_card" }),
         })
         .select("id")
         .single();
