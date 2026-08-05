@@ -278,6 +278,13 @@ export default function StudioPanel({
   }, [portrait.cutoutUrl]);
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
   /**
+   * A LOOK THE MEMBER HAS ALREADY DECIDED — either by choosing one in this
+   * post, or by opening a post that already carries one. Once true, the
+   * member's saved default must never overwrite it: a default seeds a new
+   * post, it does not reach into work already in progress.
+   */
+  const lookDecided = useRef(false);
+  /**
    * The slide family. A free channel: changing it re-draws the deck already in
    * hand and never calls the model. The theme is clamped to what the chosen
    * family can actually draw.
