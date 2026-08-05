@@ -668,6 +668,9 @@ export const themeName: Record<string, { en: string; ar: string }> = {
   paper: { en: "Paper", ar: "ورقيّ" },
   crumple_amber: { en: "Amber", ar: "كهرماني" },
   gridpaper_yellow: { en: "Yellow", ar: "أصفر" },
+  salford_navy: { en: "Navy", ar: "كحليّ" },
+  blueprint_violet: { en: "Violet", ar: "بنفسجيّ" },
+  concept_violet: { en: "Concept violet", ar: "بنفسجيّ متدرّج" },
 };
 
 /** Any theme without a translation falls back to a title-cased id. */

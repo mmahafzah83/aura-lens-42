@@ -292,7 +292,14 @@ export const HERO_BUDGET: Record<"en" | "ar", number> = { en: 18, ar: 26 };
  * Per-template budget scaling. The highlighter family sets its hero lines in a
  * heavier face on a narrower content column, so the same character count wraps.
  */
-export const TEMPLATE_BUDGET_SCALE: Record<string, number> = { highlighter: 0.85 };
+export const TEMPLATE_BUDGET_SCALE: Record<string, number> = {
+  highlighter: 0.85,
+  // salford (Montserrat 800, caps), blueprint (Poppins 700) and concept
+  // (Inter 700) all set heavy display type on the same narrow column.
+  salford: 0.85,
+  blueprint: 0.85,
+  concept: 0.85,
+};
 
 /** The hero-line budget for a language, scaled to the template doing the drawing. */
 export function heroBudget(lang: "en" | "ar", template?: string | null): number {
