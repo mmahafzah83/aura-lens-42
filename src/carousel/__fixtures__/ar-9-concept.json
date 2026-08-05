@@ -1,0 +1,397 @@
+{
+  "deck_id": "fx-ar-9-concept",
+  "signal_id": "sig-software-rollout-2026",
+  "primary_lang": "ar",
+  "dir": "rtl",
+  "numerals": "western",
+  "theme": "concept_violet",
+  "template": "concept",
+  "length": 10,
+  "profile": {
+    "name": {
+      "runs": [
+        {
+          "t": "ريم القاسم",
+          "lang": "ar"
+        }
+      ]
+    },
+    "title": {
+      "runs": [
+        {
+          "t": "تعميم البرمجيات",
+          "lang": "ar"
+        }
+      ]
+    },
+    "handle": "reem-alqasim",
+    "avatar_url": null,
+    "initials": "رق"
+  },
+  "slides": [
+    {
+      "index": 0,
+      "archetype": "cover_hero",
+      "slots": {
+        "chip": {
+          "runs": [
+            {
+              "t": "تعميم البرنامج",
+              "lang": "ar"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "التعميم",
+                "lang": "ar"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "توقّف عند 30%",
+                "lang": "ar"
+              }
+            ],
+            "highlight": true
+          }
+        ],
+        "subline": {
+          "runs": [
+            {
+              "t": "اشترينا رخصاً أكثر في 2025 ودخل عدد أقل من الناس.",
+              "lang": "ar"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "index": 1,
+      "archetype": "frame",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "لم يكن عدد الرخص هو القيد",
+              "lang": "ar"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "ساعتان مختلفتان",
+                "lang": "ar"
+              }
+            ],
+            "highlight": true
+          }
+        ],
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "الحساب يُفتح في دقيقتين. أول مهمة مفيدة تأخذ تسعة أيام.",
+                "lang": "ar"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "تابعت الاثنين ربع سنة قبل أن أصدق الثانية.",
+                "lang": "ar"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "archetype": "evidence",
+      "slots": {
+        "stat_value": "9 days",
+        "stat_label": {
+          "runs": [
+            {
+              "t": "وسيط الزمن حتى أول مهمة مفيدة",
+              "lang": "ar"
+            }
+          ]
+        },
+        "source": {
+          "runs": [
+            {
+              "t": "سجلات المنتج، الربع الأول 2026",
+              "lang": "ar"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "index": 3,
+      "archetype": "benchmark",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "أين تذهب الأيام",
+              "lang": "ar"
+            }
+          ]
+        },
+        "media": {
+          "kind": "chart",
+          "placement": "lower",
+          "chart": {
+            "type": "bars",
+            "series": [
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "انتظار الصلاحية",
+                      "lang": "ar"
+                    }
+                  ]
+                },
+                "value": 9,
+                "unit": " d",
+                "emphasis": "alert"
+              },
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "التدريب",
+                      "lang": "ar"
+                    }
+                  ]
+                },
+                "value": 3,
+                "unit": " d",
+                "emphasis": "accent"
+              },
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "الإعداد",
+                      "lang": "ar"
+                    }
+                  ]
+                },
+                "value": 2,
+                "unit": " d",
+                "emphasis": "none"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "index": 4,
+      "archetype": "quote",
+      "slots": {
+        "quote": {
+          "runs": [
+            {
+              "t": "دفعنا ثمن المقاعد وتركناها مقفلة.",
+              "lang": "ar"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "بعبارة واضحة",
+                "lang": "ar"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "archetype": "steps",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "ما الذي أبدأ بفحصه",
+              "lang": "ar"
+            }
+          ]
+        },
+        "checklist": [
+          {
+            "runs": [
+              {
+                "t": "قِس أول مهمة. لا التسجيل ولا العرض.",
+                "lang": "ar"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "افصل المستخدمين بالفرق. المالية منتج آخر.",
+                "lang": "ar"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "سعّر مقعداً معطلاً واحداً. علّق الرقم على الجدار.",
+                "lang": "ar"
+              }
+            ]
+          }
+        ],
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "ثلاث خطوات",
+                "lang": "ar"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 6,
+      "archetype": "definition",
+      "slots": {
+        "term": {
+          "runs": [
+            {
+              "t": "الزمن حتى الفائدة",
+              "lang": "ar"
+            }
+          ]
+        },
+        "term_def": {
+          "runs": [
+            {
+              "t": "الأيام بين فتح الحساب وأول مهمة مفيدة عليه.",
+              "lang": "ar"
+            }
+          ]
+        },
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "لا أحد في فريق الرخص يملك هذا الرقم، ولذلك ارتفع إلى تسعة أيام.",
+                "lang": "ar"
+              }
+            ]
+          }
+        ],
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "رقم واحد",
+                "lang": "ar"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 7,
+      "archetype": "cover_stat",
+      "slots": {
+        "stat_value": "30%",
+        "stat_label": {
+          "runs": [
+            {
+              "t": "من المقاعد المدفوعة استُخدمت في الشهر الأول",
+              "lang": "ar"
+            }
+          ]
+        },
+        "source": {
+          "runs": [
+            {
+              "t": "سجلات المنتج، الربع الأول 2026",
+              "lang": "ar"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "من المقاعد",
+                "lang": "ar"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 8,
+      "archetype": "close",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "إن نفعك هذا",
+              "lang": "ar"
+            }
+          ]
+        },
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "أكتب عن تعميم البرمجيات أغلب الأسابيع.",
+                "lang": "ar"
+              }
+            ]
+          }
+        ],
+        "cta_pill": {
+          "runs": [
+            {
+              "t": "تابعني للمقال القادم",
+              "lang": "ar"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "القرار لك",
+                "lang": "ar"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    }
+  ]
+}
