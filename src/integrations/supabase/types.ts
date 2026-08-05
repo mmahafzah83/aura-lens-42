@@ -2564,6 +2564,7 @@ export type Database = {
           content_type: string | null
           created_at: string
           cta_style: string | null
+          ending_type: string | null
           engagement_score: number
           enriched_by: string[]
           format_type: string | null
@@ -2575,6 +2576,7 @@ export type Database = {
           linkedin_post_id: string | null
           linkedin_url: string | null
           media_type: string | null
+          moment_id: string | null
           original_generated_text: string | null
           post_text: string | null
           post_url: string | null
@@ -2588,6 +2590,7 @@ export type Database = {
           source_signal_id: string | null
           source_trust: number
           source_type: string
+          stance: string | null
           synced_at: string
           theme: string | null
           title: string | null
@@ -2597,6 +2600,7 @@ export type Database = {
           user_id: string
           visual_strategy_type: string | null
           visual_style: string | null
+          voice_match: number | null
         }
         Insert: {
           acquisition?: string
@@ -2608,6 +2612,7 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           cta_style?: string | null
+          ending_type?: string | null
           engagement_score?: number
           enriched_by?: string[]
           format_type?: string | null
@@ -2619,6 +2624,7 @@ export type Database = {
           linkedin_post_id?: string | null
           linkedin_url?: string | null
           media_type?: string | null
+          moment_id?: string | null
           original_generated_text?: string | null
           post_text?: string | null
           post_url?: string | null
@@ -2632,6 +2638,7 @@ export type Database = {
           source_signal_id?: string | null
           source_trust?: number
           source_type?: string
+          stance?: string | null
           synced_at?: string
           theme?: string | null
           title?: string | null
@@ -2641,6 +2648,7 @@ export type Database = {
           user_id: string
           visual_strategy_type?: string | null
           visual_style?: string | null
+          voice_match?: number | null
         }
         Update: {
           acquisition?: string
@@ -2652,6 +2660,7 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           cta_style?: string | null
+          ending_type?: string | null
           engagement_score?: number
           enriched_by?: string[]
           format_type?: string | null
@@ -2663,6 +2672,7 @@ export type Database = {
           linkedin_post_id?: string | null
           linkedin_url?: string | null
           media_type?: string | null
+          moment_id?: string | null
           original_generated_text?: string | null
           post_text?: string | null
           post_url?: string | null
@@ -2676,6 +2686,7 @@ export type Database = {
           source_signal_id?: string | null
           source_trust?: number
           source_type?: string
+          stance?: string | null
           synced_at?: string
           theme?: string | null
           title?: string | null
@@ -2685,6 +2696,7 @@ export type Database = {
           user_id?: string
           visual_strategy_type?: string | null
           visual_style?: string | null
+          voice_match?: number | null
         }
         Relationships: [
           {

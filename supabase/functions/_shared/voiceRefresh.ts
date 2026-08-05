@@ -10,9 +10,10 @@
  * and curated `use` phrases are never removed.
  */
 import { scriptOf } from "./linkedinPost.ts";
+import { dedupeRules, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "./voiceVocab.ts";
 
 const OWN_SOURCES = ["linkedin_export", "linkedin_own", "aura_generated"];
-const MAX_EXAMPLES = 20;
+const MAX_EXAMPLES = EXAMPLE_CAP;
 
 interface PostRow {
   post_text: string | null;
@@ -187,16 +188,16 @@ export async function refreshVoiceProfiles(db: any, userId: string): Promise<Ref
       e?.source !== "linkedin_own" && e?.source !== "aura_generated");
     const observed = [...current.filter((e) => !curated.includes(e)), ...additions]
       .sort((a, b) => (b?.engagement ?? 0) - (a?.engagement ?? 0));
-    const examples = [...curated, ...observed].slice(0, MAX_EXAMPLES);
+    const examples = normalizeExamples([...curated, ...observed], MAX_EXAMPLES, "linkedin_own");
 
-    const vocab = (existing?.vocabulary_preferences ?? {}) as Record<string, any>;
+    const { vocabulary: vocab } = sanitizeVocabulary(existing?.vocabulary_preferences ?? {});
     const curatedUse: string[] = Array.isArray(vocab.use) ? vocab.use : [];
     const observedUse = observedUsePhrases(langPosts)
       .filter((g) => !curatedUse.some((u) => u.toLowerCase().includes(g.toLowerCase())));
     const nextVocab = {
       ...vocab,
       // Curated phrases stay first and are never dropped.
-      use: [...curatedUse, ...observedUse].slice(0, 40),
+      use: dedupeRules([...curatedUse, ...observedUse]),
       rhythm: describeRhythm(langPosts, lang),
       observed: {
         posts_analyzed: langPosts.length,

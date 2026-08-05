@@ -15,6 +15,7 @@ import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
+import { generationMetadata } from "@/lib/generationMetadata";
 import { formatSmartDate } from "@/lib/formatDate";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
 import { DeckIRSchema, type DeckIR } from "@/carousel/deckIR";
@@ -578,13 +579,13 @@ export default function StudioPanel({
       const { error } = await supabase.from("linkedin_posts").insert({
         user_id: userId,
         post_text: words,
-        original_generated_text: words,
         format_type: "post",
         tracking_status: "draft",
         source_type: "aura_generated",
         authorship: "aura_drafted",
         title,
         topic_label: title,
+        ...generationMetadata(words),
       } as any);
       if (!error) setStatus(T.savedOtherFirst[lang]);
     })();
@@ -1184,15 +1185,14 @@ export default function StudioPanel({
       .insert({
         user_id: userId,
         post_text: content,
-        original_generated_text: content,
         format_type: "post",
         tracking_status: "draft",
         source_type: "aura_generated",
         authorship: "aura_drafted",
         title,
         topic_label: title || null,
-        source_signal_id: choice?.id || null,
         source_metadata: pieceMeta(),
+        ...generationMetadata(content, { signalId: choice?.id || null }),
       } as any)
       .select("id")
       .single();
@@ -1246,15 +1246,14 @@ export default function StudioPanel({
         .insert({
           user_id: userId,
           post_text: content,
-          original_generated_text: content,
           format_type: "post",
           tracking_status: "draft",
           source_type: "aura_generated",
           authorship: "aura_drafted",
           title,
           topic_label: title || null,
-          source_signal_id: choice?.id || null,
           source_metadata: { ...(pieceMeta() as Record<string, unknown>), origin_draft_id: draftId },
+          ...generationMetadata(content, { signalId: choice?.id || null }),
         } as any)
         .select("id")
         .single();

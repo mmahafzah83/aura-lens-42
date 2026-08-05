@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Download, Linkedin, Loader2, CheckCircle2, Circle } from "lucide-react";
 import AuraCard, { type AuraCardVariant } from "@/components/AuraCard";
 import { downloadBlob } from "@/lib/download";
+import { generationMetadata } from "@/lib/generationMetadata";
 
 // Colours and type read System-B semantic tokens directly. No hardcoded
 // names/scores anywhere.
@@ -170,13 +171,13 @@ export default function AuraCardPanel({
         .insert({
           user_id: uid,
           post_text: caption,
-          content_type: "post",
           format_type: "post",
           source_type: "aura_generated",
           authorship: "aura_drafted",
           acquisition: "published_via_aura",
           tracking_status: "draft",
           source_metadata: { origin: "aura_card", variant, image_url: imageUrl },
+          ...generationMetadata(caption, { contentType: "aura_card" }),
         })
         .select("id")
         .single();
