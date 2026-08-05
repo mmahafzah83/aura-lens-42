@@ -14,6 +14,12 @@ import enCrumple from "../__fixtures__/en-9-crumple.json";
 import arCrumple from "../__fixtures__/ar-9-crumple.json";
 import enGridpaper from "../__fixtures__/en-9-gridpaper.json";
 import arGridpaper from "../__fixtures__/ar-9-gridpaper.json";
+import enSalford from "../__fixtures__/en-9-salford.json";
+import arSalford from "../__fixtures__/ar-9-salford.json";
+import enBlueprint from "../__fixtures__/en-9-blueprint.json";
+import arBlueprint from "../__fixtures__/ar-9-blueprint.json";
+import enConcept from "../__fixtures__/en-9-concept.json";
+import arConcept from "../__fixtures__/ar-9-concept.json";
 
 const fixtures: Array<[string, unknown]> = [
   ["en-7-chart", enChart],
@@ -25,6 +31,12 @@ const fixtures: Array<[string, unknown]> = [
   ["ar-9-crumple", arCrumple],
   ["en-9-gridpaper", enGridpaper],
   ["ar-9-gridpaper", arGridpaper],
+  ["en-9-salford", enSalford],
+  ["ar-9-salford", arSalford],
+  ["en-9-blueprint", enBlueprint],
+  ["ar-9-blueprint", arBlueprint],
+  ["en-9-concept", enConcept],
+  ["ar-9-concept", arConcept],
 ];
 
 /** The two highlighter fixtures must resolve to the highlighter family. */
@@ -33,12 +45,22 @@ const highlighterFixtures: Array<[string, unknown]> = [
   ["ar-7-highlighter", arHighlighter],
 ];
 
-/** The paper families, each with its own single registered colourway. */
-const paperFixtures: Array<[string, unknown, string]> = [
+/**
+ * Every family that has its own renderer and its own single registered
+ * colourway. Adding a family here is what makes the archetype-coverage test
+ * below apply to it — that is the point of one list rather than six.
+ */
+const familyFixtures: Array<[string, unknown, string]> = [
   ["en-9-crumple", enCrumple, "crumple"],
   ["ar-9-crumple", arCrumple, "crumple"],
   ["en-9-gridpaper", enGridpaper, "gridpaper"],
   ["ar-9-gridpaper", arGridpaper, "gridpaper"],
+  ["en-9-salford", enSalford, "salford"],
+  ["ar-9-salford", arSalford, "salford"],
+  ["en-9-blueprint", enBlueprint, "blueprint"],
+  ["ar-9-blueprint", arBlueprint, "blueprint"],
+  ["en-9-concept", enConcept, "concept"],
+  ["ar-9-concept", arConcept, "concept"],
 ];
 
 describe("DeckIR fixtures", () => {
@@ -69,7 +91,7 @@ describe("DeckIR fixtures", () => {
     }
   });
 
-  it.each(paperFixtures)("%s resolves to its own registered family and colourway", (_name, raw, family) => {
+  it.each(familyFixtures)("%s resolves to its own registered family and colourway", (_name, raw, family) => {
     const ir = DeckIRSchema.parse(raw);
     expect(ir.template).toBe(family);
     expect(getTemplate(ir.template).id).toBe(family);
@@ -77,12 +99,12 @@ describe("DeckIR fixtures", () => {
     expect(ir.theme in THEMES).toBe(true);
   });
 
-  it("covers all nine archetypes in each paper fixture", () => {
+  it("covers all nine archetypes in every family fixture", () => {
     const nine = [
       "cover_hero", "cover_stat", "frame", "evidence",
       "benchmark", "quote", "steps", "definition", "close",
     ];
-    for (const [name, raw] of paperFixtures) {
+    for (const [name, raw] of familyFixtures) {
       const ir = DeckIRSchema.parse(raw);
       const seen = new Set(ir.slides.map((s) => s.archetype));
       for (const a of nine) expect(seen.has(a as never), `${name} is missing ${a}`).toBe(true);
