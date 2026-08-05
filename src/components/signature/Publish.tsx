@@ -16,6 +16,7 @@ import {
   svgToImageBlob,
 } from "@/lib/broadsheetExport";
 import { ensureCardFontsLoaded } from "./fitText";
+import { generationMetadata } from "@/lib/generationMetadata";
 
 interface Props {
   family: FamilyEntry;

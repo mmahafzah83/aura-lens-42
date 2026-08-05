@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import { generationMetadata } from "@/lib/generationMetadata";
 
 type FlashLang = "ar" | "en";
 type FlashMode = "theme" | "spark";

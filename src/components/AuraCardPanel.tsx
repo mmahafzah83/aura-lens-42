@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Download, Linkedin, Loader2, CheckCircle2, Circle } from "lucide-react";
 import AuraCard, { type AuraCardVariant } from "@/components/AuraCard";
 import { downloadBlob } from "@/lib/download";
+import { generationMetadata } from "@/lib/generationMetadata";
 
 // Colours and type read System-B semantic tokens directly. No hardcoded
 // names/scores anywhere.

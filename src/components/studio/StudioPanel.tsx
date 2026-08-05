@@ -15,6 +15,7 @@ import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
+import { generationMetadata } from "@/lib/generationMetadata";
 import { formatSmartDate } from "@/lib/formatDate";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
 import { DeckIRSchema, type DeckIR } from "@/carousel/deckIR";
