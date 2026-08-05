@@ -850,7 +850,7 @@ export function assemble(
     || [prof.first_name, prof.last_name].filter(Boolean).join(" ").trim()
     || "Member";
   const title = [prof.level, prof.firm].filter(Boolean).join(", ");
-  const handle = String(ident.handle ?? "").trim()
+  const handle = bareHandle(ident.handle)
     || bareHandle(prof.linkedin_handle || prof.linkedin_url)
     || "member";
   const tn = (t: string) => ({ runs: [{ t, lang: /[\u0600-\u06FF]/.test(t) ? "ar" : "en" }] });
