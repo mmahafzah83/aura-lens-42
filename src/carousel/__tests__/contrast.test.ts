@@ -49,7 +49,7 @@ const INKS = ["ink", "fg", "invertFg"] as const;
  * pair simply is not generated, exactly as before.
  */
 function inksFor(ground: string): readonly string[] {
-  return ground === "invert" ? ["invertFg"] : ["ink", "fg"];
+  return ground === "invert" ? ["invertFg"] : INKS.filter((i) => i !== "invertFg");
 }
 
 /**
