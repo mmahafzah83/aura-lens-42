@@ -1194,17 +1194,26 @@ async function runPhaseA(opts: {
   const candidateIds = (inserted ?? []).map((r: any) => r.id);
   console.log(`[phaseA] queued ${candidateIds.length} placeholders`);
 
-  // Fire-and-forget self-invoke to Phase B (no await on the body).
+  // Self-invoke Phase B. MUST be wrapped in EdgeRuntime.waitUntil — without it
+  // the isolate is torn down at response time and the request never leaves,
+  // stranding placeholders in status='enriching' until the TTL sweep deletes them.
   const enrichUrl = `${supabaseUrl}/functions/v1/fetch-industry-trends`;
-  fetch(enrichUrl, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${serviceKey}`,
-      "Content-Type": "application/json",
-      apikey: serviceKey,
-    },
-    body: JSON.stringify({ phase: "enrich", user_id: userId, candidate_ids: candidateIds, mode }),
-  }).catch(e => console.error("[phaseA] self-invoke fetch error (non-fatal)", e));
+  // @ts-ignore EdgeRuntime.waitUntil
+  EdgeRuntime.waitUntil((async () => {
+    try {
+      await fetch(enrichUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+          apikey: serviceKey,
+        },
+        body: JSON.stringify({ phase: "enrich", user_id: userId, candidate_ids: candidateIds, mode }),
+      });
+    } catch (e) {
+      console.error("[phaseA] self-invoke fetch error (non-fatal)", (e as Error).message);
+    }
+  })());
 
   return { status: "enriching", discovered: candidates.length, queued: candidateIds.length };
 }
@@ -1609,7 +1618,10 @@ serve(withObserve("fetch-industry-trends", async (req) => {
 
     // ── Phase B: self-invoked enrichment ──
     if (phase === "enrich") {
-      const isServiceCall = authHeader.includes(serviceKey);
+      // Strict equality on the extracted bearer token (matches compute-imprint).
+      const apiKeyHeader = req.headers.get("apikey") ?? "";
+      const bearer = authHeader.replace("Bearer ", "");
+      const isServiceCall = (!!bearer && bearer === serviceKey) || apiKeyHeader === serviceKey;
       let userId = bodyEnrichUserId;
       if (!isServiceCall) {
         const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
