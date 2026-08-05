@@ -46,9 +46,14 @@ const THEME_REGISTRY = [
   "highlighter_green",
   "crumple_amber",
   "gridpaper_yellow",
+  "salford_navy",
+  "blueprint_violet",
+  "concept_violet",
 ] as const;
 const DEFAULT_THEME = "midnight";
-const TEMPLATE_REGISTRY = ["instrument", "highlighter", "crumple", "gridpaper"] as const;
+const TEMPLATE_REGISTRY = [
+  "instrument", "highlighter", "crumple", "gridpaper", "salford", "blueprint", "concept",
+] as const;
 const DEFAULT_TEMPLATE = "instrument";
 
 /**
@@ -61,6 +66,9 @@ const TEMPLATE_THEMES: Record<string, readonly string[]> = {
   highlighter: ["highlighter_orange", "highlighter_green"],
   crumple: ["crumple_amber"],
   gridpaper: ["gridpaper_yellow"],
+  salford: ["salford_navy"],
+  blueprint: ["blueprint_violet"],
+  concept: ["concept_violet"],
 };
 
 function resolveTheme(id: unknown, template: string = DEFAULT_TEMPLATE): string {
