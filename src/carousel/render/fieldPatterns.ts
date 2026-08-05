@@ -12,9 +12,7 @@
  * numeral is drawn with `opacity` only, never a blend mode.
  */
 
-/** salford's dot-matrix field. One radial-gradient dot, tiled. */
-export const SALFORD_DOT_PITCH = 26;
-
+/** salford's dot-matrix field. One radial-gradient dot, tiled by the caller. */
 export function dotMatrix(color: string): string {
   return `radial-gradient(${color} 2.2px, transparent 2.4px)`;
 }
