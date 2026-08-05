@@ -72,20 +72,31 @@ function computeStrength(breadth: number, depth: number): number {
   return Math.min(1, Math.max(0, 0.60 * b + 0.40 * d));
 }
 
+/* Split an id array into fixed-size batches so .in() never blows the URL limit */
+const ID_BATCH = 100;
+function chunkIds(ids: string[], size = ID_BATCH): string[][] {
+  const out: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) out.push(ids.slice(i, i + size));
+  return out;
+}
+
 /* Count unique sources via source_registry_id (one row per distinct source) */
 async function countUniqueOrgs(
   admin: any,
   fragmentIds: string[],
 ): Promise<number> {
   if (fragmentIds.length === 0) return 1;
-  const { data: frags } = await admin
-    .from("evidence_fragments")
-    .select("source_registry_id")
-    .in("id", fragmentIds);
   const sources = new Set<string>();
-  (frags || []).forEach((f: any) => {
-    if (f.source_registry_id) sources.add(f.source_registry_id);
-  });
+  for (const batch of chunkIds(fragmentIds)) {
+    const { data, error } = await admin
+      .from("evidence_fragments")
+      .select("source_registry_id")
+      .in("id", batch);
+    if (error) throw new Error("countUniqueOrgs batch failed: " + error.message);
+    (data || []).forEach((f: any) => {
+      if (f.source_registry_id) sources.add(f.source_registry_id);
+    });
+  }
   return Math.max(sources.size, 1);
 }
 
@@ -95,12 +106,15 @@ async function countUniqueSources(
   fragmentIds: string[],
 ): Promise<number> {
   if (fragmentIds.length === 0) return 1;
-  const { data: frags } = await admin
-    .from("evidence_fragments")
-    .select("source_registry_id")
-    .in("id", fragmentIds);
   const ids = new Set<string>();
-  (frags || []).forEach((f: any) => { if (f.source_registry_id) ids.add(f.source_registry_id); });
+  for (const batch of chunkIds(fragmentIds)) {
+    const { data, error } = await admin
+      .from("evidence_fragments")
+      .select("source_registry_id")
+      .in("id", batch);
+    if (error) throw new Error("countUniqueSources batch failed: " + error.message);
+    (data || []).forEach((f: any) => { if (f.source_registry_id) ids.add(f.source_registry_id); });
+  }
   return Math.max(ids.size, 1);
 }
 
@@ -254,14 +268,18 @@ Deno.serve(withObserve("detect-signals-v2", async (req) => {
       });
     }
 
-    // Fetch the actual fragment data
-    const { data: fragments, error: fragErr } = await admin
-      .from("evidence_fragments")
-      .select("id, title, content, fragment_type, tags, skill_pillars, confidence, entities, created_at")
-      .in("id", targetFragmentIds)
-      .eq("user_id", user_id);
+    // Fetch the actual fragment data (chunked so large batches can't truncate)
+    const fragments: any[] = [];
+    for (const batch of chunkIds(targetFragmentIds)) {
+      const { data, error: fragErr } = await admin
+        .from("evidence_fragments")
+        .select("id, title, content, fragment_type, tags, skill_pillars, confidence, entities, created_at")
+        .in("id", batch)
+        .eq("user_id", user_id);
+      if (fragErr) throw new Error(`Fragment fetch: ${fragErr.message}`);
+      if (data) fragments.push(...data);
+    }
 
-    if (fragErr) throw new Error(`Fragment fetch: ${fragErr.message}`);
     if (!fragments || fragments.length === 0) {
       return new Response(JSON.stringify({ skipped: true, reason: "fragments not found" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
