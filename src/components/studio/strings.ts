@@ -666,6 +666,8 @@ export const themeName: Record<string, { en: string; ar: string }> = {
   clay: { en: "Clay", ar: "طينيّ" },
   gradient: { en: "Gradient", ar: "متدرّج" },
   paper: { en: "Paper", ar: "ورقيّ" },
+  crumple_amber: { en: "Amber", ar: "كهرماني" },
+  gridpaper_yellow: { en: "Yellow", ar: "أصفر" },
 };
 
 /** Any theme without a translation falls back to a title-cased id. */
