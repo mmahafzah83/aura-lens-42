@@ -241,6 +241,18 @@ export const RecordLens: React.FC<RecordLensProps> = ({
   const uid = userId ?? "anon";
   const draft = facts?.last_night?.newest_signal_draft ?? null;
 
+  // Only last night's draft counts as "this morning". When the row carries no
+  // timestamp the overnight run is, by definition, last night's.
+  const draftIsFresh = useMemo(() => {
+    if (!draft) return false;
+    const created = (draft as any).created_at as string | undefined;
+    if (!created) return true;
+    const yesterday = new Date();
+    yesterday.setHours(0, 0, 0, 0);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return new Date(created).getTime() >= yesterday.getTime();
+  }, [draft]);
+
   const [zoom, setZoom] = useState<RecordZoom>(() => {
     try {
       const v = localStorage.getItem(zoomKey(uid));
