@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { checkInvariants } from "../dev-server/supabase/functions/generate-deck/invariants.ts";
-import fx from "../dev-server/src/carousel/__fixtures__/en-9-crumple.json";
+import { checkInvariants } from "../../../supabase/functions/generate-deck/invariants.ts";
+import fx from "..//__fixtures__/en-9-crumple.json";
 
 describe("EF checkInvariants", () => {
   it("runs against a deck with hero lines", () => {
