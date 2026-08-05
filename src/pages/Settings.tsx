@@ -720,10 +720,20 @@ const handleDeleteAccount = async () => {
         </div>
         </section>
 
+        {/* Slides */}
+        <section id="slides" style={{ scrollMarginTop: 96 }}>
+          <SectionHeader
+            label="Slides"
+            subtitle="The family and colour your slides open in. You can still change either inside any post."
+          />
+          <div className="space-y-4">
+            <SlideDefaultsCard userId={authUser?.id ?? null} />
+          </div>
+        </section>
+
         {/* Profile summary */}
         <SectionHeader
           label="Profile summary"
-
           subtitle="A read-only summary of what Aura knows about your profile, brand, and capabilities."
         />
 
