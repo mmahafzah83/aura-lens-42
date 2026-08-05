@@ -251,7 +251,7 @@ export function useHomeLedger(userId: string | null | undefined, days = 14): Hom
       ? Math.max(1, Math.round((Date.now() - new Date(created).getTime()) / 86_400_000))
       : null;
 
-    // nights that produced something, over the last 7
+    // nights Aura found something to write, over the last 7
     const sevenAgo = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
     const nightsProduced = [...draftDays].filter((k) => k >= sevenAgo).length;
 

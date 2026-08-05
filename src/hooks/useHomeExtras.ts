@@ -57,4 +57,4 @@ export function useShapePast(userId: string | null | undefined): ShapePast {
   return state;
 }
 
-// The Room is closed. Its reads lived here and have been removed.
+// The shared-space lens is closed. Its reads lived here and have been removed.
