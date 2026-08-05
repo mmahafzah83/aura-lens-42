@@ -68,9 +68,9 @@ type Grain = "day" | "week" | "month";
 
 type Row =
   | { kind: "bucket"; at: string; grain: Grain; b: RecordBucket; pubs: RecordPublished[] }
-  | { kind: "quiet"; at: string; from: string; to: string; n: number }
+  | { kind: "quiet"; at: string; from: string; to: string; n: number; state: "night" | "zero" }
   | { kind: "milestone"; at: string; m: RecordMilestone }
-  | { kind: "publish"; at: string; p: RecordPublished };
+  | { kind: "pubday"; at: string; ps: RecordPublished[] };
 
 const periodEnd = (key: string, grain: Grain) => {
   const a = parse(key);
@@ -86,17 +86,17 @@ function milestoneText(m: RecordMilestone): { head: string; sub: string } {
     const band = String(m.value ?? "").replace(/_/g, " ");
     const top = /presence/i.test(band);
     return {
-      head: `You crossed into ${band}.`,
+      head: m.direction === "down" ? `You moved down to ${band}.` : `You moved up to ${band}.`,
       sub: top
         ? "The top band. Held by publishing, not by reading."
         : "The band moved because the record moved.",
     };
   }
   if (m.kind === "first_publish") {
-    return { head: "Your first published entry.", sub: postTitle(m.value) };
+    return { head: "Your first post written with Aura.", sub: postTitle(m.value) };
   }
   return {
-    head: `A theme reached ${m.n ?? 25} fragments.`,
+    head: `One topic reached ${m.n ?? 25} pieces of knowledge.`,
     sub: postTitle(m.value),
   };
 }
