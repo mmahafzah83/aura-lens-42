@@ -1,0 +1,397 @@
+{
+  "deck_id": "fx-en-9-crumple",
+  "signal_id": "sig-port-throughput-2026",
+  "primary_lang": "en",
+  "dir": "ltr",
+  "numerals": "western",
+  "theme": "crumple_amber",
+  "template": "crumple",
+  "length": 10,
+  "profile": {
+    "name": {
+      "runs": [
+        {
+          "t": "Noura Al Hassan",
+          "lang": "en"
+        }
+      ]
+    },
+    "title": {
+      "runs": [
+        {
+          "t": "Port operations",
+          "lang": "en"
+        }
+      ]
+    },
+    "handle": "noura-alhassan",
+    "avatar_url": null,
+    "initials": "NA"
+  },
+  "slides": [
+    {
+      "index": 0,
+      "archetype": "cover_hero",
+      "slots": {
+        "chip": {
+          "runs": [
+            {
+              "t": "Port throughput",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "The berth",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "was the queue",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ],
+        "subline": {
+          "runs": [
+            {
+              "t": "Jebel Ali added cranes in 2025 and the wait got longer.",
+              "lang": "en"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "index": 1,
+      "archetype": "frame",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "Cranes were never the constraint",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Two clocks",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ],
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "A crane moves a box in 90 seconds. A truck gate clears one in 11 minutes.",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "I watched both clocks for a week before I believed the second one.",
+                "lang": "en"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "archetype": "evidence",
+      "slots": {
+        "stat_value": "11 min",
+        "stat_label": {
+          "runs": [
+            {
+              "t": "average gate clearance per truck",
+              "lang": "en"
+            }
+          ]
+        },
+        "source": {
+          "runs": [
+            {
+              "t": "Terminal gate logs, Q1 2026",
+              "lang": "en"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "index": 3,
+      "archetype": "benchmark",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "Where the minutes go",
+              "lang": "en"
+            }
+          ]
+        },
+        "media": {
+          "kind": "chart",
+          "placement": "lower",
+          "chart": {
+            "type": "bars",
+            "series": [
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "Gate",
+                      "lang": "en"
+                    }
+                  ]
+                },
+                "value": 11,
+                "unit": " min",
+                "emphasis": "alert"
+              },
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "Yard",
+                      "lang": "en"
+                    }
+                  ]
+                },
+                "value": 4,
+                "unit": " min",
+                "emphasis": "accent"
+              },
+              {
+                "label": {
+                  "runs": [
+                    {
+                      "t": "Quay",
+                      "lang": "en"
+                    }
+                  ]
+                },
+                "value": 2,
+                "unit": " min",
+                "emphasis": "none"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "index": 4,
+      "archetype": "quote",
+      "slots": {
+        "quote": {
+          "runs": [
+            {
+              "t": "We bought speed at the quay and paid for it at the gate.",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Said plainly",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "archetype": "steps",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "What I would check first",
+              "lang": "en"
+            }
+          ]
+        },
+        "checklist": [
+          {
+            "runs": [
+              {
+                "t": "Time the gate. Not the crane, and not the vessel.",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "Split the queue by hour. Mornings are a different port.",
+                "lang": "en"
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "t": "Price one hour of delay. Put that figure on the wall.",
+                "lang": "en"
+              }
+            ]
+          }
+        ],
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Three checks",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    },
+    {
+      "archetype": "definition",
+      "slots": {
+        "term": {
+          "runs": [
+            {
+              "t": "Gate clearance",
+              "lang": "en"
+            }
+          ]
+        },
+        "term_def": {
+          "runs": [
+            {
+              "t": "The minutes between a truck reaching the gate and leaving the terminal.",
+              "lang": "en"
+            }
+          ]
+        },
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "Nobody on the crane team owns this number, which is why it drifted to 11 minutes.",
+                "lang": "en"
+              }
+            ]
+          }
+        ],
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "One number",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      },
+      "index": 6
+    },
+    {
+      "archetype": "cover_stat",
+      "slots": {
+        "stat_value": "63%",
+        "stat_label": {
+          "runs": [
+            {
+              "t": "of a truck's terminal time is spent at the gate",
+              "lang": "en"
+            }
+          ]
+        },
+        "source": {
+          "runs": [
+            {
+              "t": "Terminal gate logs, Q1 2026",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "of the wait",
+                "lang": "en"
+              }
+            ]
+          }
+        ]
+      },
+      "index": 7
+    },
+    {
+      "index": 8,
+      "archetype": "close",
+      "slots": {
+        "headline": {
+          "runs": [
+            {
+              "t": "If this was useful",
+              "lang": "en"
+            }
+          ]
+        },
+        "body": [
+          {
+            "runs": [
+              {
+                "t": "I write about port operations most weeks.",
+                "lang": "en"
+              }
+            ]
+          }
+        ],
+        "cta_pill": {
+          "runs": [
+            {
+              "t": "Follow for the next one",
+              "lang": "en"
+            }
+          ]
+        },
+        "hero_lines": [
+          {
+            "runs": [
+              {
+                "t": "Your move",
+                "lang": "en"
+              }
+            ],
+            "highlight": true
+          }
+        ]
+      }
+    }
+  ]
+}

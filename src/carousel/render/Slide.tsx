@@ -30,6 +30,8 @@ import {
 } from "./template";
 import { publishMeasuredDrops } from "./measuredDrops";
 import HighlighterSlide from "./Highlighter";
+import CrumpleSlide from "./Crumple";
+import GridpaperSlide from "./Gridpaper";
 
 /* ------------------------------------------------------------------ */
 /* Canvas and type scale — all of it now DATA, read from the template  */
@@ -999,6 +1001,8 @@ function InstrumentSlide({ deck, slide, theme: themeName, template, onFit }: Sli
  */
 const TEMPLATE_RENDERERS: Record<string, React.FC<SlideProps>> = {
   highlighter: HighlighterSlide,
+  crumple: CrumpleSlide,
+  gridpaper: GridpaperSlide,
 };
 
 export function Slide(props: SlideProps) {

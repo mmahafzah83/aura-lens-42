@@ -36,8 +36,8 @@ function isHex(v: unknown): v is string {
   return typeof v === "string" && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(v.trim());
 }
 
-const GROUNDS = ["paper", "field", "dark", "g1", "g2", "g3", "bgSolid"] as const;
-const INKS = ["ink", "fg"] as const;
+const GROUNDS = ["paper", "field", "dark", "g1", "g2", "g3", "bgSolid", "invert"] as const;
+const INKS = ["ink", "fg", "invertFg"] as const;
 
 /**
  * LEGACY EXEMPTION — closed list, do not extend.
@@ -66,6 +66,12 @@ function pairsFor(name: string, t: Record<string, unknown>): Pair[] {
   if (isHex(t.accent) && isHex(t.accentInk)) {
     out.push({ theme: name, a: "accent", b: "accentInk", av: t.accent, bv: t.accentInk });
   }
+  // (invert, accent) — the accent word printed ON the inversion ground. A
+  // declared pair for any family that alternates a dark slide, and the one
+  // pairing the GROUNDS/INKS loop cannot see, because accent is neither.
+  if (isHex(t.invert) && isHex(t.accent)) {
+    out.push({ theme: name, a: "invert", b: "accent", av: t.invert, bv: t.accent });
+  }
   for (const g of GROUNDS) {
     const gv = t[g];
     if (!isHex(gv)) continue;
@@ -79,9 +85,19 @@ function pairsFor(name: string, t: Record<string, unknown>): Pair[] {
   return out;
 }
 
+/**
+ * Both registries are tested, and a name that appears in both is tested TWICE
+ * rather than once. A colourway that has grown a renderer (crumple, gridpaper,
+ * highlighter) exists as a full 17-field Theme AND as its original token stub;
+ * collapsing them would silently drop whichever came second, which is exactly
+ * the pair a widening is most likely to get wrong.
+ */
 const ALL: Record<string, Record<string, unknown>> = {
+  ...Object.fromEntries(
+    Object.entries(TEMPLATE_THEMES as unknown as Record<string, Record<string, unknown>>)
+      .map(([k, v]) => [`tokens:${k}`, v]),
+  ),
   ...(THEMES as unknown as Record<string, Record<string, unknown>>),
-  ...(TEMPLATE_THEMES as unknown as Record<string, Record<string, unknown>>),
 };
 
 describe("theme contrast", () => {

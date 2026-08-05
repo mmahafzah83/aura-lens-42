@@ -10,6 +10,10 @@ import arInlineEn from "../__fixtures__/ar-7-inline-en.json";
 import enNoStat from "../__fixtures__/en-5-no-stat.json";
 import enHighlighter from "../__fixtures__/en-7-highlighter.json";
 import arHighlighter from "../__fixtures__/ar-7-highlighter.json";
+import enCrumple from "../__fixtures__/en-9-crumple.json";
+import arCrumple from "../__fixtures__/ar-9-crumple.json";
+import enGridpaper from "../__fixtures__/en-9-gridpaper.json";
+import arGridpaper from "../__fixtures__/ar-9-gridpaper.json";
 
 const fixtures: Array<[string, unknown]> = [
   ["en-7-chart", enChart],
@@ -17,12 +21,24 @@ const fixtures: Array<[string, unknown]> = [
   ["en-5-no-stat", enNoStat],
   ["en-7-highlighter", enHighlighter],
   ["ar-7-highlighter", arHighlighter],
+  ["en-9-crumple", enCrumple],
+  ["ar-9-crumple", arCrumple],
+  ["en-9-gridpaper", enGridpaper],
+  ["ar-9-gridpaper", arGridpaper],
 ];
 
 /** The two highlighter fixtures must resolve to the highlighter family. */
 const highlighterFixtures: Array<[string, unknown]> = [
   ["en-7-highlighter", enHighlighter],
   ["ar-7-highlighter", arHighlighter],
+];
+
+/** The paper families, each with its own single registered colourway. */
+const paperFixtures: Array<[string, unknown, string]> = [
+  ["en-9-crumple", enCrumple, "crumple"],
+  ["ar-9-crumple", arCrumple, "crumple"],
+  ["en-9-gridpaper", enGridpaper, "gridpaper"],
+  ["ar-9-gridpaper", arGridpaper, "gridpaper"],
 ];
 
 describe("DeckIR fixtures", () => {
@@ -50,6 +66,26 @@ describe("DeckIR fixtures", () => {
       const ir = DeckIRSchema.parse(raw);
       expect(ir.template).toBe("instrument");
       expect(getTemplate(ir.template).id).toBe("instrument");
+    }
+  });
+
+  it.each(paperFixtures)("%s resolves to its own registered family and colourway", (_name, raw, family) => {
+    const ir = DeckIRSchema.parse(raw);
+    expect(ir.template).toBe(family);
+    expect(getTemplate(ir.template).id).toBe(family);
+    expect(templateThemes[family]).toContain(ir.theme);
+    expect(ir.theme in THEMES).toBe(true);
+  });
+
+  it("covers all nine archetypes in each paper fixture", () => {
+    const nine = [
+      "cover_hero", "cover_stat", "frame", "evidence",
+      "benchmark", "quote", "steps", "definition", "close",
+    ];
+    for (const [name, raw] of paperFixtures) {
+      const ir = DeckIRSchema.parse(raw);
+      const seen = new Set(ir.slides.map((s) => s.archetype));
+      for (const a of nine) expect(seen.has(a as never), `${name} is missing ${a}`).toBe(true);
     }
   });
 });

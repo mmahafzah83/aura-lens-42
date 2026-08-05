@@ -28,6 +28,14 @@ export interface Theme {
   avA: string;
   avB: string;
   avInk: string;
+  /**
+   * OPTIONAL INVERSION GROUND. Families that alternate a dark slide against a
+   * light one (gridpaper) declare the dark surface and the ink that rides on
+   * it here. A family with no dark slide leaves both absent rather than
+   * inventing a colour the renderer never draws.
+   */
+  invert?: string;
+  invertFg?: string;
 }
 
 const INSTRUMENT_THEMES = {
@@ -149,15 +157,84 @@ const HIGHLIGHTER_THEMES = {
   },
 } satisfies Record<string, Theme>;
 
+/* ------------------------------------------------------------------ */
+/* crumple — pressed paper, one rotated amber slab                      */
+/*                                                                      */
+/* Widened from the `crumple_amber` stub below. Nothing is invented that */
+/* carries text: `bgSolid` IS the declared paper, `accentInk` IS the     */
+/* declared ink, and because this palette holds no red, ink is also the  */
+/* alert — the highlighter precedent, not a new decision.                */
+/* ------------------------------------------------------------------ */
+
+const CRUMPLE_THEMES = {
+  crumple_amber: {
+    bg: "#F5F3EE",
+    bgSolid: "#F5F3EE",
+    fg: "#161616",
+    dim: "#57534C",
+    head: "#161616",
+    accent: "#F2A93B",
+    accentLight: "#F8CE8C",
+    accentInk: "#161616",
+    // No red in this template. Ink IS the alert.
+    alert: "#161616",
+    neutral: "#DDD8CD",
+    panel: "rgba(22,22,22,.06)",
+    rule: "rgba(22,22,22,.16)",
+    avA: "#F2A93B",
+    avB: "#C4801F",
+    avInk: "#161616",
+  },
+} satisfies Record<string, Theme>;
+
+/* ------------------------------------------------------------------ */
+/* gridpaper — graph ground, alternating dark slides                    */
+/*                                                                      */
+/* The one family with a declared inversion ground: `invert` is the      */
+/* stub's own `dark`, and `invertFg` is the stub's own paper. Both are   */
+/* declared colours reused, never fabricated ones.                       */
+/* ------------------------------------------------------------------ */
+
+const GRIDPAPER_THEMES = {
+  gridpaper_yellow: {
+    bg: "#F6EFE2",
+    bgSolid: "#F6EFE2",
+    fg: "#141210",
+    dim: "#55504A",
+    head: "#141210",
+    accent: "#F0B429",
+    accentLight: "#F7D687",
+    accentInk: "#141210",
+    // No red in this template either. Ink IS the alert.
+    alert: "#141210",
+    neutral: "#DED6C6",
+    panel: "rgba(20,18,16,.06)",
+    rule: "rgba(20,18,16,.16)",
+    avA: "#F0B429",
+    avB: "#C08A12",
+    avInk: "#141210",
+    invert: "#141210",
+    invertFg: "#F6EFE2",
+  },
+} satisfies Record<string, Theme>;
+
 export const THEMES = {
   ...INSTRUMENT_THEMES,
   ...HIGHLIGHTER_THEMES,
+  ...CRUMPLE_THEMES,
+  ...GRIDPAPER_THEMES,
 };
 
 export type ThemeName = keyof typeof THEMES;
 
 /** True when a theme is a light-ground (paper) set. Drives ink-on-paper chrome. */
-export const PAPER_THEMES: readonly string[] = ["paper", "highlighter_orange", "highlighter_green"];
+export const PAPER_THEMES: readonly string[] = [
+  "paper",
+  "highlighter_orange",
+  "highlighter_green",
+  "crumple_amber",
+  "gridpaper_yellow",
+];
 
 export const THEME_NAMES = ["midnight", "clay", "gradient", "paper"] as const;
 
@@ -181,6 +258,8 @@ export function getTheme(name?: string | null): Theme {
 export const templateThemes: Record<string, string[]> = {
   instrument: ["midnight", "clay", "gradient", "paper"],
   highlighter: ["highlighter_orange", "highlighter_green"],
+  crumple: ["crumple_amber"],
+  gridpaper: ["gridpaper_yellow"],
 };
 
 /* ------------------------------------------------------------------ */
