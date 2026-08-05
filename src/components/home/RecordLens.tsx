@@ -151,17 +151,17 @@ const ThemeChip: React.FC<{
     }}>
       <MachineDot size={6} />
       <span aria-hidden style={{ ...MONO, fontSize: 10 }}>{open ? "▾" : "▸"}</span>
-      {plural(n, "theme formed", "themes formed")}
+      {plural(n, "topic found", "topics found")}
     </button>
     {open && (
       <div style={{ display: "grid", gap: 4, paddingInlineStart: 4 }}>
-        {loading && <Muted style={{ fontSize: 12.5 }}>Reading the themes…</Muted>}
+        {loading && <Muted style={{ fontSize: 12.5 }}>Reading the topics…</Muted>}
         {!loading && titles.slice(0, 10).map((t, i) => (
           <p key={i} style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{t}</p>
         ))}
         {!loading && n > titles.length && (
           <TextButton onClick={onOpenSignals} style={{ justifySelf: "start", fontSize: 12.5 }}>
-            …and {n - titles.length} more — open the signals board
+            …and {n - titles.length} more — open the topics board
           </TextButton>
         )}
       </div>

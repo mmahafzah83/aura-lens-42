@@ -396,8 +396,8 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
             <Card style={{ display: "grid", gap: 12 }}>
               <Kicker>Start here</Kicker>
               <Body style={{ fontSize: 15, color: "var(--text-primary)" }}>
-                Nothing has been captured yet, so there is no record and no room to show — only the shape you
-                arrived with.
+                Nothing has been saved yet, so there is nothing that happened to show — only where you stand
+                today.
               </Body>
               <div>
                 <ActButton onClick={() => {
