@@ -85,9 +85,19 @@ function pairsFor(name: string, t: Record<string, unknown>): Pair[] {
   return out;
 }
 
+/**
+ * Both registries are tested, and a name that appears in both is tested TWICE
+ * rather than once. A colourway that has grown a renderer (crumple, gridpaper,
+ * highlighter) exists as a full 17-field Theme AND as its original token stub;
+ * collapsing them would silently drop whichever came second, which is exactly
+ * the pair a widening is most likely to get wrong.
+ */
 const ALL: Record<string, Record<string, unknown>> = {
+  ...Object.fromEntries(
+    Object.entries(TEMPLATE_THEMES as unknown as Record<string, Record<string, unknown>>)
+      .map(([k, v]) => [`tokens:${k}`, v]),
+  ),
   ...(THEMES as unknown as Record<string, Record<string, unknown>>),
-  ...(TEMPLATE_THEMES as unknown as Record<string, Record<string, unknown>>),
 };
 
 describe("theme contrast", () => {
