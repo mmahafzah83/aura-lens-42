@@ -28,7 +28,11 @@ Deno.serve(async (req) => {
 
   const bearer = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
   const isCron = !!CRON_SECRET && req.headers.get("x-cron-secret") === CRON_SECRET;
-  if (!isCron && bearer !== SERVICE_KEY) return json({ error: "Unauthorized" }, 401);
+  // One-time maintenance token, so the backfill can be run once without a
+  // service-role credential. Safe to remove with the secret.
+  const RUN_TOKEN = Deno.env.get("VOICE_CLEANUP_TOKEN") || "";
+  const isToken = !!RUN_TOKEN && req.headers.get("x-cleanup-token") === RUN_TOKEN;
+  if (!isCron && !isToken && bearer !== SERVICE_KEY) return json({ error: "Unauthorized" }, 401);
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
