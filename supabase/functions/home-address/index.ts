@@ -98,7 +98,7 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
       .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     admin.from("facet_states").select("facet, value").eq("user_id", userId),
     admin.from("linkedin_posts")
-      .select("id, title, post_text, tracking_status, created_at, published_at, publish_attempted_at, source_signal_id, source_metadata")
+      .select("id, title, post_text, tracking_status, created_at, published_at, publish_attempted_at, source_signal_id, source_metadata, authorship, acquisition")
       .eq("user_id", userId).order("created_at", { ascending: false }).limit(1000),
     admin.from("agent_findings").select("id, status, themes, created_at")
       .eq("user_id", userId).gte("created_at", isoDaysAgo(1)),
@@ -210,12 +210,13 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
   // merged into one figure.
   const publishedRows = posts.filter((p) => !!p.published_at);
   const published_total = publishedRows.length;
-  const published_sent_from_aura = publishedRows.filter((p) => !!p.publish_attempted_at).length;
-  const published_written_in_aura = publishedRows.filter(
-    (p) => !p.publish_attempted_at && p?.source_metadata && typeof p.source_metadata === "object" &&
-      Object.prototype.hasOwnProperty.call(p.source_metadata, "source"),
-  ).length;
-  const published_through_aura = published_sent_from_aura + published_written_in_aura;
+  // Mirror of public.post_provenance — never re-infer from source_metadata.
+  const isAuraPublished = (p: any) =>
+    p.acquisition === "published_via_aura" || !!p.publish_attempted_at;
+  const isAuraDrafted = (p: any) =>
+    !isAuraPublished(p) && (p.authorship === "aura_drafted" || p.authorship === "aura_assisted");
+  const published_sent_from_aura = publishedRows.filter(isAuraPublished).length;
+  const published_through_aura = publishedRows.filter((p) => isAuraPublished(p) || isAuraDrafted(p)).length;
   const attempts = posts.filter((p) => !!p.publish_attempted_at);
   const publish_attempts = attempts.length;
   const last_publish_attempt = attempts
@@ -231,18 +232,27 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
     (p) => p.tracking_status === "draft" && new Date(p.created_at).getTime() >= Date.now() - 86400000,
   );
   const contentItems: any[] = contentR.data ?? [];
-  const newestSignalDraft = nightDrafts.find(
-    (p) => p.source_signal_id || (Array.isArray(p?.source_metadata?.signal_ids) && p.source_metadata.signal_ids.length),
-  ) ?? null;
+  const linkedSignalOf = (p: any) => {
+    const sid = p.source_signal_id || p?.source_metadata?.signal_ids?.[0] || null;
+    return { sid, sig: sid ? (signals.find((s) => s.id === sid) ?? null) : null };
+  };
+  const RETIRED = new Set(["merged", "archived"]);
+  const newestSignalDraft = nightDrafts.find((p) => {
+    const { sid, sig } = linkedSignalOf(p);
+    if (!sid) return false;
+    // A draft from a retired theme must not be offered as today's move.
+    return !sig || !RETIRED.has(String(sig.status));
+  }) ?? null;
   let newest_signal_draft: any = null;
   if (newestSignalDraft) {
-    const sid = newestSignalDraft.source_signal_id || newestSignalDraft.source_metadata?.signal_ids?.[0] || null;
-    const linked = signals.find((s) => s.id === sid) ?? null;
+    const { sid, sig } = linkedSignalOf(newestSignalDraft);
     newest_signal_draft = {
       id: newestSignalDraft.id,
       title: newestSignalDraft.title || (newestSignalDraft.post_text || "").slice(0, 80) || null,
       signal_id: sid,
-      fragment_count: linked?.fragment_count ?? null,
+      signal_status: sig?.status ?? null,
+      created_at: newestSignalDraft.created_at,
+      fragment_count: sig?.fragment_count ?? null,
     };
   }
   const last_night = {
