@@ -176,6 +176,8 @@ const HIGHLIGHTER_RAMP: TypeRamp = {
 const FONT_POPPINS = '"AuraPoppins", "Helvetica Neue", Helvetica, Arial, sans-serif';
 /** Poppins has no Arabic. Arabic is IBM Plex Sans Arabic, 700 display / 400 body. */
 const FONT_AR_TEXT = '"AuraArabicText", "Segoe UI", Tahoma, sans-serif';
+/** Archivo Black ships a single weight (400) and is a display face only. */
+const FONT_ARCHIVO = '"AuraArchivo", "Arial Black", Impact, sans-serif';
 
 const HIGHLIGHTER_FONTS_BASE = {
   displayEn: FONT_POPPINS,
@@ -229,9 +231,160 @@ const HIGHLIGHTER: TemplateDescriptor = {
   heroHighlight: "block",
 };
 
+/* ------------------------------------------------------------------ */
+/* Shared derivation for the paper-texture families                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One derivation, two families. The weights differ per family (Archivo Black
+ * has only 400; Poppins sets its display at 700), so they are an argument
+ * rather than a constant — but the SIZES are still read from the ramp, so a
+ * ramp change cannot leave the fit ladder measuring a fallback face.
+ */
+function paperGateSpecs(
+  ramp: TypeRamp,
+  fonts: Omit<FontSet, "gateSpecs">,
+  w: { display: number; body: number; meta: number; arDisplay: number; arBody: number },
+): Array<[string, string]> {
+  const d = head(fonts.displayEn);
+  const t = head(fonts.textEn);
+  const a = head(fonts.arabic);
+  return [
+    [`${w.display} ${ramp.heroEn}px ${d}`, LATIN_SAMPLE],
+    [`${w.display} ${ramp.h2}px ${d}`, LATIN_SAMPLE],
+    [`${w.display} ${ramp.stat}px ${d}`, DIGIT_SAMPLE],
+    [`${w.body} ${ramp.body}px ${t}`, LATIN_SAMPLE],
+    [`${w.meta} ${ramp.chip}px ${t}`, LATIN_SAMPLE],
+    [`${w.meta} ${ramp.source}px ${t}`, DIGIT_SAMPLE],
+    [`${w.arDisplay} ${ramp.heroAr}px ${a}`, ARABIC_SAMPLE],
+    [`${w.arBody} ${ramp.body}px ${a}`, ARABIC_SAMPLE],
+  ];
+}
+
+/* ------------------------------------------------------------------ */
+/* crumple — pressed paper, Archivo Black, one rotated amber slab      */
+/* ------------------------------------------------------------------ */
+
+const CRUMPLE_RAMP: TypeRamp = {
+  // Cover display 104 sits inside the locked 100–108 band.
+  heroEn: 104, heroEnLh: 1.06,
+  // Arabic display never tighter than 1.4 — Cairo 900 needs the room.
+  heroAr: 88,  heroArLh: 1.44,
+  stat: 104,   statLh: 1.06,
+  // Interior headline 84, inside the locked 76–92 band.
+  h2: 84,      h2Lh: 1.1,
+  body: 40,    bodyLhEn: 1.7, bodyLhAr: 1.75,
+  chip: 28, data: 28, source: 26,
+  gap: 28, media: 360,
+  identityName: 37,
+  identitySub: 28,
+  floors: { content: 38, meta: 22 },
+};
+
+const CRUMPLE_FONTS_BASE = {
+  displayEn: FONT_ARCHIVO,
+  textEn: FONT_TEXT_EN,
+  // Meta is Inter. This family has no monospace voice.
+  mono: FONT_TEXT_EN,
+  arabic: FONT_AR,
+};
+
+const CRUMPLE: TemplateDescriptor = {
+  id: "crumple",
+  label: { en: "Crumple", ar: "الورق المطوي" },
+  ramp: CRUMPLE_RAMP,
+  geometry: {
+    canvasW: 1080,
+    canvasH: 1350,
+    pad: 96,
+    safeArea: { top: 96, side: 96, bottom: 96 + 68 },
+    bandMediaShare: BAND_MEDIA_SHARE,
+    bandTypeBoost: BAND_TYPE_BOOST,
+    bandLift: 26,
+    closeFigureW: 430,
+    closeFigureH: 470,
+    radiusChip: 999,
+    radiusPanel: 0,
+    radiusMedia: 0,
+    contentX: 120,
+    maxTextW: 860,
+  },
+  fonts: {
+    ...CRUMPLE_FONTS_BASE,
+    // Archivo Black is 400-only; Cairo carries 900 display and 400 body.
+    gateSpecs: paperGateSpecs(CRUMPLE_RAMP, CRUMPLE_FONTS_BASE, {
+      display: 400, body: 500, meta: 700, arDisplay: 900, arBody: 400,
+    }),
+  },
+  media: MEDIA_BY_ARCHETYPE,
+  coverAlign: "start",
+  heroHighlight: "slab",
+};
+
+/* ------------------------------------------------------------------ */
+/* gridpaper — graph ground, Poppins, alternating dark slides          */
+/* ------------------------------------------------------------------ */
+
+const GRIDPAPER_RAMP: TypeRamp = {
+  heroEn: 100, heroEnLh: 1.08,
+  heroAr: 86,  heroArLh: 1.48,
+  stat: 100,   statLh: 1.08,
+  h2: 80,      h2Lh: 1.12,
+  body: 40,    bodyLhEn: 1.7, bodyLhAr: 1.75,
+  chip: 29, data: 28, source: 26,
+  gap: 28, media: 360,
+  identityName: 38,
+  identitySub: 29,
+  floors: { content: 38, meta: 22 },
+};
+
+const GRIDPAPER_FONTS_BASE = {
+  displayEn: FONT_POPPINS,
+  textEn: FONT_POPPINS,
+  mono: FONT_POPPINS,
+  arabic: FONT_AR_TEXT,
+};
+
+/** The graph rule pitch, in px at 1080×1350. Read by the renderer, not typed in it. */
+export const GRIDPAPER_GRID_PITCH = 54;
+
+const GRIDPAPER: TemplateDescriptor = {
+  id: "gridpaper",
+  label: { en: "Grid paper", ar: "الورق المربّع" },
+  ramp: GRIDPAPER_RAMP,
+  geometry: {
+    canvasW: 1080,
+    canvasH: 1350,
+    // A multiple of the 54px rule, so the content column lands on the grid.
+    pad: 108,
+    safeArea: { top: 108, side: 108, bottom: 108 + 68 },
+    bandMediaShare: BAND_MEDIA_SHARE,
+    bandTypeBoost: BAND_TYPE_BOOST,
+    bandLift: 26,
+    closeFigureW: 430,
+    closeFigureH: 470,
+    radiusChip: 999,
+    radiusPanel: 0,
+    radiusMedia: 0,
+    contentX: 108,
+    maxTextW: 864,
+  },
+  fonts: {
+    ...GRIDPAPER_FONTS_BASE,
+    gateSpecs: paperGateSpecs(GRIDPAPER_RAMP, GRIDPAPER_FONTS_BASE, {
+      display: 700, body: 500, meta: 500, arDisplay: 700, arBody: 400,
+    }),
+  },
+  media: MEDIA_BY_ARCHETYPE,
+  coverAlign: "start",
+  heroHighlight: "slab",
+};
+
 export const TEMPLATES: Record<string, TemplateDescriptor> = {
   instrument: INSTRUMENT,
   highlighter: HIGHLIGHTER,
+  crumple: CRUMPLE,
+  gridpaper: GRIDPAPER,
 };
 
 export const TEMPLATE_IDS: string[] = Object.keys(TEMPLATES);
