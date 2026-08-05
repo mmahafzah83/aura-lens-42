@@ -63,7 +63,6 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId }) => {
     ? facets.map((f) => past.values![f.facet] ?? f.value)
     : null;
   const hasPast = Boolean(pastValues && pastValues.some((v, i) => Math.abs(v - values[i]) > 0.005));
-  const atCeiling = facets.filter((f) => f.value >= CEILING).length;
 
   if (facets.length === 0) {
     return (
