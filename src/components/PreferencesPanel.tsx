@@ -29,7 +29,23 @@ interface Profile {
   level: string | null;
   notification_prefs: Record<string, unknown> | null;
   shared_learning_consent: boolean | null;
+  timezone: string | null;
 }
+
+const FALLBACK_TIMEZONES = [
+  "Asia/Riyadh", "Asia/Dubai", "Asia/Qatar", "Asia/Bahrain", "Asia/Kuwait",
+  "Asia/Muscat", "Asia/Amman", "Asia/Beirut", "Africa/Cairo",
+  "Europe/London", "Europe/Paris", "America/New_York", "America/Los_Angeles",
+];
+
+const TIMEZONES: string[] = (() => {
+  try {
+    const supported = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf;
+    const list = typeof supported === "function" ? supported("timeZone") : null;
+    if (list && list.length) return list;
+  } catch { /* fall through */ }
+  return FALLBACK_TIMEZONES;
+})();
 
 const SectionHeader = ({ children }: { children: React.ReactNode }) => (
   <div
@@ -225,7 +241,7 @@ export default function PreferencesPanel({
     (async () => {
       const { data } = await (supabase
         .from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, level, notification_prefs, shared_learning_consent")
+        .select("first_name, last_name, firm, sector_focus, level, notification_prefs, shared_learning_consent, timezone")
         .eq("user_id", userId)
         .maybeSingle();
       if (!cancelled) {
