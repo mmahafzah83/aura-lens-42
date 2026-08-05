@@ -77,11 +77,13 @@ const Row = ({
   danger?: boolean;
   children?: React.ReactNode;
 }) => (
+  <>
+  <style>{`.aura-row:hover .aura-chevron{color:var(--brand)}`}</style>
   <button
     type="button"
     onClick={onClick}
     disabled={!onClick}
-    className="w-full text-left transition-colors"
+    className="aura-row w-full text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--act)] focus-visible:ring-offset-1 rounded-md"
     style={{
       display: "flex",
       alignItems: "center",
@@ -120,9 +122,10 @@ const Row = ({
       {children}
     </div>
     {chevron && onClick && !danger && (
-      <ChevronRight className="w-4 h-4" style={{ color: "var(--ink-2)", flexShrink: 0 }} />
+      <ChevronRight className="aura-chevron w-4 h-4 transition-colors" style={{ color: "var(--ink-3)", flexShrink: 0 }} />
     )}
   </button>
+  </>
 );
 
 const Toggle = ({
@@ -397,7 +400,9 @@ export default function PreferencesPanel({
             padding: "8px 10px",
             minHeight: 44,
             maxWidth: 220,
+            cursor: "pointer",
           }}
+          className="focus-visible:ring-2 focus-visible:ring-[var(--act)]"
         >
           {TIMEZONES.map((tz) => (
             <option key={tz} value={tz}>{tz}</option>
