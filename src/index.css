@@ -206,7 +206,7 @@ html *:not(canvas):not(video):not(iframe) {
   --ink:var(--text-primary); --ink-2:var(--text-secondary); --ink-3:var(--text-muted);
   --rule:var(--border-default);
   --live:var(--machine); --live-ink:var(--machine-text);
-  --action:var(--deadline); --action-ink:var(--deadline-text);
+  --action:var(--act); --action-ink:#FFFFFF;
   --spot:var(--act); --spot-2:var(--act-hover);
   --pos:var(--success); --neg:var(--error);
   --pos-text:var(--success-text);
