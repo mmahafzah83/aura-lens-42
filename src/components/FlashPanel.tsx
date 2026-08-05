@@ -312,8 +312,6 @@ export default function FlashPanel() {
       const { error } = await supabase.from("linkedin_posts").insert({
         user_id: session.user.id,
         post_text: displayText(r.text),
-        original_generated_text: displayText(r.text),
-        content_type: "post",
         format_type: "post",
         source_type: "aura_generated",
         authorship: "aura_drafted",
@@ -326,6 +324,7 @@ export default function FlashPanel() {
           theme: selectedTheme || null,
           sector: sectorPayloadValue() || null,
         },
+        ...generationMetadata(displayText(r.text), { contentType: postType || "post" }),
       });
       if (error) throw error;
       toast.success(t.saved);
@@ -375,8 +374,6 @@ export default function FlashPanel() {
         .insert({
           user_id: session.user.id,
           post_text: text,
-          original_generated_text: r.text,
-          content_type: "post",
           format_type: "post",
           source_type: "aura_generated",
           authorship: "aura_drafted",
@@ -389,6 +386,7 @@ export default function FlashPanel() {
             theme: selectedTheme || null,
             sector: sectorPayloadValue() || null,
           },
+          ...generationMetadata(r.text, { contentType: postType || "post" }),
         })
         .select("id")
         .single();
