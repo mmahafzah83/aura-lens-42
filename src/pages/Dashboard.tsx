@@ -638,7 +638,7 @@ const Dashboard = () => {
         receiptShownRef.current = true;
         sessionStorage.removeItem("aura_pending_capture_at");
         const title = row.signal_title.length > 60 ? row.signal_title.slice(0, 58) + "…" : row.signal_title;
-        toast(`Your reading strengthened ${title} — now backed by ${fragCount} sources`, {
+        toast(`Your reading strengthened ${title} — now backed by ${fragCount} pieces of evidence`, {
           duration: 9000,
           action: {
             label: "See it →",
