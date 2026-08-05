@@ -210,15 +210,15 @@ export function provenanceOf(p: ProvenanceRow | null | undefined): Provenance | 
 }
 
 export const PROVENANCE_LABEL: Record<Provenance, string> = {
-  aura_published: "Published with Aura",
-  aura_drafted: "Written with Aura",
-  linkedin_only: "From LinkedIn",
+  aura_published: "Aura wrote and posted this",
+  aura_drafted: "Aura wrote this",
+  linkedin_only: "Your own post",
 };
 
 export const PROVENANCE_EXPLAIN: Record<Provenance, string> = {
-  aura_published: "Aura wrote this and sent it to LinkedIn for you.",
-  aura_drafted: "Aura wrote this with you; you posted it yourself.",
-  linkedin_only: "Aura had nothing to do with this one — it was found on your LinkedIn.",
+  aura_published: "Aura wrote it and posted it to LinkedIn for you.",
+  aura_drafted: "Aura wrote it with you. You posted it yourself.",
+  linkedin_only: "You wrote this one. Aura found it on your LinkedIn.",
 };
 
 export function isMadeWithAura(p: ProvenanceRow | null | undefined): boolean {

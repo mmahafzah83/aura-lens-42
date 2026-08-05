@@ -19,7 +19,7 @@ export interface HomeMove {
   est_minutes: number;
 }
 
-export type HomeLens = "record" | "room" | "shape";
+export type HomeLens = "record" | "shape";
 
 export interface HomeFacts {
   as_of?: string;
@@ -92,7 +92,7 @@ function normalise(raw: any): HomeAddressRow | null {
   return {
     id: raw.id,
     address_date: raw.address_date,
-    lens: (raw.lens === "room" || raw.lens === "shape" ? raw.lens : "record") as HomeLens,
+    lens: (raw.lens === "shape" ? "shape" : "record") as HomeLens,
     lens_reason: raw.lens_reason ?? "",
     address_md: raw.address_md ?? null,
     moves: Array.isArray(raw.moves) ? (raw.moves as HomeMove[]) : [],

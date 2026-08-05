@@ -33,6 +33,8 @@ export interface RecordMilestone {
   kind: "band" | "first_publish" | "fragments";
   value: string | null;
   n?: number;
+  direction?: "up" | "down";
+  through_aura?: boolean;
 }
 
 export interface RecordTimeline {
@@ -46,6 +48,7 @@ export interface RecordTimeline {
   publishedTotal: number;
   publishedThroughAura: number;
   publishedSentFromAura: number;
+  publishedReturned: number;
   fragmentsTotal: number;
   themesTotal: number;
   /** rows read on first paint — reported for the record's own honesty */
@@ -55,7 +58,7 @@ export interface RecordTimeline {
 const EMPTY: RecordTimeline = {
   loading: true, days: [], weeks: [], months: [], published: [], milestones: [],
   signupAt: null, publishedTotal: 0, publishedThroughAura: 0, publishedSentFromAura: 0,
-  fragmentsTotal: 0, themesTotal: 0, rowsFetched: 0,
+  publishedReturned: 0, fragmentsTotal: 0, themesTotal: 0, rowsFetched: 0,
 };
 
 const asBuckets = (v: any): RecordBucket[] =>
@@ -71,7 +74,8 @@ export function useRecordTimeline(userId: string | null | undefined): RecordTime
     if (!userId) return;
     let alive = true;
     (async () => {
-      const { data, error } = await (supabase.rpc as any)("home_record_timeline", {});
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      const { data, error } = await (supabase.rpc as any)("home_record_timeline", { p_tz: tz });
       if (!alive) return;
       if (error || !data) { setState((s) => ({ ...s, loading: false })); return; }
       const t: any = data;
@@ -84,13 +88,18 @@ export function useRecordTimeline(userId: string | null | undefined): RecordTime
       }));
       const milestones: RecordMilestone[] = (Array.isArray(t.milestones) ? t.milestones : [])
         .filter((m: any) => m && m.at)
-        .map((m: any) => ({ at: m.at, kind: m.kind, value: m.value ?? null, n: m.n }));
+        .map((m: any) => ({
+          at: m.at, kind: m.kind, value: m.value ?? null, n: m.n,
+          direction: m.direction === "down" ? "down" : m.direction === "up" ? "up" : undefined,
+          through_aura: typeof m.through_aura === "boolean" ? m.through_aura : undefined,
+        }));
       setState({
         loading: false, days, weeks, months, published, milestones,
         signupAt: t.signup_at ?? null,
         publishedTotal: Number(t.published_total ?? 0),
         publishedThroughAura: Number(t.published_through_aura ?? 0),
         publishedSentFromAura: Number(t.published_sent_from_aura ?? 0),
+        publishedReturned: Number(t.published_returned ?? 0),
         fragmentsTotal: Number(t.fragments_total ?? 0),
         themesTotal: Number(t.themes_total ?? 0),
         rowsFetched: days.length + weeks.length + months.length + published.length + milestones.length,
