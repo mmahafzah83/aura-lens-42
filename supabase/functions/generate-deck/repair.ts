@@ -58,7 +58,13 @@ export function splitMixedScriptRun(run: any): any[] | null {
     else return null;
   }
 
-  if (spans.length <= 1) return null;
+  if (spans.length === 1) {
+    // Single script, but mislabelled — an all-Latin run marked "ar" reads the
+    // same to the checker as a mixed one. Correct the label, keep one run.
+    if (spans[0].lang === run?.lang) return null;
+    return [{ ...run, t, lang: spans[0].lang }];
+  }
+  if (spans.length === 0) return null;
   return spans
     .filter((s) => s.t.trim().length > 0)
     .map((s) => ({ ...run, t: s.t, lang: s.lang }));
