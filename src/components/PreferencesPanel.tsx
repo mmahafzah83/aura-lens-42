@@ -367,6 +367,43 @@ export default function PreferencesPanel({
         on={overnightReadingOn}
         onChange={(v) => updatePref("overnight_reading_enabled", v)}
       />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          padding: "14px 24px",
+          borderTop: "0.5px solid var(--rule)",
+          fontFamily: "var(--font-body)",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3 }}>Time zone</div>
+          <div style={{ fontSize: 12.5, color: "var(--ink-2)", marginTop: 4, lineHeight: 1.45 }}>
+            When your Monday brief and overnight email arrive. Defaults to Riyadh.
+          </div>
+        </div>
+        <select
+          aria-label="Time zone"
+          value={profile?.timezone || "Asia/Riyadh"}
+          onChange={(e) => persistTimezone(e.target.value)}
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            color: "var(--ink)",
+            background: "var(--paper-2)",
+            border: "0.5px solid var(--rule)",
+            borderRadius: 8,
+            padding: "8px 10px",
+            minHeight: 44,
+            maxWidth: 220,
+          }}
+        >
+          {TIMEZONES.map((tz) => (
+            <option key={tz} value={tz}>{tz}</option>
+          ))}
+        </select>
+      </div>
 
       {/* PRIVACY */}
       <SectionHeader>Privacy</SectionHeader>
