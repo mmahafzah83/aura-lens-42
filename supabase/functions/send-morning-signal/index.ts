@@ -64,6 +64,31 @@ function riyadhHHMM(iso: string): string {
   return riyadh(new Date(iso)).toISOString().slice(11, 16);
 }
 
+/**
+ * Local-time parts for a member's own timezone. Null/invalid falls back to Riyadh,
+ * so a member who never set one keeps the behaviour they have today.
+ */
+const WEEKDAY_INDEX: Record<string, number> = {
+  Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+};
+function localParts(tz: string | null | undefined, at: Date): { weekday: number; hour: number; dateKey: string } {
+  const zone = tz && String(tz).trim() ? String(tz).trim() : "Asia/Riyadh";
+  const build = (z: string) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: z, weekday: "short", hour: "2-digit", hour12: false,
+      year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(at);
+  let parts: Intl.DateTimeFormatPart[];
+  try { parts = build(zone); } catch { parts = build("Asia/Riyadh"); }
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const hourRaw = get("hour");
+  return {
+    weekday: WEEKDAY_INDEX[get("weekday").slice(0, 3)] ?? 0,
+    hour: hourRaw === "24" ? 0 : parseInt(hourRaw, 10) || 0,
+    dateKey: `${get("year")}-${get("month")}-${get("day")}`,
+  };
+}
+
 function firstTheme(f: Finding): string | null {
   const t = Array.isArray(f.themes) ? f.themes.find((x) => !!x && String(x).trim()) : null;
   return t ? String(t).trim() : null;
