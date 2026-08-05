@@ -1475,6 +1475,9 @@ export default function StudioPanel({
 
   const uploadPicture = useCallback(async (file: File) => {
     setPictureNotice(null);
+    // The picture path is client-side only. Whatever the last build said, it
+    // is not about this action — retire the banner before we start.
+    setDeckFailures([]);
     if (!deck) return;
     const slide = deck.slides[Math.min(current, deck.slides.length - 1)];
     if (mediaSupport(slide.archetype) === "none") { setPictureNotice(T.noPictureHere[lang]); return; }
