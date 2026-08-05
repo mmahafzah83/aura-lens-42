@@ -458,7 +458,7 @@ export const SignalHero = ({
   const confPct = Math.round(signal.confidence * 100);
   const orgs = signal.unique_orgs || 1;
   const fragCount = signal.fragment_count ?? (signal as any).evidenceCount ?? 0;
-  const sourceCount = (signal as any).sourceCount ?? evidence.length ?? 0;
+  const sourceCount = (signal as any).unique_orgs ?? 1;
   const isRising = signal.velocity_status === "accelerating";
   const isFading = signal.velocity_status === "fading";
   const velText = isRising ? "and rising" : isFading ? "and fading" : "and stable";
