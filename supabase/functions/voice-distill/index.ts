@@ -1,7 +1,37 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { detectLang, groupByLang } from "../_shared/lang.ts";
-import { dedupeRules, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "../_shared/voiceVocab.ts";
+import { dedupeRules, dedupeRuleEntries, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "../_shared/voiceVocab.ts";
+import {
+  toRules,
+  verifyCandidates,
+  applyContradictions,
+  CONTRADICTION_LIMIT,
+  type EditPair,
+} from "../_shared/voiceRules.ts";
 import { sanitizeStyleFields } from "../_shared/voiceStyle.ts";
+
+/**
+ * What the member actually did: every draft they rewrote, as the pair
+ * (what Aura generated, what they saved). This is the only honest source of
+ * evidence for what a member avoids, and the only source of contradictions.
+ */
+async function loadEditPairs(supabase: any, user_id: string): Promise<EditPair[]> {
+  const { data, error } = await supabase
+    .from("linkedin_posts")
+    .select("original_generated_text, post_text")
+    .eq("user_id", user_id)
+    .not("original_generated_text", "is", null)
+    .not("edited_at", "is", null)
+    .order("edited_at", { ascending: false })
+    .limit(50);
+  if (error) {
+    console.warn("voice-distill: edit pairs unavailable —", error.message);
+    return [];
+  }
+  return (data || [])
+    .map((r: any) => ({ original: String(r.original_generated_text ?? ""), edited: String(r.post_text ?? "") }))
+    .filter((p: EditPair) => p.original.trim() && p.edited.trim() && p.original !== p.edited);
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
