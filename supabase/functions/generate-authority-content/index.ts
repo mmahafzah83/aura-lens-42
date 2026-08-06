@@ -5,7 +5,14 @@ import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY } from "../_shared/
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR } from "../_shared/voiceStyle.ts";
-import { stripUnsourcedNumbers } from "../_shared/numberGuard.ts";
+import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
+import {
+  checkTextIntegrity,
+  neutralizeRtlMarkers,
+  profileBansEmoji,
+  stripEmoji,
+  containsEmoji,
+} from "../_shared/outputHygiene.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -516,44 +523,52 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         });
       }
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-5-20250929",
-          max_tokens: 4096,
-          system: systemPrompt,
-          messages: [
-            { role: "user", content: userMessageContent },
-          ],
-        }),
-      });
+      // One place the model is called, so a corrective regeneration runs the
+      // exact same prompt with an added directive.
+      const callModel = async (extraDirective = ""): Promise<string | null> => {
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-5-20250929",
+            max_tokens: 4096,
+            system: systemPrompt + (extraDirective ? `\n\n${extraDirective}` : ""),
+            messages: [
+              { role: "user", content: userMessageContent },
+            ],
+          }),
+        });
+        if (!response.ok) {
+          const t = await response.text();
+          console.error("Anthropic error:", response.status, t);
+          return null;
+        }
+        const json = await response.json();
+        try {
+          EdgeRuntime.waitUntil(logAIUsage({
+            user_id: effectiveUserId ?? null,
+            function_name: "generate-authority-content",
+            provider: "anthropic",
+            model: json.model,
+            input_tokens: json.usage?.input_tokens,
+            output_tokens: json.usage?.output_tokens,
+          }));
+        } catch (_) { /* non-blocking */ }
+        return (json.content || []).map((c: any) => c.text || "").join("") || "";
+      };
 
-      if (!response.ok) {
-        const t = await response.text();
-        console.error("Anthropic error:", response.status, t);
-        return new Response(JSON.stringify({ success: false, error: `AI error: ${response.status}` }), {
+      const firstPass = await callModel();
+      if (firstPass === null) {
+        return new Response(JSON.stringify({ success: false, error: "AI error" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      const aiJson = await response.json();
-      try {
-        EdgeRuntime.waitUntil(logAIUsage({
-          user_id: effectiveUserId ?? null,
-          function_name: "generate-authority-content",
-          provider: "anthropic",
-          model: aiJson.model,
-          input_tokens: aiJson.usage?.input_tokens,
-          output_tokens: aiJson.usage?.output_tokens,
-        }));
-      } catch (_) { /* non-blocking */ }
-      let content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
+      let content = firstPass;
       const rawContent = content;
 
       // Generic scaffold stripper — trigger-based, positive rules only.
