@@ -1185,10 +1185,19 @@ export default function StudioPanel({
       // Never overwrite what the edge functions wrote into source_metadata.
       const { data: existing } = await supabase
         .from("linkedin_posts")
-        .select("source_metadata")
+        .select("source_metadata, original_generated_text")
         .eq("id", draftId)
         .maybeSingle();
       const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+      /**
+       * THE MEMBER'S EDIT IS THE PRODUCT'S BEST SIGNAL.
+       *
+       * `post_text` always carries what is on screen; `original_generated_text`
+       * is never in this payload, so no save can overwrite what Aura wrote.
+       * When the two differ the save records when, and how far apart they are.
+       */
+      const original = (existing as any)?.original_generated_text ?? generatedTextRef.current;
+      const edit = editFields(original, content);
       await supabase
         .from("linkedin_posts")
         .update({
@@ -1197,10 +1206,14 @@ export default function StudioPanel({
           topic_label: title || null,
           source_signal_id: choice?.id || null,
           source_metadata: { ...prev, ...pieceMeta() },
+          ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", draftId);
       return draftId;
     }
+    // The original is the text as GENERATED, never the text on screen: a member
+    // who edits before the first save must still leave the original behind.
+    const generatedOriginal = generatedTextRef.current ?? content;
     const { data: ins, error } = await supabase
       .from("linkedin_posts")
       .insert({
@@ -1213,7 +1226,12 @@ export default function StudioPanel({
         title,
         topic_label: title || null,
         source_metadata: pieceMeta(),
-        ...generationMetadata(content, { signalId: choice?.id || null, unsourcedRemoved: unsourcedRemovedRef.current }),
+        ...generationMetadata(generatedOriginal, {
+          signalId: choice?.id || null,
+          unsourcedRemoved: unsourcedRemovedRef.current,
+          unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
+        }),
+        ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
       } as any)
       .select("id")
       .single();
@@ -1262,6 +1280,7 @@ export default function StudioPanel({
         return postRowRef.current;
       }
       const title = pieceTitle();
+      const generatedOriginal = generatedTextRef.current ?? content;
       const { data: ins, error } = await supabase
         .from("linkedin_posts")
         .insert({
@@ -1274,7 +1293,12 @@ export default function StudioPanel({
           title,
           topic_label: title || null,
           source_metadata: { ...(pieceMeta() as Record<string, unknown>), origin_draft_id: draftId },
-          ...generationMetadata(content, { signalId: choice?.id || null, unsourcedRemoved: unsourcedRemovedRef.current }),
+          ...generationMetadata(generatedOriginal, {
+            signalId: choice?.id || null,
+            unsourcedRemoved: unsourcedRemovedRef.current,
+            unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
+          }),
+          ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
         } as any)
         .select("id")
         .single();
@@ -1303,10 +1327,11 @@ export default function StudioPanel({
       const title = pieceTitle();
       const { data: existing } = await supabase
         .from("linkedin_posts")
-        .select("source_metadata")
+        .select("source_metadata, original_generated_text")
         .eq("id", id)
         .maybeSingle();
       const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
+      const edit = editFields((existing as any)?.original_generated_text ?? generatedTextRef.current, content);
       await supabase
         .from("linkedin_posts")
         .update({
@@ -1315,6 +1340,7 @@ export default function StudioPanel({
           topic_label: title || null,
           source_signal_id: choice?.id || null,
           source_metadata: { ...prev, ...pieceMeta() },
+          ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", id);
     },
