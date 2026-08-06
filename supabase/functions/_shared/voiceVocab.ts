@@ -85,18 +85,49 @@ function conceptOf(rule: string): string | null {
 }
 
 /**
+ * The pattern that would make this rule VISIBLE in a piece of writing, so a
+ * rule can be checked against the member's own text rather than assumed.
+ */
+export function conceptRegexOf(rule: string): RegExp | null {
+  for (const c of CONCEPTS) {
+    if (c.re.test(String(rule))) return new RegExp(c.re.source, c.re.flags.replace("g", ""));
+  }
+  return null;
+}
+
+/**
  * Merge rules that express the same constraint in different words — first by
  * concept, then by token overlap — and keep the most specific survivor of each
  * group, up to `cap`. Nothing is dropped that still means something new.
  */
 export function dedupeRules(input: unknown, cap = RULE_CAP): string[] {
-  const raw = (Array.isArray(input) ? input : [])
-    .map((r) => (typeof r === "string" ? r : String((r as any)?.rule ?? (r as any)?.text ?? "")))
-    .map((r) => r.replace(/\s+/g, " ").trim())
-    .filter((r) => r.length > 1);
+  return dedupeRuleEntries(input, cap).map((e) => String((e as any).rule));
+}
+
+/**
+ * The same semantic merge, but entries keep everything they carry — evidence,
+ * verification and contradiction count survive deduplication.
+ */
+export function dedupeRuleEntries(input: unknown, cap = RULE_CAP): Record<string, unknown>[] {
+  const entries = (Array.isArray(input) ? input : [])
+    .map((r) => {
+      const obj = typeof r === "string" ? { rule: r } : { ...(r as Record<string, unknown>) };
+      const rule = String((obj as any).rule ?? (obj as any).text ?? "").replace(/\s+/g, " ").trim();
+      delete (obj as any).text;
+      return { ...obj, rule };
+    })
+    .filter((e) => e.rule.length > 1);
+
+  // One entry per distinct wording, richest survivor first.
+  const byRule = new Map<string, Record<string, unknown>>();
+  for (const e of entries) {
+    const prev = byRule.get(e.rule);
+    if (!prev || (!prev.evidence && e.evidence)) byRule.set(e.rule, e);
+  }
+  const raw = [...byRule.keys()];
 
   // Most specific first, so a merge keeps the richer wording.
-  const ranked = [...new Set(raw)].sort((a, b) => {
+  const ranked = raw.sort((a, b) => {
     const sa = tokenSet(a).size, sb = tokenSet(b).size;
     return sb - sa || b.length - a.length;
   });
@@ -113,7 +144,7 @@ export function dedupeRules(input: unknown, cap = RULE_CAP): string[] {
     kept.push({ text: rule, tokens, concept });
     if (kept.length >= cap) break;
   }
-  return kept.map((k) => k.text);
+  return kept.map((k) => byRule.get(k.text) as Record<string, unknown>);
 }
 
 export interface VoiceExample {
@@ -189,7 +220,8 @@ export function sanitizeVocabulary(vocab: unknown): {
   const v = (vocab && typeof vocab === "object" ? { ...(vocab as Record<string, unknown>) } : {});
   const promoted = normalizeExamples(v.example_posts_levantine_backup, EXAMPLE_CAP, "levantine_backup");
   delete v.example_posts_levantine_backup;
-  v.avoid = dedupeRules(v.avoid);
-  v.use = dedupeRules(v.use);
+  // Entries, not strings: evidence and contradiction counts must survive.
+  v.avoid = dedupeRuleEntries(v.avoid);
+  v.use = dedupeRuleEntries(v.use);
   return { vocabulary: v, promotedExamples: promoted };
 }
