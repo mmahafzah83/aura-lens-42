@@ -2752,7 +2752,6 @@ export default function StudioPanel({
               </div>
             )}
           </div>
-          )}
           {writeArea}
         </StageCard>
       )}
