@@ -7,6 +7,7 @@ import { logError } from "../_shared/logError.ts";
 import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR } from "../_shared/voiceStyle.ts";
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
 import { findUnsourcedEntities } from "../_shared/entityGuard.ts";
+import { splitForPrompt, enforcedRuleTexts } from "../_shared/voiceRules.ts";
 import { endingTypeOf, hookStyleOf } from "../_shared/generationMeta.ts";
 import {
   checkTextIntegrity,
@@ -815,7 +816,11 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         typeof topic === "string" ? topic : "",
       ].join("\n");
       const isAr = effectiveLanguage === "ar";
-      const bansEmoji = profileBansEmoji((voiceProfile?.vocabulary_preferences as any)?.avoid);
+      // Only a ban the member's own edits confirmed is enforced mechanically.
+      // An inferred "never uses emoji" must not strip emoji they deliberately keep.
+      const bansEmoji = profileBansEmoji(
+        enforcedRuleTexts((voiceProfile?.vocabulary_preferences as any)?.avoid),
+      );
 
       // The member's own bans and RTL safety are enforced on the finished text,
       // never left to the prompt.
