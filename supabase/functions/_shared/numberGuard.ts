@@ -62,10 +62,38 @@ export interface GuardResult {
   removed_values: string[];
 }
 
+/** Every claim-shaped figure in `chunk` that the evidence cannot account for. */
+function unsourcedIn(chunk: string, sourced: Set<string>): string[] {
+  const found: string[] = [];
+  for (const m of chunk.matchAll(CLAIM_RE)) {
+    const match = m[0];
+    const index = m.index ?? 0;
+    if (!/[0-9٠-٩۰-۹]/.test(match)) continue;
+    if (!isClaimFigure(match, index, chunk)) continue;
+    const tokens = numericTokens(match);
+    let ok = false;
+    for (const t of tokens) if (sourced.has(t)) { ok = true; break; }
+    if (!ok) found.push(match.trim());
+  }
+  return found;
+}
+
+/** Detection only — the caller decides whether to regenerate. */
+export function findUnsourcedNumbers(draft: string, evidenceText: string): string[] {
+  const text = String(draft ?? "");
+  if (!text.trim()) return [];
+  const sourced = numericTokens(evidenceText || "");
+  const out: string[] = [];
+  for (const line of text.split("\n")) out.push(...unsourcedIn(line, sourced));
+  return out;
+}
+
+const SENTENCE_SPLIT = /(?<=[.!?؟…])\s+/;
+
 /**
- * Remove every figure in `draft` that cannot be traced to `evidenceText`.
- * The surrounding sentence is kept — only the unsourced figure and its unit
- * come out — and a sentence left with nothing to say is dropped.
+ * Drop every SENTENCE carrying a figure that cannot be traced to
+ * `evidenceText`. Nothing is ever cut mid-sentence, so what survives is whole
+ * text; a line left with no sentences is removed rather than left as a stub.
  */
 export function stripUnsourcedNumbers(draft: string, evidenceText: string): GuardResult {
   const text = String(draft ?? "");
@@ -73,24 +101,18 @@ export function stripUnsourcedNumbers(draft: string, evidenceText: string): Guar
   const sourced = numericTokens(evidenceText || "");
   const removedValues: string[] = [];
 
-  const cleaned = text.replace(CLAIM_RE, (match, index: number) => {
-    if (!/[0-9٠-٩۰-۹]/.test(match)) return match;
-    if (!isClaimFigure(match, index, text)) return match;
-    const tokens = numericTokens(match);
-    for (const t of tokens) if (sourced.has(t)) return match;
-    removedValues.push(match.trim());
-    return "";
+  const lines = text.split("\n").map((line) => {
+    if (!/[0-9٠-٩۰-۹]/.test(line)) return line;
+    const kept = line.split(SENTENCE_SPLIT).filter((sentence) => {
+      const bad = unsourcedIn(sentence, sourced);
+      if (bad.length === 0) return true;
+      removedValues.push(...bad);
+      return false;
+    });
+    return kept.join(" ").replace(/\s{2,}/g, " ").trim();
   });
 
-  const tidied = cleaned
-    .split("\n")
-    .map((line) =>
-      line
-        .replace(/\s{2,}/g, " ")
-        .replace(/\s+([,.،؛;:%])/g, "$1")
-        .replace(/(^|[.!?؟]\s+)[,،-]+\s*/g, "$1")
-        .trimEnd(),
-    )
+  const tidied = lines
     // A line that lost its only content is noise, not a post.
     .filter((line, i, all) => line.trim().length > 0 || (i > 0 && all[i - 1].trim().length > 0))
     .join("\n")

@@ -5,7 +5,15 @@ import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY } from "../_shared/
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR } from "../_shared/voiceStyle.ts";
-import { stripUnsourcedNumbers } from "../_shared/numberGuard.ts";
+import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
+import { endingTypeOf, hookStyleOf } from "../_shared/generationMeta.ts";
+import {
+  checkTextIntegrity,
+  neutralizeRtlMarkers,
+  profileBansEmoji,
+  stripEmoji,
+  containsEmoji,
+} from "../_shared/outputHygiene.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -516,44 +524,52 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         });
       }
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-5-20250929",
-          max_tokens: 4096,
-          system: systemPrompt,
-          messages: [
-            { role: "user", content: userMessageContent },
-          ],
-        }),
-      });
+      // One place the model is called, so a corrective regeneration runs the
+      // exact same prompt with an added directive.
+      const callModel = async (extraDirective = ""): Promise<string | null> => {
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-5-20250929",
+            max_tokens: 4096,
+            system: systemPrompt + (extraDirective ? `\n\n${extraDirective}` : ""),
+            messages: [
+              { role: "user", content: userMessageContent },
+            ],
+          }),
+        });
+        if (!response.ok) {
+          const t = await response.text();
+          console.error("Anthropic error:", response.status, t);
+          return null;
+        }
+        const json = await response.json();
+        try {
+          EdgeRuntime.waitUntil(logAIUsage({
+            user_id: effectiveUserId ?? null,
+            function_name: "generate-authority-content",
+            provider: "anthropic",
+            model: json.model,
+            input_tokens: json.usage?.input_tokens,
+            output_tokens: json.usage?.output_tokens,
+          }));
+        } catch (_) { /* non-blocking */ }
+        return (json.content || []).map((c: any) => c.text || "").join("") || "";
+      };
 
-      if (!response.ok) {
-        const t = await response.text();
-        console.error("Anthropic error:", response.status, t);
-        return new Response(JSON.stringify({ success: false, error: `AI error: ${response.status}` }), {
+      const firstPass = await callModel();
+      if (firstPass === null) {
+        return new Response(JSON.stringify({ success: false, error: "AI error" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
-      const aiJson = await response.json();
-      try {
-        EdgeRuntime.waitUntil(logAIUsage({
-          user_id: effectiveUserId ?? null,
-          function_name: "generate-authority-content",
-          provider: "anthropic",
-          model: aiJson.model,
-          input_tokens: aiJson.usage?.input_tokens,
-          output_tokens: aiJson.usage?.output_tokens,
-        }));
-      } catch (_) { /* non-blocking */ }
-      let content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
+      let content = firstPass;
       const rawContent = content;
 
       // Generic scaffold stripper — trigger-based, positive rules only.
@@ -654,13 +670,15 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           }
         } catch (_) { /* never block */ }
       }
-      content = content
+      const stripLabels = (text: string): string => text
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[-—–:：]\s*(?:English|Arabic|عربي(?:ة)?|إنجليزي(?:ة)?)\s*\n?/i, '')
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[:：\-—]?\s*\n?/i, '')
         .replace(/^[ \t]*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)[ \t]*[:：\-—]?[ \t]*$\n?/gim, '')
         .replace(/^\s*-{3,}\s*$/gm, '')
         .replace(/^\s*#{1,6}\s+/gm, '')
         .trim();
+
+      content = stripLabels(content);
 
       // Quality gate — challenge the output before returning
       // Quality gate intentionally uses a different model (GPT-4o) for independent evaluation
@@ -767,13 +785,69 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         typeof context === "string" ? context : "",
         typeof topic === "string" ? topic : "",
       ].join("\n");
-      const guarded = stripUnsourcedNumbers(content, evidenceText);
-      content = guarded.text;
-      if (guarded.removed > 0) {
+      const isAr = effectiveLanguage === "ar";
+      const bansEmoji = profileBansEmoji((voiceProfile?.vocabulary_preferences as any)?.avoid);
+
+      // The member's own bans and RTL safety are enforced on the finished text,
+      // never left to the prompt.
+      const hygiene = (text: string): string => {
+        let t = neutralizeRtlMarkers(text, isAr);
+        if (bansEmoji) t = stripEmoji(t);
+        return t.trim();
+      };
+
+      content = hygiene(content);
+      let unsourcedRemoved = 0;
+      let unsourced = findUnsourcedNumbers(content, evidenceText);
+      let integrity = checkTextIntegrity(content, isAr);
+
+      // A number the evidence cannot account for is never cut out in place —
+      // the draft is rewritten without the claim. Same for broken text.
+      if (unsourced.length > 0 || !integrity.ok || (bansEmoji && containsEmoji(firstPass))) {
         console.warn(
-          `[generate-authority-content] removed ${guarded.removed} unsourced figure(s):`,
-          guarded.removed_values.join(" | "),
+          "[generate-authority-content] regenerating —",
+          `unsourced: ${unsourced.join(" | ") || "none"};`,
+          `integrity: ${integrity.issues.join(" | ") || "ok"}`,
         );
+        const corrective = isAr
+          ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
+          : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
+
+        const retryRaw = await callModel(corrective);
+        const candidate = retryRaw ? hygiene(stripLabels(stripLeadingScaffold(retryRaw))) : "";
+        const candidateUnsourced = candidate ? findUnsourcedNumbers(candidate, evidenceText) : ["retry_failed"];
+        const candidateIntegrity = candidate ? checkTextIntegrity(candidate, isAr) : { ok: false, issues: ["retry_failed"] };
+
+        if (candidate && candidateUnsourced.length === 0 && candidateIntegrity.ok) {
+          content = candidate;
+          unsourcedRemoved = unsourced.length;
+        } else {
+          // Last resort: drop the whole sentence carrying each unsourced claim,
+          // then re-check. Broken text is discarded, never shown.
+          const base = candidate || content;
+          const guarded = stripUnsourcedNumbers(base, evidenceText);
+          const cleaned = hygiene(guarded.text);
+          const finalIntegrity = checkTextIntegrity(cleaned, isAr);
+          if (!cleaned.trim() || !finalIntegrity.ok) {
+            console.error(
+              "[generate-authority-content] draft discarded —",
+              finalIntegrity.issues.join(" | "),
+            );
+            return new Response(JSON.stringify({
+              success: false,
+              blocked: true,
+              error: "The draft could not be written cleanly from the available evidence. Try again.",
+              integrity_issues: finalIntegrity.issues,
+            }), {
+              status: 422,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          content = cleaned;
+          unsourcedRemoved = unsourced.length + guarded.removed;
+        }
+        unsourced = [];
+        integrity = checkTextIntegrity(content, isAr);
       }
 
       return new Response(JSON.stringify({
@@ -782,8 +856,12 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         framework_used: (framework && FRAMEWORK_PROMPTS[framework]) ? framework : null,
         quality_gate: gatePayload,
         blocked: gateBlocked,
-        ending_type: chosenEnding,
-        unsourced_numbers_removed: guarded.removed,
+        // The label describes the text that was actually produced, never the
+        // ending the prompt asked for.
+        ending_type: endingTypeOf(content),
+        hook_style: hookStyleOf(content),
+        requested_ending: chosenEnding,
+        unsourced_numbers_removed: unsourcedRemoved,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

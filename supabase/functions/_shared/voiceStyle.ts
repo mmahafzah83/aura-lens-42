@@ -223,11 +223,31 @@ export function sanitizeStyleFields(row: {
   };
 }
 
-/** One ending per generation, drawn from what the profile allows. */
-export function pickEnding(allowed: unknown): EndingType {
+/**
+ * No member may ever be limited to fewer than this many possible endings —
+ * two allowed values is a structural lock, not a voice.
+ */
+export const MIN_ALLOWED_ENDINGS = 3;
+
+/**
+ * The pool a generation draws from: whatever the profile allows, topped up
+ * from the full vocabulary until the floor is met. The floor lives here, in
+ * the generator's path, so no data state can lock a member in.
+ */
+export function endingPool(allowed: unknown): EndingType[] {
   const pool = (Array.isArray(allowed) ? allowed : [])
     .filter((e): e is EndingType => (ENDING_VOCAB as readonly string[]).includes(String(e)));
-  const list = pool.length ? pool : [...ENDING_VOCAB];
+  const out = [...new Set(pool)];
+  for (const e of ENDING_VOCAB) {
+    if (out.length >= MIN_ALLOWED_ENDINGS) break;
+    if (!out.includes(e)) out.push(e);
+  }
+  return out;
+}
+
+/** One ending per generation, drawn from what the profile allows. */
+export function pickEnding(allowed: unknown): EndingType {
+  const list = endingPool(allowed);
   return list[Math.floor(Math.random() * list.length)];
 }
 
