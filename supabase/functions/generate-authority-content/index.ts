@@ -784,13 +784,69 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         typeof context === "string" ? context : "",
         typeof topic === "string" ? topic : "",
       ].join("\n");
-      const guarded = stripUnsourcedNumbers(content, evidenceText);
-      content = guarded.text;
-      if (guarded.removed > 0) {
+      const isAr = effectiveLanguage === "ar";
+      const bansEmoji = profileBansEmoji((voiceProfile?.vocabulary_preferences as any)?.avoid);
+
+      // The member's own bans and RTL safety are enforced on the finished text,
+      // never left to the prompt.
+      const hygiene = (text: string): string => {
+        let t = neutralizeRtlMarkers(text, isAr);
+        if (bansEmoji) t = stripEmoji(t);
+        return t.trim();
+      };
+
+      content = hygiene(content);
+      let unsourcedRemoved = 0;
+      let unsourced = findUnsourcedNumbers(content, evidenceText);
+      let integrity = checkTextIntegrity(content, isAr);
+
+      // A number the evidence cannot account for is never cut out in place —
+      // the draft is rewritten without the claim. Same for broken text.
+      if (unsourced.length > 0 || !integrity.ok || (bansEmoji && containsEmoji(firstPass))) {
         console.warn(
-          `[generate-authority-content] removed ${guarded.removed} unsourced figure(s):`,
-          guarded.removed_values.join(" | "),
+          "[generate-authority-content] regenerating —",
+          `unsourced: ${unsourced.join(" | ") || "none"};`,
+          `integrity: ${integrity.issues.join(" | ") || "ok"}`,
         );
+        const corrective = isAr
+          ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
+          : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
+
+        const retryRaw = await callModel(corrective);
+        const candidate = retryRaw ? hygiene(stripLabels(stripLeadingScaffold(retryRaw))) : "";
+        const candidateUnsourced = candidate ? findUnsourcedNumbers(candidate, evidenceText) : ["retry_failed"];
+        const candidateIntegrity = candidate ? checkTextIntegrity(candidate, isAr) : { ok: false, issues: ["retry_failed"] };
+
+        if (candidate && candidateUnsourced.length === 0 && candidateIntegrity.ok) {
+          content = candidate;
+          unsourcedRemoved = unsourced.length;
+        } else {
+          // Last resort: drop the whole sentence carrying each unsourced claim,
+          // then re-check. Broken text is discarded, never shown.
+          const base = candidate || content;
+          const guarded = stripUnsourcedNumbers(base, evidenceText);
+          const cleaned = hygiene(guarded.text);
+          const finalIntegrity = checkTextIntegrity(cleaned, isAr);
+          if (!cleaned.trim() || !finalIntegrity.ok) {
+            console.error(
+              "[generate-authority-content] draft discarded —",
+              finalIntegrity.issues.join(" | "),
+            );
+            return new Response(JSON.stringify({
+              success: false,
+              blocked: true,
+              error: "The draft could not be written cleanly from the available evidence. Try again.",
+              integrity_issues: finalIntegrity.issues,
+            }), {
+              status: 422,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          content = cleaned;
+          unsourcedRemoved = unsourced.length + guarded.removed;
+        }
+        unsourced = [];
+        integrity = checkTextIntegrity(content, isAr);
       }
 
       return new Response(JSON.stringify({
@@ -800,7 +856,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         quality_gate: gatePayload,
         blocked: gateBlocked,
         ending_type: chosenEnding,
-        unsourced_numbers_removed: guarded.removed,
+        unsourced_numbers_removed: unsourcedRemoved,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
