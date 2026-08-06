@@ -6,6 +6,8 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR } from "../_shared/voiceStyle.ts";
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
+import { findUnsourcedEntities } from "../_shared/entityGuard.ts";
+import { splitForPrompt, enforcedRuleTexts } from "../_shared/voiceRules.ts";
 import { endingTypeOf, hookStyleOf } from "../_shared/generationMeta.ts";
 import {
   checkTextIntegrity,
@@ -137,16 +139,19 @@ function buildVoiceContext(voiceProfile: any): string {
   if (!voiceProfile) return "No voice profile set — use analytical, calm confidence tone.";
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
-  const useArr = Array.isArray(vp.use) ? vp.use : [];
-  const avoidArr = Array.isArray(vp.avoid) ? vp.avoid : [];
+  // A rule observed in the member's own writing is a constraint; an inferred
+  // one is guidance; one their edits have contradicted three times is gone.
+  const useRules = splitForPrompt(vp.use);
+  const avoidRules = splitForPrompt(vp.avoid);
   return `
 VOICE PROFILE — Write in this voice: ${voiceProfile.tone || "analytical, calm confidence"}.
 Use these structural patterns: ${JSON.stringify(voiceProfile.preferred_structures || [])}.
 ${Array.isArray(sp) && sp.length ? `Storytelling patterns: ${JSON.stringify(sp)}.` : ""}
 Mirror vocabulary from these examples: ${(voiceProfile.example_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 500)).filter(Boolean).join("\n---\n")}
 Admired voice references: ${(voiceProfile.admired_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 300)).filter(Boolean).join("\n---\n")}
-${useArr.length ? `Lean into this vocabulary: ${JSON.stringify(useArr)}.` : ""}
-${avoidArr.length ? `Avoid these patterns the user flagged: ${JSON.stringify(avoidArr)}.` : ""}
+${useRules.hard.length ? `Lean into this vocabulary — observed in their own writing: ${JSON.stringify(useRules.hard)}.` : ""}
+${avoidRules.hard.length ? `Never do these — observed in their own edits: ${JSON.stringify(avoidRules.hard)}.` : ""}
+${useRules.soft.length || avoidRules.soft.length ? `Soft guidance only — inferred, not confirmed by the writer. Follow where natural, set aside where it fights the material: prefer ${JSON.stringify(useRules.soft)}; lean away from ${JSON.stringify(avoidRules.soft)}.` : ""}
 Vocabulary notes: ${vp.notes || ""}
 Avoid patterns not present in the user's examples. Match their sentence length, paragraph density, and rhetorical style.
 Mimic rhythm, interests, and boldness from the examples — never register or slang. The DNA register always outranks example mimicry.
@@ -157,8 +162,8 @@ function buildArabicVoiceContext(voiceProfile: any): string {
   if (!voiceProfile) return "";
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
-  const useArr = Array.isArray(vp.use) ? vp.use : [];
-  const avoidArr = Array.isArray(vp.avoid) ? vp.avoid : [];
+  const useRules = splitForPrompt(vp.use);
+  const avoidRules = splitForPrompt(vp.avoid);
   const examples = (voiceProfile.example_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 500)).filter(Boolean).join("\n---\n");
   const admired = (voiceProfile.admired_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 300)).filter(Boolean).join("\n---\n");
   return `ملف الصوت — اكتب بهذا الصوت تحديداً: ${voiceProfile.tone || ""}
@@ -166,8 +171,9 @@ function buildArabicVoiceContext(voiceProfile: any): string {
 ${Array.isArray(sp) && sp.length ? `أنماط السرد والإقناع: ${JSON.stringify(sp)}` : ""}
 ${examples ? `حاكِ الإيقاع والاهتمامات والجرأة من هذه الأمثلة — لا اللهجة. لا تلتقط أي مفردات تنتمي إلى لهجة مختلفة عن السجل المستهدف. السجل المستهدف يتقدّم على محاكاة الأمثلة دائماً:\n${examples}` : ""}
 ${admired ? `مراجع صوتية يُقتدى بها:\n${admired}` : ""}
-${useArr.length ? `وظّف هذه العبارات والمفردات: ${JSON.stringify(useArr)}` : ""}
-${avoidArr.length ? `تجنّب هذه الأنماط التي حدّدها المستخدم: ${JSON.stringify(avoidArr)}` : ""}
+${useRules.hard.length ? `وظّف هذه العبارات والمفردات — ملاحظة فعلياً في كتابته: ${JSON.stringify(useRules.hard)}` : ""}
+${avoidRules.hard.length ? `تجنّب هذه الأنماط — ملاحظة فعلياً في تعديلاته: ${JSON.stringify(avoidRules.hard)}` : ""}
+${useRules.soft.length || avoidRules.soft.length ? `إرشاد مرن فقط (مستنتج وغير مؤكد من الكاتب): يُفضَّل ${JSON.stringify(useRules.soft)}، ويُبتعد عن ${JSON.stringify(avoidRules.soft)}` : ""}
 ${vp.notes ? `ملاحظات حول المفردات: ${vp.notes}` : ""}
 اكتب بحيث يعكس الناتج هذا الصوت تحديداً، لا صوتاً عاماً.`;
 }
@@ -810,7 +816,11 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         typeof topic === "string" ? topic : "",
       ].join("\n");
       const isAr = effectiveLanguage === "ar";
-      const bansEmoji = profileBansEmoji((voiceProfile?.vocabulary_preferences as any)?.avoid);
+      // Only a ban the member's own edits confirmed is enforced mechanically.
+      // An inferred "never uses emoji" must not strip emoji they deliberately keep.
+      const bansEmoji = profileBansEmoji(
+        enforcedRuleTexts((voiceProfile?.vocabulary_preferences as any)?.avoid),
+      );
 
       // The member's own bans and RTL safety are enforced on the finished text,
       // never left to the prompt.
@@ -822,30 +832,40 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
 
       content = hygiene(content);
       let unsourcedRemoved = 0;
+      let unsourcedEntitiesRemoved = 0;
       const warnings: string[] = [];
       let unsourced = findUnsourcedNumbers(content, evidenceText);
+      // A fabricated organisation, person or date costs a member exactly what a
+      // fabricated figure costs them. Same evidence set, same one-retry rule.
+      let unsourcedEntities = findUnsourcedEntities(content, evidenceText);
       let integrity = checkTextIntegrity(content, isAr);
 
       // A number the evidence cannot account for is never cut out in place —
       // the draft is rewritten without the claim. Same for broken text.
-      if (unsourced.length > 0 || !integrity.ok || (bansEmoji && containsEmoji(firstPass))) {
+      if (
+        unsourced.length > 0 || unsourcedEntities.length > 0 || !integrity.ok ||
+        (bansEmoji && containsEmoji(firstPass))
+      ) {
         console.warn(
           "[generate-authority-content] regenerating —",
           `unsourced: ${unsourced.join(" | ") || "none"};`,
+          `entities: ${unsourcedEntities.join(" | ") || "none"};`,
           `integrity: ${integrity.issues.join(" | ") || "ok"}`,
         );
         const corrective = isAr
-          ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
-          : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
+          ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- لا تذكر اسم أي شركة أو جهة أو شخص أو تاريخ محدد غير وارد حرفياً في الأدلة. إن لم يرد الاسم في الأدلة، اكتب الجملة بلا اسم.${unsourcedEntities.length ? `\n- احذف تحديداً: ${unsourcedEntities.join("، ")}` : ""}\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
+          : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Do not name any organisation, person or specific date that is not present verbatim in the supplied evidence. If the name is not in the evidence, write the sentence without it.${unsourcedEntities.length ? `\n- Specifically remove: ${unsourcedEntities.join(", ")}` : ""}\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
 
         const retryRaw = await callModel(corrective);
         const candidate = retryRaw ? hygiene(stripLabels(stripLeadingScaffold(retryRaw))) : "";
         const candidateUnsourced = candidate ? findUnsourcedNumbers(candidate, evidenceText) : ["retry_failed"];
+        const candidateEntities = candidate ? findUnsourcedEntities(candidate, evidenceText) : ["retry_failed"];
         const candidateIntegrity = candidate ? checkTextIntegrity(candidate, isAr) : { ok: false, issues: ["retry_failed"] };
 
-        if (candidate && candidateUnsourced.length === 0 && candidateIntegrity.ok) {
+        if (candidate && candidateUnsourced.length === 0 && candidateEntities.length === 0 && candidateIntegrity.ok) {
           content = candidate;
           unsourcedRemoved = unsourced.length;
+          unsourcedEntitiesRemoved = unsourcedEntities.length;
         } else {
           // Last resort: drop the whole sentence carrying each unsourced claim.
           // A member is never blocked — the best available text is returned with
@@ -857,12 +877,23 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           // destroys it: if the guard emptied the text, keep the fuller draft.
           content = cleaned.trim() ? cleaned : hygiene(base);
           unsourcedRemoved = unsourced.length + guarded.removed;
+          /**
+           * Names are never cut in place: a sentence stripped of the thing it
+           * names becomes nonsense. The count records what the guard could not
+           * source, and the member is told rather than blocked.
+           */
+          unsourcedEntitiesRemoved = Math.max(
+            unsourcedEntities.length,
+            Array.isArray(candidateEntities) ? candidateEntities.filter((e) => e !== "retry_failed").length : 0,
+          );
         }
         unsourced = findUnsourcedNumbers(content, evidenceText);
+        unsourcedEntities = findUnsourcedEntities(content, evidenceText);
         integrity = checkTextIntegrity(content, isAr);
       }
 
       if (unsourced.length > 0) warnings.push("unsourced_numbers");
+      if (unsourcedEntities.length > 0) warnings.push("unsourced_entities");
       if (!integrity.ok) warnings.push("integrity_issues");
       if (bansEmoji && containsEmoji(content)) warnings.push("emoji_present");
 
@@ -889,6 +920,8 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         hook_style: hookStyleOf(content),
         requested_ending: chosenEnding,
         unsourced_numbers_removed: unsourcedRemoved,
+        unsourced_entities_removed: unsourcedEntitiesRemoved,
+        unsourced_entity_values: unsourcedEntities,
         warnings,
         integrity_issues: integrity.ok ? [] : integrity.issues,
       }), {

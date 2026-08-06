@@ -28,3 +28,4 @@ C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Ste
 - [Influence Data Foundation](mem://features/influence-data-foundation.md) — DB schema extensions and 5 UI panels for LinkedIn authority analytics
 - [Auth-ready Bootstrap](mem://technical/auth-ready-bootstrap) — useAuthReady gates page loaders; never call getUser() in loaders; wrap with withTimeout
 - [Voice Profile Hygiene](mem://features/voice/profile-hygiene) — avoid/use caps, example_posts normalization, required generated-post metadata
+- [Voice Learning Loop](mem://features/voice/learning-loop) — Edit persistence + edit_distance, entity provenance guard, evidence-backed voice rules

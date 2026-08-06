@@ -10,7 +10,8 @@
  * and curated `use` phrases are never removed.
  */
 import { scriptOf } from "./linkedinPost.ts";
-import { dedupeRules, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "./voiceVocab.ts";
+import { dedupeRuleEntries, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "./voiceVocab.ts";
+import { toRules, findUseEvidence } from "./voiceRules.ts";
 import { sanitizeStyleText } from "./voiceStyle.ts";
 
 const OWN_SOURCES = ["linkedin_export", "linkedin_own", "aura_generated"];
@@ -197,13 +198,23 @@ export async function refreshVoiceProfiles(db: any, userId: string): Promise<Ref
     const examples = normalizeExamples([...curated, ...observed], MAX_EXAMPLES, "linkedin_own");
 
     const { vocabulary: vocab } = sanitizeVocabulary(existing?.vocabulary_preferences ?? {});
-    const curatedUse: string[] = Array.isArray(vocab.use) ? vocab.use : [];
+    const curatedUse = toRules(vocab.use);
+    const curatedTexts = curatedUse.map((r) => r.rule);
+    // These phrases were read out of the member's own posts, so each one comes
+    // with the sample that proves it — never an inferred rule.
     const observedUse = observedUsePhrases(langPosts)
-      .filter((g) => !curatedUse.some((u) => u.toLowerCase().includes(g.toLowerCase())));
+      .filter((g) => !curatedTexts.some((u) => u.toLowerCase().includes(g.toLowerCase())))
+      .map((g) => ({
+        rule: g,
+        evidence: findUseEvidence(g, langPosts.map((p: any) => String(p?.post_text ?? ""))),
+        contradictions: 0,
+      }))
+      .filter((r) => Boolean(r.evidence))
+      .map((r) => ({ ...r, verified: true }));
     const nextVocab = {
       ...vocab,
       // Curated phrases stay first and are never dropped.
-      use: dedupeRules([...curatedUse, ...observedUse]),
+      use: dedupeRuleEntries([...curatedUse, ...observedUse]),
       rhythm: describeRhythm(langPosts, lang),
       observed: {
         posts_analyzed: langPosts.length,

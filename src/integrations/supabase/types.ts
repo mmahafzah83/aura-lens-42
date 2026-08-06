@@ -2567,6 +2567,8 @@ export type Database = {
           content_type: string | null
           created_at: string
           cta_style: string | null
+          edit_distance: number | null
+          edited_at: string | null
           ending_type: string | null
           engagement_score: number
           enriched_by: string[]
@@ -2600,6 +2602,7 @@ export type Database = {
           tone: string | null
           topic_label: string | null
           tracking_status: string
+          unsourced_entities_removed: number
           unsourced_numbers_removed: number
           user_id: string
           visual_strategy_type: string | null
@@ -2616,6 +2619,8 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           cta_style?: string | null
+          edit_distance?: number | null
+          edited_at?: string | null
           ending_type?: string | null
           engagement_score?: number
           enriched_by?: string[]
@@ -2649,6 +2654,7 @@ export type Database = {
           tone?: string | null
           topic_label?: string | null
           tracking_status?: string
+          unsourced_entities_removed?: number
           unsourced_numbers_removed?: number
           user_id: string
           visual_strategy_type?: string | null
@@ -2665,6 +2671,8 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           cta_style?: string | null
+          edit_distance?: number | null
+          edited_at?: string | null
           ending_type?: string | null
           engagement_score?: number
           enriched_by?: string[]
@@ -2698,6 +2706,7 @@ export type Database = {
           tone?: string | null
           topic_label?: string | null
           tracking_status?: string
+          unsourced_entities_removed?: number
           unsourced_numbers_removed?: number
           user_id?: string
           visual_strategy_type?: string | null
