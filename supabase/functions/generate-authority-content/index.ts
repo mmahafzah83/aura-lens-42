@@ -6,6 +6,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR } from "../_shared/voiceStyle.ts";
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
+import { findUnsourcedEntities } from "../_shared/entityGuard.ts";
 import { endingTypeOf, hookStyleOf } from "../_shared/generationMeta.ts";
 import {
   checkTextIntegrity,
@@ -822,30 +823,40 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
 
       content = hygiene(content);
       let unsourcedRemoved = 0;
+      let unsourcedEntitiesRemoved = 0;
       const warnings: string[] = [];
       let unsourced = findUnsourcedNumbers(content, evidenceText);
+      // A fabricated organisation, person or date costs a member exactly what a
+      // fabricated figure costs them. Same evidence set, same one-retry rule.
+      let unsourcedEntities = findUnsourcedEntities(content, evidenceText);
       let integrity = checkTextIntegrity(content, isAr);
 
       // A number the evidence cannot account for is never cut out in place —
       // the draft is rewritten without the claim. Same for broken text.
-      if (unsourced.length > 0 || !integrity.ok || (bansEmoji && containsEmoji(firstPass))) {
+      if (
+        unsourced.length > 0 || unsourcedEntities.length > 0 || !integrity.ok ||
+        (bansEmoji && containsEmoji(firstPass))
+      ) {
         console.warn(
           "[generate-authority-content] regenerating —",
           `unsourced: ${unsourced.join(" | ") || "none"};`,
+          `entities: ${unsourcedEntities.join(" | ") || "none"};`,
           `integrity: ${integrity.issues.join(" | ") || "ok"}`,
         );
         const corrective = isAr
-          ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
-          : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
+          ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- لا تذكر اسم أي شركة أو جهة أو شخص أو تاريخ محدد غير وارد حرفياً في الأدلة. إن لم يرد الاسم في الأدلة، اكتب الجملة بلا اسم.${unsourcedEntities.length ? `\n- احذف تحديداً: ${unsourcedEntities.join("، ")}` : ""}\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
+          : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Do not name any organisation, person or specific date that is not present verbatim in the supplied evidence. If the name is not in the evidence, write the sentence without it.${unsourcedEntities.length ? `\n- Specifically remove: ${unsourcedEntities.join(", ")}` : ""}\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
 
         const retryRaw = await callModel(corrective);
         const candidate = retryRaw ? hygiene(stripLabels(stripLeadingScaffold(retryRaw))) : "";
         const candidateUnsourced = candidate ? findUnsourcedNumbers(candidate, evidenceText) : ["retry_failed"];
+        const candidateEntities = candidate ? findUnsourcedEntities(candidate, evidenceText) : ["retry_failed"];
         const candidateIntegrity = candidate ? checkTextIntegrity(candidate, isAr) : { ok: false, issues: ["retry_failed"] };
 
-        if (candidate && candidateUnsourced.length === 0 && candidateIntegrity.ok) {
+        if (candidate && candidateUnsourced.length === 0 && candidateEntities.length === 0 && candidateIntegrity.ok) {
           content = candidate;
           unsourcedRemoved = unsourced.length;
+          unsourcedEntitiesRemoved = unsourcedEntities.length;
         } else {
           // Last resort: drop the whole sentence carrying each unsourced claim.
           // A member is never blocked — the best available text is returned with
@@ -857,12 +868,23 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           // destroys it: if the guard emptied the text, keep the fuller draft.
           content = cleaned.trim() ? cleaned : hygiene(base);
           unsourcedRemoved = unsourced.length + guarded.removed;
+          /**
+           * Names are never cut in place: a sentence stripped of the thing it
+           * names becomes nonsense. The count records what the guard could not
+           * source, and the member is told rather than blocked.
+           */
+          unsourcedEntitiesRemoved = Math.max(
+            unsourcedEntities.length,
+            Array.isArray(candidateEntities) ? candidateEntities.filter((e) => e !== "retry_failed").length : 0,
+          );
         }
         unsourced = findUnsourcedNumbers(content, evidenceText);
+        unsourcedEntities = findUnsourcedEntities(content, evidenceText);
         integrity = checkTextIntegrity(content, isAr);
       }
 
       if (unsourced.length > 0) warnings.push("unsourced_numbers");
+      if (unsourcedEntities.length > 0) warnings.push("unsourced_entities");
       if (!integrity.ok) warnings.push("integrity_issues");
       if (bansEmoji && containsEmoji(content)) warnings.push("emoji_present");
 
@@ -889,6 +911,8 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         hook_style: hookStyleOf(content),
         requested_ending: chosenEnding,
         unsourced_numbers_removed: unsourcedRemoved,
+        unsourced_entities_removed: unsourcedEntitiesRemoved,
+        unsourced_entity_values: unsourcedEntities,
         warnings,
         integrity_issues: integrity.ok ? [] : integrity.issues,
       }), {
