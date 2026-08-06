@@ -2502,9 +2502,47 @@ export default function StudioPanel({
             </div>
           </div>
 
-          {/* Own words are offered to everyone, whatever posture. */}
-          {(
-            <div style={{ marginTop: 18 }}>
+          {/* THE ONE PRIMARY on this screen. It is the only control that
+              writes; Continue does not exist here. */}
+          {(() => {
+            const advances = Boolean(pasted.trim()) || Boolean(content.trim()) || posture === "author";
+            const blocked = !doneMap[1] || generating;
+            return (
+              <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
+                <ButtonPrimary
+                  onClick={() => { if (advances) { onContinue(); return; } void generate(); }}
+                  disabled={blocked}
+                  style={{ minHeight: 44 }}
+                >
+                  {(advances ? T.useTheseWords[lang] : T.writeIt[lang])} {rtlShell ? "←" : "→"}
+                </ButtonPrimary>
+                {blocked && !generating && (
+                  <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 320 }}>
+                    {T.whyNoSubject[lang]}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+
+          <hr style={{ margin: "20px 0 4px", border: 0, borderTop: "1px solid var(--border-default)" }} />
+
+          {/* SECONDARY, below the line: own words, and work already waiting.
+              Both collapsed — neither may stand above the subjects. */}
+          <div style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              onClick={() => setShowPaste((v) => !v)}
+              aria-expanded={showPaste}
+              style={{
+                minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+              }}
+            >
+              {T.pasteHead[lang]}
+            </button>
+            {showPaste && (
+            <div style={{ marginTop: 8 }}>
               <label htmlFor="studio-paste" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
                 {T.pasteHead[lang]}
               </label>
@@ -2542,6 +2580,46 @@ export default function StudioPanel({
                       {T.replaceNo[lang]}
                     </ButtonGhost>
                   </div>
+                </div>
+              )}
+            </div>
+            )}
+          </div>
+
+          {!draftsLoading && drafts.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setShowDrafts((v) => !v)}
+                aria-expanded={showDrafts}
+                style={{
+                  minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                  fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+                }}
+              >
+                {T.openDraft[lang]}{" ("}{drafts.length}{")"}
+              </button>
+              {showDrafts && (
+                <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                  {drafts.slice(0, 12).map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => void openDraft(d, "studio_drafts_list")}
+                      style={{
+                        textAlign: rtlShell ? "right" : "left", cursor: "pointer",
+                        background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                        borderRadius: 12, padding: 12,
+                      }}
+                    >
+                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
+                        {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
+                      </span>
+                      <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
+                        {T.draftSaved[lang]} {savedAgo(d.created_at, lang)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
