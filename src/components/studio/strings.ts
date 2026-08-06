@@ -464,7 +464,7 @@ export const T = {
     ar: "منشورات مكتوبة لك بالفعل. افتح واحداً وتابع.",
   },
   draftSaved: { en: "saved", ar: "حُفظ" },
-  draftOpened: { en: "We opened that draft. Carry on where it stopped.", ar: "فتحنا تلك المسوّدة. تابع من حيث توقفت." },
+  draftOpened: { en: "We opened that draft. Pick up where it stopped.", ar: "فتحنا تلك المسوّدة. تابع من حيث توقفت." },
   draftMissing: { en: "That draft is no longer there.", ar: "تلك المسوّدة لم تعد موجودة." },
   untitledDraft: { en: "Untitled draft", ar: "مسوّدة بلا عنوان" },
 
