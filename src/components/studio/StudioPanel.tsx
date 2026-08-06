@@ -43,7 +43,6 @@ import { deriveDone, plausibleLinkedInUrl } from "@/components/studio/journeySta
 
 /* Local copy for this panel only. Same bilingual shape as `T`. */
 const L = {
-  startNewPiece: { en: "Start a new piece", ar: "ابدأ منشوراً جديداً" },
   newPieceHead: {
     en: "Start a new piece? This clears the current words.",
     ar: "هل تبدأ منشوراً جديداً؟ سيُمسح النص الحالي.",
@@ -54,8 +53,7 @@ const L = {
     en: "Aura prepared a draft on “{subject}” from last night’s run.",
     ar: "أعدّت أورا مسودة عن «{subject}» من تشغيل الليلة الماضية.",
   },
-  preparedUse: { en: "Use it", ar: "استخدمها" },
-  preparedFresh: { en: "Start fresh", ar: "ابدأ من جديد" },
+  dismiss: { en: "Dismiss", ar: "تجاهل" },
   auraPickedNamed: {
     en: "Aura chose “{subject}” for you — choose a different one below.",
     ar: "اختارت أورا «{subject}» لك — اختر موضوعاً آخر أدناه.",
@@ -349,6 +347,9 @@ export default function StudioPanel({
   /** All active subjects, loaded only when the member asks to see them. */
   const [allSignals, setAllSignals] = useState<Array<{ id: string; title: string; insight: string }>>([]);
   const [showAllSubjects, setShowAllSubjects] = useState(false);
+  /* Step 1 secondaries — collapsed by default, never above the subjects. */
+  const [showPaste, setShowPaste] = useState(false);
+  const [showDrafts, setShowDrafts] = useState(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
   /**
