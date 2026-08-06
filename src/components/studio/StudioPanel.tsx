@@ -43,19 +43,17 @@ import { deriveDone, plausibleLinkedInUrl } from "@/components/studio/journeySta
 
 /* Local copy for this panel only. Same bilingual shape as `T`. */
 const L = {
-  startNewPiece: { en: "Start a new piece", ar: "ابدأ منشوراً جديداً" },
   newPieceHead: {
-    en: "Start a new piece? This clears the current words.",
+    en: "Begin a new post? This clears the current words.",
     ar: "هل تبدأ منشوراً جديداً؟ سيُمسح النص الحالي.",
   },
-  newPieceYes: { en: "Start new", ar: "ابدأ جديداً" },
+  newPieceYes: { en: "New post", ar: "منشور جديد" },
   newPieceNo: { en: "Keep working", ar: "تابع العمل" },
   preparedLine: {
     en: "Aura prepared a draft on “{subject}” from last night’s run.",
     ar: "أعدّت أورا مسودة عن «{subject}» من تشغيل الليلة الماضية.",
   },
-  preparedUse: { en: "Use it", ar: "استخدمها" },
-  preparedFresh: { en: "Start fresh", ar: "ابدأ من جديد" },
+  dismiss: { en: "Dismiss", ar: "تجاهل" },
   auraPickedNamed: {
     en: "Aura chose “{subject}” for you — choose a different one below.",
     ar: "اختارت أورا «{subject}» لك — اختر موضوعاً آخر أدناه.",
@@ -349,6 +347,9 @@ export default function StudioPanel({
   /** All active subjects, loaded only when the member asks to see them. */
   const [allSignals, setAllSignals] = useState<Array<{ id: string; title: string; insight: string }>>([]);
   const [showAllSubjects, setShowAllSubjects] = useState(false);
+  /* Step 1 secondaries — collapsed by default, never above the subjects. */
+  const [showPaste, setShowPaste] = useState(false);
+  const [showDrafts, setShowDrafts] = useState(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
   /**
@@ -528,7 +529,7 @@ export default function StudioPanel({
    *     intent WINS: it opens, and any unsaved work is saved first, silently,
    *     and said in one line. Never a dialog, never discarded.
    *  3. REFRESH OR A RETURN THE SAME DAY — the stored piece is OFFERED in one
-   *     line and applied only on "Carry on". We never open inside it.
+   *     line and applied only when the draft is opened. We never open inside it.
    *  4. A RETURN AFTER MORE THAN 24 HOURS — no offer at all. The draft is one
    *     item in the drafts list; the composer opens clean.
    */
@@ -618,7 +619,7 @@ export default function StudioPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, draftPrefill]);
 
-  /** "Carry on" — and only then does the saved work become this session's. */
+  /** Open the draft — and only then does the saved work become this session's. */
   const carryOnRestore = useCallback(() => {
     const saved = pendingRestore;
     if (!saved) return;
@@ -1743,13 +1744,6 @@ export default function StudioPanel({
     setStatus(T.linkSaved[lang]);
   }, [linkInput, ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
-  /** P9 — the onward choices. The shell owns navigation; we only ask. */
-  const goTab = useCallback((tab: "library" | "influence") => {
-    try {
-      window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab } }));
-    } catch { /* navigation is never allowed to throw at a member */ }
-  }, []);
-
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
     const fit = fits[current];
@@ -2040,10 +2034,9 @@ export default function StudioPanel({
         return;
       }
       if (content.trim()) { setStep(2); return; }
-      // The author's own words are the only source in that posture: there is
-      // no generate affordance to reach.
-      if (posture === "author") { setStep(2); return; }
-      void generate();
+      // Step 1 never generates from here. "Write it" is the only control that
+      // calls generate(); Continue does not render on step 1 at all.
+      setStep(2);
       return;
     }
     if (step === 2) { setStep(3); return; }
@@ -2086,7 +2079,7 @@ export default function StudioPanel({
               fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)",
             }}
           >
-            {L.startNewPiece[lang]}
+            {T.newPost[lang]}
           </button>
         )}
       </div>
@@ -2166,16 +2159,26 @@ export default function StudioPanel({
             }}
             style={{ minHeight: 44 }}
           >
-            {L.preparedUse[lang]}
+            {T.openDraft[lang]}
           </ButtonPrimary>
-          <ButtonGhost onClick={() => setPreparedDraft(null)} style={{ minHeight: 44 }}>
-            {L.preparedFresh[lang]}
-          </ButtonGhost>
+          <button
+            type="button"
+            onClick={() => setPreparedDraft(null)}
+            aria-label={L.dismiss[lang]}
+            title={L.dismiss[lang]}
+            style={{
+              minHeight: 44, minWidth: 44, padding: 0, cursor: "pointer",
+              background: "transparent", border: 0,
+              fontFamily: "var(--ff-ui)", fontSize: 18, color: "var(--text-muted)",
+            }}
+          >
+            ×
+          </button>
         </div>
       )}
 
       {/* THE RESTORE — announced, never assumed. Nothing below is populated
-          until the member says "Carry on". */}
+          until the member opens the draft. */}
       {pendingRestore && !content && !deck && (
         <div
           role="status"
@@ -2203,10 +2206,10 @@ export default function StudioPanel({
           </span>
           <span style={{ flex: 1 }} />
           <ButtonPrimary onClick={carryOnRestore} style={{ minHeight: 44 }}>
-            {T.restoreCarryOn[lang]}
+            {T.openDraft[lang]}
           </ButtonPrimary>
           <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
-            {T.restoreStartNew[lang]}
+            {T.newPost[lang]}
           </ButtonGhost>
         </div>
       )}
@@ -2264,7 +2267,7 @@ export default function StudioPanel({
             </span>
           )}
         </span>
-        {step < 4 && !stageOwnsPrimary && (
+        {step > 1 && step < 4 && !stageOwnsPrimary && (
           <span style={{ display: "grid", gap: 2 }}>
             <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
               {T.continue[lang]} {rtlShell ? "←" : "→"}
@@ -2315,39 +2318,6 @@ export default function StudioPanel({
                 <ButtonGhost onClick={() => setPendingSubject(null)} style={{ minHeight: 44 }}>
                   {T.replaceNo[lang]}
                 </ButtonGhost>
-              </div>
-            </div>
-          )}
-
-          {/* Work already waiting. Nothing a member wrote may become unreachable. */}
-          {!draftsLoading && drafts.length > 0 && (
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                {T.draftsHead[lang]}
-              </p>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "4px 0 8px" }}>
-                {T.draftsHelp[lang]}
-              </p>
-              <div style={{ display: "grid", gap: 8 }}>
-                {drafts.slice(0, 12).map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => void openDraft(d, "studio_drafts_list")}
-                    style={{
-                      textAlign: rtlShell ? "right" : "left", cursor: "pointer",
-                      background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                      borderRadius: 12, padding: 12,
-                    }}
-                  >
-                    <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
-                      {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
-                    </span>
-                    <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
-                      {T.draftSaved[lang]} {savedAgo(d.created_at, lang)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
-                    </span>
-                  </button>
-                ))}
               </div>
             </div>
           )}
@@ -2525,9 +2495,47 @@ export default function StudioPanel({
             </div>
           </div>
 
-          {/* Own words are offered to everyone, whatever posture. */}
-          {(
-            <div style={{ marginTop: 18 }}>
+          {/* THE ONE PRIMARY on this screen. It is the only control that
+              writes, and the only forward action step 1 offers. */}
+          {(() => {
+            const advances = Boolean(pasted.trim()) || Boolean(content.trim()) || posture === "author";
+            const blocked = !doneMap[1] || generating;
+            return (
+              <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
+                <ButtonPrimary
+                  onClick={() => { if (advances) { onContinue(); return; } void generate(); }}
+                  disabled={blocked}
+                  style={{ minHeight: 44 }}
+                >
+                  {(advances ? T.useTheseWords[lang] : T.writeIt[lang])} {rtlShell ? "←" : "→"}
+                </ButtonPrimary>
+                {blocked && !generating && (
+                  <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 320 }}>
+                    {T.whyNoSubject[lang]}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+
+          <hr style={{ margin: "20px 0 4px", border: 0, borderTop: "1px solid var(--border-default)" }} />
+
+          {/* SECONDARY, below the line: own words, and work already waiting.
+              Both collapsed — neither may stand above the subjects. */}
+          <div style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              onClick={() => setShowPaste((v) => !v)}
+              aria-expanded={showPaste}
+              style={{
+                minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+              }}
+            >
+              {T.pasteHead[lang]}
+            </button>
+            {showPaste && (
+            <div style={{ marginTop: 8 }}>
               <label htmlFor="studio-paste" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
                 {T.pasteHead[lang]}
               </label>
@@ -2568,6 +2576,46 @@ export default function StudioPanel({
                 </div>
               )}
             </div>
+            )}
+          </div>
+
+          {!draftsLoading && drafts.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setShowDrafts((v) => !v)}
+                aria-expanded={showDrafts}
+                style={{
+                  minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                  fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+                }}
+              >
+                {T.openDraft[lang]}{" ("}{drafts.length}{")"}
+              </button>
+              {showDrafts && (
+                <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                  {drafts.slice(0, 12).map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => void openDraft(d, "studio_drafts_list")}
+                      style={{
+                        textAlign: rtlShell ? "right" : "left", cursor: "pointer",
+                        background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                        borderRadius: 12, padding: 12,
+                      }}
+                    >
+                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
+                        {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
+                      </span>
+                      <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
+                        {T.draftSaved[lang]} {savedAgo(d.created_at, lang)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </StageCard>
       )}
@@ -2594,7 +2642,7 @@ export default function StudioPanel({
               )}
               {!wordsReady && (
                 <ButtonPrimary onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
-                  {T.writeItNow[lang]}
+                  {T.writeIt[lang]}
                 </ButtonPrimary>
               )}
               {!wordsReady && !choice && (
@@ -2603,7 +2651,7 @@ export default function StudioPanel({
                 </span>
               )}
               <ButtonGhost onClick={() => setStep(1)} style={{ minHeight: 44 }}>
-                {T.chooseDifferent[lang]}
+                {T.changeSubject[lang]}
               </ButtonGhost>
             </div>
           )}
@@ -2958,19 +3006,13 @@ export default function StudioPanel({
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {/* Every label states exactly what survives it. */}
                 <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
-                  {T.writeAnotherClears[lang]}
+                  {T.newPost[lang]}
                 </ButtonPrimary>
                 {subjectHasMore && (
                   <ButtonGhost onClick={() => startNewPiece({ choice })} style={{ minHeight: 44 }}>
-                    {T.writeAnotherSameSubject[lang]}
+                    {T.newPostSameSubject[lang]}
                   </ButtonGhost>
                 )}
-                <ButtonGhost onClick={() => goTab("library")} style={{ minHeight: 44 }}>
-                  {T.goToLibrary[lang]}
-                </ButtonGhost>
-                <ButtonGhost onClick={() => goTab("influence")} style={{ minHeight: 44 }}>
-                  {T.seePerformance[lang]}
-                </ButtonGhost>
               </div>
             </div>
           )}

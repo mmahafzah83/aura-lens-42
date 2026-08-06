@@ -119,8 +119,14 @@ export const T = {
     ar: "لديك منشور غير مكتمل عن {subject} — {when}.",
   },
   restoreSubjectUnknown: { en: "an earlier subject", ar: "موضوع سابق" },
-  restoreCarryOn: { en: "Carry on", ar: "تابع" },
-  restoreStartNew: { en: "Start something new", ar: "ابدأ شيئاً جديداً" },
+
+  // THE LOCKED VOCABULARY — one key per verb. No synonyms may be added.
+  newPost: { en: "New post", ar: "منشور جديد" },
+  newPostSameSubject: { en: "New post — same subject", ar: "منشور جديد — نفس الموضوع" },
+  openDraft: { en: "Open a draft", ar: "افتح مسوّدة" },
+  writeIt: { en: "Write it", ar: "اكتبه" },
+  useTheseWords: { en: "Use these words", ar: "استخدم هذه الكلمات" },
+  changeSubject: { en: "Change subject", ar: "غيّر الموضوع" },
 
   // Step 1 — choose
   chooseHead: { en: "What is this post about?", ar: "عن ماذا يدور هذا المنشور؟" },
@@ -458,7 +464,7 @@ export const T = {
     ar: "منشورات مكتوبة لك بالفعل. افتح واحداً وتابع.",
   },
   draftSaved: { en: "saved", ar: "حُفظ" },
-  draftOpened: { en: "We opened that draft. Carry on where it stopped.", ar: "فتحنا تلك المسوّدة. تابع من حيث توقفت." },
+  draftOpened: { en: "We opened that draft. Pick up where it stopped.", ar: "فتحنا تلك المسوّدة. تابع من حيث توقفت." },
   draftMissing: { en: "That draft is no longer there.", ar: "تلك المسوّدة لم تعد موجودة." },
   untitledDraft: { en: "Untitled draft", ar: "مسوّدة بلا عنوان" },
 
@@ -510,18 +516,7 @@ export const T = {
     en: "Aura will track how it performs and learn from what worked.",
     ar: "ستتابع أورا أداءه وتتعلّم مما نجح.",
   },
-  writeAnotherClears: {
-    en: "Write another — clears everything",
-    ar: "اكتب منشوراً آخر — يمسح كل شيء",
-  },
-  writeAnotherSameSubject: {
-    en: "Write another about this subject — keeps the subject, clears the words",
-    ar: "اكتب منشوراً آخر عن هذا الموضوع — يبقي الموضوع ويمسح الكلمات",
-  },
-
   // The postures, made real
-  writeItNow: { en: "Write it", ar: "اكتبه" },
-  chooseDifferent: { en: "Choose a different one", ar: "اختر موضوعاً آخر" },
   authorPlaceholder: {
     en: "Write your post here, or paste it in.",
     ar: "اكتب منشورك هنا، أو الصقه.",
