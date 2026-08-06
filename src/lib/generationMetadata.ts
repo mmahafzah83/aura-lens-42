@@ -105,6 +105,7 @@ export interface GenerationMetadata {
   original_generated_text: string;
   source_signal_id: string | null;
   unsourced_numbers_removed: number;
+  unsourced_entities_removed: number;
 }
 
 /**
@@ -117,6 +118,7 @@ export function generationMetadata(
     contentType?: string | null;
     signalId?: string | null;
     unsourcedRemoved?: number | null;
+    unsourcedEntitiesRemoved?: number | null;
   } = {},
 ): GenerationMetadata {
   const text = String(originalText ?? "");
@@ -128,5 +130,7 @@ export function generationMetadata(
     original_generated_text: text,
     source_signal_id: opts.signalId || null,
     unsourced_numbers_removed: Number(opts.unsourcedRemoved) > 0 ? Number(opts.unsourcedRemoved) : 0,
+    unsourced_entities_removed:
+      Number(opts.unsourcedEntitiesRemoved) > 0 ? Number(opts.unsourcedEntitiesRemoved) : 0,
   };
 }
