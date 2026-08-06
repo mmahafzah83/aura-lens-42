@@ -2496,7 +2496,7 @@ export default function StudioPanel({
           </div>
 
           {/* THE ONE PRIMARY on this screen. It is the only control that
-              writes; Continue does not exist here. */}
+              writes, and the only forward action step 1 offers. */}
           {(() => {
             const advances = Boolean(pasted.trim()) || Boolean(content.trim()) || posture === "author";
             const blocked = !doneMap[1] || generating;
