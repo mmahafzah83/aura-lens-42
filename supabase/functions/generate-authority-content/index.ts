@@ -669,13 +669,15 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           }
         } catch (_) { /* never block */ }
       }
-      content = content
+      const stripLabels = (text: string): string => text
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[-—–:：]\s*(?:English|Arabic|عربي(?:ة)?|إنجليزي(?:ة)?)\s*\n?/i, '')
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[:：\-—]?\s*\n?/i, '')
         .replace(/^[ \t]*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)[ \t]*[:：\-—]?[ \t]*$\n?/gim, '')
         .replace(/^\s*-{3,}\s*$/gm, '')
         .replace(/^\s*#{1,6}\s+/gm, '')
         .trim();
+
+      content = stripLabels(content);
 
       // Quality gate — challenge the output before returning
       // Quality gate intentionally uses a different model (GPT-4o) for independent evaluation
