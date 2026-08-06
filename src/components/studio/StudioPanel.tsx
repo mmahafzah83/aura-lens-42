@@ -16,6 +16,7 @@ import { loadStartCards, type StartCard } from "@/components/composer/startCards
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
 import { generationMetadata } from "@/lib/generationMetadata";
+import { editFields } from "@/lib/editDistance";
 import { formatSmartDate } from "@/lib/formatDate";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
 import { DeckIRSchema, type DeckIR } from "@/carousel/deckIR";
@@ -242,6 +243,8 @@ export default function StudioPanel({
   const generatedTextRef = useRef<string | null>(null);
   // Figures the provenance guard removed from the last generation.
   const unsourcedRemovedRef = useRef<number>(0);
+  // Organisations, people and dates the provenance guard could not source.
+  const unsourcedEntitiesRemovedRef = useRef<number>(0);
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
   /**
