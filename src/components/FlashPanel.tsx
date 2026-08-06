@@ -269,8 +269,12 @@ export default function FlashPanel() {
         theme: selectedTheme || undefined,
       }),
     });
-    if (!resp.ok) throw new Error(`Generation failed (${resp.status})`);
-    const data = await resp.json();
+    const data = await resp.json().catch(() => null);
+    // The member sees the real reason, never a bare status code.
+    if (!resp.ok) throw new Error(String(data?.error || `Generation failed (${resp.status})`));
+    if (Array.isArray(data?.warnings) && data.warnings.length > 0) {
+      toast.message(lang === "ar" ? `مسودة جاهزة، مع ملاحظات: ${data.warnings.join("، ")}` : `Draft ready, with notes: ${data.warnings.join(", ")}`);
+    }
     return {
       text: data?.content || "",
       unsourcedRemoved: Number(data?.unsourced_numbers_removed) || 0,
