@@ -38,7 +38,7 @@ import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
 import { useAvatarCutout } from "@/components/studio/useAvatarCutout";
 import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/components/studio/usePhone";
-import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
+import { T, attentionText, pictureProblem, startReason, type Lang, type Posture } from "@/components/studio/strings";
 import { deriveDone, plausibleLinkedInUrl } from "@/components/studio/journeyState";
 
 /* Local copy for this panel only. Same bilingual shape as `T`. */
