@@ -289,11 +289,13 @@ serve(withObserve("generate-authority-content", async (req) => {
       // ── Grounding: fetch signal + evidence so the model draws facts only from real data
       let groundingSignal: any = null;
       let groundingFragments: any[] = [];
+      // Every fragment behind the driving signal, used for provenance only.
+      let provenanceRows: any[] = [];
       try {
         if (signal_id) {
           // Fetch the signal first — we need its own supporting_evidence_ids to ground on ITS chain.
           const { data: sigData } = await supabase.from("strategic_signals")
-            .select("signal_title, explanation, strategic_implications, confidence, supporting_evidence_ids")
+            .select("signal_title, explanation, strategic_implications, what_it_means_for_you, confidence, supporting_evidence_ids")
             .eq("id", signal_id).eq("user_id", effectiveUserId).maybeSingle();
           groundingSignal = sigData || null;
 
@@ -304,24 +306,33 @@ serve(withObserve("generate-authority-content", async (req) => {
           if (evidenceIds.length > 0) {
             // Ground on THIS signal's own evidence chain, strongest first.
             const { data: fragData } = await supabase.from("evidence_fragments")
-              .select("title, content, confidence")
+              .select("title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .in("id", evidenceIds)
               .order("confidence", { ascending: false })
               .limit(6);
             groundingFragments = fragData || [];
+            // Provenance needs the WHOLE chain, not the six shown to the model.
+            for (let i = 0; i < evidenceIds.length; i += 100) {
+              const { data: batch } = await supabase.from("evidence_fragments")
+                .select("title, content, metadata")
+                .eq("user_id", effectiveUserId)
+                .in("id", evidenceIds.slice(i, i + 100));
+              if (batch) provenanceRows.push(...batch);
+            }
           } else {
             // Fallback ONLY when the signal has no linked evidence: most recent fragments.
             const { data: fragData } = await supabase.from("evidence_fragments")
-              .select("title, content, confidence")
+              .select("title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .order("created_at", { ascending: false })
               .limit(5);
             groundingFragments = fragData || [];
+            provenanceRows = fragData || [];
           }
         } else {
           const { data: sigs } = await supabase.from("strategic_signals")
-            .select("signal_title, explanation, strategic_implications, confidence")
+            .select("signal_title, explanation, strategic_implications, what_it_means_for_you, confidence")
             .eq("user_id", effectiveUserId)
             .in("lifecycle_tier", ["live", "evergreen", "emerging"])
             .order("confidence", { ascending: false })
@@ -331,6 +342,10 @@ serve(withObserve("generate-authority-content", async (req) => {
             groundingFragments = sigs.slice(1).map((s: any) => ({
               title: s.signal_title,
               content: s.explanation || (typeof s.strategic_implications === "string" ? s.strategic_implications : JSON.stringify(s.strategic_implications || "")),
+            }));
+            provenanceRows = sigs.map((s: any) => ({
+              title: s.signal_title,
+              content: [s.explanation, s.what_it_means_for_you, typeof s.strategic_implications === "string" ? s.strategic_implications : JSON.stringify(s.strategic_implications || "")].join(" "),
             }));
           }
         }
