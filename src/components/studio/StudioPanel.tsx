@@ -2087,7 +2087,7 @@ export default function StudioPanel({
               fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)",
             }}
           >
-            {L.startNewPiece[lang]}
+            {T.newPost[lang]}
           </button>
         )}
       </div>
@@ -2167,11 +2167,21 @@ export default function StudioPanel({
             }}
             style={{ minHeight: 44 }}
           >
-            {L.preparedUse[lang]}
+            {T.openDraft[lang]}
           </ButtonPrimary>
-          <ButtonGhost onClick={() => setPreparedDraft(null)} style={{ minHeight: 44 }}>
-            {L.preparedFresh[lang]}
-          </ButtonGhost>
+          <button
+            type="button"
+            onClick={() => setPreparedDraft(null)}
+            aria-label={L.dismiss[lang]}
+            title={L.dismiss[lang]}
+            style={{
+              minHeight: 44, minWidth: 44, padding: 0, cursor: "pointer",
+              background: "transparent", border: 0,
+              fontFamily: "var(--ff-ui)", fontSize: 18, color: "var(--text-muted)",
+            }}
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -2204,10 +2214,10 @@ export default function StudioPanel({
           </span>
           <span style={{ flex: 1 }} />
           <ButtonPrimary onClick={carryOnRestore} style={{ minHeight: 44 }}>
-            {T.restoreCarryOn[lang]}
+            {T.openDraft[lang]}
           </ButtonPrimary>
           <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
-            {T.restoreStartNew[lang]}
+            {T.newPost[lang]}
           </ButtonGhost>
         </div>
       )}
@@ -2595,7 +2605,7 @@ export default function StudioPanel({
               )}
               {!wordsReady && (
                 <ButtonPrimary onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
-                  {T.writeItNow[lang]}
+                  {T.writeIt[lang]}
                 </ButtonPrimary>
               )}
               {!wordsReady && !choice && (
@@ -2604,7 +2614,7 @@ export default function StudioPanel({
                 </span>
               )}
               <ButtonGhost onClick={() => setStep(1)} style={{ minHeight: 44 }}>
-                {T.chooseDifferent[lang]}
+                {T.changeSubject[lang]}
               </ButtonGhost>
             </div>
           )}
@@ -2959,19 +2969,13 @@ export default function StudioPanel({
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {/* Every label states exactly what survives it. */}
                 <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
-                  {T.writeAnotherClears[lang]}
+                  {T.newPost[lang]}
                 </ButtonPrimary>
                 {subjectHasMore && (
                   <ButtonGhost onClick={() => startNewPiece({ choice })} style={{ minHeight: 44 }}>
-                    {T.writeAnotherSameSubject[lang]}
+                    {T.newPostSameSubject[lang]}
                   </ButtonGhost>
                 )}
-                <ButtonGhost onClick={() => goTab("library")} style={{ minHeight: 44 }}>
-                  {T.goToLibrary[lang]}
-                </ButtonGhost>
-                <ButtonGhost onClick={() => goTab("influence")} style={{ minHeight: 44 }}>
-                  {T.seePerformance[lang]}
-                </ButtonGhost>
               </div>
             </div>
           )}
