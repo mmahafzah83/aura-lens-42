@@ -1131,6 +1131,7 @@ export default function StudioPanel({
       }
       setGenWarnings(Array.isArray(json?.warnings) ? json.warnings.map(String) : []);
       unsourcedRemovedRef.current = Number(json?.unsourced_numbers_removed) || 0;
+      unsourcedEntitiesRemovedRef.current = Number(json?.unsourced_entities_removed) || 0;
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
       setContent(generated);
       generatedTextRef.current = generated;
