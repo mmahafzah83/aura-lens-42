@@ -6,6 +6,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR } from "../_shared/voiceStyle.ts";
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
+import { endingTypeOf, hookStyleOf } from "../_shared/generationMeta.ts";
 import {
   checkTextIntegrity,
   neutralizeRtlMarkers,
@@ -855,7 +856,11 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         framework_used: (framework && FRAMEWORK_PROMPTS[framework]) ? framework : null,
         quality_gate: gatePayload,
         blocked: gateBlocked,
-        ending_type: chosenEnding,
+        // The label describes the text that was actually produced, never the
+        // ending the prompt asked for.
+        ending_type: endingTypeOf(content),
+        hook_style: hookStyleOf(content),
+        requested_ending: chosenEnding,
         unsourced_numbers_removed: unsourcedRemoved,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
