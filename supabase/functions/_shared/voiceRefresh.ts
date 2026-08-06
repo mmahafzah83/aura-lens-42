@@ -10,7 +10,8 @@
  * and curated `use` phrases are never removed.
  */
 import { scriptOf } from "./linkedinPost.ts";
-import { dedupeRules, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "./voiceVocab.ts";
+import { dedupeRuleEntries, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "./voiceVocab.ts";
+import { toRules, findUseEvidence } from "./voiceRules.ts";
 import { sanitizeStyleText } from "./voiceStyle.ts";
 
 const OWN_SOURCES = ["linkedin_export", "linkedin_own", "aura_generated"];
