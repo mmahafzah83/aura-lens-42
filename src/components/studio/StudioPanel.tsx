@@ -2069,8 +2069,10 @@ export default function StudioPanel({
       setStep(2);
       return;
     }
-    if (step === 2) { setStep(3); return; }
-    if (step === 3) { setStep(4); }
+    // Moving on is a save. An edit the member made on step 2 is on the row
+    // before the next screen renders, never held only in the browser.
+    if (step === 2) { void saveDraft(); setStep(3); return; }
+    if (step === 3) { void saveDraft(); setStep(4); }
   };
 
   return shell(
