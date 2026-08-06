@@ -235,6 +235,10 @@ export default function StudioPanel({
   const [content, setContent] = useState("");
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<null | "failed" | "session">(null);
+  /** The exact reason the function gave, so a member never sees a generic error. */
+  const [genErrorDetail, setGenErrorDetail] = useState<string | null>(null);
+  /** Things the guard could not fix. The draft is still shown. */
+  const [genWarnings, setGenWarnings] = useState<string[]>([]);
   const genRunId = useRef(0);
   /** The exact text Aura last generated. Anything else is the member's own. */
   const generatedTextRef = useRef<string | null>(null);
@@ -1078,6 +1082,8 @@ export default function StudioPanel({
     const runId = ++genRunId.current;
     const useLang = langOverride ?? writeLang;
     setGenError(null);
+    setGenErrorDetail(null);
+    setGenWarnings([]);
     setNotReady(null);
     setGenerating(true);
     setBusyMessage(T.writing[lang]);
@@ -1111,7 +1117,12 @@ export default function StudioPanel({
       const json = await res.json().catch(() => null);
       if (runId !== genRunId.current) return;
       const text = json?.content;
-      if (!res.ok || !text) { setGenError("failed"); return; }
+      if (!res.ok || !text) {
+        setGenErrorDetail(typeof json?.error === "string" ? json.error : null);
+        setGenError("failed");
+        return;
+      }
+      setGenWarnings(Array.isArray(json?.warnings) ? json.warnings.map(String) : []);
       unsourcedRemovedRef.current = Number(json?.unsourced_numbers_removed) || 0;
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
       setContent(generated);
@@ -1939,12 +1950,19 @@ export default function StudioPanel({
     <>
       {genError && (
         <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--error)", margin: "0 0 12px" }}>
-          {genError === "session" ? T.sessionEnded[lang] : T.writeFailed[lang]}{" "}
+          {genError === "session" ? T.sessionEnded[lang] : (genErrorDetail || T.writeFailed[lang])}{" "}
           {posture !== "author" && (
           <button type="button" onClick={() => generate()} style={{ background: "transparent", border: 0, color: "var(--act)", fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
             {T.tryAgain[lang]}
           </button>
           )}
+        </p>
+      )}
+      {genWarnings.length > 0 && (
+        <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--ink-3)", margin: "0 0 10px" }}>
+          {lang === "ar"
+            ? `مسودة جاهزة، مع ملاحظات: ${genWarnings.join("، ")}`
+            : `Draft ready, with notes: ${genWarnings.join(", ")}`}
         </p>
       )}
       <textarea

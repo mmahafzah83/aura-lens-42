@@ -289,11 +289,13 @@ serve(withObserve("generate-authority-content", async (req) => {
       // ── Grounding: fetch signal + evidence so the model draws facts only from real data
       let groundingSignal: any = null;
       let groundingFragments: any[] = [];
+      // Every fragment behind the driving signal, used for provenance only.
+      let provenanceRows: any[] = [];
       try {
         if (signal_id) {
           // Fetch the signal first — we need its own supporting_evidence_ids to ground on ITS chain.
           const { data: sigData } = await supabase.from("strategic_signals")
-            .select("signal_title, explanation, strategic_implications, confidence, supporting_evidence_ids")
+            .select("signal_title, explanation, strategic_implications, what_it_means_for_you, confidence, supporting_evidence_ids")
             .eq("id", signal_id).eq("user_id", effectiveUserId).maybeSingle();
           groundingSignal = sigData || null;
 
@@ -304,24 +306,33 @@ serve(withObserve("generate-authority-content", async (req) => {
           if (evidenceIds.length > 0) {
             // Ground on THIS signal's own evidence chain, strongest first.
             const { data: fragData } = await supabase.from("evidence_fragments")
-              .select("title, content, confidence")
+              .select("title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .in("id", evidenceIds)
               .order("confidence", { ascending: false })
               .limit(6);
             groundingFragments = fragData || [];
+            // Provenance needs the WHOLE chain, not the six shown to the model.
+            for (let i = 0; i < evidenceIds.length; i += 100) {
+              const { data: batch } = await supabase.from("evidence_fragments")
+                .select("title, content, metadata")
+                .eq("user_id", effectiveUserId)
+                .in("id", evidenceIds.slice(i, i + 100));
+              if (batch) provenanceRows.push(...batch);
+            }
           } else {
             // Fallback ONLY when the signal has no linked evidence: most recent fragments.
             const { data: fragData } = await supabase.from("evidence_fragments")
-              .select("title, content, confidence")
+              .select("title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .order("created_at", { ascending: false })
               .limit(5);
             groundingFragments = fragData || [];
+            provenanceRows = fragData || [];
           }
         } else {
           const { data: sigs } = await supabase.from("strategic_signals")
-            .select("signal_title, explanation, strategic_implications, confidence")
+            .select("signal_title, explanation, strategic_implications, what_it_means_for_you, confidence")
             .eq("user_id", effectiveUserId)
             .in("lifecycle_tier", ["live", "evergreen", "emerging"])
             .order("confidence", { ascending: false })
@@ -331,6 +342,10 @@ serve(withObserve("generate-authority-content", async (req) => {
             groundingFragments = sigs.slice(1).map((s: any) => ({
               title: s.signal_title,
               content: s.explanation || (typeof s.strategic_implications === "string" ? s.strategic_implications : JSON.stringify(s.strategic_implications || "")),
+            }));
+            provenanceRows = sigs.map((s: any) => ({
+              title: s.signal_title,
+              content: [s.explanation, s.what_it_means_for_you, typeof s.strategic_implications === "string" ? s.strategic_implications : JSON.stringify(s.strategic_implications || "")].join(" "),
             }));
           }
         }
@@ -778,10 +793,19 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       const evidenceText = [
         groundingSignal?.signal_title || "",
         groundingSignal?.explanation || "",
+        groundingSignal?.what_it_means_for_you || "",
         typeof groundingSignal?.strategic_implications === "string"
           ? groundingSignal.strategic_implications
           : JSON.stringify(groundingSignal?.strategic_implications || ""),
         ...groundingFragments.map((f: any) => `${f.title || ""} ${f.content || ""}`),
+        // The full evidence chain — a figure the member captured is sourced,
+        // whatever the six fragments shown to the model happened to contain.
+        ...provenanceRows.map((f: any) => {
+          const meta = f.metadata && typeof f.metadata === "object" ? f.metadata : {};
+          const quote = (meta as any).source_quote;
+          const quoteText = Array.isArray(quote) ? quote.join(" ") : (quote ? String(quote) : "");
+          return `${f.title || ""} ${f.content || ""} ${quoteText}`;
+        }),
         typeof context === "string" ? context : "",
         typeof topic === "string" ? topic : "",
       ].join("\n");
@@ -798,6 +822,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
 
       content = hygiene(content);
       let unsourcedRemoved = 0;
+      const warnings: string[] = [];
       let unsourced = findUnsourcedNumbers(content, evidenceText);
       let integrity = checkTextIntegrity(content, isAr);
 
@@ -822,32 +847,34 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           content = candidate;
           unsourcedRemoved = unsourced.length;
         } else {
-          // Last resort: drop the whole sentence carrying each unsourced claim,
-          // then re-check. Broken text is discarded, never shown.
+          // Last resort: drop the whole sentence carrying each unsourced claim.
+          // A member is never blocked — the best available text is returned with
+          // a warning describing what could not be fixed.
           const base = candidate || content;
           const guarded = stripUnsourcedNumbers(base, evidenceText);
           const cleaned = hygiene(guarded.text);
-          const finalIntegrity = checkTextIntegrity(cleaned, isAr);
-          if (!cleaned.trim() || !finalIntegrity.ok) {
-            console.error(
-              "[generate-authority-content] draft discarded —",
-              finalIntegrity.issues.join(" | "),
-            );
-            return new Response(JSON.stringify({
-              success: false,
-              blocked: true,
-              error: "The draft could not be written cleanly from the available evidence. Try again.",
-              integrity_issues: finalIntegrity.issues,
-            }), {
-              status: 422,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
-          content = cleaned;
+          // Provenance outranks style, but it downgrades the draft, never
+          // destroys it: if the guard emptied the text, keep the fuller draft.
+          content = cleaned.trim() ? cleaned : hygiene(base);
           unsourcedRemoved = unsourced.length + guarded.removed;
         }
-        unsourced = [];
+        unsourced = findUnsourcedNumbers(content, evidenceText);
         integrity = checkTextIntegrity(content, isAr);
+      }
+
+      if (unsourced.length > 0) warnings.push("unsourced_numbers");
+      if (!integrity.ok) warnings.push("integrity_issues");
+      if (bansEmoji && containsEmoji(content)) warnings.push("emoji_present");
+
+      // The only failure a member may ever see is genuinely empty output.
+      if (!content.trim()) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "The model returned no text. Please try again.",
+        }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       return new Response(JSON.stringify({
@@ -862,6 +889,8 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         hook_style: hookStyleOf(content),
         requested_ending: chosenEnding,
         unsourced_numbers_removed: unsourcedRemoved,
+        warnings,
+        integrity_issues: integrity.ok ? [] : integrity.issues,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
