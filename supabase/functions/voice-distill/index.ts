@@ -559,6 +559,17 @@ Deno.serve(async (req) => {
       const newAvoid: string[] = distillation?.vocabulary?.avoided_patterns ?? [];
       const newRhythm: string = distillation?.vocabulary?.sentence_rhythm ?? "";
 
+      /**
+       * A rule must be OBSERVED. `use` rules are checked against the member's
+       * own posts; `avoid` rules can only be proven by the member actually
+       * removing something on edit — the absence of emoji in six posts is not
+       * evidence that they refuse emoji.
+       */
+      const samplesForL: string[] = postsForL
+        .map((p: any) => String(p?.post_text ?? ""))
+        .filter((t) => t.trim().length > 0);
+      const editPairs = await loadEditPairs(supabase, user_id);
+
       // MERGE into the (user_id, L) row.
       const { data: existing, error: existErr } = await supabase
         .from("authority_voice_profiles")
@@ -593,11 +604,22 @@ Deno.serve(async (req) => {
       // Rules that say the same thing in different words are merged, and both
       // lists are capped, so the prompt carries twelve distinct constraints
       // rather than ninety near-duplicates.
-      const mergedAvoid = dedupeRules([...existingAvoidRaw, ...newAvoid]);
+      // Existing entries are kept but re-scored against the member's edits;
+      // new candidates only survive if the member's own material supports them.
+      const verifiedNewAvoid = verifyCandidates(newAvoid, "avoid", samplesForL, editPairs);
+      const carriedAvoid = applyContradictions(toRules(existingAvoidRaw), "avoid", editPairs);
+      const mergedAvoid = dedupeRuleEntries([...carriedAvoid, ...verifiedNewAvoid])
+        .filter((r: any) => Number(r.contradictions ?? 0) < CONTRADICTION_LIMIT);
+
+      const verifiedNewUse = verifyCandidates(newUse, "use", samplesForL, editPairs);
+      const carriedUse = applyContradictions(toRules(existingVocab.use), "use", editPairs);
+      const mergedUse = dedupeRuleEntries([...carriedUse, ...verifiedNewUse])
+        .filter((r: any) => Number(r.contradictions ?? 0) < CONTRADICTION_LIMIT);
+
       const { vocabulary: cleanedExisting } = sanitizeVocabulary(existingVocab);
       const mergedVocabulary: Record<string, unknown> = {
         ...cleanedExisting,
-        use: dedupeRules(newUse),
+        use: mergedUse,
         avoid: mergedAvoid,
         rhythm: newRhythm,
       };
