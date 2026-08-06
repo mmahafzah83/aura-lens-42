@@ -44,10 +44,10 @@ import { deriveDone, plausibleLinkedInUrl } from "@/components/studio/journeySta
 /* Local copy for this panel only. Same bilingual shape as `T`. */
 const L = {
   newPieceHead: {
-    en: "Start a new piece? This clears the current words.",
+    en: "Begin a new post? This clears the current words.",
     ar: "هل تبدأ منشوراً جديداً؟ سيُمسح النص الحالي.",
   },
-  newPieceYes: { en: "Start new", ar: "ابدأ جديداً" },
+  newPieceYes: { en: "New post", ar: "منشور جديد" },
   newPieceNo: { en: "Keep working", ar: "تابع العمل" },
   preparedLine: {
     en: "Aura prepared a draft on “{subject}” from last night’s run.",
@@ -529,7 +529,7 @@ export default function StudioPanel({
    *     intent WINS: it opens, and any unsaved work is saved first, silently,
    *     and said in one line. Never a dialog, never discarded.
    *  3. REFRESH OR A RETURN THE SAME DAY — the stored piece is OFFERED in one
-   *     line and applied only on "Carry on". We never open inside it.
+   *     line and applied only when the draft is opened. We never open inside it.
    *  4. A RETURN AFTER MORE THAN 24 HOURS — no offer at all. The draft is one
    *     item in the drafts list; the composer opens clean.
    */
@@ -619,7 +619,7 @@ export default function StudioPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, draftPrefill]);
 
-  /** "Carry on" — and only then does the saved work become this session's. */
+  /** Open the draft — and only then does the saved work become this session's. */
   const carryOnRestore = useCallback(() => {
     const saved = pendingRestore;
     if (!saved) return;
@@ -1744,13 +1744,6 @@ export default function StudioPanel({
     setStatus(T.linkSaved[lang]);
   }, [linkInput, ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
-  /** P9 — the onward choices. The shell owns navigation; we only ask. */
-  const goTab = useCallback((tab: "library" | "influence") => {
-    try {
-      window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab } }));
-    } catch { /* navigation is never allowed to throw at a member */ }
-  }, []);
-
   /* ---------- derived --------------------------------------------- */
   const attention = useMemo(() => {
     const fit = fits[current];
@@ -2185,7 +2178,7 @@ export default function StudioPanel({
       )}
 
       {/* THE RESTORE — announced, never assumed. Nothing below is populated
-          until the member says "Carry on". */}
+          until the member opens the draft. */}
       {pendingRestore && !content && !deck && (
         <div
           role="status"
