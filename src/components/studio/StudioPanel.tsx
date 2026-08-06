@@ -2041,10 +2041,9 @@ export default function StudioPanel({
         return;
       }
       if (content.trim()) { setStep(2); return; }
-      // The author's own words are the only source in that posture: there is
-      // no generate affordance to reach.
-      if (posture === "author") { setStep(2); return; }
-      void generate();
+      // Step 1 never generates from here. "Write it" is the only control that
+      // calls generate(); Continue does not render on step 1 at all.
+      setStep(2);
       return;
     }
     if (step === 2) { setStep(3); return; }
@@ -2275,7 +2274,7 @@ export default function StudioPanel({
             </span>
           )}
         </span>
-        {step < 4 && !stageOwnsPrimary && (
+        {step > 1 && step < 4 && !stageOwnsPrimary && (
           <span style={{ display: "grid", gap: 2 }}>
             <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
               {T.continue[lang]} {rtlShell ? "←" : "→"}
