@@ -82,6 +82,26 @@ const DANGLING = new Set([...AR_DANGLING, ...EN_DANGLING]);
 const BULLET_START = /^(?:[◆•\-–—*↳↲✓>]|[0-9٠-٩]{1,2}\s*[.)-]|["“«'(])/;
 const BAD_PUNCT_START = /^[,،؛;:.!?؟%=+\/\\)\]}»”…]/;
 
+const HASHTAG_LINE = /^\s*(?:#[^\s#]+\s*)+$/;
+const SIGNATURE_LINE = /^\s*(?:[—–-]{1,2}\s*\S|✍|Signed|توقيع)/;
+
+/**
+ * The body a member actually reads: hashtag blocks and a trailing signature
+ * line are decoration, not prose, and must not be judged as sentences.
+ */
+function bodyLinesOf(raw: string): string[] {
+  const lines = raw.split("\n");
+  while (lines.length) {
+    const last = lines[lines.length - 1];
+    if (!last.trim() || HASHTAG_LINE.test(last) || SIGNATURE_LINE.test(last)) {
+      lines.pop();
+      continue;
+    }
+    break;
+  }
+  return lines;
+}
+
 const sentencesOf = (line: string) =>
   line.split(/(?<=[.!?؟…])\s+/).map((s) => s.trim()).filter(Boolean);
 
@@ -107,26 +127,30 @@ export function checkTextIntegrity(text: string, _isArabic?: boolean): Integrity
   const raw = String(text ?? "");
   if (!raw.trim()) return { ok: false, issues: ["empty"] };
 
-  const lines = raw.split("\n");
+  const lines = bodyLinesOf(raw);
+  if (!lines.join("\n").trim()) return { ok: false, issues: ["empty"] };
+
   lines.forEach((line, i) => {
     if (!line.trim()) return;
+    // An orphan is a line that BEGINS mid-thought — never merely a short line.
+    // Arabic LinkedIn prose is written one line per paragraph by design.
     if (/^[ \t]+\S/.test(line)) issues.push(`line ${i + 1} starts with whitespace`);
     const t = line.trim();
     if (BAD_PUNCT_START.test(t)) issues.push(`line ${i + 1} starts with punctuation`);
 
-    const words = t.replace(BULLET_START, "").trim().split(/\s+/).filter(Boolean);
-    const first = words[0] ?? "";
-    if (words.length > 0 && words.length < 4 && DANGLING.has(first.toLowerCase()) ) {
-      issues.push(`line ${i + 1} is an orphaned fragment`);
-    }
     // "= consequence" with nothing on the left is a severed clause.
     if (/^[^=\n]{0,3}=/.test(t)) issues.push(`line ${i + 1} is a severed equation`);
-
-    for (const s of sentencesOf(t)) {
-      const w = lastWord(s).toLowerCase();
-      if (w && DANGLING.has(w)) issues.push(`line ${i + 1} ends on a dangling particle "${w}"`);
-    }
   });
+
+  // A dangling particle only matters where the text stops: mid-text particles
+  // are ordinary Arabic and English grammar.
+  const lastBody = [...lines].reverse().find((l) => l.trim());
+  if (lastBody) {
+    const sentences = sentencesOf(lastBody.trim());
+    const finalSentence = sentences[sentences.length - 1] ?? "";
+    const w = lastWord(finalSentence).toLowerCase();
+    if (w && DANGLING.has(w)) issues.push(`text ends on a dangling particle "${w}"`);
+  }
 
   return { ok: issues.length === 0, issues };
 }
