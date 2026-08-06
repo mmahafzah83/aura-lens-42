@@ -38,7 +38,7 @@ import ZoneInspector from "@/components/studio/ZoneInspector";
 import ZoneLook from "@/components/studio/ZoneLook";
 import { useAvatarCutout } from "@/components/studio/useAvatarCutout";
 import { useIsPhone, PHONE_MAX_WIDTH, EXPORT_WIDTH, clampCanvasWidth } from "@/components/studio/usePhone";
-import { T, attentionText, pictureProblem, postureLabel, startReason, type Lang, type Posture } from "@/components/studio/strings";
+import { T, attentionText, pictureProblem, startReason, type Lang, type Posture } from "@/components/studio/strings";
 import { deriveDone, plausibleLinkedInUrl } from "@/components/studio/journeyState";
 
 /* Local copy for this panel only. Same bilingual shape as `T`. */
@@ -348,7 +348,9 @@ export default function StudioPanel({
   const [allSignals, setAllSignals] = useState<Array<{ id: string; title: string; insight: string }>>([]);
   const [showAllSubjects, setShowAllSubjects] = useState(false);
   /* Step 1 secondaries — collapsed by default, never above the subjects. */
-  const [showPaste, setShowPaste] = useState(false);
+  // Posture is a SILENT default only: the author simply arrives with their own
+  // words already open. The controls are identical for everyone.
+  const [showPaste, setShowPaste] = useState(() => readStoredPosture() === "author");
   const [showDrafts, setShowDrafts] = useState(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
@@ -389,7 +391,8 @@ export default function StudioPanel({
    * WHERE A POSTURE OPENS. A posture changes who writes, where the journey
    * starts and what Aura does unasked — never what exists on the screen.
    */
-  const entryStep = (p: Posture): number => (p === "editor" ? 1 : 2);
+  // Everyone starts in the same place. Posture never moves the entry point.
+  const entryStep = (_p: Posture): number => 1;
   const postureRef = useRef<Posture>("editor");
   postureRef.current = posture;
 
@@ -1945,11 +1948,9 @@ export default function StudioPanel({
       {genError && (
         <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--error)", margin: "0 0 12px" }}>
           {genError === "session" ? T.sessionEnded[lang] : (genErrorDetail || T.writeFailed[lang])}{" "}
-          {posture !== "author" && (
           <button type="button" onClick={() => generate()} style={{ background: "transparent", border: 0, color: "var(--act)", fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
             {T.tryAgain[lang]}
           </button>
-          )}
         </p>
       )}
       {genWarnings.length > 0 && (
@@ -2019,7 +2020,7 @@ export default function StudioPanel({
      stage IS the primary, so the strip does not offer a second one. */
   const stageOwnsPrimary =
     (step === 3 && format === "slides" && !deck) ||
-    (step === 2 && posture === "delegator" && !wordsReady);
+    (step === 2 && !wordsReady);
 
   const onContinue = () => {
     if (step === 1) {
@@ -2048,17 +2049,6 @@ export default function StudioPanel({
       {/* One slim strip. This is a page inside Aura; the shell owns navigation.
           It renders at every width; on a narrow screen it simply wraps. */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", paddingBottom: 6 }}>
-        <button
-          type="button"
-          onClick={() => setAskingPosture(true)}
-          style={{
-            minHeight: 44, padding: "0 12px", borderRadius: 999, cursor: "pointer",
-            background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-            fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)",
-          }}
-        >
-          {T.workingAs[lang]}: {postureLabel(posture, lang)} · {T.change[lang]}
-        </button>
         <button
           type="button"
           onClick={() => setHelpOpen((v) => !v)}
@@ -2498,7 +2488,7 @@ export default function StudioPanel({
           {/* THE ONE PRIMARY on this screen. It is the only control that
               writes, and the only forward action step 1 offers. */}
           {(() => {
-            const advances = Boolean(pasted.trim()) || Boolean(content.trim()) || posture === "author";
+            const advances = Boolean(pasted.trim()) || Boolean(content.trim());
             const blocked = !doneMap[1] || generating;
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
@@ -2627,25 +2617,22 @@ export default function StudioPanel({
           align={rtlShell ? "right" : "left"}
           lang={lang}
         >
-          {/* THE POSTURE, MADE REAL. Delegator: a subject already chosen and one
-              primary that writes. Author: no generate affordance at all.
-              Editor: the words arrived from step 1. */}
-          {posture === "delegator" && (
+          {/* One fallback only, identical for everyone: if there are no words
+              yet, offer the same "Write it" that step 1 offers. */}
+          {!wordsReady && (
             <div style={{ display: "grid", gap: 8, justifyItems: rtlShell ? "end" : "start", margin: "0 0 14px" }}>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
-                {wordsReady ? T.delegatorFoundDraft[lang] : T.delegatorWaiting[lang]}
+                {T.delegatorWaiting[lang]}
               </p>
-              {choice?.id && !wordsReady && (
+              {choice?.id && (
                 <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
                   {L.auraPickedNamed[lang].replace("{subject}", choice?.title || "")}
                 </p>
               )}
-              {!wordsReady && (
-                <ButtonPrimary onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
-                  {T.writeIt[lang]}
-                </ButtonPrimary>
-              )}
-              {!wordsReady && !choice && (
+              <ButtonPrimary onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
+                {T.writeIt[lang]}
+              </ButtonPrimary>
+              {!choice && (
                 <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)" }}>
                   {T.whyNoSubject[lang]}
                 </span>
@@ -2715,9 +2702,7 @@ export default function StudioPanel({
               </ButtonGhost>
             </div>
           )}
-          {/* Change the writing language without going back a step. This is a
-              generate affordance, so it does not exist in the author posture. */}
-          {posture !== "author" && (
+          {/* Change the writing language without going back a step. */}
           <div style={{ marginBottom: 12 }}>
             <ButtonGhost
               onClick={() => {
@@ -2767,7 +2752,6 @@ export default function StudioPanel({
               </div>
             )}
           </div>
-          )}
           {writeArea}
         </StageCard>
       )}
