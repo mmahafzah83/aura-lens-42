@@ -492,8 +492,55 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
     }
   };
 
+  const handleSaveAdmired = async () => {
+    setSavingAdmired(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+
+      const admiredPostsArr = admiredPosts
+        .split(/\n---\n/)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(content => ({ content }));
+
+      const { data: existing } = await supabase
+        .from("authority_voice_profiles")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .eq("is_primary", true)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("authority_voice_profiles")
+          .update({ admired_posts: admiredPostsArr, updated_at: new Date().toISOString() })
+          .eq("user_id", session.user.id)
+          .eq("is_primary", true);
+        if (error) throw error;
+      } else {
+        const primaryLang = (profiles.find((r: any) => r.is_primary)?.language === "ar" ? "ar" : "en");
+        const { error } = await supabase
+          .from("authority_voice_profiles")
+          .insert({
+            user_id: session.user.id,
+            admired_posts: admiredPostsArr,
+            updated_at: new Date().toISOString(),
+            language: primaryLang,
+            is_primary: profiles.length === 0,
+          });
+        if (error) throw error;
+      }
+
+      toast.success(t("Noted — style only, never words.", "تم — للأسلوب فقط، لا للكلمات."));
+    } catch (e: any) {
+      toast.error(e.message || "Couldn't save");
+    } finally {
+      setSavingAdmired(false);
+    }
+  };
+
   const handleSave = async () => {
-    // (see handleSaveAdmired below for the admired-only path)
     setSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
