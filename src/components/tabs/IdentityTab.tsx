@@ -1298,13 +1298,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       </section>
 
 
-      {/* Hidden — still mounted for data refresh logic of milestones share */}
-      <div className="hidden">
-        <MilestonesSection userId={authUser?.id ?? null} />
-      </div>
+      <MilestonesSection userId={authUser?.id ?? null} />
 
       {/* SLICE 4b — one reports home: narrative report first, formal PDF beneath */}
-      <SectionHeader label="Your reports" />
+      <div>
+        <SectionHeader label="Your reports" />
+        <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
+          Deeper readings of your standing, kept here to reopen any time.
+        </p>
+      </div>
       <BrandReportSection
         results={profile?.brand_assessment_results}
         hasAssessment={!!profile?.brand_assessment_completed_at}
@@ -1336,6 +1338,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         onNavigatePhoto={() => navigate("/settings?tab=account")}
         onNavigateSettings={() => { window.location.href = "/settings#location"; }}
       />
+      </>)}
 
       {/* Modals */}
       <ObjectiveAuditModal
