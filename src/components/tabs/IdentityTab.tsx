@@ -1004,7 +1004,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             How Aura writes as you. Learned from your posts — teach it, correct it, it updates instantly.
           </p>
           <div style={{ marginTop: 12 }}>
-            <VoiceEngineSection />
+            <VoiceEngineSection onWrite={() => handleGenerateContent("Write in my voice")} />
           </div>
         </section>
       )}
