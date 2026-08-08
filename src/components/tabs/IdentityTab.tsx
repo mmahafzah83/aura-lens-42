@@ -767,6 +767,52 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         Your professional identity as the market sees it — generated from your assessment and captures, not a template.
       </FirstTimeHint>
 
+      {/* PANE SWITCHER — URL param `story` is the single source of truth */}
+      <div
+        role="tablist"
+        aria-label="Profile panes"
+        style={{
+          display: "flex",
+          gap: 8,
+          overflowX: "auto",
+          paddingBottom: 4,
+          marginBlockStart: 4,
+        }}
+      >
+        {([
+          { key: "identity", label: "Identity" },
+          { key: "voice", label: "Voice & Writing" },
+          { key: "insights", label: "Insights" },
+          { key: "record", label: "Milestones & Reports" },
+        ] as const).map((t) => {
+          const active = pane === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setPane(t.key)}
+              style={{
+                flex: "0 0 auto",
+                whiteSpace: "nowrap",
+                borderRadius: 8,
+                padding: "8px 14px",
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: "pointer",
+                background: active ? "#0670C4" : "#FFFFFF",
+                color: active ? "#FFFFFF" : "#5B6673",
+                border: active ? "1px solid #0670C4" : "1px solid #E2E7EE",
+              }}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {pane === "identity" && (<>
       {/* Gated welcome for users without brand assessment */}
       {!assessmentCompleted && autoAssessing && (
         <div style={{ background: "var(--paper-2)", borderRadius: 16, padding: "32px 28px", border: "0.5px solid var(--rule)", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
