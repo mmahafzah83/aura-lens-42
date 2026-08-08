@@ -171,6 +171,18 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
   const navigate = useNavigate();
 
+  // Pane state — the URL search param `story` is the single source of truth.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const storyParam = searchParams.get("story");
+  const pane: "identity" | "voice" | "insights" | "record" =
+    storyParam === "voice" || storyParam === "insights" || storyParam === "record" ? storyParam : "identity";
+  const setPane = (next: "identity" | "voice" | "insights" | "record") => {
+    const params = new URLSearchParams(searchParams);
+    if (next === "identity") params.delete("story");
+    else params.set("story", next);
+    setSearchParams(params);
+  };
+
   useEffect(() => {
     const openAssessment = () => setBrandOpen(true);
     const openProfileEditor = () => {
