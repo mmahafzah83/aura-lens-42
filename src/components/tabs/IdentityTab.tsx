@@ -854,7 +854,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {/* SECTION 2 — PROFILE HERO CARD */}
       {assessmentCompleted && (
-        <SectionHeader label="Your market position" />
+        <div>
+          <SectionHeader label="Your market position" />
+          <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
+            How you stand in the market — drawn from your assessment. Edit anything; your words always win.
+          </p>
+        </div>
       )}
       {assessmentCompleted && (
         <div>
@@ -970,15 +975,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <MarketMirror userId={authUser?.id ?? null} hideHeader />
         </section>
       )}
+      </>)}
 
       {/* SECTION 4 — YOUR VOICE */}
-      {assessmentCompleted && (
+      {pane === "voice" && assessmentCompleted && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }} data-testid="story-voice-section">
-          <button
-            type="button"
-            onClick={() => setVoiceOpen((v) => !v)}
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer" }}
-          >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Mic className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
               <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)" }}>
@@ -997,25 +999,18 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 {radarInputs.voiceTrained ? "Trained" : "Not yet"}
               </span>
             </div>
-            <ChevronDown
-              className="w-4 h-4"
-              style={{
-                color: "var(--ink-5)",
-                transition: "transform 0.2s ease",
-                transform: voiceOpen ? "rotate(180deg)" : "rotate(0deg)",
-              }}
-            />
-          </button>
-          {voiceOpen && (
-            <div style={{ marginTop: 12 }}>
-              <VoiceEngineSection />
-            </div>
-          )}
+          </div>
+          <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
+            How Aura writes as you. Learned from your posts — teach it, correct it, it updates instantly.
+          </p>
+          <div style={{ marginTop: 12 }}>
+            <VoiceEngineSection />
+          </div>
         </section>
       )}
 
       {/* SECTION 5 — YOUR TERRITORY */}
-      {assessmentCompleted && themesForTerritory.length > 0 && (
+      {pane === "identity" && assessmentCompleted && themesForTerritory.length > 0 && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1058,11 +1053,17 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </section>
       )}
 
+      {pane === "insights" && (<>
       {/* SECTION 6 — CAPABILITY RADAR */}
       {assessmentCompleted && (
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <SectionHeader label="Your capability radar" />
-          <InfoTooltip slug="capability-radar" label="Capability Radar" side="top" triggerSize={13} />
+        <div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <SectionHeader label="Your capability radar" />
+            <InfoTooltip slug="capability-radar" label="Capability Radar" side="top" triggerSize={13} />
+          </div>
+          <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
+            Where your presence is strong and where it thins — recalculated as you capture and publish.
+          </p>
         </div>
       )}
       {assessmentCompleted && profile?.audit_method !== "evidence_audit" && (
@@ -1084,14 +1085,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {/* SECTION 6b — PROFILE INTELLIGENCE */}
       {assessmentCompleted && (
-        <SectionHeader label="Profile intelligence" />
+        <div>
+          <SectionHeader label="Profile intelligence" />
+          <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
+            What Aura has noticed about you lately, and topics ready when you are.
+          </p>
+        </div>
       )}
       {assessmentCompleted && (
         <div data-testid="story-strategic-identity">
           <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} hideSuggestedTopics={false} />
         </div>
       )}
+      </>)}
 
+      {pane === "record" && (<>
       {/* SECTION 7 — YOUR JOURNEY (timeline) */}
       {assessmentCompleted && milestoneData.length > 0 && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
