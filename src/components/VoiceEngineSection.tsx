@@ -25,6 +25,8 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
   const teachFileRef = useRef<HTMLInputElement>(null);
   const [teachText, setTeachText] = useState("");
   const [teaching, setTeaching] = useState(false);
+  const [admiredOpen, setAdmiredOpen] = useState(false);
+  const [savingAdmired, setSavingAdmired] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
