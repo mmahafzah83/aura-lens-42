@@ -1116,6 +1116,42 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
               {t("Sharpen now", "صقل الآن")}
             </Button>
           </div>
+          <div style={{ marginTop: 14 }} {...dirProps}>
+            <button
+              type="button"
+              onClick={() => setAdmiredOpen((v) => !v)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: 0,
+                padding: 0, cursor: "pointer", fontFamily: UI, fontSize: 12.5, color: "#5B6673",
+                lineHeight: bodyLine,
+              }}
+              aria-expanded={admiredOpen}
+            >
+              {t("Posts you admire (style only)", "منشورات تُعجبك (للأسلوب فقط)")}
+              <ChevronRight
+                className="w-3.5 h-3.5"
+                style={{ transition: "transform 150ms ease", transform: admiredOpen ? "rotate(90deg)" : "none" }}
+              />
+            </button>
+            {admiredOpen && (
+              <div style={{ marginTop: 10 }}>
+                <Textarea
+                  value={admiredPosts}
+                  onChange={(e) => setAdmiredPosts(e.target.value)}
+                  placeholder={t("Paste posts whose style you admire — separate with ---", "الصق منشورات تُعجبك أساليبها — افصل بينها بـ ---")}
+                  className="min-h-[110px] text-sm"
+                  disabled={savingAdmired}
+                  style={{ fontFamily: UI, lineHeight: bodyLine }}
+                />
+                <div style={{ marginTop: 10 }}>
+                  <Button type="button" size="sm" variant="outline" onClick={handleSaveAdmired} disabled={savingAdmired} className="gap-2">
+                    {savingAdmired ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {t("Save", "حفظ")}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </SpineCard>
       </div>
 
