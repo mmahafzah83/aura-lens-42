@@ -25,6 +25,8 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
   const teachFileRef = useRef<HTMLInputElement>(null);
   const [teachText, setTeachText] = useState("");
   const [teaching, setTeaching] = useState(false);
+  const [admiredOpen, setAdmiredOpen] = useState(false);
+  const [savingAdmired, setSavingAdmired] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -487,6 +489,54 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
       setUploading(false);
       setTeaching(false);
       if (teachFileRef.current) teachFileRef.current.value = "";
+    }
+  };
+
+  const handleSaveAdmired = async () => {
+    setSavingAdmired(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+
+      const admiredPostsArr = admiredPosts
+        .split(/\n---\n/)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(content => ({ content }));
+
+      const { data: existing } = await supabase
+        .from("authority_voice_profiles")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .eq("is_primary", true)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("authority_voice_profiles")
+          .update({ admired_posts: admiredPostsArr, updated_at: new Date().toISOString() })
+          .eq("user_id", session.user.id)
+          .eq("is_primary", true);
+        if (error) throw error;
+      } else {
+        const primaryLang = (profiles.find((r: any) => r.is_primary)?.language === "ar" ? "ar" : "en");
+        const { error } = await supabase
+          .from("authority_voice_profiles")
+          .insert({
+            user_id: session.user.id,
+            admired_posts: admiredPostsArr,
+            updated_at: new Date().toISOString(),
+            language: primaryLang,
+            is_primary: profiles.length === 0,
+          });
+        if (error) throw error;
+      }
+
+      toast.success(t("Noted — style only, never words.", "تم — للأسلوب فقط، لا للكلمات."));
+    } catch (e: any) {
+      toast.error(e.message || "Couldn't save");
+    } finally {
+      setSavingAdmired(false);
     }
   };
 
@@ -1065,6 +1115,42 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
               {distilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
               {t("Sharpen now", "صقل الآن")}
             </Button>
+          </div>
+          <div style={{ marginTop: 14 }} {...dirProps}>
+            <button
+              type="button"
+              onClick={() => setAdmiredOpen((v) => !v)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: 0,
+                padding: 0, cursor: "pointer", fontFamily: UI, fontSize: 12.5, color: "#5B6673",
+                lineHeight: bodyLine,
+              }}
+              aria-expanded={admiredOpen}
+            >
+              {t("Posts you admire (style only)", "منشورات تُعجبك (للأسلوب فقط)")}
+              <ChevronRight
+                className="w-3.5 h-3.5"
+                style={{ transition: "transform 150ms ease", transform: admiredOpen ? "rotate(90deg)" : "none" }}
+              />
+            </button>
+            {admiredOpen && (
+              <div style={{ marginTop: 10 }}>
+                <Textarea
+                  value={admiredPosts}
+                  onChange={(e) => setAdmiredPosts(e.target.value)}
+                  placeholder={t("Paste posts whose style you admire — separate with ---", "الصق منشورات تُعجبك أساليبها — افصل بينها بـ ---")}
+                  className="min-h-[110px] text-sm"
+                  disabled={savingAdmired}
+                  style={{ fontFamily: UI, lineHeight: bodyLine }}
+                />
+                <div style={{ marginTop: 10 }}>
+                  <Button type="button" size="sm" variant="outline" onClick={handleSaveAdmired} disabled={savingAdmired} className="gap-2">
+                    {savingAdmired ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    {t("Save", "حفظ")}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </SpineCard>
       </div>
