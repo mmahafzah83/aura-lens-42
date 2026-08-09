@@ -27,6 +27,11 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
   const [teaching, setTeaching] = useState(false);
   const [admiredOpen, setAdmiredOpen] = useState(false);
   const [savingAdmired, setSavingAdmired] = useState(false);
+  // Local drafts so sliders stay smooth; committed on release.
+  const [lenDraft, setLenDraft] = useState<number | null>(null);
+  const [mixDraft, setMixDraft] = useState<Record<string, number> | null>(null);
+  const [bannedDraft, setBannedDraft] = useState("");
+  const [endingNote, setEndingNote] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
