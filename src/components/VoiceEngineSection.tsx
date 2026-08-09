@@ -10,7 +10,7 @@
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Mic, Pencil, RotateCcw, X, Plus, RefreshCw, Loader2, Upload } from "lucide-react";
+import { Pencil, RotateCcw, X, Plus, RefreshCw, Loader2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
