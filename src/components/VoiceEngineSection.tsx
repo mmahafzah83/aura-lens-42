@@ -19,6 +19,7 @@ import {
   optionLabel, optionExample, type VoiceOption,
 } from "@/components/voice/voiceOptions";
 import { composeSample, GENERIC_SAMPLE, type VoiceSpec } from "@/components/voice/sampleBank";
+import LinkedInImportCard from "@/components/LinkedInImportCard";
 
 /* ── System-B tokens ─────────────────────────────────────────────────────── */
 const NIGHT = "#0F1519";
@@ -724,6 +725,9 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
           <section>
             <h3 style={sectionHeader}>Teach Aura</h3>
+            <div style={{ marginBlockEnd: 12 }}>
+              <LinkedInImportCard onImported={() => loadProfiles()} />
+            </div>
             <div style={{ ...cardStyle, padding: 14 }}>
               <p style={{ fontSize: 12.5, color: MUTED, marginBlockEnd: 10 }}>
                 Paste posts you have written — one per block, separated by a blank line. Aura learns the style, never the words.
