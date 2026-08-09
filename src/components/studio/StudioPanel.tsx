@@ -1090,7 +1090,7 @@ export default function StudioPanel({
   }, [showAllSubjects, userId, allSignals.length]);
 
   /* ---------- step 2: the words ----------------------------------- */
-  const generate = useCallback(async (picked?: Choice, langOverride?: Lang) => {
+  const generate = useCallback(async (picked?: Choice, langOverride?: Lang, angle?: string) => {
     const target = picked ?? choice;
     if (!target) return;
     const runId = ++genRunId.current;
@@ -1125,6 +1125,9 @@ export default function StudioPanel({
           context: target.insight || "",
           language: useLang,
           signal_id: target.id || undefined,
+          ...(angle && angle.trim()
+            ? { extra_instruction: `Write from THIS angle only: ${angle.trim()}` }
+            : {}),
           stream: false,
         }),
       });
@@ -1177,6 +1180,7 @@ export default function StudioPanel({
       language: writeLang,
       _language: writeLang,
       signal_ids: choice?.id ? [choice.id] : [],
+      ...(chosenDirectionRef.current ? { chosen_direction: chosenDirectionRef.current } : {}),
     }),
     [choice, typedTopic, writeLang],
   );
