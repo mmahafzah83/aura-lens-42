@@ -141,7 +141,9 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
       .from("authority_voice_profiles")
       .select("id, mode_key, mode_label, readiness, updated_at")
       .eq("user_id", userId)
-      .order("updated_at", { ascending: false }),
+      // A tied `updated_at` used to make the winner arbitrary; `id` breaks the tie.
+      .order("updated_at", { ascending: false })
+      .order("id", { ascending: true }),
     supabase
       .from("voice_trait_registry")
       .select("trait_key, display_name, pole_low, pole_high, group_key, computable, min_evidence, sort_order")
@@ -154,7 +156,15 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
   ]);
 
   const all = profiles ?? [];
-  const active = all.find((p) => p.id === wantProfileId) ?? all[0] ?? null;
+  // One row per mode. The database now enforces this, but a client that has
+  // not reloaded must still never render two cards for the same mode.
+  const byMode = new Map<string, (typeof all)[number]>();
+  for (const p of all) {
+    if (!p.mode_key) continue;
+    if (!byMode.has(p.mode_key)) byMode.set(p.mode_key, p);
+  }
+  const unique = [...byMode.values()];
+  const active = unique.find((p) => p.id === wantProfileId) ?? byMode.get("default") ?? unique[0] ?? null;
 
   const windowRows = (windowRes.data as { hook_style: string | null; ending_type: string | null }[] | null) ?? [];
   const windowDist: Record<string, number> = {};
@@ -200,7 +210,9 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
     });
   }
 
-  const existing = new Map(all.filter((p) => p.mode_key).map((p) => [p.mode_key as string, p]));
+  // The cards and `activeProfileId` are derived from the same map, so selecting
+  // a card can never switch to a row the cards do not know about.
+  const existing = byMode;
   const modes: DnaMode[] = [];
   const legacy = existing.get("default");
   if (legacy) {
@@ -238,7 +250,11 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
 
 /* ── mutations ───────────────────────────────────────────────────────────── */
 
-/** A value the member set themselves: theirs, high confidence, no measured band. */
+/**
+ * A value the member set themselves: theirs, high confidence, no measured band.
+ * Upsert, not insert — a stale `trait.id` used to collide with the
+ * (profile_id, trait_key) unique constraint and throw 23505.
+ */
 export async function setTraitValue(userId: string, profileId: string, trait: DnaTrait, value: number) {
   const payload = {
     user_id: userId,
@@ -250,9 +266,9 @@ export async function setTraitValue(userId: string, profileId: string, trait: Dn
     last_confirmed_at: new Date().toISOString(),
     ...(trait.computable ? {} : { band_low: null, band_high: null }),
   };
-  const { error } = trait.id
-    ? await supabase.from("voice_traits").update(payload).eq("id", trait.id)
-    : await supabase.from("voice_traits").insert(payload);
+  const { error } = await supabase
+    .from("voice_traits")
+    .upsert(payload, { onConflict: "profile_id,trait_key" });
   if (error) throw error;
 }
 
@@ -342,9 +358,12 @@ export async function deleteRule(id: string) {
   if (error) throw error;
 }
 
-export async function reorderRules(ordered: DnaRule[]) {
-  for (let i = 0; i < ordered.length; i++) {
-    const { error } = await supabase.from("voice_rules").update({ rank: i }).eq("id", ordered[i].id);
-    if (error) throw error;
-  }
+/** One round trip, not one per rule. */
+export async function reorderRules(userId: string, profileId: string | null, ordered: DnaRule[]) {
+  if (ordered.length === 0) return;
+  const rows = ordered.map((r, i) => ({
+    id: r.id, user_id: userId, profile_id: profileId, kind: r.kind, text: r.text, source: r.source, rank: i,
+  }));
+  const { error } = await supabase.from("voice_rules").upsert(rows, { onConflict: "id" });
+  if (error) throw error;
 }
