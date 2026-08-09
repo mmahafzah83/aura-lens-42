@@ -34,12 +34,11 @@ export function resolveIdentityFrom(conn: any, prof: any): Identity {
   const assembled = [prof?.first_name, prof?.last_name].filter(Boolean).join(" ").trim();
 
   const name = override || fromLinkedIn || assembled || "Member";
-  // The member's own explicit handle wins over anything a connection carries.
+  // `linkedin_connections` is the single source of truth for the address.
+  // The deprecated `diagnostic_profiles` columns are no longer read.
   const handle =
-    bareHandle(prof?.linkedin_handle)
-    ?? bareHandle(conn?.handle)
+    bareHandle(conn?.handle)
     ?? bareHandle(conn?.profile_url)
-    ?? bareHandle(prof?.linkedin_url)
     ?? "member";
 
   return {
@@ -47,7 +46,7 @@ export function resolveIdentityFrom(conn: any, prof: any): Identity {
     handle,
     profile_url: conn?.profile_url ?? (handle !== "member" ? `https://www.linkedin.com/in/${handle}` : null),
     name_source: override ? "override" : fromLinkedIn ? "linkedin" : "profile",
-    handle_source: (prof?.linkedin_handle || prof?.linkedin_url) ? "profile" : "linkedin",
+    handle_source: "linkedin",
   };
 }
 
@@ -57,7 +56,7 @@ export async function loadIdentity(userId: string): Promise<Identity> {
       .select("display_name, profile_name, handle, profile_url")
       .eq("user_id", userId).maybeSingle(),
     supabase.from("diagnostic_profiles")
-      .select("display_name_override, first_name, last_name, linkedin_handle, linkedin_url")
+      .select("display_name_override, first_name, last_name")
       .eq("user_id", userId).maybeSingle(),
   ]);
   return resolveIdentityFrom(conn, prof);

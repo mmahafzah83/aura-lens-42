@@ -159,11 +159,20 @@ Deno.serve(async (req) => {
     // Resolve author signature from owner profile
     let authorFooter = "";
     try {
-      const { data: profile } = await adminClient
-        .from("diagnostic_profiles")
-        .select("first_name, last_name, level, firm, sector_focus, linkedin_handle")
-        .eq("user_id", (fw as any).user_id)
-        .maybeSingle();
+      // The address comes from linkedin_connections — the profile columns are deprecated.
+      const [{ data: profileRow }, { data: connRow }] = await Promise.all([
+        adminClient
+          .from("diagnostic_profiles")
+          .select("first_name, last_name, level, firm, sector_focus")
+          .eq("user_id", (fw as any).user_id)
+          .maybeSingle(),
+        adminClient
+          .from("linkedin_connections")
+          .select("handle")
+          .eq("user_id", (fw as any).user_id)
+          .maybeSingle(),
+      ]);
+      const profile = profileRow ? { ...profileRow, linkedin_handle: connRow?.handle ?? null } : profileRow;
       const p = (profile as any) || {};
       const name = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
       authorFooter = [name, p.level, p.firm || p.sector_focus].filter(Boolean).join(" | ");

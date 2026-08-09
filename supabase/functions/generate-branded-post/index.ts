@@ -67,11 +67,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: profile } = await supabase
-      .from("diagnostic_profiles")
-      .select("first_name, last_name, firm, level, core_practice, sector_focus, brand_pillars, north_star_goal, linkedin_handle")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // The address comes from linkedin_connections — the profile columns are deprecated.
+    const [{ data: profileRow }, { data: connRow }] = await Promise.all([
+      supabase
+        .from("diagnostic_profiles")
+        .select("first_name, last_name, firm, level, core_practice, sector_focus, brand_pillars, north_star_goal")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase.from("linkedin_connections").select("handle").eq("user_id", user.id).maybeSingle(),
+    ]);
+    const profile = profileRow ? { ...profileRow, linkedin_handle: connRow?.handle ?? null } : profileRow;
 
     const p = profile as any || {};
     const pillarsArr: string[] = Array.isArray(p.brand_pillars)

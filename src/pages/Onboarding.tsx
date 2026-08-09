@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff, Lightbulb, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { saveLinkedInAddress } from "@/lib/linkedinAddress";
 import CountryPicker from "@/components/CountryPicker";
 import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -664,8 +665,16 @@ const Onboarding = () => {
         onboarding_completed: true,
         completed: true,
       };
-      if (usedLinkedIn && linkedinUrl.trim()) payload.linkedin_url = linkedinUrl.trim();
       payload.shared_learning_consent = sharedLearningConsent;
+
+      // The address is written to linkedin_connections — the profile columns are deprecated.
+      if (usedLinkedIn && linkedinUrl.trim()) {
+        try {
+          await saveLinkedInAddress(userId, linkedinUrl.trim());
+        } catch (e) {
+          console.error("Could not save LinkedIn address:", e);
+        }
+      }
 
       const { error } = await supabase
         .from("diagnostic_profiles" as any)

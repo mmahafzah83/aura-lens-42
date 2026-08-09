@@ -6,6 +6,7 @@ import { signOutAndLand } from "@/lib/signOut";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
+import LinkedInAddressCard from "@/components/settings/LinkedInAddressCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { exportReportPdf } from "@/lib/exportReportPdf";
@@ -30,8 +31,7 @@ interface ProfileData {
   core_practice: string | null;
   sector_focus: string | null;
   north_star_goal: string | null;
-  linkedin_handle: string | null;
-  linkedin_url: string | null;
+  // LinkedIn address is read from linkedin_connections, not from this record.
   years_experience: string | null;
   leadership_style: string | null;
   primary_strength: string | null;
@@ -65,7 +65,8 @@ export default function Settings() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get("tab") === "preferences" ? "preferences" : "account";
+  const rawTab = searchParams.get("tab");
+  const tab = rawTab === "preferences" ? "preferences" : rawTab === "connections" ? "connections" : "account";
   const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
   /** Which profile field the member asked to edit. Null means the modal is shut. */
   const [editField, setEditField] = useState<EditProfileField | null>(null);
@@ -132,12 +133,12 @@ const handleDeleteAccount = async () => {
       const { data, error: qErr } = await supabase
         .from("diagnostic_profiles")
         .select(
-          "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets, country, country_code"
+          "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets, country, country_code"
         )
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (qErr) throw qErr;
-      setProfile((data as ProfileData) || null);
+      setProfile((data as unknown as ProfileData) || null);
       setSignatures(Array.isArray((data as any)?.signature_presets) ? (data as any).signature_presets : []);
       {
         const p = (data as any) || {};
@@ -420,7 +421,7 @@ const handleDeleteAccount = async () => {
 
         {/* Tabs — Account first, then preferences */}
         <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "0.5px solid var(--rule)" }}>
-          {([["account", "Account"], ["preferences", "Preferences"]] as const).map(([key, label]) => (
+          {([["account", "Account"], ["connections", "Connections"], ["preferences", "Preferences"]] as const).map(([key, label]) => (
             <button
               key={key}
               type="button"
@@ -452,6 +453,8 @@ const handleDeleteAccount = async () => {
             onEditField={(f) => setEditField(f)}
             onSignOut={() => { void signOutAndLand(navigate); }}
           />
+        ) : tab === "connections" ? (
+          <LinkedInAddressCard userId={authUser?.id ?? null} />
         ) : (
         <>
 

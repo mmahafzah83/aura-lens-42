@@ -122,10 +122,10 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
   const [
     profileRes, snapRes, mirrorRes, signalsRes,
     entriesCountRes, documentsCountRes, evidenceCountRes, activeSignalsCountRes,
-    auraPublishedRes, trackedCountRes, frameworkRowsRes, voiceRes,
+    auraPublishedRes, trackedCountRes, frameworkRowsRes, voiceRes, connRes,
   ] = await Promise.all([
     db.from("diagnostic_profiles")
-      .select("first_name,last_name,level,firm,core_practice,sector_focus,north_star_goal,linkedin_handle,years_experience,primary_strength,brand_pillars,brand_assessment_results,identity_intelligence,audit_interpretation,audit_results,skill_ratings,generated_skills")
+      .select("first_name,last_name,level,firm,core_practice,sector_focus,north_star_goal,years_experience,primary_strength,brand_pillars,brand_assessment_results,identity_intelligence,audit_interpretation,audit_results,skill_ratings,generated_skills")
       .eq("user_id", userId).maybeSingle(),
     db.from("imprint_snapshots").select("imprint, tier, components, created_at")
       .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
@@ -148,6 +148,8 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
     db.from("authority_voice_profiles")
       .select("tone, preferred_structures, storytelling_patterns, vocabulary_preferences")
       .eq("user_id", userId).eq("is_primary", true).maybeSingle(),
+    // The LinkedIn address lives on linkedin_connections — the profile columns are deprecated.
+    db.from("linkedin_connections").select("handle").eq("user_id", userId).maybeSingle(),
   ]);
 
   const p: any = profileRes?.data || null;
@@ -166,7 +168,7 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
         sector_focus: p.sector_focus || null,
         north_star_goals: splitPipes(p.north_star_goal),
         north_star_goal_raw: p.north_star_goal || null,
-        linkedin_handle: p.linkedin_handle || null,
+        linkedin_handle: (connRes as any)?.data?.handle || null,
         years_experience_raw: p.years_experience || null,
         years_experience_total: parseYearsTotal(p.years_experience),
         primary_strength: p.primary_strength || null,

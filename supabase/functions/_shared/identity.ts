@@ -82,16 +82,13 @@ export function resolveIdentityFrom(conn: any, prof: any): Identity {
   const name = override || fromLinkedIn || assembled || "Member";
   const name_source: IdentitySource = override ? "override" : fromLinkedIn ? "linkedin" : "profile";
 
-  // The member's OWN explicit handle wins. A connection URL is a fallback,
-  // never an override of what the member typed for themselves.
+  // `linkedin_connections` is the single source of truth for the address. The
+  // `diagnostic_profiles` address columns are deprecated and no longer read.
   const handle =
-    bareHandle(prof?.linkedin_handle)
-    ?? bareHandle(conn?.handle)
+    bareHandle(conn?.handle)
     ?? bareHandle(conn?.profile_url)
-    ?? bareHandle(prof?.linkedin_url)
     ?? "member";
-  const handle_source: IdentitySource =
-    (prof?.linkedin_handle || prof?.linkedin_url) ? "profile" : "linkedin";
+  const handle_source: IdentitySource = "linkedin";
 
   return {
     name,
@@ -110,7 +107,7 @@ export async function resolveIdentity(db: any, userId: string): Promise<Identity
       .eq("user_id", userId)
       .maybeSingle(),
     db.from("diagnostic_profiles")
-      .select("display_name_override, first_name, last_name, linkedin_handle, linkedin_url")
+      .select("display_name_override, first_name, last_name")
       .eq("user_id", userId)
       .maybeSingle(),
   ]);
