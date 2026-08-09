@@ -1172,6 +1172,56 @@ export default function StudioPanel({
     }
   }, [choice, writeLang, lang, applyGate]);
 
+  /* Four short ways into the same subject. Optional, additive: it never
+     replaces "Write it", and skipping it lands on the normal generate. */
+  const loadAngles = useCallback(async () => {
+    const target = choice;
+    if (!target) return;
+    setAnglesError(false);
+    setAnglesBusy(true);
+    setAnglesOpen(true);
+    setPickedAngleId(null);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const freshToken = sess?.session?.access_token;
+      if (!freshToken) { setAnglesError(true); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${freshToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          action: "generate_directions",
+          topic: target.title,
+          context: target.insight || "",
+          language: writeLang,
+          signal_id: target.id || undefined,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      const list = Array.isArray(json?.directions) ? json.directions : [];
+      const clean = list
+        .map((d: any, i: number) => ({ id: String(d?.id ?? i + 1), angle: String(d?.angle ?? "").trim() }))
+        .filter((d: { angle: string }) => d.angle)
+        .slice(0, 4);
+      if (!res.ok || clean.length === 0) { setAnglesError(true); setAngles([]); return; }
+      setAngles(clean);
+    } catch {
+      setAnglesError(true);
+    } finally {
+      setAnglesBusy(false);
+    }
+  }, [choice, writeLang]);
+
+  const pickAngle = useCallback((d: { id: string; angle: string }) => {
+    setPickedAngleId(d.id);
+    chosenDirectionRef.current = d.angle;
+    setAnglesOpen(false);
+    void generate(undefined, undefined, d.angle);
+  }, [generate]);
+
   /* ---------- the draft row --------------------------------------- */
   /** The subject, written as a title so the Library never shows a raw line. */
   const pieceTitle = useCallback((): string => {
