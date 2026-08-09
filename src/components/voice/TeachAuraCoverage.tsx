@@ -26,9 +26,11 @@ const CHIP: Record<CoverageStatus, { bg: string; fg: string; border: string; lab
 export default function TeachAuraCoverage({
   coverage,
   includedCount,
+  textlessWithEngagement = 0,
 }: {
   coverage: CoverageRow[];
   includedCount: number;
+  textlessWithEngagement?: number;
 }) {
   const gap = biggestGapSentence({ coverage, includedCount });
 
@@ -75,6 +77,14 @@ export default function TeachAuraCoverage({
       <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.65, marginBlockStart: 10 }}>
         {gap ?? `Aura needs at least ${MIN_POSTS_FOR_COVERAGE} posts before it can judge coverage.`}
       </p>
+      {textlessWithEngagement > 0 && (
+        <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.65, marginBlockStart: 8 }}>
+          <span style={{ color: INK, fontWeight: 600 }}>
+            {textlessWithEngagement} of your posts have engagement data but no text.
+          </span>{" "}
+          Import them to teach Aura from your best-performing writing.
+        </p>
+      )}
     </section>
   );
 }

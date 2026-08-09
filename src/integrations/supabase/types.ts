@@ -4067,6 +4067,7 @@ export type Database = {
       voice_post_outcomes: {
         Row: {
           baseline_engagement_rate: number | null
+          baseline_total_engagement: number | null
           comments: number | null
           computed_at: string
           created_at: string
@@ -4078,6 +4079,7 @@ export type Database = {
           hook_style: string | null
           id: string
           impressions: number | null
+          outcome_source: string | null
           performance_index: number | null
           performance_index_raw: number | null
           post_id: string
@@ -4085,11 +4087,13 @@ export type Database = {
           reactions: number | null
           sample_traits: Json
           shares: number | null
+          total_engagement: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           baseline_engagement_rate?: number | null
+          baseline_total_engagement?: number | null
           comments?: number | null
           computed_at?: string
           created_at?: string
@@ -4101,6 +4105,7 @@ export type Database = {
           hook_style?: string | null
           id?: string
           impressions?: number | null
+          outcome_source?: string | null
           performance_index?: number | null
           performance_index_raw?: number | null
           post_id: string
@@ -4108,11 +4113,13 @@ export type Database = {
           reactions?: number | null
           sample_traits?: Json
           shares?: number | null
+          total_engagement?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           baseline_engagement_rate?: number | null
+          baseline_total_engagement?: number | null
           comments?: number | null
           computed_at?: string
           created_at?: string
@@ -4124,6 +4131,7 @@ export type Database = {
           hook_style?: string | null
           id?: string
           impressions?: number | null
+          outcome_source?: string | null
           performance_index?: number | null
           performance_index_raw?: number | null
           post_id?: string
@@ -4131,6 +4139,7 @@ export type Database = {
           reactions?: number | null
           sample_traits?: Json
           shares?: number | null
+          total_engagement?: number | null
           updated_at?: string
           user_id?: string
         }

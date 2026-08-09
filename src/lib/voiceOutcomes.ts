@@ -18,6 +18,8 @@ export const EXCLUSION_LABEL: Record<string, string> = {
   not_own_writing: "not your own writing",
   not_in_corpus: "not in what Aura reads",
   no_metrics_yet: "no performance figures yet",
+  no_performance_data: "no performance figures yet",
+  other_measure: "measured a different way",
   too_new: `published less than ${OUTCOME_RULES.settleDays} days ago`,
   too_few_impressions: `fewer than ${OUTCOME_RULES.minImpressions} impressions`,
 };
@@ -86,7 +88,9 @@ export async function loadWhatWorked(userId: string): Promise<WhatWorkedModel> {
     traitFindings,
     styleFindings,
     learningSinceDays: earliest === null ? null : Math.max(0, Math.floor((Date.now() - earliest) / 864e5)),
-    postsRead: all.filter((r) => !r.excluded || r.exclusion_reason === "no_metrics_yet").length,
+    postsRead: all.filter((r) =>
+      !r.excluded || r.exclusion_reason === "no_metrics_yet" || r.exclusion_reason === "no_performance_data"
+    ).length,
     correctionsApplied: corrections,
     proposalsConfirmed: traits.filter((t) => t.source === "aura" && t.last_confirmed_at).length,
     proposalsRejected: (rejRes.data ?? []).length,

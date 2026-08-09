@@ -76,6 +76,11 @@ export interface TeachAuraModel {
   posts: CorpusPost[];
   totalPosts: number;
   /**
+   * Posts LinkedIn engagement is known for but whose words were never saved.
+   * A real gap: Aura can see they did well and cannot read why.
+   */
+  textlessWithEngagement: number;
+  /**
    * The only rows worth a member's attention: own-writing Aura could not
    * classify, and set-asides it was not sure about. Capped, because a queue of
    * 160 is a labelling job nobody finishes.
@@ -106,7 +111,7 @@ function statusFor(count: number, threshold: number): CoverageStatus {
 export const PAGE_SIZE = 20;
 
 export async function loadTeachAura(userId: string, page = 0): Promise<TeachAuraModel> {
-  const [address, postsRes, docsRes, voiceRes] = await Promise.all([
+  const [address, postsRes, docsRes, voiceRes, textlessRes] = await Promise.all([
     loadLinkedInAddress(userId),
     supabase
       .from("linkedin_posts")
@@ -122,6 +127,14 @@ export async function loadTeachAura(userId: string, page = 0): Promise<TeachAura
       .eq("user_id", userId)
       .eq("is_primary", true)
       .maybeSingle(),
+    // Engagement is known, the words were never saved. Aura can see these did
+    // well and cannot read why.
+    supabase
+      .from("linkedin_posts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .is("post_text", null)
+      .gt("engagement_score", 0),
   ]);
 
   if (postsRes.error) throw new Error(postsRes.error.message);
@@ -187,6 +200,7 @@ export async function loadTeachAura(userId: string, page = 0): Promise<TeachAura
     // change costs nothing.
     posts,
     totalPosts: posts.length,
+    textlessWithEngagement: textlessRes.count ?? 0,
     ambiguous,
   };
 }
