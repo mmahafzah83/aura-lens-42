@@ -35,6 +35,7 @@ import JourneyMap from "@/components/studio/JourneyMap";
 import BusyBar from "@/components/studio/BusyBar";
 import PostureQuestion from "@/components/studio/PostureQuestion";
 import StageCard from "@/components/studio/StageCard";
+import AdvisorCard, { type GatePayload } from "@/components/studio/AdvisorCard";
 import ZonePiece from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
@@ -372,6 +373,8 @@ export default function StudioPanel({
   const [showDrafts, setShowDrafts] = useState(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
+  /* The reading generation already took, held only for display. */
+  const [gatePayload, setGatePayload] = useState<GatePayload>(null);
   /**
    * No state may disable the action that clears it: editing the words is
    * exactly the signal that lifts the block. The gate re-runs server-side.
@@ -1157,6 +1160,9 @@ export default function StudioPanel({
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
       setContent(generated);
       generatedTextRef.current = generated;
+      // The reading the generation already took. Display only — no re-run.
+      const q = json?.quality_gate;
+      setGatePayload(q && typeof q === "object" ? (q as GatePayload) : null);
       // The gate already ran at generation. If it held the post, the words stay
       // fully editable and only the publish action waits.
       if (json?.blocked === true) {
@@ -2104,6 +2110,26 @@ export default function StudioPanel({
       <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>
         {T.editHint[lang]}
       </p>
+      {/* DRAFT-LEVEL only. Reads the existing quality reading; never the
+          member-level Imprint, and it writes nothing. */}
+      {content.trim().length > 0 && !published && (
+        <AdvisorCard
+          lang={writeLang}
+          text={content}
+          initial={gatePayload}
+          subject={choice?.title ?? null}
+          signalId={choice?.id ?? null}
+          busy={generating}
+          onRefine={(directive) => void generate(undefined, undefined, directive)}
+          onUseOpening={(line) => {
+            const lines = content.split("\n");
+            const idx = lines.findIndex((l) => l.trim().length > 0);
+            if (idx < 0) return;
+            lines[idx] = line;
+            changeContent(lines.join("\n"));
+          }}
+        />
+      )}
     </>
   );
 
