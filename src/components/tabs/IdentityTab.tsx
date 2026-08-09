@@ -25,7 +25,7 @@ import AuraCardPanel from "@/components/AuraCardPanel";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
 
-import VoiceEngineSection from "@/components/VoiceEngineSection";
+import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
@@ -1004,7 +1004,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             How Aura writes as you. Learned from your posts — teach it, correct it, it updates instantly.
           </p>
           <div style={{ marginTop: 12 }}>
-            <VoiceEngineSection onWrite={() => handleGenerateContent("Write in my voice")} />
+            <VoiceWorkspace
+              userId={authUser?.id ?? null}
+              onWrite={() => handleGenerateContent("Write in my voice")}
+            />
           </div>
         </section>
       )}
