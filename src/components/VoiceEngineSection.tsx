@@ -10,7 +10,7 @@
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Mic, Pencil, RotateCcw, X, Plus, RefreshCw, Loader2, Upload } from "lucide-react";
+import { Pencil, RotateCcw, X, Plus, RefreshCw, Loader2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -20,6 +20,7 @@ import {
 } from "@/components/voice/voiceOptions";
 import { composeSample, GENERIC_SAMPLE, type VoiceSpec } from "@/components/voice/sampleBank";
 import LinkedInImportCard from "@/components/LinkedInImportCard";
+import VoiceMicBadge from "@/components/voice/VoiceMicBadge";
 
 /* ── System-B tokens ─────────────────────────────────────────────────────── */
 const NIGHT = "#0F1519";
@@ -85,13 +86,7 @@ function StrengthBar({
       background: NIGHT, borderRadius: 20, padding: "20px 24px", display: "flex",
       gap: 20, alignItems: "center", flexWrap: "wrap",
     }}>
-      <div className="voice-mic" aria-hidden style={{
-        position: "relative", inlineSize: 52, blockSize: 52, borderRadius: "50%", flex: "0 0 auto",
-        background: "rgba(0,206,201,.10)", border: "1px solid rgba(0,206,201,.28)",
-        display: "grid", placeItems: "center",
-      }}>
-        <Mic size={22} color={CYAN} strokeWidth={1.7} fill="none" />
-      </div>
+      <VoiceMicBadge size={52} />
 
       <div style={{ flex: 1, minInlineSize: 220 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
@@ -581,12 +576,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
   return (
     <div ref={containerRef} dir="ltr" style={{ fontFamily: "Inter, system-ui, sans-serif", color: INK }}>
       <style>{`
-        @keyframes voiceMicPulse { 0% { transform: scale(.9); opacity: .9 } 100% { transform: scale(1.25); opacity: 0 } }
         @keyframes voiceLiveDot { 0%,100% { opacity: 1 } 50% { opacity: .2 } }
-        .voice-mic::after {
-          content: ""; position: absolute; inset: -1px; border-radius: 50%;
-          border: 1px solid rgba(0,206,201,.5); animation: voiceMicPulse 2.6s infinite ease-out;
-        }
         .voice-live-dot { animation: voiceLiveDot 1.4s infinite ease-in-out; }
         .voice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
         .voice-rules { display: grid; grid-template-columns: 1fr 1fr 1fr; }
@@ -599,7 +589,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
           .voice-test-desktop { display: none !important; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .voice-mic::after, .voice-live-dot { animation: none !important; }
+          .voice-live-dot { animation: none !important; }
         }
       `}</style>
 

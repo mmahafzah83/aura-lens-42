@@ -50,6 +50,7 @@ const CardPreview = lazy(() => import("./pages/CardPreview"));
 const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLeadershipStrategy"));
 const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
 const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
+const VoiceHarness = lazy(() => import("./pages/VoiceHarness"));
 const Studio = lazy(() => import("./pages/Studio"));
 // Dev-only carousel renderer harness. Registered below only when import.meta.env.DEV.
 const CarouselPreview = lazy(() => import("./carousel/render/CarouselPreview"));
@@ -139,6 +140,8 @@ const App = () => (
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
             <Route path="/signature" element={<PasswordGate><SignatureStudio /></PasswordGate>} />
             <Route path="/signature-harness" element={<PasswordGate><SignatureHarness /></PasswordGate>} />
+            {/* Static fixtures only — reads nothing from the database, so it needs no gate. */}
+            <Route path="/voice-harness" element={<VoiceHarness />} />
             <Route path="/studio" element={<PasswordGate><Studio /></PasswordGate>} />
             {import.meta.env.DEV && (
               <Route path="/carousel-preview" element={<CarouselPreview />} />
