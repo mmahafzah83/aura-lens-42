@@ -412,7 +412,7 @@ export default function YourVoice({
       <VoiceRules
         rules={dna.rules}
         suggestions={dna.suggestions}
-        canSuggest={dna.windowSize >= 20 || overview.corpusCount >= 20}
+        canSuggest={dna.windowSize >= 20 || model.overview.corpusCount >= 20}
         busy={busy}
         onAccept={(r) => void mutate(
           { ...dna, rules: [...dna.rules, { ...r, status: "active" }], suggestions: dna.suggestions.filter((s) => s.id !== r.id) },

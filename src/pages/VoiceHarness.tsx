@@ -69,7 +69,7 @@ const STATES: { title: string; model: VoiceOverviewModel }[] = [
 
 /* ── Voice DNA states ────────────────────────────────────────────────────── */
 const DNA_EMPTY: VoiceDnaModel = {
-  hasProfile: false, activeProfileId: null, traits: [], modes: [], rules: [],
+  hasProfile: false, activeProfileId: null, traits: [], modes: [], rules: [], suggestions: [],
   windowSize: 0, windowClassified: 0, windowDist: {}, endingDist: {}, endingClassified: 0,
   diversity: null, topShare: null, topStyleKey: null, topStyleCount: null,
 };
@@ -95,6 +95,11 @@ const DNA_THIN: VoiceDnaModel = {
     { key: "personal", label: "Personal", blurb: "For the story only you can tell — warmer, less data.", profileId: null, readiness: null, needsEvidence: false },
   ],
   rules: [],
+  // A proposal, not a rule — the strip renders it with its evidence line.
+  suggestions: [{
+    id: "s1", kind: "never", text: `Never close with "What are your thoughts?"`, source: "aura", rank: 1000,
+    status: "suggested", evidence: { post_ids: [], count: 0, total: 42, note: "Never appears in your writing", derivation: "rule" },
+  }],
   windowSize: 5, windowClassified: 3, windowDist: { question: 2, announcement: 1 },
   endingDist: { cta: 1 }, endingClassified: 1,
   diversity: null, topShare: null, topStyleKey: null, topStyleCount: null,
