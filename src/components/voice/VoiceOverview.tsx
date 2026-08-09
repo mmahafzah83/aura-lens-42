@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import VoiceMicBadge from "@/components/voice/VoiceMicBadge";
 import {
-  loadVoiceOverview, dismissRecommendation, readinessSentence,
+  loadVoiceOverview, dismissRecommendation, readinessSentence, HOOK_LABEL,
   READINESS_LABEL, READINESS_ORDER, type VoiceOverviewModel, type Readiness,
 } from "@/lib/voiceOverview";
 
@@ -50,6 +50,8 @@ interface Health {
   /** 0–1 fill of the track; null when the value is unknown. */
   fill: number | null;
   unknownText: string;
+  /** Second measured fact, rendered in mono under the headline number. */
+  secondary?: string;
 }
 
 function HealthCard({ h }: { h: Health }) {
@@ -64,6 +66,9 @@ function HealthCard({ h }: { h: Health }) {
           <span style={{ ...monoNum, fontSize: 26, fontWeight: 700, color: colour, lineHeight: 1 }}>{h.value}</span>
           <span style={{ ...monoNum, fontSize: 12, fontWeight: 600, color: colour }}>{h.unit}</span>
         </div>
+      )}
+      {h.secondary && (
+        <div style={{ ...monoNum, fontSize: 11, color: MUTED, marginBlockStart: 6 }}>{h.secondary}</div>
       )}
       <div
         aria-hidden
@@ -101,13 +106,24 @@ function buildHealth(m: VoiceOverviewModel): Health[] {
     unknownText: "No dated posts yet",
   };
 
+  // What would actually lift consistency: the traits not yet at high confidence.
+  const notHigh = m.traits.filter((t) => t.computable && t.confidence !== "high");
+  const notHighNames = notHigh.map((t) => t.display_name.toLowerCase());
+  const targets = notHigh.map((t) =>
+    t.evidence_count === null ? null : Math.max(1, (t.confidence === "low" ? t.min_evidence : t.min_evidence * 2) - t.evidence_count),
+  );
+  const estimate = targets.length && targets.every((v) => v !== null) ? Math.max(...(targets as number[])) : null;
+  const consistencyDetail = notHighNames.length === 0
+    ? ""
+    : ` ${notHighNames.join(" and ").replace(/^./, (c) => c.toUpperCase())} ${notHighNames.length === 1 ? "is" : "are"} not yet high confidence${estimate === null ? "." : ` — about ${estimate} more of your posts would settle ${notHighNames.length === 1 ? "it" : "them"}.`}`;
+
   const consistency: Health = {
     label: "Consistency",
     value: m.computableComputed === 0 ? null : m.computableHigh,
     unit: `of ${m.computableComputed}`,
     explain: m.computableComputed === 0
       ? "Aura has not measured any traits yet."
-      : `Your posts agree with each other on ${m.computableHigh} of ${m.computableComputed} measured traits.`,
+      : `Your posts agree with each other on ${m.computableHigh} of ${m.computableComputed} measured traits.${consistencyDetail}`,
     band: m.computableComputed === 0
       ? "weak"
       : m.computableHigh / m.computableComputed >= 0.8 ? "good"
@@ -116,14 +132,24 @@ function buildHealth(m: VoiceOverviewModel): Health[] {
     unknownText: "Not enough posts yet",
   };
 
+  // Two gates, not one: breadth (entropy) and repetition (top-style share).
+  // The card is coloured by whichever is worse, so a passing half never reads green.
+  const divBand: Band = m.diversity === null ? "weak" : m.diversity >= 60 ? "good" : m.diversity >= 50 ? "watch" : "weak";
+  const shareBand: Band = m.topShare === null ? "weak" : m.topShare <= 35 ? "good" : m.topShare <= 45 ? "watch" : "weak";
+  const worst: Band = [divBand, shareBand].includes("weak") ? "weak" : [divBand, shareBand].includes("watch") ? "watch" : "good";
+  const topName = m.topStyleKey ? (HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey).replace(/^(a|an|your own) /, "") : null;
+
   const distinctiveness: Health = {
     label: "Distinctiveness",
     value: m.diversity === null ? null : Math.round(m.diversity),
     unit: "%",
+    secondary: m.topShare === null || !topName || m.topStyleCount === null
+      ? undefined
+      : `Top opener ${Math.round(m.topShare)}% — ${topName}, ${m.topStyleCount} of ${m.windowSize}`,
     explain: m.diversity === null
       ? `Opener variety needs 8 classified posts in your recent window. You have ${m.windowClassified}.`
-      : `How much your openers vary across your last ${m.windowSize} posts. 60% is the bar for distinctive.`,
-    band: m.diversity === null ? "weak" : m.diversity >= 60 ? "good" : m.diversity >= 50 ? "watch" : "weak",
+      : "How much your openers vary. Distinctive needs 60% diversity and no single opener above 35%.",
+    band: worst,
     fill: m.diversity === null ? null : m.diversity / 100,
     unknownText: "Not enough posts yet",
   };
