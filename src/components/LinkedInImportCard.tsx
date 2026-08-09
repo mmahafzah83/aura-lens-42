@@ -128,18 +128,17 @@ const LinkedInImportCard = ({ onImported }: { onImported?: (summary: any) => voi
       <h4 style={{ fontSize: 15.5, fontWeight: 600, margin: 0, lineHeight: 1.4 }}>{t.heading}</h4>
       <p style={{ fontSize: 13, lineHeight: isAr ? 1.9 : 1.65, color: MUTED, marginBlock: "8px 14px" }}>{t.body}</p>
 
-      <input
-        dir="ltr"
-        type="url"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="linkedin.com/in/yourname"
-        disabled={busy}
-        style={{
-          inlineSize: "100%", border: `1px solid ${LINE}`, borderRadius: 12, padding: "11px 12px",
-          fontSize: 13.5, color: INK, background: busy ? "#F2F5F9" : "#FFFFFF",
-        }}
-      />
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <span style={{ fontSize: 13.5, color: INK }}>
+          {handle ? `@${handle}` : "No LinkedIn address set yet."}
+        </span>
+        <Link
+          to="/settings?tab=connections"
+          style={{ fontSize: 12.5, color: BLUE, fontWeight: 500, textDecoration: "none" }}
+        >
+          Change in Settings →
+        </Link>
+      </div>
 
       <button
         type="button"
