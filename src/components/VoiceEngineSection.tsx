@@ -1599,11 +1599,6 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
       </button>
     </div>
   );
-      >
-        {t("Write with this voice →", "اكتب بهذا الصوت ←")}
-      </button>
-    </div>
-  );
 };
 
 export default VoiceEngineSection;
