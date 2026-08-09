@@ -123,7 +123,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
     const { data: post, error: postErr } = await adminClient
       .from("linkedin_posts")
-      .select("id, post_text, published_confirmed_at, source_metadata, original_generated_text, source_signal_id, linkedin_post_id, post_url")
+      .select("id, post_text, published_confirmed_at, source_metadata, original_generated_text, source_signal_id, linkedin_post_id, post_url, content_type, media_type")
       .eq("id", postId)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -153,9 +153,14 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       return json({ success: false, error: "Post exceeds LinkedIn's 3000-character limit" });
     }
 
+    // A card share is an image with a short caption, not a written post. The
+    // post gate has nothing to judge here, so it is skipped entirely — no
+    // evaluate-content-quality call, no content_gate_results row.
+    const isCardShare = String((post as any)?.content_type ?? "") === "aura_card";
+
     // ── QUALITY GATE (control, not telemetry) ─────────────────────────────
     // Every publish surface converges here. Gate the text actually being sent.
-    {
+    if (!isCardShare) {
       const meta = (post as any)?.source_metadata ?? {};
       const language: string =
         meta.language || meta.content_language ||

@@ -1674,7 +1674,7 @@ export default function StudioPanel({
       return;
     }
     // A real, answered attempt that came back bad: say why, and store why.
-    const failure = classifyPublishError(payload?.error || error?.message || "", true);
+    const failure = classifyPublishError(payload?.error || error?.message || "", true, !!(payload as any)?.blocked);
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
     toast.error(failure.message);
     try {

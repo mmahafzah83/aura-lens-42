@@ -415,7 +415,7 @@ export default function FlashPanel() {
       if (error) throw error;
       if (!(data as any)?.success) {
         // Answered, and answered badly: name the reason and store it.
-        const failure = classifyPublishError((data as any)?.error || "Publish failed", true);
+        const failure = classifyPublishError((data as any)?.error || "Publish failed", true, !!(data as any)?.blocked);
         toast.error(failure.message);
         await supabase
           .from("linkedin_posts")

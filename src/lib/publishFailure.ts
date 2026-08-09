@@ -16,9 +16,18 @@ export type PublishFailure = {
   keepDraft: boolean;
 };
 
-export function classifyPublishError(raw: unknown, attempted: boolean): PublishFailure {
+export function classifyPublishError(raw: unknown, attempted: boolean, blocked?: boolean): PublishFailure {
   const text = String((raw as any)?.message ?? raw ?? "").trim();
   const low = text.toLowerCase();
+
+  // Aura's own check held the draft — LinkedIn was never asked.
+  if (blocked || /quality gate|quality check/.test(low)) {
+    return {
+      reason: `Held by Aura's quality check: ${text}`.slice(0, 500),
+      message: "Aura's quality check held this draft back before sending. Sharpen it and try again — your draft is saved.",
+      keepDraft: true,
+    };
+  }
 
   if (/not connected|no linkedin|missing token|not_connected/.test(low)) {
     return {
