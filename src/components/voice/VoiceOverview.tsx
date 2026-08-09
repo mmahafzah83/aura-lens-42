@@ -137,7 +137,7 @@ function buildHealth(m: VoiceOverviewModel): Health[] {
   const divBand: Band = m.diversity === null ? "weak" : m.diversity >= 60 ? "good" : m.diversity >= 50 ? "watch" : "weak";
   const shareBand: Band = m.topShare === null ? "weak" : m.topShare <= 35 ? "good" : m.topShare <= 45 ? "watch" : "weak";
   const worst: Band = [divBand, shareBand].includes("weak") ? "weak" : [divBand, shareBand].includes("watch") ? "watch" : "good";
-  const topName = m.topStyleKey ? (HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey).replace(/^(a|an|your own|something) /, "") : null;
+  const topName = m.topStyleKey ? (HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey).replace(/^(a|an|your own) /, "") : null;
 
   const distinctiveness: Health = {
     label: "Distinctiveness",
