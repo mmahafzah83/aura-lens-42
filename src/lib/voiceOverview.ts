@@ -148,7 +148,7 @@ export function readinessSentence(m: VoiceOverviewModel): string {
   return `Aura drafts in a voice the market can tell apart, from ${m.corpusCount} posts.`;
 }
 
-function leastUsedHook(dist: Record<string, number>): string | null {
+export function leastUsedHook(dist: Record<string, number>): string | null {
   const unused = ALL_HOOKS.filter((h) => h !== "other" && !dist[h]);
   if (unused.length) return unused[0];
   const entries = Object.entries(dist).filter(([k]) => k !== "other");
