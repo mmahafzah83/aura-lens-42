@@ -7,6 +7,34 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
+// A console section: an accordion whose summary carries the current value.
+// Module-level so typing inside a section never remounts it.
+function ConsoleSection({
+  id, label, value, explainer, isAr, children,
+}: { id: string; label: string; value: string; explainer?: string; isAr: boolean; children: React.ReactNode }) {
+  const dp = isAr ? ({ dir: "rtl" as const, lang: "ar" }) : ({ dir: "ltr" as const, lang: "en" });
+  return (
+    <details id={`voice-sec-${id}`} className="voice-sec" style={{ ...cardStyleB, marginBlockStart: 10, padding: 0 }}>
+      <summary
+        {...dp}
+        style={{
+          listStyle: "none", cursor: "pointer", padding: 16, display: "flex", gap: 12,
+          alignItems: "baseline", justifyContent: "space-between",
+        }}
+      >
+        <span style={labelStyle}>{label}</span>
+        <span style={{ flex: 1, textAlign: isAr ? "left" : "right", fontSize: 12.5, color: "#1B2733", lineHeight: bodyLine }}>
+          {value || <span style={{ color: "#8FA1AD" }}>{isAr ? "غير محدد" : "Not set"}</span>}
+        </span>
+      </summary>
+      <div style={{ padding: "0 16px 16px" }}>
+        {explainer ? <p style={explainerStyle} {...dp}>{explainer}</p> : null}
+        {children}
+      </div>
+    </details>
+  );
+}
+
 const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -841,31 +869,6 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
   const t = (en: string, ar: string) => (isAr ? ar : en);
 
-  // A console section: an accordion whose summary carries the current value,
-  // so the whole voice reads without opening anything.
-  const ConsoleSection = ({
-    id, label, value, explainer, children,
-  }: { id: string; label: string; value: string; explainer?: string; children: React.ReactNode }) => (
-    <details id={`voice-sec-${id}`} className="voice-sec" style={{ ...cardStyleB, marginBlockStart: 10, padding: 0 }}>
-      <summary
-        {...dirProps}
-        style={{
-          listStyle: "none", cursor: "pointer", padding: 16, display: "flex", gap: 12,
-          alignItems: "baseline", justifyContent: "space-between",
-        }}
-      >
-        <span style={labelStyle}>{label}</span>
-        <span style={{ flex: 1, textAlign: isAr ? "left" : "right", fontSize: 12.5, color: "#1B2733", lineHeight: bodyLine }}>
-          {value || <span style={{ color: "#8FA1AD" }}>{t("Not set", "غير محدد")}</span>}
-        </span>
-      </summary>
-      <div style={{ padding: "0 16px 16px" }}>
-        {explainer ? <p style={explainerStyle} {...dirProps}>{explainer}</p> : null}
-        {children}
-      </div>
-    </details>
-  );
-
   const chipBtn = (active: boolean): React.CSSProperties => ({
     border: `1px solid ${active ? "#0670C4" : "#E2E7EE"}`,
     background: active ? "rgba(6,112,196,0.08)" : "#FFFFFF",
@@ -1064,6 +1067,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
       <div style={{ marginBlockStart: 14 }}>
         {/* 1. Language — read only */}
         <ConsoleSection
+          isAr={isAr}
           id="lang"
           label={t("LANGUAGE", "اللغة")}
           value={summaries.lang}
@@ -1076,6 +1080,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 2. Tone */}
         <ConsoleSection
+          isAr={isAr}
           id="tone"
           label={t("TONE", "النبرة")}
           value={summaries.tone}
@@ -1113,6 +1118,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 3. Length */}
         <ConsoleSection
+          isAr={isAr}
           id="length"
           label={t("LENGTH", "الطول")}
           value={summaries.length}
@@ -1140,6 +1146,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 4. Rhythm — read only */}
         <ConsoleSection
+          isAr={isAr}
           id="rhythm"
           label={t("RHYTHM", "الإيقاع")}
           value={summaries.rhythm}
@@ -1152,6 +1159,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 5. Emoji */}
         <ConsoleSection
+          isAr={isAr}
           id="emoji"
           label={t("EMOJI", "الإيموجي")}
           value={summaries.emoji}
@@ -1177,6 +1185,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 6. Openings */}
         <ConsoleSection
+          isAr={isAr}
           id="openings"
           label={t("OPENINGS", "الافتتاحيات")}
           value={summaries.openings}
@@ -1202,6 +1211,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 7. Endings — real allowed_endings column */}
         <ConsoleSection
+          isAr={isAr}
           id="endings"
           label={t("ENDINGS", "الخواتيم")}
           value={summaries.endings}
@@ -1236,6 +1246,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 8. Story types */}
         <ConsoleSection
+          isAr={isAr}
           id="story"
           label={t("STORY TYPES", "أنواع المنشور")}
           value={summaries.story}
@@ -1275,6 +1286,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 9. Structures */}
         <ConsoleSection
+          isAr={isAr}
           id="structures"
           label={t("HOW YOU BUILD A POST", "كيف تبني منشورك")}
           value={summaries.structures}
@@ -1297,6 +1309,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 10. Recurring moves */}
         <ConsoleSection
+          isAr={isAr}
           id="moves"
           label={t("YOUR RECURRING MOVES", "حركاتك المتكررة")}
           value={summaries.moves}
@@ -1319,6 +1332,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 11. Do · Never */}
         <ConsoleSection
+          isAr={isAr}
           id="rules"
           label={t("WHAT YOU DO · WHAT YOU NEVER DO", "ما تفعله · ما لا تفعله أبداً")}
           value={summaries.rules}
@@ -1439,6 +1453,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 12. Anchor posts */}
         <ConsoleSection
+          isAr={isAr}
           id="anchors"
           label={t("POSTS THAT ANCHOR YOUR VOICE", "منشورات ترسّخ صوتك")}
           value={summaries.anchors}
@@ -1482,6 +1497,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
 
         {/* 13. Teach Aura */}
         <ConsoleSection
+          isAr={isAr}
           id="teach"
           label={t("TEACH AURA", "علّم Aura")}
           value={t("Paste, upload, sharpen", "الصق، ارفع، اصقل")}
