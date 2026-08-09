@@ -17,6 +17,7 @@ import SpectrumRow from "@/components/voice/SpectrumRow";
 import VoiceModes from "@/components/voice/VoiceModes";
 import VoiceRules from "@/components/voice/VoiceRules";
 import VariationEngine from "@/components/voice/VariationEngine";
+import WhatWorked from "@/components/voice/WhatWorked";
 import InfoTooltip from "@/components/voice/InfoTooltip";
 import {
   AMBER_TEXT, BLUE, CYAN, CYAN_TEXT, GREEN, INK, LINE, MUTED, NIGHT, NIGHT_LINE, NIGHT_MUTED,
@@ -446,6 +447,26 @@ export default function YourVoice({
 
       {/* 6 — variation, the only copy in the product */}
       <VariationEngine model={dna} />
+
+      {/* 7 — what worked: the voice measured against its own results */}
+      <WhatWorked
+        userId={userId}
+        traits={dna.traits}
+        onConfirm={(t) => {
+          if (!t.id) return;
+          void mutate(
+            patchTrait(dna, t.trait_key, { last_confirmed_at: new Date().toISOString() }),
+            () => confirmTrait(t.id as string),
+          );
+        }}
+        onReject={(t) => {
+          if (!userId || !dna.activeProfileId) return;
+          void mutate(
+            patchTrait(dna, t.trait_key, { value: null, source: null, confidence: null, id: null }),
+            () => rejectTrait(userId, dna.activeProfileId as string, t),
+          );
+        }}
+      />
     </div>
   );
 }
