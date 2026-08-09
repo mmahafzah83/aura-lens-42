@@ -373,6 +373,8 @@ export default function StudioPanel({
   const [showDrafts, setShowDrafts] = useState(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
+  /* The reading generation already took, held only for display. */
+  const [gatePayload, setGatePayload] = useState<GatePayload>(null);
   /**
    * No state may disable the action that clears it: editing the words is
    * exactly the signal that lifts the block. The gate re-runs server-side.
