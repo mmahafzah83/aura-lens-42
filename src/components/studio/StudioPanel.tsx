@@ -252,6 +252,14 @@ export default function StudioPanel({
    * draft row; nothing is written when the generator reported nothing.
    */
   const fingerprintRef = useRef<{ endingType?: string; hookStyle?: string }>({});
+  /* The angle the member tapped, if they asked to see angles first. Kept in a
+     ref so the draft row can carry it without re-rendering the composer. */
+  const chosenDirectionRef = useRef<string | null>(null);
+  const [angles, setAngles] = useState<Array<{ id: string; angle: string }>>([]);
+  const [anglesOpen, setAnglesOpen] = useState(false);
+  const [anglesBusy, setAnglesBusy] = useState(false);
+  const [anglesError, setAnglesError] = useState(false);
+  const [pickedAngleId, setPickedAngleId] = useState<string | null>(null);
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
   /**
