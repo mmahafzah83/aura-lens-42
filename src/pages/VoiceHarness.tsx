@@ -5,6 +5,7 @@
  * Nothing here is reachable from the product navigation.
  */
 import VoiceOverview from "@/components/voice/VoiceOverview";
+import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
 import { buildRecommendation, type VoiceOverviewModel } from "@/lib/voiceOverview";
 
 function make(partial: Partial<VoiceOverviewModel>): VoiceOverviewModel {
@@ -63,6 +64,12 @@ const STATES: { title: string; model: VoiceOverviewModel }[] = [
 export default function VoiceHarness() {
   return (
     <div style={{ padding: 24, background: "#F7F9FC", minHeight: "100vh" }}>
+      <div style={{ marginBlockEnd: 32 }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#5B6673", marginBlockEnd: 8 }}>
+          SUB-NAVIGATION
+        </div>
+        <VoiceWorkspace userId={null} onWrite={() => {}} />
+      </div>
       {STATES.map((s) => (
         <div key={s.title} style={{ marginBlockEnd: 32 }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#5B6673", marginBlockEnd: 8 }}>
