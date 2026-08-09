@@ -76,7 +76,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
       if (!session?.user?.id) return;
       supabase
         .from("authority_voice_profiles")
-        .select("language, is_primary, example_posts, admired_posts, vocabulary_preferences, preferred_structures, storytelling_patterns, tone, updated_at")
+        .select("language, is_primary, example_posts, admired_posts, vocabulary_preferences, preferred_structures, storytelling_patterns, tone, allowed_endings, updated_at")
         .eq("user_id", session.user.id)
         .then(({ data }) => {
           if (cancelled) return;
@@ -161,7 +161,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
       if (!session?.user?.id) return;
       const { data } = await supabase
         .from("authority_voice_profiles")
-        .select("example_posts, admired_posts, vocabulary_preferences, preferred_structures, storytelling_patterns, tone, updated_at")
+        .select("example_posts, admired_posts, vocabulary_preferences, preferred_structures, storytelling_patterns, tone, allowed_endings, updated_at")
         .eq("user_id", session.user.id)
         .eq("is_primary", true)
         .maybeSingle();
@@ -169,7 +169,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
       // touch the legacy single-row `profile` state below).
       const { data: allRows } = await supabase
         .from("authority_voice_profiles")
-        .select("language, is_primary, example_posts, admired_posts, vocabulary_preferences, preferred_structures, storytelling_patterns, tone, updated_at")
+        .select("language, is_primary, example_posts, admired_posts, vocabulary_preferences, preferred_structures, storytelling_patterns, tone, allowed_endings, updated_at")
         .eq("user_id", session.user.id);
       setProfiles(Array.isArray(allRows) ? allRows : []);
       if (!data) return;
