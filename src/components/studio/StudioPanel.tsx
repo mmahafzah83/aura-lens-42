@@ -35,6 +35,7 @@ import JourneyMap from "@/components/studio/JourneyMap";
 import BusyBar from "@/components/studio/BusyBar";
 import PostureQuestion from "@/components/studio/PostureQuestion";
 import StageCard from "@/components/studio/StageCard";
+import AdvisorCard, { type GatePayload } from "@/components/studio/AdvisorCard";
 import ZonePiece from "@/components/studio/ZonePiece";
 import ZoneStage from "@/components/studio/ZoneStage";
 import ZoneInspector from "@/components/studio/ZoneInspector";
@@ -2104,6 +2105,26 @@ export default function StudioPanel({
       <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>
         {T.editHint[lang]}
       </p>
+      {/* DRAFT-LEVEL only. Reads the existing quality reading; never the
+          member-level Imprint, and it writes nothing. */}
+      {content.trim().length > 0 && !published && (
+        <AdvisorCard
+          lang={writeLang}
+          text={content}
+          initial={gatePayload}
+          subject={choice?.title ?? null}
+          signalId={choice?.id ?? null}
+          busy={generating}
+          onRefine={(directive) => void generate(undefined, undefined, directive)}
+          onUseOpening={(line) => {
+            const lines = content.split("\n");
+            const idx = lines.findIndex((l) => l.trim().length > 0);
+            if (idx < 0) return;
+            lines[idx] = line;
+            changeContent(lines.join("\n"));
+          }}
+        />
+      )}
     </>
   );
 
