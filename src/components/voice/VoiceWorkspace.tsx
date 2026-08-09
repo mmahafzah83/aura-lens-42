@@ -11,7 +11,7 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import VoiceOverview from "@/components/voice/VoiceOverview";
-import VoiceEngineSection from "@/components/VoiceEngineSection";
+import VoiceDna from "@/components/voice/VoiceDna";
 
 const BLUE = "#0670C4";
 const MUTED = "#5B6673";
@@ -97,7 +97,7 @@ export default function VoiceWorkspace({
       </div>
 
       {active === "overview" && <VoiceOverview userId={userId} onNavigate={go} />}
-      {active === "dna" && <VoiceEngineSection onWrite={onWrite} />}
+      {active === "dna" && <VoiceDna userId={userId} onWrite={onWrite} onNavigate={go} />}
       {active === "teach" && <Placeholder title="Teach Aura" />}
       {active === "test" && <Placeholder title="Test & Improve" />}
     </div>
