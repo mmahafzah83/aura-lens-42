@@ -94,6 +94,8 @@ interface FlashResult {
   text: string;
   copied?: boolean;
   unsourcedRemoved?: number;
+  endingType?: string;
+  hookStyle?: string;
   saving?: boolean;
   publishing?: boolean;
   previewOpen?: boolean;
