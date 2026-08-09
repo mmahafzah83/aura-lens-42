@@ -40,7 +40,10 @@ const norm = (v: number, lo: number, hi: number) => clamp(((v - lo) / (hi - lo))
 const EMOJI_RE = /\p{Extended_Pictographic}/gu;
 const ARABIC_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
 const LATIN_RE = /[A-Za-z]/g;
-const EVIDENCE_RE = /(\d+(?:[.,]\d+)*\s?%|[$€£]\s?\d|\bSAR\b|\bAED\b|\bUSD\b|\b(?:19|20)\d{2}\b|\d+(?:[.,]\d+)*)/g;
+// Arabic-Indic digits count as figures too: a member writing in Arabic states
+// numbers in ٠-٩ and those posts are evidence-dense, not evidence-free.
+const EVIDENCE_RE =
+  /([\d٠-٩]+(?:[.,٫][\d٠-٩]+)*\s?[%٪]|[$€£]\s?[\d٠-٩]|\bSAR\b|\bAED\b|\bUSD\b|ريال|درهم|دولار|\b(?:19|20)\d{2}\b|[\d٠-٩]+(?:[.,٫][\d٠-٩]+)*)/g;
 
 const countOf = (text: string, re: RegExp) => (text.match(re) ?? []).length;
 
