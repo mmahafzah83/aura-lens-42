@@ -53,9 +53,23 @@ export async function saveLinkedInAddress(userId: string, input: string): Promis
   const handle = canonicalHandle(input);
   if (!handle) throw new Error("That doesn't look like a LinkedIn address.");
   const profile_url = profileUrlFor(handle) as string;
-  const { error } = await supabase
+  const patch = { handle, profile_url, updated_at: new Date().toISOString() };
+
+  // Update first: the row usually exists, and `access_token` is required on
+  // insert, so an address-only row starts with an empty token until the member
+  // connects LinkedIn properly.
+  const { data: updated, error: updateError } = await supabase
     .from("linkedin_connections")
-    .upsert({ user_id: userId, handle, profile_url, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-  if (error) throw new Error(error.message);
+    .update(patch)
+    .eq("user_id", userId)
+    .select("user_id");
+  if (updateError) throw new Error(updateError.message);
+
+  if (!updated || updated.length === 0) {
+    const { error: insertError } = await supabase
+      .from("linkedin_connections")
+      .insert({ user_id: userId, access_token: "", ...patch });
+    if (insertError) throw new Error(insertError.message);
+  }
   return { handle, profileUrl: profile_url, lastSyncedAt: null };
 }
