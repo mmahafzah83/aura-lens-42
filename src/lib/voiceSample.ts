@@ -107,6 +107,9 @@ export interface ComposedSample {
   segments: Segment[];
   text: string;
   isArabic: boolean;
+  /** first and last segment, for callers that highlight by string match */
+  hook: string;
+  closer: string;
 }
 
 /** Compose a sample from the member's measured traits. Pure, instant, free. */
