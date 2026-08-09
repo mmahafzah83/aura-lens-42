@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import VoiceMicBadge from "@/components/voice/VoiceMicBadge";
 import {
-  loadVoiceOverview, dismissRecommendation, readinessSentence,
+  loadVoiceOverview, dismissRecommendation, readinessSentence, HOOK_LABEL,
   READINESS_LABEL, READINESS_ORDER, type VoiceOverviewModel, type Readiness,
 } from "@/lib/voiceOverview";
 
@@ -50,6 +50,8 @@ interface Health {
   /** 0–1 fill of the track; null when the value is unknown. */
   fill: number | null;
   unknownText: string;
+  /** Second measured fact, rendered in mono under the headline number. */
+  secondary?: string;
 }
 
 function HealthCard({ h }: { h: Health }) {
@@ -64,6 +66,9 @@ function HealthCard({ h }: { h: Health }) {
           <span style={{ ...monoNum, fontSize: 26, fontWeight: 700, color: colour, lineHeight: 1 }}>{h.value}</span>
           <span style={{ ...monoNum, fontSize: 12, fontWeight: 600, color: colour }}>{h.unit}</span>
         </div>
+      )}
+      {h.secondary && (
+        <div style={{ ...monoNum, fontSize: 11, color: MUTED, marginBlockStart: 6 }}>{h.secondary}</div>
       )}
       <div
         aria-hidden
