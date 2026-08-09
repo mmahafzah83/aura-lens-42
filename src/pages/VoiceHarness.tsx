@@ -7,8 +7,50 @@
 import YourVoice from "@/components/voice/YourVoice";
 import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
 import TestImprove from "@/components/voice/TestImprove";
+import WhatWorked from "@/components/voice/WhatWorked";
 import type { VoiceDnaModel } from "@/lib/voiceDna";
 import { buildRecommendation, type VoiceOverviewModel } from "@/lib/voiceOverview";
+import type { WhatWorkedModel } from "@/lib/voiceOutcomes";
+
+/* ── What worked states ──────────────────────────────────────────────────── */
+
+/** The founder's real shape today: metrics exist, but none on a post Aura reads. */
+const WORKED_NONE: WhatWorkedModel = {
+  outcomes: [],
+  excludedCounts: { no_text: 116, no_metrics_yet: 41, not_own_writing: 36 },
+  learningOn: true,
+  traitFindings: [],
+  styleFindings: [],
+  learningSinceDays: 479,
+  postsRead: 41,
+  correctionsApplied: 0,
+  proposalsConfirmed: 0,
+  proposalsRejected: 0,
+};
+
+const WORKED_SIGNAL: WhatWorkedModel = {
+  outcomes: Array.from({ length: 18 }, (_, i) => ({
+    post_id: `p${i}`,
+    performance_index: [0.7, 1.4, 0.9, 2.1, 0.8, 1.1, 1.6, 0.6, 1.2, 0.95, 1.8, 0.75, 1.35, 1.05, 0.85, 1.5, 1.15, 0.9][i],
+    sample_traits: { evidence_density: 40 + i * 2 },
+    hook_style: i % 3 === 0 ? "number_first" : "contrarian_claim",
+    ending_type: "question",
+    published_at: new Date(Date.now() - (18 - i) * 7 * 864e5).toISOString(),
+  })),
+  excludedCounts: { too_new: 2 },
+  learningOn: true,
+  traitFindings: [{
+    kind: "trait", trait_key: "evidence_density", raise: true, topN: 6, bottomN: 6,
+    topTraitMedian: 66, bottomTraitMedian: 47, topPerfMedian: 1.55, bottomPerfMedian: 0.72,
+    ratio: 2.4, effect: 1.9, gap: 19,
+  }],
+  styleFindings: [{ kind: "hook", style: "number_first", n: 8, ratio: 1.6 }],
+  learningSinceDays: 512,
+  postsRead: 41,
+  correctionsApplied: 3,
+  proposalsConfirmed: 1,
+  proposalsRejected: 1,
+};
 
 function make(partial: Partial<VoiceOverviewModel>): VoiceOverviewModel {
   const base = {
@@ -129,6 +171,18 @@ export default function VoiceHarness() {
             {s.title.toUpperCase()}
           </div>
           <TestImprove userId={null} onWrite={() => {}} onNavigate={() => {}} modelOverride={s.model} />
+        </div>
+      ))}
+
+      {[{ title: "WORKED A — no signal (founder, today)", model: WORKED_NONE },
+        { title: "WORKED B — a clear pattern", model: WORKED_SIGNAL }].map((s) => (
+        <div key={s.title} style={{ marginBlockEnd: 32 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#5B6673", marginBlockEnd: 8 }}>
+            {s.title.toUpperCase()}
+          </div>
+          <WhatWorked
+            userId={null} traits={DNA_THIN.traits} onConfirm={() => {}} onReject={() => {}} modelOverride={s.model}
+          />
         </div>
       ))}
 

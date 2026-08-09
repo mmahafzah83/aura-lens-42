@@ -4043,6 +4043,121 @@ export type Database = {
           },
         ]
       }
+      voice_learning_prefs: {
+        Row: {
+          created_at: string
+          learn_from_performance: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          learn_from_performance?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          learn_from_performance?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      voice_post_outcomes: {
+        Row: {
+          baseline_engagement_rate: number | null
+          comments: number | null
+          computed_at: string
+          created_at: string
+          ending_type: string | null
+          engagement_rate: number | null
+          excluded: boolean
+          exclusion_reason: string | null
+          followers_at_publish: number | null
+          hook_style: string | null
+          id: string
+          impressions: number | null
+          performance_index: number | null
+          performance_index_raw: number | null
+          post_id: string
+          published_at: string | null
+          reactions: number | null
+          sample_traits: Json
+          shares: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          baseline_engagement_rate?: number | null
+          comments?: number | null
+          computed_at?: string
+          created_at?: string
+          ending_type?: string | null
+          engagement_rate?: number | null
+          excluded?: boolean
+          exclusion_reason?: string | null
+          followers_at_publish?: number | null
+          hook_style?: string | null
+          id?: string
+          impressions?: number | null
+          performance_index?: number | null
+          performance_index_raw?: number | null
+          post_id: string
+          published_at?: string | null
+          reactions?: number | null
+          sample_traits?: Json
+          shares?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          baseline_engagement_rate?: number | null
+          comments?: number | null
+          computed_at?: string
+          created_at?: string
+          ending_type?: string | null
+          engagement_rate?: number | null
+          excluded?: boolean
+          exclusion_reason?: string | null
+          followers_at_publish?: number | null
+          hook_style?: string | null
+          id?: string
+          impressions?: number | null
+          performance_index?: number | null
+          performance_index_raw?: number | null
+          post_id?: string
+          published_at?: string | null
+          reactions?: number | null
+          sample_traits?: Json
+          shares?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_post_outcomes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "influence_dashboard_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_post_outcomes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "linkedin_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_post_outcomes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "post_provenance"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voice_rules: {
         Row: {
           active: boolean
