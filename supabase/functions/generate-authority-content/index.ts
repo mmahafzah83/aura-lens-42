@@ -8,7 +8,7 @@ import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
 import { findUnsourcedEntities } from "../_shared/entityGuard.ts";
 import { splitForPrompt, enforcedRuleTexts } from "../_shared/voiceRules.ts";
-import { endingTypeOf, hookStyleOf } from "../_shared/generationMeta.ts";
+import { endingTypeOf, hookStyleOf } from "../_shared/fingerprint.ts";
 import {
   checkTextIntegrity,
   neutralizeRtlMarkers,
