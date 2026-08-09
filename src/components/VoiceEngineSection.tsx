@@ -949,76 +949,104 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
     { id: "openings", name: t("Openings", "الافتتاحيات") },
     { id: "endings", name: t("Endings", "الخواتيم") },
     { id: "story", name: t("Story types", "أنواع المنشور") },
-    { id: "structures", name: t("Structures", "البُنى") },
-    { id: "rules", name: t("Do · Never", "افعل · لا تفعل") },
-    { id: "anchors", name: t("Anchors", "المراسي") },
-  ];
-
   return (
     <div id="voice-engine-section" ref={containerRef} style={{ scrollMarginTop: 96, fontFamily: UI }}>
-      <style>{`@keyframes voice-dot-kf { 0%,100% { opacity: .35 } 50% { opacity: 1 } }`}</style>
+      <style>{`
+@keyframes voice-core-kf { 0%,100% { opacity:.4; transform:scale(.92) } 50% { opacity:1; transform:scale(1) } }
+@keyframes voice-ring-kf { 0% { opacity:.55; transform:scale(.8) } 100% { opacity:0; transform:scale(1.9) } }
+@keyframes voice-travel { 0% { transform:translateY(-20px); opacity:0 } 25% { opacity:1 } 100% { transform:translateY(0); opacity:0 } }
+.voice-sec > summary::-webkit-details-marker { display:none }
+.voice-feed { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.voice-chip { position:relative; }
+@media (min-width: 900px) {
+  .voice-chip::after { content:""; position:absolute; left:50%; bottom:-22px; height:20px; border-left:1px dotted rgba(0,206,201,.45); }
+  .voice-chip::before { content:""; position:absolute; left:calc(50% - 2px); bottom:-6px; width:4px; height:4px; border-radius:999px; background:#00CEC9; animation: voice-travel 3s linear infinite; }
+  .voice-chip:nth-child(3n)::before { animation-duration:3.6s; animation-delay:.4s }
+  .voice-chip:nth-child(3n+1)::before { animation-duration:2.6s; animation-delay:.9s }
+  .voice-chip:nth-child(4n)::before { animation-duration:4s; animation-delay:1.3s }
+}
+@media (max-width: 899px) {
+  .voice-feed { flex-wrap:nowrap; overflow-x:auto; justify-content:flex-start; padding-bottom:4px; }
+  .voice-chip::after, .voice-chip::before { display:none }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-chip::before { animation:none; display:none }
+  .voice-core, .voice-ring { animation:none !important }
+}
+      `}</style>
 
-      {/* VOICE CORE */}
-      <div style={{ background: NIGHT, borderRadius: 20, padding: 18, color: "#FFFFFF" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ width: 9, height: 9, borderRadius: 999, background: "#00CEC9", animation: "voice-dot-kf 2.6s ease-in-out infinite" }} />
-          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: ".12em", color: "#8FA1AD" }}>YOUR VOICE</span>
-          <span
-            style={{
-              marginInlineStart: "auto", fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10,
-              background: trained ? "rgba(18,128,92,0.22)" : "rgba(143,161,173,0.18)",
-              color: trained ? "#7EE2BC" : "#8FA1AD",
-            }}
-          >
-            {trained ? t("Trained", "مُدرَّب") : t("Not yet", "ليس بعد")}
-          </span>
-        </div>
-
-        <div role="tablist" aria-label="Voice language" style={{ display: "inline-flex", gap: 4, marginBlockStart: 14, background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: 3 }}>
-          {(["en", "ar"] as const).map((l) => (
+      {/* ── PART 1 — ENGINE BAND ─────────────────────────────────────────── */}
+      <div style={{ background: NIGHT, borderRadius: 24, padding: "22px 18px 26px", color: "#FFFFFF" }}>
+        <div className="voice-feed" role="list">
+          {FEED_CHIPS.map((c) => (
             <button
-              key={l}
+              key={c.id}
               type="button"
-              role="tab"
-              aria-selected={activeLang === l}
-              onClick={() => setActiveLang(l)}
+              role="listitem"
+              className="voice-chip"
+              onClick={() => openSection(c.id)}
+              {...dirProps}
               style={{
-                border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer",
-                background: activeLang === l ? "#0984E3" : "transparent",
-                color: activeLang === l ? "#FFFFFF" : "#8FA1AD",
-                fontFamily: l === "ar" ? "'CairoAR', 'Cairo', sans-serif" : "Inter, sans-serif",
-                fontSize: 12.5, fontWeight: 600,
+                border: "1px solid rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.05)",
+                borderRadius: 999, padding: "5px 11px", cursor: "pointer", color: "#C7D3DC",
+                fontFamily: UI, fontSize: 11.5, whiteSpace: "nowrap", flex: "0 0 auto",
               }}
-              dir={l === "ar" ? "rtl" : "ltr"}
-              lang={l}
             >
-              {l === "ar" ? "العربية" : "English"}
+              <span style={{ color: "#8FA1AD" }}>{c.name}</span>
+              <span style={{ marginInlineStart: 6, color: "#FFFFFF" }}>
+                {(summaries[c.id] || t("—", "—")).slice(0, 26)}
+              </span>
             </button>
           ))}
         </div>
 
-        <p style={{ fontFamily: MONO, fontSize: 11, color: "#8FA1AD", margin: "12px 0 0", lineHeight: 1.7 }} {...dirProps}>
-          {examples.length === 0
-            ? t("Not yet heard in this language — teach it below.", "لم تُسمع بعد بهذه اللغة — علّمها أدناه.")
-            : `${t("Learned from", "تعلّمت من")} ${examples.length} ${t("posts", "منشوراً")} · ${t("updated", "حُدّثت")} ${shortDate(activeRow?.updated_at)}`}
-        </p>
-
-        {busy && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBlockStart: 10 }}>
-            <span style={{ width: 9, height: 9, borderRadius: 999, background: "#00CEC9", animation: "voice-dot-kf 1.4s ease-in-out infinite" }} />
-            <span style={{ fontFamily: MONO, fontSize: 11, color: "#8FA1AD" }}>
-              {t("Aura is listening…", "Aura تُنصت…")}
-            </span>
-          </div>
-        )}
+        {/* Core */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBlockStart: 34 }}>
+          <span style={{ position: "relative", width: 14, height: 14, display: "inline-block" }} aria-hidden>
+            <span
+              className="voice-ring"
+              style={{
+                position: "absolute", inset: -6, borderRadius: 999, border: "1px solid #00CEC9",
+                animation: "voice-ring-kf 2.6s ease-out infinite",
+              }}
+            />
+            <span
+              className="voice-core"
+              style={{
+                position: "absolute", inset: 2, borderRadius: 999, background: "#00CEC9",
+                animation: "voice-core-kf 2.6s ease-in-out infinite",
+              }}
+            />
+          </span>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: ".12em", color: "#8FA1AD", marginBlockStart: 12 }}>
+            YOUR VOICE
+          </span>
+          <p
+            {...dirProps}
+            style={{ margin: "8px 0 0", maxWidth: 460, textAlign: "center", fontSize: 15, lineHeight: bodyLine, color: "#FFFFFF" }}
+          >
+            {toneVal
+              ? toneVal.slice(0, 90) + (toneVal.length > 90 ? "…" : "")
+              : t("No tone captured yet.", "لم تُلتقط النبرة بعد.")}
+          </p>
+          <p style={{ fontFamily: MONO, fontSize: 11, color: "#8FA1AD", margin: "10px 0 0", textAlign: "center", lineHeight: 1.7 }} {...dirProps}>
+            {examples.length === 0
+              ? t("Not yet heard — teach it below.", "لم تُسمع بعد — علّمها أدناه.")
+              : `${t("Learned from", "تعلّمت من")} ${examples.length} ${t("posts", "منشوراً")} · ${t("updated", "حُدّثت")} ${shortDate(activeRow?.updated_at)}`}
+          </p>
+          {busy && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBlockStart: 12 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: "#00CEC9", animation: "voice-core-kf 1.4s ease-in-out infinite" }} />
+              <span style={{ fontFamily: MONO, fontSize: 11, color: "#8FA1AD" }}>{t("Aura is listening…", "Aura تُنصت…")}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {primaryChangeNotice && (
         <div role="status" style={{ ...cardStyleB, marginBlockStart: 12, display: "flex", gap: 10, alignItems: "flex-start" }} {...dirProps}>
           <span style={{ flex: 1, fontSize: 13, color: "#1B2733", lineHeight: bodyLine }}>
-            {isAr
-              ? "أصبح صوتك الأساسي محدداً بناءً على منشوراتك الأخيرة."
-              : "Your primary voice is now set by your recent posts."}
+            {isAr ? "أصبح صوتك الأساسي محدداً بناءً على منشوراتك الأخيرة." : "Your primary voice is now set by your recent posts."}
           </span>
           <button type="button" onClick={dismissPrimaryChangeNotice} style={iconBtn} aria-label={t("Dismiss", "إخفاء")}>
             <X className="w-3.5 h-3.5" />
@@ -1026,25 +1054,31 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         </div>
       )}
 
-      {/* DOTTED SPINE */}
-      <div style={{ position: "relative" }}>
-        <span
-          aria-hidden
-          style={{
-            position: "absolute", insetInlineStart: 3, insetBlockStart: 0, bottom: 0,
-            borderInlineStart: "2px dotted #B9C6D4",
-          }}
-        />
+      {loading && (
+        <div style={{ display: "flex", justifyContent: "center", padding: 20 }}>
+          <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#8FA1AD" }} />
+        </div>
+      )}
 
-        {loading && (
-          <div style={{ display: "flex", justifyContent: "center", padding: 20 }}>
-            <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#8FA1AD" }} />
-          </div>
-        )}
+      {/* ── PART 2 — CONSOLE ─────────────────────────────────────────────── */}
+      <div style={{ marginBlockStart: 14 }}>
+        {/* 1. Language — read only */}
+        <ConsoleSection
+          id="lang"
+          label={t("LANGUAGE", "اللغة")}
+          value={summaries.lang}
+          explainer={t("Read from the posts Aura has heard. Showing: your primary voice.", "محسوبة من المنشورات التي سمعتها Aura. المعروض: صوتك الأساسي.")}
+        >
+          <p style={{ fontFamily: MONO, fontSize: 12, color: "#5B6673", margin: 0 }} {...dirProps}>
+            {summaries.lang}
+          </p>
+        </ConsoleSection>
 
-        {/* a. Tone */}
-        <SpineCard
-          label={t("YOUR TONE", "نبرتك")}
+        {/* 2. Tone */}
+        <ConsoleSection
+          id="tone"
+          label={t("TONE", "النبرة")}
+          value={summaries.tone}
           explainer={t("The register Aura writes you in. Edit it any time — your words win.", "النبرة التي تكتب بها Aura نيابة عنك. عدّلها متى شئت — كلماتك هي الفيصل.")}
         >
           {editingTone ? (
@@ -1075,11 +1109,175 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
               </button>
             </div>
           )}
-        </SpineCard>
+        </ConsoleSection>
 
-        {/* b. Structures */}
-        <SpineCard
+        {/* 3. Length */}
+        <ConsoleSection
+          id="length"
+          label={t("LENGTH", "الطول")}
+          value={summaries.length}
+          explainer={t("Aura keeps every post at or under this.", "تلتزم Aura بهذا الحد في كل منشور.")}
+        >
+          <div {...dirProps}>
+            <div style={{ fontFamily: MONO, fontSize: 13, color: "#1B2733" }}>
+              {t(`up to ${lenDraft ?? lengthMax} characters`, `حتى ${lenDraft ?? lengthMax} حرفاً`)}
+            </div>
+            <input
+              type="range"
+              min={400}
+              max={3000}
+              step={50}
+              value={lenDraft ?? lengthMax}
+              onChange={(e) => setLenDraft(Number(e.target.value))}
+              onMouseUp={() => { if (lenDraft !== null) { savePrefs({ length_max: lenDraft }); setLenDraft(null); } }}
+              onTouchEnd={() => { if (lenDraft !== null) { savePrefs({ length_max: lenDraft }); setLenDraft(null); } }}
+              onKeyUp={() => { if (lenDraft !== null) { savePrefs({ length_max: lenDraft }); setLenDraft(null); } }}
+              style={{ width: "100%", marginTop: 10, accentColor: "#0670C4" }}
+              aria-label={t("Maximum characters", "الحد الأقصى للأحرف")}
+            />
+          </div>
+        </ConsoleSection>
+
+        {/* 4. Rhythm — read only */}
+        <ConsoleSection
+          id="rhythm"
+          label={t("RHYTHM", "الإيقاع")}
+          value={summaries.rhythm}
+          explainer={t("Heard in your own writing.", "مُلاحظ في كتابتك أنت.")}
+        >
+          <p style={{ margin: 0, fontStyle: "italic", fontSize: 13, color: "#5B6673", lineHeight: bodyLine }} {...dirProps}>
+            {rhythm || t("Not heard yet.", "لم يُلاحظ بعد.")}
+          </p>
+        </ConsoleSection>
+
+        {/* 5. Emoji */}
+        <ConsoleSection
+          id="emoji"
+          label={t("EMOJI", "الإيموجي")}
+          value={summaries.emoji}
+          explainer={t("Never in the opening or the closing question.", "لا يظهر أبداً في الافتتاحية ولا في السؤال الختامي.")}
+        >
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }} {...dirProps}>
+            {(["none", "rare", "some"] as const).map((lvl) => (
+              <button
+                key={lvl}
+                type="button"
+                aria-pressed={emojiLevel === lvl}
+                onClick={() => savePrefs({ emoji_level: lvl })}
+                style={chipBtn(emojiLevel === lvl)}
+              >
+                {t(
+                  lvl === "none" ? "None" : lvl === "rare" ? "Rare" : "Some",
+                  lvl === "none" ? "بلا" : lvl === "rare" ? "نادراً" : "قليلاً",
+                )}
+              </button>
+            ))}
+          </div>
+        </ConsoleSection>
+
+        {/* 6. Openings */}
+        <ConsoleSection
+          id="openings"
+          label={t("OPENINGS", "الافتتاحيات")}
+          value={summaries.openings}
+          explainer={t("Aura opens every post one of these ways.", "تفتتح Aura كل منشور بإحدى هذه الطرق.")}
+        >
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }} {...dirProps}>
+            {OPENING_OPTIONS.map((o) => {
+              const on = chosenOpenings.includes(o.v);
+              return (
+                <button
+                  key={o.v}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => savePrefs({ openings: on ? chosenOpenings.filter((x) => x !== o.v) : [...chosenOpenings, o.v] })}
+                  style={chipBtn(on)}
+                >
+                  {isAr ? o.ar : o.en}
+                </button>
+              );
+            })}
+          </div>
+        </ConsoleSection>
+
+        {/* 7. Endings — real allowed_endings column */}
+        <ConsoleSection
+          id="endings"
+          label={t("ENDINGS", "الخواتيم")}
+          value={summaries.endings}
+          explainer={t("Aura rotates between the ones you keep.", "تتنقل Aura بين ما تُبقيه منها.")}
+        >
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }} {...dirProps}>
+            {ENDING_OPTIONS.map((o) => {
+              const on = allowedEndings.includes(o.v);
+              return (
+                <button
+                  key={o.v}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    if (on && allowedEndings.length <= 1) { setEndingNote(true); return; }
+                    setEndingNote(false);
+                    saveEndings(on ? allowedEndings.filter((x) => x !== o.v) : [...allowedEndings, o.v]);
+                  }}
+                  style={chipBtn(on)}
+                >
+                  {isAr ? o.ar : o.en}
+                </button>
+              );
+            })}
+          </div>
+          {endingNote && (
+            <p style={{ ...explainerStyle, margin: "10px 0 0" }} {...dirProps}>
+              {t("Keep at least one ending.", "أبقِ خاتمة واحدة على الأقل.")}
+            </p>
+          )}
+        </ConsoleSection>
+
+        {/* 8. Story types */}
+        <ConsoleSection
+          id="story"
+          label={t("STORY TYPES", "أنواع المنشور")}
+          value={summaries.story}
+          explainer={t("Aura leans toward the one you use least.", "تميل Aura إلى النوع الأقل استخداماً لديك.")}
+        >
+          <div {...dirProps}>
+            {STORY_ROWS.map((r) => {
+              const val = Number((mixDraft ?? storyMix)[r.k]) || 0;
+              return (
+                <div key={r.k} style={{ marginBlockEnd: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                    <span style={{ fontSize: 13, color: "#1B2733", lineHeight: bodyLine }}>
+                      {isAr ? r.ar : r.en}{" "}
+                      <span style={{ color: "#8FA1AD", fontSize: 12 }}>{isAr ? r.en : r.ar} · {r.note}</span>
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: 12, color: "#5B6673" }}>{val}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={val}
+                    onChange={(e) => setMixDraft({ ...(mixDraft ?? storyMix), [r.k]: Number(e.target.value) })}
+                    onMouseUp={() => { if (mixDraft) { savePrefs({ story_mix: mixDraft }); setMixDraft(null); } }}
+                    onTouchEnd={() => { if (mixDraft) { savePrefs({ story_mix: mixDraft }); setMixDraft(null); } }}
+                    onKeyUp={() => { if (mixDraft) { savePrefs({ story_mix: mixDraft }); setMixDraft(null); } }}
+                    style={{ width: "100%", accentColor: "#0670C4" }}
+                    aria-label={isAr ? r.ar : r.en}
+                  />
+                </div>
+              );
+            })}
+            <p style={{ ...explainerStyle, margin: 0 }}>{t("Aura leans toward the one you use least.", "تميل Aura إلى النوع الأقل استخداماً لديك.")}</p>
+          </div>
+        </ConsoleSection>
+
+        {/* 9. Structures */}
+        <ConsoleSection
+          id="structures"
           label={t("HOW YOU BUILD A POST", "كيف تبني منشورك")}
+          value={summaries.structures}
           explainer={t("The shapes your posts take, learned from what you publish.", "الأشكال التي تأخذها منشوراتك، مُتعلَّمة مما تنشره.")}
         >
           {structures.map((item, i) => (
@@ -1095,11 +1293,13 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
             />
           ))}
           <AddRow label={t("+ Add in your own words", "+ أضف بكلماتك")} onAdd={(v) => saveList("preferred_structures", [...structures, v], structures)} />
-        </SpineCard>
+        </ConsoleSection>
 
-        {/* c. Recurring moves */}
-        <SpineCard
+        {/* 10. Recurring moves */}
+        <ConsoleSection
+          id="moves"
           label={t("YOUR RECURRING MOVES", "حركاتك المتكررة")}
+          value={summaries.moves}
           explainer={t("Signature moves Aura noticed across your posts.", "حركات مميزة لاحظتها Aura عبر منشوراتك.")}
         >
           {patterns.map((item, i) => (
@@ -1115,11 +1315,13 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
             />
           ))}
           <AddRow label={t("+ Add in your own words", "+ أضف بكلماتك")} onAdd={(v) => saveList("storytelling_patterns", [...patterns, v], patterns)} />
-        </SpineCard>
+        </ConsoleSection>
 
-        {/* d. Rules */}
-        <SpineCard
+        {/* 11. Do · Never */}
+        <ConsoleSection
+          id="rules"
           label={t("WHAT YOU DO · WHAT YOU NEVER DO", "ما تفعله · ما لا تفعله أبداً")}
+          value={summaries.rules}
           explainer={t("The rules of your writing. Aura obeys this list.", "قواعد كتابتك. Aura تلتزم بهذه القائمة.")}
         >
           {useRules.map((r, i) => (
@@ -1129,7 +1331,6 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
               marker={<span style={{ color: "#12805C", fontWeight: 700 }}>✓</span>}
               onSave={(v) => {
                 const next = useRules.slice();
-                // Only the text changes — verified / contradictions / evidence survive.
                 next[i] = typeof r === "string" ? { rule: v, verified: false, contradictions: 0, evidence: null } : { ...r, rule: v };
                 saveVocabList("use", next);
               }}
@@ -1161,17 +1362,86 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
             onAdd={(v) => saveVocabList("avoid", [...avoidRules, { rule: v, verified: false, contradictions: 0, evidence: null }])}
           />
 
-          {rhythm.trim().length > 0 && (
-            <div style={{ marginBlockStart: 16 }} {...dirProps}>
-              <div style={labelStyle}>{t("YOUR RHYTHM", "إيقاعك")}</div>
-              <p style={{ margin: "6px 0 0", fontStyle: "italic", fontSize: 13, color: "#5B6673", lineHeight: bodyLine }}>{rhythm}</p>
+          {/* Keep AI phrasing out */}
+          <div style={{ marginBlockStart: 18, display: "flex", alignItems: "flex-start", gap: 10 }} {...dirProps}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, color: "#1B2733", lineHeight: bodyLine }}>
+                {t("Keep AI phrasing out", "أبعد صياغة الذكاء الاصطناعي")}
+              </div>
+              <p style={{ ...explainerStyle, margin: "2px 0 0" }}>
+                {t("Blocks the stock AI openers and closers.", "يمنع الافتتاحيات والخواتيم الجاهزة للذكاء الاصطناعي.")}
+              </p>
             </div>
-          )}
-        </SpineCard>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={antiAi}
+              onClick={() => savePrefs({ anti_ai: !antiAi })}
+              style={{
+                width: 42, height: 24, borderRadius: 999, border: "1px solid #E2E7EE", cursor: "pointer",
+                background: antiAi ? "#0670C4" : "#EEF2F6", position: "relative", flex: "0 0 auto",
+              }}
+              aria-label={t("Keep AI phrasing out", "أبعد صياغة الذكاء الاصطناعي")}
+            >
+              <span
+                style={{
+                  position: "absolute", top: 2, insetInlineStart: antiAi ? 20 : 2, width: 18, height: 18,
+                  borderRadius: 999, background: "#FFFFFF", transition: "inset-inline-start 140ms ease",
+                }}
+              />
+            </button>
+          </div>
 
-        {/* e. Examples */}
-        <SpineCard
+          {/* Never say this */}
+          <div style={{ marginBlockStart: 18 }} {...dirProps}>
+            <div style={labelStyle}>{t("NEVER SAY THIS", "لا تقل هذا أبداً")}</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBlockStart: 8 }}>
+              {bannedPhrases.map((p, i) => (
+                <span
+                  key={`b-${i}-${p}`}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid #E2E7EE",
+                    borderRadius: 999, padding: "5px 10px", fontSize: 12.5, color: "#1B2733", background: "#FFFFFF",
+                  }}
+                >
+                  {p}
+                  <button
+                    type="button"
+                    style={iconBtn}
+                    aria-label={t("Remove", "إزالة")}
+                    onClick={() => savePrefs({ banned_phrases: bannedPhrases.filter((_, j) => j !== i) })}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              value={bannedDraft}
+              onChange={(e) => setBannedDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                const v = bannedDraft.trim();
+                if (!v || bannedPhrases.includes(v)) { setBannedDraft(""); return; }
+                savePrefs({ banned_phrases: [...bannedPhrases, v] });
+                setBannedDraft("");
+              }}
+              placeholder={t("Add a phrase, press Enter", "أضف عبارة، ثم Enter")}
+              {...dirProps}
+              style={{
+                marginBlockStart: 10, width: "100%", borderRadius: 10, border: "1px solid #E2E7EE",
+                padding: "9px 11px", fontFamily: UI, fontSize: 13, color: "#1B2733", lineHeight: bodyLine,
+              }}
+            />
+          </div>
+        </ConsoleSection>
+
+        {/* 12. Anchor posts */}
+        <ConsoleSection
+          id="anchors"
           label={t("POSTS THAT ANCHOR YOUR VOICE", "منشورات ترسّخ صوتك")}
+          value={summaries.anchors}
           explainer={t("The writing Aura holds as proof of how you sound.", "الكتابة التي تحتفظ بها Aura دليلاً على طريقتك.")}
         >
           <div style={{ fontFamily: MONO, fontSize: 12, color: "#5B6673" }}>{examples.length}</div>
@@ -1208,11 +1478,13 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
             </div>
           ))}
           <p style={{ ...explainerStyle, margin: "12px 0 0" }} {...dirProps}>{t("Teaching adds more.", "التعليم يضيف المزيد.")}</p>
-        </SpineCard>
+        </ConsoleSection>
 
-        {/* f. Teach */}
-        <SpineCard
+        {/* 13. Teach Aura */}
+        <ConsoleSection
+          id="teach"
           label={t("TEACH AURA", "علّم Aura")}
+          value={t("Paste, upload, sharpen", "الصق، ارفع، اصقل")}
           explainer={t("Feed it posts you've written. Two minutes of pasting beats an hour of describing.", "أطعمها منشورات كتبتها. دقيقتان من اللصق أفضل من ساعة من الوصف.")}
         >
           <Textarea
@@ -1286,7 +1558,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
               </div>
             )}
           </div>
-        </SpineCard>
+        </ConsoleSection>
       </div>
 
       {/* PRIMARY ACTION */}
@@ -1300,6 +1572,11 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
           marginBlockStart: 18, width: "100%", border: "none", borderRadius: 8, padding: "12px 16px",
           background: "#0670C4", color: "#FFFFFF", fontFamily: UI, fontSize: 13.5, fontWeight: 600, cursor: "pointer",
         }}
+      >
+        {t("Write with this voice →", "اكتب بهذا الصوت ←")}
+      </button>
+    </div>
+  );
       >
         {t("Write with this voice →", "اكتب بهذا الصوت ←")}
       </button>
