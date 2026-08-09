@@ -157,17 +157,30 @@ function leastUsedHook(dist: Record<string, number>): string | null {
   return entries[0][0];
 }
 
+/**
+ * The one sentence about opener repetition. Two surfaces render it — the
+ * Overview recommendation and the Voice DNA variation engine — and they must
+ * never disagree, so there is exactly one generator. Returns null when
+ * repetition is not the binding problem.
+ */
+export function repetitionSentence(m: {
+  topShare: number | null;
+  topStyleKey: string | null;
+  topStyleCount: number | null;
+  windowSize: number;
+  windowDist: Record<string, number>;
+}): string | null {
+  if (m.topShare === null || m.topShare <= 40 || !m.topStyleKey || !m.topStyleCount) return null;
+  const alt = leastUsedHook(m.windowDist);
+  return `${m.topStyleCount} of your last ${m.windowSize} posts open with ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — ${Math.round(m.topShare)}% of the window. Try opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} next time; you have used it ${m.windowDist[alt ?? ""] ?? 0} times in these ${m.windowSize} posts.`;
+}
+
 /** Priority order is fixed: first match wins. Every branch carries a real number. */
 export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation" | "recommendationDismissed">): Recommendation {
   // 1 — repetition. Entropy is forgiving of one dominant opener, so this gate leads.
-  if (m.topShare !== null && m.topShare > 40 && m.topStyleKey && m.topStyleCount) {
-    const alt = leastUsedHook(m.windowDist);
-    return {
-      key: "repetition",
-      text: `${m.topStyleCount} of your last ${m.windowSize} posts open with ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — ${Math.round(m.topShare)}% of the window. Try opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} next time; you have used it ${m.windowDist[alt ?? ""] ?? 0} times in these ${m.windowSize} posts.`,
-      actionLabel: "See Voice DNA",
-      actionTab: "dna",
-    };
+  const repetition = repetitionSentence(m);
+  if (repetition) {
+    return { key: "repetition", text: repetition, actionLabel: "See Voice DNA", actionTab: "dna" };
   }
   // 2 — breadth.
   if (m.diversity !== null && m.diversity < 60) {

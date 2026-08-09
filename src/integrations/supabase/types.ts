@@ -4037,6 +4037,53 @@ export type Database = {
           },
         ]
       }
+      voice_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          kind: string
+          profile_id: string | null
+          rank: number
+          source: string
+          text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          kind: string
+          profile_id?: string | null
+          rank?: number
+          source?: string
+          text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          kind?: string
+          profile_id?: string | null
+          rank?: number
+          source?: string
+          text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_rules_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "authority_voice_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voice_trait_registry: {
         Row: {
           active: boolean
@@ -4081,6 +4128,44 @@ export type Database = {
           unit?: string | null
         }
         Relationships: []
+      }
+      voice_trait_rejections: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          rejected_until: string
+          rejected_value: number | null
+          trait_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          rejected_until?: string
+          rejected_value?: number | null
+          trait_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          rejected_until?: string
+          rejected_value?: number | null
+          trait_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_trait_rejections_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "authority_voice_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       voice_traits: {
         Row: {
