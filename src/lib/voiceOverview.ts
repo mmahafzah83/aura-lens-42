@@ -11,6 +11,7 @@
  * is no zero-fill anywhere in this file.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { REPETITION_GATES } from "@/lib/voiceGates";
 
 export type Readiness = "forming" | "developing" | "working" | "reliable" | "distinctive";
 
@@ -127,10 +128,10 @@ export function readinessSentence(m: VoiceOverviewModel): string {
   }
   if (m.readiness === "reliable") {
     // Binding constraint first: repetition, then breadth, then measurement.
-    if (m.topShare !== null && m.topShare > 35 && m.topStyleKey && m.topStyleCount) {
+    if (m.topShare !== null && m.topShare > REPETITION_GATES.topShareCeiling && m.topStyleKey && m.topStyleCount) {
       return `Aura drafts reliably in your voice. ${word(m.topStyleCount).replace(/^./, (c) => c.toUpperCase())} of your last ${word(m.windowSize)} posts opened the same way — that is what stands between you and a voice the market can tell apart.`;
     }
-    if (m.diversity !== null && m.diversity < 60) {
+    if (m.diversity !== null && m.diversity < REPETITION_GATES.diversityFloor) {
       return `Aura drafts reliably in your voice. Your openers only vary ${pct(m.diversity)} across your last ${m.windowSize} posts — 60% is the bar for a voice the market can tell apart.`;
     }
     if (m.diversity === null) {
@@ -170,7 +171,7 @@ export function repetitionSentence(m: {
   windowSize: number;
   windowDist: Record<string, number>;
 }): string | null {
-  if (m.topShare === null || m.topShare <= 40 || !m.topStyleKey || !m.topStyleCount) return null;
+  if (m.topShare === null || m.topShare <= REPETITION_GATES.topShareBinding || !m.topStyleKey || !m.topStyleCount) return null;
   const alt = leastUsedHook(m.windowDist);
   return `${m.topStyleCount} of your last ${m.windowSize} posts open with ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — ${Math.round(m.topShare)}% of the window. Try opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} next time; you have used it ${m.windowDist[alt ?? ""] ?? 0} times in these ${m.windowSize} posts.`;
 }
@@ -183,11 +184,11 @@ export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation"
     return { key: "repetition", text: repetition, actionLabel: "See Voice DNA", actionTab: "dna" };
   }
   // 2 — breadth.
-  if (m.diversity !== null && m.diversity < 60) {
+  if (m.diversity !== null && m.diversity < REPETITION_GATES.diversityFloor) {
     const alt = leastUsedHook(m.windowDist);
     return {
       key: "diversity",
-      text: `Your openers vary ${Math.round(m.diversity)}% across your last ${m.windowSize} posts; 60% is the bar. Opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} would widen it — you have used it ${m.windowDist[alt ?? ""] ?? 0} times in this window.`,
+      text: `Your openers vary ${Math.round(m.diversity)}% across your last ${m.windowSize} posts; ${REPETITION_GATES.diversityFloor}% is the bar. Opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} would widen it — you have used it ${m.windowDist[alt ?? ""] ?? 0} times in this window.`,
       actionLabel: "See Voice DNA",
       actionTab: "dna",
     };
