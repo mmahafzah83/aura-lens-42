@@ -261,6 +261,8 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
       .eq("user_id", userId)
       .eq("is_primary", true)
       .maybeSingle(),
+    // The LinkedIn address lives on linkedin_connections — the profile columns are deprecated.
+    supabase.from("linkedin_connections").select("handle").eq("user_id", userId).maybeSingle(),
   ]);
 
   const p: any = (profileRes as any)?.data || null;
@@ -281,7 +283,7 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
         sector_focus: p.sector_focus || null,
         north_star_goals: splitPipes(p.north_star_goal),
         north_star_goal_raw: p.north_star_goal || null,
-        linkedin_handle: p.linkedin_handle || null,
+        linkedin_handle: (connRes as any)?.data?.handle || null,
         years_experience_raw: p.years_experience || null,
         years_experience_total: parseYearsTotal(p.years_experience),
         primary_strength: p.primary_strength || null,
