@@ -179,3 +179,9 @@ verify_jwt = false
 
 [functions.home-address]
 verify_jwt = false
+
+[functions.voice-compute-traits]
+verify_jwt = false
+
+[functions.voice-classify-posts]
+verify_jwt = false

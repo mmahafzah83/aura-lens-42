@@ -383,7 +383,10 @@ export type Database = {
           id: string
           is_primary: boolean
           language: string
+          mode_key: string | null
+          mode_label: string | null
           preferred_structures: Json
+          readiness: string | null
           storytelling_patterns: Json
           tone: string
           updated_at: string
@@ -398,7 +401,10 @@ export type Database = {
           id?: string
           is_primary?: boolean
           language?: string
+          mode_key?: string | null
+          mode_label?: string | null
           preferred_structures?: Json
+          readiness?: string | null
           storytelling_patterns?: Json
           tone?: string
           updated_at?: string
@@ -413,7 +419,10 @@ export type Database = {
           id?: string
           is_primary?: boolean
           language?: string
+          mode_key?: string | null
+          mode_label?: string | null
           preferred_structures?: Json
+          readiness?: string | null
           storytelling_patterns?: Json
           tone?: string
           updated_at?: string
@@ -3907,6 +3916,181 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_feedback: {
+        Row: {
+          applied_changes: Json
+          created_at: string
+          id: string
+          mode_scope: string | null
+          post_id: string | null
+          profile_id: string | null
+          sample_text: string | null
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          applied_changes?: Json
+          created_at?: string
+          id?: string
+          mode_scope?: string | null
+          post_id?: string | null
+          profile_id?: string | null
+          sample_text?: string | null
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          applied_changes?: Json
+          created_at?: string
+          id?: string
+          mode_scope?: string | null
+          post_id?: string | null
+          profile_id?: string | null
+          sample_text?: string | null
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_feedback_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "influence_dashboard_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_feedback_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "linkedin_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_feedback_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "post_provenance"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_trait_registry: {
+        Row: {
+          active: boolean
+          computable: boolean
+          created_at: string
+          display_name: string
+          group_key: string
+          id: string
+          min_evidence: number
+          pole_high: string
+          pole_low: string
+          sort_order: number
+          trait_key: string
+          unit: string | null
+        }
+        Insert: {
+          active?: boolean
+          computable?: boolean
+          created_at?: string
+          display_name: string
+          group_key: string
+          id?: string
+          min_evidence?: number
+          pole_high: string
+          pole_low: string
+          sort_order?: number
+          trait_key: string
+          unit?: string | null
+        }
+        Update: {
+          active?: boolean
+          computable?: boolean
+          created_at?: string
+          display_name?: string
+          group_key?: string
+          id?: string
+          min_evidence?: number
+          pole_high?: string
+          pole_low?: string
+          sort_order?: number
+          trait_key?: string
+          unit?: string | null
+        }
+        Relationships: []
+      }
+      voice_traits: {
+        Row: {
+          band_high: number | null
+          band_low: number | null
+          computed_at: string | null
+          confidence: string
+          created_at: string
+          evidence_count: number
+          id: string
+          last_confirmed_at: string | null
+          locked: boolean
+          profile_id: string
+          raw_value: number | null
+          source: string
+          trait_key: string
+          updated_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          band_high?: number | null
+          band_low?: number | null
+          computed_at?: string | null
+          confidence: string
+          created_at?: string
+          evidence_count?: number
+          id?: string
+          last_confirmed_at?: string | null
+          locked?: boolean
+          profile_id: string
+          raw_value?: number | null
+          source: string
+          trait_key: string
+          updated_at?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          band_high?: number | null
+          band_low?: number | null
+          computed_at?: string | null
+          confidence?: string
+          created_at?: string
+          evidence_count?: number
+          id?: string
+          last_confirmed_at?: string | null
+          locked?: boolean
+          profile_id?: string
+          raw_value?: number | null
+          source?: string
+          trait_key?: string
+          updated_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_traits_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "authority_voice_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_traits_trait_key_fkey"
+            columns: ["trait_key"]
+            isOneToOne: false
+            referencedRelation: "voice_trait_registry"
+            referencedColumns: ["trait_key"]
+          },
+        ]
+      }
       weekly_missions: {
         Row: {
           completed_at: string | null
@@ -4691,6 +4875,10 @@ export type Database = {
         }[]
       }
       tier_rank: { Args: { t: string }; Returns: number }
+      voice_profile_readiness: {
+        Args: { p_profile_id: string }
+        Returns: string
+      }
       whatsapp_mint_pair_token: {
         Args: never
         Returns: {

@@ -561,6 +561,17 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       const urn = pubResult.headers["x-restli-id"] ?? "";
       const postUrl = `https://www.linkedin.com/feed/update/${urn}/`;
       const now = new Date().toISOString();
+      // How far the member moved the draft before it went out. Written on the
+      // post itself so the voice loop can read it without joining draft_edits.
+      const servedForEdit: string = ((post as any).original_generated_text ?? "").trim();
+      const editColumns: Record<string, unknown> = {};
+      if (servedForEdit && servedForEdit !== postText.trim()) {
+        const a = servedForEdit.slice(0, DIFF_CAP);
+        const b = postText.slice(0, DIFF_CAP);
+        const longest = Math.max(a.length, b.length) || 1;
+        editColumns.edited_at = now;
+        editColumns.edit_distance = Number(Math.min(1, levenshtein(a, b) / longest).toFixed(4));
+      }
       await adminClient
         .from("linkedin_posts")
         .update({
@@ -571,6 +582,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
           tracking_status: "published",
           authorship: "aura_drafted",
           acquisition: "published_via_aura",
+          ...editColumns,
         })
         .eq("id", postId)
         .eq("user_id", user.id);
