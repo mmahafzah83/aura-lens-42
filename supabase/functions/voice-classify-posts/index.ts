@@ -5,9 +5,24 @@
  * ones reach the model, batched, so filling a 400-post history costs a handful
  * of calls rather than four hundred.
  *
- * A non-null label is never overwritten.
+ * A non-null label is never overwritten, with one deliberate exception:
+ * `{ reclassify_other: true }` re-runs the model over rows already parked in
+ * `other`, with the strict definitions prompt, and may replace `other` with a
+ * real label. It can never replace a real label.
+ *
+ * The vocabulary lives in `_shared/voiceVocab.ts`. The model's answer is
+ * validated against it — anything outside the list becomes `other` and is
+ * counted in `model_rejected`.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  ENDING_DEFINITIONS,
+  ENDING_TYPES,
+  HOOK_DEFINITIONS,
+  HOOK_STYLES,
+  isEnding,
+  isHook,
+} from "../_shared/voiceVocab.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,13 +32,15 @@ const corsHeaders = {
 const FOUNDER_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const BATCH = 20;
 
-const HOOKS = ["contrarian_claim", "number_first", "short_story", "question", "experience_led", "announcement", "other"] as const;
-const ENDINGS = ["question", "suspended", "reframe", "equation", "number", "cta", "other"] as const;
+const HOOKS = HOOK_STYLES;
+const ENDINGS = ENDING_TYPES;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const firstLine = (t: string) => (t.split(/\n+/).map((l) => l.trim()).find(Boolean) ?? "").trim();
+const openerBlock = (t: string) =>
+  t.split(/\n+/).map((l) => l.trim()).filter(Boolean).slice(0, 3).join(" / ");
 const lastLine = (t: string) => {
   const lines = t.split(/\n+/).map((l) => l.trim()).filter(Boolean);
   return lines[lines.length - 1] ?? "";
@@ -54,19 +71,29 @@ function ruleEnding(line: string): string | null {
   return null;
 }
 
-async function modelClassify(apiKey: string, batch: { i: number; first: string; last: string }[]) {
+const hookGuide = Object.entries(HOOK_DEFINITIONS).map(([k, v]) => `- ${k}: ${v}`).join("\n");
+const endingGuide = Object.entries(ENDING_DEFINITIONS).map(([k, v]) => `- ${k}: ${v}`).join("\n");
+
+type Rejects = { hook: number; ending: number };
+
+async function modelClassify(
+  apiKey: string,
+  batch: { i: number; first: string; last: string }[],
+  strict: boolean,
+  rejects: Rejects,
+) {
+  const system = strict
+    ? `You label the OPENING and the ENDING of LinkedIn posts.\n\nOPENING styles (choose the CLOSEST match, do not default to "other"):\n${hookGuide}\n- other: only when the opener genuinely fits none of the above — a bare link, a pure greeting, or a single word.\n\nENDING types:\n${endingGuide}\n- other: only when none of the above fit.\n\nEvery answer must be exactly one of the listed keys. Return the tool call only.`
+    : `Label LinkedIn post openings and endings. hook_style must be one of: ${HOOKS.join(", ")}. ` +
+      `ending_type must be one of: ${ENDINGS.join(", ")}. Return the tool call only.`;
+
   const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "google/gemini-3-flash-preview",
       messages: [
-        {
-          role: "system",
-          content:
-            `Label LinkedIn post openings and endings. hook_style must be one of: ${HOOKS.join(", ")}. ` +
-            `ending_type must be one of: ${ENDINGS.join(", ")}. Return the tool call only.`,
-        },
+        { role: "system", content: system },
         {
           role: "user",
           content: batch
@@ -110,11 +137,20 @@ async function modelClassify(apiKey: string, batch: { i: number; first: string; 
   const data = await res.json();
   const args = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
   if (!args) return [] as { index: number; hook_style: string; ending_type: string }[];
+  let raw: { index: number; hook_style: unknown; ending_type: unknown }[] = [];
   try {
-    return (JSON.parse(args).labels ?? []) as { index: number; hook_style: string; ending_type: string }[];
+    raw = JSON.parse(args).labels ?? [];
   } catch {
     return [];
   }
+  // Validate against the one vocabulary. Out-of-list answers become `other`.
+  return raw.map((r) => {
+    let hook = String(r.hook_style ?? "");
+    let ending = String(r.ending_type ?? "");
+    if (!isHook(hook)) { rejects.hook += 1; hook = "other"; }
+    if (!isEnding(ending)) { rejects.ending += 1; ending = "other"; }
+    return { index: Number(r.index), hook_style: hook, ending_type: ending };
+  });
 }
 
 Deno.serve(async (req) => {
@@ -124,6 +160,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
+    const reclassifyOther = body.reclassify_other === true;
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const cronSecret = Deno.env.get("CRON_SECRET");
@@ -146,7 +183,83 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+    const rejects: Rejects = { hook: 0, ending: 0 };
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
 
+    // ---------- Re-pass over rows parked in `other` ----------
+    if (reclassifyOther) {
+      const { data: rows, error: selErr } = await admin
+        .from("linkedin_posts")
+        .select("id, post_text, hook_style, ending_type")
+        .eq("user_id", userId)
+        .eq("hook_style", "other")
+        .not("post_text", "is", null)
+        .limit(500);
+      if (selErr) throw new Error(`select failed: ${selErr.message}`);
+      const cands = (rows ?? []).filter((r) => String(r.post_text ?? "").trim().length > 50);
+      if (!apiKey) return json({ error: "AI not configured" }, 500);
+
+      let moved = 0;
+      let stayed_other = 0;
+      const resisted: { id: string; opener: string }[] = [];
+
+      for (let s = 0; s < cands.length; s += BATCH) {
+        const slice = cands.slice(s, s + BATCH);
+        const payload = slice.map((r, k) => ({
+          i: s + k,
+          first: openerBlock(String(r.post_text)),
+          last: lastLine(String(r.post_text)),
+        }));
+        try {
+          const labels = await modelClassify(apiKey, payload, true, rejects);
+          for (const lab of labels) {
+            const row = cands[lab.index];
+            if (!row) continue;
+            if (lab.hook_style === "other") {
+              stayed_other += 1;
+              resisted.push({ id: row.id, opener: firstLine(String(row.post_text)).slice(0, 120) });
+              continue;
+            }
+            const { error } = await admin
+              .from("linkedin_posts")
+              .update({ hook_style: lab.hook_style })
+              .eq("id", row.id)
+              .eq("user_id", userId)
+              .eq("hook_style", "other"); // can only ever replace `other`
+            if (error) throw new Error(`update ${row.id} failed: ${error.message}`);
+            moved += 1;
+          }
+        } catch (e) {
+          console.error("[voice-classify-posts] strict batch failed:", (e as Error).message);
+        }
+      }
+
+      const { count: totalClassified } = await admin
+        .from("linkedin_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .not("hook_style", "is", null);
+      const { count: otherLeft } = await admin
+        .from("linkedin_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("hook_style", "other");
+
+      return json({
+        mode: "reclassify_other",
+        user_id: userId,
+        examined: cands.length,
+        moved_off_other: moved,
+        stayed_other,
+        model_rejected: rejects,
+        other_now: otherLeft ?? 0,
+        classified_now: totalClassified ?? 0,
+        other_share_now: totalClassified ? Number((((otherLeft ?? 0) / totalClassified) * 100).toFixed(1)) : 0,
+        resisted: resisted.slice(0, 25),
+      });
+    }
+
+    // ---------- Normal pass: fill nulls only ----------
     const { data: rows, error: selErr } = await admin
       .from("linkedin_posts")
       .select("id, post_text, hook_style, ending_type")
@@ -171,8 +284,8 @@ Deno.serve(async (req) => {
       const patch: Record<string, string> = {};
       const h = needHook ? ruleHook(first) : null;
       const e = needEnd ? ruleEnding(last) : null;
-      if (h) patch.hook_style = h;
-      if (e) patch.ending_type = e;
+      if (h && isHook(h)) patch.hook_style = h;
+      if (e && isEnding(e)) patch.ending_type = e;
       if (Object.keys(patch).length) { patches.set(r.id, patch); rule_decided += 1; }
       if ((needHook && !h) || (needEnd && !e)) {
         undecided.push({ i, id: r.id, first, last, needHook: needHook && !h, needEnd: needEnd && !e });
@@ -180,18 +293,17 @@ Deno.serve(async (req) => {
     });
 
     let model_decided = 0;
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (undecided.length && apiKey) {
       for (let s = 0; s < undecided.length; s += BATCH) {
         const slice = undecided.slice(s, s + BATCH);
         try {
-          const labels = await modelClassify(apiKey, slice.map((u) => ({ i: u.i, first: u.first, last: u.last })));
+          const labels = await modelClassify(apiKey, slice.map((u) => ({ i: u.i, first: u.first, last: u.last })), true, rejects);
           for (const lab of labels) {
             const target = slice.find((u) => u.i === lab.index);
             if (!target) continue;
             const patch = patches.get(target.id) ?? {};
-            if (target.needHook && HOOKS.includes(lab.hook_style as typeof HOOKS[number])) patch.hook_style = lab.hook_style;
-            if (target.needEnd && ENDINGS.includes(lab.ending_type as typeof ENDINGS[number])) patch.ending_type = lab.ending_type;
+            if (target.needHook) patch.hook_style = lab.hook_style;
+            if (target.needEnd) patch.ending_type = lab.ending_type;
             if (Object.keys(patch).length) { patches.set(target.id, patch); model_decided += 1; }
           }
         } catch (e) {
@@ -216,6 +328,7 @@ Deno.serve(async (req) => {
       candidates: candidates.length,
       rule_decided,
       model_decided,
+      model_rejected: rejects,
       undecided_left: Math.max(0, undecided.length - model_decided),
       rows_updated: updated,
       ai_available: Boolean(apiKey),

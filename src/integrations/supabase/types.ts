@@ -4938,6 +4938,7 @@ export type Database = {
         }[]
       }
       tier_rank: { Args: { t: string }; Returns: number }
+      voice_opener_diversity: { Args: { p_user_id: string }; Returns: number }
       voice_profile_readiness: {
         Args: { p_profile_id: string }
         Returns: string
