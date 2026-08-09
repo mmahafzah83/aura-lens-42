@@ -784,7 +784,10 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           },
           body: JSON.stringify({
             model: "claude-sonnet-4-5-20250929",
-            max_tokens: 4096,
+            // A member-set length ceiling also sizes the call (~4 chars/token).
+            max_tokens: memberPrefs.length_max
+              ? Math.max(512, Math.min(4096, Math.ceil(memberPrefs.length_max / 3) + 256))
+              : 4096,
             system: systemPrompt + (extraDirective ? `\n\n${extraDirective}` : ""),
             messages: [
               { role: "user", content: userMessageContent },
@@ -1045,7 +1048,8 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       const isAr = effectiveLanguage === "ar";
       // Only a ban the member's own edits confirmed is enforced mechanically.
       // An inferred "never uses emoji" must not strip emoji they deliberately keep.
-      const bansEmoji = profileBansEmoji(
+      // An explicit "none" from the member is stronger than anything inferred.
+      const bansEmoji = prefsBansEmoji(voiceProfile) || profileBansEmoji(
         enforcedRuleTexts((voiceProfile?.vocabulary_preferences as any)?.avoid),
       );
 
@@ -1146,6 +1150,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         ending_type: endingTypeOf(content),
         hook_style: hookStyleOf(content),
         requested_ending: chosenEnding,
+        chosen_opening: chosenOpening,
         unsourced_numbers_removed: unsourcedRemoved,
         unsourced_entities_removed: unsourcedEntitiesRemoved,
         unsourced_entity_values: unsourcedEntities,
