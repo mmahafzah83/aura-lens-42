@@ -17,6 +17,7 @@ import {
 } from "@/lib/broadsheetExport";
 import { ensureCardFontsLoaded } from "./fitText";
 import { generationMetadata } from "@/lib/generationMetadata";
+import { classifyPublishError } from "@/lib/publishFailure";
 
 interface Props {
   family: FamilyEntry;
@@ -159,6 +160,8 @@ export default function Publish({
     setPublishError(null);
     let insertedId: string | null = null;
     let uidForLog: string | null = null;
+    // Only true once linkedin-publish has actually been called.
+    let attempted = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Sign in first");
@@ -217,6 +220,7 @@ export default function Publish({
       const { data, error } = await supabase.functions.invoke("linkedin-publish", {
         body: { postId: (ins as any).id },
       });
+      attempted = true;
       if (error) throw error;
       if (!(data as any)?.success) {
         const msg = (data as any)?.error || "Publish failed";
@@ -230,14 +234,17 @@ export default function Publish({
         decision: decision || null,
       });
     } catch (e: any) {
-      const message = e?.message || "Couldn't publish to LinkedIn";
-      // 1. Retire the orphan draft (rename tracking_status → 'failed').
+      const failure = classifyPublishError(e, attempted);
+      const message = failure.message;
+      // 1. Record why. Only a real, answered attempt can mark a post failed;
+      //    everything else stays a draft the member can send again.
       if (insertedId) {
         try {
           await supabase
             .from("linkedin_posts")
             .update({
-              tracking_status: "failed",
+              tracking_status: failure.keepDraft ? "draft" : "failed",
+              rejection_reason: failure.reason,
               source_metadata: {
                 origin: "signature_studio",
                 family: family.id,
@@ -247,12 +254,12 @@ export default function Publish({
                 _language: lang,
                 designOption: designOption || null,
                 emphasisOff: !!emphasisOff,
-                publish_error: String(message).slice(0, 500),
+                publish_error: failure.reason,
                 failed_at: new Date().toISOString(),
               },
             })
             .eq("id", insertedId);
-        } catch { /* never let retire mask the real error */ }
+        } catch { /* never let bookkeeping mask the real error */ }
       }
       // 2. Log server-side.
       try {
@@ -261,10 +268,11 @@ export default function Publish({
           severity: "high",
           error_message: String(message).slice(0, 1000),
           user_id: uidForLog,
-          context: { post_id: insertedId, family: family.id, lang },
+          context: { post_id: insertedId, family: family.id, lang, attempted, reason: failure.reason },
         });
       } catch { /* swallow */ }
-      // 3. Persistent inline error — replaces vanishing toast.
+      // 3. Say it out loud: inline banner and a toast.
+      toast.error(message);
       setPublishError(message);
     } finally { setPublishing(false); }
   };
