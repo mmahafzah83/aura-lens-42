@@ -131,12 +131,12 @@ const handleDeleteAccount = async () => {
       const { data, error: qErr } = await supabase
         .from("diagnostic_profiles")
         .select(
-          "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, linkedin_handle, linkedin_url, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets, country, country_code"
+          "first_name, last_name, level, firm, core_practice, sector_focus, north_star_goal, years_experience, leadership_style, primary_strength, avatar_url, brand_assessment_completed_at, brand_pillars, identity_intelligence, brand_assessment_results, skill_ratings, generated_skills, audit_results, signature_presets, country, country_code"
         )
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (qErr) throw qErr;
-      setProfile((data as ProfileData) || null);
+      setProfile((data as unknown as ProfileData) || null);
       setSignatures(Array.isArray((data as any)?.signature_presets) ? (data as any).signature_presets : []);
       {
         const p = (data as any) || {};
