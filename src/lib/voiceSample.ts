@@ -152,7 +152,13 @@ export function composeFromTraits(t: SampleTraits, seed = 0, hookLabel = "your o
   });
 
   const join = pace !== null && pace !== undefined && pace >= 60 ? "\n\n" : "\n";
-  return { segments, text: segments.map((s) => s.text).join(join), isArabic };
+  return {
+    segments,
+    text: segments.map((s) => s.text).join(join),
+    isArabic,
+    hook: segments[0]?.text ?? "",
+    closer: segments[segments.length - 1]?.text ?? "",
+  };
 }
 
 /** The control condition: what everyone else's LinkedIn post looks like. */
