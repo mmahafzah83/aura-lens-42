@@ -1160,6 +1160,9 @@ export default function StudioPanel({
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
       setContent(generated);
       generatedTextRef.current = generated;
+      // The reading the generation already took. Display only — no re-run.
+      const q = json?.quality_gate;
+      setGatePayload(q && typeof q === "object" ? (q as GatePayload) : null);
       // The gate already ran at generation. If it held the post, the words stay
       // fully editable and only the publish action waits.
       if (json?.blocked === true) {
