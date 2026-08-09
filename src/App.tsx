@@ -140,7 +140,8 @@ const App = () => (
             <Route path="/card-preview" element={<PasswordGate><CardPreview /></PasswordGate>} />
             <Route path="/signature" element={<PasswordGate><SignatureStudio /></PasswordGate>} />
             <Route path="/signature-harness" element={<PasswordGate><SignatureHarness /></PasswordGate>} />
-            <Route path="/voice-harness" element={<PasswordGate><VoiceHarness /></PasswordGate>} />
+            {/* Static fixtures only — reads nothing from the database, so it needs no gate. */}
+            <Route path="/voice-harness" element={<VoiceHarness />} />
             <Route path="/studio" element={<PasswordGate><Studio /></PasswordGate>} />
             {import.meta.env.DEV && (
               <Route path="/carousel-preview" element={<CarouselPreview />} />
