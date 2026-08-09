@@ -135,7 +135,181 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 
 الإخراج: البوست مباشرة فقط — بدون مقدمة أو عنوان أو تفسير.`;
 
-function buildVoiceContext(voiceProfile: any): string {
+/**
+ * Explicit member choices live inside the existing `vocabulary_preferences`
+ * jsonb under a single `prefs` key. No column, no migration. Absent prefs must
+ * behave exactly as before, so every block below is emitted only when the
+ * member has actually set the corresponding value.
+ */
+interface VoicePrefs {
+  length_max?: number;
+  emoji_level?: "none" | "rare" | "some";
+  openings?: string[];
+  story_mix?: Record<string, number>;
+  anti_ai?: boolean;
+  banned_phrases?: string[];
+}
+
+function readPrefs(voiceProfile: any): VoicePrefs {
+  const vp = voiceProfile && typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences
+    ? voiceProfile.vocabulary_preferences as Record<string, unknown>
+    : {};
+  const p = vp.prefs;
+  if (!p || typeof p !== "object" || Array.isArray(p)) return {};
+  const o = p as Record<string, unknown>;
+  const out: VoicePrefs = {};
+  if (Number.isFinite(Number(o.length_max)) && Number(o.length_max) > 0) out.length_max = Math.floor(Number(o.length_max));
+  if (o.emoji_level === "none" || o.emoji_level === "rare" || o.emoji_level === "some") out.emoji_level = o.emoji_level;
+  if (Array.isArray(o.openings)) {
+    const list = o.openings.map((x) => String(x ?? "").trim()).filter(Boolean);
+    if (list.length) out.openings = list;
+  }
+  if (o.story_mix && typeof o.story_mix === "object" && !Array.isArray(o.story_mix)) {
+    const mix: Record<string, number> = {};
+    for (const [k, v] of Object.entries(o.story_mix as Record<string, unknown>)) {
+      if (Number.isFinite(Number(v))) mix[k] = Number(v);
+    }
+    if (Object.keys(mix).length) out.story_mix = mix;
+  }
+  if (typeof o.anti_ai === "boolean") out.anti_ai = o.anti_ai;
+  if (Array.isArray(o.banned_phrases)) {
+    const list = o.banned_phrases.map((x) => String(x ?? "").trim()).filter(Boolean);
+    if (list.length) out.banned_phrases = list;
+  }
+  return out;
+}
+
+/** Emoji level is the member's explicit word; it overrides anything inferred. */
+function prefsBansEmoji(voiceProfile: any): boolean {
+  return readPrefs(voiceProfile).emoji_level === "none";
+}
+
+const OPENING_LABELS_EN: Record<string, string> = {
+  number_first: "open on a specific figure drawn from the evidence",
+  contrarian_claim: "open on a claim that contradicts what the sector believes",
+  observation: "open on a plain observation of something you have seen",
+  scene: "open inside a short concrete scene",
+  question: "open on one specific question",
+  confession: "open by admitting something you got wrong",
+  contrast: "open by setting two things against each other",
+  dialogue: "open on a line someone actually said",
+};
+const OPENING_LABELS_AR: Record<string, string> = {
+  number_first: "ابدأ برقم محدد وارد في الأدلة",
+  contrarian_claim: "ابدأ بادعاء يخالف ما يعتقده القطاع",
+  observation: "ابدأ بملاحظة مباشرة لشيء رأيته",
+  scene: "ابدأ بمشهد قصير وملموس",
+  question: "ابدأ بسؤال واحد محدد",
+  confession: "ابدأ باعتراف بخطأ وقعت فيه",
+  contrast: "ابدأ بمقابلة بين أمرين متعارضين",
+  dialogue: "ابدأ بعبارة قالها شخص فعلاً",
+};
+const humanOpening = (key: string, ar: boolean) =>
+  (ar ? OPENING_LABELS_AR[key] : OPENING_LABELS_EN[key]) || key.replace(/_/g, " ");
+
+/** One opening per generation, drawn from what the member allows. */
+export function pickOpening(openings?: string[]): string | null {
+  if (!Array.isArray(openings) || openings.length === 0) return null;
+  return openings[Math.floor(Math.random() * openings.length)];
+}
+
+const STORY_MIX_LABELS_EN: Record<string, string> = {
+  analytical: "analytical — reason through the evidence",
+  actionable: "actionable — give the reader something to do",
+  human: "human — anchored in a real moment with people in it",
+  inspiring: "inspiring — lift the reader's view of the work",
+};
+const STORY_MIX_LABELS_AR: Record<string, string> = {
+  analytical: "تحليلي — استدلال على الأدلة",
+  actionable: "عملي — يمنح القارئ خطوة قابلة للتنفيذ",
+  human: "إنساني — مرتكز على لحظة حقيقية بأشخاص حقيقيين",
+  inspiring: "ملهم — يرفع نظرة القارئ إلى عمله",
+};
+
+const AI_SLOP_EN = [
+  "In today's rapidly evolving…",
+  "It's not about X, it's about Y",
+  "The key takeaway is",
+  "Let's dive in",
+  "game changer",
+  "At the end of the day",
+  "Three things stand out",
+];
+const AI_SLOP_AR = [
+  "في عالمنا سريع التغير…",
+  "الأمر لا يتعلق بـ X بل بـ Y",
+  "الخلاصة الأهم هي",
+  "دعونا نغوص في التفاصيل",
+  "نقلة نوعية",
+  "في نهاية المطاف",
+  "ثلاثة أمور تستحق الانتباه",
+];
+
+/**
+ * The member's explicit choices, rendered as prompt blocks. Returns "" when
+ * nothing has been set, so an untouched profile produces the same prompt it
+ * produced before this existed.
+ */
+function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string | null): string {
+  const prefs = readPrefs(voiceProfile);
+  const lines: string[] = [];
+
+  if (prefs.length_max) {
+    lines.push(ar
+      ? `الطول — إلزامي: لا يتجاوز المنشور ${prefs.length_max} حرفاً بأي حال.`
+      : `LENGTH — hard rule: the finished post must be ${prefs.length_max} characters or fewer.`);
+  }
+
+  if (prefs.emoji_level === "none") {
+    lines.push(ar
+      ? "الإيموجي — ممنوع نهائياً: لا تستخدم أي إيموجي أو رمز تعبيري."
+      : "EMOJI — none at all. Do not use a single emoji or pictographic symbol.");
+  } else if (prefs.emoji_level === "rare") {
+    lines.push(ar
+      ? "الإيموجي — نادراً: إيموجي واحد كحد أقصى، ولا يكون في السطر الأول ولا في السؤال الختامي."
+      : "EMOJI — rare: at most one in the whole post, never in the first line and never in the closing question.");
+  } else if (prefs.emoji_level === "some") {
+    lines.push(ar
+      ? "الإيموجي — باعتدال: استخدامه محدود، ولا يظهر في الخطاف ولا في السؤال الختامي."
+      : "EMOJI — sparing: a light touch only, never in the hook and never in the closing question.");
+  }
+
+  if (prefs.openings?.length) {
+    const named = prefs.openings.map((o) => humanOpening(o, ar)).join(ar ? "؛ " : "; ");
+    const pick = chosenOpening ?? pickOpening(prefs.openings);
+    lines.push(ar
+      ? `الافتتاحية — إلزامي: يجب أن يفتتح المنشور بإحدى هذه الطرق: ${named}. لهذا المنشور تحديداً: ${humanOpening(String(pick), true)}.`
+      : `OPENING — hard rule: the post must open in one of these styles: ${named}. For THIS post: ${humanOpening(String(pick), false)}.`);
+  }
+
+  if (prefs.story_mix) {
+    const entries = Object.entries(prefs.story_mix);
+    if (entries.length) {
+      const lowest = entries.sort((a, b) => a[1] - b[1])[0][0];
+      const label = (ar ? STORY_MIX_LABELS_AR[lowest] : STORY_MIX_LABELS_EN[lowest]) || lowest;
+      lines.push(ar
+        ? `نوع المنشور — إرشاد لا قاعدة: يميل هذا المنشور إلى النوع الأقل استخداماً لدى الكاتب: ${label}. اتبع ذلك حيث تسمح المادة.`
+        : `KIND OF POST — guidance, not a hard rule: lean toward the writer's under-used type: ${label}. Follow it where the material allows.`);
+    }
+  }
+
+  if (prefs.anti_ai !== false) {
+    lines.push(ar
+      ? `ممنوع منعاً باتاً — عبارات الذكاء الاصطناعي المستهلكة: ${AI_SLOP_AR.join("، ")}. وكذلك: التحوّط الفارغ، والجمل المتوازنة أكثر من اللازم، والقوائم الثلاثية غير الضرورية، والخواتيم التحفيزية العامة.`
+      : `HARD BAN — AI-cliché patterns: ${AI_SLOP_EN.join(", ")}. Also: empty hedging, over-balanced constructions, unnecessary three-part lists, generic inspirational closers.`);
+  }
+
+  if (prefs.banned_phrases?.length) {
+    lines.push(ar
+      ? `ممنوع منعاً باتاً — عبارات حظرها الكاتب بنفسه: ${JSON.stringify(prefs.banned_phrases)}. لا تستخدمها ولا صيغها القريبة.`
+      : `HARD BAN — phrases the writer has banned: ${JSON.stringify(prefs.banned_phrases)}. Never use them or near-variants.`);
+  }
+
+  if (lines.length === 0) return "";
+  return "\n" + (ar ? "اختيارات الكاتب الصريحة — تتقدّم على أي استنتاج:" : "WRITER'S EXPLICIT CHOICES — these outrank anything inferred:") + "\n" + lines.join("\n") + "\n";
+}
+
+function buildVoiceContext(voiceProfile: any, chosenOpening?: string | null): string {
   if (!voiceProfile) return "No voice profile set — use analytical, calm confidence tone.";
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
@@ -155,10 +329,10 @@ ${useRules.soft.length || avoidRules.soft.length ? `Soft guidance only — infer
 Vocabulary notes: ${vp.notes || ""}
 Avoid patterns not present in the user's examples. Match their sentence length, paragraph density, and rhetorical style.
 Mimic rhythm, interests, and boldness from the examples — never register or slang. The DNA register always outranks example mimicry.
-`;
+${buildPrefsBlock(voiceProfile, false, chosenOpening)}`;
 }
 
-function buildArabicVoiceContext(voiceProfile: any): string {
+function buildArabicVoiceContext(voiceProfile: any, chosenOpening?: string | null): string {
   if (!voiceProfile) return "";
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
@@ -175,7 +349,8 @@ ${useRules.hard.length ? `وظّف هذه العبارات والمفردات �
 ${avoidRules.hard.length ? `تجنّب هذه الأنماط — ملاحظة فعلياً في تعديلاته: ${JSON.stringify(avoidRules.hard)}` : ""}
 ${useRules.soft.length || avoidRules.soft.length ? `إرشاد مرن فقط (مستنتج وغير مؤكد من الكاتب): يُفضَّل ${JSON.stringify(useRules.soft)}، ويُبتعد عن ${JSON.stringify(avoidRules.soft)}` : ""}
 ${vp.notes ? `ملاحظات حول المفردات: ${vp.notes}` : ""}
-اكتب بحيث يعكس الناتج هذا الصوت تحديداً، لا صوتاً عاماً.`;
+اكتب بحيث يعكس الناتج هذا الصوت تحديداً، لا صوتاً عاماً.
+${buildPrefsBlock(voiceProfile, true, chosenOpening)}`;
 }
 
 function buildIdentityContext(profile: any): string {
@@ -390,6 +565,48 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       // Extra instruction (e.g. for short version rewrite)
       const extraInstruction = extra_instruction ? `\n\n${extra_instruction}` : "";
 
+      // One opening per generation, drawn from what the member allows.
+      const memberPrefs = readPrefs(voiceProfile);
+      const chosenOpening = pickOpening(memberPrefs.openings);
+
+      /**
+       * Variation: never repeat the shape of the member's most recent post.
+       * Silence is the correct output when there is not enough history — a
+       * fabricated constraint is worse than none. Never blocks generation.
+       */
+      let recentHookStyle: string | null = null;
+      let recentEndingType: string | null = null;
+      try {
+        const { data: recentRows } = await supabase
+          .from("linkedin_posts")
+          .select("hook_style, ending_type, framework_type")
+          .eq("user_id", effectiveUserId)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        const rows = (recentRows || []).filter((r: any) => r.hook_style || r.ending_type || r.framework_type);
+        if (rows.length >= 3) {
+          recentHookStyle = (rows.find((r: any) => r.hook_style)?.hook_style as string) || null;
+          recentEndingType = (rows.find((r: any) => r.ending_type)?.ending_type as string) || null;
+        }
+      } catch (_e) {
+        // A history read must never cost a member their draft.
+      }
+      const recentPatternBlock = (() => {
+        const bits: string[] = [];
+        if (recentHookStyle) {
+          bits.push(effectiveLanguage === "ar"
+            ? `آخر منشور فُتح بنمط "${recentHookStyle}" — لا تعِد استخدامه هذه المرة.`
+            : `The last post opened with a "${recentHookStyle}" hook — do not reuse it this time.`);
+        }
+        if (recentEndingType) {
+          bits.push(effectiveLanguage === "ar"
+            ? `وانتهى بخاتمة من نوع "${recentEndingType}" — اختر خاتمة مختلفة.`
+            : `It closed with a "${recentEndingType}" ending — choose a different close.`);
+        }
+        if (!bits.length) return "";
+        return "\n\n" + (effectiveLanguage === "ar" ? "النمط الأخير:" : "RECENT PATTERN:") + " " + bits.join(" ");
+      })();
+
       // Language + voice handling
       let voiceSection: string;
       if (effectiveLanguage === "ar") {
@@ -399,12 +616,13 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         );
         // Arabic-native prompt replaces voice section
         voiceSection = voiceProfile
-          ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile)
+          ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile, chosenOpening)
           : arabicBase;
         // If a specific framework is selected, use it; otherwise Arabic defaults to PAS/BAB (already in ARABIC_VOICE_PROMPT)
       } else {
-        voiceSection = buildVoiceContext(voiceProfile);
+        voiceSection = buildVoiceContext(voiceProfile, chosenOpening);
       }
+      voiceSection += recentPatternBlock;
 
       const sectorContextLabel = `${(typeof sector === "string" && sector.trim()) || profile?.sector_focus || "their own"} context`;
       const hookFramework = `You are writing for ${readerDescription}. Always open with one of these two hook types:
@@ -478,7 +696,16 @@ FORMATTING RULES (mandatory):
 
       // The ending is a rotatable value the profile allows — never an
       // instruction read out of a style field.
-      const chosenEnding = pickEnding(voiceProfile?.allowed_endings);
+      // Bias away from the ending the member just used, where an alternative exists.
+      const chosenEnding = (() => {
+        const first = pickEnding(voiceProfile?.allowed_endings);
+        if (!recentEndingType || first !== recentEndingType) return first;
+        for (let i = 0; i < 6; i++) {
+          const next = pickEnding(voiceProfile?.allowed_endings);
+          if (next !== recentEndingType) return next;
+        }
+        return first;
+      })();
       const endingDirective = effectiveLanguage === "ar"
         ? `\n\nالخاتمة لهذا البوست: ${ENDING_DIRECTIVE_AR[chosenEnding]}`
         : `\n\nENDING FOR THIS POST: ${ENDING_DIRECTIVE_EN[chosenEnding]}`;
@@ -557,7 +784,10 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           },
           body: JSON.stringify({
             model: "claude-sonnet-4-5-20250929",
-            max_tokens: 4096,
+            // A member-set length ceiling also sizes the call (~4 chars/token).
+            max_tokens: memberPrefs.length_max
+              ? Math.max(512, Math.min(4096, Math.ceil(memberPrefs.length_max / 3) + 256))
+              : 4096,
             system: systemPrompt + (extraDirective ? `\n\n${extraDirective}` : ""),
             messages: [
               { role: "user", content: userMessageContent },
@@ -818,7 +1048,8 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       const isAr = effectiveLanguage === "ar";
       // Only a ban the member's own edits confirmed is enforced mechanically.
       // An inferred "never uses emoji" must not strip emoji they deliberately keep.
-      const bansEmoji = profileBansEmoji(
+      // An explicit "none" from the member is stronger than anything inferred.
+      const bansEmoji = prefsBansEmoji(voiceProfile) || profileBansEmoji(
         enforcedRuleTexts((voiceProfile?.vocabulary_preferences as any)?.avoid),
       );
 
@@ -919,6 +1150,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         ending_type: endingTypeOf(content),
         hook_style: hookStyleOf(content),
         requested_ending: chosenEnding,
+        chosen_opening: chosenOpening,
         unsourced_numbers_removed: unsourcedRemoved,
         unsourced_entities_removed: unsourcedEntitiesRemoved,
         unsourced_entity_values: unsourcedEntities,
