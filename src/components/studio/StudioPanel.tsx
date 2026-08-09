@@ -247,6 +247,11 @@ export default function StudioPanel({
   const unsourcedRemovedRef = useRef<number>(0);
   // Organisations, people and dates the provenance guard could not source.
   const unsourcedEntitiesRemovedRef = useRef<number>(0);
+  /**
+   * The content fingerprint as the generator reported it. Persisted on the
+   * draft row; nothing is written when the generator reported nothing.
+   */
+  const fingerprintRef = useRef<{ endingType?: string; hookStyle?: string }>({});
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
   /**
