@@ -576,12 +576,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
   return (
     <div ref={containerRef} dir="ltr" style={{ fontFamily: "Inter, system-ui, sans-serif", color: INK }}>
       <style>{`
-        @keyframes voiceMicPulse { 0% { transform: scale(.9); opacity: .9 } 100% { transform: scale(1.25); opacity: 0 } }
         @keyframes voiceLiveDot { 0%,100% { opacity: 1 } 50% { opacity: .2 } }
-        .voice-mic::after {
-          content: ""; position: absolute; inset: -1px; border-radius: 50%;
-          border: 1px solid rgba(0,206,201,.5); animation: voiceMicPulse 2.6s infinite ease-out;
-        }
         .voice-live-dot { animation: voiceLiveDot 1.4s infinite ease-in-out; }
         .voice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
         .voice-rules { display: grid; grid-template-columns: 1fr 1fr 1fr; }
@@ -594,7 +589,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
           .voice-test-desktop { display: none !important; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .voice-mic::after, .voice-live-dot { animation: none !important; }
+          .voice-live-dot { animation: none !important; }
         }
       `}</style>
 
