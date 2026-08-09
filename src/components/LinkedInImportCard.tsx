@@ -1,14 +1,19 @@
 /**
  * LinkedIn import — the automatic way to teach Aura a member's voice.
  *
- * The member confirms their profile address once; the `linkedin-fetch-posts`
- * edge function reads their own posts with their session JWT. Paste/upload
- * stays available as the manual fallback.
+ * The address is *not* edited here. It lives on `linkedin_connections` and is
+ * edited in Settings → Connections and during onboarding; this card reads it
+ * and links there. One editor for one value.
+ *
+ * Voice & Writing is English-only chrome. The Arabic copy below stays in the
+ * codebase for the locale switch but is not rendered on this surface.
  */
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { loadLinkedInAddress } from "@/lib/linkedinAddress";
 
 /* System-B tokens */
 const BLUE = "#0670C4";
@@ -41,18 +46,18 @@ const COPY = {
   },
 } as const;
 
-const isProfileUrl = (v: string) => /linkedin\.com\/in\/[^/\s?]+/i.test(v);
-
 const LinkedInImportCard = ({ onImported }: { onImported?: (summary: any) => void } = {}) => {
-  const [lang, setLang] = useState<"en" | "ar">("en");
+  /** English-only on this surface; COPY.ar is kept for the future locale switch. */
+  const lang = "en" as const;
   const [url, setUrl] = useState("");
+  const [handle, setHandle] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
 
   const t = COPY[lang];
-  const isAr = lang === "ar";
+  const isAr = false;
 
   useEffect(() => {
     let cancelled = false;
@@ -60,20 +65,10 @@ const LinkedInImportCard = ({ onImported }: { onImported?: (summary: any) => voi
       const { data: { session } } = await supabase.auth.getSession();
       const uid = session?.user?.id;
       if (!uid) return;
-
-      const [{ data: conn }, { data: voice }] = await Promise.all([
-        supabase.from("linkedin_connections").select("handle, profile_url").eq("user_id", uid).maybeSingle(),
-        supabase.from("authority_voice_profiles").select("language, is_primary").eq("user_id", uid),
-      ]);
-      if (cancelled) return;
-
-      const primary = Array.isArray(voice) ? (voice.find((v: any) => v?.is_primary) || voice[0]) : null;
-      if ((primary as any)?.language === "ar") setLang("ar");
-
-      const handle = typeof conn?.handle === "string" ? conn.handle.trim() : "";
-      const stored = typeof conn?.profile_url === "string" ? conn.profile_url.trim() : "";
-      if (handle) setUrl(`https://www.linkedin.com/in/${handle}`);
-      else if (isProfileUrl(stored)) setUrl(stored);
+      const address = await loadLinkedInAddress(uid).catch(() => null);
+      if (cancelled || !address) return;
+      setHandle(address.handle);
+      setUrl(address.profileUrl ?? "");
     })();
     return () => { cancelled = true; };
   }, []);
