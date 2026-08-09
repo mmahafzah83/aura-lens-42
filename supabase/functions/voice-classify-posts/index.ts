@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
       // The .is(null) guards make it impossible to overwrite an existing label.
       let q = admin.from("linkedin_posts").update(patch).eq("id", id).eq("user_id", userId);
       if (patch.hook_style) q = q.is("hook_style", null);
-      if (patch.ending_type && !patch.hook_style) q = q.is("ending_type", null);
+      if (patch.ending_type) q = q.is("ending_type", null);
       const { error } = await q;
       if (error) throw new Error(`update ${id} failed: ${error.message}`);
       updated += 1;
