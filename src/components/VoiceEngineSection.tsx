@@ -20,6 +20,7 @@ import {
 } from "@/components/voice/voiceOptions";
 import { composeSample, GENERIC_SAMPLE, type VoiceSpec } from "@/components/voice/sampleBank";
 import LinkedInImportCard from "@/components/LinkedInImportCard";
+import VoiceMicBadge from "@/components/voice/VoiceMicBadge";
 
 /* ── System-B tokens ─────────────────────────────────────────────────────── */
 const NIGHT = "#0F1519";
@@ -85,13 +86,7 @@ function StrengthBar({
       background: NIGHT, borderRadius: 20, padding: "20px 24px", display: "flex",
       gap: 20, alignItems: "center", flexWrap: "wrap",
     }}>
-      <div className="voice-mic" aria-hidden style={{
-        position: "relative", inlineSize: 52, blockSize: 52, borderRadius: "50%", flex: "0 0 auto",
-        background: "rgba(0,206,201,.10)", border: "1px solid rgba(0,206,201,.28)",
-        display: "grid", placeItems: "center",
-      }}>
-        <Mic size={22} color={CYAN} strokeWidth={1.7} fill="none" />
-      </div>
+      <VoiceMicBadge size={52} />
 
       <div style={{ flex: 1, minInlineSize: 220 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
