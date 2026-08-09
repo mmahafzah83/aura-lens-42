@@ -249,7 +249,7 @@ export async function submitVerdict(args: SubmitArgs): Promise<string[]> {
     verdict,
     sample_text: sampleText,
     mode_scope: applyToAll ? "all" : modeScope,
-    applied_changes: applied as unknown as Record<string, unknown>[], // always present — an empty array is the honest record of "nothing moved"
+    applied_changes: JSON.parse(JSON.stringify(applied)), // always present — an empty array is the honest record of "nothing moved"
   });
   if (insErr) throw insErr;
 
