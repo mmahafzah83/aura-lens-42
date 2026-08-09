@@ -7,6 +7,7 @@
 import VoiceOverview from "@/components/voice/VoiceOverview";
 import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
 import VoiceDna from "@/components/voice/VoiceDna";
+import TestImprove from "@/components/voice/TestImprove";
 import type { VoiceDnaModel } from "@/lib/voiceDna";
 import { buildRecommendation, type VoiceOverviewModel } from "@/lib/voiceOverview";
 
@@ -115,6 +116,15 @@ export default function VoiceHarness() {
             {s.title.toUpperCase()}
           </div>
           <VoiceOverview userId={null} onNavigate={() => {}} modelOverride={s.model} />
+        </div>
+      ))}
+
+      {[{ title: "TEST A — nothing measured", model: DNA_EMPTY }, { title: "TEST B — measured, thin window", model: DNA_THIN }].map((s) => (
+        <div key={s.title} style={{ marginBlockEnd: 32 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#5B6673", marginBlockEnd: 8 }}>
+            {s.title.toUpperCase()}
+          </div>
+          <TestImprove userId={null} onWrite={() => {}} onNavigate={() => {}} modelOverride={s.model} />
         </div>
       ))}
 
