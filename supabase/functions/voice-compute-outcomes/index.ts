@@ -61,7 +61,10 @@ Deno.serve(async (req) => {
     if (isService) {
       if (typeof body.user_id === "string") userIds = [body.user_id];
       else if (body.all === true) {
-        const { data } = await admin.from("linkedin_post_metrics").select("user_id");
+        // Every member with a published post — not only the ones the older
+        // metrics pipeline covered.
+        const { data } = await admin
+          .from("linkedin_posts").select("user_id").not("published_at", "is", null);
         userIds = [...new Set((data ?? []).map((r) => r.user_id as string))];
       } else return json({ error: "user_id or all required for service calls" }, 400);
     } else {
