@@ -197,7 +197,7 @@ export async function submitVerdict(args: SubmitArgs): Promise<string[]> {
     for (const pid of targets) {
       const existing = pid === profileId ? t : null;
       if (existing?.id) {
-        const patch: Record<string, unknown> = { value: change.to, last_confirmed_at: new Date().toISOString() };
+        const patch: { value: number | null; last_confirmed_at: string; band_high?: number } = { value: change.to, last_confirmed_at: new Date().toISOString() };
         if (verdict === "too_aggressive" && t.band_high !== null && t.band_low !== null) {
           patch.band_high = Number(Math.max(t.band_low, t.band_high - (t.band_high - t.band_low) * 0.25).toFixed(2));
         }
@@ -249,7 +249,7 @@ export async function submitVerdict(args: SubmitArgs): Promise<string[]> {
     verdict,
     sample_text: sampleText,
     mode_scope: applyToAll ? "all" : modeScope,
-    applied_changes: applied, // always present — an empty array is the honest record of "nothing moved"
+    applied_changes: applied as unknown as Record<string, unknown>[], // always present — an empty array is the honest record of "nothing moved"
   });
   if (insErr) throw insErr;
 
