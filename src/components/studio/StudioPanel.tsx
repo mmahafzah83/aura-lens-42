@@ -2620,6 +2620,71 @@ export default function StudioPanel({
                     {T.whyNoSubject[lang]}
                   </span>
                 )}
+                {/* Optional: four ways in, offered beside the primary. */}
+                {!advances && (
+                  <ButtonGhost
+                    onClick={() => { if (anglesOpen) { setAnglesOpen(false); return; } void loadAngles(); }}
+                    disabled={blocked || anglesBusy}
+                    aria-expanded={anglesOpen}
+                    style={{ minHeight: 44 }}
+                  >
+                    {anglesBusy ? T.anglesLoading[lang] : T.seeAngles[lang]}
+                  </ButtonGhost>
+                )}
+                {anglesOpen && !anglesBusy && (
+                  <div style={{ marginTop: 6, width: "100%" }}>
+                    {anglesError ? (
+                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>
+                        {T.anglesFailed[lang]}
+                      </p>
+                    ) : (
+                      <>
+                        <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 8px" }}>
+                          {T.chooseAngle[lang]}
+                        </p>
+                        <div style={{ display: "grid", gap: 8 }}>
+                          {angles.map((d) => {
+                            const on = pickedAngleId === d.id;
+                            return (
+                              <button
+                                key={d.id}
+                                type="button"
+                                onClick={() => pickAngle(d)}
+                                aria-pressed={on}
+                                dir={rtlWrite ? "rtl" : "ltr"}
+                                style={{
+                                  textAlign: rtlWrite ? "right" : "left",
+                                  background: "var(--surface-card)",
+                                  border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                                  boxShadow: on ? "0 0 0 2px var(--act)" : "none",
+                                  borderRadius: 12,
+                                  padding: "12px 14px",
+                                  cursor: "pointer",
+                                  fontFamily: rtlWrite ? "var(--ff-ar, var(--ff-ui))" : "var(--ff-ui)",
+                                  fontSize: 13.5,
+                                  lineHeight: rtlWrite ? 1.9 : 1.6,
+                                  color: "var(--text-primary)",
+                                }}
+                              >
+                                {d.angle}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setAnglesOpen(false); chosenDirectionRef.current = null; void generate(); }}
+                          style={{
+                            marginTop: 10, minHeight: 44, padding: 0, background: "transparent", border: 0,
+                            cursor: "pointer", fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)",
+                          }}
+                        >
+                          {T.skipAngles[lang]}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })()}
