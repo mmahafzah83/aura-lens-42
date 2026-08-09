@@ -252,6 +252,14 @@ export default function StudioPanel({
    * draft row; nothing is written when the generator reported nothing.
    */
   const fingerprintRef = useRef<{ endingType?: string; hookStyle?: string }>({});
+  /* The angle the member tapped, if they asked to see angles first. Kept in a
+     ref so the draft row can carry it without re-rendering the composer. */
+  const chosenDirectionRef = useRef<string | null>(null);
+  const [angles, setAngles] = useState<Array<{ id: string; angle: string }>>([]);
+  const [anglesOpen, setAnglesOpen] = useState(false);
+  const [anglesBusy, setAnglesBusy] = useState(false);
+  const [anglesError, setAnglesError] = useState(false);
+  const [pickedAngleId, setPickedAngleId] = useState<string | null>(null);
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
   /**
@@ -1090,7 +1098,7 @@ export default function StudioPanel({
   }, [showAllSubjects, userId, allSignals.length]);
 
   /* ---------- step 2: the words ----------------------------------- */
-  const generate = useCallback(async (picked?: Choice, langOverride?: Lang) => {
+  const generate = useCallback(async (picked?: Choice, langOverride?: Lang, angle?: string) => {
     const target = picked ?? choice;
     if (!target) return;
     const runId = ++genRunId.current;
@@ -1125,6 +1133,9 @@ export default function StudioPanel({
           context: target.insight || "",
           language: useLang,
           signal_id: target.id || undefined,
+          ...(angle && angle.trim()
+            ? { extra_instruction: `Write from THIS angle only: ${angle.trim()}` }
+            : {}),
           stream: false,
         }),
       });
@@ -1161,6 +1172,56 @@ export default function StudioPanel({
     }
   }, [choice, writeLang, lang, applyGate]);
 
+  /* Four short ways into the same subject. Optional, additive: it never
+     replaces "Write it", and skipping it lands on the normal generate. */
+  const loadAngles = useCallback(async () => {
+    const target = choice;
+    if (!target) return;
+    setAnglesError(false);
+    setAnglesBusy(true);
+    setAnglesOpen(true);
+    setPickedAngleId(null);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const freshToken = sess?.session?.access_token;
+      if (!freshToken) { setAnglesError(true); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${freshToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          action: "generate_directions",
+          topic: target.title,
+          context: target.insight || "",
+          language: writeLang,
+          signal_id: target.id || undefined,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      const list = Array.isArray(json?.directions) ? json.directions : [];
+      const clean = list
+        .map((d: any, i: number) => ({ id: String(d?.id ?? i + 1), angle: String(d?.angle ?? "").trim() }))
+        .filter((d: { angle: string }) => d.angle)
+        .slice(0, 4);
+      if (!res.ok || clean.length === 0) { setAnglesError(true); setAngles([]); return; }
+      setAngles(clean);
+    } catch {
+      setAnglesError(true);
+    } finally {
+      setAnglesBusy(false);
+    }
+  }, [choice, writeLang]);
+
+  const pickAngle = useCallback((d: { id: string; angle: string }) => {
+    setPickedAngleId(d.id);
+    chosenDirectionRef.current = d.angle;
+    setAnglesOpen(false);
+    void generate(undefined, undefined, d.angle);
+  }, [generate]);
+
   /* ---------- the draft row --------------------------------------- */
   /** The subject, written as a title so the Library never shows a raw line. */
   const pieceTitle = useCallback((): string => {
@@ -1177,6 +1238,7 @@ export default function StudioPanel({
       language: writeLang,
       _language: writeLang,
       signal_ids: choice?.id ? [choice.id] : [],
+      ...(chosenDirectionRef.current ? { chosen_direction: chosenDirectionRef.current } : {}),
     }),
     [choice, typedTopic, writeLang],
   );
@@ -2557,6 +2619,71 @@ export default function StudioPanel({
                   <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 320 }}>
                     {T.whyNoSubject[lang]}
                   </span>
+                )}
+                {/* Optional: four ways in, offered beside the primary. */}
+                {!advances && (
+                  <ButtonGhost
+                    onClick={() => { if (anglesOpen) { setAnglesOpen(false); return; } void loadAngles(); }}
+                    disabled={blocked || anglesBusy}
+                    aria-expanded={anglesOpen}
+                    style={{ minHeight: 44 }}
+                  >
+                    {anglesBusy ? T.anglesLoading[lang] : T.seeAngles[lang]}
+                  </ButtonGhost>
+                )}
+                {anglesOpen && !anglesBusy && (
+                  <div style={{ marginTop: 6, width: "100%" }}>
+                    {anglesError ? (
+                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>
+                        {T.anglesFailed[lang]}
+                      </p>
+                    ) : (
+                      <>
+                        <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 8px" }}>
+                          {T.chooseAngle[lang]}
+                        </p>
+                        <div style={{ display: "grid", gap: 8 }}>
+                          {angles.map((d) => {
+                            const on = pickedAngleId === d.id;
+                            return (
+                              <button
+                                key={d.id}
+                                type="button"
+                                onClick={() => pickAngle(d)}
+                                aria-pressed={on}
+                                dir={rtlWrite ? "rtl" : "ltr"}
+                                style={{
+                                  textAlign: rtlWrite ? "right" : "left",
+                                  background: "var(--surface-card)",
+                                  border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                                  boxShadow: on ? "0 0 0 2px var(--act)" : "none",
+                                  borderRadius: 12,
+                                  padding: "12px 14px",
+                                  cursor: "pointer",
+                                  fontFamily: rtlWrite ? "var(--ff-ar, var(--ff-ui))" : "var(--ff-ui)",
+                                  fontSize: 13.5,
+                                  lineHeight: rtlWrite ? 1.9 : 1.6,
+                                  color: "var(--text-primary)",
+                                }}
+                              >
+                                {d.angle}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setAnglesOpen(false); chosenDirectionRef.current = null; void generate(); }}
+                          style={{
+                            marginTop: 10, minHeight: 44, padding: 0, background: "transparent", border: 0,
+                            cursor: "pointer", fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)",
+                          }}
+                        >
+                          {T.skipAngles[lang]}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             );

@@ -128,6 +128,13 @@ export const T = {
   useTheseWords: { en: "Use these words", ar: "استخدم هذه الكلمات" },
   changeSubject: { en: "Change subject", ar: "غيّر الموضوع" },
 
+  // Angles — an optional look at four ways in, before the words are written.
+  seeAngles: { en: "See angles first", ar: "اعرض الزوايا أولاً" },
+  chooseAngle: { en: "Choose your angle", ar: "اختر زاويتك" },
+  anglesLoading: { en: "Finding angles…", ar: "جارٍ إيجاد الزوايا…" },
+  anglesFailed: { en: "Could not find angles just now. Write it instead.", ar: "تعذّر إيجاد الزوايا الآن. اكتبه مباشرة." },
+  skipAngles: { en: "skip — just write it", ar: "تخطَّ — اكتبه مباشرة" },
+
   // Step 1 — choose
   chooseHead: { en: "What is this post about?", ar: "عن ماذا يدور هذا المنشور؟" },
   chooseHelp: {
