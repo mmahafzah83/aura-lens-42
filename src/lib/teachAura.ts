@@ -76,6 +76,11 @@ export interface TeachAuraModel {
   posts: CorpusPost[];
   totalPosts: number;
   /**
+   * Posts LinkedIn engagement is known for but whose words were never saved.
+   * A real gap: Aura can see they did well and cannot read why.
+   */
+  textlessWithEngagement: number;
+  /**
    * The only rows worth a member's attention: own-writing Aura could not
    * classify, and set-asides it was not sure about. Capped, because a queue of
    * 160 is a labelling job nobody finishes.
