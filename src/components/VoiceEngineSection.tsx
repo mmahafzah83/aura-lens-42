@@ -834,24 +834,120 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
     );
   };
 
-  const SpineCard = ({ label, explainer, children }: { label: string; explainer: string; children: React.ReactNode }) => (
-    <div style={{ position: "relative", marginInlineStart: 22, marginBlockStart: 14 }}>
-      <span
-        aria-hidden
+  const t = (en: string, ar: string) => (isAr ? ar : en);
+
+  // A console section: an accordion whose summary carries the current value,
+  // so the whole voice reads without opening anything.
+  const ConsoleSection = ({
+    id, label, value, explainer, children,
+  }: { id: string; label: string; value: string; explainer?: string; children: React.ReactNode }) => (
+    <details id={`voice-sec-${id}`} className="voice-sec" style={{ ...cardStyleB, marginBlockStart: 10, padding: 0 }}>
+      <summary
+        {...dirProps}
         style={{
-          position: "absolute", insetInlineStart: -22, insetBlockStart: 26, width: 7, height: 7,
-          borderRadius: 999, background: "#B9C6D4",
+          listStyle: "none", cursor: "pointer", padding: 16, display: "flex", gap: 12,
+          alignItems: "baseline", justifyContent: "space-between",
         }}
-      />
-      <div style={cardStyleB}>
-        <div style={labelStyle} {...dirProps}>{label}</div>
-        <p style={explainerStyle} {...dirProps}>{explainer}</p>
+      >
+        <span style={labelStyle}>{label}</span>
+        <span style={{ flex: 1, textAlign: isAr ? "left" : "right", fontSize: 12.5, color: "#1B2733", lineHeight: bodyLine }}>
+          {value || <span style={{ color: "#8FA1AD" }}>{t("Not set", "غير محدد")}</span>}
+        </span>
+      </summary>
+      <div style={{ padding: "0 16px 16px" }}>
+        {explainer ? <p style={explainerStyle} {...dirProps}>{explainer}</p> : null}
         {children}
       </div>
-    </div>
+    </details>
   );
 
-  const t = (en: string, ar: string) => (isAr ? ar : en);
+  const chipBtn = (active: boolean): React.CSSProperties => ({
+    border: `1px solid ${active ? "#0670C4" : "#E2E7EE"}`,
+    background: active ? "rgba(6,112,196,0.08)" : "#FFFFFF",
+    color: active ? "#0670C4" : "#5B6673",
+    borderRadius: 999, padding: "6px 12px", fontFamily: UI, fontSize: 12.5,
+    cursor: "pointer", lineHeight: 1.4,
+  });
+
+  const OPENING_OPTIONS: { v: string; en: string; ar: string }[] = [
+    { v: "number_first", en: "A number first", ar: "رقم أولاً" },
+    { v: "contrarian_claim", en: "A claim they'll argue with", ar: "ادعاء سيجادلون فيه" },
+    { v: "observation", en: "Something you keep seeing", ar: "شيء تراه باستمرار" },
+    { v: "question", en: "A question", ar: "سؤال" },
+    { v: "story", en: "A short story", ar: "قصة قصيرة" },
+    { v: "confession", en: "An admission", ar: "اعتراف" },
+  ];
+  const ENDING_OPTIONS: { v: string; en: string; ar: string }[] = [
+    { v: "question", en: "An uncomfortable question", ar: "سؤال غير مريح" },
+    { v: "signature", en: "Your signature line", ar: "جملة توقيعك" },
+    { v: "hanging_line", en: "A line left hanging", ar: "جملة معلّقة" },
+    { v: "reframe", en: "A reframe", ar: "إعادة تأطير" },
+    { v: "equation", en: "An equation", ar: "معادلة" },
+    { v: "number", en: "A number", ar: "رقم" },
+  ];
+  const STORY_ROWS: { k: string; en: string; ar: string; note: string }[] = [
+    { k: "analytical", en: "Analytical", ar: "تحليلي", note: t("here's what it is", "هذا ما هو عليه") },
+    { k: "actionable", en: "Actionable", ar: "جاهز للتنفيذ", note: t("here's how", "هكذا تفعلها") },
+    { k: "human", en: "Human", ar: "الطبيعة البشرية", note: t("here's why", "وهذا هو السبب") },
+    { k: "inspiring", en: "Inspiring", ar: "ملهم", note: t("yes, you can", "نعم، تستطيع") },
+  ];
+  const labelOf = (opts: { v: string; en: string; ar: string }[], v: string) => {
+    const hit = opts.find((o) => o.v === v);
+    return hit ? (isAr ? hit.ar : hit.en) : v;
+  };
+
+  // Language mix is read from the corpus, never chosen here.
+  const langMix = (() => {
+    let ar = 0, en = 0;
+    for (const r of profiles) {
+      const n = Array.isArray(r?.example_posts) ? r.example_posts.length : 0;
+      if (r?.language === "ar") ar += n; else en += n;
+    }
+    const total = ar + en;
+    if (total === 0) return t("No posts heard yet", "لم تُسمع منشورات بعد");
+    return `العربية ${Math.round((ar / total) * 100)}% · English ${Math.round((en / total) * 100)}%`;
+  })();
+
+  const openSection = (id: string) => {
+    const el = document.getElementById(`voice-sec-${id}`) as HTMLDetailsElement | null;
+    if (!el) return;
+    el.open = true;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const summaries: Record<string, string> = {
+    lang: langMix,
+    tone: toneVal ? toneVal.slice(0, 70) : "",
+    length: lengthSet ? `${lengthMax} ${t("chars", "حرفاً")}` : t("No limit", "بلا حد"),
+    rhythm: rhythm ? rhythm.slice(0, 60) : "",
+    emoji: emojiLevel ? t(
+      emojiLevel === "none" ? "None" : emojiLevel === "rare" ? "Rare" : "Some",
+      emojiLevel === "none" ? "بلا" : emojiLevel === "rare" ? "نادراً" : "قليلاً",
+    ) : "",
+    openings: chosenOpenings.length ? chosenOpenings.map((o) => labelOf(OPENING_OPTIONS, o)).join(" · ") : "",
+    endings: allowedEndings.length ? allowedEndings.map((e) => labelOf(ENDING_OPTIONS, e)).join(" · ") : "",
+    story: Object.keys(storyMix).length
+      ? STORY_ROWS.map((r) => `${isAr ? r.ar : r.en} ${Number(storyMix[r.k]) || 0}`).join(" · ")
+      : "",
+    structures: structures.length ? `${structures.length}` : "",
+    moves: patterns.length ? `${patterns.length}` : "",
+    rules: (useRules.length || avoidRules.length) ? `${useRules.length} ✓ · ${avoidRules.length} ✗` : "",
+    anchors: examples.length ? `${examples.length}` : "",
+  };
+
+  const FEED_CHIPS: { id: string; name: string }[] = [
+    { id: "lang", name: t("Language", "اللغة") },
+    { id: "tone", name: t("Tone", "النبرة") },
+    { id: "length", name: t("Length", "الطول") },
+    { id: "rhythm", name: t("Rhythm", "الإيقاع") },
+    { id: "emoji", name: t("Emoji", "الإيموجي") },
+    { id: "openings", name: t("Openings", "الافتتاحيات") },
+    { id: "endings", name: t("Endings", "الخواتيم") },
+    { id: "story", name: t("Story types", "أنواع المنشور") },
+    { id: "structures", name: t("Structures", "البُنى") },
+    { id: "rules", name: t("Do · Never", "افعل · لا تفعل") },
+    { id: "anchors", name: t("Anchors", "المراسي") },
+  ];
 
   return (
     <div id="voice-engine-section" ref={containerRef} style={{ scrollMarginTop: 96, fontFamily: UI }}>
