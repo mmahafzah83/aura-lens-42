@@ -664,8 +664,16 @@ const Onboarding = () => {
         onboarding_completed: true,
         completed: true,
       };
-      if (usedLinkedIn && linkedinUrl.trim()) payload.linkedin_url = linkedinUrl.trim();
       payload.shared_learning_consent = sharedLearningConsent;
+
+      // The address is written to linkedin_connections — the profile columns are deprecated.
+      if (usedLinkedIn && linkedinUrl.trim()) {
+        try {
+          await saveLinkedInAddress(userId, linkedinUrl.trim());
+        } catch (e) {
+          console.error("Could not save LinkedIn address:", e);
+        }
+      }
 
       const { error } = await supabase
         .from("diagnostic_profiles" as any)
