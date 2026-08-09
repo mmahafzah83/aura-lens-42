@@ -64,7 +64,8 @@ export default function Settings() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get("tab") === "preferences" ? "preferences" : "account";
+  const rawTab = searchParams.get("tab");
+  const tab = rawTab === "preferences" ? "preferences" : rawTab === "connections" ? "connections" : "account";
   const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
   /** Which profile field the member asked to edit. Null means the modal is shut. */
   const [editField, setEditField] = useState<EditProfileField | null>(null);
@@ -419,7 +420,7 @@ const handleDeleteAccount = async () => {
 
         {/* Tabs — Account first, then preferences */}
         <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "0.5px solid var(--rule)" }}>
-          {([["account", "Account"], ["preferences", "Preferences"]] as const).map(([key, label]) => (
+          {([["account", "Account"], ["connections", "Connections"], ["preferences", "Preferences"]] as const).map(([key, label]) => (
             <button
               key={key}
               type="button"
@@ -451,6 +452,8 @@ const handleDeleteAccount = async () => {
             onEditField={(f) => setEditField(f)}
             onSignOut={() => { void signOutAndLand(navigate); }}
           />
+        ) : tab === "connections" ? (
+          <LinkedInAddressCard userId={authUser?.id ?? null} />
         ) : (
         <>
 
