@@ -98,37 +98,52 @@ function pct(n: number | null): string {
   return n === null ? "" : `${Math.round(n)}%`;
 }
 
-/** One honest sentence about this member's state, built from their numbers. */
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+const word = (n: number) => (n >= 0 && n < WORDS.length ? WORDS[n] : String(n));
+
+/**
+ * One honest sentence. It always names the single binding constraint — the
+ * thing standing between this member and the next rung — with a real number
+ * from their own data. No compliment is paired with a contradiction.
+ */
 export function readinessSentence(m: VoiceOverviewModel): string {
   if (m.corpusCount === 0) {
     return "Aura hasn't read anything you've written yet, so it has nothing to write from.";
   }
-  const top = topHook(m.windowDist);
-  const lowNames = m.traits
-    .filter((t) => t.computable && t.confidence === "low")
-    .map((t) => t.display_name);
+  const lowNames = m.traits.filter((t) => t.computable && t.confidence === "low").map((t) => t.display_name);
+  const medNames = m.traits.filter((t) => t.computable && t.confidence === "medium").map((t) => t.display_name);
 
   if (m.readiness === "forming") {
-    return `Aura has read ${m.corpusCount} of your posts. It needs 8 before it can describe your voice at all.`;
+    return `Aura has read ${m.corpusCount} of your posts. It needs 8 before it can describe your voice at all — that is the only thing missing.`;
   }
   if (m.readiness === "developing") {
-    return `Aura has read ${m.corpusCount} posts — enough for a rough shape, not enough to draft in your voice unaided. 20 is the next step.`;
+    return `Aura has read ${m.corpusCount} posts. Volume is the constraint: 20 is where it can draft in your voice unaided.`;
   }
   if (m.readiness === "working") {
     if (lowNames.length) {
-      return `Aura drafts in your voice, but ${lowNames.length === 1 ? "one measurement is" : `${lowNames.length} measurements are`} still shaky: ${lowNames.join(", ")}. More posts will settle ${lowNames.length === 1 ? "it" : "them"}.`;
+      return `${lowNames.length === 1 ? "One measurement is" : `${lowNames.length} measurements are`} still unreliable — ${lowNames.join(", ")}. That is what is holding your voice back, not the ${m.corpusCount} posts Aura has read.`;
     }
-    return `Aura has read ${m.corpusCount} posts and drafts in your voice. 30 posts is where it stops second-guessing.`;
+    return `Aura has read ${m.corpusCount} posts. Volume is still the constraint: 30 is where it stops second-guessing.`;
   }
   if (m.readiness === "reliable") {
-    if (m.diversity !== null && top) {
-      return `Aura drafts reliably in your voice. Your openers repeat more than they should — ${top.count} of your last ${m.windowSize} start with ${HOOK_LABEL[top.key] ?? top.key}. See Voice DNA.`;
+    // Binding constraint first: repetition, then breadth, then measurement.
+    if (m.topShare !== null && m.topShare > 35 && m.topStyleKey && m.topStyleCount) {
+      return `Aura drafts reliably in your voice. ${word(m.topStyleCount).replace(/^./, (c) => c.toUpperCase())} of your last ${word(m.windowSize)} posts opened the same way — that is what stands between you and a voice the market can tell apart.`;
     }
-    return `Aura drafts reliably in your voice, from ${m.corpusCount} posts. Opener variety is the last thing left to measure.`;
+    if (m.diversity !== null && m.diversity < 60) {
+      return `Aura drafts reliably in your voice. Your openers only vary ${pct(m.diversity)} across your last ${m.windowSize} posts — 60% is the bar for a voice the market can tell apart.`;
+    }
+    if (m.diversity === null) {
+      return `Aura drafts reliably in your voice, from ${m.corpusCount} posts. Opener variety cannot be measured yet — ${m.windowClassified} of your last ${m.windowSize} posts have a labelled opener, and 8 are needed.`;
+    }
+    if (medNames.length) {
+      return `Aura drafts reliably in your voice. ${medNames.length === 1 ? `${medNames[0]} is` : `${medNames.join(" and ")} are`} still measured at medium confidence — more of your writing would settle ${medNames.length === 1 ? "it" : "them"}.`;
+    }
+    return `Aura drafts reliably in your voice, from ${m.corpusCount} posts.`;
   }
-  // distinctive
-  if (top) {
-    return `Aura drafts in a voice the market can tell apart. Your openers vary well — ${pct(m.diversity)} diversity across your last ${m.windowSize} posts, with ${HOOK_LABEL[top.key] ?? top.key} still your most-used at ${top.count}.`;
+  // distinctive — both gates already passed, so the numbers can be stated plainly.
+  if (m.topShare !== null && m.topStyleKey && m.topStyleCount) {
+    return `Aura drafts in a voice the market can tell apart: ${pct(m.diversity)} opener variety across your last ${m.windowSize} posts, and your most-used opener — ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — accounts for only ${m.topStyleCount} of them.`;
   }
   return `Aura drafts in a voice the market can tell apart, from ${m.corpusCount} posts.`;
 }
@@ -151,18 +166,27 @@ function leastUsedHook(dist: Record<string, number>): string | null {
 
 /** Priority order is fixed: first match wins. Every branch carries a real number. */
 export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation" | "recommendationDismissed">): Recommendation {
-  if (m.diversity !== null && m.diversity < 50) {
-    const top = topHook(m.windowDist);
+  // 1 — repetition. Entropy is forgiving of one dominant opener, so this gate leads.
+  if (m.topShare !== null && m.topShare > 40 && m.topStyleKey && m.topStyleCount) {
     const alt = leastUsedHook(m.windowDist);
-    if (top) {
-      return {
-        key: "diversity",
-        text: `${top.count} of your last ${m.windowSize} posts open with ${HOOK_LABEL[top.key] ?? top.key}. Try opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} next time — you have used it ${m.windowDist[alt ?? ""] ?? 0} times in this window.`,
-        actionLabel: "See Voice DNA",
-        actionTab: "dna",
-      };
-    }
+    return {
+      key: "repetition",
+      text: `${m.topStyleCount} of your last ${m.windowSize} posts open with ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — ${Math.round(m.topShare)}% of the window. Try opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} next time; you have used it ${m.windowDist[alt ?? ""] ?? 0} times in these ${m.windowSize} posts.`,
+      actionLabel: "See Voice DNA",
+      actionTab: "dna",
+    };
   }
+  // 2 — breadth.
+  if (m.diversity !== null && m.diversity < 60) {
+    const alt = leastUsedHook(m.windowDist);
+    return {
+      key: "diversity",
+      text: `Your openers vary ${Math.round(m.diversity)}% across your last ${m.windowSize} posts; 60% is the bar. Opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} would widen it — you have used it ${m.windowDist[alt ?? ""] ?? 0} times in this window.`,
+      actionLabel: "See Voice DNA",
+      actionTab: "dna",
+    };
+  }
+  // 3 — freshness.
   if (m.freshnessDays !== null && m.freshnessDays > 90) {
     return {
       key: "freshness",
@@ -173,10 +197,23 @@ export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation"
   }
   const low = m.traits.find((t) => t.computable && t.confidence === "low");
   if (low) {
-    const needed = Math.max(1, low.min_evidence - m.corpusCount);
+    const needed = Math.max(1, low.min_evidence - (low.evidence_count ?? m.corpusCount));
     return {
       key: "confidence",
       text: `Aura is unsure about ${low.display_name}. About ${needed} more of your posts would settle it.`,
+      actionLabel: "Teach Aura",
+      actionTab: "teach",
+    };
+  }
+  // 5 — medium-confidence traits still deserve a next step.
+  const medium = m.traits.find((t) => t.computable && t.confidence === "medium");
+  if (medium) {
+    const gap = medium.evidence_count === null ? null : Math.max(1, medium.min_evidence * 2 - medium.evidence_count);
+    return {
+      key: "confidence",
+      text: gap === null
+        ? `${medium.display_name} is measured at medium confidence. More of your own writing would lift it to high.`
+        : `${medium.display_name} is measured at medium confidence from ${medium.evidence_count} posts. About ${gap} more would lift it to high.`,
       actionLabel: "Teach Aura",
       actionTab: "teach",
     };
