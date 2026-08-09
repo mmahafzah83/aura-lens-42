@@ -64,10 +64,12 @@ function segmentise(text: string): Segment[] {
   });
 }
 
-export default function TestImprove({ userId, onWrite, onNavigate }: {
+export default function TestImprove({ userId, onWrite, onNavigate, modelOverride }: {
   userId: string | null;
   onWrite: () => void;
   onNavigate: (key: "overview" | "dna" | "teach" | "test") => void;
+  /** dev harness only — lets the empty and thin states be reviewed without owning an account in that state */
+  modelOverride?: VoiceDnaModel;
 }) {
   const [model, setModel] = useState<VoiceDnaModel | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -85,12 +87,13 @@ export default function TestImprove({ userId, onWrite, onNavigate }: {
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    if (modelOverride) { setModel(modelOverride); return; }
     if (!userId) return;
     const m = await loadVoiceDna(userId, profileId);
     setModel(m);
     if (!profileId) setProfileId(m.activeProfileId);
     setHistory(await loadFeedbackHistory(userId, 10));
-  }, [userId, profileId]);
+  }, [userId, profileId, modelOverride]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
@@ -212,7 +215,7 @@ export default function TestImprove({ userId, onWrite, onNavigate }: {
     }
   };
 
-  if (!userId || !model) {
+  if ((!userId && !modelOverride) || !model) {
     return <div style={{ ...cardStyle, color: MUTED, fontSize: 13 }}>Loading…</div>;
   }
 
