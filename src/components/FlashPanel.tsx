@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { generationMetadata } from "@/lib/generationMetadata";
+import { classifyPublishError } from "@/lib/publishFailure";
 
 type FlashLang = "ar" | "en";
 type FlashMode = "theme" | "spark";
