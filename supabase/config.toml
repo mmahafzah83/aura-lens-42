@@ -185,3 +185,6 @@ verify_jwt = false
 
 [functions.voice-classify-posts]
 verify_jwt = false
+
+[functions.linkedin-fetch-profile]
+verify_jwt = false

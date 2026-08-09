@@ -2732,6 +2732,69 @@ export type Database = {
           },
         ]
       }
+      linkedin_profile_snapshots: {
+        Row: {
+          about: string | null
+          certifications: Json | null
+          connections: number | null
+          created_at: string
+          education: Json | null
+          experience: Json | null
+          fetched_at: string
+          followers: number | null
+          full_name: string | null
+          headline: string | null
+          id: string
+          languages: Json | null
+          location: string | null
+          photo_url: string | null
+          raw: Json | null
+          skills: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          about?: string | null
+          certifications?: Json | null
+          connections?: number | null
+          created_at?: string
+          education?: Json | null
+          experience?: Json | null
+          fetched_at?: string
+          followers?: number | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          languages?: Json | null
+          location?: string | null
+          photo_url?: string | null
+          raw?: Json | null
+          skills?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          about?: string | null
+          certifications?: Json | null
+          connections?: number | null
+          created_at?: string
+          education?: Json | null
+          experience?: Json | null
+          fetched_at?: string
+          followers?: number | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string
+          languages?: Json | null
+          location?: string | null
+          photo_url?: string | null
+          raw?: Json | null
+          skills?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       market_mirror_cache: {
         Row: {
           client_cio_text: string | null
