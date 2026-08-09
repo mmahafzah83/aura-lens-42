@@ -6,6 +6,8 @@
  */
 import VoiceOverview from "@/components/voice/VoiceOverview";
 import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
+import VoiceDna from "@/components/voice/VoiceDna";
+import type { VoiceDnaModel } from "@/lib/voiceDna";
 import { buildRecommendation, type VoiceOverviewModel } from "@/lib/voiceOverview";
 
 function make(partial: Partial<VoiceOverviewModel>): VoiceOverviewModel {
@@ -65,6 +67,39 @@ const STATES: { title: string; model: VoiceOverviewModel }[] = [
   },
 ];
 
+/* ── Voice DNA states ────────────────────────────────────────────────────── */
+const DNA_EMPTY: VoiceDnaModel = {
+  hasProfile: false, activeProfileId: null, traits: [], modes: [], rules: [],
+  windowSize: 0, windowClassified: 0, windowDist: {}, endingDist: {}, endingClassified: 0,
+  diversity: null, topShare: null, topStyleKey: null, topStyleCount: null,
+};
+
+const DNA_THIN: VoiceDnaModel = {
+  hasProfile: true,
+  activeProfileId: "p1",
+  traits: [
+    {
+      trait_key: "pace", display_name: "Pace", pole_low: "Flowing", pole_high: "Clipped", group_key: "structure",
+      computable: true, min_evidence: 8, sort_order: 50, id: "t1", value: 61, band_low: 48, band_high: 74,
+      learned_value: 61, confidence: "low", source: "learned", locked: false, evidence_count: 5, last_confirmed_at: null,
+    },
+    {
+      trait_key: "warmth", display_name: "Warmth", pole_low: "Cool / analytical", pole_high: "Warm / personal",
+      group_key: "sound", computable: false, min_evidence: 8, sort_order: 20, id: null, value: null,
+      band_low: null, band_high: null, learned_value: null, confidence: null, source: null, locked: false,
+      evidence_count: null, last_confirmed_at: null,
+    },
+  ],
+  modes: [
+    { key: "executive", label: "Executive", blurb: "For board notes and results — shorter, harder on evidence.", profileId: null, readiness: null, needsEvidence: false },
+    { key: "personal", label: "Personal", blurb: "For the story only you can tell — warmer, less data.", profileId: null, readiness: null, needsEvidence: false },
+  ],
+  rules: [],
+  windowSize: 5, windowClassified: 3, windowDist: { question: 2, announcement: 1 },
+  endingDist: { cta: 1 }, endingClassified: 1,
+  diversity: null, topShare: null, topStyleKey: null, topStyleCount: null,
+};
+
 export default function VoiceHarness() {
   return (
     <div style={{ padding: 24, background: "#F7F9FC", minHeight: "100vh" }}>
@@ -80,6 +115,15 @@ export default function VoiceHarness() {
             {s.title.toUpperCase()}
           </div>
           <VoiceOverview userId={null} onNavigate={() => {}} modelOverride={s.model} />
+        </div>
+      ))}
+
+      {[{ title: "DNA A — no profile", model: DNA_EMPTY }, { title: "DNA B — thin profile", model: DNA_THIN }].map((s) => (
+        <div key={s.title} style={{ marginBlockEnd: 32 }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#5B6673", marginBlockEnd: 8 }}>
+            {s.title.toUpperCase()}
+          </div>
+          <VoiceDna userId={null} onNavigate={() => {}} modelOverride={s.model} />
         </div>
       ))}
     </div>
