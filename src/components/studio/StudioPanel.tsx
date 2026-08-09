@@ -1139,6 +1139,10 @@ export default function StudioPanel({
       setGenWarnings(Array.isArray(json?.warnings) ? json.warnings.map(String) : []);
       unsourcedRemovedRef.current = Number(json?.unsourced_numbers_removed) || 0;
       unsourcedEntitiesRemovedRef.current = Number(json?.unsourced_entities_removed) || 0;
+      fingerprintRef.current = {
+        endingType: typeof json?.ending_type === "string" ? json.ending_type : undefined,
+        hookStyle: typeof json?.hook_style === "string" ? json.hook_style : undefined,
+      };
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
       setContent(generated);
       generatedTextRef.current = generated;
@@ -1239,6 +1243,7 @@ export default function StudioPanel({
           unsourcedRemoved: unsourcedRemovedRef.current,
           unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
         }),
+        ...fingerprintFields(fingerprintRef.current),
         ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
       } as any)
       .select("id")
@@ -1306,6 +1311,7 @@ export default function StudioPanel({
             unsourcedRemoved: unsourcedRemovedRef.current,
             unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
           }),
+          ...fingerprintFields(fingerprintRef.current),
           ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
         } as any)
         .select("id")
