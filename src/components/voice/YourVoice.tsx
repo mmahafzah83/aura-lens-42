@@ -31,6 +31,7 @@ import {
 import {
   MODE_DEFS, addRule, confirmTrait, createMode, deleteRule, loadVoiceDna, rejectTrait,
   reorderRules, restoreLearned, setTraitLock, setTraitValue, updateRuleText,
+  acceptSuggestion, dismissSuggestion, runSuggestRules,
   type DnaRule, type DnaTrait, type VoiceDnaModel,
 } from "@/lib/voiceDna";
 
@@ -410,7 +411,23 @@ export default function YourVoice({
       {/* 5 — rules */}
       <VoiceRules
         rules={dna.rules}
+        suggestions={dna.suggestions}
+        canSuggest={dna.windowSize >= 20 || model.overview.corpusCount >= 20}
         busy={busy}
+        onAccept={(r) => void mutate(
+          { ...dna, rules: [...dna.rules, { ...r, status: "active" }], suggestions: dna.suggestions.filter((s) => s.id !== r.id) },
+          async () => { await acceptSuggestion(r.id); toast.success("Rule added. Aura will follow it from your next draft."); },
+        )}
+        onDismiss={(r) => void mutate(
+          { ...dna, suggestions: dna.suggestions.filter((s) => s.id !== r.id) },
+          async () => { await dismissSuggestion(r.id); toast("Dismissed. Aura will not suggest that again."); },
+        )}
+        onLookForPatterns={() => void mutate(dna, async () => {
+          const res = await runSuggestRules();
+          toast.success(res.written > 0
+            ? `Aura found ${res.written} ${res.written === 1 ? "pattern" : "patterns"} in your writing.`
+            : "Nothing new — Aura found no pattern it could evidence.");
+        })}
         onAdd={(kind, text) => {
           if (!userId) return;
           const rank = dna.rules.filter((r) => r.kind === kind).length;

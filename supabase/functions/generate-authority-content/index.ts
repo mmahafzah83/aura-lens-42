@@ -8,6 +8,7 @@ import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
 import { findUnsourcedEntities } from "../_shared/entityGuard.ts";
 import { splitForPrompt, enforcedRuleTexts } from "../_shared/voiceRules.ts";
+import { loadActiveMemberRules, memberRulesBlock } from "../_shared/memberRules.ts";
 import { endingTypeOf, hookStyleOf } from "../_shared/fingerprint.ts";
 import {
   checkTextIntegrity,
@@ -623,6 +624,11 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         voiceSection = buildVoiceContext(voiceProfile, chosenOpening);
       }
       voiceSection += recentPatternBlock;
+      // Only rules the member wrote or explicitly accepted. A suggested rule
+      // is a proposal and must never reach the model.
+      const activeRules = effectiveUserId ? await loadActiveMemberRules(supabase, effectiveUserId) : [];
+      const rulesBlock = memberRulesBlock(activeRules);
+      if (rulesBlock) voiceSection += `\n\n${rulesBlock}`;
 
       const sectorContextLabel = `${(typeof sector === "string" && sector.trim()) || profile?.sector_focus || "their own"} context`;
       const hookFramework = `You are writing for ${readerDescription}. Always open with one of these two hook types:

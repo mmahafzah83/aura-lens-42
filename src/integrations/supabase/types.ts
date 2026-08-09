@@ -4047,11 +4047,15 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          decided_at: string | null
+          evidence: Json | null
           id: string
           kind: string
           profile_id: string | null
           rank: number
           source: string
+          status: string
+          suggested_at: string | null
           text: string
           updated_at: string
           user_id: string
@@ -4059,11 +4063,15 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          decided_at?: string | null
+          evidence?: Json | null
           id?: string
           kind: string
           profile_id?: string | null
           rank?: number
           source?: string
+          status?: string
+          suggested_at?: string | null
           text: string
           updated_at?: string
           user_id: string
@@ -4071,11 +4079,15 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          decided_at?: string | null
+          evidence?: Json | null
           id?: string
           kind?: string
           profile_id?: string | null
           rank?: number
           source?: string
+          status?: string
+          suggested_at?: string | null
           text?: string
           updated_at?: string
           user_id?: string
