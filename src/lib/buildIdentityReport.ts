@@ -209,10 +209,11 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     trackedCountRes,
     frameworkRowsRes,
     voiceRes,
+    connRes,
   ] = await Promise.all([
     (supabase.from("diagnostic_profiles" as any) as any)
       .select(
-        "first_name,last_name,level,firm,core_practice,sector_focus,north_star_goal,linkedin_handle,years_experience,primary_strength,brand_pillars,brand_assessment_results,identity_intelligence,audit_interpretation,audit_results,skill_ratings,generated_skills",
+        "first_name,last_name,level,firm,core_practice,sector_focus,north_star_goal,years_experience,primary_strength,brand_pillars,brand_assessment_results,identity_intelligence,audit_interpretation,audit_results,skill_ratings,generated_skills",
       )
       .eq("user_id", userId)
       .maybeSingle(),
