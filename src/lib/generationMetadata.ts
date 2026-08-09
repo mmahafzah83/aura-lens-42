@@ -134,3 +134,27 @@ export function generationMetadata(
       Number(opts.unsourcedEntitiesRemoved) > 0 ? Number(opts.unsourcedEntitiesRemoved) : 0,
   };
 }
+
+/**
+ * The content fingerprint as reported by the generator plus the request
+ * parameters the client already chose. A column is only ever set when a real,
+ * non-empty value exists — never an empty string, never a placeholder.
+ */
+export function fingerprintFields(opts: {
+  endingType?: unknown;
+  hookStyle?: unknown;
+  frameworkType?: unknown;
+  theme?: unknown;
+}): Record<string, string> {
+  const clean = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  const out: Record<string, string> = {};
+  const ending = clean(opts.endingType);
+  const hook = clean(opts.hookStyle);
+  const framework = clean(opts.frameworkType);
+  const theme = clean(opts.theme);
+  if (ending) out.ending_type = ending;
+  if (hook) out.hook_style = hook;
+  if (framework && framework !== "auto") out.framework_type = framework;
+  if (theme) out.theme = theme;
+  return out;
+}

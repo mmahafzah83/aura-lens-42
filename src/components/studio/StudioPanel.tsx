@@ -15,7 +15,7 @@ import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
-import { generationMetadata } from "@/lib/generationMetadata";
+import { generationMetadata, fingerprintFields } from "@/lib/generationMetadata";
 import { editFields } from "@/lib/editDistance";
 import { classifyPublishError } from "@/lib/publishFailure";
 import { toast } from "sonner";
@@ -247,6 +247,11 @@ export default function StudioPanel({
   const unsourcedRemovedRef = useRef<number>(0);
   // Organisations, people and dates the provenance guard could not source.
   const unsourcedEntitiesRemovedRef = useRef<number>(0);
+  /**
+   * The content fingerprint as the generator reported it. Persisted on the
+   * draft row; nothing is written when the generator reported nothing.
+   */
+  const fingerprintRef = useRef<{ endingType?: string; hookStyle?: string }>({});
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
   /**
@@ -1134,6 +1139,10 @@ export default function StudioPanel({
       setGenWarnings(Array.isArray(json?.warnings) ? json.warnings.map(String) : []);
       unsourcedRemovedRef.current = Number(json?.unsourced_numbers_removed) || 0;
       unsourcedEntitiesRemovedRef.current = Number(json?.unsourced_entities_removed) || 0;
+      fingerprintRef.current = {
+        endingType: typeof json?.ending_type === "string" ? json.ending_type : undefined,
+        hookStyle: typeof json?.hook_style === "string" ? json.hook_style : undefined,
+      };
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
       setContent(generated);
       generatedTextRef.current = generated;
@@ -1234,6 +1243,7 @@ export default function StudioPanel({
           unsourcedRemoved: unsourcedRemovedRef.current,
           unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
         }),
+        ...fingerprintFields(fingerprintRef.current),
         ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
       } as any)
       .select("id")
@@ -1301,6 +1311,7 @@ export default function StudioPanel({
             unsourcedRemoved: unsourcedRemovedRef.current,
             unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
           }),
+          ...fingerprintFields(fingerprintRef.current),
           ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
         } as any)
         .select("id")

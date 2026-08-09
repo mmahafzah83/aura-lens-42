@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import InfoTooltip from "@/components/ui/InfoTooltip";
-import { generationMetadata } from "@/lib/generationMetadata";
+import { generationMetadata, fingerprintFields } from "@/lib/generationMetadata";
 import { classifyPublishError } from "@/lib/publishFailure";
 
 type FlashLang = "ar" | "en";
@@ -94,6 +94,8 @@ interface FlashResult {
   text: string;
   copied?: boolean;
   unsourcedRemoved?: number;
+  endingType?: string;
+  hookStyle?: string;
   saving?: boolean;
   publishing?: boolean;
   previewOpen?: boolean;
@@ -241,7 +243,7 @@ export default function FlashPanel() {
   const callOnce = async (
     variation: number,
     accessToken: string,
-  ): Promise<{ text: string; unsourcedRemoved: number }> => {
+  ): Promise<{ text: string; unsourcedRemoved: number; endingType?: string; hookStyle?: string }> => {
     const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
       method: "POST",
       headers: {
@@ -279,6 +281,8 @@ export default function FlashPanel() {
     return {
       text: data?.content || "",
       unsourcedRemoved: Number(data?.unsourced_numbers_removed) || 0,
+      endingType: typeof data?.ending_type === "string" ? data.ending_type : undefined,
+      hookStyle: typeof data?.hook_style === "string" ? data.hook_style : undefined,
     };
   };
 
@@ -294,9 +298,9 @@ export default function FlashPanel() {
         callOnce(3, session.access_token),
       ]);
       setResults([
-        { variation: 1, text: a.text, unsourcedRemoved: a.unsourcedRemoved },
-        { variation: 2, text: b.text, unsourcedRemoved: b.unsourcedRemoved },
-        { variation: 3, text: c.text, unsourcedRemoved: c.unsourcedRemoved },
+        { variation: 1, text: a.text, unsourcedRemoved: a.unsourcedRemoved, endingType: a.endingType, hookStyle: a.hookStyle },
+        { variation: 2, text: b.text, unsourcedRemoved: b.unsourcedRemoved, endingType: b.endingType, hookStyle: b.hookStyle },
+        { variation: 3, text: c.text, unsourcedRemoved: c.unsourcedRemoved, endingType: c.endingType, hookStyle: c.hookStyle },
       ]);
     } catch (e: any) {
       toast.error(e.message || "Generation failed");
@@ -338,6 +342,12 @@ export default function FlashPanel() {
           sector: sectorPayloadValue() || null,
         },
         ...generationMetadata(displayText(r.text), { contentType: postType || "post", unsourcedRemoved: r.unsourcedRemoved }),
+        ...fingerprintFields({
+          endingType: r.endingType,
+          hookStyle: r.hookStyle,
+          frameworkType: postType || undefined,
+          theme: selectedTheme || undefined,
+        }),
       });
       if (error) throw error;
       toast.success(t.saved);
@@ -400,6 +410,12 @@ export default function FlashPanel() {
             sector: sectorPayloadValue() || null,
           },
           ...generationMetadata(r.text, { contentType: postType || "post", unsourcedRemoved: r.unsourcedRemoved }),
+          ...fingerprintFields({
+            endingType: r.endingType,
+            hookStyle: r.hookStyle,
+            frameworkType: postType || undefined,
+            theme: selectedTheme || undefined,
+          }),
         })
         .select("id")
         .single();
