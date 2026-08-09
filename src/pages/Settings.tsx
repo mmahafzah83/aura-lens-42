@@ -6,6 +6,7 @@ import { signOutAndLand } from "@/lib/signOut";
 import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
+import LinkedInAddressCard from "@/components/settings/LinkedInAddressCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { exportReportPdf } from "@/lib/exportReportPdf";
