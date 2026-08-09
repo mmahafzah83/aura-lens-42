@@ -565,6 +565,48 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       // Extra instruction (e.g. for short version rewrite)
       const extraInstruction = extra_instruction ? `\n\n${extra_instruction}` : "";
 
+      // One opening per generation, drawn from what the member allows.
+      const memberPrefs = readPrefs(voiceProfile);
+      const chosenOpening = pickOpening(memberPrefs.openings);
+
+      /**
+       * Variation: never repeat the shape of the member's most recent post.
+       * Silence is the correct output when there is not enough history — a
+       * fabricated constraint is worse than none. Never blocks generation.
+       */
+      let recentHookStyle: string | null = null;
+      let recentEndingType: string | null = null;
+      try {
+        const { data: recentRows } = await supabase
+          .from("linkedin_posts")
+          .select("hook_style, ending_type, framework_type")
+          .eq("user_id", effectiveUserId)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        const rows = (recentRows || []).filter((r: any) => r.hook_style || r.ending_type || r.framework_type);
+        if (rows.length >= 3) {
+          recentHookStyle = (rows.find((r: any) => r.hook_style)?.hook_style as string) || null;
+          recentEndingType = (rows.find((r: any) => r.ending_type)?.ending_type as string) || null;
+        }
+      } catch (_e) {
+        // A history read must never cost a member their draft.
+      }
+      const recentPatternBlock = (() => {
+        const bits: string[] = [];
+        if (recentHookStyle) {
+          bits.push(effectiveLanguage === "ar"
+            ? `آخر منشور فُتح بنمط "${recentHookStyle}" — لا تعِد استخدامه هذه المرة.`
+            : `The last post opened with a "${recentHookStyle}" hook — do not reuse it this time.`);
+        }
+        if (recentEndingType) {
+          bits.push(effectiveLanguage === "ar"
+            ? `وانتهى بخاتمة من نوع "${recentEndingType}" — اختر خاتمة مختلفة.`
+            : `It closed with a "${recentEndingType}" ending — choose a different close.`);
+        }
+        if (!bits.length) return "";
+        return "\n\n" + (effectiveLanguage === "ar" ? "النمط الأخير:" : "RECENT PATTERN:") + " " + bits.join(" ");
+      })();
+
       // Language + voice handling
       let voiceSection: string;
       if (effectiveLanguage === "ar") {
@@ -574,12 +616,13 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         );
         // Arabic-native prompt replaces voice section
         voiceSection = voiceProfile
-          ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile)
+          ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile, chosenOpening)
           : arabicBase;
         // If a specific framework is selected, use it; otherwise Arabic defaults to PAS/BAB (already in ARABIC_VOICE_PROMPT)
       } else {
-        voiceSection = buildVoiceContext(voiceProfile);
+        voiceSection = buildVoiceContext(voiceProfile, chosenOpening);
       }
+      voiceSection += recentPatternBlock;
 
       const sectorContextLabel = `${(typeof sector === "string" && sector.trim()) || profile?.sector_focus || "their own"} context`;
       const hookFramework = `You are writing for ${readerDescription}. Always open with one of these two hook types:
@@ -653,7 +696,16 @@ FORMATTING RULES (mandatory):
 
       // The ending is a rotatable value the profile allows — never an
       // instruction read out of a style field.
-      const chosenEnding = pickEnding(voiceProfile?.allowed_endings);
+      // Bias away from the ending the member just used, where an alternative exists.
+      const chosenEnding = (() => {
+        const first = pickEnding(voiceProfile?.allowed_endings);
+        if (!recentEndingType || first !== recentEndingType) return first;
+        for (let i = 0; i < 6; i++) {
+          const next = pickEnding(voiceProfile?.allowed_endings);
+          if (next !== recentEndingType) return next;
+        }
+        return first;
+      })();
       const endingDirective = effectiveLanguage === "ar"
         ? `\n\nالخاتمة لهذا البوست: ${ENDING_DIRECTIVE_AR[chosenEnding]}`
         : `\n\nENDING FOR THIS POST: ${ENDING_DIRECTIVE_EN[chosenEnding]}`;
