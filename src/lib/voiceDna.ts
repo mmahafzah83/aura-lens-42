@@ -103,6 +103,10 @@ export interface DnaRule {
   text: string;
   source: string;
   rank: number;
+  /** 'active' rules are the only ones generation ever sees. */
+  status?: string;
+  /** Where a suggestion came from: post ids, a count and the sentence to show. */
+  evidence?: { post_ids?: string[]; count?: number; total?: number; note?: string; derivation?: string } | null;
 }
 
 export interface VoiceDnaModel {
@@ -111,6 +115,8 @@ export interface VoiceDnaModel {
   traits: DnaTrait[];
   modes: DnaMode[];
   rules: DnaRule[];
+  /** Proposals. Not in force until the member accepts one. */
+  suggestions: DnaRule[];
   windowSize: number;
   windowClassified: number;
   windowDist: Record<string, number>;
@@ -139,7 +145,7 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
   const [{ data: profiles }, { data: registry }, windowRes, diversityRes, topRes, { data: ruleRows }] = await Promise.all([
     supabase
       .from("authority_voice_profiles")
-      .select("id, mode_key, mode_label, readiness, updated_at")
+      .select("id, mode_key, mode_label, readiness, updated_at, is_primary")
       .eq("user_id", userId)
       // A tied `updated_at` used to make the winner arbitrary; `id` breaks the tie.
       .order("updated_at", { ascending: false })
@@ -152,7 +158,13 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
     supabase.rpc("voice_window", { p_user_id: userId }),
     supabase.rpc("voice_opener_diversity", { p_user_id: userId }),
     supabase.rpc("voice_top_style_share", { p_user_id: userId }),
-    supabase.from("voice_rules").select("id, kind, text, source, rank").eq("user_id", userId).eq("active", true).order("rank"),
+    supabase
+      .from("voice_rules")
+      .select("id, kind, text, source, rank, status, evidence")
+      .eq("user_id", userId)
+      .eq("active", true)
+      .in("status", ["active", "suggested"])
+      .order("rank"),
   ]);
 
   const all = profiles ?? [];
@@ -164,6 +176,13 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
     if (!byMode.has(p.mode_key)) byMode.set(p.mode_key, p);
   }
   const unique = [...byMode.values()];
+  // Every member with a profile has exactly one primary. If a merge or a delete
+  // left none, repair it here rather than resolving the member to nothing.
+  if (unique.length > 0 && !unique.some((p) => p.is_primary)) {
+    const repair = byMode.get("default") ?? unique[0];
+    await supabase.from("authority_voice_profiles").update({ is_primary: true }).eq("id", repair.id);
+    repair.is_primary = true;
+  }
   const active = unique.find((p) => p.id === wantProfileId) ?? byMode.get("default") ?? unique[0] ?? null;
 
   const windowRows = (windowRes.data as { hook_style: string | null; ending_type: string | null }[] | null) ?? [];
@@ -235,7 +254,8 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
     activeProfileId: active?.id ?? null,
     traits,
     modes,
-    rules: ((ruleRows ?? []) as DnaRule[]),
+    rules: ((ruleRows ?? []) as DnaRule[]).filter((r) => (r.status ?? "active") === "active"),
+    suggestions: ((ruleRows ?? []) as DnaRule[]).filter((r) => r.status === "suggested"),
     windowSize: windowRows.length,
     windowClassified: windowRows.filter((r) => r.hook_style).length,
     windowDist,
@@ -311,7 +331,8 @@ export async function rejectTrait(userId: string, profileId: string, trait: DnaT
 export async function createMode(userId: string, def: ModeDef, baseTraits: DnaTrait[]) {
   const { data: profile, error } = await supabase
     .from("authority_voice_profiles")
-    .insert({ user_id: userId, mode_key: def.key, mode_label: def.label, readiness: "forming" })
+    // A new mode is never primary — one primary per member, always.
+    .insert({ user_id: userId, mode_key: def.key, mode_label: def.label, readiness: "forming", is_primary: false })
     .select("id")
     .single();
   if (error) throw error;
@@ -344,7 +365,7 @@ export async function createMode(userId: string, def: ModeDef, baseTraits: DnaTr
 export async function addRule(userId: string, profileId: string | null, kind: DnaRule["kind"], text: string, rank: number) {
   const { error } = await supabase
     .from("voice_rules")
-    .insert({ user_id: userId, profile_id: profileId, kind, text, source: "user", rank });
+    .insert({ user_id: userId, profile_id: profileId, kind, text, source: "user", rank, status: "active" });
   if (error) throw error;
 }
 
@@ -366,4 +387,33 @@ export async function reorderRules(userId: string, profileId: string | null, ord
   }));
   const { error } = await supabase.from("voice_rules").upsert(rows, { onConflict: "id" });
   if (error) throw error;
+}
+
+/* ── suggested rules ─────────────────────────────────────────────────────── */
+
+/** Accepting puts a rule in force. Only now does generation see it. */
+export async function acceptSuggestion(id: string) {
+  const { error } = await supabase
+    .from("voice_rules")
+    .update({ status: "active", decided_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Dismissing is remembered for 90 days by the suggestion function. */
+export async function dismissSuggestion(id: string) {
+  const { error } = await supabase
+    .from("voice_rules")
+    .update({ status: "dismissed", decided_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** The gateway runs only when the member asks, never on a render. */
+export async function runSuggestRules(): Promise<{ written: number; posts_read?: number }> {
+  const { data: session } = await supabase.auth.getSession();
+  if (!session.session) throw new Error("Sign in to look for patterns.");
+  const { data, error } = await supabase.functions.invoke("voice-suggest-rules", { body: {} });
+  if (error) throw error;
+  return (data ?? { written: 0 }) as { written: number; posts_read?: number };
 }
