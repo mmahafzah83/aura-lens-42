@@ -14,13 +14,21 @@ export type CorpusPost = {
 
 export const MIN_POST_CHARS = 50;
 
-/** True when this row is the member's own written post. */
+/**
+ * True when this row is the member's own written post.
+ *
+ * A member who has excluded a post on the Teach Aura review list has said
+ * plainly that it is not their voice. That verdict outranks every inference
+ * below it, so it is checked first.
+ */
 export function isOwnWriting(row: {
   post_text?: string | null;
   authorship?: string | null;
   acquisition?: string | null;
   source_type?: string | null;
+  voice_corpus_status?: string | null;
 }): boolean {
+  if (row.voice_corpus_status === "excluded") return false;
   const text = String(row.post_text ?? "");
   if (text.trim().length <= MIN_POST_CHARS) return false;
   if (row.authorship === "aura_drafted") return false;
