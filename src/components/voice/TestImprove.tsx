@@ -1,15 +1,23 @@
 /**
- * Test & Improve — the sample, the honest fidelity count, and the loop that
+ * Test & Improve — the sample, the honest fidelity reading, and the loop that
  * turns a verdict into a change (or into a plainly stated non-change).
  *
  * The sample re-composes client-side on every interaction. The gateway is
- * called from exactly one place: the "Another sample" button.
+ * called from exactly one place: the "Another sample" button. The variation
+ * fact is referenced here, never re-derived — one generator, one sentence.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { AMBER, BLUE, CYAN, GREEN, INK, LINE, MONO, MUTED, NIGHT, RED, cardStyle, ghostButton, microLabel, monoNum } from "@/components/voice/tokens";
-import { HOOK_NAME, loadVoiceDna, variationSentence, type VoiceDnaModel } from "@/lib/voiceDna";
-import { leastUsedHook } from "@/lib/voiceOverview";
+import InfoTooltip from "@/components/voice/InfoTooltip";
+import {
+  AMBER_TEXT, BLUE, CYAN, GREEN, INK, LINE, MUTED, NIGHT, NIGHT_LINE, NIGHT_MUTED, NIGHT_RAISED,
+  NIGHT_TEXT, RADIUS, RED, SURFACE, TYPE, WHITE, cardStyle, chipStyle, ghostButton, microLabel,
+  monoNum, primaryButton,
+} from "@/components/voice/tokens";
+import { useCachedVoice, invalidateVoiceCache } from "@/lib/voiceCache";
+import { HOOK_NAME, loadVoiceDna, type VoiceDnaModel } from "@/lib/voiceDna";
+import { leastUsedHook, variationSummary } from "@/lib/voiceOverview";
+import { REPETITION_GATES } from "@/lib/voiceGates";
 import { voiceFidelity, type FidelityResult, type FidelityTraitInput } from "@/lib/voiceFidelity";
 import { GENERIC_AI_SAMPLE, composeFromTraits, type Segment } from "@/lib/voiceSample";
 import {
@@ -23,14 +31,14 @@ const HL_AMBER = "rgba(224,168,46,.18)";
 const dateMono = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
 
+interface TestModel { dna: VoiceDnaModel; history: FeedbackRow[] }
+
 function Highlighted({ segments, isArabic }: { segments: Segment[]; isArabic: boolean }) {
   return (
     <div
       dir={isArabic ? "rtl" : "auto"}
       style={{
-        whiteSpace: "pre-wrap",
-        color: "#E8EDF2",
-        fontSize: 14.5,
+        whiteSpace: "pre-wrap", color: NIGHT_TEXT, fontSize: TYPE.bodyLg,
         lineHeight: isArabic ? 1.9 : 1.75,
         fontFamily: isArabic ? "'Cairo', 'Inter', sans-serif" : "Inter, system-ui, sans-serif",
       }}
@@ -39,12 +47,21 @@ function Highlighted({ segments, isArabic }: { segments: Segment[]; isArabic: bo
         const bg = s.kind === "hook" || s.kind === "closer" ? HL_CYAN : s.kind === "evidence" ? HL_AMBER : "transparent";
         return (
           <span key={i}>
-            <span
-              title={s.reason}
-              style={bg === "transparent" ? undefined : { background: bg, borderRadius: 4, padding: "1px 3px", boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone" }}
-            >
-              {s.text}
-            </span>
+            {bg === "transparent" ? (
+              <span>{s.text}</span>
+            ) : (
+              <span style={{ display: "inline" }}>
+                <span
+                  style={{
+                    background: bg, borderRadius: RADIUS.chip, padding: "1px 3px",
+                    boxDecorationBreak: "clone", WebkitBoxDecorationBreak: "clone",
+                  }}
+                >
+                  {s.text}
+                </span>
+                {s.reason && <InfoTooltip term="Why this is highlighted" body={s.reason} />}
+              </span>
+            )}
             {i < segments.length - 1 ? "\n\n" : ""}
           </span>
         );
@@ -64,21 +81,44 @@ function segmentise(text: string): Segment[] {
   });
 }
 
+/** A verdict word first: a bare count gives no sense of whether it is good. */
+function fidelityHeadline(inside: number, total: number): string {
+  if (total === 0) return "Nothing measurable to compare yet.";
+  const ratio = inside / total;
+  const word = ratio === 1 ? "Yours" : ratio >= 0.7 ? "Close" : ratio >= 0.4 ? "Some way off" : "Not yours yet";
+  return `${word} — ${inside} of ${total} measures match your range.`;
+}
+
+function Collapsible({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section style={cardStyle}>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        style={{ ...ghostButton, border: "none", padding: 0, background: "transparent", color: INK, fontSize: TYPE.bodyLg, minBlockSize: 32 }}
+      >
+        {open ? "▾" : "▸"} {title}{count === undefined ? "" : ` (${count})`}
+      </button>
+      {open && <div style={{ marginBlockStart: 10 }}>{children}</div>}
+    </section>
+  );
+}
+
 export default function TestImprove({ userId, onWrite, onNavigate, modelOverride }: {
   userId: string | null;
   onWrite: () => void;
-  onNavigate: (key: "overview" | "dna" | "teach" | "test") => void;
+  onNavigate: (key: "voice" | "teach" | "test") => void;
   /** dev harness only — lets the empty and thin states be reviewed without owning an account in that state */
   modelOverride?: VoiceDnaModel;
 }) {
-  const [model, setModel] = useState<VoiceDnaModel | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [side, setSide] = useState<"voice" | "generic">("voice");
   const [seed, setSeed] = useState(0);
   const [gatewayText, setGatewayText] = useState<string | null>(null);
   const [loadingSample, setLoadingSample] = useState(false);
   const [hookOverride, setHookOverride] = useState<string | null>(null);
-  const [history, setHistory] = useState<FeedbackRow[]>([]);
   const [pendingPhrase, setPendingPhrase] = useState<Verdict | null>(null);
   const [phrase, setPhrase] = useState("");
   const [applyToAll, setApplyToAll] = useState(false);
@@ -86,16 +126,20 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    if (modelOverride) { setModel(modelOverride); return; }
-    if (!userId) return;
-    const m = await loadVoiceDna(userId, profileId);
-    setModel(m);
-    if (!profileId) setProfileId(m.activeProfileId);
-    setHistory(await loadFeedbackHistory(userId, 10));
-  }, [userId, profileId, modelOverride]);
+  // The key holds the selected mode, so nothing inside the loader sets state
+  // that the loader itself depends on — that loop was costing a double mount.
+  const key = modelOverride || !userId ? null : `voice:test:${userId}:${profileId ?? "active"}`;
+  const loader = useCallback(async (): Promise<TestModel> => {
+    const [dna, history] = await Promise.all([
+      loadVoiceDna(userId as string, profileId),
+      loadFeedbackHistory(userId as string, 10),
+    ]);
+    return { dna, history };
+  }, [userId, profileId]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  const state = useCachedVoice<TestModel>(key, loader);
+  const model = modelOverride ?? state.data?.dna ?? null;
+  const history = state.data?.history ?? [];
 
   const measured = useMemo(() => (model?.traits ?? []).filter((t) => t.value !== null), [model]);
   const values = useMemo(() => {
@@ -104,8 +148,7 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
     return v;
   }, [model]);
 
-  const topHook = model?.topStyleKey ?? "contrarian_claim";
-  const activeHook = hookOverride ?? topHook;
+  const activeHook = hookOverride ?? model?.topStyleKey ?? "contrarian_claim";
   const closerKey = useMemo(() => {
     const entries = Object.entries(model?.endingDist ?? {}).sort((a, b) => b[1] - a[1]);
     return entries[0]?.[0] ?? "question";
@@ -117,11 +160,7 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
     : Math.round(800 + (lengthTrait.value / 100) * 1800);
 
   const composed = useMemo(
-    () => composeFromTraits(
-      { values, targetChars, hookKey: activeHook, closerKey },
-      seed,
-      HOOK_NAME[activeHook] ?? activeHook,
-    ),
+    () => composeFromTraits({ values, targetChars, hookKey: activeHook, closerKey }, seed, HOOK_NAME[activeHook] ?? activeHook),
     [values, targetChars, activeHook, closerKey, seed],
   );
 
@@ -136,13 +175,14 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
     })),
     [model],
   );
-  const fidelity: FidelityResult = useMemo(
-    () => voiceFidelity(sampleText, fidelityInputs),
-    [sampleText, fidelityInputs],
-  );
+  const fidelity: FidelityResult = useMemo(() => voiceFidelity(sampleText, fidelityInputs), [sampleText, fidelityInputs]);
 
-  const thin = (model?.windowClassified ?? 0) < 8;
+  const thin = (model?.windowClassified ?? 0) < REPETITION_GATES.minClassified;
   const isArabic = side === "voice" ? composed.isArabic && !gatewayText : false;
+
+  const modeOptions = (model?.modes ?? []).filter((m) => m.profileId);
+  const activeProfileId = profileId ?? model?.activeProfileId ?? null;
+  const activeMode = modeOptions.find((m) => m.profileId === activeProfileId) ?? modeOptions[0] ?? null;
 
   const anotherSample = async () => {
     if (!userId) return;
@@ -174,9 +214,6 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
     }
   };
 
-  const modeOptions = (model?.modes ?? []).filter((m) => m.profileId);
-  const activeMode = modeOptions.find((m) => m.profileId === profileId) ?? modeOptions[0] ?? null;
-
   const feedbackTraits: FeedbackTrait[] = (model?.traits ?? []).map((t) => ({
     id: t.id, trait_key: t.trait_key, display_name: t.display_name, value: t.value,
     band_low: t.band_low, band_high: t.band_high, locked: t.locked, source: t.source, computable: t.computable,
@@ -194,7 +231,7 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
     try {
       const lines = await submitVerdict({
         userId,
-        profileId,
+        profileId: activeProfileId,
         allProfileIds: modeOptions.map((m) => m.profileId as string),
         applyToAll,
         modeScope: activeMode?.key ?? "default",
@@ -207,7 +244,8 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
       setReport(lines);
       setPendingPhrase(null);
       setPhrase("");
-      await refresh();
+      invalidateVoiceCache("voice:");
+      await state.reload(true);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -215,76 +253,93 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
     }
   };
 
-  if ((!userId && !modelOverride) || !model) {
-    return <div style={{ ...cardStyle, color: MUTED, fontSize: 13 }}>Loading…</div>;
+  if (!userId && !modelOverride) {
+    return <div style={{ ...cardStyle, color: MUTED, fontSize: TYPE.body }}>Sign in to test your voice.</div>;
   }
+  if (state.loading && !model) {
+    return <div style={{ ...cardStyle, color: MUTED, fontSize: TYPE.body }}>Reading your voice…</div>;
+  }
+  if (state.error && !model) {
+    return (
+      <div style={cardStyle}>
+        <div style={{ fontSize: TYPE.title, fontWeight: 600, color: INK }}>Aura couldn't load your voice.</div>
+        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, marginBlock: "8px 14px" }}>
+          This is a connection problem, not an empty file. {state.error}
+        </p>
+        <button type="button" style={primaryButton} onClick={() => void state.reload(true)}>Try again</button>
+      </div>
+    );
+  }
+  if (!model) return null;
 
   /* ── empty state: nothing measured ─────────────────────────────────────── */
   if (measured.length === 0) {
     return (
       <div style={cardStyle}>
         <div style={microLabel}>Test &amp; improve</div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBlockStart: 8 }}>
+        <div style={{ fontSize: TYPE.section, fontWeight: 600, color: INK, marginBlockStart: 8 }}>
           Aura hasn&apos;t learned your voice yet.
         </div>
-        <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.65, marginBlockStart: 6 }}>
+        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, marginBlock: "6px 12px" }}>
           There is nothing to test until Aura has read something you wrote. Give it your posts and this page fills itself.
         </p>
-        <button
-          type="button"
-          onClick={() => onNavigate("teach")}
-          style={{
-            background: BLUE, color: "#FFFFFF", border: "none", borderRadius: 10,
-            padding: "10px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBlockStart: 10,
-          }}
-        >
-          Teach Aura
-        </button>
+        <button type="button" style={primaryButton} onClick={() => onNavigate("teach")}>Teach Aura</button>
       </div>
     );
   }
 
-  const variation = variationSentence(model);
+  const summary = variationSummary(model);
   const altHook = leastUsedHook(model.windowDist);
   const reread = needsCorpusReread(history);
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
       {/* ── PART A — the sample ─────────────────────────────────────────── */}
-      <section style={{ background: NIGHT, borderRadius: 24, padding: 18, overflow: "hidden" }}>
+      <section className="on-night" style={{ background: NIGHT, borderRadius: RADIUS.hero, padding: 18, overflow: "hidden" }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ ...microLabel, color: "#8FA0B2" }}>Test your voice</span>
+            <span style={{ ...microLabel, color: NIGHT_MUTED }}>Test your voice</span>
             <span aria-hidden style={{
               inlineSize: 7, blockSize: 7, borderRadius: "50%", background: CYAN,
               animation: "auraBlink 1.6s ease-in-out infinite", display: "inline-block",
             }} />
-            <span style={{ ...monoNum, fontSize: 10.5, letterSpacing: ".12em", textTransform: "uppercase", color: CYAN }}>Live</span>
+            <span style={{ ...monoNum, fontSize: TYPE.micro, letterSpacing: ".12em", textTransform: "uppercase", color: NIGHT_TEXT }}>
+              Live
+            </span>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {modeOptions.length > 0 && (
-              <select
-                aria-label="Voice mode"
-                value={profileId ?? ""}
-                onChange={(e) => { setProfileId(e.target.value); setGatewayText(null); setReport(null); }}
-                style={{
-                  background: "#162026", color: "#E8EDF2", border: "1px solid #24323C", borderRadius: 8,
-                  padding: "5px 8px", fontSize: 12, fontWeight: 600,
-                }}
-              >
-                {modeOptions.map((m) => (
-                  <option key={m.profileId} value={m.profileId as string}>{m.label}</option>
-                ))}
-              </select>
+              <div role="radiogroup" aria-label="Voice mode" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {modeOptions.map((m) => {
+                  const on = m.profileId === activeProfileId;
+                  return (
+                    <button
+                      key={m.profileId}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => { setProfileId(m.profileId as string); setGatewayText(null); setReport(null); }}
+                      style={{
+                        background: on ? NIGHT_RAISED : "transparent", color: on ? NIGHT_TEXT : NIGHT_MUTED,
+                        border: `1px solid ${NIGHT_LINE}`, borderRadius: RADIUS.chip, padding: "6px 10px",
+                        fontSize: TYPE.small, fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
             )}
-            <div role="tablist" aria-label="Sample source" style={{ display: "flex", background: "#162026", borderRadius: 8, padding: 2 }}>
+            <div role="tablist" aria-label="Sample source" style={{ display: "flex", background: NIGHT_RAISED, borderRadius: RADIUS.button, padding: 2 }}>
               {(["voice", "generic"] as const).map((s) => (
                 <button
                   key={s} type="button" role="tab" aria-selected={side === s}
                   onClick={() => { setSide(s); setReport(null); }}
                   style={{
-                    background: side === s ? "#24323C" : "transparent", color: side === s ? "#E8EDF2" : "#8FA0B2",
-                    border: "none", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    background: side === s ? NIGHT_LINE : "transparent", color: side === s ? NIGHT_TEXT : NIGHT_MUTED,
+                    border: "none", borderRadius: RADIUS.chip, padding: "6px 10px", fontSize: TYPE.small,
+                    fontWeight: 600, cursor: "pointer",
                   }}
                 >
                   {s === "voice" ? "With your voice" : "Generic AI"}
@@ -298,15 +353,15 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
           {side === "voice" ? (
             <Highlighted segments={voiceSegments} isArabic={isArabic} />
           ) : (
-            <div style={{ whiteSpace: "pre-wrap", color: "#E8EDF2", fontSize: 14.5, lineHeight: 1.75 }}>
+            <div style={{ whiteSpace: "pre-wrap", color: NIGHT_TEXT, fontSize: TYPE.bodyLg, lineHeight: 1.75 }}>
               {GENERIC_AI_SAMPLE}
             </div>
           )}
         </div>
 
         <div style={{
-          ...monoNum, fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase",
-          color: "#8FA0B2", marginBlockStart: 14, display: "flex", flexWrap: "wrap", gap: 10,
+          ...monoNum, fontSize: TYPE.micro, letterSpacing: ".1em", textTransform: "uppercase",
+          color: NIGHT_MUTED, marginBlockStart: 14, display: "flex", flexWrap: "wrap", gap: 10,
         }}>
           <span>{isArabic ? "Arabic" : "English"}</span>
           <span>{sampleText.length.toLocaleString("en-US")} chars</span>
@@ -314,14 +369,15 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
           {!thin && !fidelity.unjudgeable && <span>Inside range on {fidelity.inside} of {fidelity.total}</span>}
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBlockStart: 14 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBlockStart: 14, alignItems: "center" }}>
           <button
             type="button"
             onClick={() => void anotherSample()}
             disabled={loadingSample}
             style={{
-              background: "transparent", color: "#C7D2DC", border: "1px solid #24323C", borderRadius: 8,
-              padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: loadingSample ? "wait" : "pointer",
+              background: "transparent", color: NIGHT_TEXT, border: `1px solid ${NIGHT_LINE}`,
+              borderRadius: RADIUS.button, padding: "8px 12px", fontSize: TYPE.small, fontWeight: 600,
+              cursor: loadingSample ? "wait" : "pointer",
             }}
           >
             {loadingSample ? "Writing…" : "↻ Another sample"}
@@ -330,47 +386,42 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
             type="button"
             onClick={() => { setSeed((s) => s + 1); setGatewayText(null); }}
             style={{
-              background: "transparent", color: "#8FA0B2", border: "1px solid #24323C", borderRadius: 8,
-              padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              background: "transparent", color: NIGHT_MUTED, border: `1px solid ${NIGHT_LINE}`,
+              borderRadius: RADIUS.button, padding: "8px 12px", fontSize: TYPE.small, fontWeight: 600, cursor: "pointer",
             }}
           >
-            Shuffle the template
+            Try another sample, free
           </button>
-          <button
-            type="button"
-            onClick={onWrite}
-            style={{
-              background: BLUE, color: "#FFFFFF", border: "none", borderRadius: 8,
-              padding: "7px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
-            }}
-          >
-            Write in this voice →
-          </button>
+          <button type="button" onClick={onWrite} style={primaryButton}>Write in this voice →</button>
         </div>
-        {error && <p style={{ color: "#FF9A8B", fontSize: 12, marginBlockStart: 8 }}>{error}</p>}
+        {error && <p style={{ color: "#F2B8B0", fontSize: TYPE.small, marginBlockStart: 8 }}>{error}</p>}
       </section>
 
       {/* ── PART B — fidelity ───────────────────────────────────────────── */}
       <section style={cardStyle}>
-        <div style={microLabel}>How close this is to your range</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <span style={microLabel}>Inside range</span>
+          <InfoTooltip
+            term="Inside range"
+            body="Aura measures this sample the same way it measured your posts, then checks each figure against the range your own writing spans. It is arithmetic, not an opinion about how it sounds."
+          />
+        </div>
         {thin || fidelity.unjudgeable ? (
-          <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.65, marginBlockStart: 8, marginBlockEnd: 0 }}>
+          <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, marginBlock: "8px 0" }}>
             Not enough evidence to judge range yet.
           </p>
         ) : (
           <>
-            <div style={{ ...monoNum, fontSize: 15, color: INK, marginBlockStart: 8 }}>
-              Inside your range on {fidelity.inside} of {fidelity.total} measures
+            <div style={{ fontSize: TYPE.title, fontWeight: 600, color: INK, marginBlockStart: 8 }}>
+              {fidelityHeadline(fidelity.inside, fidelity.total)}
             </div>
             <div style={{ marginBlockStart: 10 }}>
               {fidelity.traits.map((t) => (
                 <div key={t.trait_key} style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "6px 0", borderBlockStart: `1px solid ${LINE}` }}>
-                  <span style={{
-                    ...monoNum, fontSize: 9.5, letterSpacing: ".08em", textTransform: "uppercase",
-                    color: t.inside ? GREEN : AMBER, background: t.inside ? "#E8F5EF" : "#FBF4E4",
-                    borderRadius: 6, padding: "2px 6px", flex: "0 0 auto",
-                  }}>{t.inside ? "Inside" : "Outside"}</span>
-                  <span style={{ fontSize: 13, color: t.inside ? MUTED : INK, lineHeight: 1.55 }}>
+                  <span style={chipStyle(t.inside ? GREEN : AMBER_TEXT, t.inside ? "#E8F5EF" : "#FBF4E4")}>
+                    {t.inside ? "Inside" : "Outside"}
+                  </span>
+                  <span style={{ fontSize: TYPE.body, color: t.inside ? MUTED : INK, lineHeight: 1.55 }}>
                     {t.miss ?? `${t.display_name} sits inside your measured range.`}
                   </span>
                 </div>
@@ -379,7 +430,7 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
           </>
         )}
         {fidelity.excluded.length > 0 && (
-          <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginBlockStart: 10, marginBlockEnd: 0 }}>
+          <p style={{ fontSize: TYPE.small, color: MUTED, lineHeight: 1.6, marginBlock: "10px 0" }}>
             Excluded from the count: {fidelity.excluded.map((e) => `${e.display_name} (${e.reason})`).join(", ")}.
           </p>
         )}
@@ -387,19 +438,16 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
 
       {/* ── PART C — the correction loop ────────────────────────────────── */}
       <section style={cardStyle}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>Does this sound like you?</div>
+        <div style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>Does this sound like you?</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBlockStart: 10 }}>
           {VERDICTS.map((v) => (
-            <button
-              key={v} type="button" disabled={busy} onClick={() => void send(v)}
-              style={{ ...ghostButton, color: INK, opacity: busy ? 0.6 : 1 }}
-            >
+            <button key={v} type="button" className="vd-act" disabled={busy} onClick={() => void send(v)}>
               {VERDICT_LABEL[v]}
             </button>
           ))}
         </div>
 
-        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12.5, color: MUTED, marginBlockStart: 10 }}>
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: TYPE.body, color: MUTED, marginBlockStart: 10 }}>
           <input type="checkbox" checked={applyToAll} onChange={(e) => setApplyToAll(e.target.checked)} />
           Apply to all modes (otherwise the change stays in {activeMode?.label ?? "your default voice"})
         </label>
@@ -411,85 +459,88 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
               onChange={(e) => setPhrase(e.target.value)}
               placeholder="Which phrase would you never say?"
               aria-label="Phrase you would never say"
-              style={{ flex: "1 1 220px", border: `1px solid ${LINE}`, borderRadius: 8, padding: "8px 10px", fontSize: 13 }}
+              style={{ flex: "1 1 220px", border: `1px solid ${LINE}`, borderRadius: RADIUS.button, padding: "10px", fontSize: TYPE.body }}
             />
-            <button
-              type="button" disabled={!phrase.trim() || busy}
-              onClick={() => void send("would_never_say", phrase)}
-              style={{ ...ghostButton, color: INK }}
-            >
+            <button type="button" className="vd-act" disabled={!phrase.trim() || busy} onClick={() => void send("would_never_say", phrase)}>
               Add to never list
             </button>
           </div>
         )}
 
         {report && (
-          <div style={{ marginBlockStart: 12, background: "#F2F5F9", borderRadius: 10, padding: "10px 12px" }}>
+          <div role="status" style={{ marginBlockStart: 12, background: SURFACE, borderRadius: RADIUS.button, padding: "10px 12px" }}>
             {report.map((line, i) => (
-              <p key={i} style={{ fontSize: 13, color: INK, lineHeight: 1.6, margin: i === 0 ? 0 : "6px 0 0" }}>{line}</p>
+              <p key={i} style={{ fontSize: TYPE.body, color: INK, lineHeight: 1.6, margin: i === 0 ? 0 : "6px 0 0" }}>{line}</p>
             ))}
           </div>
         )}
 
         {reread && (
-          <p style={{ fontSize: 13, color: RED, lineHeight: 1.6, marginBlockStart: 10, marginBlockEnd: 0 }}>
-            Three drafts in a row missed in the last fortnight. That is a pattern — let Aura re-read your posts.{" "}
-            <button type="button" onClick={() => onNavigate("teach")} style={{ ...ghostButton, color: INK, marginInlineStart: 6 }}>
-              Re-read my corpus
-            </button>
+          <p style={{ fontSize: TYPE.body, color: RED, lineHeight: 1.6, marginBlock: "10px 0" }}>
+            Three drafts in a row missed in the last fortnight. That is a pattern —{" "}
+            <button
+              type="button"
+              onClick={() => onNavigate("teach")}
+              style={{ background: "none", border: "none", padding: 0, color: BLUE, fontSize: TYPE.body, fontWeight: 600, textDecoration: "underline", cursor: "pointer" }}
+            >
+              let Aura re-read your posts
+            </button>.
           </p>
         )}
       </section>
 
       {/* ── PART D — recent learning ────────────────────────────────────── */}
-      <section style={cardStyle}>
-        <div style={microLabel}>Recent learning</div>
+      <Collapsible title="Recent learning" count={history.length}>
         {history.length === 0 ? (
-          <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.65, marginBlockStart: 8, marginBlockEnd: 0 }}>
+          <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, margin: 0 }}>
             Nothing yet. Every time you tell Aura a draft is wrong, the correction lands here.
           </p>
         ) : (
-          <div style={{ marginBlockStart: 8 }}>
-            {history.map((r) => (
-              <div key={r.id} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "baseline", padding: "8px 0", borderBlockStart: `1px solid ${LINE}` }}>
-                <span style={{ ...monoNum, fontSize: 11, color: MUTED, flex: "0 0 96px" }}>{dateMono(r.created_at)}</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: INK, flex: "0 0 auto" }}>{VERDICT_LABEL[r.verdict] ?? r.verdict}</span>
-                <span style={{ fontSize: 13, color: MUTED, flex: "1 1 200px", lineHeight: 1.55 }}>
-                  {r.applied_changes.length === 0
-                    ? "No change: one verdict is not enough to move a trait."
-                    : r.applied_changes
-                        .map((c) => `${c.trait_key.replace(/_/g, " ")} ${c.from === null ? "set" : Math.round(c.from) + "%"} → ${c.to === null ? "—" : Math.round(c.to) + "%"} · ${c.scope}`)
-                        .join("; ")}
-                </span>
-                <span style={{ ...monoNum, fontSize: 10.5, color: MUTED, flex: "0 0 auto" }}>{r.mode_scope ?? "—"}</span>
-              </div>
-            ))}
-          </div>
+          history.map((r) => (
+            <div key={r.id} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "baseline", padding: "8px 0", borderBlockStart: `1px solid ${LINE}` }}>
+              <span style={{ ...monoNum, fontSize: TYPE.caption, color: MUTED, flex: "0 0 96px" }}>{dateMono(r.created_at)}</span>
+              <span style={{ fontSize: TYPE.body, fontWeight: 600, color: INK, flex: "0 0 auto" }}>{VERDICT_LABEL[r.verdict] ?? r.verdict}</span>
+              <span style={{ fontSize: TYPE.body, color: MUTED, flex: "1 1 200px", lineHeight: 1.55 }}>
+                {r.applied_changes.length === 0
+                  ? "No change: one verdict is not enough to move a trait."
+                  : r.applied_changes
+                      .map((c) => `${c.trait_key.replace(/_/g, " ")} ${c.from === null ? "set" : Math.round(c.from) + "%"} → ${c.to === null ? "—" : Math.round(c.to) + "%"} · ${c.scope}`)
+                      .join("; ")}
+              </span>
+              <span style={{ ...monoNum, fontSize: TYPE.micro, color: MUTED, flex: "0 0 auto" }}>{r.mode_scope ?? "—"}</span>
+            </div>
+          ))
         )}
-      </section>
+      </Collapsible>
 
-      {/* ── PART E — variation ──────────────────────────────────────────── */}
-      {variation && (
-        <section style={cardStyle}>
-          <div style={microLabel}>Variation</div>
-          <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.65, marginBlockStart: 8, marginBlockEnd: 10 }}>{variation}</p>
-          <button
-            type="button"
-            onClick={() => { setHookOverride(altHook ?? "question"); setGatewayText(null); setSeed((s) => s + 1); }}
-            style={{ ...ghostButton, color: INK }}
-          >
-            Show me that opening
-          </button>
-          {hookOverride && (
-            <span style={{ fontSize: 12, color: MUTED, marginInlineStart: 10 }}>
-              Sample now opens with {HOOK_NAME[hookOverride] ?? hookOverride}.{" "}
-              <button type="button" onClick={() => setHookOverride(null)} style={{ ...ghostButton, color: INK }}>Back to yours</button>
-            </span>
-          )}
-        </section>
+      {/* ── PART E — variation, referenced not repeated ─────────────────── */}
+      {summary && (
+        <Collapsible title="How you start a post">
+          <p style={{ fontSize: TYPE.body, color: INK, lineHeight: 1.65, marginBlock: "0 10px" }}>{summary}</p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              type="button"
+              className="vd-act"
+              onClick={() => { setHookOverride(altHook ?? "question"); setGatewayText(null); setSeed((s) => s + 1); }}
+            >
+              Show me that opening
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigate("voice")}
+              style={{ background: "none", border: "none", padding: 0, color: BLUE, fontSize: TYPE.body, fontWeight: 600, cursor: "pointer" }}
+            >
+              See the full breakdown →
+            </button>
+            {hookOverride && (
+              <span style={{ fontSize: TYPE.small, color: MUTED }}>
+                Sample now opens with {HOOK_NAME[hookOverride] ?? hookOverride}.{" "}
+                <button type="button" className="vd-act" onClick={() => setHookOverride(null)}>Back to yours</button>
+              </span>
+            )}
+          </div>
+        </Collapsible>
       )}
-
-      <style>{`@keyframes auraBlink { 0%,100% { opacity: 1 } 50% { opacity: .25 } }`}</style>
     </div>
   );
 }
