@@ -13,6 +13,7 @@ import { useSearchParams } from "react-router-dom";
 import VoiceOverview from "@/components/voice/VoiceOverview";
 import VoiceDna from "@/components/voice/VoiceDna";
 import TeachAura from "@/components/voice/TeachAura";
+import TestImprove from "@/components/voice/TestImprove";
 
 const BLUE = "#0670C4";
 const MUTED = "#5B6673";
@@ -26,22 +27,6 @@ const TABS = [
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
-
-function Placeholder({ title }: { title: string }) {
-  return (
-    <div
-      style={{
-        background: "#FFFFFF", border: `1px solid ${LINE}`, borderRadius: 16, padding: 20,
-        fontFamily: "Inter, system-ui, sans-serif",
-      }}
-    >
-      <div style={{ fontSize: 15, fontWeight: 600, color: "#0F1519" }}>{title}</div>
-      <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, marginBlockStart: 6, marginBlockEnd: 0 }}>
-        Coming in this build. Nothing here yet — Aura won't show you numbers it hasn't measured.
-      </p>
-    </div>
-  );
-}
 
 export default function VoiceWorkspace({
   userId,
@@ -100,7 +85,7 @@ export default function VoiceWorkspace({
       {active === "overview" && <VoiceOverview userId={userId} onNavigate={go} />}
       {active === "dna" && <VoiceDna userId={userId} onWrite={onWrite} onNavigate={go} />}
       {active === "teach" && <TeachAura userId={userId} />}
-      {active === "test" && <Placeholder title="Test & Improve" />}
+      {active === "test" && <TestImprove userId={userId} onWrite={onWrite} onNavigate={go} />}
     </div>
   );
 }
