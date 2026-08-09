@@ -2616,6 +2616,8 @@ export type Database = {
           user_id: string
           visual_strategy_type: string | null
           visual_style: string | null
+          voice_corpus_reason: string | null
+          voice_corpus_status: string | null
           voice_match: number | null
         }
         Insert: {
@@ -2668,6 +2670,8 @@ export type Database = {
           user_id: string
           visual_strategy_type?: string | null
           visual_style?: string | null
+          voice_corpus_reason?: string | null
+          voice_corpus_status?: string | null
           voice_match?: number | null
         }
         Update: {
@@ -2720,6 +2724,8 @@ export type Database = {
           user_id?: string
           visual_strategy_type?: string | null
           visual_style?: string | null
+          voice_corpus_reason?: string | null
+          voice_corpus_status?: string | null
           voice_match?: number | null
         }
         Relationships: [
