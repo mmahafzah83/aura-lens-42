@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { generationMetadata } from "@/lib/generationMetadata";
+import { classifyPublishError } from "@/lib/publishFailure";
 
 type FlashLang = "ar" | "en";
 type FlashMode = "theme" | "spark";
@@ -413,8 +414,13 @@ export default function FlashPanel() {
       const { data, error } = await supabase.functions.invoke("linkedin-publish", { body: { postId } });
       if (error) throw error;
       if (!(data as any)?.success) {
-        const msg = (data as any)?.error || "Publish failed";
-        toast.error(/not connected/i.test(msg) ? "Connect LinkedIn in Settings first." : msg);
+        // Answered, and answered badly: name the reason and store it.
+        const failure = classifyPublishError((data as any)?.error || "Publish failed", true);
+        toast.error(failure.message);
+        await supabase
+          .from("linkedin_posts")
+          .update({ rejection_reason: failure.reason } as any)
+          .eq("id", postId);
         return;
       }
       const url = (data as any).postUrl;

@@ -5,6 +5,7 @@ import { Download, Linkedin, Loader2, CheckCircle2, Circle } from "lucide-react"
 import AuraCard, { type AuraCardVariant } from "@/components/AuraCard";
 import { downloadBlob } from "@/lib/download";
 import { generationMetadata } from "@/lib/generationMetadata";
+import { classifyPublishError } from "@/lib/publishFailure";
 
 // Colours and type read System-B semantic tokens directly. No hardcoded
 // names/scores anywhere.
@@ -142,6 +143,8 @@ export default function AuraCardPanel({
     setShareError(null);
     let insertedId: string | null = null;
     let uidForLog: string | null = null;
+    // Only true once linkedin-publish has actually been called.
+    let attempted = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Sign in first");
@@ -194,6 +197,7 @@ export default function AuraCardPanel({
       const { data, error } = await supabase.functions.invoke("linkedin-publish", {
         body: { postId: (ins as any).id },
       });
+      attempted = true;
       if (error) throw error;
       if (!(data as any)?.success) {
         const msg = (data as any)?.error || "Publish failed";
@@ -205,24 +209,26 @@ export default function AuraCardPanel({
         url ? { action: { label: "View post", onClick: () => window.open(url, "_blank") } } : undefined,
       );
     } catch (e: any) {
-      const message = e?.message || "Couldn't share to LinkedIn";
-      // 1. Retire the orphan (rename tracking_status → 'failed'). Wrapped so a
-      //    failure here cannot mask the original error.
+      const failure = classifyPublishError(e, attempted);
+      const message = failure.message;
+      // 1. Record why. The post is only marked failed when LinkedIn was
+      //    actually asked and said no — otherwise it stays a draft.
       if (insertedId) {
         try {
           await supabase
             .from("linkedin_posts")
             .update({
-              tracking_status: "failed",
+              tracking_status: failure.keepDraft ? "draft" : "failed",
+              rejection_reason: failure.reason,
               source_metadata: {
                 origin: "aura_card",
                 variant,
-                publish_error: String(message).slice(0, 500),
+                publish_error: failure.reason,
                 failed_at: new Date().toISOString(),
               },
             })
             .eq("id", insertedId);
-        } catch { /* swallow: never let retire mask the real error */ }
+        } catch { /* swallow: never let bookkeeping mask the real error */ }
       }
       // 2. Log server-side — a client failure that leaves a DB row must leave
       //    an ef_error_log row. Wrapped for the same reason.
@@ -232,10 +238,11 @@ export default function AuraCardPanel({
           severity: "high",
           error_message: String(message).slice(0, 1000),
           user_id: uidForLog,
-          context: { post_id: insertedId, variant },
+          context: { post_id: insertedId, variant, attempted, reason: failure.reason },
         });
       } catch { /* swallow */ }
-      // 3. Persistent inline error — replaces the vanishing toast.
+      // 3. Say it out loud: inline banner and a toast.
+      toast.error(message);
       setShareError(message);
     } finally { setBusy(null); }
   };

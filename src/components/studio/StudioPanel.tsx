@@ -17,6 +17,8 @@ import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/component
 import { track } from "@/lib/track";
 import { generationMetadata } from "@/lib/generationMetadata";
 import { editFields } from "@/lib/editDistance";
+import { classifyPublishError } from "@/lib/publishFailure";
+import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
 import { stripMarkdown, fixArabicDirectionalSymbols } from "@/lib/textFormat";
 import { DeckIRSchema, type DeckIR } from "@/carousel/deckIR";
@@ -1671,7 +1673,16 @@ export default function StudioPanel({
       setStep(2);
       return;
     }
+    // A real, answered attempt that came back bad: say why, and store why.
+    const failure = classifyPublishError(payload?.error || error?.message || "", true);
     setProblem(message.includes("not connected") ? T.notConnected[lang] : T.postFailed[lang]);
+    toast.error(failure.message);
+    try {
+      await supabase
+        .from("linkedin_posts")
+        .update({ rejection_reason: failure.reason } as any)
+        .eq("id", id);
+    } catch { /* never let bookkeeping mask the message on screen */ }
   }, [ensurePostRow, syncRowToScreen, finalisePublished, choice, lang, applyGate]);
 
   /** Lets the gate branch above retry itself once, with the override on. */
