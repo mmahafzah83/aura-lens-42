@@ -47,6 +47,7 @@ export interface TraitRow {
   min_evidence: number;
   updated_at: string | null;
   last_confirmed_at: string | null;
+  evidence_count: number | null;
 }
 
 export interface ChangeRow {
@@ -77,6 +78,12 @@ export interface VoiceOverviewModel {
   windowDist: Record<string, number>;
   /** 0–100, null when the window holds fewer than 8 classified posts */
   diversity: number | null;
+  /** share of the window taken by the single most-used real opener, 0–100 */
+  topShare: number | null;
+  topStyleKey: string | null;
+  topStyleCount: number | null;
+  /** true when 'other' outnumbers the reported top style */
+  otherDominant: boolean;
   traits: TraitRow[];
   computableComputed: number;
   computableHigh: number;
