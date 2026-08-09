@@ -952,6 +952,12 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
     { id: "openings", name: t("Openings", "الافتتاحيات") },
     { id: "endings", name: t("Endings", "الخواتيم") },
     { id: "story", name: t("Story types", "أنواع المنشور") },
+    { id: "structures", name: t("Structures", "البُنى") },
+    { id: "moves", name: t("Moves", "الحركات") },
+    { id: "rules", name: t("Do · Never", "افعل · لا تفعل") },
+    { id: "anchors", name: t("Anchors", "المراسي") },
+  ];
+
   return (
     <div id="voice-engine-section" ref={containerRef} style={{ scrollMarginTop: 96, fontFamily: UI }}>
       <style>{`
