@@ -29,7 +29,7 @@ export const LATIN_RE = /[A-Za-z]/g;
 // Arabic-Indic digits count as figures too: a member writing in Arabic states
 // numbers in ٠-٩ and those posts are evidence-dense, not evidence-free.
 export const EVIDENCE_RE =
-  /([\d٠-٩]+(?:[.,٫][\d٠-٩]+)*\s?[%٪]|[$€£]\s?[\d٠-٩]|\bSAR\b|\bAED\b|\bUSD\b|ريال|درهم|دولار|\b(?:19|20)\d{2}\b|[\d٠-٩]+(?:[.,٫][\d٠-٪]*[\d٠-٩])?)/g;
+  /([\d٠-٩]+(?:[.,٫][\d٠-٩]+)*\s?[%٪]|[$€£]\s?[\d٠-٩]|\bSAR\b|\bAED\b|\bUSD\b|ريال|درهم|دولار|\b(?:19|20)\d{2}\b|[\d٠-٩]+(?:[.,٫][\d٠-٩]+)*)/g;
 
 export const countOf = (text: string, re: RegExp) => (text.match(re) ?? []).length;
 
