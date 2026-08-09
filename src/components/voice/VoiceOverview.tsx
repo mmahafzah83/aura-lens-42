@@ -176,15 +176,19 @@ function ReadinessRail({ readiness }: { readiness: Readiness }) {
 export default function VoiceOverview({
   userId,
   onNavigate,
+  modelOverride,
 }: {
   userId: string | null;
   onNavigate: (tab: "dna" | "teach" | "test") => void;
+  /** Harness only: render a known model instead of reading the database. */
+  modelOverride?: VoiceOverviewModel;
 }) {
   const [model, setModel] = useState<VoiceOverviewModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
 
   const load = useCallback(async () => {
+    if (modelOverride) { setModel(modelOverride); setLoading(false); return; }
     if (!userId) { setLoading(false); return; }
     setLoading(true);
     try {
@@ -195,7 +199,7 @@ export default function VoiceOverview({
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, modelOverride]);
 
   useEffect(() => { void load(); }, [load]);
 
