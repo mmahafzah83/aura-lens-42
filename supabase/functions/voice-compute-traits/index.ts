@@ -155,9 +155,37 @@ Deno.serve(async (req) => {
       await admin.from("authority_voice_profiles").update({ readiness }).eq("id", profileId);
     }
 
+    // Rules are proposed from the same reading, but only when there is enough
+    // of it and the member is not already covered. Never on a page load.
+    let rules_suggested_run = false;
+    if (posts_used >= 20) {
+      const { data: activeRules } = await admin
+        .from("voice_rules")
+        .select("kind")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .eq("active", true);
+      const counts: Record<string, number> = {};
+      for (const r of activeRules ?? []) counts[r.kind as string] = (counts[r.kind as string] ?? 0) + 1;
+      const thin = ["always", "never", "anchor"].some((k) => (counts[k] ?? 0) < 3);
+      if (thin) {
+        rules_suggested_run = true;
+        try {
+          await fetch(`${SUPABASE_URL}/functions/v1/voice-suggest-rules`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}` },
+            body: JSON.stringify({ user_id: userId }),
+          });
+        } catch (e) {
+          console.error("voice-suggest-rules chain failed:", (e as Error).message);
+        }
+      }
+    }
+
     return json({
       user_id: userId,
       profile_id: profileId,
+      rules_suggested_run,
       traits_written,
       traits_skipped_locked,
       traits_skipped_user_set,
