@@ -10,8 +10,11 @@ import { toast } from "sonner";
 // A console section: an accordion whose summary carries the current value.
 // Module-level so typing inside a section never remounts it.
 function ConsoleSection({
-  id, label, value, explainer, isAr, children,
-}: { id: string; label: string; value: string; explainer?: string; isAr: boolean; children: React.ReactNode }) {
+  id, label, value, explainer, isAr, children, cardStyleB, labelStyle, explainerStyle, bodyLine,
+}: {
+  id: string; label: string; value: string; explainer?: string; isAr: boolean; children: React.ReactNode;
+  cardStyleB: React.CSSProperties; labelStyle: React.CSSProperties; explainerStyle: React.CSSProperties; bodyLine: number;
+}) {
   const dp = isAr ? ({ dir: "rtl" as const, lang: "ar" }) : ({ dir: "ltr" as const, lang: "en" });
   return (
     <details id={`voice-sec-${id}`} className="voice-sec" style={{ ...cardStyleB, marginBlockStart: 10, padding: 0 }}>
