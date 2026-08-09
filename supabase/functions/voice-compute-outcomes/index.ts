@@ -2,9 +2,22 @@
  * Read what actually happened to the member's published posts.
  *
  * This function writes no opinions. It measures each published post with the
- * one shared trait module, joins the newest metrics snapshot, and records how
- * the post did against the member's OWN trailing median — never against another
- * member and never against an absolute. Idempotent: one row per post, upserted.
+ * one shared trait module and records how the post did against the member's OWN
+ * trailing median — never against another member and never against an absolute.
+ * Idempotent: one row per post, upserted.
+ *
+ * PERFORMANCE SOURCE — a fallback chain, because the two pipelines barely overlap:
+ *   a. `linkedin_post_metrics`, newest snapshot, when one exists. Richer: it
+ *      carries impressions, so a true engagement RATE is available.
+ *   b. otherwise the counts the Apify import writes onto the post row itself
+ *      (`like_count`, `comment_count`, `repost_count`). No impressions exist on
+ *      this path, so a rate cannot be computed. The index is then an ENGAGEMENT
+ *      VOLUME index: total engagement over the member's trailing median total
+ *      engagement. Volume is sensitive to follower growth over time — which is
+ *      precisely why the baseline is the last 20 posts and never lifetime.
+ * The source used is recorded per row in `outcome_source`, baselines are built
+ * inside one source only, and a member's rows from the minority source are set
+ * aside rather than compared against a measure that does not mean the same thing.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isOwnWriting } from "../_shared/voiceCorpus.ts";
@@ -23,6 +36,11 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const DAY = 24 * 60 * 60 * 1000;
+
+type Source = "metrics_snapshot" | "post_counts";
+
+const num = (v: unknown): number | null =>
+  v === null || v === undefined || v === "" ? null : Number(v);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -62,7 +80,7 @@ Deno.serve(async (req) => {
     for (const userId of userIds) {
       const { data: posts, error: postErr } = await admin
         .from("linkedin_posts")
-        .select("id, post_text, published_at, hook_style, ending_type, authorship, acquisition, source_type, voice_corpus_status")
+        .select("id, post_text, published_at, hook_style, ending_type, authorship, acquisition, source_type, voice_corpus_status, like_count, comment_count, repost_count, engagement_score")
         .eq("user_id", userId)
         .not("published_at", "is", null)
         .order("published_at", { ascending: true });
@@ -99,27 +117,92 @@ Deno.serve(async (req) => {
       const now = Date.now();
       const excluded: Record<string, number> = {};
       const rows: Record<string, unknown>[] = [];
-      const priorRates: number[] = [];
-      const rawIndices: number[] = [];
 
-      for (const p of posts ?? []) {
+      /* Pass 1 — read the figures for every post and decide the source. */
+      interface Seen {
+        p: Record<string, unknown>;
+        source: Source | null;
+        rate: number | null;
+        total: number | null;
+        impressions: number | null;
+        reactions: number | null;
+        comments: number | null;
+        shares: number | null;
+        ageDays: number | null;
+      }
+      const seen: Seen[] = (posts ?? []).map((p) => {
         const met = metricsByPost.get(p.id as string) ?? null;
-        const rate = met && met.engagement_rate !== null ? Number(met.engagement_rate) : null;
         const publishedAt = p.published_at as string | null;
         const ageDays = publishedAt ? (now - new Date(publishedAt).getTime()) / DAY : null;
 
-        let reason: string | null = null;
-        if (!p.post_text || String(p.post_text).trim().length === 0) reason = "no_text";
-        else if (!isOwnWriting(p)) reason = "not_own_writing";
-        else if (p.voice_corpus_status !== "included") reason = "not_in_corpus";
-        else if (!met) reason = "no_metrics_yet";
-        else if (ageDays !== null && ageDays < OUTCOME_RULES.settleDays) reason = "too_new";
-        else if (Number(met.impressions ?? 0) < OUTCOME_RULES.minImpressions) reason = "too_few_impressions";
+        if (met) {
+          const reactions = num(met.reactions) ?? 0;
+          const comments = num(met.comments) ?? 0;
+          const shares = num(met.shares) ?? 0;
+          return {
+            p: p as Record<string, unknown>, source: "metrics_snapshot",
+            rate: num(met.engagement_rate), total: reactions + comments + shares,
+            impressions: num(met.impressions), reactions, comments, shares, ageDays,
+          };
+        }
+        const likes = num(p.like_count);
+        const comments = num(p.comment_count);
+        const reposts = num(p.repost_count);
+        const hasCounts = likes !== null || comments !== null || reposts !== null;
+        return {
+          p: p as Record<string, unknown>,
+          source: hasCounts ? "post_counts" : null,
+          rate: null,
+          total: hasCounts ? (likes ?? 0) + (comments ?? 0) + (reposts ?? 0) : null,
+          impressions: null, reactions: likes, comments, shares: reposts, ageDays,
+        };
+      });
 
-        // The baseline is built from every measured post, including ones we do
-        // not learn from: the member's typical reach is a fact about them.
-        const baseline = trailingBaseline(priorRates);
-        if (rate !== null) priorRates.push(rate);
+      /* One source per member, so no two posts are compared on measures that do
+         not mean the same thing. The source that covers more of the member's
+         own writing wins; the minority is set aside, not silently mixed in. */
+      const eligibleFor = (s: Seen) =>
+        !!s.p.post_text && String(s.p.post_text).trim().length > 0 &&
+        isOwnWriting(s.p) && s.p.voice_corpus_status === "included";
+      let snapN = 0, countN = 0;
+      for (const s of seen) {
+        if (!eligibleFor(s)) continue;
+        if (s.source === "metrics_snapshot") snapN += 1;
+        else if (s.source === "post_counts") countN += 1;
+      }
+      const chosen: Source | null = snapN === 0 && countN === 0 ? null
+        : snapN >= countN ? "metrics_snapshot" : "post_counts";
+
+      /* Pass 2 — exclusion in the order a post actually fails, and the
+         trailing baseline built within the chosen source alone. */
+      const priorValues: number[] = [];
+      const rawIndices: number[] = [];
+
+      for (const s of seen) {
+        const p = s.p;
+        const publishedAt = p.published_at as string | null;
+
+        let reason: string | null = null;
+        if (!isOwnWriting(p)) reason = "not_own_writing";
+        else if (p.voice_corpus_status !== "included") reason = "not_in_corpus";
+        else if (!p.post_text || String(p.post_text).trim().length === 0) reason = "no_text";
+        else if (s.source === null) reason = "no_performance_data";
+        else if (chosen !== null && s.source !== chosen) reason = "other_measure";
+        else if (s.ageDays !== null && s.ageDays < OUTCOME_RULES.settleDays) reason = "too_new";
+        else if (s.source === "metrics_snapshot" && (s.impressions ?? 0) < OUTCOME_RULES.minImpressions) {
+          reason = "too_few_impressions";
+        }
+
+        // The measure this member is indexed on: a rate when impressions exist,
+        // otherwise engagement volume. Never both in one baseline.
+        const value = chosen === "metrics_snapshot" ? s.rate : s.total;
+        const inChosen = s.source === chosen;
+
+        // The baseline is built from every post measured on the chosen source,
+        // including ones we do not learn from: the member's typical reach is a
+        // fact about them.
+        const baseline = trailingBaseline(priorValues);
+        if (inChosen && value !== null) priorValues.push(value);
 
         const traits: Record<string, number> = {};
         if (p.post_text) {
@@ -129,7 +212,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        const rawIndex = reason === null && rate !== null && baseline !== null ? rate / baseline : null;
+        const rawIndex = reason === null && value !== null && baseline !== null ? value / baseline : null;
         if (rawIndex !== null) rawIndices.push(rawIndex);
 
         if (reason) excluded[reason] = (excluded[reason] ?? 0) + 1;
@@ -139,14 +222,17 @@ Deno.serve(async (req) => {
           post_id: p.id,
           published_at: publishedAt,
           followers_at_publish: followersAt(publishedAt),
-          impressions: met ? Number(met.impressions ?? 0) : null,
-          engagement_rate: rate,
-          reactions: met ? Number(met.reactions ?? 0) : null,
-          comments: met ? Number(met.comments ?? 0) : null,
-          shares: met ? Number(met.shares ?? 0) : null,
+          outcome_source: s.source,
+          impressions: s.impressions,
+          engagement_rate: s.rate,
+          total_engagement: s.total,
+          reactions: s.reactions,
+          comments: s.comments,
+          shares: s.shares,
           performance_index_raw: rawIndex,
           performance_index: rawIndex, // winsorised below, once the member's own spread is known
-          baseline_engagement_rate: baseline,
+          baseline_engagement_rate: chosen === "metrics_snapshot" ? baseline : null,
+          baseline_total_engagement: chosen === "post_counts" ? baseline : null,
           sample_traits: traits,
           hook_style: p.hook_style ?? null,
           ending_type: p.ending_type ?? null,
@@ -176,7 +262,12 @@ Deno.serve(async (req) => {
         posts_seen: rows.length,
         rows_kept: kept.length,
         excluded_by_reason: excluded,
-        baseline_engagement_rate: trailingBaseline(priorRates),
+        source_used: chosen,
+        source_counts: {
+          metrics_snapshot: rows.filter((r) => r.outcome_source === "metrics_snapshot").length,
+          post_counts: rows.filter((r) => r.outcome_source === "post_counts").length,
+        },
+        trailing_baseline: trailingBaseline(priorValues),
         performance_index_range: idx.length ? [Math.min(...idx), Math.max(...idx)] : null,
       });
     }
