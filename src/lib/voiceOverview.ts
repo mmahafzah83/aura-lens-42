@@ -57,7 +57,7 @@ export interface ChangeRow {
 }
 
 export interface Recommendation {
-  key: "diversity" | "freshness" | "confidence" | "confirm" | "none";
+  key: "repetition" | "diversity" | "freshness" | "confidence" | "confirm" | "none";
   text: string;
   actionLabel?: string;
   actionTab?: "dna" | "teach" | "test";
@@ -146,13 +146,6 @@ export function readinessSentence(m: VoiceOverviewModel): string {
     return `Aura drafts in a voice the market can tell apart: ${pct(m.diversity)} opener variety across your last ${m.windowSize} posts, and your most-used opener — ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — accounts for only ${m.topStyleCount} of them.`;
   }
   return `Aura drafts in a voice the market can tell apart, from ${m.corpusCount} posts.`;
-}
-
-function topHook(dist: Record<string, number>): { key: string; count: number } | null {
-  const entries = Object.entries(dist);
-  if (!entries.length) return null;
-  entries.sort((a, b) => b[1] - a[1]);
-  return { key: entries[0][0], count: entries[0][1] };
 }
 
 function leastUsedHook(dist: Record<string, number>): string | null {
@@ -262,7 +255,7 @@ const VERDICT_TEXT: Record<string, string> = {
 };
 
 export async function loadVoiceOverview(userId: string): Promise<VoiceOverviewModel> {
-  const [{ data: profiles }, { data: registry }, corpus, windowRes, diversityRes, { data: feedback }, { data: dp }] =
+  const [{ data: profiles }, { data: registry }, corpus, windowRes, diversityRes, topRes, { data: feedback }, { data: dp }] =
     await Promise.all([
       supabase
         .from("authority_voice_profiles")
@@ -274,6 +267,9 @@ export async function loadVoiceOverview(userId: string): Promise<VoiceOverviewMo
       supabase.rpc("voice_corpus_stats", { p_user_id: userId }),
       supabase.rpc("voice_window", { p_user_id: userId }),
       supabase.rpc("voice_opener_diversity", { p_user_id: userId }),
+      (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }>)(
+        "voice_top_style_share", { p_user_id: userId },
+      ),
       supabase.from("voice_feedback").select("verdict, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(6),
       supabase.from("diagnostic_profiles").select("ui_dismissals").eq("user_id", userId).maybeSingle(),
     ]);
@@ -281,6 +277,10 @@ export async function loadVoiceOverview(userId: string): Promise<VoiceOverviewMo
   const profile = profiles?.[0] ?? null;
   const stats = (corpus.data as { post_count: number; newest_published_at: string | null }[] | null)?.[0] ?? null;
   const windowRows = (windowRes.data as { hook_style: string | null; published_at: string | null }[] | null) ?? [];
+
+  const topRow = (topRes.data as
+    { share: number | null; top_style: string | null; top_count: number | null; other_dominant: boolean | null }[] | null
+  )?.[0] ?? null;
 
   const windowDist: Record<string, number> = {};
   for (const r of windowRows) {
@@ -296,7 +296,7 @@ export async function loadVoiceOverview(userId: string): Promise<VoiceOverviewMo
   if (profile) {
     const { data: rows } = await supabase
       .from("voice_traits")
-      .select("trait_key, value, confidence, source, updated_at, last_confirmed_at")
+      .select("trait_key, value, confidence, source, updated_at, last_confirmed_at, evidence_count")
       .eq("profile_id", profile.id);
     const reg = new Map((registry ?? []).map((r) => [r.trait_key, r]));
     traits = (rows ?? [])
@@ -312,6 +312,7 @@ export async function loadVoiceOverview(userId: string): Promise<VoiceOverviewMo
           min_evidence: meta?.min_evidence ?? 8,
           updated_at: r.updated_at,
           last_confirmed_at: r.last_confirmed_at,
+          evidence_count: r.evidence_count === null || r.evidence_count === undefined ? null : Number(r.evidence_count),
         };
       })
       .sort((a, b) => a.display_name.localeCompare(b.display_name));
@@ -348,6 +349,10 @@ export async function loadVoiceOverview(userId: string): Promise<VoiceOverviewMo
     windowClassified: windowRows.filter((r) => r.hook_style).length,
     windowDist,
     diversity: diversityRes.data === null || diversityRes.data === undefined ? null : Number(diversityRes.data),
+    topShare: topRow?.share === null || topRow?.share === undefined ? null : Number(topRow.share),
+    topStyleKey: topRow?.top_style ?? null,
+    topStyleCount: topRow?.top_count === null || topRow?.top_count === undefined ? null : Number(topRow.top_count),
+    otherDominant: Boolean(topRow?.other_dominant),
     traits,
     computableComputed: computable.length,
     computableHigh: computable.filter((t) => t.confidence === "high").length,
