@@ -156,15 +156,20 @@ export function useReadChips(userId: string | null | undefined, facts: HomeFacts
     if (!userId) return;
     let alive = true;
     (async () => {
-      const { data } = await supabase.from("diagnostic_profiles")
-        .select("brand_assessment_answers, skill_ratings, linkedin_url").eq("user_id", userId).maybeSingle();
+      // The LinkedIn address lives on linkedin_connections — the profile columns are deprecated.
+      const [{ data }, { data: conn }] = await Promise.all([
+        supabase.from("diagnostic_profiles")
+          .select("brand_assessment_answers, skill_ratings").eq("user_id", userId).maybeSingle(),
+        supabase.from("linkedin_connections")
+          .select("handle, profile_url").eq("user_id", userId).maybeSingle(),
+      ]);
       if (!alive || !data) return;
       const a = (data as any).brand_assessment_answers;
       const s = (data as any).skill_ratings;
       setProfile({
         answers: a && typeof a === "object" ? Object.keys(a).length : 0,
         calibrated: !!s && typeof s === "object" && Object.keys(s).length > 0,
-        linkedin: !!(data as any).linkedin_url,
+        linkedin: Boolean(conn?.handle || conn?.profile_url),
       });
     })();
     return () => { alive = false; };
