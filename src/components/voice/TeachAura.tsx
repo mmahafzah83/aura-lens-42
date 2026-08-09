@@ -184,7 +184,11 @@ export default function TeachAura({ userId }: { userId: string | null }) {
             ambiguous={model.ambiguous}
             onApplied={async () => { await recompute(); }}
           />
-          <TeachAuraCoverage coverage={model.coverage} includedCount={model.includedCount} />
+          <TeachAuraCoverage
+            coverage={model.coverage}
+            includedCount={model.includedCount}
+            textlessWithEngagement={model.textlessWithEngagement}
+          />
         </>
       )}
 
