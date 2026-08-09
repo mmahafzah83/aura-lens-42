@@ -30,8 +30,7 @@ interface ProfileData {
   core_practice: string | null;
   sector_focus: string | null;
   north_star_goal: string | null;
-  linkedin_handle: string | null;
-  linkedin_url: string | null;
+  // LinkedIn address is read from linkedin_connections, not from this record.
   years_experience: string | null;
   leadership_style: string | null;
   primary_strength: string | null;
