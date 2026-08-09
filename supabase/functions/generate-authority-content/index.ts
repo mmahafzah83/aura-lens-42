@@ -1118,6 +1118,151 @@ Return ONLY a JSON object matching this exact schema:
       }
     }
 
+    /* ── generate_directions ────────────────────────────────────────────
+       Four short ways into the SAME subject, offered before a post is
+       written. Grounded on exactly the same signal + evidence chain that
+       generate_content uses — no new fact source, no invented figures. */
+    if (action === "generate_directions") {
+      const { topic, context, signal_id, sector, theme } = params;
+
+      let groundingSignal: any = null;
+      let groundingFragments: any[] = [];
+      try {
+        if (signal_id) {
+          const { data: sigData } = await supabase.from("strategic_signals")
+            .select("signal_title, explanation, strategic_implications, what_it_means_for_you, confidence, supporting_evidence_ids")
+            .eq("id", signal_id).eq("user_id", effectiveUserId).maybeSingle();
+          groundingSignal = sigData || null;
+          const evidenceIds = Array.isArray(sigData?.supporting_evidence_ids)
+            ? sigData!.supporting_evidence_ids.filter(Boolean)
+            : [];
+          if (evidenceIds.length > 0) {
+            const { data: fragData } = await supabase.from("evidence_fragments")
+              .select("title, content, metadata, confidence")
+              .eq("user_id", effectiveUserId)
+              .in("id", evidenceIds.slice(0, 100))
+              .order("confidence", { ascending: false })
+              .limit(6);
+            groundingFragments = fragData || [];
+          } else {
+            const { data: fragData } = await supabase.from("evidence_fragments")
+              .select("title, content, metadata, confidence")
+              .eq("user_id", effectiveUserId)
+              .order("created_at", { ascending: false })
+              .limit(5);
+            groundingFragments = fragData || [];
+          }
+        } else {
+          const { data: sigs } = await supabase.from("strategic_signals")
+            .select("signal_title, explanation, strategic_implications, what_it_means_for_you, confidence")
+            .eq("user_id", effectiveUserId)
+            .in("lifecycle_tier", ["live", "evergreen", "emerging"])
+            .order("confidence", { ascending: false })
+            .limit(3);
+          if (sigs && sigs.length) {
+            groundingSignal = sigs[0];
+            groundingFragments = sigs.slice(1).map((s: any) => ({
+              title: s.signal_title,
+              content: s.explanation || (typeof s.strategic_implications === "string" ? s.strategic_implications : JSON.stringify(s.strategic_implications || "")),
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn("[generate-authority-content] directions grounding failed:", (e as Error).message);
+      }
+
+      const groundingBlock = (() => {
+        if (!groundingSignal && groundingFragments.length === 0) return "";
+        const sigLine = groundingSignal
+          ? `SIGNAL: ${groundingSignal.signal_title || ""} — ${groundingSignal.explanation || ""}`
+          : "";
+        const fragLines = groundingFragments
+          .map((f: any) => `- ${(f.title ? f.title + ": " : "")}${(f.content || "").toString().slice(0, 260)}`)
+          .filter(Boolean)
+          .join("\n");
+        return `GROUNDED EVIDENCE — the only facts you may lean on:\n${sigLine}\n${fragLines}`;
+      })();
+
+      const voiceBlock = effectiveLanguage === "ar"
+        ? (voiceProfile ? buildArabicVoiceContext(voiceProfile) : "")
+        : buildVoiceContext(voiceProfile);
+
+      const sectorLine = `${(typeof sector === "string" && sector.trim()) || profile?.sector_focus || "their own"} context`;
+      const themeLine = typeof theme === "string" && theme.trim() ? `Theme: ${theme.trim()}.` : "";
+
+      const dirSystem = effectiveLanguage === "ar"
+        ? `أنت تساعد ${readerDescription} على اختيار زاوية قبل الكتابة.
+أعطِ أربع زوايا مختلفة تماماً لنفس الموضوع: زاوية معاكسة للسائد، زاوية تشخيصية، زاوية من تجربة ممارس، وزاوية استشرافية.
+كل زاوية جملة واحدة قصيرة بالعربية الفصحى المعاصرة، والمصطلحات التقنية تبقى بالإنجليزية.
+لا وسوم، لا إيموجي، لا مقدمة، لا تسميات مثل "زاوية معاكسة".
+استند فقط إلى الأدلة أدناه؛ لا تخترع أرقاماً أو جهات.
+أعد JSON فقط بهذا الشكل: {"directions":[{"id":"1","angle":"..."},{"id":"2","angle":"..."},{"id":"3","angle":"..."},{"id":"4","angle":"..."}]}`
+        : `You help ${readerDescription} choose an angle before writing. ${themeLine}
+Give four genuinely different ways into the SAME subject: one that argues against the common view, one that diagnoses a cause, one told from lived practitioner experience, and one that looks ahead.
+Each angle is ONE plain sentence — a real sentence, never a label. Ground it in ${sectorLine}.
+No hashtags, no emoji, no preamble, no labels.
+Draw only on the evidence below; invent no numbers, names, or organisations.
+Return ONLY this JSON: {"directions":[{"id":"1","angle":"..."},{"id":"2","angle":"..."},{"id":"3","angle":"..."},{"id":"4","angle":"..."}]}`;
+
+      const dirUser = [
+        `SUBJECT: ${String(topic || "").slice(0, 300)}`,
+        context ? `CONTEXT: ${String(context).slice(0, 600)}` : "",
+        groundingBlock,
+        voiceBlock ? `VOICE:\n${voiceBlock.slice(0, 1200)}` : "",
+      ].filter(Boolean).join("\n\n");
+
+      const dirRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          max_tokens: 600,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: dirSystem },
+            { role: "user", content: dirUser },
+          ],
+        }),
+      });
+
+      if (!dirRes.ok) {
+        const t = await dirRes.text();
+        console.error("generate_directions AI error:", dirRes.status, t);
+        return new Response(JSON.stringify({ error: "AI error" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const dirJson = await dirRes.json();
+      try {
+        EdgeRuntime.waitUntil(logAIUsage({
+          user_id: effectiveUserId ?? null,
+          function_name: "generate-authority-content",
+          provider: "lovable",
+          model: dirJson.model || "google/gemini-3-flash-preview",
+          input_tokens: dirJson.usage?.prompt_tokens,
+          output_tokens: dirJson.usage?.completion_tokens,
+          metadata: { action: "generate_directions" },
+        }));
+      } catch (_) { /* non-blocking */ }
+
+      const rawText = String(dirJson.choices?.[0]?.message?.content ?? "").trim();
+      let directions: Array<{ id: string; angle: string }> = [];
+      try {
+        const cleaned = rawText.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+        const parsed = JSON.parse(cleaned);
+        directions = (Array.isArray(parsed?.directions) ? parsed.directions : [])
+          .map((d: any, i: number) => ({ id: String(d?.id ?? i + 1), angle: String(d?.angle ?? "").trim() }))
+          .filter((d: any) => d.angle)
+          .slice(0, 4);
+      } catch (e) {
+        console.error("generate_directions parse failed:", rawText.slice(0, 300));
+      }
+
+      return new Response(JSON.stringify({ directions }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "generate_narrative_plan") {
       const voiceContext = buildVoiceContext(voiceProfile);
 
