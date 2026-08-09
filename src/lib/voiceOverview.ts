@@ -61,7 +61,7 @@ export interface Recommendation {
   key: "repetition" | "diversity" | "freshness" | "confidence" | "confirm" | "none";
   text: string;
   actionLabel?: string;
-  actionTab?: "dna" | "teach" | "test";
+  actionTab?: "voice" | "teach" | "test";
 }
 
 export interface VoiceOverviewModel {
@@ -181,7 +181,7 @@ export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation"
   // 1 — repetition. Entropy is forgiving of one dominant opener, so this gate leads.
   const repetition = repetitionSentence(m);
   if (repetition) {
-    return { key: "repetition", text: repetition, actionLabel: "See Voice DNA", actionTab: "dna" };
+    return { key: "repetition", text: repetition, actionLabel: "See your spectrums", actionTab: "voice" };
   }
   // 2 — breadth.
   if (m.diversity !== null && m.diversity < REPETITION_GATES.diversityFloor) {
@@ -189,8 +189,8 @@ export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation"
     return {
       key: "diversity",
       text: `Your openers vary ${Math.round(m.diversity)}% across your last ${m.windowSize} posts; ${REPETITION_GATES.diversityFloor}% is the bar. Opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} would widen it — you have used it ${m.windowDist[alt ?? ""] ?? 0} times in this window.`,
-      actionLabel: "See Voice DNA",
-      actionTab: "dna",
+      actionLabel: "See your spectrums",
+      actionTab: "voice",
     };
   }
   // 3 — freshness.
@@ -235,6 +235,31 @@ export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation"
     };
   }
   return { key: "none", text: "Your voice is current. Nothing needs attention." };
+}
+
+/**
+ * The variation reading, in one sentence. Three surfaces render it and they
+ * must be byte-identical, so this is the only place it is written. Returns
+ * null when there is not enough classified writing to judge.
+ */
+export function variationSummary(m: {
+  diversity: number | null;
+  topShare: number | null;
+  windowClassified: number;
+  windowDist: Record<string, number>;
+}): string | null {
+  if (m.diversity === null || m.windowClassified < REPETITION_GATES.minClassified) return null;
+  const d = Math.round(m.diversity);
+  const varied = d >= REPETITION_GATES.diversityFloor;
+  const first = `Your openers are ${d}% varied — healthy is ${REPETITION_GATES.diversityFloor}% or more.`;
+  if (m.topShare === null) return first;
+  const share = Math.round(m.topShare);
+  if (share <= REPETITION_GATES.topShareCeiling) {
+    return `${first} No single opening takes more than ${share}% of your posts, and healthy is ${REPETITION_GATES.topShareCeiling}% or less. Nothing needs changing.`;
+  }
+  const alt = leastUsedHook(m.windowDist);
+  const altName = HOOK_LABEL[alt ?? "question"] ?? "a question";
+  return `${first} ${varied ? "But" : "And"} ${share}% of your posts start the same way, and healthy is ${REPETITION_GATES.topShareCeiling}% or less. Try ${altName} next.`;
 }
 
 /** Turn a trait/feedback/profile row into one line of plain English. */
