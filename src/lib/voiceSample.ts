@@ -107,6 +107,9 @@ export interface ComposedSample {
   segments: Segment[];
   text: string;
   isArabic: boolean;
+  /** first and last segment, for callers that highlight by string match */
+  hook: string;
+  closer: string;
 }
 
 /** Compose a sample from the member's measured traits. Pure, instant, free. */
@@ -149,7 +152,13 @@ export function composeFromTraits(t: SampleTraits, seed = 0, hookLabel = "your o
   });
 
   const join = pace !== null && pace !== undefined && pace >= 60 ? "\n\n" : "\n";
-  return { segments, text: segments.map((s) => s.text).join(join), isArabic };
+  return {
+    segments,
+    text: segments.map((s) => s.text).join(join),
+    isArabic,
+    hook: segments[0]?.text ?? "",
+    closer: segments[segments.length - 1]?.text ?? "",
+  };
 }
 
 /** The control condition: what everyone else's LinkedIn post looks like. */
@@ -170,4 +179,48 @@ What are your thoughts? Let me know in the comments 👇
 /** Split a composed sample's plain text back into paragraphs for the pace join. */
 export function segmentsToText(segments: Segment[], clipped: boolean): string {
   return segments.map((s) => s.text).join(clipped ? "\n\n" : "\n");
+}
+
+/* ── Compatibility shim for the legacy Voice Engine section ───────────────
+ * `sampleBank.ts` was a second, divergent copy of this module using the old
+ * opener vocabulary. It is deleted; the one legacy caller maps its own ids
+ * onto the current keys here, so there is still only one template bank.
+ */
+export interface VoiceSpec {
+  language: "en" | "ar";
+  tone?: string;
+  rhythm?: string;
+  emoji?: string;
+  opener?: string;
+  closer?: string;
+  structure?: string;
+  length?: number;
+}
+
+const LEGACY_OPENER: Record<string, string> = {
+  claim: "contrarian_claim",
+  number: "number_first",
+  story: "short_story",
+  question: "question",
+  experience: "experience_led",
+  announcement: "announcement",
+};
+
+export const GENERIC_SAMPLE = GENERIC_AI_SAMPLE;
+
+export function composeSample(spec: VoiceSpec, seed = 0): ComposedSample {
+  const values: Record<string, number | null> = {
+    pace: spec.rhythm === "clipped" ? 82 : spec.rhythm === "flowing" ? 28 : 50,
+    emoji: spec.emoji && spec.emoji !== "none" ? 40 : 0,
+    arabic: spec.language === "ar" ? 100 : 0,
+  };
+  return composeFromTraits(
+    {
+      values,
+      targetChars: spec.length ?? null,
+      hookKey: LEGACY_OPENER[spec.opener ?? ""] ?? "contrarian_claim",
+      closerKey: spec.closer ?? "question",
+    },
+    seed,
+  );
 }

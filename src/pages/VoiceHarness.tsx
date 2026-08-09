@@ -1,12 +1,11 @@
 /**
- * Dev harness for the Voice Overview states — the same pattern as
+ * Dev harness for the Voice states — the same pattern as
  * SignatureHarness. It renders the page against hand-built models so the
  * empty states can be reviewed without owning an account in that state.
  * Nothing here is reachable from the product navigation.
  */
-import VoiceOverview from "@/components/voice/VoiceOverview";
+import YourVoice from "@/components/voice/YourVoice";
 import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
-import VoiceDna from "@/components/voice/VoiceDna";
 import TestImprove from "@/components/voice/TestImprove";
 import type { VoiceDnaModel } from "@/lib/voiceDna";
 import { buildRecommendation, type VoiceOverviewModel } from "@/lib/voiceOverview";
@@ -115,7 +114,7 @@ export default function VoiceHarness() {
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#5B6673", marginBlockEnd: 8 }}>
             {s.title.toUpperCase()}
           </div>
-          <VoiceOverview userId={null} onNavigate={() => {}} modelOverride={s.model} />
+          <YourVoice userId={null} onNavigate={() => {}} modelOverride={{ overview: s.model, dna: DNA_THIN }} />
         </div>
       ))}
 
@@ -128,14 +127,6 @@ export default function VoiceHarness() {
         </div>
       ))}
 
-      {[{ title: "DNA A — no profile", model: DNA_EMPTY }, { title: "DNA B — thin profile", model: DNA_THIN }].map((s) => (
-        <div key={s.title} style={{ marginBlockEnd: 32 }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#5B6673", marginBlockEnd: 8 }}>
-            {s.title.toUpperCase()}
-          </div>
-          <VoiceDna userId={null} onNavigate={() => {}} modelOverride={s.model} />
-        </div>
-      ))}
     </div>
   );
 }

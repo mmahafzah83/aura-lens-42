@@ -1,131 +1,231 @@
 /**
- * Imported-source review — the honesty surface.
+ * What Aura read — the honesty surface, stated as an answer rather than a queue.
  *
- * The member can see everything Aura counted as their writing and take any of
- * it back. `voice_window()` and `voice-compute-traits` both respect
- * `voice_corpus_status = 'excluded'`, so this list is not theatre: excluding
- * a post really does change the measured traits.
+ * `voice_window()` and `voice-compute-traits` both respect
+ * `voice_corpus_status = 'excluded'`, so setting something aside really does
+ * change the measured traits. Changes are queued and applied together: one
+ * recompute per Apply, not one per click.
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { HOOK_LABEL } from "@/lib/voiceOverview";
-import { PAGE_SIZE, setCorpusState, type CorpusPost, type CorpusState } from "@/lib/teachAura";
-
-const LINE = "#E2E7EE";
-const INK = "#0F1519";
-const MUTED = "#5B6673";
-const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+import { PAGE_SIZE, setCorpusStates, type CorpusPost, type CorpusState } from "@/lib/teachAura";
+import {
+  GREEN, INK, LINE, MUTED, SURFACE, TYPE, cardStyle, chipStyle, ghostButton, microLabel, monoNum, primaryButton,
+} from "@/components/voice/tokens";
 
 const STATE_CHIP: Record<CorpusState, { bg: string; fg: string; border: string; label: string }> = {
-  included: { bg: "#EAF6F0", fg: "#12805C", border: "#BFE3D3", label: "Included" },
-  excluded: { bg: "#F2F5F9", fg: "#5B6673", border: "#DDE4EC", label: "Excluded" },
-  auto_excluded: { bg: "#FBF4E4", fg: "#9A6F12", border: "#F0DFB4", label: "Auto-excluded" },
+  included: { bg: "#EAF6F0", fg: GREEN, border: "#BFE3D3", label: "Counted" },
+  excluded: { bg: SURFACE, fg: MUTED, border: "#DDE4EC", label: "Set aside" },
+  auto_excluded: { bg: "#FBF4E4", fg: "#9A6F12", border: "#F0DFB4", label: "Set aside by Aura" },
 };
 
 const fmtDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" }) : "—";
 
+type Filter = "all" | "aside" | "arabic" | "old";
+
 export default function TeachAuraReview({
-  posts,
-  total,
-  page,
-  onPage,
-  onChanged,
+  posts, includedCount, excludedCount, ambiguous, onApplied,
 }: {
   posts: CorpusPost[];
-  total: number;
-  page: number;
-  onPage: (p: number) => void;
-  /** Recomputes traits and reports what moved. */
-  onChanged: () => void;
+  includedCount: number;
+  excludedCount: number;
+  ambiguous: CorpusPost[];
+  /** Applies the queued changes, then recomputes once and reports what moved. */
+  onApplied: (changes: { include: string[]; exclude: string[] }) => Promise<void>;
 }) {
-  const [busy, setBusy] = useState<string | null>(null);
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [page, setPage] = useState(0);
+  const [queued, setQueued] = useState<Record<string, CorpusState>>({});
+  const [busy, setBusy] = useState(false);
 
-  const toggle = async (post: CorpusPost) => {
-    const next: CorpusState = post.state === "included" ? "excluded" : "included";
-    setBusy(post.id);
+  const stateOf = (p: CorpusPost): CorpusState => queued[p.id] ?? p.state;
+
+  const filtered = useMemo(() => {
+    const cutoff = new Date("2024-01-01").getTime();
+    return posts.filter((p) => {
+      if (filter === "aside") return stateOf(p) !== "included";
+      if (filter === "arabic") return p.isArabic;
+      if (filter === "old") return p.publishedAt !== null && new Date(p.publishedAt).getTime() < cutoff;
+      return true;
+    });
+    // `queued` is intentionally not a dependency of the filter's identity: the
+    // list must not reshuffle under the member's cursor as they tick boxes.
+  }, [posts, filter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const slice = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const pendingCount = Object.keys(queued).length;
+
+  const queue = (p: CorpusPost, next: CorpusState) =>
+    setQueued((q) => {
+      const copy = { ...q };
+      if (p.state === next) delete copy[p.id];
+      else copy[p.id] = next;
+      return copy;
+    });
+
+  const apply = async () => {
+    const include = Object.entries(queued).filter(([, s]) => s === "included").map(([id]) => id);
+    const exclude = Object.entries(queued).filter(([, s]) => s === "excluded").map(([id]) => id);
+    setBusy(true);
     try {
-      await setCorpusState(post.id, next);
-      onChanged();
+      await setCorpusStates(include, "included");
+      await setCorpusStates(exclude, "excluded");
+      setQueued({});
+      await onApplied({ include, exclude });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't change that post.");
+      toast.error(e instanceof Error ? e.message : "Couldn't apply those changes.");
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
+  const answer = `Aura read ${includedCount} of your posts and set aside ${excludedCount} reposts and comments.`;
+
   return (
     <section style={{ marginBlockStart: 20 }}>
-      <h3 style={{ fontSize: 15, fontWeight: 600, color: INK, margin: "0 0 4px" }}>What Aura counted as yours</h3>
-      <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, margin: "0 0 8px" }}>
-        Take back anything that isn't your own writing. Aura re-reads your patterns straight away.
-      </p>
+      <div style={cardStyle}>
+        <div style={microLabel}>What Aura read</div>
+        <p style={{ fontSize: TYPE.section, fontWeight: 600, color: INK, lineHeight: 1.5, marginBlock: "8px 4px" }}>
+          {answer} {ambiguous.length === 0 ? "Nothing else needs your attention." : ""}
+        </p>
+        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: 0 }}>
+          Take back anything that isn't your own writing.
+        </p>
 
-      <div style={{ background: "#FFFFFF", border: `1px solid ${LINE}`, borderRadius: 16, overflow: "hidden" }}>
-        {posts.map((post, i) => {
-          const chip = STATE_CHIP[post.state];
-          return (
-            <div
-              key={post.id}
-              style={{
-                display: "grid", gridTemplateColumns: "72px minmax(0,1fr) auto", gap: 12, alignItems: "center",
-                padding: "10px 14px", borderBlockStart: i === 0 ? "none" : `1px solid ${LINE}`,
-              }}
-            >
-              <span style={{ fontFamily: MONO, fontSize: 12, color: MUTED }}>{fmtDate(post.publishedAt)}</span>
-              <div style={{ minWidth: 0 }}>
-                <p dir="auto" style={{ fontSize: 13, color: INK, margin: 0, lineHeight: 1.5, overflowWrap: "anywhere" }}>
-                  {post.excerpt}…
-                </p>
-                <span style={{ fontSize: 11.5, color: MUTED }}>
-                  {post.hookStyle ? HOOK_LABEL[post.hookStyle] ?? post.hookStyle : "Not classified yet"}
-                  {post.state === "auto_excluded" && post.reason ? ` · ${post.reason}` : ""}
-                </span>
-              </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span
-                  style={{
-                    fontSize: 11.5, fontWeight: 600, padding: "3px 8px", borderRadius: 999,
-                    background: chip.bg, color: chip.fg, border: `1px solid ${chip.border}`, whiteSpace: "nowrap",
-                  }}
-                >
-                  {chip.label}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => void toggle(post)}
-                  disabled={busy === post.id}
-                  style={{
-                    border: `1px solid ${LINE}`, background: "#FFFFFF", borderRadius: 8, padding: "4px 10px",
-                    fontSize: 12, color: INK, cursor: busy === post.id ? "default" : "pointer", whiteSpace: "nowrap",
-                  }}
-                >
-                  {post.state === "included" ? "Exclude" : "Include"}
-                </button>
-              </div>
+        {ambiguous.length > 0 && (
+          <div style={{ marginBlockStart: 14, borderBlockStart: `1px solid ${LINE}`, paddingBlockStart: 12 }}>
+            <div style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
+              Aura wasn't sure about {ambiguous.length === 1 ? "this one" : `these ${ambiguous.length}`}. Is each one your own writing?
             </div>
-          );
-        })}
+            {ambiguous.map((p) => {
+              const s = stateOf(p);
+              return (
+                <div key={p.id} className="ta-row" style={{ padding: "10px 0", borderBlockStart: `1px solid ${LINE}` }}>
+                  <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{fmtDate(p.publishedAt)}</span>
+                  <p dir="auto" style={{ fontSize: TYPE.body, color: INK, margin: 0, lineHeight: 1.5, overflowWrap: "anywhere" }}>
+                    {p.excerpt}…
+                  </p>
+                  <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button" className="vd-act"
+                      style={s === "included" ? { borderColor: GREEN, color: GREEN } : undefined}
+                      onClick={() => queue(p, "included")}
+                    >
+                      Yes, mine
+                    </button>
+                    <button
+                      type="button" className="vd-act"
+                      style={s !== "included" ? { borderColor: INK, color: INK } : undefined}
+                      onClick={() => queue(p, "excluded")}
+                    >
+                      Not mine
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <button
+          type="button"
+          className="vd-act"
+          aria-expanded={open}
+          style={{ marginBlockStart: 14 }}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? "Hide the full list" : `See everything Aura read (${posts.length})`}
+        </button>
+
+        {open && (
+          <div style={{ marginBlockStart: 12 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {([["all", "Everything"], ["aside", "Set aside"], ["arabic", "Arabic"], ["old", "Before 2024"]] as const).map(([k, label]) => (
+                <button
+                  key={k} type="button" className="vd-act"
+                  aria-pressed={filter === k}
+                  style={filter === k ? { borderColor: INK, color: INK } : undefined}
+                  onClick={() => { setFilter(k); setPage(0); }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ marginBlockStart: 10, border: `1px solid ${LINE}`, borderRadius: 12, overflow: "hidden" }}>
+              {slice.map((p, i) => {
+                const s = stateOf(p);
+                const chip = STATE_CHIP[s];
+                const changed = queued[p.id] !== undefined;
+                return (
+                  <label
+                    key={p.id}
+                    className="ta-row"
+                    style={{
+                      padding: "10px 14px", borderBlockStart: i === 0 ? "none" : `1px solid ${LINE}`,
+                      background: changed ? "#F4F9FE" : "transparent", cursor: "pointer",
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={s !== "included"}
+                        onChange={(e) => queue(p, e.target.checked ? "excluded" : "included")}
+                        aria-label={`Set aside the post from ${fmtDate(p.publishedAt)}`}
+                        style={{ inlineSize: 18, blockSize: 18 }}
+                      />
+                      <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{fmtDate(p.publishedAt)}</span>
+                    </span>
+                    <span style={{ minInlineSize: 0 }}>
+                      <span dir="auto" style={{ display: "block", fontSize: TYPE.body, color: INK, lineHeight: 1.5, overflowWrap: "anywhere" }}>
+                        {p.excerpt}…
+                      </span>
+                      <span style={{ fontSize: TYPE.caption, color: MUTED }}>
+                        {p.hookStyle ? HOOK_LABEL[p.hookStyle] ?? p.hookStyle : "Not classified yet"}
+                        {s === "auto_excluded" && p.reason ? ` · ${p.reason}` : ""}
+                      </span>
+                    </span>
+                    <span style={chipStyle(chip.fg, chip.bg, chip.border)}>{chip.label}</span>
+                  </label>
+                );
+              })}
+              {slice.length === 0 && (
+                <p style={{ fontSize: TYPE.body, color: MUTED, padding: "14px" }}>Nothing matches that filter.</p>
+              )}
+            </div>
+
+            {pages > 1 && (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBlockStart: 10 }}>
+                <button type="button" className="vd-act" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>Previous</button>
+                <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{page + 1} / {pages}</span>
+                <button type="button" className="vd-act" onClick={() => setPage((p) => p + 1)} disabled={page + 1 >= pages}>Next</button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {pages > 1 && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBlockStart: 10 }}>
-          <button
-            type="button" onClick={() => onPage(page - 1)} disabled={page === 0}
-            style={{ border: `1px solid ${LINE}`, background: "#FFFFFF", borderRadius: 8, padding: "5px 10px", fontSize: 12.5, cursor: page === 0 ? "default" : "pointer", opacity: page === 0 ? 0.5 : 1 }}
-          >
-            Previous
-          </button>
-          <span style={{ fontFamily: MONO, fontSize: 12, color: MUTED }}>
-            {page + 1} / {pages}
+      {pendingCount > 0 && (
+        <div
+          role="status"
+          style={{
+            position: "sticky", insetBlockEnd: 12, marginBlockStart: 12, display: "flex", gap: 10,
+            alignItems: "center", flexWrap: "wrap", ...cardStyle, boxShadow: "0 8px 24px rgba(15,21,25,.12)",
+          }}
+        >
+          <span style={{ fontSize: TYPE.body, color: INK }}>
+            {pendingCount} {pendingCount === 1 ? "change" : "changes"} waiting. Aura re-reads your patterns once, when you apply.
           </span>
-          <button
-            type="button" onClick={() => onPage(page + 1)} disabled={page + 1 >= pages}
-            style={{ border: `1px solid ${LINE}`, background: "#FFFFFF", borderRadius: 8, padding: "5px 10px", fontSize: 12.5, cursor: page + 1 >= pages ? "default" : "pointer", opacity: page + 1 >= pages ? 0.5 : 1 }}
-          >
-            Next
-          </button>
+          <span style={{ marginInlineStart: "auto", display: "flex", gap: 8 }}>
+            <button type="button" style={ghostButton} onClick={() => setQueued({})} disabled={busy}>Cancel</button>
+            <button type="button" style={{ ...primaryButton, opacity: busy ? 0.6 : 1 }} onClick={() => void apply()} disabled={busy}>
+              {busy ? "Applying…" : "Apply"}
+            </button>
+          </span>
         </div>
       )}
     </section>

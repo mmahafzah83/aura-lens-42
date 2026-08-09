@@ -60,6 +60,8 @@ export interface CorpusPost {
   hookStyle: string | null;
   state: CorpusState;
   reason: string | null;
+  /** true when the text is mostly Arabic — used by the review filters. */
+  isArabic: boolean;
 }
 
 export interface TeachAuraModel {
@@ -73,7 +75,18 @@ export interface TeachAuraModel {
   coverage: CoverageRow[];
   posts: CorpusPost[];
   totalPosts: number;
+  /**
+   * The only rows worth a member's attention: own-writing Aura could not
+   * classify, and set-asides it was not sure about. Capped, because a queue of
+   * 160 is a labelling job nobody finishes.
+   */
+  ambiguous: CorpusPost[];
 }
+/** How many uncertain items the member is ever asked about at once. */
+export const MAX_AMBIGUOUS = 8;
+
+/** An auto-exclude Aura was not confident about. */
+const UNSURE_REASON = /uncertain|unsure|low confidence|maybe|possible/i;
 
 const ARABIC = /[\u0600-\u06FF]/;
 
@@ -126,6 +139,7 @@ export async function loadTeachAura(userId: string, page = 0): Promise<TeachAura
       hookStyle: (r.hook_style as string | null) ?? null,
       state,
       reason: (r.voice_corpus_reason as string | null) ?? null,
+      isArabic: isArabicText(text),
     };
   });
 
@@ -155,6 +169,12 @@ export async function loadTeachAura(userId: string, page = 0): Promise<TeachAura
 
   const examples = (voiceRes.data as any)?.example_posts;
 
+  const ambiguous = posts
+    .filter((p) =>
+      (p.state === "included" && !p.hookStyle) ||
+      (p.state === "auto_excluded" && (!p.reason || UNSURE_REASON.test(p.reason))))
+    .slice(0, MAX_AMBIGUOUS);
+
   return {
     address,
     includedCount: included.length,
@@ -163,8 +183,11 @@ export async function loadTeachAura(userId: string, page = 0): Promise<TeachAura
     documentCount: docsRes.count ?? 0,
     pastedCount: Array.isArray(examples) ? examples.length : 0,
     coverage,
-    posts: posts.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
+    // The whole list; the page filters and pages it client-side so a filter
+    // change costs nothing.
+    posts,
     totalPosts: posts.length,
+    ambiguous,
   };
 }
 
@@ -191,12 +214,21 @@ export function biggestGapSentence(m: Pick<TeachAuraModel, "coverage" | "include
 
 /** Flip one post in or out of the corpus. Returns the state it landed on. */
 export async function setCorpusState(postId: string, next: CorpusState): Promise<void> {
+  return setCorpusStates([postId], next);
+}
+
+/**
+ * Flip a batch in one round trip. Every caller queues its changes and applies
+ * them together, so one recompute follows one Apply rather than one per click.
+ */
+export async function setCorpusStates(postIds: string[], next: CorpusState): Promise<void> {
+  if (postIds.length === 0) return;
   const { error } = await supabase
     .from("linkedin_posts")
     .update({
       voice_corpus_status: next,
       voice_corpus_reason: next === "excluded" ? "Excluded by you" : null,
     })
-    .eq("id", postId);
+    .in("id", postIds);
   if (error) throw new Error(error.message);
 }

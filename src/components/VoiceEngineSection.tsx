@@ -18,7 +18,7 @@ import {
   OPENER_OPTIONS, CLOSER_OPTIONS, OPENER_LIBRARY, CLOSER_LIBRARY, MOVES_LIBRARY,
   optionLabel, optionExample, type VoiceOption,
 } from "@/components/voice/voiceOptions";
-import { composeSample, GENERIC_SAMPLE, type VoiceSpec } from "@/components/voice/sampleBank";
+import { composeSample, GENERIC_SAMPLE, type VoiceSpec } from "@/lib/voiceSample";
 import LinkedInImportCard from "@/components/LinkedInImportCard";
 import VoiceMicBadge from "@/components/voice/VoiceMicBadge";
 
