@@ -37,6 +37,9 @@ export default function SpectrumRow({
 }) {
   const rail = useRef<HTMLDivElement | null>(null);
   const [dragging, setDragging] = useState(false);
+  // Self-setting an unmeasured trait: the rail becomes live, but nothing is
+  // written — and no knob is drawn — until the member actually picks a point.
+  const [setting, setSetting] = useState(false);
   const measured = trait.value !== null;
   const prov = PROVENANCE[trait.source ?? ""] ?? null;
   const knobColour = trait.locked ? INK : BLUE;
@@ -101,8 +104,8 @@ export default function SpectrumRow({
               <button type="button" className="vd-act" disabled={busy} onClick={onReject}>Reject</button>
             </>
           )}
-          {!trait.computable && !measured && (
-            <button type="button" className="vd-act" disabled={busy} onClick={() => onSet(50)}>Set this yourself</button>
+          {!trait.computable && !measured && !setting && (
+            <button type="button" className="vd-act" disabled={busy} onClick={() => setSetting(true)}>Set this yourself</button>
           )}
         </span>
       </div>
@@ -151,6 +154,21 @@ export default function SpectrumRow({
             }}
           />
         </div>
+      ) : setting ? (
+        <div
+          ref={rail}
+          role="slider"
+          tabIndex={0}
+          aria-label={`Set ${trait.display_name}`}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          onPointerDown={(e) => { commit(e.clientX); setSetting(false); }}
+          style={{
+            position: "relative", blockSize: 6, borderRadius: 3, marginBlockStart: 8,
+            background: "linear-gradient(90deg,#EDF1F6,#DDE4EC)", cursor: "pointer", touchAction: "none",
+            outline: `2px solid rgba(6,112,196,.25)`, outlineOffset: 3,
+          }}
+        />
       ) : (
         <div aria-hidden style={{ blockSize: 6, borderRadius: 3, marginBlockStart: 8, background: "#F1F4F8" }} />
       )}
@@ -178,6 +196,10 @@ export default function SpectrumRow({
           {spread !== null && (
             <span style={{ ...monoNum, fontSize: 11, color: MUTED }}>±{spread}% range across your posts</span>
           )}
+        </div>
+      ) : setting ? (
+        <div style={{ fontSize: 12, color: MUTED, marginBlockStart: 8 }}>
+          Click the track where you sit between {trait.pole_low.toLowerCase()} and {trait.pole_high.toLowerCase()}.
         </div>
       ) : (
         <div style={{ fontSize: 12, color: MUTED, marginBlockStart: 8 }}>
