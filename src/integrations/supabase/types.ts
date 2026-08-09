@@ -4943,6 +4943,17 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: string
       }
+      voice_window: {
+        Args: { p_user_id: string }
+        Returns: {
+          created_at: string
+          ending_type: string
+          hook_style: string
+          id: string
+          post_text: string
+          published_at: string
+        }[]
+      }
       whatsapp_mint_pair_token: {
         Args: never
         Returns: {
