@@ -49,13 +49,13 @@ const STATES: { title: string; model: VoiceOverviewModel }[] = [
   {
     title: "C — full profile",
     model: make({
-      hasProfile: true, profileId: "y", readiness: "distinctive", corpusCount: 41, freshnessDays: 31,
+      hasProfile: true, profileId: "y", readiness: "reliable", corpusCount: 41, freshnessDays: 31,
       windowSize: 12, windowClassified: 12,
       windowDist: { contrarian_claim: 7, announcement: 2, number_first: 1, other: 1, question: 1 },
       diversity: 63.4, topShare: 58.3, topStyleKey: "contrarian_claim", topStyleCount: 7, computableComputed: 5, computableHigh: 4,
       changes: [
         { at: new Date().toISOString(), emphasis: "Length", text: " was measured at 20 from your posts, confidence high." },
-        { at: new Date(Date.now() - 86400000).toISOString(), emphasis: "Readiness", text: " was recalculated to Distinctive from 41 posts." },
+        { at: new Date(Date.now() - 86400000).toISOString(), emphasis: "Readiness", text: " was recalculated to Reliable from 41 posts." },
       ],
       traits: [{
         trait_key: "pace", display_name: "Pace", value: 94, confidence: "high", source: "learned",
