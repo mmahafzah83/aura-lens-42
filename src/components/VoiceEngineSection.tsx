@@ -621,8 +621,11 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
   };
 
 
-  // ── Voice map presentation ───────────────────────────────────────────────
-  const activeRow: any = profiles.find((r) => r?.language === activeLang) || null;
+  // ── Engine band + console presentation ───────────────────────────────────
+  // ONE voice: the member's primary row. `activeLang` is initialised from that
+  // row and no control re-keys it, so nothing swaps when a language differs.
+  const primaryRow: any = profiles.find((r) => r?.is_primary) || profiles[0] || null;
+  const activeRow: any = profiles.find((r) => r?.language === activeLang) || primaryRow;
   const isAr = activeLang === "ar";
   const MONO = "'IBM Plex Mono', ui-monospace, monospace";
   const UI = isAr ? "'CairoAR', 'Cairo', Inter, sans-serif" : "Inter, system-ui, sans-serif";
@@ -638,6 +641,20 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
   const avoidRules: any[] = Array.isArray(vocab.avoid) ? vocab.avoid : [];
   const rhythm: string = typeof vocab.rhythm === "string" ? vocab.rhythm : "";
   const examples: any[] = Array.isArray(activeRow?.example_posts) ? activeRow.example_posts : [];
+  // Member controls the engine now reads.
+  const prefs: any = (vocab.prefs && typeof vocab.prefs === "object" && !Array.isArray(vocab.prefs)) ? vocab.prefs : {};
+  const allowedEndings: string[] = Array.isArray(activeRow?.allowed_endings)
+    ? activeRow.allowed_endings.map((e: any) => String(e)).filter(Boolean)
+    : [];
+  const lengthMax: number = Number.isFinite(Number(prefs.length_max)) && Number(prefs.length_max) > 0
+    ? Number(prefs.length_max) : 1400;
+  const lengthSet: boolean = Number.isFinite(Number(prefs.length_max)) && Number(prefs.length_max) > 0;
+  const emojiLevel: string = ["none", "rare", "some"].includes(prefs.emoji_level) ? prefs.emoji_level : "";
+  const chosenOpenings: string[] = Array.isArray(prefs.openings) ? prefs.openings.map((o: any) => String(o)) : [];
+  const storyMix: Record<string, number> = (prefs.story_mix && typeof prefs.story_mix === "object" && !Array.isArray(prefs.story_mix))
+    ? prefs.story_mix : {};
+  const antiAi: boolean = prefs.anti_ai !== false;
+  const bannedPhrases: string[] = Array.isArray(prefs.banned_phrases) ? prefs.banned_phrases.map((b: any) => String(b)).filter(Boolean) : [];
   const ruleText = (r: any): string => (typeof r === "string" ? r : String(r?.rule ?? r?.phrase ?? r?.text ?? ""));
   const itemText = (r: any): string => (typeof r === "string" ? r : String(r?.text ?? r?.content ?? r?.rule ?? ""));
   const exampleText = (e: any): string => (typeof e === "string" ? e : String(e?.content ?? ""));
@@ -702,6 +719,22 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
   // spread through untouched; only the edited list is replaced.
   const saveVocabList = (key: "use" | "avoid", next: any[]) =>
     writeField({ vocabulary_preferences: { ...vocab, [key]: next } }, { vocabulary_preferences: vocab });
+
+  /**
+   * Every member control lives inside `vocabulary_preferences.prefs`. The whole
+   * vocabulary object is spread, then `prefs` is spread, then only the edited
+   * key is replaced — rhythm, texture, notes, use, avoid, examples_cleaned_at
+   * all survive untouched.
+   */
+  const savePrefs = (patch: Record<string, any>) =>
+    writeField(
+      { vocabulary_preferences: { ...vocab, prefs: { ...prefs, ...patch } } },
+      { vocabulary_preferences: vocab },
+    );
+
+  /** `allowed_endings` is a real text[] column — written as a plain array. */
+  const saveEndings = (next: string[]) =>
+    writeField({ allowed_endings: next }, { allowed_endings: allowedEndings });
 
   const busy = teaching || uploading || distilling;
 
