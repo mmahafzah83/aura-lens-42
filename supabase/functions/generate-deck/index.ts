@@ -226,7 +226,7 @@ async function readContext(db: any, signalId: string, userId: string): Promise<S
   const { data: profile } = await db
     .from("diagnostic_profiles")
     .select(
-      "display_name_override, first_name, last_name, level, firm, avatar_url, avatar_cutout_url, linkedin_handle, linkedin_url, content_language",
+      "display_name_override, first_name, last_name, level, firm, avatar_url, avatar_cutout_url, content_language",
     )
     .eq("user_id", userId)
     .maybeSingle();
