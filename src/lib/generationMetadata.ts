@@ -158,26 +158,3 @@ export function fingerprintFields(opts: {
   if (theme) out.theme = theme;
   return out;
 }
-
-function generationMetadataLegacyUnused(
-  originalText: string,
-  opts: {
-    contentType?: string | null;
-    signalId?: string | null;
-    unsourcedRemoved?: number | null;
-    unsourcedEntitiesRemoved?: number | null;
-  } = {},
-): GenerationMetadata {
-  const text = String(originalText ?? "");
-  return {
-    hook_style: hookStyleOf(text),
-    ending_type: endingTypeOf(text),
-    stance: stanceOf(text),
-    content_type: (opts.contentType ?? "").trim() || "post",
-    original_generated_text: text,
-    source_signal_id: opts.signalId || null,
-    unsourced_numbers_removed: Number(opts.unsourcedRemoved) > 0 ? Number(opts.unsourcedRemoved) : 0,
-    unsourced_entities_removed:
-      Number(opts.unsourcedEntitiesRemoved) > 0 ? Number(opts.unsourcedEntitiesRemoved) : 0,
-  };
-}
