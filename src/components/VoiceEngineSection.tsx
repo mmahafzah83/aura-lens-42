@@ -10,8 +10,11 @@ import { toast } from "sonner";
 // A console section: an accordion whose summary carries the current value.
 // Module-level so typing inside a section never remounts it.
 function ConsoleSection({
-  id, label, value, explainer, isAr, children,
-}: { id: string; label: string; value: string; explainer?: string; isAr: boolean; children: React.ReactNode }) {
+  id, label, value, explainer, isAr, children, cardStyleB, labelStyle, explainerStyle, bodyLine,
+}: {
+  id: string; label: string; value: string; explainer?: string; isAr: boolean; children: React.ReactNode;
+  cardStyleB: React.CSSProperties; labelStyle: React.CSSProperties; explainerStyle: React.CSSProperties; bodyLine: number;
+}) {
   const dp = isAr ? ({ dir: "rtl" as const, lang: "ar" }) : ({ dir: "ltr" as const, lang: "en" });
   return (
     <details id={`voice-sec-${id}`} className="voice-sec" style={{ ...cardStyleB, marginBlockStart: 10, padding: 0 }}>
@@ -1074,6 +1077,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 1. Language — read only */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="lang"
           label={t("LANGUAGE", "اللغة")}
           value={summaries.lang}
@@ -1087,6 +1094,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 2. Tone */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="tone"
           label={t("TONE", "النبرة")}
           value={summaries.tone}
@@ -1125,6 +1136,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 3. Length */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="length"
           label={t("LENGTH", "الطول")}
           value={summaries.length}
@@ -1153,6 +1168,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 4. Rhythm — read only */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="rhythm"
           label={t("RHYTHM", "الإيقاع")}
           value={summaries.rhythm}
@@ -1166,6 +1185,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 5. Emoji */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="emoji"
           label={t("EMOJI", "الإيموجي")}
           value={summaries.emoji}
@@ -1192,6 +1215,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 6. Openings */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="openings"
           label={t("OPENINGS", "الافتتاحيات")}
           value={summaries.openings}
@@ -1218,6 +1245,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 7. Endings — real allowed_endings column */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="endings"
           label={t("ENDINGS", "الخواتيم")}
           value={summaries.endings}
@@ -1253,6 +1284,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 8. Story types */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="story"
           label={t("STORY TYPES", "أنواع المنشور")}
           value={summaries.story}
@@ -1293,6 +1328,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 9. Structures */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="structures"
           label={t("HOW YOU BUILD A POST", "كيف تبني منشورك")}
           value={summaries.structures}
@@ -1316,6 +1355,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 10. Recurring moves */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="moves"
           label={t("YOUR RECURRING MOVES", "حركاتك المتكررة")}
           value={summaries.moves}
@@ -1339,6 +1382,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 11. Do · Never */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="rules"
           label={t("WHAT YOU DO · WHAT YOU NEVER DO", "ما تفعله · ما لا تفعله أبداً")}
           value={summaries.rules}
@@ -1460,6 +1507,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 12. Anchor posts */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="anchors"
           label={t("POSTS THAT ANCHOR YOUR VOICE", "منشورات ترسّخ صوتك")}
           value={summaries.anchors}
@@ -1504,6 +1555,10 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         {/* 13. Teach Aura */}
         <ConsoleSection
           isAr={isAr}
+          cardStyleB={cardStyleB}
+          labelStyle={labelStyle}
+          explainerStyle={explainerStyle}
+          bodyLine={bodyLine}
           id="teach"
           label={t("TEACH AURA", "علّم Aura")}
           value={t("Paste, upload, sharpen", "الصق، ارفع، اصقل")}
