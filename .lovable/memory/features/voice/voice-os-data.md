@@ -16,3 +16,9 @@ type: feature
 
 ## Edit signal
 `linkedin-publish` writes `edited_at` and normalised `edit_distance` onto `linkedin_posts` (alongside the richer `draft_edits` row) whenever the published text differs from `original_generated_text`.
+
+## Vocabulary (single source of truth)
+`supabase/functions/_shared/voiceVocab.ts` holds `HOOK_STYLES` (contrarian_claim, number_first, short_story, question, experience_led, announcement, other) and `ENDING_TYPES` (question, suspended, reframe, equation, number, cta, other), plus one worked definition per label. `generationMeta.ts` and `src/lib/generationMetadata.ts` mirror it; the `linkedin_posts` CHECK constraints enforce it. To add a label: change the constant + the constraint, nothing else. The model's answer is validated against the list — anything outside becomes `other`, counted as `model_rejected`.
+
+## Readiness ladder
+`voice_opener_diversity(user_id)` = normalised Shannon entropy (base ln 6) over hook_style of the last 20 own-writing posts, excluding `other`; NULL below 12 classified openers. `voice_profile_readiness`: forming <8 posts, developing 8–19, working 20–29 or any low-confidence computable trait, reliable 30+ clean, distinctive = reliable AND diversity ≥ 60.
