@@ -4950,6 +4950,16 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: string
       }
+      voice_top_style_share: {
+        Args: { p_user_id: string }
+        Returns: {
+          other_dominant: boolean
+          share: number
+          top_count: number
+          top_style: string
+          window_total: number
+        }[]
+      }
       voice_window: {
         Args: { p_user_id: string }
         Returns: {
