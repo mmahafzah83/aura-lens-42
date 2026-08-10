@@ -1270,8 +1270,6 @@ const Onboarding = () => {
       const d = dims[Math.min(dimIdx, dims.length - 1)];
       const value = scores[d.name] ?? 50;
       const last = dimIdx >= dims.length - 1;
-      const values = dims.map((x) => scores[x.name]).filter((v) => typeof v === "number") as number[];
-      const isFlat = values.length === dims.length && Math.max(...values) - Math.min(...values) <= 15;
       content = (
         <PaperShell bead={3} footer={escapeFooter}>
           {flatWarn ? (
