@@ -1386,7 +1386,7 @@ const Onboarding = () => {
               has claimed, and where the ground is still soft.
             </p>
             <p style={bodyNight}>
-              These {questions?.length ?? 10} come from four places: how archetype is used in brand work, the search
+              These {questions?.length ?? 9} come from four places: how archetype is used in brand work, the search
               for uncontested space in strategy, the point-of-view question behind category design, and the coaching
               question that surfaces what is actually holding someone back.
             </p>
@@ -1394,7 +1394,7 @@ const Onboarding = () => {
               There are no right answers and nothing is scored. Aura is looking for your pattern.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              {questions?.length ?? 10} questions. A couple of minutes.
+              {questions?.length ?? 9} questions. A couple of minutes. Saved as you go.
             </p>
             <button type="button" onClick={() => { setQIdx(0); go(11); }} disabled={!questions}
               style={{ ...btnPrimary, marginBlockStart: 24, opacity: questions ? 1 : 0.5 }}>
