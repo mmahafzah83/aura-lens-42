@@ -242,7 +242,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: "var(--vellum, #fff)",
+          background: "#FFFFFF",
           borderRadius: 16,
           boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
           maxWidth: 720, width: "100%",
@@ -358,7 +358,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
         <div style={{
           marginTop: 16,
           padding: "12px 16px",
-          background: "var(--color-background-secondary, #f5f3ee)",
+          background: "#F2F5F9",
           borderRadius: 8,
           position: "relative",
         }}>
