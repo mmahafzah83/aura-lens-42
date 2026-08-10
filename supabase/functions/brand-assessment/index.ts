@@ -87,6 +87,23 @@ Skills: ${JSON.stringify(snap.skills ?? []).slice(0, 1000)}`
 ${frags.map((f, i) => `${i + 1}. ${f.title}${f.content ? ` — ${String(f.content).slice(0, 400)}` : ""}`).join("\n")}`
       : "WHAT THEY HAVE CAPTURED\nNothing captured yet.";
 
+    // Their actual published writing — the evidence any claim is tested against.
+    const postsBlock = posts.length
+      ? `THEIR OWN POSTS (${posts.length} read, most-engaged first)
+${posts.map((p, i) => `${i + 1}. [${p.like_count ?? 0} reactions${p.published_at ? `, ${String(p.published_at).slice(0, 10)}` : ""}] ${String(p.post_text).replace(/\s+/g, " ").slice(0, 600)}`).join("\n")}`
+      : "THEIR OWN POSTS\nNothing on file — say so rather than inferring from the profile alone.";
+
+    // The one question where they bet on their own strength. Everything in
+    // THE HONEST TRUTH turns on whether their posts back this up.
+    const selfClaimKey = Object.keys(answers ?? {}).find((k) => /strongest at/i.test(k));
+    const selfClaim = selfClaimKey ? String((answers as any)[selfClaimKey] ?? "").trim() : "";
+    const selfClaimBlock = selfClaim
+      ? `WHERE THEY BET THEY ARE STRONGEST
+The member claims they are strongest at: "${selfClaim}".
+
+Compare that claim against their actual posts above and their captured claims. If the evidence supports it, say so and cite what supports it — quote or name the specific post or claim. If the evidence does NOT support it, say that plainly and specifically in THE HONEST TRUTH — name the number (how many of their ${posts.length} posts actually touch it, how many of their ${frags.length} captured claims do). Do not soften it into an opportunity, a "next step", or a "chance to". If there is not enough evidence either way, say that instead of guessing.`
+      : "WHERE THEY BET THEY ARE STRONGEST\nNot answered — do not invent a claim to test.";
+
     // Build audit scores context for the AI
     const auditContext = typeof auditScores === "string"
       ? auditScores
