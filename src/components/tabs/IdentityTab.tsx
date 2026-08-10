@@ -1256,21 +1256,28 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           </button>
         )}
 
-        {/* Horizontal timeline */}
+        {/* Horizontal timeline — real recorded events only. */}
         {(() => {
           const onboardingDone = !!profile?.onboarding_completed;
-          const auditOrBrandDone = !!profile?.audit_completed_at || !!profile?.brand_assessment_completed_at;
-          const nodes = [
-            { label: "Foundation", state: onboardingDone ? "done" : "future" },
-            { label: "Building", state: auditOrBrandDone ? "done" : onboardingDone ? "current" : "future" },
-            { label: "Now", state: "current" },
-            { label: "3-yr target", state: "future" },
-          ] as const;
+          const brandDone = !!profile?.brand_assessment_completed_at;
+          const nodes: { label: string; state: "done" }[] = [];
+          if (onboardingDone) nodes.push({ label: "Foundation", state: "done" });
+          if (brandDone) nodes.push({ label: "Assessment", state: "done" });
+          for (const m of earnedSorted.slice(0, 4)) {
+            nodes.push({ label: m.name, state: "done" });
+          }
+          if (nodes.length < 2) {
+            return (
+              <p style={{ fontSize: 13.5, color: "#5B6673", marginTop: 16, marginBottom: 0, lineHeight: 1.6 }}>
+                Your record starts when you publish.
+              </p>
+            );
+          }
           return (
             <div style={{ display: "flex", alignItems: "center", marginTop: 16 }}>
               {nodes.map((n, i) => {
                 const isDone = n.state === "done";
-                const isCurrent = n.state === "current";
+                const isCurrent = false;
                 const dot = (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <span style={{
@@ -1294,7 +1301,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 const barColor = (() => {
                   if (!next) return "transparent";
                   if (isDone && next.state === "done") return "var(--success, #2e7d32)";
-                  if (isDone && next.state === "current") return "var(--spot)";
                   return "var(--brand-line, rgba(0,0,0,0.12))";
                 })();
                 return (
