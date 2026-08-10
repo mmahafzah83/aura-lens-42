@@ -152,7 +152,7 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
             <SectionHeader label="WHAT CHANGED" />
             <div>
               {diff.map((d) => (
-                <div key={d.label + d.from + d.to} style={DIFF_ROW}>
+                <div key={d.path} style={DIFF_ROW}>
                   <span style={{ fontSize: 13, color: INK }}>{d.label}</span>
                   <span style={{ fontFamily: MONO, fontSize: 13, color: INK }}>
                     {d.from}{" "}
@@ -188,7 +188,7 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
                   }}
                 >
                   <span style={{ fontFamily: MONO }}>v{r.version}</span>
-                  <span>{fmtDate(r.created_at)}</span>
+                  <span style={{ fontFamily: MONO }}>{fmtDate(r.created_at)}</span>
                 </button>
               );
             })}
@@ -211,7 +211,7 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
         {viewingOld && selected && current ? (
           <p style={{ ...NOTE_LINE, marginBottom: 8 }}>
             You're looking at version <span style={{ fontFamily: MONO }}>{selected.version}</span>, from{" "}
-            {fmtDate(selected.created_at)}. Your current report is{" "}
+            <span style={{ fontFamily: MONO }}>{fmtDate(selected.created_at)}</span>. Your current report is{" "}
             <span style={{ fontFamily: MONO }}>v{current.version}</span>.{" "}
             <button
               type="button"

@@ -2,6 +2,8 @@
 // No React. No network. No Supabase.
 
 export interface ReportDiffRow {
+  /** Full dotted path — unique, safe as a React key. */
+  path: string;
   label: string;
   from: string;
   to: string;
@@ -12,14 +14,25 @@ const IGNORED = /(id|_at|uuid|url)/i;
 const MAX_ROWS = 6;
 const MAX_DEPTH = 6;
 
-function humanise(path: string): string {
-  const last = path.split(".").pop() || path;
-  const words = last
+const GENERIC = new Set(["value", "count", "total", "score", "length", "n"]);
+
+function words(seg: string): string {
+  return seg
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .replace(/[_-]+/g, " ")
     .trim()
     .toLowerCase();
-  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function humanise(path: string): string {
+  const segs = path.split(".");
+  const last = segs[segs.length - 1] || path;
+  const parent = segs.length > 1 ? segs[segs.length - 2] : "";
+  const text =
+    GENERIC.has(words(last).replace(/\s+/g, "")) && parent
+      ? `${words(parent)} ${words(last)}`
+      : words(last);
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -65,6 +78,7 @@ export function diffReports(current: unknown, previous: unknown): ReportDiffRow[
     .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from))
     .slice(0, MAX_ROWS)
     .map((l) => ({
+      path: l.path,
       label: humanise(l.path),
       from: fmt(l.from),
       to: fmt(l.to),

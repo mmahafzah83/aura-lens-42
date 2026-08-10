@@ -16,6 +16,15 @@ const SHEET_W = 794; // A4 @ 96dpi — fixed, must be scaled to fit on screen.
 const MONO = "'IBM Plex Mono', ui-monospace, monospace";
 const ERROR_LINE: React.CSSProperties = { fontSize: 12.5, color: "#C0392B", marginTop: 8 };
 
+/** Shared outer shell for every top-level card in "What you can show". */
+const SHELL: React.CSSProperties = {
+  background: "#FFFFFF",
+  border: "1px solid #E2E7EE",
+  borderRadius: 20,
+  padding: 20,
+};
+const MUTED: React.CSSProperties = { fontSize: 11, color: "#5B6673" };
+
 interface Props {
   firstName?: string | null;
   lastName?: string | null;
@@ -45,6 +54,9 @@ export default function ReportViewerSection({
   const [exportError, setExportError] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
   const [scaledHeight, setScaledHeight] = useState<number | null>(null);
+
+  // DEFECT 7 — a failure from one version must never linger on another.
+  useEffect(() => { setExportError(null); }, [overrideVersion, overrideSnapshotAt]);
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -80,7 +92,12 @@ export default function ReportViewerSection({
 
   const fileName = () => {
     const person =
-      `${firstName || ""}${lastName || ""}`.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "") || "Member";
+      [firstName, lastName]
+        .filter(Boolean)
+        .join("-")
+        .replace(/[^A-Za-z0-9]+/g, "-")
+        .replace(/-{2,}/g, "-")
+        .replace(/^-|-$/g, "") || "Member";
     const date = (snapshotAt ? new Date(snapshotAt) : new Date()).toISOString().slice(0, 10);
     const v = version ?? 1;
     return `Aura-Report-${person}-v${v}-${date}.pdf`;
@@ -105,15 +122,8 @@ export default function ReportViewerSection({
 
   if (!hasAssessment && !loading) {
     return (
-      <section
-        style={{
-          background: "var(--aura-card)",
-          border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
-          borderRadius: 12,
-          padding: 16,
-        }}
-      >
-        <p className="text-sm" style={{ color: "var(--ink-3)", margin: 0 }}>
+      <section style={SHELL}>
+        <p className="text-sm" style={{ color: "#5B6673", margin: 0 }}>
           Complete your brand assessment to generate your identity report.
         </p>
         <div style={{ marginTop: 12 }}>
@@ -126,14 +136,7 @@ export default function ReportViewerSection({
   }
 
   return (
-    <section
-      style={{
-        background: "var(--aura-card)",
-        border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
-        borderRadius: 12,
-        padding: 16,
-      }}
-    >
+    <section style={SHELL}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <Button
           variant="outline"
@@ -144,29 +147,31 @@ export default function ReportViewerSection({
           {exporting ? "Preparing your PDF…" : "Download PDF"}
         </Button>
         {version && snapshotAt ? (
-          <span style={{ fontSize: 11, color: "#5B6673" }}>
+          <span style={MUTED}>
             <span style={{ fontFamily: MONO }}>v{version}</span> ·{" "}
-            {new Date(snapshotAt).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
+            <span style={{ fontFamily: MONO }}>
+              {new Date(snapshotAt).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </span>
           </span>
         ) : null}
       </div>
       {exportError ? <div style={ERROR_LINE}>{exportError}</div> : null}
 
       {loading || !report ? (
-        <p className="text-sm" style={{ color: "var(--ink-4)", margin: 0 }}>
+        <p className="text-sm" style={{ color: "#5B6673", margin: 0 }}>
           Preparing your report…
         </p>
       ) : (
         <div
           ref={frameRef}
           style={{
-            border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
-            borderRadius: 10,
-            background: "#ffffff",
+            border: "1px solid #E2E7EE",
+            borderRadius: 12,
+            background: "#FFFFFF",
             overflow: "hidden",
             height: scaledHeight ? Math.ceil(scaledHeight) : undefined,
           }}
