@@ -13,10 +13,10 @@ const MethodNote = ({ onNight = false }: { onNight?: boolean }) => (
     textAlign: "start",
   }}>
     <strong style={{ fontWeight: 600 }}>How this was made</strong> — Read from your LinkedIn profile, your recent
-    posts, the claims you saved, and your own answers. Built on a combination of established assessment and
-    positioning methods: behavioural anchoring, the leadership-pipeline view of seniority, archetype method from
-    brand work, and uncontested-space strategy. Aura is not affiliated with any of them. This is a professional
-    read, not a clinical or psychological test.
+    posts, the claims you saved, and your own answers. Built on a combination of established ways of reading
+    capability and standing: describing behaviour by example rather than by score, the leadership-pipeline view of
+    seniority, archetype method from brand work, and uncontested-space strategy. Aura is not affiliated with any of
+    them. This is a professional read, not a clinical or psychological test.
   </p>
 );
 

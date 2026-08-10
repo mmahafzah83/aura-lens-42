@@ -30,6 +30,9 @@ import RevealCard, { type RevealData, shareRevealCard, suggestedCaption } from "
 import StatusRow from "@/components/onboarding/StatusRow";
 import Confetti from "@/components/onboarding/Confetti";
 import MethodNote from "@/components/onboarding/MethodNote";
+import WaitProof from "@/components/onboarding/WaitProof";
+import ReadCorrection from "@/components/onboarding/ReadCorrection";
+import { loadPostProof, type PostProof } from "@/lib/postProof";
 import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleBand } from "@/lib/seniorityTitles";
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 
@@ -116,12 +119,26 @@ const footnote: React.CSSProperties = {
 /* ──────────────────────────────── helpers ───────────────────────────────── */
 
 interface Dimension {
-  name: string; why_line: string | null; anchor_low: string | null; anchor_high: string | null;
+  name: string; why_line: string | null;
+  anchor_low: string | null; anchor_mid: string | null; anchor_high: string | null;
 }
 interface JourneyQuestion {
   prompt: string; helper: string | null; kind: string; max_choices: number | null;
   options: { label: string; value: string }[] | null;
+  why_asked: string | null; allow_none: boolean | null; randomise: boolean | null;
 }
+
+/** A stable shuffle — the same question never reshuffles under the member. */
+const shuffled = <T,>(list: T[], seed: number): T[] => {
+  const out = [...list];
+  let s = seed * 9301 + 49297;
+  for (let i = out.length - 1; i > 0; i--) {
+    s = (s * 9301 + 49297) % 233280;
+    const j = Math.floor((s / 233280) * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+};
 interface Claim { title: string; content?: string | null; confidence?: number | null }
 
 const normaliseLinkedIn = (input: string): string | null => {
@@ -174,7 +191,7 @@ const PaperShell = ({
 const Onboarding = () => {
   usePageMeta({
     title: "Aura — Start your shelf",
-    description: "Five short steps. Aura learns your sector, your level and the way you already write.",
+    description: "About ten minutes. Aura learns your sector, your level and the way you already write.",
     path: "/onboarding",
   });
   const navigate = useNavigate();
@@ -226,6 +243,8 @@ const Onboarding = () => {
   const [dimIdx, setDimIdx] = useState(0);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [contentError, setContentError] = useState(false);
+  const [flatWarn, setFlatWarn] = useState(false);
+  const [flatAck, setFlatAck] = useState(false);
 
   /* screen 11 */
   const [questions, setQuestions] = useState<JourneyQuestion[] | null>(null);
@@ -233,6 +252,11 @@ const Onboarding = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [textAnswer, setTextAnswer] = useState("");
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
+  const [proposals, setProposals] = useState<{ label: string; why: string }[] | null>(null);
+  const [proposalsDead, setProposalsDead] = useState(false);
+
+  /* the member's own figures — used to fill every wait */
+  const [proof, setProof] = useState<PostProof | null>(null);
 
   /* screen 13 */
   const [reveal, setReveal] = useState<RevealData | null>(null);
@@ -495,7 +519,7 @@ const Onboarding = () => {
     setContentError(false);
     try {
       const base = () => (supabase.from("capability_dimensions" as any) as any)
-        .select("name, why_line, anchor_low, anchor_high")
+        .select("name, why_line, anchor_low, anchor_mid, anchor_high")
         .eq("band", band).eq("active", true).order("position");
       let rows: any[] = [];
       if (sector) {
@@ -517,7 +541,7 @@ const Onboarding = () => {
     setContentError(false);
     try {
       const base = () => (supabase.from("onboarding_questions" as any) as any)
-        .select("prompt, helper, kind, options, max_choices")
+        .select("prompt, helper, kind, options, max_choices, why_asked, allow_none, randomise")
         .eq("band", band).eq("active", true).order("position");
       let rows: any[] = [];
       if (sector) {
@@ -539,6 +563,35 @@ const Onboarding = () => {
   }, [screen, loadDimensions]);
   useEffect(() => { if (screen === 10 || screen === 11) void loadQuestions(); }, [screen, loadQuestions]);
 
+  /* the member's own figures, read once the posts are in */
+  useEffect(() => {
+    if (!userId || proof) return;
+    if (screen < 2) return;
+    loadPostProof(userId).then((p) => { if (p.posts > 0) setProof(p); }).catch(() => {});
+  }, [userId, screen, proof]);
+
+  /* three spaces Aura proposes — fetched the moment a proposed question is in view */
+  useEffect(() => {
+    if (screen !== 11 || !questions) return;
+    const q = questions[Math.min(qIdx, questions.length - 1)];
+    if (q?.kind !== "proposed" || proposals !== null || proposalsDead) return;
+    let alive = true;
+    const timer = window.setTimeout(() => { if (alive) setProposalsDead(true); }, 15000);
+    supabase.functions
+      .invoke("onboarding-proposals", {
+        body: { claims: claims.map((c) => c.title), sector: sector || null, level: levelTitle || null },
+      })
+      .then(({ data, error }) => {
+        if (!alive) return;
+        const list = (data as any)?.options;
+        if (error || !Array.isArray(list) || list.length === 0) setProposalsDead(true);
+        else setProposals(list.slice(0, 3));
+      })
+      .catch(() => { if (alive) setProposalsDead(true); })
+      .finally(() => window.clearTimeout(timer));
+    return () => { alive = false; window.clearTimeout(timer); };
+  }, [screen, questions, qIdx, proposals, proposalsDead, claims, sector, levelTitle]);
+
   /* ── autosave after every slider ──
      Existing members keep whatever keys are already on file: new answers are
      MERGED in alongside them, never written over the top of the object. */
@@ -554,10 +607,12 @@ const Onboarding = () => {
           skill_ratings: { ...existingRatings, ...next },
           audit_results: { ...existingAudit, ...next },
           audit_completed_at: new Date().toISOString(), audit_method: "self_read",
+          instrument_version: 2,
+          ...(band ? { answered_band: band } : {}),
         })
         .eq("user_id", userId);
     } catch (e) { console.warn("[journey] slider save failed", e); }
-  }, [userId]);
+  }, [userId, band]);
 
   const setScore = (name: string, value: number) => {
     setScores((prev) => {
@@ -573,6 +628,11 @@ const Onboarding = () => {
     go(12);
     if (!userId) return;
     await saveAnswers(userId, finalAnswers);
+    try {
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ instrument_version: 2, ...(band ? { answered_band: band } : {}) })
+        .eq("user_id", userId);
+    } catch (e) { console.warn("[journey] stamp failed", e); }
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
     const figures = [
       { value: String(postsRead || claims.length), label: postsRead ? "posts read" : "claims kept" },
@@ -618,6 +678,8 @@ const Onboarding = () => {
           onboarding_completed: true,
           onboarding_step: 4,
           completed: true,
+          instrument_version: 2,
+          ...(band ? { answered_band: band } : {}),
         }, { onConflict: "user_id" });
       } catch (e) { console.warn("[journey] finish save failed", e); }
       try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
@@ -860,8 +922,9 @@ const Onboarding = () => {
       <PaperShell bead={0} cream footer={escapeFooter}>
         <h1 style={h1Light}>Let's fill this up.</h1>
         <p style={bodyLight}>
-          Five short steps, and each one gives you something. In five minutes this shelf is yours — and Aura knows
-          how to write the way you already think.
+          Five short steps, and each one gives you something back as you go. It takes about ten minutes, and you can
+          stop anywhere — everything is saved as you go. At the end this shelf is yours, and Aura knows how to write
+          the way you already think.
         </p>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
           {SHELF.map((s) => <ShelfBadge key={s.key} label={s.label} tone={s.tone} />)}
@@ -880,6 +943,10 @@ const Onboarding = () => {
         <p style={bodyLight}>
           Aura reads what's already public — your profile and your recent posts. That's how it learns your sector,
           your level, and the way you already write.
+        </p>
+        <p style={{ ...bodyLight, fontSize: 12.5, marginBlockStart: 10 }}>
+          Aura stores your posts so it can learn your voice. You can delete them, and your whole account, from
+          Settings at any time — and they go for good.
         </p>
         <input
           value={liInput}
@@ -1120,6 +1187,9 @@ const Onboarding = () => {
             <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
           ))}
         </div>
+        {proof && proof.lines.length > 0 ? (
+          <WaitProof lines={proof.lines} howLong="While you wait — here's what Aura found in your own posts." />
+        ) : null}
         {claimsSlow && (
           <>
             <p style={{ ...bodyNight, textAlign: "center" }}>Still reading — it'll be waiting on your Home.</p>
@@ -1191,8 +1261,9 @@ const Onboarding = () => {
             <h1 style={{ ...h1Night, textAlign: "center" }}>Before you start</h1>
             <p style={bodyNight}>
               These {sliderCount === 8 ? "eight" : sliderCount} are not a personality test. Each one asks what you
-              have actually done, with a real sentence at each end instead of a number — a method used in
-              professional assessment since the 1960s because it is harder to fool and harder to flatter.
+              have actually done, with a real sentence at each end and one in the middle instead of a number — a way
+              of asking that has been used in serious work since the 1960s, because it is harder to fool and harder
+              to flatter.
             </p>
             <p style={bodyNight}>
               They are chosen for your level. A Director and a Consultant are asked different things, because what
@@ -1223,6 +1294,21 @@ const Onboarding = () => {
       const last = dimIdx >= dims.length - 1;
       content = (
         <PaperShell bead={3} footer={escapeFooter}>
+          {flatWarn ? (
+            <>
+              <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>Can I check something?</h1>
+              <p style={bodyLight}>
+                You put all {dims.length} in more or less the same place. That happens when the sentences don't quite
+                fit, or when it's easier to sit in the middle than to pick. Either is fine — but Aura reads a flat
+                answer as "no strong pattern", and it will write more carefully because of it.
+              </p>
+              <button type="button" onClick={() => { setFlatWarn(false); setDimIdx(0); }}
+                style={{ ...btnPrimary, marginBlockStart: 20 }}>Let me have another look</button>
+              <button type="button" onClick={() => { setFlatAck(true); setFlatWarn(false); go(10); }}
+                style={btnGhostLight}>No, that's right for me</button>
+            </>
+          ) : (
+          <>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             {dimIdx + 1} / {dims.length}
           </p>
@@ -1231,19 +1317,43 @@ const Onboarding = () => {
           <input
             type="range" min={0} max={100} step={1} value={value}
             aria-label={d.name}
+            aria-valuetext={value < 34 ? (d.anchor_low ?? "") : value < 67 ? (d.anchor_mid ?? "") : (d.anchor_high ?? "")}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
             style={{ inlineSize: "100%", marginBlockStart: 26, accentColor: OB.blue }}
           />
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 14, marginBlockStart: 10 }}>
-            <span style={{ fontSize: 11.5, color: OB.muted, maxInlineSize: "46%" }}>{d.anchor_low}</span>
-            <span style={{ fontSize: 11.5, color: OB.muted, maxInlineSize: "46%", textAlign: "end" }}>{d.anchor_high}</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
+            {([
+              ["Low", d.anchor_low, value < 34],
+              ["Middle", d.anchor_mid, value >= 34 && value < 67],
+              ["High", d.anchor_high, value >= 67],
+            ] as [string, string | null, boolean][])
+              .filter(([, text]) => !!text)
+              .map(([tag, text, live]) => (
+                <div key={tag} style={{
+                  display: "flex", gap: 9, fontSize: 12, lineHeight: 1.5,
+                  color: live ? OB.ink : OB.muted,
+                  background: live ? OB.blueTint : "transparent",
+                  border: `1px solid ${live ? OB.blue : "transparent"}`,
+                  borderRadius: RADIUS.card, padding: "8px 10px",
+                  transition: `background 220ms ${EASE}, color 220ms ${EASE}`,
+                }}>
+                  <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2 }}>{tag}</span>
+                  <span>{text}</span>
+                </div>
+              ))}
           </div>
           <button type="button" onClick={() => {
             if (!scores[d.name]) setScore(d.name, value);
-            if (last) go(10); else setDimIdx((i) => i + 1);
+            if (!last) { setDimIdx((i) => i + 1); return; }
+            const finalValues = dims.map((x) => (x.name === d.name ? value : scores[x.name] ?? value));
+            const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
+            if (flatNow && !flatAck) setFlatWarn(true); else go(10);
           }} style={{ ...btnPrimary, marginBlockStart: 26 }}>
             {last ? `Done — that's all ${dims.length}` : "Next"}
           </button>
+          {dimIdx > 0 ? (
+            <button type="button" onClick={() => setDimIdx((i) => Math.max(0, i - 1))} style={btnGhostLight}>Back</button>
+          ) : null}
           {last && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
               {SHELF.map((s, i) => (
@@ -1252,6 +1362,8 @@ const Onboarding = () => {
                   figure={i === 0 ? (postsRead || "✓") : i === 1 ? claims.length : i === 2 ? dims.length : undefined} />
               ))}
             </div>
+          )}
+          </>
           )}
         </PaperShell>
       );
@@ -1274,7 +1386,7 @@ const Onboarding = () => {
               has claimed, and where the ground is still soft.
             </p>
             <p style={bodyNight}>
-              These {questions?.length ?? 10} come from four places: how archetype is used in brand work, the search
+              These {questions?.length ?? 9} come from four places: how archetype is used in brand work, the search
               for uncontested space in strategy, the point-of-view question behind category design, and the coaching
               question that surfaces what is actually holding someone back.
             </p>
@@ -1282,7 +1394,7 @@ const Onboarding = () => {
               There are no right answers and nothing is scored. Aura is looking for your pattern.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              {questions?.length ?? 10} questions. A couple of minutes.
+              {questions?.length ?? 9} questions. A couple of minutes. Saved as you go.
             </p>
             <button type="button" onClick={() => { setQIdx(0); go(11); }} disabled={!questions}
               style={{ ...btnPrimary, marginBlockStart: 24, opacity: questions ? 1 : 0.5 }}>
@@ -1294,7 +1406,7 @@ const Onboarding = () => {
     );
   }
 
-  /* 11 — WHITE ×6 */
+  /* 11 — WHITE, the nine questions */
   if (screen === 11) {
     if (contentError || !questions) {
       content = (
@@ -1315,65 +1427,121 @@ const Onboarding = () => {
         if (userId) void saveAnswers(userId, next);
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
+      const back = () => {
+        setTextAnswer("");
+        setMultiPicked([]);
+        setQIdx((i) => Math.max(0, i - 1));
+      };
       const cap = q.kind === "multi" ? (q.max_choices ?? (q.options?.length || 99)) : 1;
       const atCap = multiPicked.length >= cap;
+      const opts = q.randomise ? shuffled(q.options || [], qIdx + 1) : (q.options || []);
+      const proposedReady = q.kind === "proposed" && !!proposals && proposals.length > 0;
+      const proposedFallback = q.kind === "proposed" && (proposalsDead || (proposals !== null && proposals.length === 0));
+
+      const optionButton = (label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
+        <button key={label} type="button" disabled={blocked} onClick={onClick} style={{
+          textAlign: "start", padding: "14px 15px", borderRadius: 14,
+          cursor: blocked ? "not-allowed" : "pointer",
+          border: `1px solid ${picked ? OB.blue : OB.line}`,
+          background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
+          lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
+          opacity: blocked ? 0.45 : 1,
+          transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
+        }}>
+          {label}
+          {why ? <span style={{ display: "block", marginBlockStart: 5, fontSize: 12.5, lineHeight: 1.5, color: OB.muted }}>{why}</span> : null}
+        </button>
+      );
+
       content = (
         <PaperShell bead={4} footer={escapeFooter}>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             Question {qIdx + 1} of {questions.length}
           </p>
+          {qIdx === 0 ? (
+            <p style={{ margin: "6px 0 0", fontSize: 12, color: OB.muted }}>Saved as you go — you can stop any time.</p>
+          ) : null}
           <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{q.prompt}</h1>
           {q.helper ? <p style={bodyLight}>{q.helper}</p> : null}
+          {q.why_asked ? (
+            <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted }}>
+              <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", marginInlineEnd: 7 }}>Why this</span>
+              {q.why_asked}
+            </p>
+          ) : null}
 
           {q.kind === "choice" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
-              {(q.options || []).map((o) => (
-                <button key={o.value} type="button" onClick={() => advance(o.label)} style={{
-                  textAlign: "start", padding: "14px 15px", borderRadius: 14, cursor: "pointer",
-                  border: `1px solid ${OB.line}`, background: OB.white, fontSize: 14.5,
-                  lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
-                  transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
-                }}>{o.label}</button>
-              ))}
+              {opts.map((o) => optionButton(o.label, () => advance(o.label)))}
             </div>
           ) : q.kind === "multi" ? (
             <>
-              <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
-                Pick up to {cap}
-              </p>
+              <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>Pick up to {cap}</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
-                {(q.options || []).map((o) => {
-                  const picked = multiPicked.includes(o.label);
-                  const blocked = !picked && atCap;
-                  return (
-                    <button key={o.value} type="button" disabled={blocked}
-                      onClick={() => setMultiPicked((prev) =>
-                        prev.includes(o.label) ? prev.filter((x) => x !== o.label) : [...prev, o.label])}
-                      style={{
-                        textAlign: "start", padding: "14px 15px", borderRadius: 14,
-                        cursor: blocked ? "not-allowed" : "pointer",
-                        border: `1px solid ${picked ? OB.blue : OB.line}`,
-                        background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
-                        lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
-                        opacity: blocked ? 0.45 : 1,
-                        transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
-                      }}>{o.label}</button>
-                  );
-                })}
+                {opts.map((o) => optionButton(
+                  o.label,
+                  () => setMultiPicked((prev) => prev.includes(o.label) ? prev.filter((x) => x !== o.label) : [...prev, o.label]),
+                  multiPicked.includes(o.label),
+                  !multiPicked.includes(o.label) && atCap,
+                ))}
               </div>
               <button type="button" disabled={multiPicked.length === 0}
                 onClick={() => advance(multiPicked.join(" · "))}
                 style={{ ...btnPrimary, marginBlockStart: 16, opacity: multiPicked.length ? 1 : 0.5 }}>Next</button>
             </>
+          ) : q.kind === "proposed" ? (
+            proposedReady ? (
+              <>
+                <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
+                  Keep the one that's actually you. The two you drop tell Aura just as much.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
+                  {proposals!.map((pr) => optionButton(
+                    pr.label,
+                    () => {
+                      const dropped = proposals!.filter((x) => x.label !== pr.label).map((x) => x.label);
+                      advance(`${pr.label}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
+                    },
+                    false, false, pr.why,
+                  ))}
+                </div>
+              </>
+            ) : proposedFallback ? (
+              <>
+                <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
+                  Aura hasn't got enough of your writing to propose three yet — say it in your own words instead.
+                </p>
+                <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
+                  aria-label={q.prompt}
+                  onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
+                  placeholder="One line, your words" style={{ ...fieldStyle, marginBlockStart: 12 }} />
+                <button type="button" disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}
+                  style={{ ...btnPrimary, marginBlockStart: 16, opacity: textAnswer.trim() ? 1 : 0.5 }}>Next</button>
+              </>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted, marginBlockStart: 20 }}>
+                <Loader2 size={14} className="animate-spin" /> Reading your posts and your claims…
+              </div>
+            )
           ) : (
             <>
               <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
+                aria-label={q.prompt}
                 onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
                 placeholder="One line, your words" style={{ ...fieldStyle, marginBlockStart: 20 }} />
               <button type="button" disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}
                 style={{ ...btnPrimary, marginBlockStart: 16, opacity: textAnswer.trim() ? 1 : 0.5 }}>Next</button>
             </>
           )}
+
+          {q.allow_none ? (
+            <button type="button" onClick={() => advance("None of these fit")} style={btnGhostLight}>
+              None of these fit
+            </button>
+          ) : null}
+          {qIdx > 0 ? (
+            <button type="button" onClick={back} style={btnGhostLight}>Back</button>
+          ) : null}
         </PaperShell>
       );
     }
@@ -1397,9 +1565,26 @@ const Onboarding = () => {
           ))}
         </div>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Tonight Aura reads for your three subjects. Tomorrow morning there's something waiting — and every capture
-          adds to the shelf.
+          {proof && proof.posts > 0 ? (
+            <>
+              Aura has {proof.posts} of your posts and {proof.words.toLocaleString()} words in your own voice
+              {proof.pctWithNumber !== null ? `, ${proof.pctWithNumber}% of them carrying a real number` : ""}
+              {claims.length ? `, plus ${claims.length} claims you kept` : ""}. That is what it writes from — not a
+              template.
+            </>
+          ) : (
+            <>
+              Aura has {claims.length || "your"} {claims.length === 1 ? "claim" : "claims"} and your own answers on
+              file. That is what it writes from — not a template.
+            </>
+          )}
         </p>
+        <p style={{ ...bodyNight, textAlign: "center" }}>
+          Tonight it reads for your three subjects. Tomorrow morning there's something waiting.
+        </p>
+        {revealPending && proof && proof.lines.length > 0 ? (
+          <WaitProof lines={proof.lines} howLong="Writing your read. About a minute." />
+        ) : null}
         <button type="button" onClick={() => go(13)} disabled={revealPending && !revealSlow}
           style={{ ...btnPrimary, marginBlockStart: 24, opacity: revealPending && !revealSlow ? 0.6 : 1 }}>
           {revealPending && !revealSlow ? <Loader2 size={16} className="animate-spin" /> : null}
@@ -1453,6 +1638,7 @@ const Onboarding = () => {
             ...btnGhostLight, color: "#FFFFFF", border: "1px solid rgba(255,255,255,.55)",
           }}>Take me in</button>
           <div style={{ color: "rgba(255,255,255,.82)" }}>
+            <ReadCorrection userId={userId} onNight />
             <MethodNote onNight />
           </div>
         </div>
