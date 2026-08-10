@@ -606,6 +606,11 @@ const Onboarding = () => {
     go(12);
     if (!userId) return;
     await saveAnswers(userId, finalAnswers);
+    try {
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ instrument_version: 2, ...(band ? { answered_band: band } : {}) })
+        .eq("user_id", userId);
+    } catch (e) { console.warn("[journey] stamp failed", e); }
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
     const figures = [
       { value: String(postsRead || claims.length), label: postsRead ? "posts read" : "claims kept" },
