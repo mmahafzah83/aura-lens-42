@@ -5,6 +5,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import HealthFindingsPanel from "@/components/admin/HealthFindingsPanel";
 import SystemHealthPanel from "@/components/admin/SystemHealthPanel";
 import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
+import PlatformRulesPanel from "@/components/admin/PlatformRulesPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
 import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
 import IsItWorkingZone, { useIsItWorking } from "@/components/admin/cockpit/IsItWorking";
@@ -1142,6 +1143,7 @@ export default function Admin() {
         <ReportHealthPanel />
         <RegenerateReportPanel />
         <SendTestEmailPanel />
+        <PlatformRulesPanel />
       </div>
     </>
   );
