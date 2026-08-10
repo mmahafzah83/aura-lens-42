@@ -1,0 +1,369 @@
+/**
+ * How you appear — the first thing on My Story.
+ *
+ * The mirror (what a stranger sees), presence health (six measured rows), and
+ * the gap between what the member writes about and what their profile says.
+ * Every figure here traces to a stored value; anything missing renders as an
+ * em dash rather than a zero.
+ */
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { scorePresence, earliestExperienceYear, type PresenceRow, type PresenceKey } from "@/lib/presenceHealth";
+import { loadLinkedInAddress } from "@/lib/linkedinAddress";
+
+/* ── System-B "Signal" values. Module scope, always. ─────────────────────── */
+const INK = "#0F1519";
+const MUTED = "#5B6673";
+const LINE = "#E2E7EE";
+const CARD = "#FFFFFF";
+const ACT = "#0670C4";
+const SUCCESS = "#12805C";
+const AMBER = "#E0A82E";
+const NIGHT = "#0F1519";
+const NIGHT_TEXT = "#FFFFFF";
+const NIGHT_MUTED = "#8A97A6";
+const NIGHT_DIM = "#6F7C89";
+const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+const SANS = "Inter, system-ui, sans-serif";
+
+const cardStyle: React.CSSProperties = {
+  background: CARD, border: `1px solid ${LINE}`, borderRadius: 20, padding: 20,
+};
+const nightCardStyle: React.CSSProperties = {
+  background: NIGHT, borderRadius: 20, padding: 24, color: NIGHT_TEXT,
+};
+const figureValueStyle: React.CSSProperties = {
+  fontFamily: MONO, fontSize: 22, fontWeight: 600, color: NIGHT_TEXT, lineHeight: 1.1,
+};
+const figureLabelStyle: React.CSSProperties = {
+  fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: NIGHT_MUTED, marginBlockStart: 4,
+};
+const quietLinkStyle: React.CSSProperties = {
+  background: "transparent", border: "none", padding: 0, marginBlockStart: 6,
+  color: ACT, fontSize: 12.5, fontWeight: 600, cursor: "pointer", textAlign: "start",
+  fontFamily: SANS, textDecoration: "none", display: "inline-block", minHeight: 24,
+};
+const primaryButtonStyle: React.CSSProperties = {
+  background: ACT, color: CARD, border: "none", borderRadius: 8, padding: "12px 18px",
+  fontSize: 14, fontWeight: 600, cursor: "pointer", minHeight: 44,
+};
+const chipBase: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 6, background: CARD,
+  borderRadius: 4, padding: "5px 9px", fontSize: 12.5, lineHeight: 1.2,
+};
+const dashStyle: React.CSSProperties = { fontFamily: MONO };
+
+const EM_DASH = "—";
+
+interface Snapshot {
+  full_name: string | null;
+  headline: string | null;
+  about: string | null;
+  photo_url: string | null;
+  location: string | null;
+  followers: number | null;
+  connections: number | null;
+  experience: unknown;
+  education: unknown;
+  skills: unknown;
+  fetched_at: string | null;
+}
+
+const barColour = (score: number) => (score >= 8 ? SUCCESS : score === 7 ? ACT : AMBER);
+
+const overallWord = (sum: number) => (sum >= 50 ? "Strong" : sum >= 30 ? "Uneven" : "Thin");
+
+/** Whole-word-ish presence of a theme inside the profile text. */
+function mentions(haystack: string, theme: string): boolean {
+  const t = theme.trim().toLowerCase();
+  if (!t) return false;
+  const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escaped}`, "i").test(haystack);
+}
+
+export default function HowYouAppear({ userId }: { userId: string | null }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [postsWithText, setPostsWithText] = useState<number | null>(null);
+  const [themes, setThemes] = useState<{ theme: string; count: number }[]>([]);
+  const [handle, setHandle] = useState<string | null>(null);
+  const [profileUrl, setProfileUrl] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [stage, setStage] = useState<"profile" | "posts" | null>(null);
+
+  const load = useCallback(async () => {
+    if (!userId) { setLoading(false); return; }
+    setLoading(true);
+    const [snapRes, postsRes, signalsRes, profRes] = await Promise.all([
+      supabase.from("linkedin_profile_snapshots")
+        .select("full_name,headline,about,photo_url,location,followers,connections,experience,education,skills,fetched_at")
+        .eq("user_id", userId).maybeSingle(),
+      supabase.from("linkedin_posts").select("id", { count: "exact", head: true })
+        .eq("user_id", userId).not("post_text", "is", null).neq("post_text", ""),
+      supabase.from("strategic_signals").select("theme_tags").eq("user_id", userId).limit(500),
+      supabase.from("diagnostic_profiles").select("avatar_url").eq("user_id", userId).maybeSingle(),
+    ]);
+
+    setSnapshot((snapRes.data as Snapshot | null) ?? null);
+    setPostsWithText(typeof postsRes.count === "number" ? postsRes.count : null);
+    setAvatarUrl(((profRes.data as { avatar_url: string | null } | null)?.avatar_url) ?? null);
+
+    const counts = new Map<string, number>();
+    for (const row of (signalsRes.data as { theme_tags: string[] | null }[] | null) || []) {
+      for (const raw of row.theme_tags || []) {
+        const t = String(raw || "").trim().toLowerCase();
+        if (t.length < 3) continue;
+        counts.set(t, (counts.get(t) || 0) + 1);
+      }
+    }
+    setThemes([...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([theme, count]) => ({ theme, count })));
+
+    try {
+      const address = await loadLinkedInAddress(userId);
+      setHandle(address.handle);
+      setProfileUrl(address.profileUrl);
+    } catch { /* address is optional here */ }
+    setLoading(false);
+  }, [userId]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const rows: PresenceRow[] = useMemo(() => scorePresence(snapshot), [snapshot]);
+  const sum = rows.reduce((a, r) => a + r.score, 0);
+
+  const yearsVisible = useMemo(() => {
+    const earliest = earliestExperienceYear(snapshot?.experience);
+    if (!earliest) return null;
+    const years = new Date().getFullYear() - earliest;
+    return years > 0 ? years : null;
+  }, [snapshot]);
+
+  const profileText = `${snapshot?.headline || ""} ${snapshot?.about || ""}`.toLowerCase();
+  const themeRows = themes.map((t) => ({ ...t, carried: mentions(profileText, t.theme) }));
+  const carriedCount = themeRows.filter((t) => t.carried).length;
+  const firstMissing = themeRows.find((t) => !t.carried);
+
+  /** Profile first, then posts. Each call can take two minutes. */
+  const readProfile = useCallback(async () => {
+    if (!profileUrl) { navigate("/settings?tab=connections"); return; }
+    try {
+      setStage("profile");
+      const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", { body: { profile_url: profileUrl } });
+      if (error) throw error;
+      if ((data as { error?: string } | null)?.error) throw new Error(String((data as { error?: string }).error));
+      setStage("posts");
+      await supabase.functions.invoke("linkedin-fetch-posts", { body: { profile_url: profileUrl, max_posts: 50 } });
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't read your profile just now.");
+    } finally {
+      setStage(null);
+    }
+  }, [profileUrl, navigate, load]);
+
+  const useLinkedInPhoto = useCallback(async () => {
+    if (!userId || !snapshot?.photo_url || avatarUrl) return;
+    const { error } = await supabase.from("diagnostic_profiles").update({ avatar_url: snapshot.photo_url }).eq("user_id", userId);
+    if (error) toast.error("Couldn't save that photo just now.");
+    else { setAvatarUrl(snapshot.photo_url); toast.success("Your LinkedIn photo is now your Aura photo."); }
+  }, [userId, snapshot, avatarUrl]);
+
+  if (loading || !userId) return null;
+
+  /* ── Empty: no snapshot at all ─────────────────────────────────────────── */
+  if (!snapshot) {
+    return (
+      <section style={cardStyle} data-testid="how-you-appear-empty">
+        <h2 style={{ fontFamily: SANS, fontSize: 19, fontWeight: 700, color: INK, margin: 0 }}>
+          Aura hasn't read your profile yet.
+        </h2>
+        <p style={{ fontSize: 13.5, color: MUTED, margin: "8px 0 16px", lineHeight: 1.6 }}>
+          One address, once. Then this fills in.
+        </p>
+        <button type="button" style={primaryButtonStyle} onClick={readProfile} disabled={stage !== null}>
+          {stage === "profile" ? "Reading your profile…" : stage === "posts" ? "Reading your posts…" : "Read my profile"}
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }} data-testid="how-you-appear">
+      {/* ── SECTION 1 — the mirror ───────────────────────────────────────── */}
+      <section style={nightCardStyle}>
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+          {snapshot.photo_url ? (
+            <img
+              src={snapshot.photo_url}
+              alt={snapshot.full_name ? `${snapshot.full_name}'s profile photo` : "Profile photo"}
+              style={{ width: 72, height: 72, borderRadius: 999, objectFit: "cover", flexShrink: 0, border: "1px solid rgba(255,255,255,.14)" }}
+            />
+          ) : (
+            <div
+              aria-hidden
+              style={{ width: 72, height: 72, borderRadius: 999, flexShrink: 0, border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.04)" }}
+            />
+          )}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 19, color: NIGHT_TEXT, lineHeight: 1.25 }} dir="auto">
+              {snapshot.full_name || EM_DASH}
+            </div>
+            <div
+              dir="auto"
+              style={{
+                fontSize: 14, color: NIGHT_MUTED, marginBlockStart: 4, lineHeight: 1.45,
+                display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+              }}
+            >
+              {snapshot.headline || EM_DASH}
+            </div>
+            <div style={{ fontSize: 12.5, color: NIGHT_DIM, marginBlockStart: 4 }} dir="auto">
+              {snapshot.location || EM_DASH}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 24, marginBlockStart: 20 }}>
+          {[
+            { value: snapshot.followers, label: "People following you" },
+            { value: postsWithText, label: "Posts Aura has read" },
+            { value: yearsVisible, label: "Years on record" },
+          ].map((f) => (
+            <div key={f.label} style={{ minWidth: 104 }}>
+              <div style={figureValueStyle}>
+                {typeof f.value === "number" ? f.value.toLocaleString() : EM_DASH}
+              </div>
+              <div style={figureLabelStyle}>{f.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ fontSize: 12.5, color: NIGHT_DIM, marginBlockStart: 18 }}>
+          This is what someone sees before they meet you.
+        </div>
+      </section>
+
+      {/* ── SECTION 2 — presence health ──────────────────────────────────── */}
+      <section style={cardStyle}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <SectionHeader label="PRESENCE HEALTH" />
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
+            <span style={{ ...dashStyle, fontSize: 15, fontWeight: 600, color: INK }}>{sum}/60</span>
+            <span style={{ fontSize: 12.5, color: MUTED }}>{overallWord(sum)}</span>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {rows.map((r) => (
+            <div key={r.key} style={{ paddingBlock: 10, minHeight: 44 }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>{r.label}</span>
+                <span style={{ ...dashStyle, fontSize: 13, color: MUTED, textAlign: "end" }}>{r.fact}</span>
+              </div>
+              <div style={{ height: 6, borderRadius: 999, background: LINE, marginBlockStart: 8, overflow: "hidden" }}>
+                <div style={{ width: `${r.score * 10}%`, height: "100%", borderRadius: 999, background: barColour(r.score) }} />
+              </div>
+              {r.weak && (
+                <div style={{ marginBlockStart: 8 }}>
+                  <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{r.rule}</div>
+                  <FixAction
+                    rowKey={r.key}
+                    handle={handle}
+                    profileUrl={profileUrl}
+                    canUsePhoto={!!snapshot.photo_url && !avatarUrl}
+                    onUsePhoto={useLinkedInPhoto}
+                    onPublish={() => navigate("/publish")}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── SECTION 3 — the gap ──────────────────────────────────────────── */}
+      {themeRows.length >= 3 && (
+        <section style={cardStyle}>
+          <SectionHeader label="WHAT YOU WRITE ABOUT VS WHAT YOUR PROFILE SAYS" />
+          <p style={{ fontSize: 13.5, color: INK, margin: "0 0 12px", lineHeight: 1.6 }}>
+            You write about <span style={dashStyle}>{themeRows.length}</span> recurring subjects. Your profile mentions{" "}
+            <span style={dashStyle}>{carriedCount}</span> of them.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {themeRows.map((t) => (
+              <span
+                key={t.theme}
+                style={{
+                  ...chipBase,
+                  border: t.carried ? `1px solid ${LINE}` : `1px dashed ${LINE}`,
+                  color: t.carried ? INK : MUTED,
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: 999, background: t.carried ? SUCCESS : AMBER, flexShrink: 0 }} />
+                {t.theme}
+              </span>
+            ))}
+          </div>
+          <div style={{ fontSize: 11.5, color: MUTED, marginBlockStart: 10 }}>
+            ● on your profile · ○ only in your writing
+          </div>
+          {firstMissing && (
+            <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
+              The thing you write about most — {firstMissing.theme} — appears nowhere on your profile.
+            </p>
+          )}
+          <button type="button" style={quietLinkStyle} onClick={() => navigate("/publish")}>
+            Put this in my headline →
+          </button>
+        </section>
+      )}
+    </div>
+  );
+}
+
+/** The single quiet action under a weak row. Never a button styled as one. */
+function FixAction({
+  rowKey, handle, profileUrl, canUsePhoto, onUsePhoto, onPublish,
+}: {
+  rowKey: PresenceKey;
+  handle: string | null;
+  profileUrl: string | null;
+  canUsePhoto: boolean;
+  onUsePhoto: () => void;
+  onPublish: () => void;
+}) {
+  if (rowKey === "photo") {
+    if (!canUsePhoto) return null;
+    return <button type="button" style={quietLinkStyle} onClick={onUsePhoto}>Use my LinkedIn photo</button>;
+  }
+  if (rowKey === "headline") {
+    return <button type="button" style={quietLinkStyle} onClick={onPublish}>Draft a sharper one from my posts →</button>;
+  }
+  if (rowKey === "about") {
+    return <button type="button" style={quietLinkStyle} onClick={onPublish}>Draft this from what I've already written →</button>;
+  }
+  if (rowKey === "experience") {
+    if (!handle) return null;
+    return (
+      <a
+        href={`https://www.linkedin.com/in/${handle}/details/experience/`}
+        target="_blank"
+        rel="noreferrer"
+        style={quietLinkStyle}
+      >
+        Add what you actually delivered →
+      </a>
+    );
+  }
+  if (rowKey === "skills") {
+    return (
+      <a href="#how-you-appear-gap" style={quietLinkStyle}>See the skills my posts prove →</a>
+    );
+  }
+  if (!profileUrl) return null;
+  return <a href={profileUrl} target="_blank" rel="noreferrer" style={quietLinkStyle}>Add it on LinkedIn →</a>;
+}
