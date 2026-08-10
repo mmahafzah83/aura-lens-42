@@ -7,6 +7,7 @@
  * have not read.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { BANNED_WORDS, hasBanned } from "../_shared/bannedWords.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,14 +26,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const BANNED = [
-  "authority", "trajectory", "personal brand", "thought leader", "leverage",
-  "utilize", "facilitate", "unlock", "elevate", "empower", "seamless",
-  "game-changing", "passionate", "results-driven", "proven track record",
-  "I'm excited to", "with over X years of experience",
-];
-
-/** Share of Arabic letters across the member's own writing. */
+/** Share of Arabic letters across the member's own writing. Picks the DEFAULT only. */
 function languageOf(texts: string[]): "ar" | "en" | "mixed" {
   const joined = texts.join(" ");
   const arabic = (joined.match(/[\u0600-\u06FF]/g) || []).length;
@@ -66,10 +60,6 @@ function normaliseAngle(raw: unknown, index: number): Angle {
 }
 
 const wordsIn = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
-const hasBanned = (s: string) => {
-  const low = s.toLowerCase();
-  return BANNED.some((b) => low.includes(b.toLowerCase()));
-};
 
 function systemPrompt(target: "headline" | "about", language: "ar" | "en" | "mixed"): string {
   const shape = target === "headline"
@@ -123,7 +113,7 @@ function systemPrompt(target: "headline" | "about", language: "ar" | "en" | "mix
     "",
     languageRule,
     "",
-    `NEVER use these words or phrases: ${BANNED.join(", ")}.`,
+    `NEVER use these words or phrases: ${BANNED_WORDS.join(", ")}.`,
     "",
     "Return STRICT JSON and nothing else. No markdown fence, no commentary:",
     '{"options":[{"angle":"Positioning","text":"...","why":"..."}]}',
