@@ -61,6 +61,8 @@ const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
 ];
 
 const MANUAL_SCREEN = 15;
+/** Shown wherever a post or word count would otherwise read zero. */
+const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you save.";
 /** A short dark panel that sits between screen 8 and the sliders. */
 const TRUST_SLIDERS_SCREEN = 8.5;
 
@@ -635,8 +637,9 @@ const Onboarding = () => {
     } catch (e) { console.warn("[journey] stamp failed", e); }
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
     const figures = [
-      { value: String(postsRead || claims.length), label: postsRead ? "posts read" : "claims kept" },
-      { value: String(Object.keys(scores).length), label: "strengths on record" },
+      ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
+      ...(claims.length ? [{ value: String(claims.length), label: "claims kept" }] : []),
+      ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
     ];
     setReveal(toRevealData(results, { figures, excludeSoft: (dims || []).map((d) => d.name) }));
     setRevealPending(false);
@@ -655,8 +658,9 @@ const Onboarding = () => {
     loadMarketRead(userId).then((r) => {
       const d = toRevealData(r, {
         figures: [
-          { value: String(postsRead || claims.length), label: postsRead ? "posts read" : "claims kept" },
-          { value: String(Object.keys(scores).length), label: "strengths on record" },
+          ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
+          ...(claims.length ? [{ value: String(claims.length), label: "claims kept" }] : []),
+          ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
         ],
         excludeSoft: (dims || []).map((x) => x.name),
       });
@@ -966,6 +970,9 @@ const Onboarding = () => {
         <button type="button" onClick={() => go(MANUAL_SCREEN)} style={btnGhostLight}>
           I'd rather type it in myself
         </button>
+        <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
+          Aura stores what it reads so it can write as you. You can delete it any time in Settings.
+        </p>
         <p style={footnote}>Aura only reads. It never posts.</p>
       </PaperShell>
     );
@@ -983,6 +990,8 @@ const Onboarding = () => {
       { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
     ].filter((r) => !r.drop);
     const allLanded = readDone && rows.every((r) => r.done);
+    // Never print a zero for posts or words — the absence is the message.
+    const nothingPublic = readDone && !postsRead && !ownWords;
     content = (
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading you.</h1>
@@ -991,6 +1000,9 @@ const Onboarding = () => {
             <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
           ))}
         </div>
+        {nothingPublic ? (
+          <p style={{ ...bodyNight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE}</p>
+        ) : null}
         <button type="button" onClick={() => go(3)} disabled={!allLanded}
           style={{ ...btnPrimary, marginBlockStart: 24, opacity: allLanded ? 1 : 0.5 }}>
           {allLanded ? null : <Loader2 size={16} className="animate-spin" />}
@@ -1002,10 +1014,11 @@ const Onboarding = () => {
 
   /* 3 — WHITE, what Aura can see */
   if (screen === 3) {
+    // A zero for posts is never printed — the empty-post line stands in for it.
     const figures = [
-      { v: postsRead ?? 0, l: "posts read" },
-      { v: liProfile?.followers ?? 0, l: "following you" },
-      { v: liProfile?.skills_count ?? 0, l: "skills on record" },
+      ...(postsRead ? [{ v: postsRead, l: "posts read" }] : []),
+      ...(liProfile?.followers ? [{ v: liProfile.followers, l: "following you" }] : []),
+      ...(liProfile?.skills_count ? [{ v: liProfile.skills_count, l: "skills on record" }] : []),
     ];
     // The read succeeded, so the firm, sector and level all come from it.
     // There is no separate page after this one.
@@ -1025,14 +1038,18 @@ const Onboarding = () => {
             ) : null}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 20, marginBlockStart: 20 }}>
-          {figures.map((f) => (
-            <div key={f.l}>
-              <div style={{ fontFamily: OB.mono, fontSize: 22, fontWeight: 600, color: OB.ink }}>{f.v}</div>
-              <div style={{ fontSize: 11.5, color: OB.muted, marginBlockStart: 4 }}>{f.l}</div>
-            </div>
-          ))}
-        </div>
+        {postsRead ? (
+          <div style={{ display: "flex", gap: 20, marginBlockStart: 20 }}>
+            {figures.map((f) => (
+              <div key={f.l}>
+                <div style={{ fontFamily: OB.mono, fontSize: 22, fontWeight: 600, color: OB.ink }}>{f.v}</div>
+                <div style={{ fontSize: 11.5, color: OB.muted, marginBlockStart: 4 }}>{f.l}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ ...bodyLight, marginBlockStart: 18 }}>{EMPTY_POSTS_LINE}</p>
+        )}
 
         <div style={{
           marginBlockStart: 20, padding: "13px 15px", borderRadius: RADIUS.card,
@@ -1574,8 +1591,8 @@ const Onboarding = () => {
             </>
           ) : (
             <>
-              Aura has {claims.length || "your"} {claims.length === 1 ? "claim" : "claims"} and your own answers on
-              file. That is what it writes from — not a template.
+              {EMPTY_POSTS_LINE}
+              {claims.length ? ` Aura already has ${claims.length} ${claims.length === 1 ? "claim" : "claims"} and your own answers on file.` : " Aura already has your own answers on file."}
             </>
           )}
         </p>

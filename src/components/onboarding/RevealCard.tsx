@@ -65,6 +65,9 @@ export async function shareRevealCard(
   return "downloaded";
 }
 
+/** Stands in wherever a post or word figure would otherwise read zero. */
+export const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you save.";
+
 const chip = (bg: string, color: string): React.CSSProperties => ({
   display: "inline-block",
   padding: "6px 11px",
@@ -129,7 +132,7 @@ const RevealCard = forwardRef<
       </>
     )}
 
-    {data.figures.length > 0 && (
+    {data.figures.length > 0 ? (
       <div style={{ display: "flex", gap: 26, marginBlockStart: 24 }}>
         {data.figures.slice(0, 2).map((f) => (
           <div key={f.label}>
@@ -138,6 +141,8 @@ const RevealCard = forwardRef<
           </div>
         ))}
       </div>
+    ) : (
+      <p style={{ margin: "24px 0 0", fontSize: 13.5, lineHeight: 1.6, opacity: 0.92 }}>{EMPTY_POSTS_LINE}</p>
     )}
 
     {footer ? (
@@ -152,8 +157,9 @@ const RevealCard = forwardRef<
           </span>
         </div>
         <p style={{ margin: "10px 0 0", fontSize: 11.5, lineHeight: 1.5, opacity: 0.85 }}>
-          A snapshot of how my work reads from the outside — built from {footer.posts} of my posts
-          and {footer.saved} things I saved.
+          {footer.posts > 0
+            ? `A snapshot of how my work reads from the outside — built from ${footer.posts} of my posts${footer.saved ? ` and ${footer.saved} things I saved` : ""}.`
+            : `A snapshot of how my work reads from the outside${footer.saved ? ` — built from ${footer.saved} things I saved` : ""}.`}
         </p>
       </div>
     ) : null}

@@ -19,15 +19,18 @@ const ReadCorrection = ({ userId, onNight = false }: { userId: string | null; on
     setSaving(true);
     try {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("identity_intelligence").eq("user_id", userId).maybeSingle();
-      const cur = ((data as any)?.identity_intelligence ?? {}) as Record<string, any>;
-      const list = Array.isArray(cur.read_corrections) ? cur.read_corrections : [];
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ identity_intelligence: { ...cur, read_corrections: [...list, { at: new Date().toISOString(), note: text.trim() }] } })
+        .select("ui_dismissals").eq("user_id", userId).maybeSingle();
+      const cur = ((data as any)?.ui_dismissals ?? {}) as Record<string, any>;
+      const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({
+          ui_dismissals: { ...cur, read_correction: { text: text.trim(), at: new Date().toISOString() } },
+        })
         .eq("user_id", userId);
+      if (error) throw error;
       setDone(true);
       toast.success("Noted. Aura will use that next time it reads you.");
-    } catch {
+    } catch (e) {
+      console.warn("[read-correction] save failed", e);
       toast.error("Couldn't save that just now. Try once more.");
     } finally {
       setSaving(false);
@@ -41,7 +44,7 @@ const ReadCorrection = ({ userId, onNight = false }: { userId: string | null; on
   return (
     <div style={{ marginBlockStart: 14 }}>
       <p style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: muted }}>
-        This is a read, not a verdict. If it's wrong, tell Aura and it changes.{" "}
+        This is a read, not a verdict. If it's wrong, tell Aura and it will change.{" "}
         {!open && (
           <button type="button" onClick={() => setOpen(true)} style={{
             background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit",

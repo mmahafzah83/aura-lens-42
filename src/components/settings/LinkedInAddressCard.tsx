@@ -77,6 +77,9 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
           {busy ? "Saving…" : "Save address"}
         </button>
       </div>
+      <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
+        Aura stores what it reads so it can write as you. You can delete it any time in Settings.
+      </p>
     </div>
   );
 }
