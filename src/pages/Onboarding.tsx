@@ -1157,7 +1157,10 @@ const Onboarding = () => {
 
   /* 8 — NIGHT, before the sliders */
   if (screen === 8) {
-    const pickedLine = bandLabel && sector ? `Eight sliders. Under a minute. Picked for ${bandLabel} · ${sector}.` : null;
+    const sliderCount = dims?.length ?? 0;
+    const pickedLine = bandLabel && sector && sliderCount
+      ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel} · ${sector}.`
+      : null;
     content = (
       <NightShell face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadDimensions()) : (
@@ -1168,9 +1171,35 @@ const Onboarding = () => {
               your posts actually show — and where those two disagree is the interesting part.
             </p>
             {pickedLine ? <p style={{ ...bodyNight, textAlign: "center" }}>{pickedLine}</p> : null}
-            <button type="button" onClick={() => { setDimIdx(0); go(9); }} disabled={!dims}
+            <button type="button" onClick={() => { setDimIdx(0); go(TRUST_SLIDERS_SCREEN); }} disabled={!dims}
               style={{ ...btnPrimary, marginBlockStart: 24, opacity: dims ? 1 : 0.5 }}>
               {dims ? "Okay" : <Loader2 size={16} className="animate-spin" />}
+            </button>
+          </>
+        )}
+      </NightShell>
+    );
+  }
+
+  /* 8.5 — NIGHT, why the sliders are built this way */
+  if (screen === TRUST_SLIDERS_SCREEN) {
+    const sliderCount = dims?.length ?? 0;
+    content = (
+      <NightShell footer={escapeFooter}>
+        {contentError || !dims ? retryPanel(() => void loadDimensions()) : (
+          <>
+            <h1 style={{ ...h1Night, textAlign: "center" }}>Before you start</h1>
+            <p style={bodyNight}>
+              These {sliderCount === 8 ? "eight" : sliderCount} are not a personality test. Each one asks what you
+              have actually done, with a real sentence at each end instead of a number — a method used in
+              professional assessment since the 1960s because it is harder to fool and harder to flatter.
+            </p>
+            <p style={bodyNight}>
+              They are chosen for your level. A Director and a Consultant are asked different things, because what
+              capability means changes at each step up, not gradually.
+            </p>
+            <button type="button" onClick={() => { setDimIdx(0); go(9); }} style={{ ...btnPrimary, marginBlockStart: 24 }}>
+              Okay
             </button>
           </>
         )}
