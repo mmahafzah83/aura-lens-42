@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import CountryPicker from "@/components/CountryPicker";
+import { useSeniorityTitles, bandOfTitle } from "@/lib/seniorityTitles";
 
 const SECTOR_OPTIONS = [
   "Consulting", "Energy", "Finance", "Government", "Technology",
@@ -36,6 +37,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
   const [sectorFocus, setSectorFocus] = useState("");
   const [sectorOther, setSectorOther] = useState("");
   const [level, setLevel] = useState("");
+  const { titles: seniorityTitles } = useSeniorityTitles();
   const [corePractice, setCorePractice] = useState("");
   const [northStar, setNorthStar] = useState("");
   const [country, setCountry] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
   const firmRef = useRef<HTMLInputElement>(null);
   const sectorRef = useRef<HTMLSelectElement>(null);
   const lastNameRef = useRef<HTMLInputElement>(null);
-  const levelRef = useRef<HTMLInputElement>(null);
+  const levelRef = useRef<HTMLSelectElement>(null);
   const practiceRef = useRef<HTMLInputElement>(null);
   const northStarRef = useRef<HTMLTextAreaElement>(null);
 
@@ -109,6 +111,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     if (!userId || saving) return;
     setSaving(true);
     const resolvedSector = sectorFocus === "Other" ? sectorOther.trim() : sectorFocus;
+    const pickedBand = bandOfTitle(seniorityTitles, level);
     const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
       .update({
         first_name: firstName.trim() || null,
@@ -116,6 +119,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
         firm: firm.trim() || null,
         sector_focus: resolvedSector || null,
         level: level.trim() || null,
+        ...(pickedBand ? { seniority_band: pickedBand, band_source: "corrected" } : {}),
         core_practice: corePractice.trim() || null,
         north_star_goal: northStar.trim() || null,
         country: country || null,
@@ -218,7 +222,13 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
             </div>
             <div>
               <label style={label}>Title</label>
-              <input ref={levelRef} value={level} onChange={(e) => setLevel(e.target.value)} style={input} />
+              <select ref={levelRef} value={level} onChange={(e) => setLevel(e.target.value)} style={input}>
+                <option value="">Select your level…</option>
+                {level && !seniorityTitles.some((t) => t.title === level) ? (
+                  <option value={level}>{level}</option>
+                ) : null}
+                {seniorityTitles.map((t) => <option key={t.title} value={t.title}>{t.title}</option>)}
+              </select>
             </div>
             <div>
               <label style={label}>Core practice</label>

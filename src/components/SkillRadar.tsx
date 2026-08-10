@@ -76,9 +76,13 @@ const SkillRadar = () => {
       const expBonus = totalYears > 15;
       setHasExperienceBonus(expBonus);
 
+      // Render whatever the member actually has — 8, 10 or 18 keys.
+      const ratingKeys = diagRatings && typeof diagRatings === "object" ? Object.keys(diagRatings) : [];
       const activePillars: string[] = diagSkills && diagSkills.length > 0
         ? diagSkills.map((s: any) => s.name)
-        : FALLBACK_PILLARS;
+        : ratingKeys.length > 0
+          ? ratingKeys
+          : FALLBACK_PILLARS;
 
       // Intelligence boosts
       const boosts: Record<string, number> = {};

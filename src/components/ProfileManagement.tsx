@@ -10,6 +10,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
+import { useSeniorityTitles, bandOfTitle } from "@/lib/seniorityTitles";
 
 interface Skill {
   name: string;
@@ -40,6 +41,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [firm, setFirm] = useState("");
   const [level, setLevel] = useState("");
+  const { titles: seniorityTitles } = useSeniorityTitles();
   const [corePractice, setCorePractice] = useState("");
   const [sectorFocus, setSectorFocus] = useState("");
   const [sectorOther, setSectorOther] = useState("");
@@ -101,6 +103,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
       firstName?.trim() && firm?.trim() && level?.trim() && resolvedSector
     );
     const wasFirstSave = !hasSavedBefore;
+    const pickedBand = bandOfTitle(seniorityTitles, level);
     const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
       .upsert({
         user_id: user.id,
@@ -109,6 +112,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         avatar_url: avatarUrl,
         firm,
         level,
+        ...(pickedBand ? { seniority_band: pickedBand, band_source: "corrected" } : {}),
         core_practice: corePractice,
         sector_focus: resolvedSector,
         target_register: targetRegister || null,
@@ -263,7 +267,6 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: "Firm", value: firm, set: setFirm, placeholder: "e.g., Deloitte, Saudi Aramco, your organization" },
-              { label: "Level / Title", value: level, set: setLevel, placeholder: "e.g., VP of Strategy, CIO, your current role" },
               { label: "Core Practice", value: corePractice, set: setCorePractice, placeholder: "e.g., Strategy, Technology, Finance — the area you work in" },
             ].map(item => (
               <div key={item.label}>
@@ -271,6 +274,19 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
                 <Input placeholder={item.placeholder} value={item.value} onChange={(e) => item.set(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
               </div>
             ))}
+            <div>
+              <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Level</label>
+              <Select value={level || undefined} onValueChange={setLevel}>
+                <SelectTrigger className="h-9 bg-secondary border-border/30 text-sm">
+                  <SelectValue placeholder="Select…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {seniorityTitles.map((t) => (
+                    <SelectItem key={t.title} value={t.title}>{t.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Sector Focus</label>
               <Select value={sectorFocus || undefined} onValueChange={setSectorFocus}>

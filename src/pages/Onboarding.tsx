@@ -29,6 +29,8 @@ import ProgressBeads from "@/components/onboarding/ProgressBeads";
 import RevealCard, { type RevealData, shareRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
 import StatusRow from "@/components/onboarding/StatusRow";
 import Confetti from "@/components/onboarding/Confetti";
+import MethodNote from "@/components/onboarding/MethodNote";
+import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleBand } from "@/lib/seniorityTitles";
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
@@ -41,6 +43,7 @@ const BAND_LABEL: Record<Band, string> = {
   room: "C-suite & board",
 };
 
+/** Only a last-resort label when the member never picked a title. */
 const BAND_TO_LEVEL: Record<Band, string> = {
   work: "Manager",
   table: "Director",
@@ -55,6 +58,8 @@ const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
 ];
 
 const MANUAL_SCREEN = 15;
+/** A short dark panel that sits between screen 8 and the sliders. */
+const TRUST_SLIDERS_SCREEN = 8.5;
 
 const PAGE_CSS = `
 .obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};}
@@ -114,7 +119,7 @@ interface Dimension {
   name: string; why_line: string | null; anchor_low: string | null; anchor_high: string | null;
 }
 interface JourneyQuestion {
-  prompt: string; helper: string | null; kind: string;
+  prompt: string; helper: string | null; kind: string; max_choices: number | null;
   options: { label: string; value: string }[] | null;
 }
 interface Claim { title: string; content?: string | null; confidence?: number | null }
@@ -194,6 +199,8 @@ const Onboarding = () => {
   const [firm, setFirm] = useState("");
   const [sector, setSector] = useState("");
   const [band, setBand] = useState<Band | null>(null);
+  const [levelTitle, setLevelTitle] = useState("");
+  const { titles: seniorityTitles, failed: titlesFailed, reload: reloadTitles } = useSeniorityTitles();
 
   /* screen 1–3 */
   const [liInput, setLiInput] = useState("");
@@ -225,6 +232,7 @@ const Onboarding = () => {
   const [qIdx, setQIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [textAnswer, setTextAnswer] = useState("");
+  const [multiPicked, setMultiPicked] = useState<string[]>([]);
 
   /* screen 13 */
   const [reveal, setReveal] = useState<RevealData | null>(null);
@@ -286,7 +294,7 @@ const Onboarding = () => {
       else if (!passwordSet) setNeedsPassword(true);
 
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, seniority_band, onboarding_step, skill_ratings, identity_intelligence")
+        .select("first_name, last_name, firm, sector_focus, level, seniority_band, onboarding_step, skill_ratings, identity_intelligence")
         .eq("user_id", uid)
         .maybeSingle();
       const p: any = profile || {};
@@ -299,6 +307,7 @@ const Onboarding = () => {
       if (p.last_name) setLastName(p.last_name);
       if (p.firm) setFirm(p.firm);
       if (p.sector_focus) { setSector(p.sector_focus); setSectorKnown(true); }
+      if (p.level) setLevelTitle(p.level);
       if (p.seniority_band) setBand(p.seniority_band as Band);
       if (p.skill_ratings && typeof p.skill_ratings === "object") setScores(p.skill_ratings as Record<string, number>);
 
@@ -498,7 +507,8 @@ const Onboarding = () => {
         rows = data || [];
       }
       if (rows.length === 0) { setContentError(true); return; }
-      setDims(rows.slice(0, 8) as Dimension[]);
+      // However many the band has — never a constant.
+      setDims(rows as Dimension[]);
     } catch { setContentError(true); }
   }, [band, sector]);
 
@@ -507,7 +517,7 @@ const Onboarding = () => {
     setContentError(false);
     try {
       const base = () => (supabase.from("onboarding_questions" as any) as any)
-        .select("prompt, helper, kind, options")
+        .select("prompt, helper, kind, options, max_choices")
         .eq("band", band).eq("active", true).order("position");
       let rows: any[] = [];
       if (sector) {
@@ -519,20 +529,30 @@ const Onboarding = () => {
         rows = data || [];
       }
       if (rows.length === 0) { setContentError(true); return; }
-      setQuestions(rows.slice(0, 6) as JourneyQuestion[]);
+      // However many the band has — never a constant.
+      setQuestions(rows as JourneyQuestion[]);
     } catch { setContentError(true); }
   }, [band, sector]);
 
-  useEffect(() => { if (screen === 8 || screen === 9) void loadDimensions(); }, [screen, loadDimensions]);
+  useEffect(() => {
+    if (screen === 8 || screen === TRUST_SLIDERS_SCREEN || screen === 9) void loadDimensions();
+  }, [screen, loadDimensions]);
   useEffect(() => { if (screen === 10 || screen === 11) void loadQuestions(); }, [screen, loadQuestions]);
 
-  /* ── autosave after every slider ── */
+  /* ── autosave after every slider ──
+     Existing members keep whatever keys are already on file: new answers are
+     MERGED in alongside them, never written over the top of the object. */
   const saveScores = useCallback(async (next: Record<string, number>) => {
     if (!userId) return;
     try {
+      const { data: current } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("skill_ratings, audit_results").eq("user_id", userId).maybeSingle();
+      const existingRatings = ((current as any)?.skill_ratings as Record<string, number>) || {};
+      const existingAudit = ((current as any)?.audit_results as Record<string, number>) || {};
       await (supabase.from("diagnostic_profiles" as any) as any)
         .update({
-          skill_ratings: next, audit_results: next,
+          skill_ratings: { ...existingRatings, ...next },
+          audit_results: { ...existingAudit, ...next },
           audit_completed_at: new Date().toISOString(), audit_method: "self_read",
         })
         .eq("user_id", userId);
@@ -594,7 +614,7 @@ const Onboarding = () => {
           last_name: lastName.trim() || null,
           firm: firm.trim() || null,
           sector_focus: sector || null,
-          level: band ? BAND_TO_LEVEL[band] : null,
+          level: levelTitle.trim() || (band ? BAND_TO_LEVEL[band] : null),
           onboarding_completed: true,
           onboarding_step: 4,
           completed: true,
@@ -652,6 +672,46 @@ const Onboarding = () => {
   ) : null;
 
   const bandLabel = band ? BAND_LABEL[band] : null;
+
+  /** One writer for the level, wherever it is picked. */
+  const chooseTitle = async (title: string, b: Band) => {
+    setLevelTitle(title);
+    setBand(b);
+    setDims(null);
+    setQuestions(null);
+    if (userId) {
+      try {
+        await (supabase.from("diagnostic_profiles" as any) as any)
+          .update({ level: title, seniority_band: b, band_source: "corrected" })
+          .eq("user_id", userId);
+      } catch (e) { console.warn("[journey] level save failed", e); }
+    }
+  };
+
+  const titleList = (onPick: (t: string, b: Band) => void) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBlockStart: 12 }}>
+      {titlesFailed ? (
+        <>
+          <p style={{ ...bodyLight, margin: 0 }}>Aura couldn't load the list of levels. Nothing is lost.</p>
+          <button type="button" onClick={() => void reloadTitles()} style={{ ...btnGhostLight, marginBlockStart: 0 }}>
+            Try again
+          </button>
+        </>
+      ) : seniorityTitles.map((t) => (
+        <button key={t.title} type="button" onClick={() => onPick(t.title, t.band as Band)} style={{
+          display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10,
+          textAlign: "start", padding: "11px 13px", borderRadius: 12, cursor: "pointer",
+          border: `1px solid ${levelTitle === t.title ? OB.blue : OB.line}`,
+          background: levelTitle === t.title ? OB.blueTint : OB.white,
+          fontSize: 14, fontFamily: "inherit", color: OB.ink,
+        }}>
+          <span>{t.title}</span>
+          <span style={{ fontSize: 11.5, color: OB.muted }}>{TITLE_BAND_LABEL[t.band as TitleBand]}</span>
+        </button>
+      ))}
+    </div>
+  );
+
   const shelfUnlocked = useMemo(() => ({
     profile: screen > 3,
     claims: screen > 7,
@@ -912,30 +972,14 @@ const Onboarding = () => {
           background: OB.canvas, border: `1px solid ${OB.line}`,
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <span style={{ fontSize: 14 }}>Level · <strong>{bandLabel || "not set"}</strong></span>
+            <span style={{ fontSize: 14 }}>Level · <strong>{levelTitle || bandLabel || "not set"}</strong></span>
             <button type="button" onClick={() => setBandPicker((v) => !v)} style={{
               border: `1px solid ${OB.blue}`, background: OB.white, color: OB.blue,
               fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
               padding: "8px 16px", borderRadius: 999, flexShrink: 0,
             }}>{bandPicker ? "Close" : "Change"}</button>
           </div>
-          {bandPicker && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBlockStart: 12 }}>
-              {(Object.keys(BAND_LABEL) as Band[]).map((b) => (
-                <button key={b} type="button" onClick={async () => {
-                  setBand(b); setBandPicker(false); setDims(null);
-                  if (userId) {
-                    await (supabase.from("diagnostic_profiles" as any) as any)
-                      .update({ seniority_band: b, band_source: "corrected" }).eq("user_id", userId);
-                  }
-                }} style={{
-                  textAlign: "start", padding: "11px 13px", borderRadius: 12, cursor: "pointer",
-                  border: `1px solid ${band === b ? OB.blue : OB.line}`,
-                  background: band === b ? OB.blueTint : OB.white, fontSize: 14, fontFamily: "inherit", color: OB.ink,
-                }}>{BAND_LABEL[b]}</button>
-              ))}
-            </div>
-          )}
+          {bandPicker && titleList((t, b) => { void chooseTitle(t, b); setBandPicker(false); })}
           {!sector && (
             <div style={{ marginBlockStart: 12 }}>
               <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Aura couldn't tell your sector — pick it once.</label>
@@ -970,7 +1014,7 @@ const Onboarding = () => {
 
   /* 15 — WHITE, only when the read failed or was skipped */
   if (screen === MANUAL_SCREEN) {
-    const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band;
+    const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band && !!levelTitle;
     content = (
       <PaperShell bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>Aura couldn't read it — tell it the basics.</h1>
@@ -982,19 +1026,14 @@ const Onboarding = () => {
             <option value="">Your sector</option>
             {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-          {(Object.keys(BAND_LABEL) as Band[]).map((b) => (
-            <button key={b} type="button" onClick={() => setBand(b)} style={{
-              textAlign: "start", padding: "12px 14px", borderRadius: 12, cursor: "pointer",
-              border: `1px solid ${band === b ? OB.blue : OB.line}`,
-              background: band === b ? OB.blueTint : OB.white, fontSize: 14, fontFamily: "inherit", color: OB.ink,
-            }}>{BAND_LABEL[b]}</button>
-          ))}
         </div>
+        <p style={{ ...bodyLight, marginBlockStart: 16, fontWeight: 600, color: OB.ink }}>Your level</p>
+        {titleList((t, b) => { setLevelTitle(t); setBand(b); })}
         <button type="button" disabled={!ready} onClick={async () => {
           if (userId) {
             await (supabase.from("diagnostic_profiles" as any) as any).upsert({
               user_id: userId, first_name: firstName.trim(), last_name: lastName.trim() || null,
-              firm: firm.trim(), sector_focus: sector, level: band ? BAND_TO_LEVEL[band] : null,
+              firm: firm.trim(), sector_focus: sector, level: levelTitle || (band ? BAND_TO_LEVEL[band] : null),
               seniority_band: band, band_source: "corrected",
             }, { onConflict: "user_id" });
           }
@@ -1118,7 +1157,10 @@ const Onboarding = () => {
 
   /* 8 — NIGHT, before the sliders */
   if (screen === 8) {
-    const pickedLine = bandLabel && sector ? `Eight sliders. Under a minute. Picked for ${bandLabel} · ${sector}.` : null;
+    const sliderCount = dims?.length ?? 0;
+    const pickedLine = bandLabel && sector && sliderCount
+      ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel} · ${sector}.`
+      : null;
     content = (
       <NightShell face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadDimensions()) : (
@@ -1129,9 +1171,35 @@ const Onboarding = () => {
               your posts actually show — and where those two disagree is the interesting part.
             </p>
             {pickedLine ? <p style={{ ...bodyNight, textAlign: "center" }}>{pickedLine}</p> : null}
-            <button type="button" onClick={() => { setDimIdx(0); go(9); }} disabled={!dims}
+            <button type="button" onClick={() => { setDimIdx(0); go(TRUST_SLIDERS_SCREEN); }} disabled={!dims}
               style={{ ...btnPrimary, marginBlockStart: 24, opacity: dims ? 1 : 0.5 }}>
               {dims ? "Okay" : <Loader2 size={16} className="animate-spin" />}
+            </button>
+          </>
+        )}
+      </NightShell>
+    );
+  }
+
+  /* 8.5 — NIGHT, why the sliders are built this way */
+  if (screen === TRUST_SLIDERS_SCREEN) {
+    const sliderCount = dims?.length ?? 0;
+    content = (
+      <NightShell footer={escapeFooter}>
+        {contentError || !dims ? retryPanel(() => void loadDimensions()) : (
+          <>
+            <h1 style={{ ...h1Night, textAlign: "center" }}>Before you start</h1>
+            <p style={bodyNight}>
+              These {sliderCount === 8 ? "eight" : sliderCount} are not a personality test. Each one asks what you
+              have actually done, with a real sentence at each end instead of a number — a method used in
+              professional assessment since the 1960s because it is harder to fool and harder to flatter.
+            </p>
+            <p style={bodyNight}>
+              They are chosen for your level. A Director and a Consultant are asked different things, because what
+              capability means changes at each step up, not gradually.
+            </p>
+            <button type="button" onClick={() => { setDimIdx(0); go(9); }} style={{ ...btnPrimary, marginBlockStart: 24 }}>
+              Okay
             </button>
           </>
         )}
@@ -1174,7 +1242,7 @@ const Onboarding = () => {
             if (!scores[d.name]) setScore(d.name, value);
             if (last) go(10); else setDimIdx((i) => i + 1);
           }} style={{ ...btnPrimary, marginBlockStart: 26 }}>
-            {last ? "Done — that's all eight" : "Next"}
+            {last ? `Done — that's all ${dims.length}` : "Next"}
           </button>
           {last && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
@@ -1205,7 +1273,17 @@ const Onboarding = () => {
               What comes out isn't a personality type. It's the subjects you genuinely own, the space nobody near you
               has claimed, and where the ground is still soft.
             </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>Six questions. Ninety seconds.</p>
+            <p style={bodyNight}>
+              These {questions?.length ?? 10} come from four places: how archetype is used in brand work, the search
+              for uncontested space in strategy, the point-of-view question behind category design, and the coaching
+              question that surfaces what is actually holding someone back.
+            </p>
+            <p style={bodyNight}>
+              There are no right answers and nothing is scored. Aura is looking for your pattern.
+            </p>
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              {questions?.length ?? 10} questions. A couple of minutes.
+            </p>
             <button type="button" onClick={() => { setQIdx(0); go(11); }} disabled={!questions}
               style={{ ...btnPrimary, marginBlockStart: 24, opacity: questions ? 1 : 0.5 }}>
               {questions ? "Let's do it" : <Loader2 size={16} className="animate-spin" />}
@@ -1233,9 +1311,12 @@ const Onboarding = () => {
         const next = { ...answers, [`Q${qIdx + 1} ${q.prompt}`]: value };
         setAnswers(next);
         setTextAnswer("");
+        setMultiPicked([]);
         if (userId) void saveAnswers(userId, next);
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
+      const cap = q.kind === "multi" ? (q.max_choices ?? (q.options?.length || 99)) : 1;
+      const atCap = multiPicked.length >= cap;
       content = (
         <PaperShell bead={4} footer={escapeFooter}>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
@@ -1255,6 +1336,35 @@ const Onboarding = () => {
                 }}>{o.label}</button>
               ))}
             </div>
+          ) : q.kind === "multi" ? (
+            <>
+              <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
+                Pick up to {cap}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
+                {(q.options || []).map((o) => {
+                  const picked = multiPicked.includes(o.label);
+                  const blocked = !picked && atCap;
+                  return (
+                    <button key={o.value} type="button" disabled={blocked}
+                      onClick={() => setMultiPicked((prev) =>
+                        prev.includes(o.label) ? prev.filter((x) => x !== o.label) : [...prev, o.label])}
+                      style={{
+                        textAlign: "start", padding: "14px 15px", borderRadius: 14,
+                        cursor: blocked ? "not-allowed" : "pointer",
+                        border: `1px solid ${picked ? OB.blue : OB.line}`,
+                        background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
+                        lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
+                        opacity: blocked ? 0.45 : 1,
+                        transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
+                      }}>{o.label}</button>
+                  );
+                })}
+              </div>
+              <button type="button" disabled={multiPicked.length === 0}
+                onClick={() => advance(multiPicked.join(" · "))}
+                style={{ ...btnPrimary, marginBlockStart: 16, opacity: multiPicked.length ? 1 : 0.5 }}>Next</button>
+            </>
           ) : (
             <>
               <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
@@ -1342,6 +1452,9 @@ const Onboarding = () => {
           <button type="button" onClick={() => go(14)} style={{
             ...btnGhostLight, color: "#FFFFFF", border: "1px solid rgba(255,255,255,.55)",
           }}>Take me in</button>
+          <div style={{ color: "rgba(255,255,255,.82)" }}>
+            <MethodNote onNight />
+          </div>
         </div>
       </div>
     );

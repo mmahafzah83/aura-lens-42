@@ -378,13 +378,27 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     "Geopolitical Fluency": "geopolitical_fluency",
     "Value-Based P&L": "value_based_pnl",
   };
+  // Render whatever keys exist — 8, 10 or 18. The legacy ten are listed first
+  // so existing members see no reordering; anything new follows.
+  const usedKeys = new Set<string>();
   for (const dim of CAPABILITY_DIMENSIONS) {
     // Some users have keys in snake_case slug form (e.g. "value_based_pnl");
     // others in canonical form ("Value-Based P&L"). Try canonical first, then slug.
-    const v = (ratingsRaw as any)[dim] ?? (ratingsRaw as any)[SLUG_MAP[dim]];
+    const slug = SLUG_MAP[dim];
+    const v = (ratingsRaw as any)[dim] ?? (ratingsRaw as any)[slug];
     if (typeof v === "number" && !Number.isNaN(v)) {
+      usedKeys.add(dim);
+      if (slug) usedKeys.add(slug);
       filled.push({ name: dim, score: Math.round(v) });
     }
+  }
+  for (const [key, raw] of Object.entries(ratingsRaw)) {
+    if (usedKeys.has(key)) continue;
+    if (typeof raw !== "number" || Number.isNaN(raw)) continue;
+    const pretty = key.includes("_")
+      ? key.split(/[_\s]+/).filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+      : key;
+    filled.push({ name: pretty, score: Math.round(raw) });
   }
   const capabilities: CapabilitiesSection | null = filled.length > 0 ? filled : null;
 
