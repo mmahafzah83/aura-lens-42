@@ -519,7 +519,7 @@ const Onboarding = () => {
     setContentError(false);
     try {
       const base = () => (supabase.from("capability_dimensions" as any) as any)
-        .select("name, why_line, anchor_low, anchor_high")
+        .select("name, why_line, anchor_low, anchor_mid, anchor_high")
         .eq("band", band).eq("active", true).order("position");
       let rows: any[] = [];
       if (sector) {
@@ -541,7 +541,7 @@ const Onboarding = () => {
     setContentError(false);
     try {
       const base = () => (supabase.from("onboarding_questions" as any) as any)
-        .select("prompt, helper, kind, options, max_choices")
+        .select("prompt, helper, kind, options, max_choices, why_asked, allow_none, randomise")
         .eq("band", band).eq("active", true).order("position");
       let rows: any[] = [];
       if (sector) {
@@ -563,6 +563,13 @@ const Onboarding = () => {
   }, [screen, loadDimensions]);
   useEffect(() => { if (screen === 10 || screen === 11) void loadQuestions(); }, [screen, loadQuestions]);
 
+  /* the member's own figures, read once the posts are in */
+  useEffect(() => {
+    if (!userId || proof) return;
+    if (screen < 2) return;
+    loadPostProof(userId).then((p) => { if (p.posts > 0) setProof(p); }).catch(() => {});
+  }, [userId, screen, proof]);
+
   /* ── autosave after every slider ──
      Existing members keep whatever keys are already on file: new answers are
      MERGED in alongside them, never written over the top of the object. */
@@ -578,10 +585,12 @@ const Onboarding = () => {
           skill_ratings: { ...existingRatings, ...next },
           audit_results: { ...existingAudit, ...next },
           audit_completed_at: new Date().toISOString(), audit_method: "self_read",
+          instrument_version: 2,
+          ...(band ? { answered_band: band } : {}),
         })
         .eq("user_id", userId);
     } catch (e) { console.warn("[journey] slider save failed", e); }
-  }, [userId]);
+  }, [userId, band]);
 
   const setScore = (name: string, value: number) => {
     setScores((prev) => {
