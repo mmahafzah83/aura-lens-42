@@ -56,6 +56,21 @@ const MILESTONE_DEFS: { id: string; name: string; cta?: { label: string; tab: st
 const prettify = (s?: string) =>
   (s || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, (m) => m.toUpperCase());
 
+/** Three panes. Old keys map forward so existing URLs never 404. Module scope: stable across renders. */
+const PANE_ALIAS: Record<string, "appear" | "voice" | "standing"> = {
+  appear: "appear",
+  identity: "appear",
+  voice: "voice",
+  standing: "standing",
+  insights: "standing",
+  record: "standing",
+};
+
+/** "Where you stand" is one continuous section — 16px between its cards. */
+const STANDING_STACK: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 16,
+};
+
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
   onSwitchTab?: (tab: string) => void;
