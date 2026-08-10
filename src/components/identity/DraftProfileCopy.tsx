@@ -51,6 +51,19 @@ const ANGLE_CHIP: React.CSSProperties = {
   fontSize: 11.5, fontFamily: SANS, textTransform: "uppercase", letterSpacing: ".06em",
 };
 const ANGLE_HINT: React.CSSProperties = { fontSize: 12.5, color: MUTED, lineHeight: 1.55, margin: "6px 18px 0" };
+const CREDIT_LINE: React.CSSProperties = { fontSize: 12.5, color: MUTED, lineHeight: 1.55 };
+const CACHE_LINE: React.CSSProperties = { fontSize: 12.5, color: MUTED, lineHeight: 1.55 };
+const DROPPED_LINE: React.CSSProperties = { fontSize: 12.5, color: MUTED, lineHeight: 1.55 };
+const LANG_ROW: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" };
+const LANG_LABEL: React.CSSProperties = { fontSize: 12.5, color: MUTED };
+const SEGMENT: React.CSSProperties = {
+  display: "inline-flex", border: `1px solid ${LINE}`, borderRadius: 8, overflow: "hidden", background: CARD,
+};
+const SEG_BTN = (on: boolean): React.CSSProperties => ({
+  minHeight: 44, padding: "0 16px", border: 0, cursor: "pointer",
+  background: on ? ACT : CARD, color: on ? "#FFFFFF" : MUTED,
+  fontSize: 13.5, fontWeight: 600, fontFamily: SANS,
+});
 const WHY_LINE: React.CSSProperties = { fontSize: 12.5, color: MUTED, lineHeight: 1.5 };
 const QUIET_ACTION: React.CSSProperties = {
   alignSelf: "flex-start", background: "none", border: 0, padding: "10px 0",
@@ -101,6 +114,10 @@ interface Props {
 
 const isArabic = (s: string) => /[\u0600-\u06FF]/.test(s);
 const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+const formatDate = (iso: string) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
 
 export default function DraftProfileCopy({ target, open, onClose, handle, onReadAgain }: Props) {
   const [phase, setPhase] = useState<"reading" | "writing" | "done">("reading");
@@ -108,30 +125,54 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
   const [thin, setThin] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<number | null>(null);
+  const [dropped, setDropped] = useState(0);
+  const [fromCache, setFromCache] = useState(false);
+  const [writtenAt, setWrittenAt] = useState<string | null>(null);
+  const [language, setLanguage] = useState<"ar" | "en">("en");
+  const [mixed, setMixed] = useState(false);
+  const [wide, setWide] = useState(
+    typeof window !== "undefined" ? window.matchMedia("(min-width: 768px)").matches : true,
+  );
   const timers = useRef<number[]>([]);
 
-  const run = useCallback(async () => {
+  const run = useCallback(async (mode: "cached" | "fresh", lang?: "ar" | "en") => {
     setPhase("reading");
     setOptions([]);
     setThin(null);
     setError(null);
+    setDropped(0);
+    setFromCache(false);
     const toWriting = window.setTimeout(() => setPhase("writing"), 1200);
     timers.current.push(toWriting);
     try {
       const { data, error: err } = await supabase.functions.invoke("draft-profile-copy", {
-        body: { target },
+        body: { target, mode, ...(mode === "fresh" && lang ? { language: lang } : {}) },
       });
       if (err) throw new Error("Aura couldn't write just now. Try again.");
       const res = data as {
         ok?: boolean; reason?: string; posts_found?: number;
-        options?: Option[]; error?: string;
+        options?: Option[]; error?: string; dropped?: number;
+        from_cache?: boolean; written_at?: string;
+        language?: string; detected_language?: string;
       } | null;
+      const detected = res?.detected_language ?? res?.language;
+      if (detected === "ar" || detected === "en") setLanguage(detected);
+      setMixed(detected === "mixed");
       if (res?.ok && Array.isArray(res.options) && res.options.length > 0) {
         setOptions(res.options);
+        setDropped(typeof res.dropped === "number" ? res.dropped : 0);
+        setFromCache(Boolean(res.from_cache));
+        setWrittenAt(res.written_at ?? null);
       } else if (res?.reason === "not_enough_writing") {
         setThin(typeof res.posts_found === "number" ? res.posts_found : 0);
       } else if (res?.reason === "unreadable_response") {
         setError("Aura's answer came back garbled. Try again.");
+      } else if (res?.reason === "busy") {
+        setError("Aura is busy right now. Try again in a minute.");
+      } else if (res?.reason === "no_credits") {
+        setError("You're out of Aura credits. What's already written is still free to re-read.");
+      } else if (res?.reason === "model_failed") {
+        setError("Aura couldn't write just now. Try again.");
       } else {
         setError(res?.error || "Aura couldn't write just now. Try again.");
       }
@@ -145,8 +186,16 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
 
   useEffect(() => {
     if (!open) return;
-    void run();
+    void run("cached");
   }, [open, run]);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px)");
+    const onChange = () => setWide(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -175,7 +224,6 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
 
   if (!open) return null;
 
-  const wide = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
   const panelStyle: React.CSSProperties = wide
     ? { ...PANEL_BASE, marginInlineStart: "auto", width: 520, maxWidth: "100%", height: "100%", borderStartStartRadius: 12, borderEndStartRadius: 12 }
     : { ...PANEL_BASE, marginBlockStart: "auto", width: "100%", maxHeight: "92%", borderStartStartRadius: 20, borderStartEndRadius: 20 };
@@ -240,7 +288,13 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
           {!busy && error && (
             <div style={NOTE_CARD}>
               <div style={ERROR_LINE}>{error}</div>
-              <button type="button" style={QUIET_ACTION} onClick={() => void run()}>Try again</button>
+              <button type="button" style={QUIET_ACTION} onClick={() => void run("cached")}>Try again</button>
+            </div>
+          )}
+
+          {!busy && fromCache && writtenAt && options.length > 0 && (
+            <div style={CACHE_LINE}>
+              Written on <span style={{ fontFamily: MONO }}>{formatDate(writtenAt)}</span>.
             </div>
           )}
 
@@ -276,6 +330,11 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
 
           {!busy && options.length > 0 && (
             <>
+              {dropped > 0 && (
+                <div style={DROPPED_LINE}>
+                  <span style={{ fontFamily: MONO }}>{dropped}</span> more didn't meet the bar and weren't shown.
+                </div>
+              )}
               <div style={HONEST_LINE}>
                 Aura can't edit LinkedIn for you. Copy the one you want and paste it in.
               </div>
@@ -289,10 +348,21 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
                   Open my LinkedIn profile →
                 </a>
               )}
+              <div style={LANG_ROW}>
+                <span style={LANG_LABEL}>Write in</span>
+                <div style={SEGMENT} role="group" aria-label="Write in">
+                  <button type="button" style={SEG_BTN(language === "en")} aria-pressed={language === "en"} onClick={() => setLanguage("en")}>English</button>
+                  <button type="button" style={SEG_BTN(language === "ar")} aria-pressed={language === "ar"} onClick={() => setLanguage("ar")}>العربية</button>
+                </div>
+              </div>
+              {mixed && <div style={CREDIT_LINE}>You write in both. Pick one.</div>}
               <div>
-                <button type="button" style={PRIMARY_BTN} onClick={() => void run()}>
-                  Write three more
+                <button type="button" style={PRIMARY_BTN} onClick={() => void run("fresh", language)}>
+                  Write three new ones
                 </button>
+                <div style={{ ...CREDIT_LINE, marginBlockStart: 8 }}>
+                  Writing new ones uses your Aura credits. What's here is free to re-read.
+                </div>
               </div>
             </>
           )}
