@@ -1273,7 +1273,17 @@ const Onboarding = () => {
               What comes out isn't a personality type. It's the subjects you genuinely own, the space nobody near you
               has claimed, and where the ground is still soft.
             </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>Six questions. Ninety seconds.</p>
+            <p style={bodyNight}>
+              These {questions?.length ?? 10} come from four places: how archetype is used in brand work, the search
+              for uncontested space in strategy, the point-of-view question behind category design, and the coaching
+              question that surfaces what is actually holding someone back.
+            </p>
+            <p style={bodyNight}>
+              There are no right answers and nothing is scored. Aura is looking for your pattern.
+            </p>
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              {questions?.length ?? 10} questions. A couple of minutes.
+            </p>
             <button type="button" onClick={() => { setQIdx(0); go(11); }} disabled={!questions}
               style={{ ...btnPrimary, marginBlockStart: 24, opacity: questions ? 1 : 0.5 }}>
               {questions ? "Let's do it" : <Loader2 size={16} className="animate-spin" />}
