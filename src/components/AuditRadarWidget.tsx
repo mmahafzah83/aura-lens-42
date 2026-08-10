@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
+import { formatSkillLabel } from "@/lib/formatSkillLabel";
 
-const DIMENSION_ORDER = [
+// Legacy ordering hint only. The radar renders whatever keys the member
+// actually has — 8, 10 or 18 — and never assumes this list.
+const LEGACY_ORDER = [
   "Strategic Architecture",
   "C-Suite Stewardship",
   "Sector Foresight",
