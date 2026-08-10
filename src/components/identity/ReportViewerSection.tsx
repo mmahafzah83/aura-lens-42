@@ -13,14 +13,36 @@ import BrandPaperDocument from "@/components/report/BrandPaperDocument";
 
 const SHEET_W = 794; // A4 @ 96dpi — fixed, must be scaled to fit on screen.
 
+const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+const ERROR_LINE: React.CSSProperties = { fontSize: 12.5, color: "#C0392B", marginTop: 8 };
+
 interface Props {
   firstName?: string | null;
+  lastName?: string | null;
   onCompleteAssessment: () => void;
+  /** When set, this exact snapshot is rendered and exported instead of the current one. */
+  overrideReport?: any | null;
+  overrideVersion?: number | null;
+  overrideSnapshotAt?: string | null;
 }
 
-export default function ReportViewerSection({ firstName, onCompleteAssessment }: Props) {
-  const { report, version, snapshotAt, loading, hasAssessment } = useReportSnapshot();
+export default function ReportViewerSection({
+  firstName,
+  lastName,
+  onCompleteAssessment,
+  overrideReport,
+  overrideVersion,
+  overrideSnapshotAt,
+}: Props) {
+  const live = useReportSnapshot();
+  const usingOverride = !!overrideReport;
+  const report = usingOverride ? overrideReport : live.report;
+  const version = usingOverride ? overrideVersion ?? null : live.version;
+  const snapshotAt = usingOverride ? overrideSnapshotAt ?? null : live.snapshotAt;
+  const loading = usingOverride ? false : live.loading;
+  const hasAssessment = usingOverride ? true : live.hasAssessment;
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
   const [scaledHeight, setScaledHeight] = useState<number | null>(null);
 
@@ -57,25 +79,25 @@ export default function ReportViewerSection({ firstName, onCompleteAssessment }:
   }, [scale, report]);
 
   const fileName = () => {
-    const slug =
-      (firstName || "profile").toString().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") ||
-      "profile";
+    const person =
+      `${firstName || ""}${lastName || ""}`.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "") || "Member";
     const date = (snapshotAt ? new Date(snapshotAt) : new Date()).toISOString().slice(0, 10);
-    const v = version ? `-v${version}` : "";
-    return `aura-report-${slug}${v}-${date}.pdf`;
+    const v = version ?? 1;
+    return `Aura-Report-${person}-v${v}-${date}.pdf`;
   };
 
   const handleExport = async () => {
     if (!report || !exportMountRef.current) {
-      toast.error("Report not ready yet.");
+      setExportError("Your report isn't ready yet. Try again in a moment.");
       return;
     }
     setExporting(true);
+    setExportError(null);
     try {
       await exportReportPdf(exportMountRef.current, fileName());
       toast.success("Report downloaded");
     } catch (e: any) {
-      toast.error(e?.message || "Failed to download report");
+      setExportError("We couldn't build your PDF. Please try again.");
     } finally {
       setExporting(false);
     }
@@ -114,17 +136,16 @@ export default function ReportViewerSection({ firstName, onCompleteAssessment }:
     >
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 12 }}>
         <Button
-          variant="default"
+          variant="outline"
           size="sm"
           onClick={handleExport}
-          loading={exporting}
           disabled={exporting || loading || !report}
         >
-          Download your report (PDF)
+          {exporting ? "Preparing your PDF…" : "Download PDF"}
         </Button>
         {version && snapshotAt ? (
-          <span style={{ fontSize: 11, color: "var(--ink-4)" }}>
-            Version {version} ·{" "}
+          <span style={{ fontSize: 11, color: "#5B6673" }}>
+            <span style={{ fontFamily: MONO }}>v{version}</span> ·{" "}
             {new Date(snapshotAt).toLocaleDateString("en-GB", {
               day: "numeric",
               month: "long",
@@ -133,6 +154,7 @@ export default function ReportViewerSection({ firstName, onCompleteAssessment }:
           </span>
         ) : null}
       </div>
+      {exportError ? <div style={ERROR_LINE}>{exportError}</div> : null}
 
       {loading || !report ? (
         <p className="text-sm" style={{ color: "var(--ink-4)", margin: 0 }}>
