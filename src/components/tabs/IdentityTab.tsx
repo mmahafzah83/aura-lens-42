@@ -11,7 +11,7 @@ import MilestonesSection from "@/components/MilestonesSection";
 import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
-import ReportViewerSection from "@/components/identity/ReportViewerSection";
+import ReportVersions from "@/components/identity/ReportVersions";
 import BrandReportSection from "@/components/identity/BrandReportSection";
 import SectionError from "@/components/ui/section-error";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
