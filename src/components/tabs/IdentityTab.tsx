@@ -11,7 +11,7 @@ import MilestonesSection from "@/components/MilestonesSection";
 import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
-import ReportViewerSection from "@/components/identity/ReportViewerSection";
+import ReportVersions from "@/components/identity/ReportVersions";
 import BrandReportSection from "@/components/identity/BrandReportSection";
 import SectionError from "@/components/ui/section-error";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
@@ -56,15 +56,27 @@ const MILESTONE_DEFS: { id: string; name: string; cta?: { label: string; tab: st
 const prettify = (s?: string) =>
   (s || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, (m) => m.toUpperCase());
 
-/** Three panes. Old keys map forward so existing URLs never 404. Module scope: stable across renders. */
-const PANE_ALIAS: Record<string, "appear" | "voice" | "standing"> = {
+/** Four panes. Old keys map forward so existing URLs never 404. Module scope: stable across renders. */
+type PaneKey = "appear" | "voice" | "standing" | "show";
+const PANE_ALIAS: Record<string, PaneKey> = {
   appear: "appear",
   identity: "appear",
   voice: "voice",
   standing: "standing",
   insights: "standing",
   record: "standing",
+  show: "show",
+  report: "show",
+  reports: "show",
+  card: "show",
+  cards: "show",
 };
+
+/** "What you can show" stack — 16px between its cards. */
+const SHOW_STACK: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 16,
+};
+const PANE_SUBLINE: React.CSSProperties = { fontSize: 13.5, color: "#5B6673", marginTop: 2 };
 
 /** "Where you stand" is one continuous section — 16px between its cards. */
 const STANDING_STACK: React.CSSProperties = {
@@ -190,8 +202,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   // Pane state — the URL search param `story` is the single source of truth.
   const [searchParams, setSearchParams] = useSearchParams();
   const storyParam = searchParams.get("story");
-  const pane: "appear" | "voice" | "standing" = PANE_ALIAS[storyParam ?? ""] ?? "appear";
-  const setPane = (next: "appear" | "voice" | "standing") => {
+  const pane: PaneKey = PANE_ALIAS[storyParam ?? ""] ?? "appear";
+  const setPane = (next: PaneKey) => {
     const params = new URLSearchParams(searchParams);
     if (next === "appear") params.delete("story");
     else params.set("story", next);
@@ -798,6 +810,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           { key: "appear", label: "How you appear" },
           { key: "voice", label: "How you sound" },
           { key: "standing", label: "Where you stand" },
+          { key: "show", label: "What you can show" },
         ] as const).map((t) => {
           const active = pane === t.key;
           return (
@@ -1324,44 +1337,36 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       <MilestonesSection userId={authUser?.id ?? null} />
 
-      {/* SLICE 4b — one reports home: narrative report first, formal PDF beneath */}
-      <div>
-        <SectionHeader label="Your reports" />
-        <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
-          Deeper readings of your standing, kept here to reopen any time.
-        </p>
       </div>
-      <BrandReportSection
-        results={profile?.brand_assessment_results}
-        hasAssessment={!!profile?.brand_assessment_completed_at}
-        onCompleteAssessment={() => setBrandOpen(true)}
-      />
-      {profile?.brand_assessment_completed_at ? (
-        <div style={{ marginTop: 16 }}>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 500,
-              color: "var(--ink-5)",
-              marginBottom: 8,
-            }}
-          >
-            Your report, as issued paper
-          </div>
-          <ReportViewerSection
+      )}
+
+      {pane === "show" && (
+      <div style={SHOW_STACK}>
+        <div>
+          <SectionHeader label="What you can show" />
+          <p style={PANE_SUBLINE}>Everything here is yours to download or send.</p>
+        </div>
+
+        <BrandReportSection
+          results={profile?.brand_assessment_results}
+          hasAssessment={!!profile?.brand_assessment_completed_at}
+          onCompleteAssessment={() => setBrandOpen(true)}
+        />
+
+        {profile?.brand_assessment_completed_at ? (
+          <ReportVersions
             firstName={profile?.first_name}
+            lastName={profile?.last_name}
             onCompleteAssessment={() => setBrandOpen(true)}
           />
-        </div>
-      ) : null}
+        ) : null}
 
-      {/* Your Aura Card — readiness gate + shareable card */}
-      <AuraCardPanel
-        onNavigateAssessment={() => setBrandOpen(true)}
-        onNavigateAudit={() => setAuditOpen(true)}
-        onNavigatePhoto={() => navigate("/settings?tab=account")}
-        onNavigateSettings={() => { window.location.href = "/settings#location"; }}
-      />
+        <AuraCardPanel
+          onNavigateAssessment={() => setBrandOpen(true)}
+          onNavigateAudit={() => setAuditOpen(true)}
+          onNavigatePhoto={() => navigate("/settings?tab=account")}
+          onNavigateSettings={() => { window.location.href = "/settings#location"; }}
+        />
       </div>
       )}
 
