@@ -305,12 +305,7 @@ export default function AuraCardPanel({
   return (
     <section
       dir={dir}
-      style={{
-        border: `1px solid ${RULE}`,
-        background: PAPER,
-        padding: "22px 22px 20px",
-        marginTop: 24,
-      }}
+      style={SHELL}
       aria-label="Your Aura Card"
     >
       <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
@@ -426,7 +421,6 @@ export default function AuraCardPanel({
                   onClick={() => { setShareError(null); void shareToLinkedIn(); }}
                   disabled={!!busy}
                   icon={busy === "share" ? <Loader2 className="animate-spin" size={14} /> : <Linkedin size={14} />}
-                  primary
                 >
                   Try again
                 </ActionButton>
@@ -450,7 +444,7 @@ export default function AuraCardPanel({
             <ActionButton onClick={downloadPng} disabled={!!busy} icon={busy === "png" ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}>
               Download PNG
             </ActionButton>
-            <ActionButton onClick={shareToLinkedIn} disabled={!!busy} icon={busy === "share" ? <Loader2 className="animate-spin" size={14} /> : <Linkedin size={14} />} primary>
+            <ActionButton onClick={shareToLinkedIn} disabled={!!busy} icon={busy === "share" ? <Loader2 className="animate-spin" size={14} /> : <Linkedin size={14} />}>
               Share to LinkedIn
             </ActionButton>
           </div>
@@ -494,20 +488,15 @@ export default function AuraCardPanel({
 }
 
 function ActionButton({
-  children, onClick, disabled, icon, primary,
-}: { children: React.ReactNode; onClick: () => void; disabled?: boolean; icon?: React.ReactNode; primary?: boolean }) {
+  children, onClick, disabled, icon,
+}: { children: React.ReactNode; onClick: () => void; disabled?: boolean; icon?: React.ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       style={{
-        display: "inline-flex", alignItems: "center", gap: 8,
-        fontFamily: MONO, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
-        padding: "10px 14px",
-        border: `1px solid ${primary ? INK : RULE}`,
-        background: primary ? INK : "transparent",
-        color: primary ? PAPER : INK,
+        ...SECONDARY_BTN,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.6 : 1,
       }}
