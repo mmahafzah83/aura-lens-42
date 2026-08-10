@@ -58,6 +58,34 @@ const dashStyle: React.CSSProperties = { fontFamily: MONO };
 
 const EM_DASH = "—";
 
+const halvesStyle: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 28,
+};
+const halfStyle: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 16,
+};
+const ruleStyle: React.CSSProperties = {
+  height: 1, background: LINE, width: "100%", marginBlockEnd: 16,
+};
+const readLineStyle: React.CSSProperties = {
+  display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8,
+  fontSize: 12, color: MUTED,
+};
+const halfNoteStyle: React.CSSProperties = {
+  fontSize: 12.5, color: MUTED, margin: "-8px 0 0", lineHeight: 1.6,
+};
+const comingNextStyle: React.CSSProperties = {
+  marginBlockStart: 6, color: ACT, fontSize: 12.5, fontWeight: 600, fontFamily: SANS,
+};
+
+/** "10 Aug 2026" — day in mono at the call site. */
+function formatReadDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
 interface Snapshot {
   full_name: string | null;
   headline: string | null;
