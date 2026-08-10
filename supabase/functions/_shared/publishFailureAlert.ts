@@ -9,12 +9,16 @@
  * their own try/catch: telemetry must never break the thing it describes.
  */
 
-const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
+import { adminUserIds } from "./adminRole.ts";
 
-/** Founder and test accounts are excluded — his own failures are not emergencies. */
-export function isRealUser(userId: string | null | undefined, email: string | null | undefined): boolean {
+/** Admin and test accounts are excluded — our own failures are not emergencies. */
+export function isRealUser(
+  userId: string | null | undefined,
+  email: string | null | undefined,
+  adminIds: Set<string> = new Set(),
+): boolean {
   if (!userId) return false;
-  if (userId === FOUNDER_ID) return false;
+  if (adminIds.has(userId)) return false;
   const e = (email || "").toLowerCase();
   if (!e) return true; // unknown email: treat as real rather than lose the alarm
   if (e.includes("test")) return false;
@@ -41,13 +45,14 @@ export async function alertPublishFailure(
     const { userId, postId, origin } = opts;
     const occurredAt = opts.occurredAt || new Date().toISOString();
 
-    // --- exclusion: founder + test accounts -------------------------------
+    // --- exclusion: admins + test accounts --------------------------------
+    const adminIds = new Set(await adminUserIds(admin));
     let email: string | null = null;
     try {
       const { data } = await admin.auth.admin.getUserById(userId);
       email = data?.user?.email ?? null;
     } catch { /* ignore — isRealUser tolerates a null email */ }
-    if (!isRealUser(userId, email)) return;
+    if (!isRealUser(userId, email, adminIds)) return;
 
     // --- who is this person -----------------------------------------------
     let firstName = "";

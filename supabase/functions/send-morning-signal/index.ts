@@ -8,6 +8,7 @@
 // idempotency/lifecycle rows are written.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { adminUserIds } from "../_shared/adminRole.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -18,7 +19,6 @@ const corsHeaders = {
 
 const FROM = "Aura <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
-const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
 const PAUSE_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
 const FRESH_WINDOW_HOURS = 14;
@@ -231,6 +231,7 @@ serve(async (req) => {
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+  const adminIds = new Set(await adminUserIds(admin));
 
   let dryRun = true;
   let onlyUserId: string | null = null;
@@ -272,7 +273,7 @@ serve(async (req) => {
     for (const f of (findings || []) as Finding[]) {
       if (!f.user_id) continue;
       // Founder is excluded from live sends but allowed as a dry-run target.
-      if (f.user_id === FOUNDER_ID && !(dryRun && onlyUserId === FOUNDER_ID)) continue;
+      if (adminIds.has(f.user_id) && !(dryRun && onlyUserId === f.user_id)) continue;
       if (!((f.title || "").trim() || (f.url || "").trim())) continue;
       const arr = byUser.get(f.user_id) || [];
       arr.push(f);

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { adminUserIds } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -7,7 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 serve(withObserve("aura-card-emails", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -32,6 +32,7 @@ serve(withObserve("aura-card-emails", async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+  const adminIds = new Set(await adminUserIds(admin));
 
   const now = Date.now();
   const dayMs = 86_400_000;
@@ -85,7 +86,7 @@ serve(withObserve("aura-card-emails", async (req) => {
   for (const p of profiles || []) {
     const uid = p.user_id as string;
     try {
-      if (uid === ADMIN_USER_ID) { results.push({ user_id: uid, state: "SKIP_ADMIN" }); continue; }
+      if (adminIds.has(uid)) { results.push({ user_id: uid, state: "SKIP_ADMIN" }); continue; }
       if (p.lifecycle_opt_out === true) { results.push({ user_id: uid, state: "SKIP_OPT_OUT" }); continue; }
 
       const authRow = authUsers.get(uid);

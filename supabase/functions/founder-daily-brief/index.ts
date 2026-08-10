@@ -3,8 +3,8 @@
 // sends it. Always sends. Every headline number is computed twice.
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { primaryAdminId } from "../_shared/adminRole.ts";
 
-const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -273,6 +273,7 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(supabaseUrl, serviceKey);
+  const founderId = await primaryAdminId(admin);
 
   try {
     const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
@@ -686,7 +687,7 @@ Deno.serve(async (req) => {
     const payload = {
       brief_date: briefDate,
       counted_at_utc: hhmm,
-      excluded: { founder: FOUNDER_ID, test_users: A.excluded_test_users ?? 0 },
+      excluded: { founder: founderId, test_users: A.excluded_test_users ?? 0 },
       funnel: fa,
       drafts: A.drafts,
       failed_publishes: A.failed_publishes,

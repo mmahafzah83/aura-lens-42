@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isAdmin } from "../_shared/adminRole.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 
 const corsHeaders = {
@@ -7,7 +8,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 // All per-user tables have ON DELETE CASCADE FKs to auth.users(id).
 // Deleting the auth user automatically removes all of their rows.
 
@@ -45,7 +45,7 @@ serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (callerId !== ADMIN_USER_ID) {
+    if (!(await isAdmin(userClient, callerId))) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -82,14 +82,14 @@ serve(async (req) => {
       if (found) target_user_id = found.id;
     }
 
-    if (target_user_id === ADMIN_USER_ID || target_user_id === callerId) {
+    if (target_user_id === callerId) {
       return new Response(JSON.stringify({ error: "Cannot delete your own account" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Hard guard: refuse to delete the founder user id, regardless of caller.
-    if (target_user_id === "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3") {
+    if (await isAdmin(admin, target_user_id)) {
       return new Response(JSON.stringify({ error: "cannot delete admin" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -1,12 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { isAdmin } from "../_shared/adminRole.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const TARGET_USER = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -28,7 +27,7 @@ Deno.serve(async (req) => {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  if (user.id !== ADMIN_USER_ID) {
+  if (!(await isAdmin(userClient, user.id))) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -20,7 +20,6 @@ const corsHeaders = {
 };
 
 const FN = "home-address";
-const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const MODEL = "google/gemini-3-flash-preview";
 
 // Ratified bands. Floor is inclusive; the last band is the top.

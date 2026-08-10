@@ -4,6 +4,7 @@
 // dependency. Each check can genuinely pass AND fail on real data.
 // One qa_runs row is written per check per run.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { adminUserIds } from "../_shared/adminRole.ts";
 import { isAuraPublishedPost } from "../_shared/postProvenance.ts";
 
 const corsHeaders = {
@@ -12,7 +13,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 type Status = "pass" | "fail" | "warn";
 type Check = { check_key: string; status: Status; detail: string; value_json: Record<string, unknown> };
@@ -26,16 +26,17 @@ function json(body: unknown, status = 200) {
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
 
-/** Real user ids: founder and any test-looking email excluded. */
+/** Real user ids: admins and any test-looking email excluded. */
 async function realUserIds(admin: any): Promise<Set<string>> {
   const ids = new Set<string>();
+  const adminIds = new Set(await adminUserIds(admin));
   for (let page = 1; page <= 10; page++) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
     if (error) break;
     const users = data?.users ?? [];
     for (const u of users) {
       const email = (u.email ?? "").toLowerCase();
-      if (u.id === FOUNDER_ID) continue;
+      if (adminIds.has(u.id)) continue;
       if (email.includes("test")) continue;
       ids.add(u.id);
     }

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { adminUserIds, primaryAdminId } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
@@ -12,7 +13,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const DASHBOARD_URL = "https://www.aura-intel.org/dashboard";
 const INTELLIGENCE_URL = "https://www.aura-intel.org/dashboard?tab=intelligence";
 const NOTIF_SETTINGS_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
@@ -187,6 +187,8 @@ serve(withObserve("lifecycle-emails", async (req) => {
     });
   }
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+  const adminIds = new Set(await adminUserIds(admin));
+  const digestRecipientId = await primaryAdminId(admin);
 
   const now = Date.now();
   const dayMs = 86400000;
@@ -232,7 +234,7 @@ serve(withObserve("lifecycle-emails", async (req) => {
   for (const u of users) {
     try {
       // 1. SKIP admin / opted out
-      if (u.id === ADMIN_USER_ID) { results.push({ email: u.email, state: "SKIP_ADMIN" }); continue; }
+      if (adminIds.has(u.id)) { results.push({ email: u.email, state: "SKIP_ADMIN" }); continue; }
       const prof = profileMap.get(u.id);
       if (prof?.lifecycle_opt_out === true) { results.push({ email: u.email, state: "SKIP_OPT_OUT" }); continue; }
 
@@ -309,13 +311,13 @@ serve(withObserve("lifecycle-emails", async (req) => {
   }
 
   // 9) Founder digest (once/day)
-  if (founderDigest.length > 0) {
+  if (founderDigest.length > 0 && digestRecipientId) {
     const today = new Date().toISOString().slice(0, 10);
     const digestKey = `S4_ALERT_${today}`;
     const { data: existing } = await admin
       .from("lifecycle_email_log")
       .select("id")
-      .eq("user_id", ADMIN_USER_ID)
+      .eq("user_id", digestRecipientId)
       .eq("message_key", digestKey)
       .maybeSingle();
     if (!existing) {
@@ -333,10 +335,10 @@ serve(withObserve("lifecycle-emails", async (req) => {
           "support@aura-intel.org",
           `[Aura] S4 pipeline alert — ${founderDigest.length} user(s) stuck`,
           emailShell({ preheader: "S4 pipeline alert", body, maxWidth: 560 }),
-          ADMIN_USER_ID,
+          digestRecipientId,
           digestKey,
         );
-        await admin.from("lifecycle_email_log").insert({ user_id: ADMIN_USER_ID, message_key: digestKey });
+        await admin.from("lifecycle_email_log").insert({ user_id: digestRecipientId, message_key: digestKey });
       } catch (e: any) {
         console.error("founder digest send failed", e?.message);
       }

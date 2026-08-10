@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isAdmin, adminUserIds } from "../_shared/adminRole.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
 import { logError } from "../_shared/logError.ts";
 
@@ -8,7 +9,6 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 // Plain-English explainers for the Issues panel. Each entry:
 //   what   — one sentence of what this job does for the user
@@ -214,7 +214,7 @@ serve(async (req) => {
       console.error("admin-console auth failed:", userErr?.message);
       return json({ error: "unauthorized" }, 401);
     }
-    if (userData.user.id !== FOUNDER_ID) return json({ error: "forbidden" }, 403);
+    if (!(await isAdmin(userClient, userData.user.id))) return json({ error: "forbidden" }, 403);
     const actorId = userData.user.id;
 
     // Service-role client for data work
@@ -538,7 +538,8 @@ serve(async (req) => {
         const e = email.toLowerCase();
         return e.startsWith("test") || e.includes("+test") || e.endsWith("@example.com") || e.includes("@test.");
       };
-      const realUsers = users.filter((u) => u.id !== FOUNDER_ID && !isTest(u.email));
+      const adminIds = new Set(await adminUserIds(admin));
+      const realUsers = users.filter((u) => !adminIds.has(u.id) && !isTest(u.email));
       const realIds = realUsers.map((u) => u.id);
       const safeIds = realIds.length ? realIds : ["00000000-0000-0000-0000-000000000000"];
 
@@ -758,7 +759,8 @@ serve(async (req) => {
         const e = email.toLowerCase();
         return e.startsWith("test") || e.includes("+test") || e.endsWith("@example.com") || e.includes("@test.");
       };
-      const realUsers = users.filter((u) => u.id !== FOUNDER_ID && !isTest(u.email));
+      const adminIds = new Set(await adminUserIds(admin));
+      const realUsers = users.filter((u) => !adminIds.has(u.id) && !isTest(u.email));
       const realIds = realUsers.map((u) => u.id);
 
       // Parallel data fetch
