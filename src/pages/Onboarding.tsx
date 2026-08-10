@@ -28,7 +28,7 @@ import ClaimCard from "@/components/onboarding/ClaimCard";
 import ProgressBeads from "@/components/onboarding/ProgressBeads";
 import RevealCard, { type RevealData, shareRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
 import StatusRow from "@/components/onboarding/StatusRow";
-import Confetti from "@/components/onboarding/Confetti";
+import { loadOwnSentence, type OwnSentence } from "@/lib/ownSentence";
 import MethodNote from "@/components/onboarding/MethodNote";
 import WaitProof from "@/components/onboarding/WaitProof";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
