@@ -331,7 +331,6 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                   <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{r.rule}</div>
                   <FixAction
                     rowKey={r.key}
-                    handle={handle}
                     profileUrl={profileUrl}
                     canUsePhoto={!!snapshot.photo_url && !avatarUrl}
                     onUsePhoto={useLinkedInPhoto}
@@ -406,10 +405,9 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
 
 /** The single quiet action under a weak row. Never a button styled as one. */
 function FixAction({
-  rowKey, handle, profileUrl, canUsePhoto, onUsePhoto, onPublish,
+  rowKey, profileUrl, canUsePhoto, onUsePhoto, onPublish,
 }: {
   rowKey: PresenceKey;
-  handle: string | null;
   profileUrl: string | null;
   canUsePhoto: boolean;
   onUsePhoto: () => void;
