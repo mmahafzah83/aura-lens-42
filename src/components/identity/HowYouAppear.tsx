@@ -224,9 +224,16 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     );
   }
 
+  const readDate = formatReadDate(snapshot.fetched_at);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }} data-testid="how-you-appear">
-      {/* ── SECTION 1 — the mirror ───────────────────────────────────────── */}
+    <div style={halvesStyle} data-testid="how-you-appear">
+      {/* ══ HALF A — what LinkedIn shows ═══════════════════════════════════ */}
+      <div style={halfStyle}>
+        <div>
+          <div style={ruleStyle} />
+          <SectionHeader label="WHAT LINKEDIN SHOWS" />
+        </div>
       <section style={nightCardStyle}>
         <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
           {snapshot.photo_url ? (
@@ -280,6 +287,25 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         </div>
       </section>
 
+        <div style={readLineStyle}>
+          <span>
+            Read from LinkedIn on{" "}
+            <span style={dashStyle}>{readDate ?? EM_DASH}</span>
+          </span>
+          <button type="button" style={{ ...quietLinkStyle, marginBlockStart: 0 }} onClick={readProfile} disabled={stage !== null}>
+            {stage === "profile" ? "Reading your profile…" : stage === "posts" ? "Reading your posts…" : "Read again"}
+          </button>
+        </div>
+      </div>
+
+      {/* ══ HALF B — what Aura sees ════════════════════════════════════════ */}
+      <div style={halfStyle}>
+        <div>
+          <div style={ruleStyle} />
+          <SectionHeader label="WHAT AURA SEES" />
+        </div>
+        <p style={halfNoteStyle}>LinkedIn shows the facts. This is what they add up to.</p>
+
       {/* ── SECTION 2 — presence health ──────────────────────────────────── */}
       <section style={cardStyle}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
@@ -309,7 +335,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                     profileUrl={profileUrl}
                     canUsePhoto={!!snapshot.photo_url && !avatarUrl}
                     onUsePhoto={useLinkedInPhoto}
-                    onPublish={() => navigate("/publish")}
+                    onPublish={() => navigate("/home?tab=publish")}
                   />
                 </div>
               )}
@@ -367,12 +393,13 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
             </p>
           )}
           {firstMissing && (
-            <button type="button" style={quietLinkStyle} onClick={() => navigate("/publish")}>
+            <button type="button" style={quietLinkStyle} onClick={() => navigate("/home?tab=publish")}>
               Put this in my headline →
             </button>
           )}
         </section>
       )}
+      </div>
     </div>
   );
 }
@@ -399,17 +426,7 @@ function FixAction({
     return <button type="button" style={quietLinkStyle} onClick={onPublish}>Draft this from what I've already written →</button>;
   }
   if (rowKey === "experience") {
-    if (!handle) return null;
-    return (
-      <a
-        href={`https://www.linkedin.com/in/${handle}/details/experience/`}
-        target="_blank"
-        rel="noreferrer"
-        style={quietLinkStyle}
-      >
-        Add what you actually delivered →
-      </a>
-    );
+    return <div style={comingNextStyle}>Aura can draft these from your posts — coming next.</div>;
   }
   if (rowKey === "skills") {
     return (
