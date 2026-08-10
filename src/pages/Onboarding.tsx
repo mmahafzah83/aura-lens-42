@@ -574,6 +574,13 @@ const Onboarding = () => {
     loadPostProof(userId).then((p) => { if (p.posts > 0) setProof(p); }).catch(() => {});
   }, [userId, screen, proof]);
 
+  /* one sentence of their own, quoted back on the confirm screen */
+  useEffect(() => {
+    if (!userId || ownLine) return;
+    if (screen !== 2 && screen !== 3) return;
+    loadOwnSentence(userId).then((s) => { if (s) setOwnLine(s); }).catch(() => {});
+  }, [userId, screen, ownLine]);
+
   /* three spaces Aura proposes — fetched the moment a proposed question is in view */
   useEffect(() => {
     if (screen !== 11 || !questions) return;
