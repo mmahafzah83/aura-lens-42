@@ -1337,44 +1337,36 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       <MilestonesSection userId={authUser?.id ?? null} />
 
-      {/* SLICE 4b — one reports home: narrative report first, formal PDF beneath */}
-      <div>
-        <SectionHeader label="Your reports" />
-        <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
-          Deeper readings of your standing, kept here to reopen any time.
-        </p>
       </div>
-      <BrandReportSection
-        results={profile?.brand_assessment_results}
-        hasAssessment={!!profile?.brand_assessment_completed_at}
-        onCompleteAssessment={() => setBrandOpen(true)}
-      />
-      {profile?.brand_assessment_completed_at ? (
-        <div style={{ marginTop: 16 }}>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 500,
-              color: "var(--ink-5)",
-              marginBottom: 8,
-            }}
-          >
-            Your report, as issued paper
-          </div>
-          <ReportViewerSection
+      )}
+
+      {pane === "show" && (
+      <div style={SHOW_STACK}>
+        <div>
+          <SectionHeader label="What you can show" />
+          <p style={PANE_SUBLINE}>Everything here is yours to download or send.</p>
+        </div>
+
+        <BrandReportSection
+          results={profile?.brand_assessment_results}
+          hasAssessment={!!profile?.brand_assessment_completed_at}
+          onCompleteAssessment={() => setBrandOpen(true)}
+        />
+
+        {profile?.brand_assessment_completed_at ? (
+          <ReportVersions
             firstName={profile?.first_name}
+            lastName={profile?.last_name}
             onCompleteAssessment={() => setBrandOpen(true)}
           />
-        </div>
-      ) : null}
+        ) : null}
 
-      {/* Your Aura Card — readiness gate + shareable card */}
-      <AuraCardPanel
-        onNavigateAssessment={() => setBrandOpen(true)}
-        onNavigateAudit={() => setAuditOpen(true)}
-        onNavigatePhoto={() => navigate("/settings?tab=account")}
-        onNavigateSettings={() => { window.location.href = "/settings#location"; }}
-      />
+        <AuraCardPanel
+          onNavigateAssessment={() => setBrandOpen(true)}
+          onNavigateAudit={() => setAuditOpen(true)}
+          onNavigatePhoto={() => navigate("/settings?tab=account")}
+          onNavigateSettings={() => { window.location.href = "/settings#location"; }}
+        />
       </div>
       )}
 
