@@ -1591,8 +1591,8 @@ const Onboarding = () => {
             </>
           ) : (
             <>
-              Aura has {claims.length || "your"} {claims.length === 1 ? "claim" : "claims"} and your own answers on
-              file. That is what it writes from — not a template.
+              {EMPTY_POSTS_LINE}
+              {claims.length ? ` Aura already has ${claims.length} ${claims.length === 1 ? "claim" : "claims"} and your own answers on file.` : " Aura already has your own answers on file."}
             </>
           )}
         </p>
