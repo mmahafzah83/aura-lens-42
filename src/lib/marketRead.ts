@@ -31,12 +31,53 @@ function splitTail(raw: string): { prose: string; json: any | null } {
   }
 }
 
+/** Counts behind a section, so it can name its own source honestly. */
+export interface ReadSources {
+  /** The member's own posts Aura read. */
+  posts?: number;
+  /** Things they saved and kept. */
+  saved?: number;
+  /** Questions they answered in their own words. */
+  answers?: number;
+  /** Sliders they moved. */
+  sliders?: number;
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * "From 3 things you saved and 2 of your posts." Every figure is counted, none
+ * is fixed. With nothing to count, the section says nothing.
+ */
+function evidenceLine(s: ReadSources): string | undefined {
+  const parts: string[] = [];
+  if (s.saved) parts.push(`${plural(s.saved, "thing", "things")} you saved`);
+  if (s.posts) parts.push(`${s.posts} of your posts`);
+  if (!parts.length) return undefined;
+  return `From ${parts.join(" and ")}.`;
+}
+
+function ownWordsLine(s: ReadSources): string | undefined {
+  const parts: string[] = [];
+  if (s.answers) parts.push(`your own ${plural(s.answers, "answer", "answers")}`);
+  if (s.sliders) parts.push(`${plural(s.sliders, "slider", "sliders")} you moved`);
+  if (!parts.length) return undefined;
+  return `From ${parts.join(" and ")}.`;
+}
+
+function postsLine(s: ReadSources): string | undefined {
+  if (!s.posts) return evidenceLine(s);
+  return `From ${plural(s.posts, "post", "posts")} Aura read${s.saved ? ` and ${plural(s.saved, "thing", "things")} you saved` : ""}.`;
+}
+
 export function toRevealData(
   results: Record<string, any> | null | undefined,
   extras: {
     figures?: { value: string; label: string }[];
     /** Slider names for this member's band — never legitimate soft ground. */
     excludeSoft?: string[];
+    /** Real counts, so every section can name what produced it. */
+    sources?: ReadSources;
   } = {},
 ): RevealData | null {
   if (!results) return null;
@@ -57,6 +98,7 @@ export function toRevealData(
   // Slider names are capability dimensions, not gaps — drop them entirely.
   const banned = new Set((extras.excludeSoft || []).map((s) => stripMd(s).toLowerCase()));
   const soft = rawSoft.filter((s) => s && !banned.has(s.toLowerCase()));
+  const src = extras.sources ?? {};
   if (!archetype && subjects.length === 0) return null;
   return {
     archetype: archetype || "Your read",
@@ -64,6 +106,11 @@ export function toRevealData(
     subjects: subjects.filter(Boolean).slice(0, 3),
     softGround: soft.slice(0, 2),
     figures: extras.figures ?? [],
+    provenance: {
+      read: postsLine(src),
+      subjects: evidenceLine(src),
+      softGround: ownWordsLine(src),
+    },
   };
 }
 

@@ -28,7 +28,7 @@ import ClaimCard from "@/components/onboarding/ClaimCard";
 import ProgressBeads from "@/components/onboarding/ProgressBeads";
 import RevealCard, { type RevealData, shareRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
 import StatusRow from "@/components/onboarding/StatusRow";
-import Confetti from "@/components/onboarding/Confetti";
+import { loadOwnSentence, type OwnSentence } from "@/lib/ownSentence";
 import MethodNote from "@/components/onboarding/MethodNote";
 import WaitProof from "@/components/onboarding/WaitProof";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
@@ -259,6 +259,8 @@ const Onboarding = () => {
 
   /* the member's own figures — used to fill every wait */
   const [proof, setProof] = useState<PostProof | null>(null);
+  /* one verbatim sentence of their own, shown back to them on the confirm screen */
+  const [ownLine, setOwnLine] = useState<OwnSentence | null>(null);
 
   /* screen 13 */
   const [reveal, setReveal] = useState<RevealData | null>(null);
@@ -572,6 +574,13 @@ const Onboarding = () => {
     loadPostProof(userId).then((p) => { if (p.posts > 0) setProof(p); }).catch(() => {});
   }, [userId, screen, proof]);
 
+  /* one sentence of their own, quoted back on the confirm screen */
+  useEffect(() => {
+    if (!userId || ownLine) return;
+    if (screen !== 2 && screen !== 3) return;
+    loadOwnSentence(userId).then((s) => { if (s) setOwnLine(s); }).catch(() => {});
+  }, [userId, screen, ownLine]);
+
   /* three spaces Aura proposes — fetched the moment a proposed question is in view */
   useEffect(() => {
     if (screen !== 11 || !questions) return;
@@ -641,7 +650,16 @@ const Onboarding = () => {
       ...(claims.length ? [{ value: String(claims.length), label: "claims kept" }] : []),
       ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
     ];
-    setReveal(toRevealData(results, { figures, excludeSoft: (dims || []).map((d) => d.name) }));
+    setReveal(toRevealData(results, {
+      figures,
+      excludeSoft: (dims || []).map((d) => d.name),
+      sources: {
+        posts: postsRead ?? 0,
+        saved: claims.length,
+        answers: Object.keys(finalAnswers).length,
+        sliders: Object.keys(scores).length,
+      },
+    }));
     setRevealPending(false);
   };
 
@@ -663,6 +681,12 @@ const Onboarding = () => {
           ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
         ],
         excludeSoft: (dims || []).map((x) => x.name),
+        sources: {
+          posts: postsRead ?? 0,
+          saved: claims.length,
+          answers: Object.keys(answers).length,
+          sliders: Object.keys(scores).length,
+        },
       });
       if (d) setReveal(d);
     });
@@ -1051,6 +1075,22 @@ const Onboarding = () => {
           <p style={{ ...bodyLight, marginBlockStart: 18 }}>{EMPTY_POSTS_LINE}</p>
         )}
 
+        {/* Their own words, verbatim. If nothing qualifies, nothing shows. */}
+        {ownLine ? (
+          <figure style={{
+            margin: "20px 0 0", padding: "15px 17px", borderRadius: RADIUS.card,
+            background: OB.canvas, borderInlineStart: `3px solid ${OB.blue}`,
+          }}>
+            <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>You wrote this:</figcaption>
+            <blockquote style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: OB.ink }}>
+              “{ownLine.text}”
+            </blockquote>
+            <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>
+              — your post{ownLine.when ? `, ${ownLine.when}` : ""}
+            </p>
+          </figure>
+        ) : null}
+
         <div style={{
           marginBlockStart: 20, padding: "13px 15px", borderRadius: RADIUS.card,
           background: OB.canvas, border: `1px solid ${OB.line}`,
@@ -1245,8 +1285,10 @@ const Onboarding = () => {
   /* 8 — NIGHT, before the sliders */
   if (screen === 8) {
     const sliderCount = dims?.length ?? 0;
-    const pickedLine = bandLabel && sector && sliderCount
-      ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel} · ${sector}.`
+    // Sector rows do not exist yet — every member gets the band set, so the
+    // copy may only promise the level.
+    const pickedLine = bandLabel && sliderCount
+      ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel}.`
       : null;
     content = (
       <NightShell face footer={escapeFooter}>
@@ -1393,7 +1435,7 @@ const Onboarding = () => {
       <NightShell face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
           <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is the part nobody else does.</h1>
+            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is the part that does the work.</h1>
             <p style={{ ...bodyNight, textAlign: "center" }}>
               Aura won't write a word until it has this. A few questions about how you actually work — read together
               with the posts it just read, the claims you kept, and the sliders you moved.
@@ -1568,7 +1610,6 @@ const Onboarding = () => {
   if (screen === 12) {
     content = (
       <NightShell footer={escapeFooter}>
-        <Confetti />
         <h1 style={{ ...h1Night, textAlign: "center" }}>You've got a shelf.</h1>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
           {SHELF.map((s, i) => (

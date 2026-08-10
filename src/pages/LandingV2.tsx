@@ -422,7 +422,7 @@ const LANDING_V2_HTML = `
   </div>
 
   <div class="dark rv"><div class="dark-in">
-    <div><h3>Why the order<br><em>matters.</em></h3><p>It is the part no other tool has.</p></div>
+    <div><h3>Why the order<br><em>matters.</em></h3><p>Aura will not write a word until it has read you.</p></div>
     <div class="savegrid">
       <div class="sv h"><div class="n word" style="font-size:24px">Learns first</div><div class="l">A tool that writes before it knows you hands everyone <b>the same paragraph.</b></div></div>
       <div class="sv m"><div class="n word" style="font-size:24px">Then writes</div><div class="l">Your subjects, your evidence, <b>the way you open and close an idea.</b></div></div>

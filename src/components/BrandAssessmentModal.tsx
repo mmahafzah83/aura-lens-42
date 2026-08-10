@@ -226,7 +226,7 @@ function buildQuestions(sector?: string): Question[] {
     type: "single",
     options: [
       "The person every serious practitioner follows",
-      "The advisor CEOs call when no one else can solve it",
+      "The advisor CEOs call on the hardest problems",
       "The author of the framework my industry uses",
       "The voice that predicted the shift before it happened",
       "The builder who created something that outlasted them",

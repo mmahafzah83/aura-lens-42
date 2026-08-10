@@ -36,7 +36,7 @@ serve(withObserve("brand-assessment", async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const uid = userData.user.id;
 
-    const [snapRes, fragRes, profRes] = await Promise.all([
+    const [snapRes, fragRes, profRes, postRes] = await Promise.all([
       admin.from("linkedin_profile_snapshots")
         .select("headline, about, experience, skills, followers")
         .eq("user_id", uid)
@@ -51,11 +51,17 @@ serve(withObserve("brand-assessment", async (req) => {
         .select("seniority_band, sector_focus")
         .eq("user_id", uid)
         .maybeSingle(),
+      admin.from("linkedin_posts")
+        .select("post_text, like_count, published_at")
+        .eq("user_id", uid)
+        .order("like_count", { ascending: false, nullsFirst: false })
+        .limit(15),
     ]);
 
     const snap: any = snapRes.data?.[0] ?? null;
     const frags: any[] = fragRes.data ?? [];
     const prof: any = profRes.data ?? {};
+    const posts: any[] = (postRes.data ?? []).filter((p: any) => String(p?.post_text || "").trim());
     const resolvedSector = sector || prof.sector_focus || null;
     const resolvedBand = band || prof.seniority_band || null;
 
@@ -81,6 +87,23 @@ Skills: ${JSON.stringify(snap.skills ?? []).slice(0, 1000)}`
 ${frags.map((f, i) => `${i + 1}. ${f.title}${f.content ? ` — ${String(f.content).slice(0, 400)}` : ""}`).join("\n")}`
       : "WHAT THEY HAVE CAPTURED\nNothing captured yet.";
 
+    // Their actual published writing — the evidence any claim is tested against.
+    const postsBlock = posts.length
+      ? `THEIR OWN POSTS (${posts.length} read, most-engaged first)
+${posts.map((p, i) => `${i + 1}. [${p.like_count ?? 0} reactions${p.published_at ? `, ${String(p.published_at).slice(0, 10)}` : ""}] ${String(p.post_text).replace(/\s+/g, " ").slice(0, 600)}`).join("\n")}`
+      : "THEIR OWN POSTS\nNothing on file — say so rather than inferring from the profile alone.";
+
+    // The one question where they bet on their own strength. Everything in
+    // THE HONEST TRUTH turns on whether their posts back this up.
+    const selfClaimKey = Object.keys(answers ?? {}).find((k) => /strongest at/i.test(k));
+    const selfClaim = selfClaimKey ? String((answers as any)[selfClaimKey] ?? "").trim() : "";
+    const selfClaimBlock = selfClaim
+      ? `WHERE THEY BET THEY ARE STRONGEST
+The member claims they are strongest at: "${selfClaim}".
+
+Compare that claim against their actual posts above and their captured claims. If the evidence supports it, say so and cite what supports it — quote or name the specific post or claim. If the evidence does NOT support it, say that plainly and specifically in THE HONEST TRUTH — name the number (how many of their ${posts.length} posts actually touch it, how many of their ${frags.length} captured claims do). Do not soften it into an opportunity, a "next step", or a "chance to". If there is not enough evidence either way, say that instead of guessing.`
+      : "WHERE THEY BET THEY ARE STRONGEST\nNot answered — do not invent a claim to test.";
+
     // Build audit scores context for the AI
     const auditContext = typeof auditScores === "string"
       ? auditScores
@@ -93,12 +116,16 @@ ${profileBlock}
 
 ${claimsBlock}
 
+${postsBlock}
+
+${selfClaimBlock}
+
 ${auditContext}
 
 Here are the user's Brand Assessment answers:
 ${JSON.stringify(answers, null, 2)}
 
-Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the audit scores as factual evidence — do not ask the user for them. Reference at least one of their own captured claims, by its substance, inside THE HONEST TRUTH section. Write for their seniority band. Never write a bracketed placeholder and never write the words "sector name".`;
+Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the audit scores as factual evidence — do not ask the user for them. Reference at least one of their own captured claims, by its substance, inside THE HONEST TRUTH section. THE HONEST TRUTH must also settle the claim-versus-evidence test set out above, with the number named, and it is allowed to be unwelcome — never trade accuracy for comfort. Write for their seniority band. Never write a bracketed placeholder and never write the words "sector name".`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
