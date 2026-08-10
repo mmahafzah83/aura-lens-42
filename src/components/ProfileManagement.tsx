@@ -10,6 +10,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
+import { useSeniorityTitles, bandOfTitle } from "@/lib/seniorityTitles";
 
 interface Skill {
   name: string;
