@@ -810,6 +810,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           { key: "appear", label: "How you appear" },
           { key: "voice", label: "How you sound" },
           { key: "standing", label: "Where you stand" },
+          { key: "show", label: "What you can show" },
         ] as const).map((t) => {
           const active = pane === t.key;
           return (
