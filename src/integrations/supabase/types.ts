@@ -3281,6 +3281,39 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_copy_drafts: {
+        Row: {
+          created_at: string
+          id: string
+          language: string | null
+          options: Json
+          posts_used: number | null
+          target: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string | null
+          options: Json
+          posts_used?: number | null
+          target: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string | null
+          options?: Json
+          posts_used?: number | null
+          target?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       qa_audit_results: {
         Row: {
           category: string
