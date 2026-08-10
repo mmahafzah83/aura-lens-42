@@ -275,7 +275,8 @@ const Onboarding = () => {
   const [cfPhase, setCfPhase] = useState<"input" | "reading" | "result">("input");
   const [cfValue, setCfValue] = useState("");
   const [cfBusy, setCfBusy] = useState(false);
-  const [cfFragments, setCfFragments] = useState<{ title: string }[]>([]);
+  const [cfFragments, setCfFragments] = useState<{ title: string; content?: string | null; confidence?: number | null }[]>([]);
+  const [seniorityBand, setSeniorityBand] = useState<string | null>(null);
   const [cfCount, setCfCount] = useState(0);
   const [cfTimedOut, setCfTimedOut] = useState(false);
   // True once a capture exists — either made during the capture-first screens
@@ -395,7 +396,7 @@ const Onboarding = () => {
       }
       const { data: profile } = await supabase
         .from("diagnostic_profiles" as any)
-        .select("first_name, onboarding_completed, onboarding_step, skill_ratings, country, country_code")
+        .select("first_name, onboarding_completed, onboarding_step, skill_ratings, country, country_code, seniority_band")
         .eq("user_id", session.user.id)
         .maybeSingle();
       const p: any = profile || {};
@@ -416,6 +417,7 @@ const Onboarding = () => {
         setInitialSkillScores(p.skill_ratings as Record<string, number>);
       }
       // Pre-populate Step 1 form fields if returning user has partial data
+      if (p.seniority_band) setSeniorityBand(String(p.seniority_band));
       if (p.first_name) setFirstName(p.first_name);
       if (p.last_name) setLastName(p.last_name);
       if (p.firm) setFirm(p.firm);
@@ -459,12 +461,12 @@ const Onboarding = () => {
         const rid = reg?.[0]?.id;
         if (rid) {
           const { data: frags } = await (supabase.from("evidence_fragments" as any) as any)
-            .select("title")
+            .select("title, content, confidence")
             .eq("source_registry_id", rid)
             .order("confidence", { ascending: false })
             .limit(5);
           if (frags && frags.length > 0) {
-            setCfFragments(frags as { title: string }[]);
+            setCfFragments(frags as { title: string; content?: string | null; confidence?: number | null }[]);
             setCfCount(frags.length);
             setCfPhase("result");
             return;
@@ -1414,6 +1416,22 @@ const Onboarding = () => {
                     }}
                   >
                     {f.title}
+                    {f.content ? (
+                      <span
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          fontSize: 13,
+                          lineHeight: 1.55,
+                          color: "#5B6673",
+                          marginTop: 4,
+                        }}
+                      >
+                        {f.content}
+                      </span>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -1999,7 +2017,8 @@ const Onboarding = () => {
           saveProgress(3);
           goStep(3);
         }}
-        sector={sectorFocus || corePractice || "your sector"}
+        sector={sectorFocus || corePractice || null}
+        band={seniorityBand}
         onComplete={async () => {
           try {
             if (userId) {
