@@ -380,8 +380,8 @@ const Onboarding = () => {
     return () => window.clearInterval(t);
   }, [screen]);
 
-  const upPosts = useCountUp(postsRead, { duration: 900, gate: screen === 2 && lineCount >= 1 });
-  const upWords = useCountUp(ownWords, { duration: 1100, gate: screen === 2 && lineCount >= 2 });
+  const upPosts = useCountUp(screen === 2 && lineCount >= 1 ? postsRead : 0, { duration: 900 });
+  const upWords = useCountUp(screen === 2 && lineCount >= 2 ? ownWords : 0, { duration: 1100 });
 
   /* ── the suggested read, fetched while the member is on the dark screens ── */
   const suggestRan = useRef(false);
@@ -806,7 +806,7 @@ const Onboarding = () => {
     const lines: React.ReactNode[] = [
       <span key="p"><span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{upPosts}</span> posts read</span>,
       <span key="w"><span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{upWords}</span> words of your own writing</span>,
-      <span key="s">Sector · {sector || liProfile?.headline ? (sector || "on your profile") : "not yet on file"}</span>,
+      <span key="s">Sector · {sector || "on your profile"}</span>,
       <span key="b">Level · {bandLabel || "we'll confirm it with you"}</span>,
     ];
     content = (
