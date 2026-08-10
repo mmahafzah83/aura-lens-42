@@ -259,6 +259,8 @@ const Onboarding = () => {
 
   /* the member's own figures — used to fill every wait */
   const [proof, setProof] = useState<PostProof | null>(null);
+  /* one verbatim sentence of their own, shown back to them on the confirm screen */
+  const [ownLine, setOwnLine] = useState<OwnSentence | null>(null);
 
   /* screen 13 */
   const [reveal, setReveal] = useState<RevealData | null>(null);
