@@ -21,7 +21,8 @@ import EditProfileModal, { type EditProfileField } from "@/components/EditProfil
 import AccountPanel from "@/components/settings/AccountPanel";
 import SlideDefaultsCard from "@/components/settings/SlideDefaultsCard";
 import WhatsAppPairingCard from "@/components/settings/WhatsAppPairingCard";
-import { WHATSAPP_PAIRING_ALLOWLIST } from "@/config/whatsapp";
+import { WHATSAPP_PAIRING_ADMIN_ONLY } from "@/config/whatsapp";
+import { useIsAdmin } from "@/lib/isAdmin";
 
 interface ProfileData {
   first_name: string | null;
@@ -525,7 +526,7 @@ const handleDeleteAccount = async () => {
         </div>
 
         {/* Signatures */}
-        {authUser?.id && WHATSAPP_PAIRING_ALLOWLIST.includes(authUser.id) && (
+        {(!WHATSAPP_PAIRING_ADMIN_ONLY || isAdmin === true) && (
           <>
             <SectionHeader
               label="Capture by WhatsApp"

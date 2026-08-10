@@ -115,7 +115,17 @@ const AdminAccess = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("waitlist");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const FOUNDER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
+  const [adminIds, setAdminIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+      if (cancelled) return;
+      setAdminIds(new Set((data ?? []).map((r: { user_id: string }) => r.user_id)));
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const PROTECTED_EMAIL = "mmahafzah8386@gmail.com";
 
   const seedCapture = async () => {
@@ -764,7 +774,7 @@ const AdminAccess = () => {
               {rows.map((r) => {
                 const profile = activeUsers.find((u) => u.email.toLowerCase() === r.email.toLowerCase());
                 const isProtected =
-                  profile?.user_id === FOUNDER_ID ||
+                  (!!profile?.user_id && adminIds.has(profile.user_id)) ||
                   r.email.toLowerCase() === PROTECTED_EMAIL;
                 const isDeleting = deletingEmail === r.email;
                 return (
