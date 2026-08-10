@@ -119,7 +119,6 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const [postsWithText, setPostsWithText] = useState<number | null>(null);
   const [themes, setThemes] = useState<{ theme: string; count: number }[]>([]);
   const [totalThemes, setTotalThemes] = useState(0);
-  const [handle, setHandle] = useState<string | null>(null);
   const [profileUrl, setProfileUrl] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [stage, setStage] = useState<"profile" | "posts" | null>(null);
@@ -155,7 +154,6 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
 
     try {
       const address = await loadLinkedInAddress(userId);
-      setHandle(address.handle);
       setProfileUrl(address.profileUrl);
     } catch { /* address is optional here */ }
     setLoading(false);
