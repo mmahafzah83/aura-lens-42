@@ -86,7 +86,8 @@ interface BrandAssessmentModalProps {
   onOpenChange: (open: boolean) => void;
   onComplete?: () => void;
   onNavigate?: (target: string) => void;
-  sector?: string;
+  sector?: string | null;
+  band?: string | null;
 }
 
 interface Question {
@@ -247,8 +248,8 @@ function buildQuestions(sector?: string): Question[] {
   ];
 }
 
-const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sector }: BrandAssessmentModalProps) => {
-  const QUESTIONS = useMemo(() => buildQuestions(sector), [sector]);
+const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sector, band }: BrandAssessmentModalProps) => {
+  const QUESTIONS = useMemo(() => buildQuestions(sector ?? undefined), [sector]);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string | string[]>>({});
   const [showResults, setShowResults] = useState(false);
@@ -430,7 +431,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
       });
 
       const { data, error } = await supabase.functions.invoke("brand-assessment", {
-        body: { answers: formattedAnswers, auditScores: auditScores || "No audit scores available yet", sector: sector || null },
+        body: { answers: formattedAnswers, auditScores: auditScores || "No audit scores available yet", sector: sector || null, band: band || null },
       });
 
       if (timedOut) return;
