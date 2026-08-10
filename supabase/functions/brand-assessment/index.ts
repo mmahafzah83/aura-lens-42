@@ -36,7 +36,7 @@ serve(withObserve("brand-assessment", async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const uid = userData.user.id;
 
-    const [snapRes, fragRes, profRes] = await Promise.all([
+    const [snapRes, fragRes, profRes, postRes] = await Promise.all([
       admin.from("linkedin_profile_snapshots")
         .select("headline, about, experience, skills, followers")
         .eq("user_id", uid)
@@ -51,11 +51,17 @@ serve(withObserve("brand-assessment", async (req) => {
         .select("seniority_band, sector_focus")
         .eq("user_id", uid)
         .maybeSingle(),
+      admin.from("linkedin_posts")
+        .select("post_text, like_count, published_at")
+        .eq("user_id", uid)
+        .order("like_count", { ascending: false, nullsFirst: false })
+        .limit(15),
     ]);
 
     const snap: any = snapRes.data?.[0] ?? null;
     const frags: any[] = fragRes.data ?? [];
     const prof: any = profRes.data ?? {};
+    const posts: any[] = (postRes.data ?? []).filter((p: any) => String(p?.post_text || "").trim());
     const resolvedSector = sector || prof.sector_focus || null;
     const resolvedBand = band || prof.seniority_band || null;
 
