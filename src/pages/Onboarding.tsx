@@ -1311,9 +1311,12 @@ const Onboarding = () => {
         const next = { ...answers, [`Q${qIdx + 1} ${q.prompt}`]: value };
         setAnswers(next);
         setTextAnswer("");
+        setMultiPicked([]);
         if (userId) void saveAnswers(userId, next);
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
+      const cap = q.kind === "multi" ? (q.max_choices ?? (q.options?.length || 99)) : 1;
+      const atCap = multiPicked.length >= cap;
       content = (
         <PaperShell bead={4} footer={escapeFooter}>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
@@ -1333,6 +1336,35 @@ const Onboarding = () => {
                 }}>{o.label}</button>
               ))}
             </div>
+          ) : q.kind === "multi" ? (
+            <>
+              <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
+                Pick up to {cap}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
+                {(q.options || []).map((o) => {
+                  const picked = multiPicked.includes(o.label);
+                  const blocked = !picked && atCap;
+                  return (
+                    <button key={o.value} type="button" disabled={blocked}
+                      onClick={() => setMultiPicked((prev) =>
+                        prev.includes(o.label) ? prev.filter((x) => x !== o.label) : [...prev, o.label])}
+                      style={{
+                        textAlign: "start", padding: "14px 15px", borderRadius: 14,
+                        cursor: blocked ? "not-allowed" : "pointer",
+                        border: `1px solid ${picked ? OB.blue : OB.line}`,
+                        background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
+                        lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
+                        opacity: blocked ? 0.45 : 1,
+                        transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
+                      }}>{o.label}</button>
+                  );
+                })}
+              </div>
+              <button type="button" disabled={multiPicked.length === 0}
+                onClick={() => advance(multiPicked.join(" · "))}
+                style={{ ...btnPrimary, marginBlockStart: 16, opacity: multiPicked.length ? 1 : 0.5 }}>Next</button>
+            </>
           ) : (
             <>
               <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
