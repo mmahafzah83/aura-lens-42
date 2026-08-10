@@ -202,8 +202,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   // Pane state — the URL search param `story` is the single source of truth.
   const [searchParams, setSearchParams] = useSearchParams();
   const storyParam = searchParams.get("story");
-  const pane: "appear" | "voice" | "standing" = PANE_ALIAS[storyParam ?? ""] ?? "appear";
-  const setPane = (next: "appear" | "voice" | "standing") => {
+  const pane: PaneKey = PANE_ALIAS[storyParam ?? ""] ?? "appear";
+  const setPane = (next: PaneKey) => {
     const params = new URLSearchParams(searchParams);
     if (next === "appear") params.delete("story");
     else params.set("story", next);
