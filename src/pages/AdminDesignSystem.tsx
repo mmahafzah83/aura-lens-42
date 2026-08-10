@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState, CSSProperties } from "react";
+import { checkIsAdmin } from "@/lib/isAdmin";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, RotateCcw, Eye, Save, Sun, Moon, Check } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
-
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 type ThemeValue = string | { dark: string; light: string };
 
@@ -303,7 +302,7 @@ const AdminDesignSystem = () => {
         navigate("/auth", { replace: true });
         return;
       }
-      if (session.user.id !== ADMIN_USER_ID) {
+      if (!(await checkIsAdmin(session.user.id))) {
         navigate("/home", { replace: true });
         return;
       }

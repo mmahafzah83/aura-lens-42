@@ -5,13 +5,13 @@
  * someone else (admin/testing); everyone else is silently forced to self.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { isAdmin } from "../_shared/adminRole.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FOUNDER_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const ACTOR = "harvestapi~linkedin-profile-posts";
 
 const json = (body: unknown, status = 200) =>
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
 
     // Founder may act for another user; everyone else is forced to self.
     const requested = typeof body?.user_id === "string" ? body.user_id.trim() : "";
-    const targetUserId = user.id === FOUNDER_USER_ID && requested ? requested : user.id;
+    const targetUserId = requested && (await isAdmin(anon, user.id)) ? requested : user.id;
 
     const handle = parseHandle(body?.profile_url);
     if (!handle) {

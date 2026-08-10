@@ -3,13 +3,13 @@
  * Founder-gated. No database writes. No AI calls.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { isAdmin } from "../_shared/adminRole.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FOUNDER_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const ACTOR = "scraper-engine~linkedin-profile-post-scraper";
 
 const json = (body: unknown, status = 200) =>
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: `Bearer ${bearer}` } },
     });
     const { data: { user }, error: userErr } = await anonClient.auth.getUser(bearer);
-    if (userErr || !user || user.id !== FOUNDER_USER_ID) return json({ error: "Forbidden" }, 403);
+    if (userErr || !user || !(await isAdmin(anonClient, user.id))) return json({ error: "Forbidden" }, 403);
 
     const APIFY_TOKEN = Deno.env.get("APIFY_TOKEN");
     if (!APIFY_TOKEN) {
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     } else {
       const lookupId = typeof body?.user_id === "string" && body.user_id.trim()
         ? body.user_id.trim()
-        : FOUNDER_USER_ID;
+        : user.id;
       const { data: conn } = await admin
         .from("linkedin_connections")
         .select("profile_url")
@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (conn?.profile_url) {
         resolved_url = conn.profile_url as string;
-        url_source = lookupId === FOUNDER_USER_ID && !body?.user_id ? "stored_founder" : "stored_by_user";
+        url_source = lookupId === user.id && !body?.user_id ? "stored_self" : "stored_by_user";
       }
     }
 

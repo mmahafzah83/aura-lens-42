@@ -4,5 +4,6 @@ export const AURA_WHATSAPP_NUMBER = "";
 
 export const WHATSAPP_PAIRING_ENABLED = AURA_WHATSAPP_NUMBER.length > 0;
 
-// Temporary gate: only these accounts see the pairing card until the webhook ships.
-export const WHATSAPP_PAIRING_ALLOWLIST = ["9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3"];
+// Temporary gate: only admins see the pairing card until the webhook ships.
+// Membership is a role, never a compiled-in account.
+export const WHATSAPP_PAIRING_ADMIN_ONLY = true;

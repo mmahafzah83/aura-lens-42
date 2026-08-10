@@ -3,6 +3,7 @@
 // ALWAYS sends — its arrival IS the outermost heartbeat. Never make sending conditional.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { primaryAdminId } from "../_shared/adminRole.ts";
 import { emailShell, heading as headingHtml, INK, INK_BODY, INK_MUTE, RULE, SERIF, BODY, MONO } from "../_shared/email-theme.ts";
 
 const corsHeaders = {
@@ -11,7 +12,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const FOUNDER_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const FROM = "Aura <invites@aura-intel.org>";
 
 type Verdict = "GREEN" | "AMBER" | "RED";
@@ -181,12 +181,13 @@ Deno.serve(async (req) => {
   const heartbeatWindowOverride: Record<string, number> = bodyIn?.heartbeat_window_override_min || {};
 
   const admin = createClient(supabaseUrl, serviceKey);
+  const founderUserId = (await primaryAdminId(admin)) ?? "";
   const RESEND = Deno.env.get("RESEND_API_KEY") || "";
 
   // Resolve founder email.
   let founderEmail = Deno.env.get("ADMIN_ALERT_EMAIL") || "";
   try {
-    const { data: userRes } = await (admin as any).auth.admin.getUserById(FOUNDER_USER_ID);
+    const { data: userRes } = await (admin as any).auth.admin.getUserById(founderUserId);
     if (userRes?.user?.email) founderEmail = userRes.user.email;
   } catch (_) { /* fall back to env */ }
 
@@ -485,7 +486,7 @@ Deno.serve(async (req) => {
     .select("user_id, published_at").gt("published_at", since7d).limit(10000);
   let founderPublished = 0, nonFounderPublished = 0;
   for (const r of published || []) {
-    if ((r as any).user_id === FOUNDER_USER_ID) founderPublished++; else nonFounderPublished++;
+    if ((r as any).user_id === founderUserId) founderPublished++; else nonFounderPublished++;
   }
 
   // ---------- SECTION F0: Open issues (known_issues register) ----------
@@ -730,7 +731,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             from: FROM, to: [founderEmail], subject, html: emailHtml,
             tags: [
-              { name: "user_id", value: FOUNDER_USER_ID },
+              { name: "user_id", value: founderUserId },
               { name: "email_type", value: "ops_report" },
             ],
           }),

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isAdmin } from "../_shared/adminRole.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 
 const corsHeaders = {
@@ -7,7 +8,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -30,7 +30,7 @@ serve(async (req) => {
     });
     const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
     const callerId = claimsData?.claims?.sub;
-    if (claimsErr || callerId !== ADMIN_USER_ID) {
+    if (claimsErr || !(await isAdmin(userClient, callerId))) {
       console.error("[admin-active-users] auth failed", claimsErr, callerId);
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },

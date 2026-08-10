@@ -1,12 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { isAdmin } from "../_shared/adminRole.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const TARGET_USER = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -28,7 +27,7 @@ Deno.serve(async (req) => {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-  if (user.id !== ADMIN_USER_ID) {
+  if (!(await isAdmin(userClient, user.id))) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -38,6 +37,13 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
+
+  // The walkthrough runs against the admin who called it, unless one is named.
+  let TARGET_USER = user.id;
+  try {
+    const body = await req.json();
+    if (typeof body?.user_id === "string" && body.user_id.trim()) TARGET_USER = body.user_id.trim();
+  } catch { /* no body — walk through the caller's own account */ }
 
   const results: any[] = [];
 

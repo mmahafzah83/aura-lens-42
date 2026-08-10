@@ -21,7 +21,8 @@ import EditProfileModal, { type EditProfileField } from "@/components/EditProfil
 import AccountPanel from "@/components/settings/AccountPanel";
 import SlideDefaultsCard from "@/components/settings/SlideDefaultsCard";
 import WhatsAppPairingCard from "@/components/settings/WhatsAppPairingCard";
-import { WHATSAPP_PAIRING_ALLOWLIST } from "@/config/whatsapp";
+import { WHATSAPP_PAIRING_ADMIN_ONLY } from "@/config/whatsapp";
+import { useIsAdmin } from "@/lib/isAdmin";
 
 interface ProfileData {
   first_name: string | null;
@@ -68,6 +69,7 @@ export default function Settings() {
   const rawTab = searchParams.get("tab");
   const tab = rawTab === "preferences" ? "preferences" : rawTab === "connections" ? "connections" : "account";
   const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
+  const { isAdmin } = useIsAdmin();
   /** Which profile field the member asked to edit. Null means the modal is shut. */
   const [editField, setEditField] = useState<EditProfileField | null>(null);
 
@@ -525,7 +527,7 @@ const handleDeleteAccount = async () => {
         </div>
 
         {/* Signatures */}
-        {authUser?.id && WHATSAPP_PAIRING_ALLOWLIST.includes(authUser.id) && (
+        {(!WHATSAPP_PAIRING_ADMIN_ONLY || isAdmin === true) && (
           <>
             <SectionHeader
               label="Capture by WhatsApp"

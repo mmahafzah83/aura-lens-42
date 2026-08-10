@@ -1,11 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isAdmin } from "../_shared/adminRole.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const PROMPT = `Evaluate this screenshot of Aura — a strategic intelligence OS for GCC senior executives (CIO/CDO level). Design system: bronze (#B08D3A) primary accent, Cormorant Garamond for display headings, DM Sans for body text, warm paper/cream backgrounds in light mode. Orange (#F97316) is ONLY for signal alerts and time-sensitive indicators.
 
 Score each dimension 1-10 with one-sentence explanation:
@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: claimsErr } = await userClient.auth.getUser(token);
     if (claimsErr || !user) return json({ error: "Unauthorized" }, 401);
     const userId = user.id;
-    if (userId !== ADMIN_USER_ID) return json({ error: "Forbidden" }, 403);
+    if (!(await isAdmin(userClient, userId))) return json({ error: "Forbidden" }, 403);
 
     if (!anthropicKey) return json({ error: "ANTHROPIC_API_KEY not configured" }, 500);
 

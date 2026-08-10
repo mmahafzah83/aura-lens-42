@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { checkIsAdmin } from "@/lib/isAdmin";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -8,8 +9,6 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AdminShell from "@/components/admin/AdminShell";
-
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 type PageBg = {
   id: string;
@@ -97,7 +96,7 @@ const AdminExperience = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled) return;
       if (!session) return navigate("/auth", { replace: true });
-      if (session.user.id !== ADMIN_USER_ID) return navigate("/home", { replace: true });
+      if (!(await checkIsAdmin(session.user.id))) return navigate("/home", { replace: true });
       setAuthChecked(true);
     })();
     return () => { cancelled = true; };
