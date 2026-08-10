@@ -1285,8 +1285,10 @@ const Onboarding = () => {
   /* 8 — NIGHT, before the sliders */
   if (screen === 8) {
     const sliderCount = dims?.length ?? 0;
-    const pickedLine = bandLabel && sector && sliderCount
-      ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel} · ${sector}.`
+    // Sector rows do not exist yet — every member gets the band set, so the
+    // copy may only promise the level.
+    const pickedLine = bandLabel && sliderCount
+      ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel}.`
       : null;
     content = (
       <NightShell face footer={escapeFooter}>
