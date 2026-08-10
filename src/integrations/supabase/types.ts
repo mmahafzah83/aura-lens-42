@@ -4909,6 +4909,19 @@ export type Database = {
         }
         Relationships: []
       }
+      linkedin_read_readiness: {
+        Row: {
+          account_type: Database["public"]["Enums"]["account_type"] | null
+          first_name: string | null
+          handle: string | null
+          profile_url: string | null
+          snapshots: number | null
+          source_status: string | null
+          user_id: string | null
+          verdict: string | null
+        }
+        Relationships: []
+      }
       member_accounts: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"] | null
@@ -5428,6 +5441,7 @@ export type Database = {
         | { Args: { p_uid?: string }; Returns: Json }
         | { Args: { p_tz?: string; p_uid?: string }; Returns: Json }
       is_current_user_admin: { Args: never; Returns: boolean }
+      linkedin_handle_valid: { Args: { h: string }; Returns: boolean }
       momentum_funnel: {
         Args: never
         Returns: {
