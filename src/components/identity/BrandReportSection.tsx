@@ -6,10 +6,28 @@ import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isArabicText } from "@/lib/utils";
-import { PAPER, INK, INK2, SPOT, RULE, RULE_SOFT, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 
-/** Muted ink tint — pressTokens has no INK-3 equivalent. */
-const INK3 = "rgba(27,23,18,0.62)";
+/** System-B "Signal" — module scope, literal, no retired press tokens. */
+const CARD = "#FFFFFF";
+const INK = "#0F1519";
+const INK2 = "#5B6673";
+const INK3 = "#5B6673";
+const SPOT = "#0670C4";
+const RULE = "#E2E7EE";
+const RULE_SOFT = "#E2E7EE";
+const BODY = "Inter, system-ui, sans-serif";
+const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+const ARABIC = "'Cairo', Inter, sans-serif";
+
+/** Shared outer shell for every top-level card in "What you can show". */
+const SHELL: React.CSSProperties = {
+  background: CARD,
+  border: `1px solid ${RULE}`,
+  borderRadius: 20,
+  padding: 20,
+  color: INK,
+  fontFamily: BODY,
+};
 
 /** Mirrors BrandAssessmentModal's stripMd so no literal ** leaks on screen. */
 const stripMd = (s: string) =>
@@ -22,7 +40,7 @@ const stripMd = (s: string) =>
 
 const dir = (s: string) => (isArabicText(s) ? "rtl" : "ltr");
 const fontFor = (s: string) =>
-  isArabicText(s) ? `'CairoAR', ${ARABIC}` : "var(--font-body)";
+  isArabicText(s) ? `'CairoAR', ${ARABIC}` : BODY;
 
 const textStyle = (s: string): React.CSSProperties => ({
   direction: dir(s),
@@ -55,9 +73,9 @@ const Chip = ({ text }: { text: string }) => (
     style={{
       display: "inline-block",
       padding: "5px 10px",
-      borderRadius: 2,
+      borderRadius: 4,
       border: `0.5px solid ${RULE}`,
-      background: PAPER,
+      background: CARD,
       fontSize: 12,
       lineHeight: 1.4,
       color: INK2,
@@ -110,18 +128,12 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
   const toggle = (id: string, idx: number) =>
     setOpen((prev) => ({ ...prev, [id]: !(prev[id] ?? idx < 2) }));
 
-  const cardStyle: React.CSSProperties = {
-    background: PAPER,
-    border: `0.5px solid ${RULE}`,
-    borderRadius: 4,
-    padding: "24px 20px",
-    color: INK,
-  };
+  const cardStyle: React.CSSProperties = SHELL;
 
   if (!hasAssessment || !r || (!headline && !standfirst && blocks.length === 0)) {
     return (
       <section style={cardStyle}>
-        <p className="text-sm" style={{ color: INK3, margin: 0, fontFamily: "var(--font-body)" }}>
+        <p className="text-sm" style={{ color: INK3, margin: 0, fontFamily: BODY }}>
           Complete your brand assessment to generate your reports.
         </p>
         <div style={{ marginTop: 12 }}>
@@ -148,9 +160,9 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
           <h3
             style={{
               margin: 0,
-              fontFamily: SERIF,
+              fontFamily: BODY,
               fontSize: 30,
-              fontWeight: 500,
+              fontWeight: 700,
               lineHeight: 1.15,
               color: INK,
               ...textStyle(headline),
@@ -204,9 +216,9 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
                 padding: "5px 9px",
-                borderRadius: 2,
+                borderRadius: 8,
                 border: `0.5px solid ${RULE}`,
-                background: PAPER,
+                background: CARD,
                 color: INK3,
                 cursor: "pointer",
                 transition: "color 140ms ease, border-color 140ms ease",
@@ -277,7 +289,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                             key={i}
                             style={{
                               margin: i === 0 ? 0 : "8px 0 0",
-                              fontFamily: "var(--font-body)",
+                              fontFamily: BODY,
                               fontSize: 14,
                               lineHeight: 1.75,
                               color: INK2,
@@ -304,7 +316,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                           {p.heading ? (
                             <div
                               style={{
-                                fontFamily: SERIF,
+                                fontFamily: BODY,
                                 fontSize: 16,
                                 fontWeight: 600,
                                 color: INK,

@@ -7,16 +7,35 @@ import { downloadBlob } from "@/lib/download";
 import { generationMetadata } from "@/lib/generationMetadata";
 import { classifyPublishError } from "@/lib/publishFailure";
 
-// Colours and type read System-B semantic tokens directly. No hardcoded
-// names/scores anywhere.
-const RULE = "var(--border-default)";
-const INK = "var(--text-primary)";
-const INK_2 = "var(--text-secondary)";
-const INK_3 = "var(--text-muted)";
-const PAPER = "var(--surface-page)";
-const SPOT = "var(--act)";
-const SERIF = "var(--font-body)";
-const MONO = "var(--font-mono)";
+// System-B "Signal" — module scope, literal. No hardcoded names/scores anywhere.
+const RULE = "#E2E7EE";
+const INK = "#0F1519";
+const INK_2 = "#5B6673";
+const INK_3 = "#5B6673";
+const PAPER = "#FFFFFF";
+const SPOT = "#0670C4";
+const SERIF = "Inter, system-ui, sans-serif";
+const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+
+/** Shared outer shell for every top-level card in "What you can show". */
+const SHELL: React.CSSProperties = {
+  background: PAPER,
+  border: `1px solid ${RULE}`,
+  borderRadius: 20,
+  padding: 20,
+};
+
+/** Secondary action — the pane's only primary lives in ReportVersions. */
+const SECONDARY_BTN: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 8,
+  fontFamily: MONO, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
+  minHeight: 44,
+  padding: "10px 14px",
+  borderRadius: 8,
+  border: `1px solid ${RULE}`,
+  background: PAPER,
+  color: SPOT,
+};
 
 // Skills variant is parked while we rework it. Flip to true to bring back
 // the VOICE / SKILLS toggle and render both variants.
@@ -286,12 +305,7 @@ export default function AuraCardPanel({
   return (
     <section
       dir={dir}
-      style={{
-        border: `1px solid ${RULE}`,
-        background: PAPER,
-        padding: "22px 22px 20px",
-        marginTop: 24,
-      }}
+      style={SHELL}
       aria-label="Your Aura Card"
     >
       <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
@@ -343,7 +357,7 @@ export default function AuraCardPanel({
               role="status"
               style={{
                 border: `1px solid ${RULE}`,
-                background: "var(--surface-subtle)",
+                background: "#F2F5F9",
                 padding: "12px 14px",
                 marginBottom: 14,
                 display: "flex",
@@ -373,7 +387,7 @@ export default function AuraCardPanel({
               role="alert"
               style={{
                 border: `1px solid ${SPOT}`,
-                background: "var(--surface-subtle)",
+                background: "#F2F5F9",
                 padding: "12px 14px",
                 marginBottom: 14,
                 display: "flex",
@@ -407,7 +421,6 @@ export default function AuraCardPanel({
                   onClick={() => { setShareError(null); void shareToLinkedIn(); }}
                   disabled={!!busy}
                   icon={busy === "share" ? <Loader2 className="animate-spin" size={14} /> : <Linkedin size={14} />}
-                  primary
                 >
                   Try again
                 </ActionButton>
@@ -431,7 +444,7 @@ export default function AuraCardPanel({
             <ActionButton onClick={downloadPng} disabled={!!busy} icon={busy === "png" ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}>
               Download PNG
             </ActionButton>
-            <ActionButton onClick={shareToLinkedIn} disabled={!!busy} icon={busy === "share" ? <Loader2 className="animate-spin" size={14} /> : <Linkedin size={14} />} primary>
+            <ActionButton onClick={shareToLinkedIn} disabled={!!busy} icon={busy === "share" ? <Loader2 className="animate-spin" size={14} /> : <Linkedin size={14} />}>
               Share to LinkedIn
             </ActionButton>
           </div>
@@ -475,20 +488,15 @@ export default function AuraCardPanel({
 }
 
 function ActionButton({
-  children, onClick, disabled, icon, primary,
-}: { children: React.ReactNode; onClick: () => void; disabled?: boolean; icon?: React.ReactNode; primary?: boolean }) {
+  children, onClick, disabled, icon,
+}: { children: React.ReactNode; onClick: () => void; disabled?: boolean; icon?: React.ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       style={{
-        display: "inline-flex", alignItems: "center", gap: 8,
-        fontFamily: MONO, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
-        padding: "10px 14px",
-        border: `1px solid ${primary ? INK : RULE}`,
-        background: primary ? INK : "transparent",
-        color: primary ? PAPER : INK,
+        ...SECONDARY_BTN,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.6 : 1,
       }}
