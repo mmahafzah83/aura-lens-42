@@ -410,9 +410,7 @@ serve(withObserve("capture-report-snapshot", async (req) => {
     if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
     const callerId = userData.user.id;
 
-    const { data: callerProfile } = await admin
-      .from("diagnostic_profiles").select("is_admin").eq("user_id", callerId).maybeSingle();
-    const isAdmin = callerProfile?.is_admin === true;
+    const isAdmin = await checkIsAdmin(admin, callerId);
 
     if (requested && requested !== callerId && !isAdmin) {
       return json({ error: "Forbidden" }, 403);

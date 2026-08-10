@@ -7,8 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
  * AdminGate — single source of truth for admin-only UI access.
  *
  * Replaces scattered hardcoded-UUID checks. Calls the security-definer
- * function `public.is_current_user_admin()`, which reads from
- * `diagnostic_profiles.is_admin` under the row's own RLS scope.
+ * function `public.is_current_user_admin()`, which reads the admin role
+ * from `public.user_roles` via `has_role()`.
  *
  * Usage:
  *   <AdminGate><AdminPageContents /></AdminGate>
