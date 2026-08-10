@@ -103,6 +103,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
       firstName?.trim() && firm?.trim() && level?.trim() && resolvedSector
     );
     const wasFirstSave = !hasSavedBefore;
+    const pickedBand = bandOfTitle(seniorityTitles, level);
     const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
       .upsert({
         user_id: user.id,
@@ -111,6 +112,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         avatar_url: avatarUrl,
         firm,
         level,
+        ...(pickedBand ? { seniority_band: pickedBand, band_source: "corrected" } : {}),
         core_practice: corePractice,
         sector_focus: resolvedSector,
         target_register: targetRegister || null,
