@@ -507,7 +507,8 @@ const Onboarding = () => {
         rows = data || [];
       }
       if (rows.length === 0) { setContentError(true); return; }
-      setDims(rows.slice(0, 8) as Dimension[]);
+      // However many the band has — never a constant.
+      setDims(rows as Dimension[]);
     } catch { setContentError(true); }
   }, [band, sector]);
 
@@ -516,7 +517,7 @@ const Onboarding = () => {
     setContentError(false);
     try {
       const base = () => (supabase.from("onboarding_questions" as any) as any)
-        .select("prompt, helper, kind, options")
+        .select("prompt, helper, kind, options, max_choices")
         .eq("band", band).eq("active", true).order("position");
       let rows: any[] = [];
       if (sector) {
@@ -528,20 +529,30 @@ const Onboarding = () => {
         rows = data || [];
       }
       if (rows.length === 0) { setContentError(true); return; }
-      setQuestions(rows.slice(0, 6) as JourneyQuestion[]);
+      // However many the band has — never a constant.
+      setQuestions(rows as JourneyQuestion[]);
     } catch { setContentError(true); }
   }, [band, sector]);
 
-  useEffect(() => { if (screen === 8 || screen === 9) void loadDimensions(); }, [screen, loadDimensions]);
+  useEffect(() => {
+    if (screen === 8 || screen === TRUST_SLIDERS_SCREEN || screen === 9) void loadDimensions();
+  }, [screen, loadDimensions]);
   useEffect(() => { if (screen === 10 || screen === 11) void loadQuestions(); }, [screen, loadQuestions]);
 
-  /* ── autosave after every slider ── */
+  /* ── autosave after every slider ──
+     Existing members keep whatever keys are already on file: new answers are
+     MERGED in alongside them, never written over the top of the object. */
   const saveScores = useCallback(async (next: Record<string, number>) => {
     if (!userId) return;
     try {
+      const { data: current } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("skill_ratings, audit_results").eq("user_id", userId).maybeSingle();
+      const existingRatings = ((current as any)?.skill_ratings as Record<string, number>) || {};
+      const existingAudit = ((current as any)?.audit_results as Record<string, number>) || {};
       await (supabase.from("diagnostic_profiles" as any) as any)
         .update({
-          skill_ratings: next, audit_results: next,
+          skill_ratings: { ...existingRatings, ...next },
+          audit_results: { ...existingAudit, ...next },
           audit_completed_at: new Date().toISOString(), audit_method: "self_read",
         })
         .eq("user_id", userId);
