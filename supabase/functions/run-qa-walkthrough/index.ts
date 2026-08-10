@@ -38,6 +38,13 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
+  // The walkthrough runs against the admin who called it, unless one is named.
+  let TARGET_USER = user.id;
+  try {
+    const body = await req.json();
+    if (typeof body?.user_id === "string" && body.user_id.trim()) TARGET_USER = body.user_id.trim();
+  } catch { /* no body — walk through the caller's own account */ }
+
   const results: any[] = [];
 
   const run = async (step: number, action: string, fn: () => Promise<void>) => {
