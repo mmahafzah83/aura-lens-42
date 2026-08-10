@@ -1433,11 +1433,114 @@ const Onboarding = () => {
     return cardShell(
       <>
         {eyebrow("Your starting point")}
-        {!showForm ? (
+        {!showForm && liProfile ? (
+          <div style={liPanelStyle}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: SB_INK, margin: 0 }}>
+              This is what Aura can already see.
+            </h3>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", marginBlockStart: 14 }}>
+              {liProfile.photo_url && (
+                <img
+                  src={liProfile.photo_url}
+                  alt={liProfile.full_name ? `${liProfile.full_name} on LinkedIn` : "LinkedIn profile photo"}
+                  loading="lazy"
+                  style={{ inlineSize: 56, blockSize: 56, borderRadius: 999, objectFit: "cover", border: `1px solid ${SB_LINE}` }}
+                />
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 15.5, fontWeight: 600, color: SB_INK }}>{liProfile.full_name || "Your profile"}</div>
+                {liProfile.headline && (
+                  <div dir="auto" style={{ fontSize: 13, color: SB_MUTED, lineHeight: 1.5, marginBlockStart: 2 }}>{liProfile.headline}</div>
+                )}
+              </div>
+            </div>
+
+            {liPostsCount && liPostsCount > 0 ? (
+              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBlockStart: 16 }}>
+                <div>
+                  <div style={liFigureStyle}>{liPostsCount}</div>
+                  <div style={liFigureLabelStyle}>posts of yours read</div>
+                </div>
+                <div>
+                  <div style={liFigureStyle}>{liProfile.followers ?? "—"}</div>
+                  <div style={liFigureLabelStyle}>people following you</div>
+                </div>
+                <div>
+                  <div style={liFigureStyle}>{liProfile.skills_count ?? "—"}</div>
+                  <div style={liFigureLabelStyle}>skills on record</div>
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontSize: 13.5, color: SB_MUTED, lineHeight: 1.6, marginBlock: "16px 0" }}>
+                We found your profile but no posts we can read yet. Aura will still learn from what you tell it.
+              </p>
+            )}
+
+            <p style={{ fontSize: 13, color: SB_MUTED, lineHeight: 1.6, marginBlock: "14px 0" }}>
+              Aura will write in your voice from these, not from a template.
+            </p>
+            {liPostsNote && (
+              <p style={{ fontSize: 12.5, color: SB_MUTED, lineHeight: 1.6, marginBlockStart: 8 }}>{liPostsNote}</p>
+            )}
+
+            <div style={{ marginBlockStart: 16 }}>
+              <button type="button" style={liPrimaryStyle} onClick={acceptLinkedInProfile}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = SB_ACT_DARK; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = SB_ACT; }}
+              >
+                That's me — continue
+              </button>
+              <button type="button" style={liQuietStyle} onClick={rejectLinkedInProfile}>Wrong person</button>
+            </div>
+          </div>
+        ) : !showForm ? (
           <>
-            {heading("Start with what LinkedIn already knows")}
-            <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-              Paste your headline and About section. Aura reads it in seconds and calibrates everything around your level, sector, and voice.
+            {heading("Start with your LinkedIn address")}
+            <label className="text-xs font-medium block mb-1" style={{ color: SB_MUTED }}>
+              Your LinkedIn address
+            </label>
+            <input
+              className={inputCls}
+              style={inputStyle}
+              value={linkedinUrl}
+              onChange={(e) => { setLinkedinUrl(e.target.value); setLiUrlError(""); }}
+              placeholder="linkedin.com/in/yourname"
+              disabled={liStage !== null}
+              inputMode="url"
+              autoCapitalize="none"
+              spellCheck={false}
+            />
+            <p style={{ fontSize: 12.5, color: SB_MUTED, lineHeight: 1.6, marginBlock: "8px 0" }}>
+              This is the whole setup. Aura reads what you have already written.
+            </p>
+            {liUrlError && (
+              <p style={{ fontSize: 12.5, color: SB_ERR, lineHeight: 1.6, marginBlockStart: 8 }}>{liUrlError}</p>
+            )}
+            <div style={{ marginBlock: "14px 6px" }}>
+              <button
+                type="button"
+                style={{ ...liPrimaryStyle, opacity: liStage !== null || !linkedinUrl.trim() ? 0.6 : 1,
+                  cursor: liStage !== null || !linkedinUrl.trim() ? "default" : "pointer" }}
+                disabled={liStage !== null || !linkedinUrl.trim()}
+                onClick={() => void handleReadLinkedInProfile()}
+              >
+                {liStage !== null && <Loader2 className="w-4 h-4 animate-spin" />}
+                {liStage === "profile" ? "Reading your profile…" : liStage === "posts" ? "Reading your posts…" : "Read my profile"}
+              </button>
+            </div>
+            {liStage !== null && (
+              <p style={{ fontSize: 12, color: SB_MUTED, lineHeight: 1.6 }}>
+                This can take a couple of minutes. You can leave this open.
+              </p>
+            )}
+
+            <div className="flex items-center gap-3 my-4" style={{ color: SB_MUTED, fontSize: 12 }}>
+              <div className="flex-1 h-px" style={{ background: SB_LINE }} />
+              <span>or paste your text instead</span>
+              <div className="flex-1 h-px" style={{ background: SB_LINE }} />
+            </div>
+            <p className="mb-4" style={{ fontSize: 14, lineHeight: 1.7, color: SB_MUTED }}>
+              No address to hand? Paste your headline and About section and Aura reads that instead.
             </p>
             <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>
               Your LinkedIn headline + About section
