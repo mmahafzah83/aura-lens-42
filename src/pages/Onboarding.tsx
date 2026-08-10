@@ -191,7 +191,7 @@ const PaperShell = ({
 const Onboarding = () => {
   usePageMeta({
     title: "Aura — Start your shelf",
-    description: "Five short steps. Aura learns your sector, your level and the way you already write.",
+    description: "About ten minutes. Aura learns your sector, your level and the way you already write.",
     path: "/onboarding",
   });
   const navigate = useNavigate();
@@ -900,8 +900,9 @@ const Onboarding = () => {
       <PaperShell bead={0} cream footer={escapeFooter}>
         <h1 style={h1Light}>Let's fill this up.</h1>
         <p style={bodyLight}>
-          Five short steps, and each one gives you something. In five minutes this shelf is yours — and Aura knows
-          how to write the way you already think.
+          Five short steps, and each one gives you something back as you go. It takes about ten minutes, and you can
+          stop anywhere — everything is saved as you go. At the end this shelf is yours, and Aura knows how to write
+          the way you already think.
         </p>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
           {SHELF.map((s) => <ShelfBadge key={s.key} label={s.label} tone={s.tone} />)}
@@ -920,6 +921,10 @@ const Onboarding = () => {
         <p style={bodyLight}>
           Aura reads what's already public — your profile and your recent posts. That's how it learns your sector,
           your level, and the way you already write.
+        </p>
+        <p style={{ ...bodyLight, fontSize: 12.5, marginBlockStart: 10 }}>
+          Aura stores your posts so it can learn your voice. You can delete them, and your whole account, from
+          Settings at any time — and they go for good.
         </p>
         <input
           value={liInput}
