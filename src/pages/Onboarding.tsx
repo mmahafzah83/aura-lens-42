@@ -1565,9 +1565,26 @@ const Onboarding = () => {
           ))}
         </div>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Tonight Aura reads for your three subjects. Tomorrow morning there's something waiting — and every capture
-          adds to the shelf.
+          {proof && proof.posts > 0 ? (
+            <>
+              Aura has {proof.posts} of your posts and {proof.words.toLocaleString()} words in your own voice
+              {proof.pctWithNumber !== null ? `, ${proof.pctWithNumber}% of them carrying a real number` : ""}
+              {claims.length ? `, plus ${claims.length} claims you kept` : ""}. That is what it writes from — not a
+              template.
+            </>
+          ) : (
+            <>
+              Aura has {claims.length || "your"} {claims.length === 1 ? "claim" : "claims"} and your own answers on
+              file. That is what it writes from — not a template.
+            </>
+          )}
         </p>
+        <p style={{ ...bodyNight, textAlign: "center" }}>
+          Tonight it reads for your three subjects. Tomorrow morning there's something waiting.
+        </p>
+        {revealPending && proof && proof.lines.length > 0 ? (
+          <WaitProof lines={proof.lines} howLong="Writing your read. About a minute." />
+        ) : null}
         <button type="button" onClick={() => go(13)} disabled={revealPending && !revealSlow}
           style={{ ...btnPrimary, marginBlockStart: 24, opacity: revealPending && !revealSlow ? 0.6 : 1 }}>
           {revealPending && !revealSlow ? <Loader2 size={16} className="animate-spin" /> : null}
