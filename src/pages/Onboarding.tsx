@@ -972,30 +972,14 @@ const Onboarding = () => {
           background: OB.canvas, border: `1px solid ${OB.line}`,
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <span style={{ fontSize: 14 }}>Level · <strong>{bandLabel || "not set"}</strong></span>
+            <span style={{ fontSize: 14 }}>Level · <strong>{levelTitle || bandLabel || "not set"}</strong></span>
             <button type="button" onClick={() => setBandPicker((v) => !v)} style={{
               border: `1px solid ${OB.blue}`, background: OB.white, color: OB.blue,
               fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
               padding: "8px 16px", borderRadius: 999, flexShrink: 0,
             }}>{bandPicker ? "Close" : "Change"}</button>
           </div>
-          {bandPicker && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBlockStart: 12 }}>
-              {(Object.keys(BAND_LABEL) as Band[]).map((b) => (
-                <button key={b} type="button" onClick={async () => {
-                  setBand(b); setBandPicker(false); setDims(null);
-                  if (userId) {
-                    await (supabase.from("diagnostic_profiles" as any) as any)
-                      .update({ seniority_band: b, band_source: "corrected" }).eq("user_id", userId);
-                  }
-                }} style={{
-                  textAlign: "start", padding: "11px 13px", borderRadius: 12, cursor: "pointer",
-                  border: `1px solid ${band === b ? OB.blue : OB.line}`,
-                  background: band === b ? OB.blueTint : OB.white, fontSize: 14, fontFamily: "inherit", color: OB.ink,
-                }}>{BAND_LABEL[b]}</button>
-              ))}
-            </div>
-          )}
+          {bandPicker && titleList((t, b) => { void chooseTitle(t, b); setBandPicker(false); })}
           {!sector && (
             <div style={{ marginBlockStart: 12 }}>
               <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Aura couldn't tell your sector — pick it once.</label>
