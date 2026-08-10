@@ -90,6 +90,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [postsWithText, setPostsWithText] = useState<number | null>(null);
   const [themes, setThemes] = useState<{ theme: string; count: number }[]>([]);
+  const [totalThemes, setTotalThemes] = useState(0);
   const [handle, setHandle] = useState<string | null>(null);
   const [profileUrl, setProfileUrl] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -120,7 +121,9 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         counts.set(t, (counts.get(t) || 0) + 1);
       }
     }
-    setThemes([...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([theme, count]) => ({ theme, count })));
+    const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    setTotalThemes(ranked.length);
+    setThemes(ranked.slice(0, 8).map(([theme, count]) => ({ theme, count })));
 
     try {
       const address = await loadLinkedInAddress(userId);
@@ -144,8 +147,10 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
 
   const profileText = `${snapshot?.headline || ""} ${snapshot?.about || ""}`.toLowerCase();
   const themeRows = themes.map((t) => ({ ...t, carried: mentions(profileText, t.theme) }));
-  const carriedCount = themeRows.filter((t) => t.carried).length;
+  const carriedOfShown = themeRows.filter((t) => t.carried).length;
+  const shown = themeRows.length;
   const firstMissing = themeRows.find((t) => !t.carried);
+  const topIsMissing = themeRows.length > 0 && !themeRows[0].carried;
 
   /** Profile first, then posts. Each call can take two minutes. */
   const readProfile = useCallback(async () => {
@@ -290,8 +295,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         <section id="how-you-appear-gap" style={cardStyle}>
           <SectionHeader label="WHAT YOU WRITE ABOUT VS WHAT YOUR PROFILE SAYS" />
           <p style={{ fontSize: 13.5, color: INK, margin: "0 0 12px", lineHeight: 1.6 }}>
-            You write about <span style={dashStyle}>{themeRows.length}</span> recurring subjects. Your profile mentions{" "}
-            <span style={dashStyle}>{carriedCount}</span> of them.
+            You write about <span style={dashStyle}>{totalThemes}</span> recurring subjects. Your profile mentions{" "}
+            <span style={dashStyle}>{carriedOfShown}</span> of the <span style={dashStyle}>{shown}</span> biggest.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {themeRows.map((t) => (
@@ -308,17 +313,36 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
               </span>
             ))}
           </div>
-          <div style={{ fontSize: 11.5, color: MUTED, marginBlockStart: 10 }}>
-            ● on your profile · ○ only in your writing
+          {totalThemes > shown && (
+            <div style={{ fontSize: 11.5, color: MUTED, marginBlockStart: 10 }}>
+              Showing your <span style={dashStyle}>{shown}</span> most frequent.
+            </div>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: MUTED, marginBlockStart: 10 }}>
+            <span style={{ width: 6, height: 6, borderRadius: 999, background: SUCCESS, flexShrink: 0 }} />
+            on your profile
+            <span aria-hidden="true">·</span>
+            <span style={{ width: 6, height: 6, borderRadius: 999, background: AMBER, flexShrink: 0 }} />
+            only in your writing
           </div>
-          {firstMissing && (
+          {topIsMissing ? (
             <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-              The thing you write about most — {firstMissing.theme} — appears nowhere on your profile.
+              The thing you write about most — {themeRows[0].theme} — appears nowhere on your profile.
+            </p>
+          ) : firstMissing ? (
+            <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
+              You write about {firstMissing.theme} often. Your profile never mentions it.
+            </p>
+          ) : (
+            <p style={{ fontSize: 13.5, color: MUTED, margin: "12px 0 0", lineHeight: 1.6 }}>
+              Everything you write about is on your profile.
             </p>
           )}
-          <button type="button" style={quietLinkStyle} onClick={() => navigate("/publish")}>
-            Put this in my headline →
-          </button>
+          {firstMissing && (
+            <button type="button" style={quietLinkStyle} onClick={() => navigate("/publish")}>
+              Put this in my headline →
+            </button>
+          )}
         </section>
       )}
     </div>
