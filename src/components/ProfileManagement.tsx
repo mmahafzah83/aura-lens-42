@@ -263,7 +263,6 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: "Firm", value: firm, set: setFirm, placeholder: "e.g., Deloitte, Saudi Aramco, your organization" },
-              { label: "Level / Title", value: level, set: setLevel, placeholder: "e.g., VP of Strategy, CIO, your current role" },
               { label: "Core Practice", value: corePractice, set: setCorePractice, placeholder: "e.g., Strategy, Technology, Finance — the area you work in" },
             ].map(item => (
               <div key={item.label}>
@@ -271,6 +270,19 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
                 <Input placeholder={item.placeholder} value={item.value} onChange={(e) => item.set(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
               </div>
             ))}
+            <div>
+              <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Level</label>
+              <Select value={level || undefined} onValueChange={setLevel}>
+                <SelectTrigger className="h-9 bg-secondary border-border/30 text-sm">
+                  <SelectValue placeholder="Select…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {seniorityTitles.map((t) => (
+                    <SelectItem key={t.title} value={t.title}>{t.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Sector Focus</label>
               <Select value={sectorFocus || undefined} onValueChange={setSectorFocus}>
