@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff, Lightbulb, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { saveLinkedInAddress } from "@/lib/linkedinAddress";
+import { saveLinkedInAddress, canonicalHandle } from "@/lib/linkedinAddress";
 import CountryPicker from "@/components/CountryPicker";
 import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -77,6 +77,44 @@ const OB_CSS = `
 @media (max-width:560px){ .ob-seg .ob-nm{display:none;} }
 @media (prefers-reduced-motion:reduce){ .ob *,.ob *::before,.ob *::after{animation:none !important;transition:none !important;} }
 `;
+
+/* ── System-B "Signal" tokens for the LinkedIn read. Module scope, always. ── */
+const SB_INK = "#0F1519";
+const SB_MUTED = "#5B6673";
+const SB_LINE = "#E2E7EE";
+const SB_CANVAS = "#F2F5F9";
+const SB_CARD = "#FFFFFF";
+const SB_ACT = "#0670C4";
+const SB_ACT_DARK = "#04477C";
+const SB_ERR = "#C0392B";
+const SB_MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+
+const liPanelStyle: React.CSSProperties = {
+  background: SB_CARD, border: `1px solid ${SB_LINE}`, borderRadius: 20, padding: 18,
+};
+const liFigureStyle: React.CSSProperties = {
+  fontFamily: SB_MONO, fontSize: 24, fontWeight: 600, color: SB_INK, lineHeight: 1.1,
+};
+const liFigureLabelStyle: React.CSSProperties = {
+  fontSize: 11.5, color: SB_MUTED, lineHeight: 1.4, marginBlockStart: 4,
+};
+const liPrimaryStyle: React.CSSProperties = {
+  background: SB_ACT, color: SB_CARD, border: "none", borderRadius: 8,
+  padding: "12px 18px", fontSize: 14.5, fontWeight: 600, cursor: "pointer",
+  minHeight: 44, inlineSize: "100%",
+  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+};
+const liQuietStyle: React.CSSProperties = {
+  background: SB_CARD, color: SB_MUTED, border: `1px solid ${SB_LINE}`, borderRadius: 8,
+  padding: "10px 16px", fontSize: 13.5, fontWeight: 500, cursor: "pointer",
+  minHeight: 44, inlineSize: "100%", marginBlockStart: 8,
+};
+
+/** Accepts a full URL, `linkedin.com/in/x`, `/in/x`, or a bare handle. */
+const normaliseLinkedIn = (input: string): string | null => {
+  const handle = canonicalHandle(input);
+  return handle ? `https://www.linkedin.com/in/${handle}` : null;
+};
 
 const Onboarding = () => {
   usePageMeta({
@@ -248,6 +286,12 @@ const Onboarding = () => {
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [linkedinText, setLinkedinText] = useState("");
   const [linkedinError, setLinkedinError] = useState("");
+  // LinkedIn read (profile then posts) — the primary path in step 0.
+  const [liUrlError, setLiUrlError] = useState("");
+  const [liStage, setLiStage] = useState<null | "profile" | "posts">(null);
+  const [liProfile, setLiProfile] = useState<any>(null);
+  const [liPostsCount, setLiPostsCount] = useState<number | null>(null);
+  const [liPostsNote, setLiPostsNote] = useState("");
   const [readingLi, setReadingLi] = useState(false);
   const [liStatusIdx, setLiStatusIdx] = useState(0);
   const [showForm, setShowForm] = useState(false);
@@ -646,6 +690,73 @@ const Onboarding = () => {
   };
 
   const profileValid = !!(firstName.trim() && firm.trim() && level.trim() && sectorFocus);
+
+  /**
+   * The primary path: read the member's LinkedIn profile, then their posts.
+   * Sequential and un-timed — each call can take up to two minutes.
+   */
+  const handleReadLinkedInProfile = async () => {
+    setLiUrlError("");
+    setLiPostsNote("");
+    const profile_url = normaliseLinkedIn(linkedinUrl);
+    if (!profile_url) {
+      setLiUrlError("That doesn't look like a LinkedIn address. Try linkedin.com/in/yourname.");
+      return;
+    }
+    setLinkedinUrl(profile_url);
+    setLiStage("profile");
+    try {
+      const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", {
+        body: { profile_url },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(String(data.error));
+      const profile = data?.profile ?? data;
+      setLiProfile(profile);
+      setUsedLinkedIn(true);
+      if (userId) { try { await saveLinkedInAddress(userId, profile_url); } catch { /* saved again on submit */ } }
+    } catch (e: any) {
+      const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "Couldn't read that profile.";
+      setLiUrlError(msg);
+      setLiStage(null);
+      return;
+    }
+
+    setLiStage("posts");
+    try {
+      const { data, error } = await supabase.functions.invoke("linkedin-fetch-posts", {
+        body: { profile_url, max_posts: 50 },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(String(data.error));
+      setLiPostsCount(typeof data?.kept_own_text === "number" ? data.kept_own_text : 0);
+    } catch {
+      setLiPostsCount(0);
+      setLiPostsNote("Couldn't read your posts yet — we'll try again later.");
+    } finally {
+      setLiStage(null);
+    }
+  };
+
+  /** Confirmed the profile is theirs — carry what we can into the form. */
+  const acceptLinkedInProfile = () => {
+    const p = liProfile || {};
+    const full = String(p.full_name || "").trim();
+    if (full && !firstName.trim()) {
+      const parts = full.split(/\s+/);
+      setFirstName(parts[0] || "");
+      if (parts.length > 1) setLastName(parts.slice(1).join(" "));
+    }
+    setShowForm(true);
+  };
+
+  const rejectLinkedInProfile = () => {
+    setLiProfile(null);
+    setLiPostsCount(null);
+    setLiPostsNote("");
+    setLinkedinUrl("");
+    setUsedLinkedIn(false);
+  };
 
   const handleSaveProfile = async () => {
     if (!userId || !profileValid) return;
@@ -1322,11 +1433,114 @@ const Onboarding = () => {
     return cardShell(
       <>
         {eyebrow("Your starting point")}
-        {!showForm ? (
+        {!showForm && liProfile ? (
+          <div style={liPanelStyle}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: SB_INK, margin: 0 }}>
+              This is what Aura can already see.
+            </h3>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", marginBlockStart: 14 }}>
+              {liProfile.photo_url && (
+                <img
+                  src={liProfile.photo_url}
+                  alt={liProfile.full_name ? `${liProfile.full_name} on LinkedIn` : "LinkedIn profile photo"}
+                  loading="lazy"
+                  style={{ inlineSize: 56, blockSize: 56, borderRadius: 999, objectFit: "cover", border: `1px solid ${SB_LINE}` }}
+                />
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 15.5, fontWeight: 600, color: SB_INK }}>{liProfile.full_name || "Your profile"}</div>
+                {liProfile.headline && (
+                  <div dir="auto" style={{ fontSize: 13, color: SB_MUTED, lineHeight: 1.5, marginBlockStart: 2 }}>{liProfile.headline}</div>
+                )}
+              </div>
+            </div>
+
+            {liPostsCount && liPostsCount > 0 ? (
+              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBlockStart: 16 }}>
+                <div>
+                  <div style={liFigureStyle}>{liPostsCount}</div>
+                  <div style={liFigureLabelStyle}>posts of yours read</div>
+                </div>
+                <div>
+                  <div style={liFigureStyle}>{liProfile.followers ?? "—"}</div>
+                  <div style={liFigureLabelStyle}>people following you</div>
+                </div>
+                <div>
+                  <div style={liFigureStyle}>{liProfile.skills_count ?? "—"}</div>
+                  <div style={liFigureLabelStyle}>skills on record</div>
+                </div>
+              </div>
+            ) : (
+              <p style={{ fontSize: 13.5, color: SB_MUTED, lineHeight: 1.6, marginBlock: "16px 0" }}>
+                We found your profile but no posts we can read yet. Aura will still learn from what you tell it.
+              </p>
+            )}
+
+            <p style={{ fontSize: 13, color: SB_MUTED, lineHeight: 1.6, marginBlock: "14px 0" }}>
+              Aura will write in your voice from these, not from a template.
+            </p>
+            {liPostsNote && (
+              <p style={{ fontSize: 12.5, color: SB_MUTED, lineHeight: 1.6, marginBlockStart: 8 }}>{liPostsNote}</p>
+            )}
+
+            <div style={{ marginBlockStart: 16 }}>
+              <button type="button" style={liPrimaryStyle} onClick={acceptLinkedInProfile}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = SB_ACT_DARK; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = SB_ACT; }}
+              >
+                That's me — continue
+              </button>
+              <button type="button" style={liQuietStyle} onClick={rejectLinkedInProfile}>Wrong person</button>
+            </div>
+          </div>
+        ) : !showForm ? (
           <>
-            {heading("Start with what LinkedIn already knows")}
-            <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-              Paste your headline and About section. Aura reads it in seconds and calibrates everything around your level, sector, and voice.
+            {heading("Start with your LinkedIn address")}
+            <label className="text-xs font-medium block mb-1" style={{ color: SB_MUTED }}>
+              Your LinkedIn address
+            </label>
+            <input
+              className={inputCls}
+              style={inputStyle}
+              value={linkedinUrl}
+              onChange={(e) => { setLinkedinUrl(e.target.value); setLiUrlError(""); }}
+              placeholder="linkedin.com/in/yourname"
+              disabled={liStage !== null}
+              inputMode="url"
+              autoCapitalize="none"
+              spellCheck={false}
+            />
+            <p style={{ fontSize: 12.5, color: SB_MUTED, lineHeight: 1.6, marginBlock: "8px 0" }}>
+              This is the whole setup. Aura reads what you have already written.
+            </p>
+            {liUrlError && (
+              <p style={{ fontSize: 12.5, color: SB_ERR, lineHeight: 1.6, marginBlockStart: 8 }}>{liUrlError}</p>
+            )}
+            <div style={{ marginBlock: "14px 6px" }}>
+              <button
+                type="button"
+                style={{ ...liPrimaryStyle, opacity: liStage !== null || !linkedinUrl.trim() ? 0.6 : 1,
+                  cursor: liStage !== null || !linkedinUrl.trim() ? "default" : "pointer" }}
+                disabled={liStage !== null || !linkedinUrl.trim()}
+                onClick={() => void handleReadLinkedInProfile()}
+              >
+                {liStage !== null && <Loader2 className="w-4 h-4 animate-spin" />}
+                {liStage === "profile" ? "Reading your profile…" : liStage === "posts" ? "Reading your posts…" : "Read my profile"}
+              </button>
+            </div>
+            {liStage !== null && (
+              <p style={{ fontSize: 12, color: SB_MUTED, lineHeight: 1.6 }}>
+                This can take a couple of minutes. You can leave this open.
+              </p>
+            )}
+
+            <div className="flex items-center gap-3 my-4" style={{ color: SB_MUTED, fontSize: 12 }}>
+              <div className="flex-1 h-px" style={{ background: SB_LINE }} />
+              <span>or paste your text instead</span>
+              <div className="flex-1 h-px" style={{ background: SB_LINE }} />
+            </div>
+            <p className="mb-4" style={{ fontSize: 14, lineHeight: 1.7, color: SB_MUTED }}>
+              No address to hand? Paste your headline and About section and Aura reads that instead.
             </p>
             <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>
               Your LinkedIn headline + About section
