@@ -26,7 +26,8 @@ import AuraFace from "@/components/onboarding/AuraFace";
 import ShelfBadge, { type ShelfBadgeTone } from "@/components/onboarding/ShelfBadge";
 import ClaimCard from "@/components/onboarding/ClaimCard";
 import ProgressBeads from "@/components/onboarding/ProgressBeads";
-import RevealCard, { type RevealData } from "@/components/onboarding/RevealCard";
+import RevealCard, { type RevealData, shareRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
+import StatusRow from "@/components/onboarding/StatusRow";
 import Confetti from "@/components/onboarding/Confetti";
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 
@@ -199,13 +200,17 @@ const Onboarding = () => {
   const [liBusy, setLiBusy] = useState(false);
   const [liError, setLiError] = useState("");
   const [liProfile, setLiProfile] = useState<any>(null);
-  const [postsRead, setPostsRead] = useState(0);
-  const [ownWords, setOwnWords] = useState(0);
+  const [postsRead, setPostsRead] = useState<number | null>(null);
+  const [ownWords, setOwnWords] = useState<number | null>(null);
+  const [readDone, setReadDone] = useState(false);
+  const [sectorKnown, setSectorKnown] = useState(false);
   const [bandPicker, setBandPicker] = useState(false);
 
   /* screen 5–7 */
   const [linkInput, setLinkInput] = useState("");
   const [suggested, setSuggested] = useState<{ url: string; title: string; summary?: string; source?: string } | null>(null);
+  const [suggestDead, setSuggestDead] = useState(false);
+  const [readStep, setReadStep] = useState(0);
   const [claims, setClaims] = useState<Claim[]>([]);
   const [claimsSlow, setClaimsSlow] = useState(false);
 
@@ -224,7 +229,11 @@ const Onboarding = () => {
   /* screen 13 */
   const [reveal, setReveal] = useState<RevealData | null>(null);
   const [revealPending, setRevealPending] = useState(false);
+  const [revealSlow, setRevealSlow] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [connectNote, setConnectNote] = useState("");
+  const [sharing, setSharing] = useState(false);
+  const shareRef = useRef<HTMLDivElement | null>(null);
 
   /* loop safety valve — kept from the previous journey */
   const [visits, setVisits] = useState(0);
@@ -289,7 +298,7 @@ const Onboarding = () => {
       if (p.first_name) setFirstName(p.first_name);
       if (p.last_name) setLastName(p.last_name);
       if (p.firm) setFirm(p.firm);
-      if (p.sector_focus) setSector(p.sector_focus);
+      if (p.sector_focus) { setSector(p.sector_focus); setSectorKnown(true); }
       if (p.seniority_band) setBand(p.seniority_band as Band);
       if (p.skill_ratings && typeof p.skill_ratings === "object") setScores(p.skill_ratings as Record<string, number>);
 
@@ -307,6 +316,9 @@ const Onboarding = () => {
   /* ── screen 1: read the profile ── */
   const readProfile = async () => {
     setLiError("");
+    setReadDone(false);
+    setPostsRead(null);
+    setOwnWords(null);
     const profile_url = normaliseLinkedIn(liInput);
     if (!profile_url) {
       setLiError("Aura couldn't open that page. Check it matches what you see in your browser on your own profile.");
@@ -321,6 +333,9 @@ const Onboarding = () => {
       if ((data as any)?.error) throw new Error(String((data as any).error));
       const prof: any = (data as any)?.profile ?? data;
       setLiProfile(prof);
+
+      const readSector = String(prof?.sector || prof?.industry || "").trim();
+      if (!sector && readSector) { setSector(readSector); setSectorKnown(true); }
 
       if (userId) {
         try {
@@ -359,7 +374,10 @@ const Onboarding = () => {
         const { data: rows } = await supabase
           .from("linkedin_posts").select("post_text").eq("user_id", userId).limit(200);
         setOwnWords(wordsIn((rows as any[]) || []));
+      } else {
+        setOwnWords(0);
       }
+      setReadDone(true);
     } catch (e: any) {
       const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "";
       setLiError(msg && msg.length < 120
@@ -371,35 +389,46 @@ const Onboarding = () => {
     }
   };
 
-  /* ── screen 2: the lines land one at a time ── */
-  const [lineCount, setLineCount] = useState(0);
-  useEffect(() => {
-    if (screen !== 2) { setLineCount(0); return; }
-    if (reducedMotion()) { setLineCount(4); return; }
-    const t = window.setInterval(() => setLineCount((n) => (n >= 4 ? 4 : n + 1)), 800);
-    return () => window.clearInterval(t);
-  }, [screen]);
+  /* ── screen 2: every line resolves on its own and shows itself finishing ── */
+  const upPosts = useCountUp(screen === 2 && postsRead ? postsRead : 0, { duration: 900 });
+  const upWords = useCountUp(screen === 2 && ownWords ? ownWords : 0, { duration: 1100 });
 
-  const upPosts = useCountUp(screen === 2 && lineCount >= 1 ? postsRead : 0, { duration: 900 });
-  const upWords = useCountUp(screen === 2 && lineCount >= 2 ? ownWords : 0, { duration: 1100 });
-
-  /* ── the suggested read, fetched while the member is on the dark screens ── */
+  /* ── the suggested read: asked for on screen 4 so it has a head start ── */
   const suggestRan = useRef(false);
   useEffect(() => {
     if (screen < 4 || suggestRan.current) return;
     suggestRan.current = true;
+    let settled = false;
+    // A promise left hanging on screen is worse than no promise at all.
+    const giveUp = window.setTimeout(() => { if (!settled) { settled = true; setSuggestDead(true); } }, 15000);
     supabase.functions.invoke("onboarding-find-article", {
-      body: { sector_focus: sector, firm, level: band ? BAND_TO_LEVEL[band] : "" },
+      body: {
+        sector_focus: sector || null,
+        core_practice: String(liProfile?.headline || "").trim() || null,
+        headline: String(liProfile?.headline || "").trim() || null,
+        firm,
+        level: band ? BAND_TO_LEVEL[band] : "",
+      },
     }).then(({ data }) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(giveUp);
       if ((data as any)?.found && (data as any)?.article) setSuggested((data as any).article);
-    }).catch(() => { /* the member can always paste their own */ });
-  }, [screen, sector, firm, band]);
+      else setSuggestDead(true);
+    }).catch(() => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(giveUp);
+      setSuggestDead(true);
+    });
+  }, [screen, sector, firm, band, liProfile]);
 
   /* ── screen 5/6: send the link, then watch for what came out of it ── */
   const sendLink = async (url: string, meta?: { title?: string; summary?: string }) => {
     const v = url.trim();
     if (!v) return;
     const startIso = new Date(Date.now() - 10000).toISOString();
+    setReadStep(0);
     go(6);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -419,6 +448,7 @@ const Onboarding = () => {
         } finally { window.clearTimeout(to); }
       }
     } catch { /* a slow read never blocks the journey */ }
+    setReadStep(1);
     void watchForClaims(startIso);
   };
 
@@ -439,7 +469,8 @@ const Onboarding = () => {
             .limit(3);
           if (frags && frags.length > 0) {
             setClaims(frags as Claim[]);
-            go(7);
+            setReadStep(2);
+            window.setTimeout(() => { setReadStep(3); go(7); }, 600);
             return;
           }
         }
@@ -527,11 +558,18 @@ const Onboarding = () => {
       { value: String(postsRead || claims.length), label: postsRead ? "posts read" : "claims kept" },
       { value: String(Object.keys(scores).length), label: "strengths on record" },
     ];
-    setReveal(toRevealData(results, { figures }));
+    setReveal(toRevealData(results, { figures, excludeSoft: (dims || []).map((d) => d.name) }));
     setRevealPending(false);
   };
 
   /* if they come back later, show whatever read is already on file */
+  useEffect(() => {
+    if (screen !== 12 || !revealPending) { return; }
+    // Never trap the member on the last screen.
+    const t = window.setTimeout(() => setRevealSlow(true), 20000);
+    return () => window.clearTimeout(t);
+  }, [screen, revealPending]);
+
   useEffect(() => {
     if (screen !== 13 || reveal || !userId) return;
     loadMarketRead(userId).then((r) => {
@@ -540,10 +578,11 @@ const Onboarding = () => {
           { value: String(postsRead || claims.length), label: postsRead ? "posts read" : "claims kept" },
           { value: String(Object.keys(scores).length), label: "strengths on record" },
         ],
+        excludeSoft: (dims || []).map((x) => x.name),
       });
       if (d) setReveal(d);
     });
-  }, [screen, reveal, userId, postsRead, claims.length, scores]);
+  }, [screen, reveal, userId, postsRead, claims.length, scores, dims]);
 
   /* ── finishing ── */
   const finish = async () => {
@@ -571,14 +610,18 @@ const Onboarding = () => {
 
   const connectLinkedIn = async () => {
     setConnecting(true);
+    setConnectNote("");
     try {
-      const { data, error } = await supabase.functions.invoke("linkedin-oauth", { body: {} });
+      // LinkedIn only accepts the live origin as a redirect target.
+      const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
+        body: { action: "get-auth-url", origin: "https://www.aura-intel.org" },
+      });
       if (error) throw error;
       const url = (data as any)?.url || (data as any)?.authUrl;
       if (url) { window.location.href = url; return; }
       throw new Error("no url");
     } catch {
-      toast.error("Couldn't open LinkedIn just now — you can connect it later in Settings.");
+      setConnectNote("LinkedIn connection only works on aura-intel.org — you can do this from Settings after you're in.");
       setConnecting(false);
     }
   };
@@ -803,31 +846,29 @@ const Onboarding = () => {
 
   /* 2 — NIGHT, reading you */
   if (screen === 2) {
-    const lines: React.ReactNode[] = [
-      <span key="p"><span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{upPosts}</span> posts read</span>,
-      <span key="w"><span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{upWords}</span> words of your own writing</span>,
-      <span key="s">Sector · {sector || "on your profile"}</span>,
-      <span key="b">Level · {bandLabel || "we'll confirm it with you"}</span>,
-    ];
+    // A row never shows a zero and never shows a non-answer: it either
+    // resolves to something real or it is dropped once the read is done.
+    const mono = (v: React.ReactNode) => <span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{v}</span>;
+    const rows: { key: string; label: string; line: React.ReactNode; done: boolean; drop: boolean }[] = [
+      { key: "p", label: "Posts", line: <>{mono(upPosts)} posts read</>, done: !!postsRead, drop: readDone && !postsRead },
+      { key: "w", label: "Your own writing", line: <>{mono(upWords)} words of your own writing</>, done: !!ownWords, drop: readDone && !ownWords },
+      { key: "s", label: "Sector", line: <>Sector · {mono(sector)}</>, done: !!sector, drop: readDone && !sector },
+      { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
+    ].filter((r) => !r.drop);
+    const allLanded = readDone && rows.every((r) => r.done);
     content = (
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading you.</h1>
         <div style={{ marginBlockStart: 26, display: "flex", flexDirection: "column", gap: 12 }}>
-          {lines.slice(0, lineCount).map((l, i) => (
-            <div key={i} className="obc-line" style={{
-              animationDelay: `${i * 60}ms`, opacity: 1,
-              background: OB.nightSoft, border: `1px solid ${OB.lineNight}`, borderRadius: RADIUS.card,
-              padding: "13px 15px", color: "#FFFFFF", fontSize: 14.5,
-            }}>{l}</div>
+          {rows.map((r) => (
+            <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
           ))}
         </div>
-        {liBusy ? (
-          <p style={{ ...bodyNight, textAlign: "center" }}>This takes about a minute. You can leave it open.</p>
-        ) : (
-          <button type="button" onClick={() => go(3)} style={{ ...btnPrimary, marginBlockStart: 24 }}>
-            See what I found
-          </button>
-        )}
+        <button type="button" onClick={() => go(3)} disabled={!allLanded}
+          style={{ ...btnPrimary, marginBlockStart: 24, opacity: allLanded ? 1 : 0.5 }}>
+          {allLanded ? null : <Loader2 size={16} className="animate-spin" />}
+          {allLanded ? "See what I found" : "Reading…"}
+        </button>
       </NightShell>
     );
   }
@@ -835,11 +876,13 @@ const Onboarding = () => {
   /* 3 — WHITE, what Aura can see */
   if (screen === 3) {
     const figures = [
-      { v: postsRead, l: "posts read" },
+      { v: postsRead ?? 0, l: "posts read" },
       { v: liProfile?.followers ?? 0, l: "following you" },
       { v: liProfile?.skills_count ?? 0, l: "skills on record" },
     ];
-    const nextFromHere = () => go(!firm.trim() || !sector ? MANUAL_SCREEN : 4);
+    // The read succeeded, so the firm, sector and level all come from it.
+    // There is no separate page after this one.
+    const nextFromHere = () => go(4);
     content = (
       <PaperShell bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>This is what Aura can see.</h1>
@@ -871,9 +914,10 @@ const Onboarding = () => {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             <span style={{ fontSize: 14 }}>Level · <strong>{bandLabel || "not set"}</strong></span>
             <button type="button" onClick={() => setBandPicker((v) => !v)} style={{
-              background: "none", border: "none", color: OB.blue, fontSize: 12.5, cursor: "pointer",
-              textDecoration: "underline", fontFamily: "inherit",
-            }}>change</button>
+              border: `1px solid ${OB.blue}`, background: OB.white, color: OB.blue,
+              fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+              padding: "8px 16px", borderRadius: 999, flexShrink: 0,
+            }}>{bandPicker ? "Close" : "Change"}</button>
           </div>
           {bandPicker && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBlockStart: 12 }}>
@@ -892,6 +936,23 @@ const Onboarding = () => {
               ))}
             </div>
           )}
+          {!sector && (
+            <div style={{ marginBlockStart: 12 }}>
+              <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Aura couldn't tell your sector — pick it once.</label>
+              <select id="ob-sector" value={sector} onChange={async (e) => {
+                const v = e.target.value;
+                setSector(v);
+                setSectorKnown(!!v);
+                if (userId && v) {
+                  await (supabase.from("diagnostic_profiles" as any) as any)
+                    .update({ sector_focus: v }).eq("user_id", userId);
+                }
+              }} style={{ ...fieldStyle, marginBlockStart: 8 }}>
+                <option value="">Your sector</option>
+                {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "24px 0 4px" }}>
@@ -903,17 +964,16 @@ const Onboarding = () => {
         </div>
 
         <button type="button" onClick={nextFromHere} style={{ ...btnPrimary, marginBlockStart: 18 }}>That's me</button>
-        <button type="button" onClick={() => go(MANUAL_SCREEN)} style={btnGhostLight}>Not quite — let me fix it</button>
       </PaperShell>
     );
   }
 
-  /* 15 — WHITE, the member types it in themselves */
+  /* 15 — WHITE, only when the read failed or was skipped */
   if (screen === MANUAL_SCREEN) {
     const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band;
     content = (
       <PaperShell bead={1} footer={escapeFooter}>
-        <h1 style={h1Light}>Tell Aura yourself.</h1>
+        <h1 style={h1Light}>Aura couldn't read it — tell it the basics.</h1>
         <p style={bodyLight}>Four things, and Aura works from these until you point it at your profile.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockStart: 20 }}>
           <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" style={fieldStyle} />
@@ -973,11 +1033,13 @@ const Onboarding = () => {
         <button type="button" disabled={!linkInput.trim()} onClick={() => sendLink(linkInput)}
           style={{ ...btnPrimary, marginBlockStart: 14, opacity: linkInput.trim() ? 1 : 0.5 }}>Add it</button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "24px 0 16px" }}>
-          <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
-          <span style={{ fontSize: 11.5, color: OB.muted }}>Nothing to hand?</span>
-          <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
-        </div>
+        {suggested || !suggestDead ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "24px 0 16px" }}>
+            <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
+            <span style={{ fontSize: 11.5, color: OB.muted }}>Nothing to hand?</span>
+            <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
+          </div>
+        ) : null}
 
         {suggested ? (
           <div style={{ border: `1px solid ${OB.line}`, borderRadius: RADIUS.card, padding: 15, background: OB.canvas }}>
@@ -992,23 +1054,33 @@ const Onboarding = () => {
               }}>{suggested.summary}</p>
             ) : null}
             <button type="button" onClick={() => sendLink(suggested.url, { title: suggested.title, summary: suggested.summary })}
-              style={btnGhostLight}>Use this one instead</button>
+              style={btnGhostLight}>Use this one</button>
           </div>
-        ) : (
-          <p style={{ fontSize: 12.5, color: OB.muted, lineHeight: 1.55 }}>
-            Aura is still looking for one from your sector. Paste anything you have and it'll start there.
-          </p>
-        )}
+        ) : !suggestDead ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted }}>
+            <Loader2 size={14} className="animate-spin" /> Looking for one from your sector…
+          </div>
+        ) : null}
       </PaperShell>
     );
   }
 
   /* 6 — NIGHT, reading it */
   if (screen === 6) {
+    const steps = [
+      { key: "a", label: "Article fetched", done: readStep >= 1 },
+      { key: "b", label: "Claims pulled", done: readStep >= 2 || claims.length > 0 },
+      { key: "c", label: "Matched to your sector", done: readStep >= 3 },
+    ];
     content = (
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>Pulling out the bits worth keeping…</p>
+        <div style={{ marginBlockStart: 22, display: "flex", flexDirection: "column", gap: 10 }}>
+          {steps.map((s) => (
+            <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
+          ))}
+        </div>
         {claimsSlow && (
           <>
             <p style={{ ...bodyNight, textAlign: "center" }}>Still reading — it'll be waiting on your Home.</p>
@@ -1218,10 +1290,10 @@ const Onboarding = () => {
           Tonight Aura reads for your three subjects. Tomorrow morning there's something waiting — and every capture
           adds to the shelf.
         </p>
-        <button type="button" onClick={() => go(13)} disabled={revealPending}
-          style={{ ...btnPrimary, marginBlockStart: 24, opacity: revealPending ? 0.6 : 1 }}>
-          {revealPending ? <Loader2 size={16} className="animate-spin" /> : null}
-          {revealPending ? "Writing your read…" : "See how people see me"}
+        <button type="button" onClick={() => go(13)} disabled={revealPending && !revealSlow}
+          style={{ ...btnPrimary, marginBlockStart: 24, opacity: revealPending && !revealSlow ? 0.6 : 1 }}>
+          {revealPending && !revealSlow ? <Loader2 size={16} className="animate-spin" /> : null}
+          {!revealPending ? "See how people see me" : revealSlow ? "See what I have so far" : "Writing your read…"}
         </button>
       </NightShell>
     );
@@ -1283,6 +1355,9 @@ const Onboarding = () => {
         <button type="button" onClick={connectLinkedIn} disabled={connecting} style={{ ...btnPrimary, marginBlockStart: 22 }}>
           {connecting ? <Loader2 size={16} className="animate-spin" /> : null} Connect LinkedIn
         </button>
+        {connectNote ? (
+          <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.mutedNight }}>{connectNote}</p>
+        ) : null}
         <button type="button" onClick={finish} style={btnGhostNight}>Not now</button>
         <p style={{ ...footnote, color: OB.mutedNight }}>Aura never posts. You press publish, every time.</p>
       </NightShell>
