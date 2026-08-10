@@ -637,8 +637,9 @@ const Onboarding = () => {
     } catch (e) { console.warn("[journey] stamp failed", e); }
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
     const figures = [
-      { value: String(postsRead || claims.length), label: postsRead ? "posts read" : "claims kept" },
-      { value: String(Object.keys(scores).length), label: "strengths on record" },
+      ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
+      ...(claims.length ? [{ value: String(claims.length), label: "claims kept" }] : []),
+      ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
     ];
     setReveal(toRevealData(results, { figures, excludeSoft: (dims || []).map((d) => d.name) }));
     setRevealPending(false);
@@ -657,8 +658,9 @@ const Onboarding = () => {
     loadMarketRead(userId).then((r) => {
       const d = toRevealData(r, {
         figures: [
-          { value: String(postsRead || claims.length), label: postsRead ? "posts read" : "claims kept" },
-          { value: String(Object.keys(scores).length), label: "strengths on record" },
+          ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
+          ...(claims.length ? [{ value: String(claims.length), label: "claims kept" }] : []),
+          ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
         ],
         excludeSoft: (dims || []).map((x) => x.name),
       });
