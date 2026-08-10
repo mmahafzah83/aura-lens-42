@@ -61,6 +61,8 @@ const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
 ];
 
 const MANUAL_SCREEN = 15;
+/** Shown wherever a post or word count would otherwise read zero. */
+const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you save.";
 /** A short dark panel that sits between screen 8 and the sliders. */
 const TRUST_SLIDERS_SCREEN = 8.5;
 
