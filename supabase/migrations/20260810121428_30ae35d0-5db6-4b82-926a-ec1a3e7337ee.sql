@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.excluded_user_ids() TO supabase_read_only_user, sandbox_exec;

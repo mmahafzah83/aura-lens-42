@@ -5123,6 +5123,12 @@ export type Database = {
         }[]
       }
       enqueue_voice_distill_jobs: { Args: never; Returns: number }
+      excluded_user_ids: {
+        Args: never
+        Returns: {
+          user_id: string
+        }[]
+      }
       founder_brief_data: { Args: never; Returns: Json }
       founder_brief_user_ids: {
         Args: never
@@ -5134,7 +5140,6 @@ export type Database = {
         }[]
       }
       founder_brief_verify: { Args: never; Returns: Json }
-      founder_uuid: { Args: never; Returns: string }
       founding_seats: {
         Args: never
         Returns: {
