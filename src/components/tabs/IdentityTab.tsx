@@ -175,11 +175,19 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   // Pane state — the URL search param `story` is the single source of truth.
   const [searchParams, setSearchParams] = useSearchParams();
   const storyParam = searchParams.get("story");
-  const pane: "identity" | "voice" | "insights" | "record" =
-    storyParam === "voice" || storyParam === "insights" || storyParam === "record" ? storyParam : "identity";
-  const setPane = (next: "identity" | "voice" | "insights" | "record") => {
+  // Three panes. Old keys map forward so existing URLs never 404.
+  const PANE_ALIAS: Record<string, "appear" | "voice" | "standing"> = {
+    appear: "appear",
+    identity: "appear",
+    voice: "voice",
+    standing: "standing",
+    insights: "standing",
+    record: "standing",
+  };
+  const pane: "appear" | "voice" | "standing" = PANE_ALIAS[storyParam ?? ""] ?? "appear";
+  const setPane = (next: "appear" | "voice" | "standing") => {
     const params = new URLSearchParams(searchParams);
-    if (next === "identity") params.delete("story");
+    if (next === "appear") params.delete("story");
     else params.set("story", next);
     setSearchParams(params);
   };
@@ -768,9 +776,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         Your professional identity as the market sees it — generated from your assessment and captures, not a template.
       </FirstTimeHint>
 
-      {/* HOW YOU APPEAR — the first thing on My Story, above the panes */}
-      <HowYouAppear userId={authUser?.id ?? null} />
-
       {/* PANE SWITCHER — URL param `story` is the single source of truth */}
       <div
         role="tablist"
@@ -784,10 +789,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         }}
       >
         {([
-          { key: "identity", label: "Identity" },
-          { key: "voice", label: "Voice & Writing" },
-          { key: "insights", label: "Insights" },
-          { key: "record", label: "Milestones & Reports" },
+          { key: "appear", label: "How you appear" },
+          { key: "voice", label: "How you sound" },
+          { key: "standing", label: "Where you stand" },
         ] as const).map((t) => {
           const active = pane === t.key;
           return (
@@ -816,7 +820,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         })}
       </div>
 
-      {pane === "identity" && (<>
+      {pane === "appear" && (<>
+      {/* HOW YOU APPEAR — the first thing in this pane */}
+      <HowYouAppear userId={authUser?.id ?? null} />
+
       {/* Gated welcome for users without brand assessment */}
       {!assessmentCompleted && autoAssessing && (
         <div style={{ background: "var(--paper-2)", borderRadius: 16, padding: "32px 28px", border: "0.5px solid var(--rule)", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
@@ -1017,7 +1024,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       )}
 
       {/* SECTION 5 — YOUR TERRITORY */}
-      {pane === "identity" && assessmentCompleted && themesForTerritory.length > 0 && (
+      {pane === "appear" && assessmentCompleted && themesForTerritory.length > 0 && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1060,7 +1067,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </section>
       )}
 
-      {pane === "insights" && (<>
+      {pane === "standing" && (<>
       {/* SECTION 6 — CAPABILITY RADAR */}
       {assessmentCompleted && (
         <div>
@@ -1106,7 +1113,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       )}
       </>)}
 
-      {pane === "record" && (<>
+      {pane === "standing" && (<>
       {/* SECTION 7 — YOUR JOURNEY (timeline) */}
       {assessmentCompleted && milestoneData.length > 0 && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
@@ -1249,21 +1256,28 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           </button>
         )}
 
-        {/* Horizontal timeline */}
+        {/* Horizontal timeline — real recorded events only. */}
         {(() => {
           const onboardingDone = !!profile?.onboarding_completed;
-          const auditOrBrandDone = !!profile?.audit_completed_at || !!profile?.brand_assessment_completed_at;
-          const nodes = [
-            { label: "Foundation", state: onboardingDone ? "done" : "future" },
-            { label: "Building", state: auditOrBrandDone ? "done" : onboardingDone ? "current" : "future" },
-            { label: "Now", state: "current" },
-            { label: "3-yr target", state: "future" },
-          ] as const;
+          const brandDone = !!profile?.brand_assessment_completed_at;
+          const nodes: { label: string; state: "done" }[] = [];
+          if (onboardingDone) nodes.push({ label: "Foundation", state: "done" });
+          if (brandDone) nodes.push({ label: "Assessment", state: "done" });
+          for (const m of earnedSorted.slice(0, 4)) {
+            nodes.push({ label: m.name, state: "done" });
+          }
+          if (nodes.length < 2) {
+            return (
+              <p style={{ fontSize: 13.5, color: "#5B6673", marginTop: 16, marginBottom: 0, lineHeight: 1.6 }}>
+                Your record starts when you publish.
+              </p>
+            );
+          }
           return (
             <div style={{ display: "flex", alignItems: "center", marginTop: 16 }}>
               {nodes.map((n, i) => {
                 const isDone = n.state === "done";
-                const isCurrent = n.state === "current";
+                const isCurrent = false;
                 const dot = (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <span style={{
@@ -1287,7 +1301,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 const barColor = (() => {
                   if (!next) return "transparent";
                   if (isDone && next.state === "done") return "var(--success, #2e7d32)";
-                  if (isDone && next.state === "current") return "var(--spot)";
                   return "var(--brand-line, rgba(0,0,0,0.12))";
                 })();
                 return (

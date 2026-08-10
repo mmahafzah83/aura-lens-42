@@ -58,6 +58,34 @@ const dashStyle: React.CSSProperties = { fontFamily: MONO };
 
 const EM_DASH = "—";
 
+const halvesStyle: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 28,
+};
+const halfStyle: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 16,
+};
+const ruleStyle: React.CSSProperties = {
+  height: 1, background: LINE, width: "100%", marginBlockEnd: 16,
+};
+const readLineStyle: React.CSSProperties = {
+  display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8,
+  fontSize: 12, color: MUTED,
+};
+const halfNoteStyle: React.CSSProperties = {
+  fontSize: 12.5, color: MUTED, margin: "-8px 0 0", lineHeight: 1.6,
+};
+const comingNextStyle: React.CSSProperties = {
+  marginBlockStart: 6, color: ACT, fontSize: 12.5, fontWeight: 600, fontFamily: SANS,
+};
+
+/** "10 Aug 2026" — day in mono at the call site. */
+function formatReadDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
 interface Snapshot {
   full_name: string | null;
   headline: string | null;
@@ -91,7 +119,6 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const [postsWithText, setPostsWithText] = useState<number | null>(null);
   const [themes, setThemes] = useState<{ theme: string; count: number }[]>([]);
   const [totalThemes, setTotalThemes] = useState(0);
-  const [handle, setHandle] = useState<string | null>(null);
   const [profileUrl, setProfileUrl] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [stage, setStage] = useState<"profile" | "posts" | null>(null);
@@ -127,7 +154,6 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
 
     try {
       const address = await loadLinkedInAddress(userId);
-      setHandle(address.handle);
       setProfileUrl(address.profileUrl);
     } catch { /* address is optional here */ }
     setLoading(false);
@@ -196,9 +222,16 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     );
   }
 
+  const readDate = formatReadDate(snapshot.fetched_at);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }} data-testid="how-you-appear">
-      {/* ── SECTION 1 — the mirror ───────────────────────────────────────── */}
+    <div style={halvesStyle} data-testid="how-you-appear">
+      {/* ══ HALF A — what LinkedIn shows ═══════════════════════════════════ */}
+      <div style={halfStyle}>
+        <div>
+          <div style={ruleStyle} />
+          <SectionHeader label="WHAT LINKEDIN SHOWS" />
+        </div>
       <section style={nightCardStyle}>
         <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
           {snapshot.photo_url ? (
@@ -252,6 +285,25 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         </div>
       </section>
 
+        <div style={readLineStyle}>
+          <span>
+            Read from LinkedIn on{" "}
+            <span style={dashStyle}>{readDate ?? EM_DASH}</span>
+          </span>
+          <button type="button" style={{ ...quietLinkStyle, marginBlockStart: 0 }} onClick={readProfile} disabled={stage !== null}>
+            {stage === "profile" ? "Reading your profile…" : stage === "posts" ? "Reading your posts…" : "Read again"}
+          </button>
+        </div>
+      </div>
+
+      {/* ══ HALF B — what Aura sees ════════════════════════════════════════ */}
+      <div style={halfStyle}>
+        <div>
+          <div style={ruleStyle} />
+          <SectionHeader label="WHAT AURA SEES" />
+        </div>
+        <p style={halfNoteStyle}>LinkedIn shows the facts. This is what they add up to.</p>
+
       {/* ── SECTION 2 — presence health ──────────────────────────────────── */}
       <section style={cardStyle}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
@@ -277,11 +329,10 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                   <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{r.rule}</div>
                   <FixAction
                     rowKey={r.key}
-                    handle={handle}
                     profileUrl={profileUrl}
                     canUsePhoto={!!snapshot.photo_url && !avatarUrl}
                     onUsePhoto={useLinkedInPhoto}
-                    onPublish={() => navigate("/publish")}
+                    onPublish={() => navigate("/home?tab=publish")}
                   />
                 </div>
               )}
@@ -339,22 +390,22 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
             </p>
           )}
           {firstMissing && (
-            <button type="button" style={quietLinkStyle} onClick={() => navigate("/publish")}>
+            <button type="button" style={quietLinkStyle} onClick={() => navigate("/home?tab=publish")}>
               Put this in my headline →
             </button>
           )}
         </section>
       )}
+      </div>
     </div>
   );
 }
 
 /** The single quiet action under a weak row. Never a button styled as one. */
 function FixAction({
-  rowKey, handle, profileUrl, canUsePhoto, onUsePhoto, onPublish,
+  rowKey, profileUrl, canUsePhoto, onUsePhoto, onPublish,
 }: {
   rowKey: PresenceKey;
-  handle: string | null;
   profileUrl: string | null;
   canUsePhoto: boolean;
   onUsePhoto: () => void;
@@ -371,17 +422,7 @@ function FixAction({
     return <button type="button" style={quietLinkStyle} onClick={onPublish}>Draft this from what I've already written →</button>;
   }
   if (rowKey === "experience") {
-    if (!handle) return null;
-    return (
-      <a
-        href={`https://www.linkedin.com/in/${handle}/details/experience/`}
-        target="_blank"
-        rel="noreferrer"
-        style={quietLinkStyle}
-      >
-        Add what you actually delivered →
-      </a>
-    );
+    return <div style={comingNextStyle}>Aura can draft these from your posts — coming next.</div>;
   }
   if (rowKey === "skills") {
     return (
