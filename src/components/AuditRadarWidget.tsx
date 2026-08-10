@@ -66,6 +66,14 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Whatever keys are on file, legacy names first, then anything new.
+  const dimensions = useMemo(() => {
+    const keys = Object.keys(auditResults || {});
+    const known = LEGACY_ORDER.filter((d) => keys.includes(d));
+    const extra = keys.filter((k) => !LEGACY_ORDER.includes(k));
+    return [...known, ...extra];
+  }, [auditResults]);
+
   // Re-render canvas on theme toggle
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -121,10 +129,11 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
     const cx = w / 2;
     const cy = h / 2;
     const radius = Math.min(cx, cy) - 60;
-    const n = 10;
+    const n = dimensions.length;
+    if (n < 3) return;
     const angleStep = (2 * Math.PI) / n;
     const startAngle = -Math.PI / 2;
-    const orderedScores = DIMENSION_ORDER.map((d) => auditResults[d] || 0);
+    const orderedScores = dimensions.map((d) => auditResults[d] || 0);
 
     ctx.clearRect(0, 0, w, h);
 
@@ -209,10 +218,10 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
       ctx.rotate(rotation);
 
       ctx.font = "600 12px system-ui, sans-serif";
-      ctx.fillText(DIMENSION_SHORT_LABELS[DIMENSION_ORDER[i]] || DIMENSION_ORDER[i], 0, 0);
+      ctx.fillText(DIMENSION_SHORT_LABELS[dimensions[i]] || formatSkillLabel(dimensions[i]), 0, 0);
       ctx.restore();
     }
-  }, [auditResults, themeTick]);
+  }, [auditResults, dimensions, themeTick]);
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!auditResults || !canvasRef.current) return;
@@ -224,7 +233,8 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
     const cx = canvas.clientWidth / 2;
     const cy = canvas.clientHeight / 2;
     const radius = Math.min(cx, cy) - 60;
-    const n = 10;
+    const n = dimensions.length;
+    if (n < 3) return;
     const angleStep = (2 * Math.PI) / n;
     const startAngle = -Math.PI / 2;
 
@@ -232,15 +242,15 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
 
     for (let i = 0; i < n; i++) {
       const angle = startAngle + i * angleStep;
-      const val = (auditResults[DIMENSION_ORDER[i]] || 0) / 100;
+      const val = (auditResults[dimensions[i]] || 0) / 100;
       const px = cx + radius * val * Math.cos(angle);
       const py = cy + radius * val * Math.sin(angle);
       const dist = Math.sqrt((mx - px) ** 2 + (my - py) ** 2);
       if (dist < 20 && (!closest || dist < closest.dist)) {
         closest = {
-          name: DIMENSION_ORDER[i],
-          score: auditResults[DIMENSION_ORDER[i]] || 0,
-          tier: DIMENSION_TIERS[DIMENSION_ORDER[i]].tier,
+          name: formatSkillLabel(dimensions[i]),
+          score: auditResults[dimensions[i]] || 0,
+          tier: DIMENSION_TIERS[dimensions[i]]?.tier || "Core",
           dist,
         };
       }
@@ -288,7 +298,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
   const startEdit = () => {
     if (auditResults) {
       const scores: Record<string, number> = {};
-      DIMENSION_ORDER.forEach(d => { scores[d] = auditResults[d] || 0; });
+      dimensions.forEach(d => { scores[d] = auditResults[d] || 0; });
       setEditScores(scores);
       setEditMode(true);
     }
@@ -349,10 +359,10 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
 
       {editMode ? (
         <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-          {DIMENSION_ORDER.map(dim => (
+          {dimensions.map(dim => (
             <div key={dim} className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-ink-7">{dim}</span>
+                <span className="text-xs text-ink-7">{formatSkillLabel(dim)}</span>
                 <span className="text-xs font-medium" style={{ color: "var(--brand)" }}>{editScores[dim] || 0}%</span>
               </div>
               <Slider
