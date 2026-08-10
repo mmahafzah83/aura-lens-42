@@ -1067,7 +1067,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </section>
       )}
 
-      {pane === "standing" && (<>
+      {pane === "standing" && (
+      <div style={STANDING_STACK}>
       {/* SECTION 6 — CAPABILITY RADAR */}
       {assessmentCompleted && (
         <div>
@@ -1111,9 +1112,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} hideSuggestedTopics={false} />
         </div>
       )}
-      </>)}
-
-      {pane === "standing" && (<>
       {/* SECTION 7 — YOUR JOURNEY (timeline) */}
       {assessmentCompleted && milestoneData.length > 0 && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
