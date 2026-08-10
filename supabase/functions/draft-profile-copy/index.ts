@@ -52,19 +52,49 @@ function stripFence(raw: string): string {
   return t.replace(/^```[a-zA-Z]*\s*/, "").replace(/```\s*$/, "").trim();
 }
 
+const ANGLES = ["Positioning", "Proof", "Point of view"] as const;
+type Angle = typeof ANGLES[number];
+
+function normaliseAngle(raw: unknown, index: number): Angle {
+  const s = String(raw ?? "").trim().toLowerCase();
+  const hit = ANGLES.find((a) => a.toLowerCase() === s);
+  if (hit) return hit;
+  if (s.startsWith("position")) return "Positioning";
+  if (s.startsWith("proof")) return "Proof";
+  if (s.startsWith("point")) return "Point of view";
+  return ANGLES[Math.min(index, 2)];
+}
+
+const wordsIn = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+const hasBanned = (s: string) => {
+  const low = s.toLowerCase();
+  return BANNED.some((b) => low.includes(b.toLowerCase()));
+};
+
 function systemPrompt(target: "headline" | "about", language: "ar" | "en" | "mixed"): string {
   const shape = target === "headline"
     ? [
         "You are writing LinkedIn HEADLINES.",
-        "Each option is at most 200 characters.",
-        "Each option says specifically what this person does and who they do it for.",
-        "Never write a title-only line such as 'Chief Executive Officer at X'.",
+        "HEADLINE CRAFT:",
+        "- The first 60 characters are what appears beside their name in search results, comments and invitations. Put the most specific, most searchable words there. Never open with a company name.",
+        "- A headline states what they do and for whom, then what changes because of it. A job title alone is a wasted line.",
+        "- Use · or | to separate AT MOST three clauses. Never more than three.",
+        "- Include the concrete nouns a person would actually search for — sector, discipline, geography — because search is how a headline earns its keep.",
+        "- Specific beats impressive. 'Cuts utility capex by rebuilding the tender model' beats 'Transformation leader driving excellence.'",
+        "- Never use the construction 'Helping X to Y'. Never stack adjectives.",
+        "- Maximum 200 characters. Count them.",
       ].join("\n")
     : [
         "You are writing LinkedIn ABOUT sections.",
-        "Each option is between 120 and 220 words.",
-        "Open with a concrete claim, never a greeting.",
-        "No bullet lists. No closing call to action.",
+        "ABOUT CRAFT:",
+        "- LinkedIn folds the About section at roughly 265 characters behind '…see more'. Everything that makes a reader open it must live before that fold. Treat the first two sentences as the whole job.",
+        "- Open on a concrete claim, a tension, or a specific situation this person is known for. Never a greeting, never 'I am a…', never a summary of the CV that follows.",
+        "- First person. Contractions allowed. It should read the way this person writes in their posts — take the rhythm and sentence length from the supplied posts, not from a template.",
+        "- Short paragraphs, one idea each, blank line between. No bullet lists. No headings.",
+        "- Concrete nouns over abstract ones. Name the sector, the kind of problem, the kind of organisation.",
+        "- Include evidence only where it exists in the source.",
+        "- End on a position, not an invitation. No call to action, no 'feel free to reach out', no email address.",
+        "- 120–220 words. Count them.",
       ].join("\n");
 
   const languageRule = language === "ar"
@@ -78,7 +108,14 @@ function systemPrompt(target: "headline" | "about", language: "ar" | "en" | "mix
     "",
     shape,
     "",
-    "THREE DISTINCT OPTIONS. Three different angles on this person — never three rewordings of one sentence.",
+    "THREE NAMED ANGLES. Three different strategic positions on the same person — never three rewordings of one sentence.",
+    "Return them in exactly this order, each carrying its \"angle\" field:",
+    "1. \"Positioning\" — what this person does that others in their field do not. Built from the distinctive pattern across their posts.",
+    "2. \"Proof\" — what they have actually delivered. Built only from concrete outcomes, roles, sectors or scale that appear in the source. If the source contains no concrete proof, lead instead with the specific domain they demonstrably operate in — never invented numbers.",
+    "3. \"Point of view\" — what they argue for or against. Built from the recurring stance in their writing. This is the one that sounds like a person with a spine.",
+    "",
+    "REGISTER: this member is a senior professional, frequently in the Gulf and wider Arab world. Write the way a serious operator talks to a peer — plain, specific, commercially literate. Never coach language, never motivational language, never 'journey', 'passion' or 'excellence'.",
+    "ARABIC: when writing Arabic, use contemporary professional Arabic — not dialect, not bureaucratic MSA. Keep English technical terms in English. Short lines. No emoji.",
     "",
     "TRUTH RULE, absolute: use only what appears in the supplied posts, profile and themes.",
     "Invent no employer, no job title, no metric, no client, no outcome and no date that is not in the source.",
@@ -89,8 +126,8 @@ function systemPrompt(target: "headline" | "about", language: "ar" | "en" | "mix
     `NEVER use these words or phrases: ${BANNED.join(", ")}.`,
     "",
     "Return STRICT JSON and nothing else. No markdown fence, no commentary:",
-    '{"options":[{"text":"...","why":"..."}]}',
-    "\"why\" is ONE short sentence naming which of this member's own themes or posts the option draws on.",
+    '{"options":[{"angle":"Positioning","text":"...","why":"..."}]}',
+    "\"why\" is ONE short sentence naming the specific thing in THIS member's own writing the option is built from — a theme, a recurring argument, a stated outcome. Never generic such as 'draws on your expertise'. Name the actual thing.",
   ].join("\n");
 }
 
@@ -211,14 +248,24 @@ Deno.serve(async (req) => {
     const payload = await aiRes.json();
     const raw = String(payload?.choices?.[0]?.message?.content ?? "");
 
-    let options: { text: string; why: string }[] = [];
+    let options: { angle: Angle; text: string; why: string }[] = [];
+    let dropped = 0;
     try {
       const parsed = JSON.parse(stripFence(raw));
       const list = Array.isArray(parsed?.options) ? parsed.options : [];
-      options = list
-        .map((o: any) => ({ text: String(o?.text ?? "").trim(), why: String(o?.why ?? "").trim() }))
-        .filter((o: { text: string }) => o.text.length > 0)
-        .slice(0, 3);
+      const mapped = list.slice(0, 3).map((o: any, i: number) => ({
+        angle: normaliseAngle(o?.angle, i),
+        text: String(o?.text ?? "").trim(),
+        why: String(o?.why ?? "").trim(),
+      }));
+      options = mapped.filter((o) => {
+        if (!o.text) return false;
+        if (hasBanned(o.text)) return false;
+        if (target === "headline") return o.text.length <= 200;
+        const w = wordsIn(o.text);
+        return w >= 100 && w <= 260;
+      });
+      dropped = mapped.length - options.length;
     } catch {
       options = [];
     }
@@ -238,6 +285,7 @@ Deno.serve(async (req) => {
       ok: true,
       target,
       options,
+      dropped,
       posts_used: posts.length,
       themes_used: themes.length,
       language,
