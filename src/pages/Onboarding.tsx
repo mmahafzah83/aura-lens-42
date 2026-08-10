@@ -1112,7 +1112,7 @@ const Onboarding = () => {
   if (showConnectStep) {
     return cardShell(
       <>
-        {eyebrow("Before your assessment")}
+        {eyebrow("Before we begin")}
         {heading("Connect LinkedIn so Aura writes from your real numbers.")}
         <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
           Aura reads your posts and how they performed — impressions, engagement, who responded. That's how it learns which of your ideas actually land, instead of guessing.
