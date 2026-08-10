@@ -570,6 +570,28 @@ const Onboarding = () => {
     loadPostProof(userId).then((p) => { if (p.posts > 0) setProof(p); }).catch(() => {});
   }, [userId, screen, proof]);
 
+  /* three spaces Aura proposes — fetched the moment a proposed question is in view */
+  useEffect(() => {
+    if (screen !== 11 || !questions) return;
+    const q = questions[Math.min(qIdx, questions.length - 1)];
+    if (q?.kind !== "proposed" || proposals !== null || proposalsDead) return;
+    let alive = true;
+    const timer = window.setTimeout(() => { if (alive) setProposalsDead(true); }, 15000);
+    supabase.functions
+      .invoke("onboarding-proposals", {
+        body: { claims: claims.map((c) => c.title), sector: sector || null, level: levelTitle || null },
+      })
+      .then(({ data, error }) => {
+        if (!alive) return;
+        const list = (data as any)?.options;
+        if (error || !Array.isArray(list) || list.length === 0) setProposalsDead(true);
+        else setProposals(list.slice(0, 3));
+      })
+      .catch(() => { if (alive) setProposalsDead(true); })
+      .finally(() => window.clearTimeout(timer));
+    return () => { alive = false; window.clearTimeout(timer); };
+  }, [screen, questions, qIdx, proposals, proposalsDead, claims, sector, levelTitle]);
+
   /* ── autosave after every slider ──
      Existing members keep whatever keys are already on file: new answers are
      MERGED in alongside them, never written over the top of the object. */
