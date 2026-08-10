@@ -78,7 +78,7 @@ const LABEL_STYLE: React.CSSProperties = {
 
 const DIVIDER: React.CSSProperties = {
   height: 0,
-  borderTop: "0.5px solid var(--brand-line, rgba(176,141,58,0.22))",
+  borderTop: "0.5px solid var(--brand-line, rgba(6,112,196,0.22))",
   margin: "10px 0",
 };
 
@@ -224,7 +224,7 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
                         fontWeight: 600,
                         padding: "1px 7px",
                         borderRadius: 999,
-                        border: "0.5px solid var(--brand-line, rgba(176,141,58,0.22))",
+                        border: "0.5px solid var(--brand-line, rgba(6,112,196,0.22))",
                         color: "var(--ink-3, #6b6155)",
                         background: "transparent",
                       }}

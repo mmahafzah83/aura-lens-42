@@ -44,7 +44,7 @@ const TIER_QUOTES: Record<string, string> = {
 
 const BG = "#0c0b0a";
 const GOLD = "var(--act)";
-const GOLD_LINE = "rgba(212,176,86,.25)";
+const GOLD_LINE = "rgba(6,112,196,.25)";
 const TEXT = "#f0ede8";
 const TEXT_MUTED = "rgba(240,237,232,.55)";
 const SERIF = "'Cormorant Garamond', 'Cairo', Georgia, serif";
@@ -906,7 +906,7 @@ function StepCredential({
                   letterSpacing: ".15em",
                   borderRadius: 999,
                   border: `1px solid ${lang === l ? GOLD : GOLD_LINE}`,
-                  background: lang === l ? "rgba(212,176,86,.12)" : "transparent",
+                  background: lang === l ? "rgba(6,112,196,.12)" : "transparent",
                   color: lang === l ? GOLD : TEXT_MUTED,
                   cursor: "pointer",
                   fontWeight: 600,
@@ -1075,7 +1075,7 @@ function MoveRow({
         padding: "14px 16px",
         borderRadius: 10,
         border: `1px solid ${GOLD_LINE}`,
-        background: "rgba(212,176,86,.03)",
+        background: "rgba(6,112,196,.03)",
       }}
     >
       <div

@@ -219,7 +219,7 @@ function PreviewCard({ tokens, theme }: { tokens: DesignTokens; theme: Theme }) 
         color: get("ink", "#F0EAD9"),
         padding: 24,
         borderRadius: 12,
-        border: `1px solid ${get("brand_line", "rgba(212,176,86,0.28)")}`,
+        border: `1px solid ${get("brand_line", "rgba(6,112,196,0.28)")}`,
         fontFamily: String(t.body || "DM Sans") + ", sans-serif",
       }}
     >
@@ -265,7 +265,7 @@ function PreviewCard({ tokens, theme }: { tokens: DesignTokens; theme: Theme }) 
           style={{
             background: "transparent",
             color: get("brand", "#B08D3A"),
-            border: `0.5px solid ${get("brand_line", "rgba(212,176,86,0.28)")}`,
+            border: `0.5px solid ${get("brand_line", "rgba(6,112,196,0.28)")}`,
             padding: "8px 16px",
             borderRadius: 6,
             fontSize: 14,
@@ -547,7 +547,7 @@ const AdminDesignSystem = () => {
                   padding: "6px 12px",
                   borderRadius: 4,
                   border: "none",
-                  background: editTheme === "dark" ? "var(--brand-muted, rgba(212,176,86,0.18))" : "transparent",
+                  background: editTheme === "dark" ? "var(--brand-muted, rgba(6,112,196,0.18))" : "transparent",
                   color: editTheme === "dark" ? "var(--brand)" : "var(--ink-5)",
                   cursor: "pointer",
                 }}
@@ -564,7 +564,7 @@ const AdminDesignSystem = () => {
                   padding: "6px 12px",
                   borderRadius: 4,
                   border: "none",
-                  background: editTheme === "light" ? "var(--brand-muted, rgba(212,176,86,0.18))" : "transparent",
+                  background: editTheme === "light" ? "var(--brand-muted, rgba(6,112,196,0.18))" : "transparent",
                   color: editTheme === "light" ? "var(--brand)" : "var(--ink-5)",
                   cursor: "pointer",
                 }}
@@ -631,7 +631,7 @@ const AdminDesignSystem = () => {
                 fontSize: 12,
                 padding: "8px 16px",
                 borderRadius: 6,
-                border: "0.5px solid var(--brand-line, rgba(212,176,86,0.28))",
+                border: "0.5px solid var(--brand-line, rgba(6,112,196,0.28))",
                 background: "transparent",
                 color: "var(--brand)",
                 cursor: "pointer",
@@ -682,7 +682,7 @@ const AdminDesignSystem = () => {
                     key={r.id}
                     style={{
                       borderTop: "1px solid var(--ink-3)",
-                      background: r.is_active ? "var(--brand-ghost, rgba(212,176,86,0.06))" : "transparent",
+                      background: r.is_active ? "var(--brand-ghost, rgba(6,112,196,0.06))" : "transparent",
                     }}
                   >
                     <td style={{ padding: "12px", color: r.is_active ? "var(--brand)" : "var(--ink-7)", fontWeight: 600 }}>
@@ -710,7 +710,7 @@ const AdminDesignSystem = () => {
                             fontSize: 12,
                             padding: "6px 12px",
                             borderRadius: 6,
-                            border: "0.5px solid var(--brand-line, rgba(212,176,86,0.28))",
+                            border: "0.5px solid var(--brand-line, rgba(6,112,196,0.28))",
                             background: "transparent",
                             color: "var(--brand)",
                             cursor: rollingBack === r.version ? "not-allowed" : "pointer",

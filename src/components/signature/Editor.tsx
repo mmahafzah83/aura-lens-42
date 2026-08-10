@@ -409,7 +409,7 @@ export default function Editor({
                           style={{
                             ...layoutCard,
                             borderColor: active ? "var(--spot)" : "var(--rule)",
-                            background: active ? "rgba(212,176,86,0.10)" : "transparent",
+                            background: active ? "rgba(6,112,196,0.10)" : "transparent",
                           }}
                           aria-pressed={active}
                         >

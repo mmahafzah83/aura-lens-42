@@ -133,7 +133,7 @@ export const CARD_STYLES: Record<CardStyleName, CardStyleConfig> = {
   teal: {
     name: 'teal',
     background: 'linear-gradient(160deg, #1C1812, #2A1F14 50%, #1C1812)',
-    overlay: 'radial-gradient(circle at 60% 30%, rgba(212,176,86,0.08), transparent 60%)',
+    overlay: 'radial-gradient(circle at 60% 30%, rgba(6,112,196,0.08), transparent 60%)',
     accent: '#D4B056',
     accentBar: {
       position: 'bottom',
@@ -154,14 +154,14 @@ export const CARD_STYLES: Record<CardStyleName, CardStyleConfig> = {
     bodyColor: 'rgba(244,239,226,0.6)',
     footerColor: 'rgba(244,239,226,0.7)',
     footerAccentColor: '#D4B056',
-    footerBorder: '1px solid rgba(212,176,86,0.12)',
+    footerBorder: '1px solid rgba(6,112,196,0.12)',
     grain: true,
     grainOpacity: 0.08,
   },
   paper: {
     name: 'paper',
     background: '#FAF6EE',
-    border: '1px solid rgba(176,141,58,0.15)',
+    border: '1px solid rgba(6,112,196,0.15)',
     accent: '#B08D3A',
     accentBar: {
       position: 'left',
@@ -180,7 +180,7 @@ export const CARD_STYLES: Record<CardStyleName, CardStyleConfig> = {
     bodyColor: '#6B6456',
     footerColor: '#6B6456',
     footerAccentColor: '#B08D3A',
-    footerBorder: '1px solid rgba(176,141,58,0.12)',
+    footerBorder: '1px solid rgba(6,112,196,0.12)',
   },
   navy: {
     name: 'navy',

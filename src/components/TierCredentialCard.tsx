@@ -31,7 +31,7 @@ export interface CredentialData {
 
 const BG = "#0c0b0a";
 const GOLD = EXPORT_GOLD;
-const GOLD_LINE = "rgba(212,176,86,.25)";
+const GOLD_LINE = "rgba(6,112,196,.25)";
 const TEXT = "#f0ede8";
 const TEXT_MUTED = "rgba(240,237,232,.4)";
 const TEXT_HINT = "rgba(240,237,232,.2)";
@@ -237,7 +237,7 @@ export const ConceptA = forwardRef<HTMLDivElement, { data: CredentialData; size?
                       padding: "6px 12px",
                       borderRadius: 999,
                       border: `1px solid ${active ? GOLD : GOLD_LINE}`,
-                      background: active ? "rgba(212,176,86,.12)" : "transparent",
+                      background: active ? "rgba(6,112,196,.12)" : "transparent",
                       color: active ? GOLD : passed ? TEXT_MUTED : TEXT_HINT,
                       fontWeight: active ? 600 : 400,
                     }}

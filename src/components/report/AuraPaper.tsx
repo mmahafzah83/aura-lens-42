@@ -920,7 +920,7 @@ export function ClosingPlate({
               fontFamily: FONT.serif,
               fontSize: 18,
               lineHeight: 1.5,
-              color: "rgba(241,236,225,0.86)",
+              color: "rgba(242,245,249,0.86)",
               margin: "18px 0 0",
               maxWidth: 560,
             }}
@@ -935,8 +935,8 @@ export function ClosingPlate({
             marginTop: 60,
             paddingTop: 20,
             paddingBottom: 20,
-            borderTop: "1px solid rgba(241,236,225,0.28)",
-            borderBottom: "1px solid rgba(241,236,225,0.28)",
+            borderTop: "1px solid rgba(242,245,249,0.28)",
+            borderBottom: "1px solid rgba(242,245,249,0.28)",
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
             gap: 20,
@@ -967,7 +967,7 @@ export function ClosingPlate({
             }}
           >
             <div>{fullName || "—"}</div>
-            <div style={{ color: "rgba(241,236,225,0.6)", marginTop: 3 }}>The Aura Paper № 01 · aura-intel.org</div>
+            <div style={{ color: "rgba(242,245,249,0.6)", marginTop: 3 }}>The Aura Paper № 01 · aura-intel.org</div>
           </div>
           <span
             style={{
@@ -1001,7 +1001,7 @@ function ClosingStat({ label, value, deltaTeal }: { label: string; value: string
           fontSize: 10.5,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
-          color: "rgba(241,236,225,0.65)",
+          color: "rgba(242,245,249,0.65)",
           marginBottom: 8,
         }}
       >

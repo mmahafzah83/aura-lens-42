@@ -117,11 +117,11 @@ export default function MarketCoverageSection({ onOpenCapture, signals = [] }: P
                 fontSize: 12,
                 fontWeight: 700,
                 letterSpacing: 0.5,
-                background: "var(--brand-ghost, rgba(176,141,58,0.12))",
+                background: "var(--brand-ghost, rgba(6,112,196,0.12))",
                 color: "var(--brand)",
                 padding: "3px 8px",
                 borderRadius: 999,
-                border: "0.5px solid var(--brand-line, rgba(176,141,58,0.3))",
+                border: "0.5px solid var(--brand-line, rgba(6,112,196,0.3))",
                 whiteSpace: "nowrap",
               }}
             >
@@ -209,7 +209,7 @@ function CoverageBody({ data, onOpenCapture }: { data: CoverageResult; onOpenCap
             const bg = it.category === "covered"
               ? "var(--brand)"
               : it.category === "weak"
-              ? "var(--brand-line, rgba(176,141,58,0.55))"
+              ? "var(--brand-line, rgba(6,112,196,0.55))"
               : it.category === "opportunity"
               ? ORANGE
               : "var(--ink-3)";

@@ -96,7 +96,7 @@ const STRIP_CSS = `
 .sig-strip-tile:focus-visible {
   outline: none;
   border-color: var(--spot);
-  box-shadow: 0 0 0 2px rgba(212,176,86,0.35);
+  box-shadow: 0 0 0 2px rgba(6,112,196,0.35);
 }
 .sig-strip-preview {
   aspect-ratio: 4 / 5;

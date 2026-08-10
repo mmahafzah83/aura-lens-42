@@ -106,7 +106,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
     const resolvedInk3 = cs.getPropertyValue("--ink-3").trim() || "#C9C0AC";
     const resolvedInk5 = cs.getPropertyValue("--ink-5").trim() || "#8A8170";
     const resolvedBrand = cs.getPropertyValue("--act").trim();
-    const resolvedBorder = cs.getPropertyValue("--brand-line").trim() || "rgba(212,176,86,0.28)";
+    const resolvedBorder = cs.getPropertyValue("--brand-line").trim() || "rgba(6,112,196,0.28)";
 
     const dpr = window.devicePixelRatio || 1;
     const w = canvas.clientWidth;

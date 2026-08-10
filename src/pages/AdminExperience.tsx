@@ -282,7 +282,7 @@ const AdminExperience = () => {
                     <Input
                       value={bg.tint_color || ""}
                       onChange={(e) => updateBgLocal(bg.id, { tint_color: e.target.value })}
-                      placeholder="rgba(176,141,58,0.04)"
+                      placeholder="rgba(6,112,196,0.04)"
                       className="mt-1 text-xs h-9"
                       style={{ backgroundColor: "var(--ink)", borderColor: "var(--ink-3)", color: "var(--ink-7)" }}
                     />

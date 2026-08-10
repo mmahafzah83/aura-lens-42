@@ -124,9 +124,9 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
     if (!ghostDraft) return null;
 
     const PANEL_BG = "#131009";
-    const PANEL_BORDER = "rgba(241,236,225,0.12)";
+    const PANEL_BORDER = "rgba(242,245,249,0.12)";
     const INK_HI = "#F6F2E8";
-    const INK_LOW = "rgba(241,236,225,0.55)";
+    const INK_LOW = "rgba(242,245,249,0.55)";
     const TEAL = "var(--machine)";
 
     const handleOpenGhost = async () => {
@@ -165,7 +165,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
             aria-hidden
             style={{
               position: "absolute", top: 0, left: 0, right: 0, height: 1,
-              background: "linear-gradient(90deg, transparent, rgba(54,197,176,0.7), transparent)",
+              background: "linear-gradient(90deg, transparent, rgba(0,206,201,0.7), transparent)",
               pointerEvents: "none",
             }}
           />
@@ -175,7 +175,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
               className="agent-finding-dot"
               style={{
                 width: 6, height: 6, borderRadius: "50%", background: TEAL,
-                boxShadow: "0 0 12px rgba(54,197,176,0.8)",
+                boxShadow: "0 0 12px rgba(0,206,201,0.8)",
                 display: "inline-block", flexShrink: 0,
               }}
             />
@@ -231,9 +231,9 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
 
         <style>{`
           @keyframes agent-finding-ring {
-            0%   { box-shadow: 0 0 0 0 rgba(54,197,176,0.55); }
-            70%  { box-shadow: 0 0 0 8px rgba(54,197,176,0);   }
-            100% { box-shadow: 0 0 0 0 rgba(54,197,176,0);     }
+            0%   { box-shadow: 0 0 0 0 rgba(0,206,201,0.55); }
+            70%  { box-shadow: 0 0 0 8px rgba(0,206,201,0);   }
+            100% { box-shadow: 0 0 0 0 rgba(0,206,201,0);     }
           }
           .agent-finding-dot { animation: agent-finding-ring 2.4s ease-out infinite; }
           @media (prefers-reduced-motion: reduce) {
@@ -297,15 +297,15 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
   };
 
   const PANEL_BG = "#131009";
-  const PANEL_BORDER = "rgba(241,236,225,0.12)";
+  const PANEL_BORDER = "rgba(242,245,249,0.12)";
   const INK_HI = "#F6F2E8";
-  const INK_MID = "rgba(241,236,225,0.7)";
-  const INK_LOW = "rgba(241,236,225,0.55)";
-  const INK_DIM = "rgba(241,236,225,0.45)";
-  const INK_MUTE = "rgba(241,236,225,0.6)";
-  const RULE_SOFT = "rgba(241,236,225,0.15)";
-  const STRIP_BG = "rgba(241,236,225,0.08)";
-  const STRIP_BORDER = "rgba(241,236,225,0.1)";
+  const INK_MID = "rgba(242,245,249,0.7)";
+  const INK_LOW = "rgba(242,245,249,0.55)";
+  const INK_DIM = "rgba(242,245,249,0.45)";
+  const INK_MUTE = "rgba(242,245,249,0.6)";
+  const RULE_SOFT = "rgba(242,245,249,0.15)";
+  const STRIP_BG = "rgba(242,245,249,0.08)";
+  const STRIP_BORDER = "rgba(242,245,249,0.1)";
   const TEAL = "var(--machine)";
   const AMBER = "var(--text-secondary)";
 
@@ -336,7 +336,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
             position: "absolute",
             top: 0, left: 0, right: 0,
             height: 1,
-            background: "linear-gradient(90deg, transparent, rgba(54,197,176,0.7), transparent)",
+            background: "linear-gradient(90deg, transparent, rgba(0,206,201,0.7), transparent)",
             pointerEvents: "none",
           }}
         />
@@ -402,7 +402,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
                   style={{
                     width: 6, height: 6, borderRadius: "50%",
                     background: TEAL,
-                    boxShadow: "0 0 12px rgba(54,197,176,0.8)",
+                    boxShadow: "0 0 12px rgba(0,206,201,0.8)",
                     display: "inline-block", flexShrink: 0,
                   }}
                 />
@@ -523,7 +523,7 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
                   fontSize: 10,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
-                  color: "rgba(241,236,225,0.45)",
+                  color: "rgba(242,245,249,0.45)",
                   marginBottom: 10,
                   wordBreak: "break-word",
                 }}
@@ -636,9 +636,9 @@ const AgentFindingCard = ({ userId }: { userId: string | null }) => {
 
       <style>{`
         @keyframes agent-finding-ring {
-          0%   { box-shadow: 0 0 0 0 rgba(54,197,176,0.55); }
-          70%  { box-shadow: 0 0 0 8px rgba(54,197,176,0);   }
-          100% { box-shadow: 0 0 0 0 rgba(54,197,176,0);     }
+          0%   { box-shadow: 0 0 0 0 rgba(0,206,201,0.55); }
+          70%  { box-shadow: 0 0 0 8px rgba(0,206,201,0);   }
+          100% { box-shadow: 0 0 0 0 rgba(0,206,201,0);     }
         }
         .agent-finding-dot {
           animation: agent-finding-ring 2.4s ease-out infinite;

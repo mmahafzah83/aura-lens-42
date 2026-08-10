@@ -133,7 +133,7 @@ export default function HeroHead() {
         }
         .hero-scan-line {
           position: absolute; left: 0; right: 0; top: 0; height: 1px;
-          background: rgba(212,176,86,0.09);
+          background: rgba(6,112,196,0.09);
           animation: hero-scan 7s linear infinite;
           pointer-events: none;
         }
@@ -159,7 +159,7 @@ export default function HeroHead() {
             width: "min(600px, 80vw)",
             margin: "0 auto",
             filter:
-              "saturate(0.3) sepia(0.85) hue-rotate(-10deg) brightness(1.1) contrast(1.1) drop-shadow(0 0 50px rgba(176,141,58,0.12))",
+              "saturate(0.3) sepia(0.85) hue-rotate(-10deg) brightness(1.1) contrast(1.1) drop-shadow(0 0 50px rgba(6,112,196,0.12))",
             background: "transparent",
           }}
           draggable={false}
@@ -184,7 +184,7 @@ export default function HeroHead() {
                 borderRadius: 14,
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid rgba(176,141,58,0.18)",
+                border: "1px solid rgba(6,112,196,0.18)",
                 boxShadow: "0 4px 18px rgba(0,0,0,0.18)",
               }}
             >

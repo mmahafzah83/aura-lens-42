@@ -106,7 +106,7 @@ export default function AdminGuideHealth() {
     fontSize: 13,
     color: "var(--ink)",
     padding: "10px",
-    borderBottom: "1px solid rgba(176,141,58,0.12)",
+    borderBottom: "1px solid rgba(6,112,196,0.12)",
   };
 
   return (
@@ -207,7 +207,7 @@ export default function AdminGuideHealth() {
             Object.keys(byCategory).sort().map((cat) => {
               const open = !!openCats[cat];
               return (
-                <div key={cat} style={{ borderBottom: "1px solid rgba(176,141,58,0.12)" }}>
+                <div key={cat} style={{ borderBottom: "1px solid rgba(6,112,196,0.12)" }}>
                   <button
                     type="button"
                     onClick={() => setOpenCats((s) => ({ ...s, [cat]: !s[cat] }))}

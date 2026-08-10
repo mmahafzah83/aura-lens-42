@@ -939,7 +939,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 {archetypeName && (
                   <span style={{
                     fontSize: 11, fontWeight: 500, padding: "3px 10px",
-                    borderRadius: 12, background: "var(--brand-pale, rgba(176,141,58,0.12))",
+                    borderRadius: 12, background: "var(--brand-pale, rgba(6,112,196,0.12))",
                     color: "var(--action-ink)",
                     display: "inline-flex", alignItems: "center", gap: 6,
                   }}>
@@ -1003,7 +1003,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   fontWeight: 500,
                   padding: "2px 8px",
                   borderRadius: 10,
-                  background: radarInputs.voiceTrained ? "rgba(46, 125, 50, 0.12)" : "var(--brand-pale, rgba(176,141,58,0.12))",
+                  background: radarInputs.voiceTrained ? "rgba(18,128,92, 0.12)" : "var(--brand-pale, rgba(6,112,196,0.12))",
                   color: radarInputs.voiceTrained ? "var(--success)" : "var(--text-muted)",
                 }}
               >
@@ -1055,7 +1055,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   padding: "6px 12px",
                   borderRadius: 8,
                   fontWeight: isStrong ? 500 : 400,
-                  background: isStrong ? "var(--brand-pale, rgba(176,141,58,0.12))" : "var(--vellum, var(--paper-2))",
+                  background: isStrong ? "var(--brand-pale, rgba(6,112,196,0.12))" : "var(--vellum, var(--paper-2))",
                   color: isStrong ? "var(--ink)" : "var(--ink)",
                   border: isStrong ? "0.5px solid transparent" : "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
                 }}>
@@ -1119,7 +1119,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Trophy className="w-3.5 h-3.5" style={{ color: "var(--success, #2e7d32)" }} />
+              <Trophy className="w-3.5 h-3.5" style={{ color: "var(--success, #12805C)" }} />
               <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)" }}>
                 Your journey
               </span>
@@ -1166,7 +1166,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <div style={{ position: "relative", paddingBottom: 16 }}>
                 <span style={{
                   position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
-                  background: "var(--success, #2e7d32)", display: "flex", alignItems: "center", justifyContent: "center",
+                  background: "var(--success, #12805C)", display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <Check className="w-2 h-2" style={{ color: "var(--paper)" }} strokeWidth={3} />
                 </span>
@@ -1300,7 +1300,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 const next = nodes[i + 1];
                 const barColor = (() => {
                   if (!next) return "transparent";
-                  if (isDone && next.state === "done") return "var(--success, #2e7d32)";
+                  if (isDone && next.state === "done") return "var(--success, #12805C)";
                   return "var(--brand-line, rgba(0,0,0,0.12))";
                 })();
                 return (
