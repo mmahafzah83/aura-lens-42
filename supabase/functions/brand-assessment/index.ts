@@ -158,7 +158,7 @@ Analyse this professional using all six frameworks and provide the complete bran
         JSON.stringify({
           interpretation: "",
           pending: true,
-          message: "Assessment saved. Your positioning will be generated shortly — you can regenerate it from My Story.",
+          message: "Saved. Your write-up will be ready shortly — you can ask for it again from My Story.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -253,7 +253,7 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
       JSON.stringify({
         interpretation: "",
         pending: true,
-        message: "Assessment saved. Your positioning will be generated shortly — you can regenerate it from My Story.",
+        message: "Saved. Your write-up will be ready shortly — you can ask for it again from My Story.",
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

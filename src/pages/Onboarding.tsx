@@ -1762,7 +1762,7 @@ const Onboarding = () => {
           {eyebrow("You're set")}
           {heading("That's everything Aura needs.")}
           <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
-            Aura has the read you gave it, your profile, your calibration, and your assessment.
+            Aura has the read you gave it, your profile, how you rated yourself, and your answers.
           </p>
           <p className="mb-6" style={{ fontSize: 14, lineHeight: 1.7, color: "#5B6673" }}>
             From here it works in the background — reading, connecting, and bringing you what matters.
