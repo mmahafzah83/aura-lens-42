@@ -11,6 +11,11 @@ export interface RevealData {
   subjects: string[];
   softGround: string[];
   figures: { value: string; label: string }[];
+  /**
+   * What produced each section, computed from real counts. A section with no
+   * nameable source carries no line at all rather than a claim.
+   */
+  provenance?: { read?: string; subjects?: string; softGround?: string };
 }
 
 export interface RevealFooter {
