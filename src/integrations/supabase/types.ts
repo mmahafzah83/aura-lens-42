@@ -522,6 +522,7 @@ export type Database = {
           anchor_low: string
           band: Database["public"]["Enums"]["seniority_band"]
           created_at: string
+          framework: string | null
           id: string
           name: string
           position: number
@@ -534,6 +535,7 @@ export type Database = {
           anchor_low: string
           band: Database["public"]["Enums"]["seniority_band"]
           created_at?: string
+          framework?: string | null
           id?: string
           name: string
           position: number
@@ -546,6 +548,7 @@ export type Database = {
           anchor_low?: string
           band?: Database["public"]["Enums"]["seniority_band"]
           created_at?: string
+          framework?: string | null
           id?: string
           name?: string
           position?: number
@@ -3139,9 +3142,11 @@ export type Database = {
           active: boolean
           band: Database["public"]["Enums"]["seniority_band"]
           created_at: string
+          framework: string | null
           helper: string | null
           id: string
           kind: string
+          max_choices: number | null
           options: Json | null
           position: number
           prompt: string
@@ -3151,9 +3156,11 @@ export type Database = {
           active?: boolean
           band: Database["public"]["Enums"]["seniority_band"]
           created_at?: string
+          framework?: string | null
           helper?: string | null
           id?: string
           kind?: string
+          max_choices?: number | null
           options?: Json | null
           position: number
           prompt: string
@@ -3163,9 +3170,11 @@ export type Database = {
           active?: boolean
           band?: Database["public"]["Enums"]["seniority_band"]
           created_at?: string
+          framework?: string | null
           helper?: string | null
           id?: string
           kind?: string
+          max_choices?: number | null
           options?: Json | null
           position?: number
           prompt?: string
@@ -3634,6 +3643,27 @@ export type Database = {
           score?: number
           tier?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      seniority_titles: {
+        Row: {
+          active: boolean
+          band: Database["public"]["Enums"]["seniority_band"]
+          position: number
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          band: Database["public"]["Enums"]["seniority_band"]
+          position: number
+          title: string
+        }
+        Update: {
+          active?: boolean
+          band?: Database["public"]["Enums"]["seniority_band"]
+          position?: number
+          title?: string
         }
         Relationships: []
       }
