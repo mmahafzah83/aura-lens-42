@@ -614,7 +614,7 @@ const Onboarding = () => {
           last_name: lastName.trim() || null,
           firm: firm.trim() || null,
           sector_focus: sector || null,
-          level: band ? BAND_TO_LEVEL[band] : null,
+          level: levelTitle.trim() || (band ? BAND_TO_LEVEL[band] : null),
           onboarding_completed: true,
           onboarding_step: 4,
           completed: true,
