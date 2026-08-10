@@ -69,6 +69,7 @@ export default function Settings() {
   const rawTab = searchParams.get("tab");
   const tab = rawTab === "preferences" ? "preferences" : rawTab === "connections" ? "connections" : "account";
   const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
+  const { isAdmin } = useIsAdmin();
   /** Which profile field the member asked to edit. Null means the modal is shut. */
   const [editField, setEditField] = useState<EditProfileField | null>(null);
 
