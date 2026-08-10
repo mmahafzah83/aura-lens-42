@@ -199,6 +199,8 @@ const Onboarding = () => {
   const [firm, setFirm] = useState("");
   const [sector, setSector] = useState("");
   const [band, setBand] = useState<Band | null>(null);
+  const [levelTitle, setLevelTitle] = useState("");
+  const { titles: seniorityTitles, failed: titlesFailed, reload: reloadTitles } = useSeniorityTitles();
 
   /* screen 1–3 */
   const [liInput, setLiInput] = useState("");
@@ -230,6 +232,7 @@ const Onboarding = () => {
   const [qIdx, setQIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [textAnswer, setTextAnswer] = useState("");
+  const [multiPicked, setMultiPicked] = useState<string[]>([]);
 
   /* screen 13 */
   const [reveal, setReveal] = useState<RevealData | null>(null);
