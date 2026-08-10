@@ -1301,6 +1301,8 @@ const Onboarding = () => {
 
   /* 13 — FULL-BLEED BLUE */
   if (screen === 13) {
+    const shareFooter = { posts: postsRead ?? 0, saved: claims.length };
+    const caption = suggestedCaption(postsRead ?? 0);
     content = (
       <div className="obc" style={{
         minBlockSize: "100dvh",
@@ -1315,13 +1317,28 @@ const Onboarding = () => {
               </p>
             </div>
           )}
-          <button type="button" onClick={async () => {
-            const text = reveal ? `${reveal.archetype} — ${reveal.marketRead}` : "My read from Aura";
+          {/* the same card, laid out for the exported image */}
+          {reveal ? (
+            <div style={{ position: "fixed", insetInlineStart: -10000, insetBlockStart: 0, pointerEvents: "none" }} aria-hidden>
+              <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+            </div>
+          ) : null}
+          <button type="button" disabled={!reveal || sharing} onClick={async () => {
+            if (!shareRef.current) return;
+            setSharing(true);
             try {
-              if (navigator.share) await navigator.share({ text });
-              else { await navigator.clipboard.writeText(text); toast.success("Copied — paste it anywhere."); }
-            } catch { /* the member changed their mind */ }
-          }} style={{ ...btnPrimary, marginBlockStart: 20, background: OB.night }}>Share this</button>
+              const how = await shareRevealCard(shareRef.current, { caption });
+              toast.success(how === "shared"
+                ? "Sent to your share sheet."
+                : "Image saved — the caption is on your clipboard, ready to paste.");
+            } catch {
+              toast.error("Couldn't build the image just now. Try once more.");
+            } finally {
+              setSharing(false);
+            }
+          }} style={{ ...btnPrimary, marginBlockStart: 20, background: OB.night, opacity: !reveal || sharing ? 0.6 : 1 }}>
+            {sharing ? <Loader2 size={16} className="animate-spin" /> : null} Share this
+          </button>
           <button type="button" onClick={() => go(14)} style={{
             ...btnGhostLight, color: "#FFFFFF", border: "1px solid rgba(255,255,255,.55)",
           }}>Take me in</button>
