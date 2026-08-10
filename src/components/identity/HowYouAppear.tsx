@@ -287,7 +287,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
 
       {/* ── SECTION 3 — the gap ──────────────────────────────────────────── */}
       {themeRows.length >= 3 && (
-        <section style={cardStyle}>
+        <section id="how-you-appear-gap" style={cardStyle}>
           <SectionHeader label="WHAT YOU WRITE ABOUT VS WHAT YOUR PROFILE SAYS" />
           <p style={{ fontSize: 13.5, color: INK, margin: "0 0 12px", lineHeight: 1.6 }}>
             You write about <span style={dashStyle}>{themeRows.length}</span> recurring subjects. Your profile mentions{" "}

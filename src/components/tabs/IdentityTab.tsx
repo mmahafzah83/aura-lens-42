@@ -26,6 +26,7 @@ import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
 
 import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
+import HowYouAppear from "@/components/identity/HowYouAppear";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
@@ -766,6 +767,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <FirstTimeHint hintKey="mystory-profile">
         Your professional identity as the market sees it — generated from your assessment and captures, not a template.
       </FirstTimeHint>
+
+      {/* HOW YOU APPEAR — the first thing on My Story, above the panes */}
+      <HowYouAppear userId={authUser?.id ?? null} />
 
       {/* PANE SWITCHER — URL param `story` is the single source of truth */}
       <div
