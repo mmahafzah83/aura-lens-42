@@ -40,6 +40,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [firm, setFirm] = useState("");
   const [level, setLevel] = useState("");
+  const { titles: seniorityTitles } = useSeniorityTitles();
   const [corePractice, setCorePractice] = useState("");
   const [sectorFocus, setSectorFocus] = useState("");
   const [sectorOther, setSectorOther] = useState("");
