@@ -7,15 +7,15 @@
  * have not read.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
-import { BANNED_WORDS, hasBanned } from "../_shared/bannedWords.ts";
+import { hasBanned, loadBannedWords } from "../_shared/bannedWords.ts";
+import { isAdmin } from "../_shared/adminRole.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FOUNDER_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
-const MODEL = "google/gemini-3-flash-preview";
+const DEFAULT_MODEL = "google/gemini-3-flash-preview";
 const MIN_POSTS = 3;
 const MAX_POSTS = 15;
 const POST_CHARS = 1200;
@@ -61,7 +61,20 @@ function normaliseAngle(raw: unknown, index: number): Angle {
 
 const wordsIn = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
-function systemPrompt(target: "headline" | "about", language: "ar" | "en" | "mixed"): string {
+/** The model is data. Falls back to the literal when the setting is missing or malformed. */
+async function loadModel(admin: any): Promise<string> {
+  try {
+    const { data } = await admin.from("admin_settings").select("value").eq("key", "ai_model").maybeSingle();
+    const value = (data as any)?.value;
+    const name = typeof value === "string" ? value : typeof value?.model === "string" ? value.model : "";
+    if (name && name.trim().length > 0) return name.trim();
+  } catch (e) {
+    console.info("[draft-profile-copy] could not read admin_settings.ai_model:", (e as Error)?.message);
+  }
+  return DEFAULT_MODEL;
+}
+
+function systemPrompt(target: "headline" | "about", language: "ar" | "en" | "mixed", banned: string[]): string {
   const shape = target === "headline"
     ? [
         "You are writing LinkedIn HEADLINES.",
@@ -113,7 +126,7 @@ function systemPrompt(target: "headline" | "about", language: "ar" | "en" | "mix
     "",
     languageRule,
     "",
-    `NEVER use these words or phrases: ${BANNED_WORDS.join(", ")}.`,
+    `NEVER use these words or phrases: ${banned.join(", ")}.`,
     "",
     "Return STRICT JSON and nothing else. No markdown fence, no commentary:",
     '{"options":[{"angle":"Positioning","text":"...","why":"..."}]}',
@@ -150,9 +163,9 @@ Deno.serve(async (req) => {
     const askedLanguage: "ar" | "en" | null =
       body?.language === "ar" || body?.language === "en" ? body.language : null;
 
-    // Founder may act for another user; everyone else is forced to self.
+    // An admin may act for another member; everyone else is forced to self.
     const requested = typeof body?.user_id === "string" ? body.user_id.trim() : "";
-    const targetUserId = user.id === FOUNDER_USER_ID && requested ? requested : user.id;
+    const targetUserId = requested && (await isAdmin(anon, user.id)) ? requested : user.id;
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
@@ -249,10 +262,10 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: await loadModel(admin),
         temperature: 0.7,
         messages: [
-          { role: "system", content: systemPrompt(target, language) },
+          { role: "system", content: systemPrompt(target, language, bannedWords) },
           { role: "user", content: userPrompt },
         ],
       }),
@@ -279,11 +292,11 @@ Deno.serve(async (req) => {
         why: String(o?.why ?? "").trim(),
       })).map((o: { angle: Angle; text: string; why: string }) =>
         // A bad footnote never costs us a good option — clear the why, keep the text.
-        hasBanned(o.why) ? { ...o, why: "" } : o,
+        hasBanned(o.why, bannedWords) ? { ...o, why: "" } : o,
       );
       options = mapped.filter((o) => {
         if (!o.text) return false;
-        if (hasBanned(o.text)) return false;
+        if (hasBanned(o.text, bannedWords)) return false;
         if (target === "headline") return o.text.length <= 200;
         const w = wordsIn(o.text);
         return w >= 100 && w <= 260;
