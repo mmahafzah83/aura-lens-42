@@ -45,6 +45,12 @@ const OPTION_CARD: React.CSSProperties = {
   display: "flex", flexDirection: "column", gap: 10,
 };
 const COUNT_LINE: React.CSSProperties = { fontFamily: MONO, fontSize: 12, color: MUTED };
+const ANGLE_CHIP: React.CSSProperties = {
+  alignSelf: "flex-start", borderRadius: 4, padding: "3px 8px",
+  background: CARD, border: `1px solid ${LINE}`, color: MUTED,
+  fontSize: 11.5, fontFamily: SANS, textTransform: "uppercase", letterSpacing: ".06em",
+};
+const ANGLE_HINT: React.CSSProperties = { fontSize: 12.5, color: MUTED, lineHeight: 1.55, margin: "6px 18px 0" };
 const WHY_LINE: React.CSSProperties = { fontSize: 12.5, color: MUTED, lineHeight: 1.5 };
 const QUIET_ACTION: React.CSSProperties = {
   alignSelf: "flex-start", background: "none", border: 0, padding: "10px 0",
@@ -81,7 +87,7 @@ const KEYFRAMES = `@keyframes aura-draft-progress {
 
 export type DraftTarget = "headline" | "about";
 
-interface Option { text: string; why: string }
+interface Option { text: string; why: string; angle?: string }
 
 interface Props {
   target: DraftTarget;
@@ -199,6 +205,9 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
         <p style={SUBLINE}>
           Aura reads what you've published and writes in that voice. Nothing here is invented.
         </p>
+        <p style={ANGLE_HINT}>
+          Three angles on the same person. Pick the one that sounds like you.
+        </p>
 
         <div style={BODY}>
           {busy && (
@@ -239,6 +248,7 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
             const ar = isArabic(o.text);
             return (
               <div key={`${i}-${o.text.slice(0, 24)}`} style={OPTION_CARD}>
+                {o.angle && <span style={ANGLE_CHIP}>{o.angle}</span>}
                 <div
                   dir="auto"
                   style={{
