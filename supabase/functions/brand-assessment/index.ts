@@ -116,12 +116,16 @@ ${profileBlock}
 
 ${claimsBlock}
 
+${postsBlock}
+
+${selfClaimBlock}
+
 ${auditContext}
 
 Here are the user's Brand Assessment answers:
 ${JSON.stringify(answers, null, 2)}
 
-Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the audit scores as factual evidence — do not ask the user for them. Reference at least one of their own captured claims, by its substance, inside THE HONEST TRUTH section. Write for their seniority band. Never write a bracketed placeholder and never write the words "sector name".`;
+Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the audit scores as factual evidence — do not ask the user for them. Reference at least one of their own captured claims, by its substance, inside THE HONEST TRUTH section. THE HONEST TRUTH must also settle the claim-versus-evidence test set out above, with the number named, and it is allowed to be unwelcome — never trade accuracy for comfort. Write for their seniority band. Never write a bracketed placeholder and never write the words "sector name".`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
