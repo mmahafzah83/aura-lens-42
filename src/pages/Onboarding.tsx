@@ -1452,6 +1452,9 @@ const Onboarding = () => {
           <button type="button" onClick={() => go(14)} style={{
             ...btnGhostLight, color: "#FFFFFF", border: "1px solid rgba(255,255,255,.55)",
           }}>Take me in</button>
+          <div style={{ color: "rgba(255,255,255,.82)" }}>
+            <MethodNote onNight />
+          </div>
         </div>
       </div>
     );
