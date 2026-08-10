@@ -1165,6 +1165,9 @@ const Onboarding = () => {
             <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
           ))}
         </div>
+        {proof && proof.lines.length > 0 ? (
+          <WaitProof lines={proof.lines} howLong="While you wait — here's what Aura found in your own posts." />
+        ) : null}
         {claimsSlow && (
           <>
             <p style={{ ...bodyNight, textAlign: "center" }}>Still reading — it'll be waiting on your Home.</p>
@@ -1236,8 +1239,9 @@ const Onboarding = () => {
             <h1 style={{ ...h1Night, textAlign: "center" }}>Before you start</h1>
             <p style={bodyNight}>
               These {sliderCount === 8 ? "eight" : sliderCount} are not a personality test. Each one asks what you
-              have actually done, with a real sentence at each end instead of a number — a method used in
-              professional assessment since the 1960s because it is harder to fool and harder to flatter.
+              have actually done, with a real sentence at each end and one in the middle instead of a number — a way
+              of asking that has been used in serious work since the 1960s, because it is harder to fool and harder
+              to flatter.
             </p>
             <p style={bodyNight}>
               They are chosen for your level. A Director and a Consultant are asked different things, because what
