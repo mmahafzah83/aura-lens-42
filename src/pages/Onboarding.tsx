@@ -966,6 +966,9 @@ const Onboarding = () => {
         <button type="button" onClick={() => go(MANUAL_SCREEN)} style={btnGhostLight}>
           I'd rather type it in myself
         </button>
+        <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
+          Aura stores what it reads so it can write as you. You can delete it any time in Settings.
+        </p>
         <p style={footnote}>Aura only reads. It never posts.</p>
       </PaperShell>
     );
