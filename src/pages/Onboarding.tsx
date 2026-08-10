@@ -30,6 +30,9 @@ import RevealCard, { type RevealData, shareRevealCard, suggestedCaption } from "
 import StatusRow from "@/components/onboarding/StatusRow";
 import Confetti from "@/components/onboarding/Confetti";
 import MethodNote from "@/components/onboarding/MethodNote";
+import WaitProof from "@/components/onboarding/WaitProof";
+import ReadCorrection from "@/components/onboarding/ReadCorrection";
+import { loadPostProof, type PostProof } from "@/lib/postProof";
 import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleBand } from "@/lib/seniorityTitles";
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 
@@ -116,12 +119,26 @@ const footnote: React.CSSProperties = {
 /* ──────────────────────────────── helpers ───────────────────────────────── */
 
 interface Dimension {
-  name: string; why_line: string | null; anchor_low: string | null; anchor_high: string | null;
+  name: string; why_line: string | null;
+  anchor_low: string | null; anchor_mid: string | null; anchor_high: string | null;
 }
 interface JourneyQuestion {
   prompt: string; helper: string | null; kind: string; max_choices: number | null;
   options: { label: string; value: string }[] | null;
+  why_asked: string | null; allow_none: boolean | null; randomise: boolean | null;
 }
+
+/** A stable shuffle — the same question never reshuffles under the member. */
+const shuffled = <T,>(list: T[], seed: number): T[] => {
+  const out = [...list];
+  let s = seed * 9301 + 49297;
+  for (let i = out.length - 1; i > 0; i--) {
+    s = (s * 9301 + 49297) % 233280;
+    const j = Math.floor((s / 233280) * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+};
 interface Claim { title: string; content?: string | null; confidence?: number | null }
 
 const normaliseLinkedIn = (input: string): string | null => {
