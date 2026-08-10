@@ -173,10 +173,10 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
         doc.open();
         doc.write(`<!DOCTYPE html>
           <html><head>
-            <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
             <style>
               * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { width: 1200px; height: 630px; overflow: hidden; background: #111118; }
+              body { width: 1200px; height: 630px; overflow: hidden; background: ${NIGHT}; }
             </style>
           </head><body>${cardHtml}</body></html>`);
         doc.close();
@@ -187,7 +187,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
           height: 630,
           scale: 2,
           useCORS: true,
-          backgroundColor: "#111118",
+          backgroundColor: NIGHT,
           logging: false,
         });
       } finally {
@@ -262,7 +262,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
           <X size={18} />
         </button>
 
-        <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 22, color: "var(--ink, #111)", marginBottom: 4 }}>
+        <div style={{ fontFamily: CARD_FONT, fontWeight: 700, fontSize: 22, color: "#0F1519", marginBottom: 4 }}>
           Share your milestone
         </div>
         <div style={{ fontSize: 13, color: "var(--ink-3, #666)", marginBottom: 18 }}>
@@ -277,7 +277,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
             overflow: "hidden",
             borderRadius: 10,
             border: "1px solid rgba(0,0,0,0.1)",
-            background: "#111118",
+            background: NIGHT,
             position: "relative",
           }}
         >
@@ -294,10 +294,10 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               ref={cardRef}
               style={{
                 width: 1200, height: 630,
-                background: "#111118",
+                background: NIGHT,
                 color: "#fff",
                 position: "relative",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: CARD_FONT,
                 padding: "60px 70px",
                 boxSizing: "border-box",
                 display: "flex",
@@ -305,7 +305,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               }}
             >
               {/* Top brand */}
-              <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "var(--act)", fontWeight: 600 }}>
+              <div style={{ fontSize: 10, letterSpacing: "0.2em", color: ACCENT, fontWeight: 600 }}>
                 AURA INTELLIGENCE
               </div>
 
@@ -314,22 +314,22 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
                 <div style={{ fontSize: 48, lineHeight: 1, marginBottom: 22 }}>
                   {d.icon || "✦"}
                 </div>
-                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: "#fff", fontWeight: 500, marginBottom: 14 }}>
+                <div style={{ fontFamily: CARD_FONT, fontSize: 28, color: "#fff", fontWeight: 700, marginBottom: 14 }}>
                   {safeName}
                 </div>
                 <div style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", maxWidth: 800, lineHeight: 1.5 }}>
                   {safeContext}
                 </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 10 }}>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 10, fontFamily: MONO }}>
                   {earnedLabel}
                 </div>
               </div>
 
               {/* Bottom: gold line + brand + bilingual tagline */}
               <div>
-                <div style={{ height: 1, background: EXPORT_GOLD, width: 60, marginBottom: 12 }} />
+                <div style={{ height: 1, background: ACCENT, width: 60, marginBottom: 12 }} />
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div style={{ fontSize: EXPORT_FOOTER_SIZE_BRAND, color: EXPORT_GOLD, fontWeight: 500 }}>
+                  <div style={{ fontSize: EXPORT_FOOTER_SIZE_BRAND, color: ACCENT, fontWeight: 500 }}>
                     {footerLine}
                   </div>
                   <div style={{ fontSize: EXPORT_FOOTER_SIZE_TAGLINE, color: "rgba(255,255,255,0.8)" }}>
@@ -341,7 +341,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
                     style={{
                       fontSize: EXPORT_FOOTER_SIZE_TAGLINE,
                       color: "rgba(255,255,255,0.8)",
-                      fontFamily: EXPORT_AR_FONT,
+                      fontFamily: AR_FONT,
                       textAlign: "right",
                     }}
                   >
@@ -373,7 +373,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
                   borderRadius: 20,
                   fontSize: 12,
                   cursor: "pointer",
-                  background: lang === l ? "var(--act)" : "transparent",
+                  background: lang === l ? ACTION : "transparent",
                   color: lang === l ? "white" : "hsl(var(--muted-foreground))",
                   border: "0.5px solid hsl(var(--border))",
                   fontWeight: 500,
@@ -457,7 +457,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               </>
             )}
           </Button>
-          <Button onClick={handleShare} disabled={busy} style={{ background: "#0A66C2", color: "#fff" }}>
+          <Button onClick={handleShare} disabled={busy} style={{ background: ACTION, color: "#fff" }}>
             <Linkedin size={14} style={{ marginRight: 6 }} />
             Share on LinkedIn
           </Button>
