@@ -8,7 +8,7 @@
  * A failed read is reported as a failed read. It is never shown as an empty
  * corpus, which is a different and much more alarming thing to tell someone.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -194,6 +194,25 @@ export default function TeachAura({ userId }: { userId: string | null }) {
             </Link>
           </div>
         </div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBlockStart: 10 }}>
+          <button
+            type="button"
+            onClick={() => void rereadLinkedIn()}
+            disabled={stage !== null}
+            style={{ ...ghostButton, opacity: stage !== null ? 0.6 : 1, display: "flex", gap: 6, alignItems: "center", minBlockSize: 44 }}
+          >
+            {stage !== null && <Loader2 size={12} className="animate-spin" />}
+            Re-read my LinkedIn
+          </button>
+          <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>
+            {lastRead === undefined ? "" : lastRead
+              ? `Last read: ${new Date(lastRead).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
+              : "Never read"}
+          </span>
+        </div>
+        {readSummary && (
+          <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 8 }}>{readSummary}</p>
+        )}
         {stage !== null && (
           <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 10 }}>
             {STAGES[stage]} This can take up to a minute and a half — you can leave this open.
