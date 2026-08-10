@@ -243,6 +243,8 @@ const Onboarding = () => {
   const [dimIdx, setDimIdx] = useState(0);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [contentError, setContentError] = useState(false);
+  const [flatWarn, setFlatWarn] = useState(false);
+  const [flatAck, setFlatAck] = useState(false);
 
   /* screen 11 */
   const [questions, setQuestions] = useState<JourneyQuestion[] | null>(null);
@@ -250,6 +252,11 @@ const Onboarding = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [textAnswer, setTextAnswer] = useState("");
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
+  const [proposals, setProposals] = useState<{ label: string; why: string }[] | null>(null);
+  const [proposalsDead, setProposalsDead] = useState(false);
+
+  /* the member's own figures — used to fill every wait */
+  const [proof, setProof] = useState<PostProof | null>(null);
 
   /* screen 13 */
   const [reveal, setReveal] = useState<RevealData | null>(null);
