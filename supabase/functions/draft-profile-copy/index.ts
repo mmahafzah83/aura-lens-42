@@ -7,6 +7,7 @@
  * have not read.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { BANNED_WORDS, hasBanned } from "../_shared/bannedWords.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,14 +26,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const BANNED = [
-  "authority", "trajectory", "personal brand", "thought leader", "leverage",
-  "utilize", "facilitate", "unlock", "elevate", "empower", "seamless",
-  "game-changing", "passionate", "results-driven", "proven track record",
-  "I'm excited to", "with over X years of experience",
-];
-
-/** Share of Arabic letters across the member's own writing. */
+/** Share of Arabic letters across the member's own writing. Picks the DEFAULT only. */
 function languageOf(texts: string[]): "ar" | "en" | "mixed" {
   const joined = texts.join(" ");
   const arabic = (joined.match(/[\u0600-\u06FF]/g) || []).length;
@@ -66,10 +60,6 @@ function normaliseAngle(raw: unknown, index: number): Angle {
 }
 
 const wordsIn = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
-const hasBanned = (s: string) => {
-  const low = s.toLowerCase();
-  return BANNED.some((b) => low.includes(b.toLowerCase()));
-};
 
 function systemPrompt(target: "headline" | "about", language: "ar" | "en" | "mixed"): string {
   const shape = target === "headline"
@@ -123,7 +113,7 @@ function systemPrompt(target: "headline" | "about", language: "ar" | "en" | "mix
     "",
     languageRule,
     "",
-    `NEVER use these words or phrases: ${BANNED.join(", ")}.`,
+    `NEVER use these words or phrases: ${BANNED_WORDS.join(", ")}.`,
     "",
     "Return STRICT JSON and nothing else. No markdown fence, no commentary:",
     '{"options":[{"angle":"Positioning","text":"...","why":"..."}]}',
@@ -156,12 +146,41 @@ Deno.serve(async (req) => {
     if (target !== "headline" && target !== "about") {
       return json({ error: "Ask for either a headline or an about section." }, 400);
     }
+    const mode: "cached" | "fresh" = body?.mode === "fresh" ? "fresh" : "cached";
+    const askedLanguage: "ar" | "en" | null =
+      body?.language === "ar" || body?.language === "en" ? body.language : null;
 
     // Founder may act for another user; everyone else is forced to self.
     const requested = typeof body?.user_id === "string" ? body.user_id.trim() : "";
     const targetUserId = user.id === FOUNDER_USER_ID && requested ? requested : user.id;
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    // --- CACHED: hand back what we already wrote. No model call, no credits. ---
+    if (mode === "cached") {
+      const { data: cached } = await admin
+        .from("profile_copy_drafts")
+        .select("options, language, posts_used, updated_at")
+        .eq("user_id", targetUserId)
+        .eq("target", target)
+        .maybeSingle();
+      const cachedRow = cached as
+        | { options: unknown; language: string | null; posts_used: number | null; updated_at: string }
+        | null;
+      if (cachedRow && Array.isArray(cachedRow.options) && cachedRow.options.length > 0) {
+        return json({
+          ok: true,
+          from_cache: true,
+          target,
+          options: cachedRow.options,
+          dropped: 0,
+          posts_used: cachedRow.posts_used ?? null,
+          language: cachedRow.language ?? "en",
+          detected_language: cachedRow.language ?? "en",
+          written_at: cachedRow.updated_at,
+        });
+      }
+    }
 
     const [snapRes, postsRes, signalsRes, voiceRes] = await Promise.all([
       admin.from("linkedin_profile_snapshots")
@@ -172,7 +191,7 @@ Deno.serve(async (req) => {
         .eq("user_id", targetUserId)
         .not("post_text", "is", null)
         .neq("post_text", "")
-        .order("published_at", { ascending: false })
+        .order("published_at", { ascending: false, nullsFirst: false })
         .limit(MAX_POSTS),
       admin.from("strategic_signals").select("theme_tags").eq("user_id", targetUserId).limit(500),
       admin.from("authority_voice_profiles")
@@ -202,7 +221,8 @@ Deno.serve(async (req) => {
 
     const snap = (snapRes.data as Record<string, unknown> | null) || {};
     const voice = (voiceRes.data as Record<string, unknown> | null) || null;
-    const language = languageOf(posts);
+    const detected = languageOf(posts);
+    const language = askedLanguage ?? detected;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -238,11 +258,11 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (aiRes.status === 429) return json({ ok: false, reason: "busy", error: "Aura is busy right now. Try again in a minute." }, 429);
-    if (aiRes.status === 402) return json({ ok: false, reason: "no_credits", error: "This workspace is out of AI credits." }, 402);
+    if (aiRes.status === 429) return json({ ok: false, reason: "busy", error: "Aura is busy right now. Try again in a minute." });
+    if (aiRes.status === 402) return json({ ok: false, reason: "no_credits", error: "This workspace is out of AI credits." });
     if (!aiRes.ok) {
       const detail = (await aiRes.text()).slice(0, 400);
-      return json({ ok: false, reason: "model_failed", error: "Aura couldn't write just now. Try again." , detail }, 502);
+      return json({ ok: false, reason: "model_failed", error: "Aura couldn't write just now. Try again.", detail });
     }
 
     const payload = await aiRes.json();
@@ -257,7 +277,10 @@ Deno.serve(async (req) => {
         angle: normaliseAngle(o?.angle, i),
         text: String(o?.text ?? "").trim(),
         why: String(o?.why ?? "").trim(),
-      }));
+      })).map((o: { angle: Angle; text: string; why: string }) =>
+        // A bad footnote never costs us a good option — clear the why, keep the text.
+        hasBanned(o.why) ? { ...o, why: "" } : o,
+      );
       options = mapped.filter((o) => {
         if (!o.text) return false;
         if (hasBanned(o.text)) return false;
@@ -272,6 +295,17 @@ Deno.serve(async (req) => {
     if (options.length === 0) return json({ ok: false, reason: "unreadable_response" });
 
     try {
+      await (admin.from("profile_copy_drafts") as any).upsert({
+        user_id: targetUserId,
+        target,
+        options,
+        language,
+        posts_used: posts.length,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id,target" });
+    } catch { /* a failed save must never swallow the answer */ }
+
+    try {
       await (admin.from("ef_error_log") as any).insert({
         function_name: "draft-profile-copy",
         severity: "low",
@@ -283,12 +317,15 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true,
+      from_cache: false,
       target,
       options,
       dropped,
       posts_used: posts.length,
       themes_used: themes.length,
       language,
+      detected_language: detected,
+      written_at: new Date().toISOString(),
     });
   } catch (e) {
     return json({ ok: false, reason: "failed", error: e instanceof Error ? e.message : "Something went wrong." }, 500);
