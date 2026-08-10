@@ -10,13 +10,13 @@
  * proposal: it does not reach the generator until the member accepts it.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isAdmin } from "../_shared/adminRole.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FOUNDER_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 /** A wall of proposals is not a gift. */
 const MAX_SUGGESTIONS = 6;
 const DISMISSAL_MEMORY_DAYS = 90;
@@ -208,8 +208,8 @@ Deno.serve(async (req) => {
       if (error || !data?.claims) return json({ error: "Unauthorized" }, 401);
       const caller = data.claims.sub as string;
       const asked = typeof body.user_id === "string" ? body.user_id : null;
-      // Only the founder may look at somebody else's writing.
-      userId = asked && caller === FOUNDER_USER_ID ? asked : caller;
+      // Only an admin may look at somebody else's writing.
+      userId = asked && (await isAdmin(anon, caller)) ? asked : caller;
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);

@@ -1,11 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isAdmin } from "../_shared/adminRole.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 const TABLES = [
   "entries", "strategic_signals", "diagnostic_profiles", "linkedin_posts",
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: claimsErr } = await userClient.auth.getUser(token);
     if (claimsErr || !user) return json({ error: "Unauthorized" }, 401);
     const userId = user.id;
-    if (userId !== ADMIN_USER_ID) return json({ error: "Forbidden" }, 403);
+    if (!(await isAdmin(userClient, userId))) return json({ error: "Forbidden" }, 403);
 
     const admin = createClient(supabaseUrl, serviceKey);
     const run_id = crypto.randomUUID();

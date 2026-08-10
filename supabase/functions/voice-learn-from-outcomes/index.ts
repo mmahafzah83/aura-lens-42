@@ -9,6 +9,7 @@
  * parallel path, no auto-apply, and no way to reach a locked or member-set trait.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isAdmin } from "../_shared/adminRole.ts";
 import {
   OUTCOME_RULES, analyseStyles, analyseTrait, proposedValue, type OutcomeRow,
 } from "../_shared/voiceOutcomes.ts";
@@ -18,7 +19,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const FOUNDER_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const REJECTION_MEMORY_DAYS = 30;
 
 const json = (body: unknown, status = 200) =>
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       });
       const { data: { user }, error } = await anon.auth.getUser(token);
       if (error || !user) return json({ error: "Unauthorized" }, 401);
-      userId = user.id === FOUNDER_USER_ID && typeof body.user_id === "string" ? body.user_id : user.id;
+      userId = typeof body.user_id === "string" && (await isAdmin(anon, user.id)) ? body.user_id : user.id;
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);

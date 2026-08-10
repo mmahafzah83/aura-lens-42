@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { isAdmin } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
 
 const corsHeaders = {
@@ -91,9 +92,8 @@ Deno.serve(withObserve("ingest-capture", async (req) => {
     }
 
     // Admin override — allows seeding captures for other users
-    const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
     let effectiveUserId = user.id;
-    if (body?.target_user_id && typeof body.target_user_id === "string" && user.id === ADMIN_USER_ID) {
+    if (body?.target_user_id && typeof body.target_user_id === "string" && (await isAdmin(anonClient, user.id))) {
       effectiveUserId = body.target_user_id;
       console.log("[ingest-capture] Admin seeding capture for user:", effectiveUserId);
     }

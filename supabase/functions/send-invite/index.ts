@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isAdmin } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
@@ -12,7 +13,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 // Where Supabase sends the user AFTER it verifies the invite token.
 const REDIRECT_URL = "https://aura-intel.org/auth";
 // Public ceremony page shown BEFORE the token is verified — the user clicks
@@ -104,7 +104,7 @@ serve(withObserve("send-invite", async (req) => {
     }
 
     const callerId = userData.user.id;
-    if (callerId !== ADMIN_USER_ID) {
+    if (!(await isAdmin(userClient, callerId))) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

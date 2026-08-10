@@ -9,6 +9,7 @@
  * a migration.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isAdmin } from "../_shared/adminRole.ts";
 import { isOwnWriting } from "../_shared/voiceCorpus.ts";
 // Trait arithmetic lives in ONE module, shared with client-side voice_fidelity.
 import { measure } from "../_shared/voiceMeasure.ts";
@@ -18,7 +19,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FOUNDER_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       });
       const { data: { user }, error } = await anon.auth.getUser(token);
       if (error || !user) return json({ error: "Unauthorized" }, 401);
-      userId = user.id === FOUNDER_USER_ID && typeof body.user_id === "string" ? body.user_id : user.id;
+      userId = typeof body.user_id === "string" && (await isAdmin(anon, user.id)) ? body.user_id : user.id;
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
