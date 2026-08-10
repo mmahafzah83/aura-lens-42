@@ -37,6 +37,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
   const [sectorFocus, setSectorFocus] = useState("");
   const [sectorOther, setSectorOther] = useState("");
   const [level, setLevel] = useState("");
+  const { titles: seniorityTitles } = useSeniorityTitles();
   const [corePractice, setCorePractice] = useState("");
   const [northStar, setNorthStar] = useState("");
   const [country, setCountry] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
   const firmRef = useRef<HTMLInputElement>(null);
   const sectorRef = useRef<HTMLSelectElement>(null);
   const lastNameRef = useRef<HTMLInputElement>(null);
-  const levelRef = useRef<HTMLInputElement>(null);
+  const levelRef = useRef<HTMLSelectElement>(null);
   const practiceRef = useRef<HTMLInputElement>(null);
   const northStarRef = useRef<HTMLTextAreaElement>(null);
 
