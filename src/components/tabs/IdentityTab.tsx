@@ -776,9 +776,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         Your professional identity as the market sees it — generated from your assessment and captures, not a template.
       </FirstTimeHint>
 
-      {/* HOW YOU APPEAR — the first thing on My Story, above the panes */}
-      <HowYouAppear userId={authUser?.id ?? null} />
-
       {/* PANE SWITCHER — URL param `story` is the single source of truth */}
       <div
         role="tablist"
@@ -792,10 +789,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         }}
       >
         {([
-          { key: "identity", label: "Identity" },
-          { key: "voice", label: "Voice & Writing" },
-          { key: "insights", label: "Insights" },
-          { key: "record", label: "Milestones & Reports" },
+          { key: "appear", label: "How you appear" },
+          { key: "voice", label: "How you sound" },
+          { key: "standing", label: "Where you stand" },
         ] as const).map((t) => {
           const active = pane === t.key;
           return (
@@ -824,7 +820,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         })}
       </div>
 
-      {pane === "identity" && (<>
+      {pane === "appear" && (<>
+      {/* HOW YOU APPEAR — the first thing in this pane */}
+      <HowYouAppear userId={authUser?.id ?? null} />
+
       {/* Gated welcome for users without brand assessment */}
       {!assessmentCompleted && autoAssessing && (
         <div style={{ background: "var(--paper-2)", borderRadius: 16, padding: "32px 28px", border: "0.5px solid var(--rule)", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
@@ -1025,7 +1024,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       )}
 
       {/* SECTION 5 — YOUR TERRITORY */}
-      {pane === "identity" && assessmentCompleted && themesForTerritory.length > 0 && (
+      {pane === "appear" && assessmentCompleted && themesForTerritory.length > 0 && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1068,7 +1067,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </section>
       )}
 
-      {pane === "insights" && (<>
+      {pane === "standing" && (<>
       {/* SECTION 6 — CAPABILITY RADAR */}
       {assessmentCompleted && (
         <div>
@@ -1114,7 +1113,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       )}
       </>)}
 
-      {pane === "record" && (<>
+      {pane === "standing" && (<>
       {/* SECTION 7 — YOUR JOURNEY (timeline) */}
       {assessmentCompleted && milestoneData.length > 0 && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
