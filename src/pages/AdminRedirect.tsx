@@ -1,8 +1,7 @@
 import { useEffect } from "react";
+import { checkIsAdmin } from "@/lib/isAdmin";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-
-const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
 const AdminRedirect = () => {
   const navigate = useNavigate();
@@ -16,7 +15,7 @@ const AdminRedirect = () => {
         navigate("/auth", { replace: true });
         return;
       }
-      if (session.user.id !== ADMIN_USER_ID) {
+      if (!(await checkIsAdmin(session.user.id))) {
         navigate("/home", { replace: true });
         return;
       }
