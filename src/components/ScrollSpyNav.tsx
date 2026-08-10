@@ -80,7 +80,7 @@ const SPY_CSS = `
     top: 14px;
     bottom: 14px;
     width: 1px;
-    background: rgba(176,141,58,0.15);
+    background: rgba(6,112,196,0.15);
     pointer-events: none;
   }
   .scroll-spy-item {
@@ -113,7 +113,7 @@ const SPY_CSS = `
     height: 6px;
     border-radius: 50%;
     background: rgba(255,255,255,0.2);
-    box-shadow: 0 0 0 0 rgba(176,141,58,0);
+    box-shadow: 0 0 0 0 rgba(6,112,196,0);
     transition: width 400ms ease-out, height 400ms ease-out, background 400ms ease-out, box-shadow 400ms ease-out;
     flex-shrink: 0;
   }
@@ -130,7 +130,7 @@ const SPY_CSS = `
     width: 10px;
     height: 10px;
     background: ${BRONZE};
-    box-shadow: 0 0 12px 2px rgba(176,141,58,0.55);
+    box-shadow: 0 0 12px 2px rgba(6,112,196,0.55);
   }
   .scroll-spy-item:hover .scroll-spy-dot {
     background: ${BRONZE};

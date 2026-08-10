@@ -56,6 +56,21 @@ const MILESTONE_DEFS: { id: string; name: string; cta?: { label: string; tab: st
 const prettify = (s?: string) =>
   (s || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, (m) => m.toUpperCase());
 
+/** Three panes. Old keys map forward so existing URLs never 404. Module scope: stable across renders. */
+const PANE_ALIAS: Record<string, "appear" | "voice" | "standing"> = {
+  appear: "appear",
+  identity: "appear",
+  voice: "voice",
+  standing: "standing",
+  insights: "standing",
+  record: "standing",
+};
+
+/** "Where you stand" is one continuous section — 16px between its cards. */
+const STANDING_STACK: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 16,
+};
+
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
   onSwitchTab?: (tab: string) => void;
@@ -175,15 +190,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   // Pane state — the URL search param `story` is the single source of truth.
   const [searchParams, setSearchParams] = useSearchParams();
   const storyParam = searchParams.get("story");
-  // Three panes. Old keys map forward so existing URLs never 404.
-  const PANE_ALIAS: Record<string, "appear" | "voice" | "standing"> = {
-    appear: "appear",
-    identity: "appear",
-    voice: "voice",
-    standing: "standing",
-    insights: "standing",
-    record: "standing",
-  };
   const pane: "appear" | "voice" | "standing" = PANE_ALIAS[storyParam ?? ""] ?? "appear";
   const setPane = (next: "appear" | "voice" | "standing") => {
     const params = new URLSearchParams(searchParams);
@@ -504,10 +510,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         body: JSON.stringify({}),
       });
       if (!resp.ok) throw new Error("Failed");
-      toast.success("Positioning regenerated");
+      toast.success("Positioning rewritten");
       if (authUser) loadAll(authUser.id);
     } catch {
-      toast.error("Regeneration failed");
+      toast.error("Couldn't rewrite your positioning just now.");
     } finally {
       setRegenerating(false);
     }
@@ -939,7 +945,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 {archetypeName && (
                   <span style={{
                     fontSize: 11, fontWeight: 500, padding: "3px 10px",
-                    borderRadius: 12, background: "var(--brand-pale, rgba(176,141,58,0.12))",
+                    borderRadius: 12, background: "rgba(6,112,196,0.10)",
                     color: "var(--action-ink)",
                     display: "inline-flex", alignItems: "center", gap: 6,
                   }}>
@@ -1003,7 +1009,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   fontWeight: 500,
                   padding: "2px 8px",
                   borderRadius: 10,
-                  background: radarInputs.voiceTrained ? "rgba(46, 125, 50, 0.12)" : "var(--brand-pale, rgba(176,141,58,0.12))",
+                  background: radarInputs.voiceTrained ? "rgba(18,128,92, 0.12)" : "rgba(6,112,196,0.10)",
                   color: radarInputs.voiceTrained ? "var(--success)" : "var(--text-muted)",
                 }}
               >
@@ -1055,7 +1061,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   padding: "6px 12px",
                   borderRadius: 8,
                   fontWeight: isStrong ? 500 : 400,
-                  background: isStrong ? "var(--brand-pale, rgba(176,141,58,0.12))" : "var(--vellum, var(--paper-2))",
+                  background: isStrong ? "rgba(6,112,196,0.10)" : "var(--vellum, var(--paper-2))",
                   color: isStrong ? "var(--ink)" : "var(--ink)",
                   border: isStrong ? "0.5px solid transparent" : "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
                 }}>
@@ -1067,7 +1073,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </section>
       )}
 
-      {pane === "standing" && (<>
+      {pane === "standing" && (
+      <div style={STANDING_STACK}>
       {/* SECTION 6 — CAPABILITY RADAR */}
       {assessmentCompleted && (
         <div>
@@ -1111,15 +1118,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} hideSuggestedTopics={false} />
         </div>
       )}
-      </>)}
-
-      {pane === "standing" && (<>
       {/* SECTION 7 — YOUR JOURNEY (timeline) */}
       {assessmentCompleted && milestoneData.length > 0 && (
         <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Trophy className="w-3.5 h-3.5" style={{ color: "var(--success, #2e7d32)" }} />
+              <Trophy className="w-3.5 h-3.5" style={{ color: "#12805C" }} />
               <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)" }}>
                 Your journey
               </span>
@@ -1166,7 +1170,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <div style={{ position: "relative", paddingBottom: 16 }}>
                 <span style={{
                   position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
-                  background: "var(--success, #2e7d32)", display: "flex", alignItems: "center", justifyContent: "center",
+                  background: "#12805C", display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <Check className="w-2 h-2" style={{ color: "var(--paper)" }} strokeWidth={3} />
                 </span>
@@ -1300,7 +1304,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 const next = nodes[i + 1];
                 const barColor = (() => {
                   if (!next) return "transparent";
-                  if (isDone && next.state === "done") return "var(--success, #2e7d32)";
+                  if (isDone && next.state === "done") return "#12805C";
                   return "var(--brand-line, rgba(0,0,0,0.12))";
                 })();
                 return (
@@ -1358,7 +1362,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         onNavigatePhoto={() => navigate("/settings?tab=account")}
         onNavigateSettings={() => { window.location.href = "/settings#location"; }}
       />
-      </>)}
+      </div>
+      )}
 
       {/* Modals */}
       <ObjectiveAuditModal

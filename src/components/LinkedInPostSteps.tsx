@@ -18,8 +18,8 @@ export default function LinkedInPostSteps({
 
   const textMuted = isDark ? "rgba(240,237,232,.55)" : "hsl(var(--muted-foreground))";
   const textSoft = isDark ? "rgba(240,237,232,.7)" : "hsl(var(--muted-foreground))";
-  const borderColor = isDark ? "rgba(212,176,86,.25)" : "var(--color-border, rgba(0,0,0,0.1))";
-  const numberBg = isDark ? "rgba(212,176,86,.12)" : "hsl(var(--muted-foreground) / 0.1)";
+  const borderColor = isDark ? "rgba(6,112,196,.25)" : "var(--color-border, rgba(0,0,0,0.1))";
+  const numberBg = isDark ? "rgba(6,112,196,.12)" : "hsl(var(--muted-foreground) / 0.1)";
   const numberColor = isDark ? "var(--act)" : "hsl(var(--muted-foreground))";
 
   const share = shareLabel ?? (isRTL ? "شارك على LinkedIn" : withImage ? "Share on LinkedIn" : "Post on LinkedIn");
@@ -59,7 +59,7 @@ export default function LinkedInPostSteps({
         padding: "10px 12px",
         borderRadius: 8,
         border: `1px solid ${borderColor}`,
-        background: isDark ? "rgba(212,176,86,.03)" : "var(--bg-subtle, rgba(0,0,0,0.03))",
+        background: isDark ? "rgba(6,112,196,.03)" : "var(--bg-subtle, rgba(0,0,0,0.03))",
       }}
     >
       <ol

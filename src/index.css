@@ -253,15 +253,15 @@ html *:not(canvas):not(video):not(iframe) {
 
   /* signal/orange → live (teal, real-time only) */
   --signal: var(--live);
-  --signal-pale: rgba(54,197,176,0.10);
-  --signal-line: rgba(54,197,176,0.30);
+  --signal-pale: rgba(0,206,201,0.10);
+  --signal-line: rgba(0,206,201,0.30);
   --signal-orange: var(--live);
-  --signal-orange-light: rgba(54,197,176,0.12);
+  --signal-orange-light: rgba(0,206,201,0.12);
 
   /* Tier lifecycle */
   --tier-live: var(--live);
-  --tier-live-pale: rgba(54,197,176,0.12);
-  --tier-live-line: rgba(54,197,176,0.32);
+  --tier-live-pale: rgba(0,206,201,0.12);
+  --tier-live-line: rgba(0,206,201,0.32);
   --tier-evergreen: var(--pos);
   --tier-evergreen-pale: rgba(111,191,142,0.12);
   --tier-evergreen-line: rgba(111,191,142,0.32);

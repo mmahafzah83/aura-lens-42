@@ -67,7 +67,7 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
           onClick={onStartAssessment}
           className="text-xs text-ink-5 hover:text-brand transition-colors"
         >
-          Regenerate
+          Rewrite
         </button>
       </div>
       {positioningStatement ? (

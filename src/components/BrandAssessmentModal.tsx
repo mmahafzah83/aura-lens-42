@@ -806,7 +806,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
           >
             <h3 className="text-[15px] font-medium mb-2" style={{ fontFamily: SERIF, color: INK }}>Your analysis is being built</h3>
             <p className="text-sm leading-relaxed mb-5" style={{ color: INK_SOFT }}>
-              If you close now, your answers are saved and you can regenerate from My Story.
+              If you close now, your answers are saved and you can rewrite this from My Story.
             </p>
             <div className="flex flex-col gap-2">
               <button

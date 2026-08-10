@@ -72,7 +72,7 @@ export const T = {
   darkBg1: "#0A0F16",
   darkBg2: "#05080C",
   panel: "#14110D",
-  paperFaint: "rgba(241,236,225,0.86)",
+  paperFaint: "rgba(242,245,249,0.86)",
   rule: "rgba(27,23,18,0.24)",
   ruleOnDark: "rgba(231,225,211,0.16)",
 };
@@ -248,8 +248,8 @@ export const DEFAULT_SVG_STYLE: CSSProperties = {
 export function moodWashRGBA(m: Mood, alpha = 0.09): string {
   // literal RGB triplets for the three mood hexes
   const rgb =
-    m === "oxblood" ? "110,42,38" :
-    m === "teal"    ? "54,197,176" :
+    m === "oxblood" ? "192,57,43" :
+    m === "teal"    ? "0,206,201" :
                       "214,167,72";
   return `rgba(${rgb},${alpha})`;
 }

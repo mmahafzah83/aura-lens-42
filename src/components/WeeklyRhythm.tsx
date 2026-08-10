@@ -172,8 +172,8 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
               base,
               "bg-brand",
               inRun
-                ? "shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_10px_rgba(176,141,58,0.45)]"
-                : "shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1px_6px_rgba(176,141,58,0.30)]",
+                ? "shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_10px_rgba(6,112,196,0.45)]"
+                : "shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_1px_6px_rgba(6,112,196,0.30)]",
               isToday ? "ring-2 ring-brand/30 ring-offset-0" : "",
             ].join(" ");
           } else {

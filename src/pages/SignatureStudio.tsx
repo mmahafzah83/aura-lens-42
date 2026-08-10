@@ -536,7 +536,7 @@ const CSS_3D = `
   animation: sigDoorEnter 0.7s cubic-bezier(.22,1,.36,1) forwards;
 }
 .sig-door-frame:focus-visible {
-  box-shadow: 0 0 0 2px var(--spot), 0 0 0 4px rgba(212,176,86,0.25);
+  box-shadow: 0 0 0 2px var(--spot), 0 0 0 4px rgba(6,112,196,0.25);
 }
 @keyframes sigDoorEnter {
   from { opacity: 0; transform: translateY(18px); }

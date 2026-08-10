@@ -119,9 +119,9 @@ const SilenceAlarm = ({ daysSinceCapture, onOpenCapture, onSwitchTab }: Props) =
     <>
       <style>{`
         @keyframes silence-alarm-pulse {
-          0% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
-          40% { box-shadow: 0 0 0 4px rgba(249,115,22,0.18); }
-          100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
+          0% { box-shadow: 0 0 0 0 rgba(224,168,46,0); }
+          40% { box-shadow: 0 0 0 4px rgba(224,168,46,0.18); }
+          100% { box-shadow: 0 0 0 0 rgba(224,168,46,0); }
         }
       `}</style>
       <div

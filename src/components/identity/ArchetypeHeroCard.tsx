@@ -51,7 +51,7 @@ export default function ArchetypeHeroCard({
   // so all foreground text must stay warm-white regardless of light/dark mode.
   const themeStyle = {
     background: "linear-gradient(135deg, #12100B 0%, #2A2318 100%)",
-    glow: "radial-gradient(circle, rgba(176,141,58,0.08) 0%, transparent 70%)",
+    glow: "radial-gradient(circle, rgba(6,112,196,0.08) 0%, transparent 70%)",
   };
   const textPrimary = "hsl(40 20% 95%)";
   const textSecondary = "hsl(40 18% 95% / 0.7)";
