@@ -1638,6 +1638,7 @@ const Onboarding = () => {
             ...btnGhostLight, color: "#FFFFFF", border: "1px solid rgba(255,255,255,.55)",
           }}>Take me in</button>
           <div style={{ color: "rgba(255,255,255,.82)" }}>
+            <ReadCorrection userId={userId} onNight />
             <MethodNote onNight />
           </div>
         </div>
