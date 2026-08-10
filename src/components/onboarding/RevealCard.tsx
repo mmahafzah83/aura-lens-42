@@ -45,9 +45,9 @@ export async function shareRevealCard(
   const fileName = opts.fileName ?? `my-read-from-aura.${format === "jpeg" ? "jpg" : "png"}`;
   const file = new File([blob], fileName, { type: blob.type });
 
-  const nav = navigator as Navigator & { canShare?: (d: any) => boolean };
-  if (nav.share && nav.canShare?.({ files: [file] })) {
-    await nav.share({ files: [file], text: opts.caption });
+  const canShare = (navigator as Navigator & { canShare?: (d: any) => boolean }).canShare;
+  if (navigator.share && canShare?.call(navigator, { files: [file] })) {
+    await navigator.share({ files: [file], text: opts.caption });
     return "shared";
   }
 
