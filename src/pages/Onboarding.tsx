@@ -691,6 +691,73 @@ const Onboarding = () => {
 
   const profileValid = !!(firstName.trim() && firm.trim() && level.trim() && sectorFocus);
 
+  /**
+   * The primary path: read the member's LinkedIn profile, then their posts.
+   * Sequential and un-timed — each call can take up to two minutes.
+   */
+  const handleReadLinkedInProfile = async () => {
+    setLiUrlError("");
+    setLiPostsNote("");
+    const profile_url = normaliseLinkedIn(linkedinUrl);
+    if (!profile_url) {
+      setLiUrlError("That doesn't look like a LinkedIn address. Try linkedin.com/in/yourname.");
+      return;
+    }
+    setLinkedinUrl(profile_url);
+    setLiStage("profile");
+    try {
+      const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", {
+        body: { profile_url },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(String(data.error));
+      const profile = data?.profile ?? data;
+      setLiProfile(profile);
+      setUsedLinkedIn(true);
+      if (userId) { try { await saveLinkedInAddress(userId, profile_url); } catch { /* saved again on submit */ } }
+    } catch (e: any) {
+      const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "Couldn't read that profile.";
+      setLiUrlError(msg);
+      setLiStage(null);
+      return;
+    }
+
+    setLiStage("posts");
+    try {
+      const { data, error } = await supabase.functions.invoke("linkedin-fetch-posts", {
+        body: { profile_url, max_posts: 50 },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(String(data.error));
+      setLiPostsCount(typeof data?.kept_own_text === "number" ? data.kept_own_text : 0);
+    } catch {
+      setLiPostsCount(0);
+      setLiPostsNote("Couldn't read your posts yet — we'll try again later.");
+    } finally {
+      setLiStage(null);
+    }
+  };
+
+  /** Confirmed the profile is theirs — carry what we can into the form. */
+  const acceptLinkedInProfile = () => {
+    const p = liProfile || {};
+    const full = String(p.full_name || "").trim();
+    if (full && !firstName.trim()) {
+      const parts = full.split(/\s+/);
+      setFirstName(parts[0] || "");
+      if (parts.length > 1) setLastName(parts.slice(1).join(" "));
+    }
+    setShowForm(true);
+  };
+
+  const rejectLinkedInProfile = () => {
+    setLiProfile(null);
+    setLiPostsCount(null);
+    setLiPostsNote("");
+    setLinkedinUrl("");
+    setUsedLinkedIn(false);
+  };
+
   const handleSaveProfile = async () => {
     if (!userId || !profileValid) return;
     setSavingProfile(true);
