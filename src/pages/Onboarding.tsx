@@ -1384,7 +1384,7 @@ const Onboarding = () => {
     );
   }
 
-  /* 11 — WHITE ×6 */
+  /* 11 — WHITE, the nine questions */
   if (screen === 11) {
     if (contentError || !questions) {
       content = (
@@ -1405,65 +1405,121 @@ const Onboarding = () => {
         if (userId) void saveAnswers(userId, next);
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
+      const back = () => {
+        setTextAnswer("");
+        setMultiPicked([]);
+        setQIdx((i) => Math.max(0, i - 1));
+      };
       const cap = q.kind === "multi" ? (q.max_choices ?? (q.options?.length || 99)) : 1;
       const atCap = multiPicked.length >= cap;
+      const opts = q.randomise ? shuffled(q.options || [], qIdx + 1) : (q.options || []);
+      const proposedReady = q.kind === "proposed" && !!proposals && proposals.length > 0;
+      const proposedFallback = q.kind === "proposed" && (proposalsDead || (proposals !== null && proposals.length === 0));
+
+      const optionButton = (label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
+        <button key={label} type="button" disabled={blocked} onClick={onClick} style={{
+          textAlign: "start", padding: "14px 15px", borderRadius: 14,
+          cursor: blocked ? "not-allowed" : "pointer",
+          border: `1px solid ${picked ? OB.blue : OB.line}`,
+          background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
+          lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
+          opacity: blocked ? 0.45 : 1,
+          transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
+        }}>
+          {label}
+          {why ? <span style={{ display: "block", marginBlockStart: 5, fontSize: 12.5, lineHeight: 1.5, color: OB.muted }}>{why}</span> : null}
+        </button>
+      );
+
       content = (
         <PaperShell bead={4} footer={escapeFooter}>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             Question {qIdx + 1} of {questions.length}
           </p>
+          {qIdx === 0 ? (
+            <p style={{ margin: "6px 0 0", fontSize: 12, color: OB.muted }}>Saved as you go — you can stop any time.</p>
+          ) : null}
           <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{q.prompt}</h1>
           {q.helper ? <p style={bodyLight}>{q.helper}</p> : null}
+          {q.why_asked ? (
+            <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted }}>
+              <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", marginInlineEnd: 7 }}>Why this</span>
+              {q.why_asked}
+            </p>
+          ) : null}
 
           {q.kind === "choice" ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
-              {(q.options || []).map((o) => (
-                <button key={o.value} type="button" onClick={() => advance(o.label)} style={{
-                  textAlign: "start", padding: "14px 15px", borderRadius: 14, cursor: "pointer",
-                  border: `1px solid ${OB.line}`, background: OB.white, fontSize: 14.5,
-                  lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
-                  transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
-                }}>{o.label}</button>
-              ))}
+              {opts.map((o) => optionButton(o.label, () => advance(o.label)))}
             </div>
           ) : q.kind === "multi" ? (
             <>
-              <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
-                Pick up to {cap}
-              </p>
+              <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>Pick up to {cap}</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
-                {(q.options || []).map((o) => {
-                  const picked = multiPicked.includes(o.label);
-                  const blocked = !picked && atCap;
-                  return (
-                    <button key={o.value} type="button" disabled={blocked}
-                      onClick={() => setMultiPicked((prev) =>
-                        prev.includes(o.label) ? prev.filter((x) => x !== o.label) : [...prev, o.label])}
-                      style={{
-                        textAlign: "start", padding: "14px 15px", borderRadius: 14,
-                        cursor: blocked ? "not-allowed" : "pointer",
-                        border: `1px solid ${picked ? OB.blue : OB.line}`,
-                        background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
-                        lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
-                        opacity: blocked ? 0.45 : 1,
-                        transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
-                      }}>{o.label}</button>
-                  );
-                })}
+                {opts.map((o) => optionButton(
+                  o.label,
+                  () => setMultiPicked((prev) => prev.includes(o.label) ? prev.filter((x) => x !== o.label) : [...prev, o.label]),
+                  multiPicked.includes(o.label),
+                  !multiPicked.includes(o.label) && atCap,
+                ))}
               </div>
               <button type="button" disabled={multiPicked.length === 0}
                 onClick={() => advance(multiPicked.join(" · "))}
                 style={{ ...btnPrimary, marginBlockStart: 16, opacity: multiPicked.length ? 1 : 0.5 }}>Next</button>
             </>
+          ) : q.kind === "proposed" ? (
+            proposedReady ? (
+              <>
+                <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
+                  Keep the one that's actually you. The two you drop tell Aura just as much.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
+                  {proposals!.map((pr) => optionButton(
+                    pr.label,
+                    () => {
+                      const dropped = proposals!.filter((x) => x.label !== pr.label).map((x) => x.label);
+                      advance(`${pr.label}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
+                    },
+                    false, false, pr.why,
+                  ))}
+                </div>
+              </>
+            ) : proposedFallback ? (
+              <>
+                <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
+                  Aura hasn't got enough of your writing to propose three yet — say it in your own words instead.
+                </p>
+                <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
+                  aria-label={q.prompt}
+                  onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
+                  placeholder="One line, your words" style={{ ...fieldStyle, marginBlockStart: 12 }} />
+                <button type="button" disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}
+                  style={{ ...btnPrimary, marginBlockStart: 16, opacity: textAnswer.trim() ? 1 : 0.5 }}>Next</button>
+              </>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted, marginBlockStart: 20 }}>
+                <Loader2 size={14} className="animate-spin" /> Reading your posts and your claims…
+              </div>
+            )
           ) : (
             <>
               <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
+                aria-label={q.prompt}
                 onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
                 placeholder="One line, your words" style={{ ...fieldStyle, marginBlockStart: 20 }} />
               <button type="button" disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}
                 style={{ ...btnPrimary, marginBlockStart: 16, opacity: textAnswer.trim() ? 1 : 0.5 }}>Next</button>
             </>
           )}
+
+          {q.allow_none ? (
+            <button type="button" onClick={() => advance("None of these fit")} style={btnGhostLight}>
+              None of these fit
+            </button>
+          ) : null}
+          {qIdx > 0 ? (
+            <button type="button" onClick={back} style={btnGhostLight}>Back</button>
+          ) : null}
         </PaperShell>
       );
     }
