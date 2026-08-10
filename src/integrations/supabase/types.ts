@@ -520,10 +520,12 @@ export type Database = {
           active: boolean
           anchor_high: string
           anchor_low: string
+          anchor_mid: string | null
           band: Database["public"]["Enums"]["seniority_band"]
           created_at: string
           framework: string | null
           id: string
+          instrument_version: number
           name: string
           position: number
           sector: string | null
@@ -533,10 +535,12 @@ export type Database = {
           active?: boolean
           anchor_high: string
           anchor_low: string
+          anchor_mid?: string | null
           band: Database["public"]["Enums"]["seniority_band"]
           created_at?: string
           framework?: string | null
           id?: string
+          instrument_version?: number
           name: string
           position: number
           sector?: string | null
@@ -546,10 +550,12 @@ export type Database = {
           active?: boolean
           anchor_high?: string
           anchor_low?: string
+          anchor_mid?: string | null
           band?: Database["public"]["Enums"]["seniority_band"]
           created_at?: string
           framework?: string | null
           id?: string
+          instrument_version?: number
           name?: string
           position?: number
           sector?: string | null
@@ -978,6 +984,7 @@ export type Database = {
       diagnostic_profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"]
+          answered_band: Database["public"]["Enums"]["seniority_band"] | null
           audit_completed_at: string | null
           audit_interpretation: string | null
           audit_method: string | null
@@ -1006,6 +1013,7 @@ export type Database = {
           generated_skills: Json
           id: string
           identity_intelligence: Json
+          instrument_version: number | null
           last_active_at: string | null
           last_name: string | null
           last_visit_at: string | null
@@ -1035,6 +1043,7 @@ export type Database = {
         }
         Insert: {
           account_type?: Database["public"]["Enums"]["account_type"]
+          answered_band?: Database["public"]["Enums"]["seniority_band"] | null
           audit_completed_at?: string | null
           audit_interpretation?: string | null
           audit_method?: string | null
@@ -1063,6 +1072,7 @@ export type Database = {
           generated_skills?: Json
           id?: string
           identity_intelligence?: Json
+          instrument_version?: number | null
           last_active_at?: string | null
           last_name?: string | null
           last_visit_at?: string | null
@@ -1092,6 +1102,7 @@ export type Database = {
         }
         Update: {
           account_type?: Database["public"]["Enums"]["account_type"]
+          answered_band?: Database["public"]["Enums"]["seniority_band"] | null
           audit_completed_at?: string | null
           audit_interpretation?: string | null
           audit_method?: string | null
@@ -1120,6 +1131,7 @@ export type Database = {
           generated_skills?: Json
           id?: string
           identity_intelligence?: Json
+          instrument_version?: number | null
           last_active_at?: string | null
           last_name?: string | null
           last_visit_at?: string | null
@@ -3140,45 +3152,60 @@ export type Database = {
       onboarding_questions: {
         Row: {
           active: boolean
+          allow_none: boolean
           band: Database["public"]["Enums"]["seniority_band"]
           created_at: string
+          feeds: string | null
           framework: string | null
           helper: string | null
           id: string
+          instrument_version: number
           kind: string
           max_choices: number | null
           options: Json | null
           position: number
           prompt: string
+          randomise: boolean
           sector: string | null
+          why_asked: string | null
         }
         Insert: {
           active?: boolean
+          allow_none?: boolean
           band: Database["public"]["Enums"]["seniority_band"]
           created_at?: string
+          feeds?: string | null
           framework?: string | null
           helper?: string | null
           id?: string
+          instrument_version?: number
           kind?: string
           max_choices?: number | null
           options?: Json | null
           position: number
           prompt: string
+          randomise?: boolean
           sector?: string | null
+          why_asked?: string | null
         }
         Update: {
           active?: boolean
+          allow_none?: boolean
           band?: Database["public"]["Enums"]["seniority_band"]
           created_at?: string
+          feeds?: string | null
           framework?: string | null
           helper?: string | null
           id?: string
+          instrument_version?: number
           kind?: string
           max_choices?: number | null
           options?: Json | null
           position?: number
           prompt?: string
+          randomise?: boolean
           sector?: string | null
+          why_asked?: string | null
         }
         Relationships: []
       }
