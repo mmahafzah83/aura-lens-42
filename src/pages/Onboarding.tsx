@@ -1014,7 +1014,7 @@ const Onboarding = () => {
 
   /* 15 — WHITE, only when the read failed or was skipped */
   if (screen === MANUAL_SCREEN) {
-    const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band;
+    const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band && !!levelTitle;
     content = (
       <PaperShell bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>Aura couldn't read it — tell it the basics.</h1>
@@ -1026,19 +1026,14 @@ const Onboarding = () => {
             <option value="">Your sector</option>
             {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-          {(Object.keys(BAND_LABEL) as Band[]).map((b) => (
-            <button key={b} type="button" onClick={() => setBand(b)} style={{
-              textAlign: "start", padding: "12px 14px", borderRadius: 12, cursor: "pointer",
-              border: `1px solid ${band === b ? OB.blue : OB.line}`,
-              background: band === b ? OB.blueTint : OB.white, fontSize: 14, fontFamily: "inherit", color: OB.ink,
-            }}>{BAND_LABEL[b]}</button>
-          ))}
         </div>
+        <p style={{ ...bodyLight, marginBlockStart: 16, fontWeight: 600, color: OB.ink }}>Your level</p>
+        {titleList((t, b) => { setLevelTitle(t); setBand(b); })}
         <button type="button" disabled={!ready} onClick={async () => {
           if (userId) {
             await (supabase.from("diagnostic_profiles" as any) as any).upsert({
               user_id: userId, first_name: firstName.trim(), last_name: lastName.trim() || null,
-              firm: firm.trim(), sector_focus: sector, level: band ? BAND_TO_LEVEL[band] : null,
+              firm: firm.trim(), sector_focus: sector, level: levelTitle || (band ? BAND_TO_LEVEL[band] : null),
               seniority_band: band, band_source: "corrected",
             }, { onConflict: "user_id" });
           }
