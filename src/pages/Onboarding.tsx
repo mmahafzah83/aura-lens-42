@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff, Lightbulb, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { saveLinkedInAddress } from "@/lib/linkedinAddress";
+import { saveLinkedInAddress, canonicalHandle } from "@/lib/linkedinAddress";
 import CountryPicker from "@/components/CountryPicker";
 import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -77,6 +77,44 @@ const OB_CSS = `
 @media (max-width:560px){ .ob-seg .ob-nm{display:none;} }
 @media (prefers-reduced-motion:reduce){ .ob *,.ob *::before,.ob *::after{animation:none !important;transition:none !important;} }
 `;
+
+/* ── System-B "Signal" tokens for the LinkedIn read. Module scope, always. ── */
+const SB_INK = "#0F1519";
+const SB_MUTED = "#5B6673";
+const SB_LINE = "#E2E7EE";
+const SB_CANVAS = "#F2F5F9";
+const SB_CARD = "#FFFFFF";
+const SB_ACT = "#0670C4";
+const SB_ACT_DARK = "#04477C";
+const SB_ERR = "#C0392B";
+const SB_MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
+
+const liPanelStyle: React.CSSProperties = {
+  background: SB_CARD, border: `1px solid ${SB_LINE}`, borderRadius: 20, padding: 18,
+};
+const liFigureStyle: React.CSSProperties = {
+  fontFamily: SB_MONO, fontSize: 24, fontWeight: 600, color: SB_INK, lineHeight: 1.1,
+};
+const liFigureLabelStyle: React.CSSProperties = {
+  fontSize: 11.5, color: SB_MUTED, lineHeight: 1.4, marginBlockStart: 4,
+};
+const liPrimaryStyle: React.CSSProperties = {
+  background: SB_ACT, color: SB_CARD, border: "none", borderRadius: 8,
+  padding: "12px 18px", fontSize: 14.5, fontWeight: 600, cursor: "pointer",
+  minHeight: 44, inlineSize: "100%",
+  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+};
+const liQuietStyle: React.CSSProperties = {
+  background: SB_CARD, color: SB_MUTED, border: `1px solid ${SB_LINE}`, borderRadius: 8,
+  padding: "10px 16px", fontSize: 13.5, fontWeight: 500, cursor: "pointer",
+  minHeight: 44, inlineSize: "100%", marginBlockStart: 8,
+};
+
+/** Accepts a full URL, `linkedin.com/in/x`, `/in/x`, or a bare handle. */
+const normaliseLinkedIn = (input: string): string | null => {
+  const handle = canonicalHandle(input);
+  return handle ? `https://www.linkedin.com/in/${handle}` : null;
+};
 
 const Onboarding = () => {
   usePageMeta({
@@ -248,6 +286,12 @@ const Onboarding = () => {
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [linkedinText, setLinkedinText] = useState("");
   const [linkedinError, setLinkedinError] = useState("");
+  // LinkedIn read (profile then posts) — the primary path in step 0.
+  const [liUrlError, setLiUrlError] = useState("");
+  const [liStage, setLiStage] = useState<null | "profile" | "posts">(null);
+  const [liProfile, setLiProfile] = useState<any>(null);
+  const [liPostsCount, setLiPostsCount] = useState<number | null>(null);
+  const [liPostsNote, setLiPostsNote] = useState("");
   const [readingLi, setReadingLi] = useState(false);
   const [liStatusIdx, setLiStatusIdx] = useState(0);
   const [showForm, setShowForm] = useState(false);
