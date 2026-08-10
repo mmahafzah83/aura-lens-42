@@ -7,16 +7,35 @@ import { downloadBlob } from "@/lib/download";
 import { generationMetadata } from "@/lib/generationMetadata";
 import { classifyPublishError } from "@/lib/publishFailure";
 
-// Colours and type read System-B semantic tokens directly. No hardcoded
-// names/scores anywhere.
-const RULE = "var(--border-default)";
-const INK = "var(--text-primary)";
-const INK_2 = "var(--text-secondary)";
-const INK_3 = "var(--text-muted)";
-const PAPER = "var(--surface-page)";
-const SPOT = "var(--act)";
-const SERIF = "var(--font-body)";
-const MONO = "var(--font-mono)";
+// System-B "Signal" — module scope, literal. No hardcoded names/scores anywhere.
+const RULE = "#E2E7EE";
+const INK = "#0F1519";
+const INK_2 = "#5B6673";
+const INK_3 = "#5B6673";
+const PAPER = "#FFFFFF";
+const SPOT = "#0670C4";
+const SERIF = "Inter, system-ui, sans-serif";
+const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+
+/** Shared outer shell for every top-level card in "What you can show". */
+const SHELL: React.CSSProperties = {
+  background: PAPER,
+  border: `1px solid ${RULE}`,
+  borderRadius: 20,
+  padding: 20,
+};
+
+/** Secondary action — the pane's only primary lives in ReportVersions. */
+const SECONDARY_BTN: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 8,
+  fontFamily: MONO, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
+  minHeight: 44,
+  padding: "10px 14px",
+  borderRadius: 8,
+  border: `1px solid ${RULE}`,
+  background: PAPER,
+  color: SPOT,
+};
 
 // Skills variant is parked while we rework it. Flip to true to bring back
 // the VOICE / SKILLS toggle and render both variants.
