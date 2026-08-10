@@ -103,7 +103,7 @@ Analyse this professional using all six frameworks and provide the complete bran
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
-    const callAnthropic = async () => {
+    const callAnthropic = async (promptOverride?: string) => {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 110000);
       try {
@@ -118,7 +118,7 @@ Analyse this professional using all six frameworks and provide the complete bran
             model: "claude-sonnet-4-5-20250929",
             max_tokens: 4096,
             system: BRAND_ASSESSMENT_SYSTEM_PROMPT,
-            messages: [{ role: "user", content: userPrompt }],
+            messages: [{ role: "user", content: promptOverride ?? userPrompt }],
           }),
           signal: ctrl.signal,
         });
@@ -195,7 +195,43 @@ Analyse this professional using all six frameworks and provide the complete bran
         output_tokens: data.usage?.output_tokens,
       }));
     } catch (_) { /* non-blocking */ }
-    const interpretation = (data.content || []).map((c: any) => c.text || "").join("") || "";
+    let interpretation = (data.content || []).map((c: any) => c.text || "").join("") || "";
+
+    // OUTPUT GUARD — a report with a bracketed placeholder is never persisted.
+    const isBad = (t: string) => /\[[^\]]{2,40}\]/.test(t) || /sector name/i.test(t) || /zone of genius/i.test(t);
+    const pendingResponse = () => new Response(
+      JSON.stringify({
+        interpretation: "",
+        pending: true,
+        message: "Saved. Your write-up will be ready shortly — you can ask for it again from My Story.",
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+
+    if (interpretation && isBad(interpretation)) {
+      console.error("brand-assessment: placeholder detected, retrying once");
+      const correction = `${userPrompt}
+
+CORRECTION — your previous attempt contained a bracketed placeholder, the words "sector name", or the phrase "zone of genius". Rewrite the whole output. Every sentence must be finished prose about this specific person. Do not output a square bracket anywhere. Name the sector explicitly, inferring it from the headline and captured claims if it is not stated.`;
+      try {
+        const retry = await callAnthropic(correction);
+        if (retry.ok) {
+          const retryData = await retry.json();
+          const retryText = (retryData.content || []).map((c: any) => c.text || "").join("") || "";
+          interpretation = retryText;
+        }
+      } catch (e) {
+        console.error("brand-assessment: retry failed", e);
+      }
+      if (!interpretation || isBad(interpretation)) {
+        EdgeRuntime.waitUntil(logError("brand-assessment", "Placeholder output after retry — nothing saved", {
+          user_id: userData.user.id,
+          severity: "high",
+          context: { path: "placeholder_guard" },
+        }));
+        return pendingResponse();
+      }
+    }
 
     if (!interpretation) {
       console.error("brand-assessment: empty interpretation from model", data?.stop_reason);
@@ -204,14 +240,7 @@ Analyse this professional using all six frameworks and provide the complete bran
         severity: "high",
         context: { path: "empty_interpretation", anthropic_status: response.status, body: JSON.stringify(data ?? {}).slice(0, 800) },
       }));
-      return new Response(
-        JSON.stringify({
-          interpretation: "",
-          pending: true,
-          message: "Assessment saved. Your positioning will be generated shortly — you can regenerate it from My Story.",
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return pendingResponse();
     }
 
     return new Response(JSON.stringify({ interpretation, pending: false }), {
