@@ -18,7 +18,7 @@ import TeachAuraCoverage from "@/components/voice/TeachAuraCoverage";
 import TeachAuraReview from "@/components/voice/TeachAuraReview";
 import { useCachedVoice, invalidateVoiceCache } from "@/lib/voiceCache";
 import {
-  BLUE, GREEN, INK, LINE, MUTED, TYPE, cardStyle, chipStyle, microLabel, monoNum, primaryButton,
+  BLUE, GREEN, INK, LINE, MUTED, TYPE, cardStyle, chipStyle, ghostButton, microLabel, monoNum, primaryButton,
 } from "@/components/voice/tokens";
 
 /** The three stages of a re-read, named so the member knows what's happening. */
