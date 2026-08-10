@@ -515,6 +515,45 @@ export type Database = {
         }
         Relationships: []
       }
+      capability_dimensions: {
+        Row: {
+          active: boolean
+          anchor_high: string
+          anchor_low: string
+          band: Database["public"]["Enums"]["seniority_band"]
+          created_at: string
+          id: string
+          name: string
+          position: number
+          sector: string | null
+          why_line: string
+        }
+        Insert: {
+          active?: boolean
+          anchor_high: string
+          anchor_low: string
+          band: Database["public"]["Enums"]["seniority_band"]
+          created_at?: string
+          id?: string
+          name: string
+          position: number
+          sector?: string | null
+          why_line: string
+        }
+        Update: {
+          active?: boolean
+          anchor_high?: string
+          anchor_low?: string
+          band?: Database["public"]["Enums"]["seniority_band"]
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          sector?: string | null
+          why_line?: string
+        }
+        Relationships: []
+      }
       captures: {
         Row: {
           created_at: string
@@ -943,6 +982,7 @@ export type Database = {
           aura_card_ready_at: string | null
           avatar_cutout_url: string | null
           avatar_url: string | null
+          band_source: string | null
           brand_assessment_answers: Json | null
           brand_assessment_completed_at: string | null
           brand_assessment_results: Json | null
@@ -979,6 +1019,7 @@ export type Database = {
           phone_whatsapp: string | null
           primary_strength: string | null
           sector_focus: string | null
+          seniority_band: Database["public"]["Enums"]["seniority_band"] | null
           shared_learning_consent: boolean
           signature_presets: Json
           skill_ratings: Json
@@ -998,6 +1039,7 @@ export type Database = {
           aura_card_ready_at?: string | null
           avatar_cutout_url?: string | null
           avatar_url?: string | null
+          band_source?: string | null
           brand_assessment_answers?: Json | null
           brand_assessment_completed_at?: string | null
           brand_assessment_results?: Json | null
@@ -1034,6 +1076,7 @@ export type Database = {
           phone_whatsapp?: string | null
           primary_strength?: string | null
           sector_focus?: string | null
+          seniority_band?: Database["public"]["Enums"]["seniority_band"] | null
           shared_learning_consent?: boolean
           signature_presets?: Json
           skill_ratings?: Json
@@ -1053,6 +1096,7 @@ export type Database = {
           aura_card_ready_at?: string | null
           avatar_cutout_url?: string | null
           avatar_url?: string | null
+          band_source?: string | null
           brand_assessment_answers?: Json | null
           brand_assessment_completed_at?: string | null
           brand_assessment_results?: Json | null
@@ -1089,6 +1133,7 @@ export type Database = {
           phone_whatsapp?: string | null
           primary_strength?: string | null
           sector_focus?: string | null
+          seniority_band?: Database["public"]["Enums"]["seniority_band"] | null
           shared_learning_consent?: boolean
           signature_presets?: Json
           skill_ratings?: Json
@@ -3086,6 +3131,45 @@ export type Database = {
           sector_focus?: string | null
           url?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      onboarding_questions: {
+        Row: {
+          active: boolean
+          band: Database["public"]["Enums"]["seniority_band"]
+          created_at: string
+          helper: string | null
+          id: string
+          kind: string
+          options: Json | null
+          position: number
+          prompt: string
+          sector: string | null
+        }
+        Insert: {
+          active?: boolean
+          band: Database["public"]["Enums"]["seniority_band"]
+          created_at?: string
+          helper?: string | null
+          id?: string
+          kind?: string
+          options?: Json | null
+          position: number
+          prompt: string
+          sector?: string | null
+        }
+        Update: {
+          active?: boolean
+          band?: Database["public"]["Enums"]["seniority_band"]
+          created_at?: string
+          helper?: string | null
+          id?: string
+          kind?: string
+          options?: Json | null
+          position?: number
+          prompt?: string
+          sector?: string | null
         }
         Relationships: []
       }
@@ -5288,6 +5372,10 @@ export type Database = {
         }[]
       }
       delete_account: { Args: { p_user_id: string }; Returns: undefined }
+      detect_seniority_band: {
+        Args: { headline: string }
+        Returns: Database["public"]["Enums"]["seniority_band"]
+      }
       email_crons_ran_without_sends: {
         Args: { p_hours?: number }
         Returns: {
@@ -5502,6 +5590,7 @@ export type Database = {
     Enums: {
       account_type: "customer" | "staff" | "test" | "demo"
       app_role: "admin" | "member"
+      seniority_band: "work" | "table" | "room"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -5631,6 +5720,7 @@ export const Constants = {
     Enums: {
       account_type: ["customer", "staff", "test", "demo"],
       app_role: ["admin", "member"],
+      seniority_band: ["work", "table", "room"],
     },
   },
 } as const
