@@ -58,6 +58,13 @@ const dashStyle: React.CSSProperties = { fontFamily: MONO };
 
 const EM_DASH = "—";
 
+/** The handle out of any linkedin.com/in/<handle> address. */
+function handleOf(url: string | null): string | null {
+  if (!url) return null;
+  const m = url.match(/linkedin\.com\/in\/([^/?#\s]+)/i);
+  return m?.[1] ? m[1].replace(/\/+$/, "") : null;
+}
+
 const halvesStyle: React.CSSProperties = {
   display: "flex", flexDirection: "column", gap: 28,
 };
@@ -122,6 +129,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const [profileUrl, setProfileUrl] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [stage, setStage] = useState<"profile" | "posts" | null>(null);
+  const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
@@ -332,7 +340,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                     profileUrl={profileUrl}
                     canUsePhoto={!!snapshot.photo_url && !avatarUrl}
                     onUsePhoto={useLinkedInPhoto}
-                    onPublish={() => navigate("/home?tab=publish")}
+                    onDraft={setDraftTarget}
                   />
                 </div>
               )}
@@ -390,36 +398,46 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
             </p>
           )}
           {firstMissing && (
-            <button type="button" style={quietLinkStyle} onClick={() => navigate("/home?tab=publish")}>
+            <button type="button" style={quietLinkStyle} onClick={() => setDraftTarget("headline")}>
               Put this in my headline →
             </button>
           )}
         </section>
       )}
       </div>
+
+      {draftTarget && (
+        <DraftProfileCopy
+          target={draftTarget}
+          open
+          onClose={() => setDraftTarget(null)}
+          handle={handleOf(profileUrl)}
+          onReadAgain={readProfile}
+        />
+      )}
     </div>
   );
 }
 
 /** The single quiet action under a weak row. Never a button styled as one. */
 function FixAction({
-  rowKey, profileUrl, canUsePhoto, onUsePhoto, onPublish,
+  rowKey, profileUrl, canUsePhoto, onUsePhoto, onDraft,
 }: {
   rowKey: PresenceKey;
   profileUrl: string | null;
   canUsePhoto: boolean;
   onUsePhoto: () => void;
-  onPublish: () => void;
+  onDraft: (target: DraftTarget) => void;
 }) {
   if (rowKey === "photo") {
     if (!canUsePhoto) return null;
     return <button type="button" style={quietLinkStyle} onClick={onUsePhoto}>Use my LinkedIn photo</button>;
   }
   if (rowKey === "headline") {
-    return <button type="button" style={quietLinkStyle} onClick={onPublish}>Draft a sharper one from my posts →</button>;
+    return <button type="button" style={quietLinkStyle} onClick={() => onDraft("headline")}>Draft a sharper one from my posts →</button>;
   }
   if (rowKey === "about") {
-    return <button type="button" style={quietLinkStyle} onClick={onPublish}>Draft this from what I've already written →</button>;
+    return <button type="button" style={quietLinkStyle} onClick={() => onDraft("about")}>Draft this from what I've already written →</button>;
   }
   if (rowKey === "experience") {
     return <div style={comingNextStyle}>Aura can draft these from your posts — coming next.</div>;
