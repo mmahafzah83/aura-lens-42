@@ -56,15 +56,27 @@ const MILESTONE_DEFS: { id: string; name: string; cta?: { label: string; tab: st
 const prettify = (s?: string) =>
   (s || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, (m) => m.toUpperCase());
 
-/** Three panes. Old keys map forward so existing URLs never 404. Module scope: stable across renders. */
-const PANE_ALIAS: Record<string, "appear" | "voice" | "standing"> = {
+/** Four panes. Old keys map forward so existing URLs never 404. Module scope: stable across renders. */
+type PaneKey = "appear" | "voice" | "standing" | "show";
+const PANE_ALIAS: Record<string, PaneKey> = {
   appear: "appear",
   identity: "appear",
   voice: "voice",
   standing: "standing",
   insights: "standing",
   record: "standing",
+  show: "show",
+  report: "show",
+  reports: "show",
+  card: "show",
+  cards: "show",
 };
+
+/** "What you can show" stack — 16px between its cards. */
+const SHOW_STACK: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: 16,
+};
+const PANE_SUBLINE: React.CSSProperties = { fontSize: 13.5, color: "#5B6673", marginTop: 2 };
 
 /** "Where you stand" is one continuous section — 16px between its cards. */
 const STANDING_STACK: React.CSSProperties = {
