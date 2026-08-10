@@ -46,6 +46,47 @@ const BTN_QUIET: React.CSSProperties = {
 
 type AdminRow = { user_id: string; name: string | null };
 
+/* System-B tokens for the account-type control. */
+const SB_CANVAS = "#F2F5F9";
+const SB_CARD = "#FFFFFF";
+const SB_BORDER = "#E2E7EE";
+const SB_INK = "#0F1519";
+const SB_ACTION = "#0670C4";
+const SB_FONT = "Inter, system-ui, sans-serif";
+
+const ACCOUNT_TYPES = ["customer", "staff", "test", "demo"] as const;
+type AccountType = (typeof ACCOUNT_TYPES)[number];
+type AccountRow = {
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  account_type: AccountType;
+  excluded_reason: string | null;
+};
+
+const SB_INPUT: React.CSSProperties = {
+  background: SB_CARD,
+  border: `1px solid ${SB_BORDER}`,
+  borderRadius: 8,
+  padding: "7px 9px",
+  fontSize: 13,
+  color: SB_INK,
+  fontFamily: SB_FONT,
+  outline: "none",
+  minWidth: 0,
+};
+const SB_BTN: React.CSSProperties = {
+  borderRadius: 8,
+  padding: "7px 12px",
+  fontSize: 13,
+  fontWeight: 500,
+  fontFamily: SB_FONT,
+  background: SB_ACTION,
+  color: SB_CARD,
+  border: "none",
+  cursor: "pointer",
+};
+
 export default function PlatformRulesPanel() {
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState<string | null>(null);
@@ -62,6 +103,10 @@ export default function PlatformRulesPanel() {
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [newAdminId, setNewAdminId] = useState("");
   const [savingAdmin, setSavingAdmin] = useState(false);
+
+  const [accounts, setAccounts] = useState<AccountRow[]>([]);
+  const [draft, setDraft] = useState<Record<string, { type: AccountType; reason: string }>>({});
+  const [savingAccount, setSavingAccount] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,6 +139,19 @@ export default function PlatformRulesPanel() {
         }
       }
       setAdmins(ids.map((id) => ({ user_id: id, name: names[id] ?? null })));
+
+      const { data: accRows, error: accErr } = await supabase
+        .from("diagnostic_profiles")
+        .select("user_id, first_name, last_name, account_type, excluded_reason")
+        .order("created_at", { ascending: true });
+      if (accErr) throw new Error(accErr.message);
+      const list = (accRows ?? []) as AccountRow[];
+      setAccounts(list);
+      setDraft(
+        Object.fromEntries(
+          list.map((a) => [a.user_id, { type: a.account_type, reason: a.excluded_reason ?? "" }]),
+        ),
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -166,6 +224,31 @@ export default function PlatformRulesPanel() {
     setSavingAdmin(false);
     if (err) { setError(err.message); return; }
     setNote("Admin removed.");
+    void load();
+  };
+
+  const saveAccount = async (row: AccountRow) => {
+    const d = draft[row.user_id];
+    if (!d) return;
+    const reason = d.reason.trim();
+    if (d.type !== "customer" && !reason) {
+      setError("An excluded account needs a written reason.");
+      return;
+    }
+    setSavingAccount(row.user_id);
+    setError(null);
+    setNote(null);
+    const { error: err } = await supabase
+      .from("diagnostic_profiles")
+      .update({
+        account_type: d.type,
+        excluded_reason: d.type === "customer" ? null : reason,
+        excluded_at: d.type === "customer" ? null : new Date().toISOString(),
+      })
+      .eq("user_id", row.user_id);
+    setSavingAccount(null);
+    if (err) { setError(err.message); return; }
+    setNote("Account category saved.");
     void load();
   };
 
@@ -289,6 +372,75 @@ export default function PlatformRulesPanel() {
 
           {note && <div style={{ fontSize: 12, color: "#12805C" }}>{note}</div>}
           {error && <div style={{ fontSize: 12, color: "#B3261E" }}>{error}</div>}
+
+          {/* Account categories */}
+          <div>
+            <div style={LABEL}>Account categories</div>
+            <p style={{ ...SUB, marginBottom: 10 }}>
+              Anything other than customer is excluded from member metrics, and must say why.
+            </p>
+            <div style={{ background: SB_CANVAS, border: `1px solid ${SB_BORDER}`, borderRadius: 12, padding: 12 }}>
+              <div className="space-y-2">
+                {accounts.map((a) => {
+                  const d = draft[a.user_id] ?? { type: a.account_type, reason: a.excluded_reason ?? "" };
+                  const dirty = d.type !== a.account_type || d.reason.trim() !== (a.excluded_reason ?? "");
+                  return (
+                    <div
+                      key={a.user_id}
+                      style={{
+                        background: SB_CARD,
+                        border: `1px solid ${SB_BORDER}`,
+                        borderRadius: 8,
+                        padding: 10,
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 8,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={{ minWidth: 150, flex: "1 1 150px" }}>
+                        <div style={{ fontSize: 13, color: SB_INK, fontFamily: SB_FONT }}>
+                          {[a.first_name, a.last_name].filter(Boolean).join(" ") || "Unnamed member"}
+                        </div>
+                        <div style={{ fontSize: 11, fontFamily: MONO, color: "#5B6672", overflowWrap: "anywhere" }}>
+                          {a.user_id}
+                        </div>
+                      </div>
+                      <select
+                        value={d.type}
+                        onChange={(e) =>
+                          setDraft((p) => ({ ...p, [a.user_id]: { ...d, type: e.target.value as AccountType } }))
+                        }
+                        style={{ ...SB_INPUT, width: 120 }}
+                      >
+                        {ACCOUNT_TYPES.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                      {d.type !== "customer" && (
+                        <input
+                          value={d.reason}
+                          onChange={(e) =>
+                            setDraft((p) => ({ ...p, [a.user_id]: { ...d, reason: e.target.value } }))
+                          }
+                          placeholder="Reason (required)"
+                          style={{ ...SB_INPUT, flex: "2 1 200px" }}
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => void saveAccount(a)}
+                        disabled={!dirty || savingAccount === a.user_id}
+                        style={{ ...SB_BTN, opacity: !dirty || savingAccount === a.user_id ? 0.4 : 1 }}
+                      >
+                        {savingAccount === a.user_id ? "Saving…" : "Save"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </section>

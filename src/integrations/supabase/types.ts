@@ -935,6 +935,7 @@ export type Database = {
       }
       diagnostic_profiles: {
         Row: {
+          account_type: Database["public"]["Enums"]["account_type"]
           audit_completed_at: string | null
           audit_interpretation: string | null
           audit_method: string | null
@@ -955,12 +956,13 @@ export type Database = {
           default_template: string | null
           default_theme: string | null
           display_name_override: string | null
+          excluded_at: string | null
+          excluded_reason: string | null
           firm: string | null
           first_name: string | null
           generated_skills: Json
           id: string
           identity_intelligence: Json
-          is_internal: boolean
           last_active_at: string | null
           last_name: string | null
           last_visit_at: string | null
@@ -988,6 +990,7 @@ export type Database = {
           years_experience: string | null
         }
         Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"]
           audit_completed_at?: string | null
           audit_interpretation?: string | null
           audit_method?: string | null
@@ -1008,12 +1011,13 @@ export type Database = {
           default_template?: string | null
           default_theme?: string | null
           display_name_override?: string | null
+          excluded_at?: string | null
+          excluded_reason?: string | null
           firm?: string | null
           first_name?: string | null
           generated_skills?: Json
           id?: string
           identity_intelligence?: Json
-          is_internal?: boolean
           last_active_at?: string | null
           last_name?: string | null
           last_visit_at?: string | null
@@ -1041,6 +1045,7 @@ export type Database = {
           years_experience?: string | null
         }
         Update: {
+          account_type?: Database["public"]["Enums"]["account_type"]
           audit_completed_at?: string | null
           audit_interpretation?: string | null
           audit_method?: string | null
@@ -1061,12 +1066,13 @@ export type Database = {
           default_template?: string | null
           default_theme?: string | null
           display_name_override?: string | null
+          excluded_at?: string | null
+          excluded_reason?: string | null
           firm?: string | null
           first_name?: string | null
           generated_skills?: Json
           id?: string
           identity_intelligence?: Json
-          is_internal?: boolean
           last_active_at?: string | null
           last_name?: string | null
           last_visit_at?: string | null
@@ -4819,6 +4825,174 @@ export type Database = {
         }
         Relationships: []
       }
+      member_accounts: {
+        Row: {
+          account_type: Database["public"]["Enums"]["account_type"] | null
+          audit_completed_at: string | null
+          audit_interpretation: string | null
+          audit_method: string | null
+          audit_results: Json | null
+          aura_card_ready_at: string | null
+          avatar_cutout_url: string | null
+          avatar_url: string | null
+          brand_assessment_answers: Json | null
+          brand_assessment_completed_at: string | null
+          brand_assessment_results: Json | null
+          brand_pillars: string[] | null
+          completed: boolean | null
+          content_language: string | null
+          core_practice: string | null
+          country: string | null
+          country_code: string | null
+          created_at: string | null
+          default_template: string | null
+          default_theme: string | null
+          display_name_override: string | null
+          excluded_at: string | null
+          excluded_reason: string | null
+          firm: string | null
+          first_name: string | null
+          generated_skills: Json | null
+          id: string | null
+          identity_intelligence: Json | null
+          last_active_at: string | null
+          last_name: string | null
+          last_visit_at: string | null
+          leadership_style: string | null
+          level: string | null
+          lifecycle_opt_out: boolean | null
+          linkedin_handle: string | null
+          linkedin_url: string | null
+          north_star_goal: string | null
+          notification_prefs: Json | null
+          onboarding_completed: boolean | null
+          onboarding_step: number | null
+          phone_verified: boolean | null
+          phone_whatsapp: string | null
+          primary_strength: string | null
+          sector_focus: string | null
+          shared_learning_consent: boolean | null
+          signature_presets: Json | null
+          skill_ratings: Json | null
+          target_register: string | null
+          theme_preference: string | null
+          timezone: string | null
+          ui_dismissals: Json | null
+          user_id: string | null
+          years_experience: string | null
+        }
+        Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
+          audit_completed_at?: string | null
+          audit_interpretation?: string | null
+          audit_method?: string | null
+          audit_results?: Json | null
+          aura_card_ready_at?: string | null
+          avatar_cutout_url?: string | null
+          avatar_url?: string | null
+          brand_assessment_answers?: Json | null
+          brand_assessment_completed_at?: string | null
+          brand_assessment_results?: Json | null
+          brand_pillars?: string[] | null
+          completed?: boolean | null
+          content_language?: string | null
+          core_practice?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          default_template?: string | null
+          default_theme?: string | null
+          display_name_override?: string | null
+          excluded_at?: string | null
+          excluded_reason?: string | null
+          firm?: string | null
+          first_name?: string | null
+          generated_skills?: Json | null
+          id?: string | null
+          identity_intelligence?: Json | null
+          last_active_at?: string | null
+          last_name?: string | null
+          last_visit_at?: string | null
+          leadership_style?: string | null
+          level?: string | null
+          lifecycle_opt_out?: boolean | null
+          linkedin_handle?: string | null
+          linkedin_url?: string | null
+          north_star_goal?: string | null
+          notification_prefs?: Json | null
+          onboarding_completed?: boolean | null
+          onboarding_step?: number | null
+          phone_verified?: boolean | null
+          phone_whatsapp?: string | null
+          primary_strength?: string | null
+          sector_focus?: string | null
+          shared_learning_consent?: boolean | null
+          signature_presets?: Json | null
+          skill_ratings?: Json | null
+          target_register?: string | null
+          theme_preference?: string | null
+          timezone?: string | null
+          ui_dismissals?: Json | null
+          user_id?: string | null
+          years_experience?: string | null
+        }
+        Update: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
+          audit_completed_at?: string | null
+          audit_interpretation?: string | null
+          audit_method?: string | null
+          audit_results?: Json | null
+          aura_card_ready_at?: string | null
+          avatar_cutout_url?: string | null
+          avatar_url?: string | null
+          brand_assessment_answers?: Json | null
+          brand_assessment_completed_at?: string | null
+          brand_assessment_results?: Json | null
+          brand_pillars?: string[] | null
+          completed?: boolean | null
+          content_language?: string | null
+          core_practice?: string | null
+          country?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          default_template?: string | null
+          default_theme?: string | null
+          display_name_override?: string | null
+          excluded_at?: string | null
+          excluded_reason?: string | null
+          firm?: string | null
+          first_name?: string | null
+          generated_skills?: Json | null
+          id?: string | null
+          identity_intelligence?: Json | null
+          last_active_at?: string | null
+          last_name?: string | null
+          last_visit_at?: string | null
+          leadership_style?: string | null
+          level?: string | null
+          lifecycle_opt_out?: boolean | null
+          linkedin_handle?: string | null
+          linkedin_url?: string | null
+          north_star_goal?: string | null
+          notification_prefs?: Json | null
+          onboarding_completed?: boolean | null
+          onboarding_step?: number | null
+          phone_verified?: boolean | null
+          phone_whatsapp?: string | null
+          primary_strength?: string | null
+          sector_focus?: string | null
+          shared_learning_consent?: boolean | null
+          signature_presets?: Json | null
+          skill_ratings?: Json | null
+          target_register?: string | null
+          theme_preference?: string | null
+          timezone?: string | null
+          ui_dismissals?: Json | null
+          user_id?: string | null
+          years_experience?: string | null
+        }
+        Relationships: []
+      }
       post_provenance: {
         Row: {
           acquisition: string | null
@@ -5326,6 +5500,7 @@ export type Database = {
       }
     }
     Enums: {
+      account_type: "customer" | "staff" | "test" | "demo"
       app_role: "admin" | "member"
     }
     CompositeTypes: {
@@ -5454,6 +5629,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_type: ["customer", "staff", "test", "demo"],
       app_role: ["admin", "member"],
     },
   },
