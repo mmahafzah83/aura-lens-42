@@ -1,2169 +1,1300 @@
-import { useEffect, useState, useRef } from "react";
+/**
+ * THE COLLECTION — the fourteen-screen first run.
+ *
+ * Surface law, absolute:
+ *   NIGHT (#0F1519)  = Aura is working, the member does nothing. AuraFace lives here.
+ *   WHITE / CREAM    = the member's turn. ProgressBeads live here.
+ *
+ * Content comes from two live tables — capability_dimensions and
+ * onboarding_questions — resolved exact (band, sector) first, then
+ * (band, sector IS NULL). If both come back empty the member sees a friendly
+ * retry, never a blank screen.
+ */
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff, Lightbulb, Linkedin } from "lucide-react";
+import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { saveLinkedInAddress, canonicalHandle } from "@/lib/linkedinAddress";
-import CountryPicker from "@/components/CountryPicker";
-import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
-import BrandAssessmentModal from "@/components/BrandAssessmentModal";
-import CalibrationSliders from "@/components/CalibrationSliders";
-import { SECTORS, normalizeSector } from "@/constants/sectors";
+import { useCountUp } from "@/hooks/useCountUp";
+import { SECTORS } from "@/constants/sectors";
 import { initThemeFromStorage } from "@/lib/applyTheme";
 import { track } from "@/lib/track";
+import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@/lib/marketRead";
+import AuraFace from "@/components/onboarding/AuraFace";
+import ShelfBadge, { type ShelfBadgeTone } from "@/components/onboarding/ShelfBadge";
+import ClaimCard from "@/components/onboarding/ClaimCard";
+import ProgressBeads from "@/components/onboarding/ProgressBeads";
+import RevealCard, { type RevealData } from "@/components/onboarding/RevealCard";
+import Confetti from "@/components/onboarding/Confetti";
+import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 
-type Step = 0 | 1 | 2 | 3;
+/* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
-interface Prefill {
-  first_name?: string;
-  last_name?: string;
-  firm?: string;
-  level?: string;
-  core_practice?: string;
-  sector_focus?: string;
-}
+type Band = "work" | "table" | "room";
 
-interface FoundArticle {
-  url: string;
-  title: string;
-  summary?: string;
-  source?: string;
-}
+const BAND_LABEL: Record<Band, string> = {
+  work: "Manager & lead",
+  table: "Director & partner",
+  room: "C-suite & board",
+};
 
-const OB_CSS = `
-.ob{
-  --page:#F2F5F9; --plate:#EAEFF5; --n0:#FFFFFF; --n100:#EEF2F7; --n200:#E2E7EE;
-  --n300:#D6DCE4; --n400:#98A2AE; --n500:#5B6673; --n700:#3A434E; --n900:#0F1519;
-  --act:#0670C4; --act-50:#E6F2FD; --cy:#00CEC9; --cy-t:#00807B;
-  --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
-  --ser:'Instrument Serif',Georgia,serif;
-  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
-  font-family:var(--ui); color:var(--n900); -webkit-font-smoothing:antialiased;
+const BAND_TO_LEVEL: Record<Band, string> = {
+  work: "Manager",
+  table: "Director",
+  room: "C-Suite",
+};
+
+const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
+  { key: "profile", label: "Your profile", tone: "blue" },
+  { key: "claims", label: "First claims", tone: "cyan" },
+  { key: "strengths", label: "Strengths", tone: "deep" },
+  { key: "subjects", label: "Your subjects", tone: "amber" },
+];
+
+const MANUAL_SCREEN = 15;
+
+const PAGE_CSS = `
+.obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};}
+.obc *,.obc *::before,.obc *::after{box-sizing:border-box;}
+.obc :focus-visible{outline:2px solid ${OB.blue};outline-offset:3px;border-radius:8px;}
+@keyframes obc-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.obc-in{animation:obc-in 450ms ${SPRING} both;}
+.obc-line{opacity:0;animation:obc-in 450ms ${SPRING} both;}
+@media (prefers-reduced-motion:reduce){
+  .obc-in,.obc-line{animation:none !important;opacity:1 !important;transform:none !important;}
 }
-.ob *,.ob *::before,.ob *::after{box-sizing:border-box;}
-.ob :focus-visible{outline:2px solid var(--act);outline-offset:3px;border-radius:6px;}
-.ob-rail{display:flex;align-items:flex-end;gap:0;margin-bottom:30px;}
-.ob-seg{flex:1;display:flex;flex-direction:column;gap:7px;}
-.ob-seg .ob-bar{height:3px;border-radius:2px;background:var(--n200);transition:background .4s ease;}
-.ob-seg.done .ob-bar{background:var(--n900);}
-.ob-seg.now .ob-bar{background:var(--act);}
-.ob-seg .ob-nm{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--n400);padding-right:10px;line-height:1.3;}
-.ob-seg.now .ob-nm{color:var(--act);}
-.ob-seg.done .ob-nm{color:var(--n500);}
-.ob-eyebrow{position:relative;display:inline-block;padding:8px 13px;margin-bottom:20px;}
-.ob-eyebrow span{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--n700);}
-.ob-eyebrow::before,.ob-eyebrow::after{content:'';position:absolute;width:12px;height:12px;border:1.5px solid var(--n300);}
-.ob-eyebrow::before{left:0;bottom:0;border-top:0;border-right:0;}
-.ob-eyebrow::after{right:0;top:0;border-bottom:0;border-left:0;}
-.ob-h1{font-family:var(--ser);font-weight:400;font-size:clamp(28px,3.4vw,40px);line-height:1.03;letter-spacing:-.026em;color:var(--n900);margin:0 0 4px;}
-.ob-body{font-size:15.5px;line-height:1.62;color:var(--n700);margin:0;}
-.ob-field{width:100%;background:var(--page);border:1px solid var(--n200);color:var(--n900);font-size:15.5px;font-family:inherit;padding:14px 16px;border-radius:12px;outline:none;transition:border-color .25s ease,box-shadow .25s ease,background .25s ease;}
-.ob-field::placeholder{color:var(--n400);}
-.ob-field:focus{border-color:var(--act);background:var(--n0);box-shadow:0 0 0 4px var(--act-50);}
-.ob-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;width:100%;border-radius:999px;font-size:15.5px;font-weight:600;font-family:inherit;border:1px solid transparent;background:var(--n900);color:#fff;cursor:pointer;transition:transform .2s ease,box-shadow .25s ease,opacity .2s ease;}
-.ob-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 34px -16px rgba(15,21,25,.7);}
-.ob-btn:disabled{opacity:.5;cursor:not-allowed;}
-.ob-ghost{display:block;width:100%;min-height:46px;margin-top:10px;border-radius:999px;background:transparent;color:var(--n500);border:1px solid var(--n200);font-family:inherit;font-size:14.5px;font-weight:500;cursor:pointer;transition:background .2s ease,color .2s ease;}
-.ob-ghost:hover{background:var(--page);color:var(--n900);}
-.ob-line{background:transparent;color:var(--act);border:1px solid var(--act);}
-.ob-line:hover:not(:disabled){background:var(--act-50);box-shadow:none;transform:none;}
-.ob input:-webkit-autofill,.ob input:-webkit-autofill:hover,.ob input:-webkit-autofill:focus,.ob textarea:-webkit-autofill,.ob select:-webkit-autofill{
-  -webkit-box-shadow:0 0 0 1000px #F2F5F9 inset !important;
-  -webkit-text-fill-color:#0F1519 !important;
-  caret-color:#0F1519 !important;
-  transition:background-color 9999s ease-in-out 0s;
-}
-@media (max-width:560px){ .ob-seg .ob-nm{display:none;} }
-@media (prefers-reduced-motion:reduce){ .ob *,.ob *::before,.ob *::after{animation:none !important;transition:none !important;} }
 `;
 
-/* ── System-B "Signal" tokens for the LinkedIn read. Module scope, always. ── */
-const SB_INK = "#0F1519";
-const SB_MUTED = "#5B6673";
-const SB_LINE = "#E2E7EE";
-const SB_CANVAS = "#F2F5F9";
-const SB_CARD = "#FFFFFF";
-const SB_ACT = "#0670C4";
-const SB_ACT_DARK = "#04477C";
-const SB_ERR = "#C0392B";
-const SB_MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
-
-const liPanelStyle: React.CSSProperties = {
-  background: SB_CARD, border: `1px solid ${SB_LINE}`, borderRadius: 20, padding: 18,
-};
-const liFigureStyle: React.CSSProperties = {
-  fontFamily: SB_MONO, fontSize: 24, fontWeight: 600, color: SB_INK, lineHeight: 1.1,
-};
-const liFigureLabelStyle: React.CSSProperties = {
-  fontSize: 11.5, color: SB_MUTED, lineHeight: 1.4, marginBlockStart: 4,
-};
-const liPrimaryStyle: React.CSSProperties = {
-  background: SB_ACT, color: SB_CARD, border: "none", borderRadius: 8,
-  padding: "12px 18px", fontSize: 14.5, fontWeight: 600, cursor: "pointer",
-  minHeight: 44, inlineSize: "100%",
-  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-};
-const liQuietStyle: React.CSSProperties = {
-  background: SB_CARD, color: SB_MUTED, border: `1px solid ${SB_LINE}`, borderRadius: 8,
-  padding: "10px 16px", fontSize: 13.5, fontWeight: 500, cursor: "pointer",
-  minHeight: 44, inlineSize: "100%", marginBlockStart: 8,
+const btnPrimary: React.CSSProperties = {
+  inlineSize: "100%", minBlockSize: 52, borderRadius: RADIUS.pill, border: "none",
+  background: OB.blue, color: "#FFFFFF", fontSize: 15.5, fontWeight: 600, cursor: "pointer",
+  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9,
+  transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}`, fontFamily: "inherit",
 };
 
-/** Accepts a full URL, `linkedin.com/in/x`, `/in/x`, or a bare handle. */
+const btnGhostLight: React.CSSProperties = {
+  inlineSize: "100%", minBlockSize: 46, borderRadius: RADIUS.pill,
+  background: "transparent", color: OB.muted, border: `1px solid ${OB.line}`,
+  fontSize: 14.5, fontWeight: 500, cursor: "pointer", marginBlockStart: 10, fontFamily: "inherit",
+};
+
+const btnGhostNight: React.CSSProperties = {
+  ...btnGhostLight, color: OB.mutedNight, border: `1px solid ${OB.lineNight}`,
+};
+
+const fieldStyle: React.CSSProperties = {
+  inlineSize: "100%", background: OB.canvas, border: `1px solid ${OB.line}`,
+  color: OB.ink, fontSize: 15.5, fontFamily: "inherit", padding: "14px 16px",
+  borderRadius: 12, outline: "none",
+};
+
+const h1Light: React.CSSProperties = {
+  margin: 0, fontSize: "clamp(26px,7.2vw,34px)", fontWeight: 800,
+  letterSpacing: "-0.03em", lineHeight: 1.1, color: OB.ink,
+};
+
+const h1Night: React.CSSProperties = { ...h1Light, color: "#FFFFFF" };
+
+const bodyLight: React.CSSProperties = {
+  margin: "12px 0 0", fontSize: 15, lineHeight: 1.65, color: OB.muted,
+};
+
+const bodyNight: React.CSSProperties = { ...bodyLight, color: OB.mutedNight };
+
+const footnote: React.CSSProperties = {
+  margin: "14px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted, textAlign: "center",
+};
+
+/* ──────────────────────────────── helpers ───────────────────────────────── */
+
+interface Dimension {
+  name: string; why_line: string | null; anchor_low: string | null; anchor_high: string | null;
+}
+interface JourneyQuestion {
+  prompt: string; helper: string | null; kind: string;
+  options: { label: string; value: string }[] | null;
+}
+interface Claim { title: string; content?: string | null; confidence?: number | null }
+
 const normaliseLinkedIn = (input: string): string | null => {
   const handle = canonicalHandle(input);
   return handle ? `https://www.linkedin.com/in/${handle}` : null;
 };
 
+const wordsIn = (rows: { post_text?: string | null }[]): number =>
+  rows.reduce((n, r) => n + String(r.post_text || "").trim().split(/\s+/).filter(Boolean).length, 0);
+
+/* ──────────────────────────────── shells ────────────────────────────────── */
+
+const NightShell = ({ children, face, footer }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode }) => (
+  <div className="obc" style={{
+    minBlockSize: "100dvh", background: OB.night, display: "flex", alignItems: "center",
+    justifyContent: "center", padding: "28px 20px",
+  }}>
+    <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: 420 }}>
+      {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace /></div> : null}
+      {children}
+      {footer}
+    </div>
+  </div>
+);
+
+const PaperShell = ({
+  children, bead, cream = false, footer,
+}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode }) => (
+  <div className="obc" style={{
+    minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
+    display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
+  }}>
+    <div style={{ inlineSize: "100%", maxInlineSize: 460 }}>
+      <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
+        <ProgressBeads active={bead} />
+      </div>
+      <div className="obc-in" style={{
+        background: OB.white, borderRadius: RADIUS.hero, border: `1px solid ${OB.line}`,
+        padding: "clamp(22px,6vw,32px)", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
+      }}>
+        {children}
+      </div>
+      {footer}
+    </div>
+  </div>
+);
+
+/* ──────────────────────────────── page ──────────────────────────────────── */
+
 const Onboarding = () => {
   usePageMeta({
-    title: "Aura — Get Started",
-    description: "Complete your Aura onboarding so it can start reading for you.",
+    title: "Aura — Start your shelf",
+    description: "Five short steps. Aura learns your sector, your level and the way you already write.",
     path: "/onboarding",
   });
   const navigate = useNavigate();
-
-  // Honour the user's saved light/dark preference on this standalone route
-  // (Dashboard normally writes data-theme; /onboarding mounts outside it).
   useEffect(() => { initThemeFromStorage(); }, []);
 
-  // One-time ceremony overlay shown between onboarding completion and Home.
-  const [ceremony, setCeremony] = useState(false);
-  const [ceremonyLeaving, setCeremonyLeaving] = useState(false);
-
-  const completeCeremonyAndNavigate = () => {
-    if (ceremonyLeaving) return;
-    setCeremonyLeaving(true);
-    // Mark onboarding fully complete (Fix 9/10) — best-effort, non-blocking.
-    (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id) {
-          await (supabase.from("diagnostic_profiles" as any) as any)
-            .update({ onboarding_step: 4, onboarding_completed: true })
-            .eq("user_id", session.user.id);
-        }
-      } catch (e) { console.warn("final onboarding_step save failed:", e); }
-    })();
-    window.setTimeout(() => {
-      try {
-        const raw = localStorage.getItem("aura_visited_pages");
-        const arr: string[] = raw ? JSON.parse(raw) : [];
-        if (!arr.includes("home")) {
-          arr.push("home");
-          localStorage.setItem("aura_visited_pages", JSON.stringify(arr));
-        }
-      } catch { /* ignore */ }
-      try {
-        toast.success("Welcome home. ✦", { duration: 4000 });
-      } catch { /* ignore */ }
-      navigate("/home", { replace: true });
-    }, 500);
-  };
-
-  // Suppress the home first-visit hint for users who just completed onboarding.
-  const goHome = () => {
-    seedImprint();
-    // Play the ceremony exactly once per browser; subsequent visits go straight home.
-    try {
-      const alreadyPlayed = localStorage.getItem("aura_onboarding_ceremony_seen") === "true";
-      if (!alreadyPlayed) {
-        localStorage.setItem("aura_onboarding_ceremony_seen", "true");
-        setCeremony(true);
-        // Fix 4: persist completion immediately at ceremony mount so closing
-        // the tab mid-ceremony still marks onboarding complete.
-        (async () => {
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user?.id) {
-              await (supabase.from("diagnostic_profiles" as any) as any)
-                .update({ onboarding_step: 4, onboarding_completed: true })
-                .eq("user_id", session.user.id);
-            }
-          } catch (e) { console.warn("ceremony-mount completion save failed:", e); }
-        })();
-        return;
-      }
-    } catch { /* ignore — fall through to navigation */ }
-    try {
-      const raw = localStorage.getItem("aura_visited_pages");
-      const arr: string[] = raw ? JSON.parse(raw) : [];
-      if (!arr.includes("home")) {
-        arr.push("home");
-        localStorage.setItem("aura_visited_pages", JSON.stringify(arr));
-      }
-    } catch { /* ignore */ }
-    navigate("/home", { replace: true });
-  };
-  const [step, setStep] = useState<Step>(0);
-  const [direction, setDirection] = useState(1);
+  const [checking, setChecking] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [checking, setChecking] = useState(true);
-
-  // Final "Connect LinkedIn" screen state (shown once, right before ceremony).
-  const [showConnectStep, setShowConnectStep] = useState(false);
-  const [connectingLI, setConnectingLI] = useState(false);
-
-  const markConnectSeen = () => {
-    try { localStorage.setItem("aura_onboarding_connect_seen", "1"); } catch {}
-  };
-
-  const handleConnectLinkedIn = async () => {
-    setConnectingLI(true);
-    markConnectSeen();
-    try {
-      try { sessionStorage.setItem("aura_li_return", "/onboarding"); } catch {}
-      const { data, error } = await supabase.functions.invoke("linkedin-oauth", {
-        body: { action: "get-auth-url", origin: window.location.origin },
-      });
-      if (error || !data?.url) {
-        toast.error("Couldn't start LinkedIn connection — you can connect from Analytics anytime.");
-        setConnectingLI(false);
-        return;
-      }
-      window.location.href = data.url;
-    } catch {
-      toast.error("Couldn't start LinkedIn connection — you can connect from Analytics anytime.");
-      setConnectingLI(false);
-    }
-  };
-
-  const handleSkipConnect = () => {
-    markConnectSeen();
-    setShowConnectStep(false);
-    startBreathingTo(1, "Now your own read — Aura corrects it from there.");
-  };
-
-  const seedImprint = () => {
-    try {
-      if (!userId) return;
-      const key = `aura_imprint_seeded_${userId}`;
-      if (localStorage.getItem(key)) return;
-      localStorage.setItem(key, "1");
-      // Self-JWT path: compute-imprint resolves the user from the bearer token,
-      // recomputes the score, and writes the first imprint_snapshot immediately.
-      supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
-      // Fire-and-forget: seed industry_trends for this user so Observatory / Market
-      // Coverage isn't empty on first visit. Phase A returns fast; enrichment
-      // continues in the background.
-      supabase.functions
-        .invoke("fetch-industry-trends", { body: { mode: "light" } })
-        .catch(() => {});
-    } catch { /* non-blocking */ }
-  };
-
-  // Step -1: password setup gate
-  const [needsPassword, setNeedsPassword] = useState(false);
   const [needsIdentityConfirm, setNeedsIdentityConfirm] = useState(false);
+  const [needsPassword, setNeedsPassword] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [pwd, setPwd] = useState("");
   const [pwdConfirm, setPwdConfirm] = useState("");
   const [pwdShow, setPwdShow] = useState(false);
   const [settingPwd, setSettingPwd] = useState(false);
 
-  // Step 0
-  
-  // Sub-state: within step 0, show welcome first, then LinkedIn paste + form.
-  const [welcomeAcknowledged, setWelcomeAcknowledged] = useState(false);
+  const [screen, setScreen] = useState(0);
 
-  // ─── Capture-first pilot: two screens shown IN FRONT of the existing flow.
-  // Shown from data only (step 0/absent + zero entries + not skipped this session);
-  // onboarding_step numbering is untouched.
-  const [showCaptureFirst, setShowCaptureFirst] = useState(false);
-  const [cfPhase, setCfPhase] = useState<"input" | "reading" | "result">("input");
-  const [cfValue, setCfValue] = useState("");
-  const [cfBusy, setCfBusy] = useState(false);
-  const [cfFragments, setCfFragments] = useState<{ title: string; content?: string | null; confidence?: number | null }[]>([]);
-  const [seniorityBand, setSeniorityBand] = useState<string | null>(null);
-  const [cfCount, setCfCount] = useState(0);
-  const [cfTimedOut, setCfTimedOut] = useState(false);
-  // True once a capture exists — either made during the capture-first screens
-  // this session, or already present in `entries`. Drives the closing screen.
-  const [alreadyCaptured, setAlreadyCaptured] = useState(false);
-
-  // Step 1
-  const [linkedinUrl, setLinkedinUrl] = useState("");
-  const [linkedinText, setLinkedinText] = useState("");
-  const [linkedinError, setLinkedinError] = useState("");
-  // LinkedIn read (profile then posts) — the primary path in step 0.
-  const [liUrlError, setLiUrlError] = useState("");
-  const [liStage, setLiStage] = useState<null | "profile" | "posts">(null);
-  const [liProfile, setLiProfile] = useState<any>(null);
-  const [liPostsCount, setLiPostsCount] = useState<number | null>(null);
-  const [liPostsNote, setLiPostsNote] = useState("");
-  const [readingLi, setReadingLi] = useState(false);
-  const [liStatusIdx, setLiStatusIdx] = useState(0);
-  const [showForm, setShowForm] = useState(false);
-  const [usedLinkedIn, setUsedLinkedIn] = useState(false);
-  const [describeMode, setDescribeMode] = useState(false);
-  const [helperOpen, setHelperOpen] = useState(false);
+  /* member facts */
   const [firstName, setFirstName] = useState("");
-  const [prefillFirstName, setPrefillFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [firm, setFirm] = useState("");
-  const [level, setLevel] = useState("");
-  const [sectorFocus, setSectorFocus] = useState("");
-  const [corePractice, setCorePractice] = useState("");
-  const [northStar, setNorthStar] = useState("");
-  const [savingProfile, setSavingProfile] = useState(false);
-  // Optional country (for Aura Card flag). Never blocks completion.
-  const [country, setCountry] = useState<string | null>(null);
-  const [countryCode, setCountryCode] = useState<string | null>(null);
+  const [sector, setSector] = useState("");
+  const [band, setBand] = useState<Band | null>(null);
 
-  // Shared-learning consent (opt-in; persisted on diagnostic_profiles.shared_learning_consent).
-  const [sharedLearningConsent, setSharedLearningConsent] = useState(false);
-  const [consentTouched, setConsentTouched] = useState(false);
+  /* screen 1–3 */
+  const [liInput, setLiInput] = useState("");
+  const [liBusy, setLiBusy] = useState(false);
+  const [liError, setLiError] = useState("");
+  const [liProfile, setLiProfile] = useState<any>(null);
+  const [postsRead, setPostsRead] = useState(0);
+  const [ownWords, setOwnWords] = useState(0);
+  const [bandPicker, setBandPicker] = useState(false);
 
-  // Step 2
-  const [foundArticle, setFoundArticle] = useState<FoundArticle | null>(null);
-  const [articleSearchDone, setArticleSearchDone] = useState(false);
-  const [manualUrl, setManualUrl] = useState("");
-  const [capturing, setCapturing] = useState(false);
-  const [captureSuccess, setCaptureSuccess] = useState(false);
-  const [capturedTitle, setCapturedTitle] = useState<string>("");
-  const articleSearchStartRef = useRef<number>(0);
+  /* screen 5–7 */
+  const [linkInput, setLinkInput] = useState("");
+  const [suggested, setSuggested] = useState<{ url: string; title: string; summary?: string; source?: string } | null>(null);
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [claimsSlow, setClaimsSlow] = useState(false);
 
-  // Step 3
-  const [assessmentOpen, setAssessmentOpen] = useState(false);
-  const [initialSkillScores, setInitialSkillScores] = useState<Record<string, number> | null>(null);
+  /* screen 9 */
+  const [dims, setDims] = useState<Dimension[] | null>(null);
+  const [dimIdx, setDimIdx] = useState(0);
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [contentError, setContentError] = useState(false);
 
-  // Breathing transition between article capture (step 2) and calibration (step 3)
-  const [breathing, setBreathing] = useState(false);
-  const [breathingLeaving, setBreathingLeaving] = useState(false);
-  const [breathingMessage, setBreathingMessage] = useState<string>(
-    "Now your own read — Aura corrects it from there.",
-  );
+  /* screen 11 */
+  const [questions, setQuestions] = useState<JourneyQuestion[] | null>(null);
+  const [qIdx, setQIdx] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [textAnswer, setTextAnswer] = useState("");
 
-  // Loop-detection safety valve: if this session keeps bouncing back to
-  // /onboarding without ever completing, surface an escape hatch.
-  const [onboardingVisits, setOnboardingVisits] = useState<number>(0);
+  /* screen 13 */
+  const [reveal, setReveal] = useState<RevealData | null>(null);
+  const [revealPending, setRevealPending] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+
+  /* loop safety valve — kept from the previous journey */
+  const [visits, setVisits] = useState(0);
   useEffect(() => {
     try {
-      const key = "aura_onboarding_visits";
-      const next = Number(sessionStorage.getItem(key) || "0") + 1;
-      sessionStorage.setItem(key, String(next));
-      setOnboardingVisits(next);
+      const k = "aura_onboarding_visits";
+      const n = Number(sessionStorage.getItem(k) || "0") + 1;
+      sessionStorage.setItem(k, String(n));
+      setVisits(n);
     } catch { /* ignore */ }
   }, []);
 
-  const skipOnboardingEscape = async () => {
-    seedImprint();
+  /* ── progress: a closed tab loses nothing ── */
+  const persistScreen = useCallback(async (next: number) => {
+    if (!userId) return;
+    try { localStorage.setItem(`aura_ob_screen_${userId}`, String(next)); } catch { /* ignore */ }
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await (supabase.from("diagnostic_profiles" as any) as any).upsert({
-          user_id: user.id,
-          first_name: (user.user_metadata as any)?.first_name
-            || user.email?.split("@")[0]
-            || "User",
-          onboarding_completed: true,
-          onboarding_step: 4,
-          completed: true,
-        }, { onConflict: "user_id" });
-      }
-      sessionStorage.removeItem("aura_onboarding_visits");
-    } catch (e) {
-      console.warn("skip onboarding failed:", e);
-    }
-    navigate("/home", { replace: true });
-  };
+      const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("identity_intelligence").eq("user_id", userId).maybeSingle();
+      const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({
+          identity_intelligence: { ...ii, journey_screen: next },
+          onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
+        })
+        .eq("user_id", userId);
+    } catch (e) { console.warn("[journey] progress save failed", e); }
+  }, [userId]);
 
-  // Auth + gate: if user already onboarded, send them home.
+  const go = useCallback((next: number) => {
+    setScreen(next);
+    void track("onboarding_step", { step: `screen_${next}`, step_index: next });
+    void persistScreen(next);
+    try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
+  }, [persistScreen]);
+
+  /* ── boot ── */
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth", { replace: true });
-        return;
-      }
-      setUserId(session.user.id);
+      if (!session) { navigate("/auth", { replace: true }); return; }
+      const uid = session.user.id;
+      setUserId(uid);
       setUserEmail(session.user.email ?? null);
-      setPrefillFirstName((session.user.user_metadata as any)?.first_name || "");
-      const passwordAlreadySet = Boolean((session.user.user_metadata as any)?.password_set);
-      // Identity confirmation gate: anyone who just arrived via an invite
-      // (no password set yet) must first confirm this is their email — prevents
-      // a forwarded-invite recipient from silently taking over the account.
-      let confirmedThisSession = false;
-      try {
-        confirmedThisSession = sessionStorage.getItem(`aura_identity_confirmed_${session.user.id}`) === "true";
-      } catch { /* ignore */ }
-      if (!passwordAlreadySet && !confirmedThisSession) {
-        setNeedsIdentityConfirm(true);
-      } else if (!passwordAlreadySet) {
-        setNeedsPassword(true);
-      }
-      const { data: profile } = await supabase
-        .from("diagnostic_profiles" as any)
-        .select("first_name, onboarding_completed, onboarding_step, skill_ratings, country, country_code, seniority_band")
-        .eq("user_id", session.user.id)
+
+      const passwordSet = Boolean((session.user.user_metadata as any)?.password_set);
+      let confirmed = false;
+      try { confirmed = sessionStorage.getItem(`aura_identity_confirmed_${uid}`) === "true"; } catch { /* ignore */ }
+      if (!passwordSet && !confirmed) setNeedsIdentityConfirm(true);
+      else if (!passwordSet) setNeedsPassword(true);
+
+      const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("first_name, last_name, firm, sector_focus, seniority_band, onboarding_step, skill_ratings, identity_intelligence")
+        .eq("user_id", uid)
         .maybeSingle();
       const p: any = profile || {};
-      // Completion redirect — any user with onboarding_step >= 4
-      // (or the legacy onboarding_completed flag) can never accidentally restart.
-      if (p && (p.onboarding_step ?? 0) >= 4) {
-        goHome();
+
+      if (Number(p.onboarding_step ?? 0) >= 4) {
+        navigate("/home", { replace: true });
         return;
       }
-      // Resume from last saved step (Fix 1C)
-      const savedStep = Number(p.onboarding_step ?? 0);
-      if (savedStep > 0 && savedStep <= 3) {
-        setStep(savedStep as Step);
-        setWelcomeAcknowledged(true);
-      }
-      // Pre-populate calibration sliders with any partial scores (Fix 1D)
-      if (p.skill_ratings && typeof p.skill_ratings === "object") {
-        setInitialSkillScores(p.skill_ratings as Record<string, number>);
-      }
-      // Pre-populate Step 1 form fields if returning user has partial data
-      if (p.seniority_band) setSeniorityBand(String(p.seniority_band));
       if (p.first_name) setFirstName(p.first_name);
       if (p.last_name) setLastName(p.last_name);
       if (p.firm) setFirm(p.firm);
-      if (p.level) setLevel(p.level);
-      if (p.sector_focus) setSectorFocus(p.sector_focus);
-      if (p.core_practice) setCorePractice(p.core_practice);
-      if (p.north_star_goal) setNorthStar(p.north_star_goal);
-      if (p.country) setCountry(p.country);
-      if (p.country_code) setCountryCode(p.country_code);
-      // Capture-first gate — data-driven, never a new step counter.
+      if (p.sector_focus) setSector(p.sector_focus);
+      if (p.seniority_band) setBand(p.seniority_band as Band);
+      if (p.skill_ratings && typeof p.skill_ratings === "object") setScores(p.skill_ratings as Record<string, number>);
+
+      let resume = Number((p.identity_intelligence as any)?.journey_screen ?? 0);
       try {
-        const skipped = sessionStorage.getItem(`aura_capture_first_skipped_${session.user.id}`) === "1";
-        if (!skipped && savedStep === 0) {
-          const { count } = await supabase
-            .from("entries" as any)
-            .select("id", { count: "exact", head: true })
-            .eq("user_id", session.user.id);
-          if ((count ?? 0) === 0) setShowCaptureFirst(true);
-        }
-      } catch { /* never block onboarding */ }
+        const local = Number(localStorage.getItem(`aura_ob_screen_${uid}`) ?? "0");
+        if (local > resume) resume = local;
+      } catch { /* ignore */ }
+      if (resume > 0 && resume < 13) setScreen(resume);
+
       setChecking(false);
     })();
   }, [navigate]);
 
-  // ─── Capture-first: submit through the SAME ingest-capture path the app uses.
-  const cfSkip = () => {
-    try { if (userId) sessionStorage.setItem(`aura_capture_first_skipped_${userId}`, "1"); } catch {}
-    setShowCaptureFirst(false);
+  /* ── screen 1: read the profile ── */
+  const readProfile = async () => {
+    setLiError("");
+    const profile_url = normaliseLinkedIn(liInput);
+    if (!profile_url) {
+      setLiError("Aura couldn't open that page. Check it matches what you see in your browser on your own profile.");
+      return;
+    }
+    setLiBusy(true);
+    go(2);
+    try {
+      if (userId) { try { await saveLinkedInAddress(userId, profile_url); } catch { /* saved again later */ } }
+      const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", { body: { profile_url } });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error(String((data as any).error));
+      const prof: any = (data as any)?.profile ?? data;
+      setLiProfile(prof);
+
+      if (userId) {
+        try {
+          await supabase.from("linkedin_connections").update({ source_status: "verified_by_read" }).eq("user_id", userId);
+        } catch { /* never block */ }
+      }
+
+      const full = String(prof?.full_name || "").trim();
+      if (full && !firstName.trim()) {
+        const parts = full.split(/\s+/);
+        setFirstName(parts[0] || "");
+        if (parts.length > 1) setLastName(parts.slice(1).join(" "));
+      }
+
+      /* the level comes from the headline, and it is written down as detected */
+      const headline = String(prof?.headline || "");
+      if (headline) {
+        try {
+          const { data: detected } = await (supabase.rpc as any)("detect_seniority_band", { headline });
+          const b = (detected as string | null) as Band | null;
+          if (b && userId) {
+            setBand(b);
+            await (supabase.from("diagnostic_profiles" as any) as any)
+              .update({ seniority_band: b, band_source: "detected" })
+              .eq("user_id", userId);
+          }
+        } catch { /* the member confirms it on the next screen anyway */ }
+      }
+
+      const { data: postData } = await supabase.functions.invoke("linkedin-fetch-posts", {
+        body: { profile_url, max_posts: 50 },
+      });
+      const kept = typeof (postData as any)?.kept_own_text === "number" ? (postData as any).kept_own_text : 0;
+      setPostsRead(kept);
+      if (userId) {
+        const { data: rows } = await supabase
+          .from("linkedin_posts").select("post_text").eq("user_id", userId).limit(200);
+        setOwnWords(wordsIn((rows as any[]) || []));
+      }
+    } catch (e: any) {
+      const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "";
+      setLiError(msg && msg.length < 120
+        ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
+        : "Aura couldn't open that page. Check it matches what you see in your browser on your own profile.");
+      go(1);
+    } finally {
+      setLiBusy(false);
+    }
   };
 
-  const cfPoll = async (startIso: string) => {
-    const deadline = Date.now() + 20000;
+  /* ── screen 2: the lines land one at a time ── */
+  const [lineCount, setLineCount] = useState(0);
+  useEffect(() => {
+    if (screen !== 2) { setLineCount(0); return; }
+    if (reducedMotion()) { setLineCount(4); return; }
+    const t = window.setInterval(() => setLineCount((n) => (n >= 4 ? 4 : n + 1)), 800);
+    return () => window.clearInterval(t);
+  }, [screen]);
+
+  const upPosts = useCountUp(postsRead, { duration: 900, gate: screen === 2 && lineCount >= 1 });
+  const upWords = useCountUp(ownWords, { duration: 1100, gate: screen === 2 && lineCount >= 2 });
+
+  /* ── the suggested read, fetched while the member is on the dark screens ── */
+  const suggestRan = useRef(false);
+  useEffect(() => {
+    if (screen < 4 || suggestRan.current) return;
+    suggestRan.current = true;
+    supabase.functions.invoke("onboarding-find-article", {
+      body: { sector_focus: sector, firm, level: band ? BAND_TO_LEVEL[band] : "" },
+    }).then(({ data }) => {
+      if ((data as any)?.found && (data as any)?.article) setSuggested((data as any).article);
+    }).catch(() => { /* the member can always paste their own */ });
+  }, [screen, sector, firm, band]);
+
+  /* ── screen 5/6: send the link, then watch for what came out of it ── */
+  const sendLink = async (url: string, meta?: { title?: string; summary?: string }) => {
+    const v = url.trim();
+    if (!v) return;
+    const startIso = new Date(Date.now() - 10000).toISOString();
+    go(6);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const ctrl = new AbortController();
+        const to = window.setTimeout(() => ctrl.abort(), 25000);
+        try {
+          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({
+              type: "link", content: v, source_url: v,
+              metadata: { title: meta?.title, summary: meta?.summary, source: "onboarding_collection" },
+            }),
+            signal: ctrl.signal,
+          });
+        } finally { window.clearTimeout(to); }
+      }
+    } catch { /* a slow read never blocks the journey */ }
+    void watchForClaims(startIso);
+  };
+
+  const watchForClaims = async (startIso: string) => {
+    if (!userId) return;
+    const deadline = Date.now() + 12000;
     while (Date.now() < deadline) {
       try {
         const { data: reg } = await (supabase.from("source_registry" as any) as any)
-          .select("id")
-          .eq("user_id", userId)
-          .gte("created_at", startIso)
-          .order("created_at", { ascending: false })
-          .limit(1);
+          .select("id").eq("user_id", userId).gte("created_at", startIso)
+          .order("created_at", { ascending: false }).limit(1);
         const rid = reg?.[0]?.id;
         if (rid) {
           const { data: frags } = await (supabase.from("evidence_fragments" as any) as any)
             .select("title, content, confidence")
             .eq("source_registry_id", rid)
             .order("confidence", { ascending: false })
-            .limit(5);
+            .limit(3);
           if (frags && frags.length > 0) {
-            setCfFragments(frags as { title: string; content?: string | null; confidence?: number | null }[]);
-            setCfCount(frags.length);
-            setCfPhase("result");
+            setClaims(frags as Claim[]);
+            go(7);
             return;
           }
         }
-      } catch { /* keep polling */ }
-      await new Promise((r) => window.setTimeout(r, 2000));
+      } catch { /* keep watching */ }
+      await new Promise((r) => window.setTimeout(r, 1800));
     }
-    setCfTimedOut(true);
-    setCfPhase("result");
+    setClaimsSlow(true);
   };
 
-  const cfSubmit = async () => {
-    const v = cfValue.trim();
-    if (!v) return;
-    let isUrl = false;
-    try { isUrl = /^https?:$/.test(new URL(v).protocol); } catch { /* free text */ }
-    const startIso = new Date(Date.now() - 10000).toISOString();
-    setCfBusy(true);
+  /* ── content resolution: exact, then the sector-free set, then a retry ── */
+  const loadDimensions = useCallback(async () => {
+    if (!band) return;
+    setContentError(false);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => controller.abort(), 25000);
-        try {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
-              type: isUrl ? "link" : "text",
-              content: v,
-              source_url: isUrl ? v : null,
-              metadata: { source: "onboarding_capture_first" },
-            }),
-            signal: controller.signal,
-          });
-        } finally {
-          window.clearTimeout(timeoutId);
-        }
+      const base = () => (supabase.from("capability_dimensions" as any) as any)
+        .select("name, why_line, anchor_low, anchor_high")
+        .eq("band", band).eq("active", true).order("position");
+      let rows: any[] = [];
+      if (sector) {
+        const { data } = await base().eq("sector", sector);
+        rows = data || [];
       }
-    } catch { /* a slow or failed capture must never block */ }
-    setCfBusy(false);
-    setCfPhase("reading");
-    void cfPoll(startIso);
-  };
+      if (rows.length === 0) {
+        const { data } = await base().is("sector", null);
+        rows = data || [];
+      }
+      if (rows.length === 0) { setContentError(true); return; }
+      setDims(rows.slice(0, 8) as Dimension[]);
+    } catch { setContentError(true); }
+  }, [band, sector]);
 
-  // Helper — persist onboarding progress so users can resume after closing the tab.
-  const saveProgress = async (stepCompleted: number) => {
+  const loadQuestions = useCallback(async () => {
+    if (!band) return;
+    setContentError(false);
+    try {
+      const base = () => (supabase.from("onboarding_questions" as any) as any)
+        .select("prompt, helper, kind, options")
+        .eq("band", band).eq("active", true).order("position");
+      let rows: any[] = [];
+      if (sector) {
+        const { data } = await base().eq("sector", sector);
+        rows = data || [];
+      }
+      if (rows.length === 0) {
+        const { data } = await base().is("sector", null);
+        rows = data || [];
+      }
+      if (rows.length === 0) { setContentError(true); return; }
+      setQuestions(rows.slice(0, 6) as JourneyQuestion[]);
+    } catch { setContentError(true); }
+  }, [band, sector]);
+
+  useEffect(() => { if (screen === 8 || screen === 9) void loadDimensions(); }, [screen, loadDimensions]);
+  useEffect(() => { if (screen === 10 || screen === 11) void loadQuestions(); }, [screen, loadQuestions]);
+
+  /* ── autosave after every slider ── */
+  const saveScores = useCallback(async (next: Record<string, number>) => {
     if (!userId) return;
     try {
       await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ onboarding_step: stepCompleted })
+        .update({
+          skill_ratings: next, audit_results: next,
+          audit_completed_at: new Date().toISOString(), audit_method: "self_read",
+        })
         .eq("user_id", userId);
-    } catch (e) {
-      console.warn("saveProgress failed:", e);
-    }
-  };
-
-  // Auto-save partial calibration scores after every slider Next click (Fix 1D)
-  const autoSaveScores = async (currentScores: Record<string, number>) => {
-    if (!userId) return;
-    try {
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ skill_ratings: currentScores })
-        .eq("user_id", userId);
-    } catch (e) {
-      console.warn("autoSaveScores failed:", e);
-    }
-  };
-
-  // Fire the onboarding-find-article EF in the background. Called at the end of
-  // Step 2 (brand assessment) so results are ready by Step 3 (capture).
-  const triggerArticleSearch = () => {
-    if (articleSearchStartRef.current) return; // already fired this session
-    articleSearchStartRef.current = Date.now();
-    setArticleSearchDone(false);
-    setFoundArticle(null);
-    supabase.functions
-      .invoke("onboarding-find-article", {
-        body: {
-          sector_focus: sectorFocus,
-          core_practice: corePractice.trim(),
-          firm: firm.trim(),
-          level: level.trim(),
-        },
-      })
-      .then(({ data }) => {
-        if (data?.found && data?.article) {
-          setFoundArticle(data.article);
-          // Cache it: the LinkedIn OAuth round trip is a full page navigation
-          // that destroys all React state. sessionStorage survives it.
-          try {
-            if (userId) {
-              sessionStorage.setItem(
-                `aura_ob_article_${userId}`,
-                JSON.stringify({ article: data.article, ts: Date.now() }),
-              );
-            }
-          } catch { /* Safari private mode — never block onboarding */ }
-        }
-      })
-      .catch(() => {})
-      .finally(() => setArticleSearchDone(true));
-  };
-
-  // Rehydrate a cached article after a full page reload (LinkedIn OAuth).
-  // Setting articleSearchStartRef keeps the "already fired" guard holding, so
-  // the Edge Function is called at most once per user.
-  useEffect(() => {
-    if (!userId) return;
-    if (articleSearchStartRef.current) return;
-    try {
-      const raw = sessionStorage.getItem(`aura_ob_article_${userId}`);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      const art = parsed?.article;
-      const ts = Number(parsed?.ts || 0);
-      if (!art?.url || !ts || Date.now() - ts > 24 * 60 * 60 * 1000) {
-        try { sessionStorage.removeItem(`aura_ob_article_${userId}`); } catch { /* ignore */ }
-        return;
-      }
-      articleSearchStartRef.current = ts;
-      setFoundArticle(art);
-      setArticleSearchDone(true);
-    } catch { /* ignore */ }
+    } catch (e) { console.warn("[journey] slider save failed", e); }
   }, [userId]);
 
-  const confirmIdentityYes = () => {
+  const setScore = (name: string, value: number) => {
+    setScores((prev) => {
+      const next = { ...prev, [name]: value };
+      void saveScores(next);
+      return next;
+    });
+  };
+
+  /* ── the six questions, then the read ── */
+  const finishQuestions = async (finalAnswers: Record<string, string>) => {
+    setRevealPending(true);
+    go(12);
     if (!userId) return;
-    try { sessionStorage.setItem(`aura_identity_confirmed_${userId}`, "true"); } catch {}
+    await saveAnswers(userId, finalAnswers);
+    const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
+    const figures = [
+      { value: String(postsRead || claims.length), label: postsRead ? "posts read" : "claims kept" },
+      { value: String(Object.keys(scores).length), label: "strengths on record" },
+    ];
+    setReveal(toRevealData(results, { figures }));
+    setRevealPending(false);
+  };
+
+  /* if they come back later, show whatever read is already on file */
+  useEffect(() => {
+    if (screen !== 13 || reveal || !userId) return;
+    loadMarketRead(userId).then((r) => {
+      const d = toRevealData(r, {
+        figures: [
+          { value: String(postsRead || claims.length), label: postsRead ? "posts read" : "claims kept" },
+          { value: String(Object.keys(scores).length), label: "strengths on record" },
+        ],
+      });
+      if (d) setReveal(d);
+    });
+  }, [screen, reveal, userId, postsRead, claims.length, scores]);
+
+  /* ── finishing ── */
+  const finish = async () => {
+    if (userId) {
+      try {
+        await (supabase.from("diagnostic_profiles" as any) as any).upsert({
+          user_id: userId,
+          first_name: firstName.trim() || "Member",
+          last_name: lastName.trim() || null,
+          firm: firm.trim() || null,
+          sector_focus: sector || null,
+          level: band ? BAND_TO_LEVEL[band] : null,
+          onboarding_completed: true,
+          onboarding_step: 4,
+          completed: true,
+        }, { onConflict: "user_id" });
+      } catch (e) { console.warn("[journey] finish save failed", e); }
+      try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
+    }
+    try { localStorage.setItem("aura_onboarding_complete", "true"); } catch { /* ignore */ }
+    try { sessionStorage.removeItem("aura_onboarding_visits"); } catch { /* ignore */ }
+    supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
+    navigate("/home", { replace: true });
+  };
+
+  const connectLinkedIn = async () => {
+    setConnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("linkedin-oauth", { body: {} });
+      if (error) throw error;
+      const url = (data as any)?.url || (data as any)?.authUrl;
+      if (url) { window.location.href = url; return; }
+      throw new Error("no url");
+    } catch {
+      toast.error("Couldn't open LinkedIn just now — you can connect it later in Settings.");
+      setConnecting(false);
+    }
+  };
+
+  /* ── escape hatch, unchanged in spirit ── */
+  const escape = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await (supabase.from("diagnostic_profiles" as any) as any).upsert({
+          user_id: user.id,
+          first_name: (user.user_metadata as any)?.first_name || user.email?.split("@")[0] || "Member",
+          onboarding_completed: true, onboarding_step: 4, completed: true,
+        }, { onConflict: "user_id" });
+      }
+      sessionStorage.removeItem("aura_onboarding_visits");
+    } catch { /* ignore */ }
+    navigate("/home", { replace: true });
+  };
+
+  const escapeFooter = visits >= 3 ? (
+    <div style={{ textAlign: "center", marginBlockStart: 16 }}>
+      <button type="button" onClick={escape} style={{
+        background: "none", border: "none", color: OB.muted, fontSize: 12,
+        cursor: "pointer", textDecoration: "underline", fontFamily: "inherit",
+      }}>Skip this and take me in →</button>
+    </div>
+  ) : null;
+
+  const bandLabel = band ? BAND_LABEL[band] : null;
+  const shelfUnlocked = useMemo(() => ({
+    profile: screen > 3,
+    claims: screen > 7,
+    strengths: screen > 9 || (dims ? Object.keys(scores).length >= dims.length : false),
+    subjects: screen >= 12,
+  }), [screen, dims, scores]);
+
+  /* ───────────────────────── password & identity ───────────────────────── */
+
+  const confirmIdentityYes = () => {
+    try { if (userId) sessionStorage.setItem(`aura_identity_confirmed_${userId}`, "true"); } catch { /* ignore */ }
     setNeedsIdentityConfirm(false);
-    // After confirming, gate to password setup if not set yet.
     setNeedsPassword(true);
   };
 
   const confirmIdentityNo = async () => {
     setSigningOut(true);
-    try { await supabase.auth.signOut(); } catch {}
-    navigate("/request-access", { replace: true });
+    try { await supabase.auth.signOut(); } catch { /* ignore */ }
+    navigate("/auth", { replace: true });
   };
 
-
-  // Step 1: rotating loading status
-  useEffect(() => {
-    if (!readingLi) return;
-    setLiStatusIdx(0);
-    const t1 = window.setTimeout(() => setLiStatusIdx(1), 2000);
-    const t2 = window.setTimeout(() => setLiStatusIdx(2), 4000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [readingLi]);
-
-  // Fix 3: force re-render to surface the "11pm article" fallback if the
-  // onboarding-find-article EF stalls past ~12s.
-  useEffect(() => {
-    if (step !== 3) return;
-    if (articleSearchDone) return;
-    if (!articleSearchStartRef.current) return;
-    const timer = window.setTimeout(() => {
-      setArticleSearchDone(true);
-    }, 20000);
-    return () => clearTimeout(timer);
-  }, [step, articleSearchDone]);
-
-  const goStep = (next: Step) => {
-    setDirection(next > step ? 1 : -1);
-    // Track step completion — the step we are LEAVING.
-    void track("onboarding_step", { step: `step_${step}`, step_index: step });
-    setStep(next);
-  };
-
-  // ─── Step 1: LinkedIn pre-fill ───
-  const handleReadLinkedIn = async () => {
-    setLinkedinError("");
-    if (linkedinText.trim().length < 10) {
-      setLinkedinError("Tell us a bit more — paste your headline or describe your role");
-      return;
-    }
-    setReadingLi(true);
-    let timedOut = false;
-    const timeout = window.setTimeout(() => {
-      timedOut = true;
-      setReadingLi(false);
-      toast.message("Taking too long — let's fill this manually");
-      setShowForm(true);
-    }, 15000);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("onboarding-linkedin-prefill", {
-        body: { linkedin_text: linkedinText.trim() },
-      });
-      clearTimeout(timeout);
-      if (timedOut) return;
-
-      if (error) throw error;
-      const p: Prefill = (data && (data.profile || (data.success ? data : null))) || {};
-      const hasData = !!(p && (p.first_name || p.firm || p.level || p.core_practice));
-      if (!hasData) {
-        toast.message("Couldn't extract from that text. No problem — fill it in manually.");
-        setShowForm(true);
-      } else {
-        setFirstName(p.first_name || "");
-        setLastName(p.last_name || "");
-        setFirm(p.firm || "");
-        setLevel(p.level || "");
-        setCorePractice(p.core_practice || "");
-        const s = p.sector_focus || "";
-        setSectorFocus(s ? normalizeSector(s) : "");
-        setUsedLinkedIn(true);
-        setShowForm(true);
-        // Successful extraction — show inline confirmation only, no error toast.
-      }
-    } catch (e) {
-      clearTimeout(timeout);
-      if (timedOut) return;
-      toast.message("Couldn't read that. No problem — fill it in manually.");
-      setShowForm(true);
-    } finally {
-      setReadingLi(false);
-    }
-  };
-
-  const profileValid = !!(firstName.trim() && firm.trim() && level.trim() && sectorFocus);
-
-  /**
-   * The primary path: read the member's LinkedIn profile, then their posts.
-   * Sequential and un-timed — each call can take up to two minutes.
-   */
-  const handleReadLinkedInProfile = async () => {
-    setLiUrlError("");
-    setLiPostsNote("");
-    const profile_url = normaliseLinkedIn(linkedinUrl);
-    if (!profile_url) {
-      setLiUrlError("That doesn't look like a LinkedIn address. Try linkedin.com/in/yourname.");
-      return;
-    }
-    setLinkedinUrl(profile_url);
-    setLiStage("profile");
-    try {
-      const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", {
-        body: { profile_url },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(String(data.error));
-      const profile = data?.profile ?? data;
-      setLiProfile(profile);
-      setUsedLinkedIn(true);
-      if (userId) { try { await saveLinkedInAddress(userId, profile_url); } catch { /* saved again on submit */ } }
-    } catch (e: any) {
-      const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "Couldn't read that profile.";
-      setLiUrlError(msg);
-      setLiStage(null);
-      return;
-    }
-
-    setLiStage("posts");
-    try {
-      const { data, error } = await supabase.functions.invoke("linkedin-fetch-posts", {
-        body: { profile_url, max_posts: 50 },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(String(data.error));
-      setLiPostsCount(typeof data?.kept_own_text === "number" ? data.kept_own_text : 0);
-    } catch {
-      setLiPostsCount(0);
-      setLiPostsNote("Couldn't read your posts yet — we'll try again later.");
-    } finally {
-      setLiStage(null);
-    }
-  };
-
-  /** Confirmed the profile is theirs — carry what we can into the form. */
-  const acceptLinkedInProfile = () => {
-    const p = liProfile || {};
-    const full = String(p.full_name || "").trim();
-    if (full && !firstName.trim()) {
-      const parts = full.split(/\s+/);
-      setFirstName(parts[0] || "");
-      if (parts.length > 1) setLastName(parts.slice(1).join(" "));
-    }
-    setShowForm(true);
-  };
-
-  const rejectLinkedInProfile = () => {
-    setLiProfile(null);
-    setLiPostsCount(null);
-    setLiPostsNote("");
-    setLinkedinUrl("");
-    setUsedLinkedIn(false);
-  };
-
-  const handleSaveProfile = async () => {
-    if (!userId || !profileValid) return;
-    setSavingProfile(true);
-    try {
-      const payload: any = {
-        user_id: userId,
-        first_name: firstName.trim(),
-        last_name: lastName.trim() || null,
-        firm: firm.trim(),
-        level: level.trim(),
-        sector_focus: sectorFocus,
-        core_practice: corePractice.trim() || null,
-        north_star_goal: northStar.trim() || null,
-        country: country || null,
-        country_code: countryCode || null,
-        onboarding_completed: true,
-        completed: true,
-      };
-      payload.shared_learning_consent = sharedLearningConsent;
-
-      // The address is written to linkedin_connections — the profile columns are deprecated.
-      if (usedLinkedIn && linkedinUrl.trim()) {
-        try {
-          await saveLinkedInAddress(userId, linkedinUrl.trim());
-        } catch (e) {
-          console.error("Could not save LinkedIn address:", e);
-        }
-      }
-
-      const { error } = await supabase
-        .from("diagnostic_profiles" as any)
-        .upsert(payload, { onConflict: "user_id" });
-      if (error) throw error;
-      try { localStorage.setItem("aura_onboarding_complete", "true"); } catch {}
-
-      await saveProgress(1);
-      // Kill the race: kick off the article search NOW, at the start of
-      // calibration. The existing ref guard makes Step-2 fallback calls no-op.
-      triggerArticleSearch();
-      // If the user hasn't seen the Connect LinkedIn screen, show it before calibration.
-      let connectSeen = false;
-      try { connectSeen = localStorage.getItem("aura_onboarding_connect_seen") === "1"; } catch {}
-      if (!connectSeen) {
-        setShowConnectStep(true);
-        return;
-      }
-      // Breathing transition into Step 1 (Map your strengths).
-      startBreathingTo(1, "Now your own read — Aura corrects it from there.");
-    } catch (e: any) {
-      toast.error(e.message || "Couldn't save profile — please try again");
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
-  // ─── Step 2: capture article ───
-  const captureArticle = async (url: string, articleMeta?: { title?: string; summary?: string; source?: string }) => {
-    if (!url.trim()) return;
-    try {
-      new URL(url.trim());
-    } catch {
-      toast.error("That doesn't look like a valid URL");
-      return;
-    }
-    setCapturing(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Session expired");
-      // Fix 1: 30s client-side timeout so a stalled EF can't trap the user.
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 30000);
-      let timedOut = false;
-      try {
-        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            type: "link",
-            content: url.trim(),
-            source_url: url.trim(),
-            metadata: articleMeta
-              ? {
-                  title: articleMeta.title,
-                  summary: articleMeta.summary,
-                  source: "onboarding_exa",
-                }
-              : {},
-          }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        const data = await resp.json().catch(() => null);
-        if (!resp.ok && data?.error !== "duplicate_url") {
-          throw new Error(data?.error_message || data?.message || "Capture failed");
-        }
-        // ingest-capture creates the entry server-side — no client-side insert needed.
-        setCapturedTitle(articleMeta?.title || "");
-        setCaptureSuccess(true);
-        window.setTimeout(() => startBreathingToCeremony(), 3000);
-      } catch (innerErr: any) {
-        clearTimeout(timeoutId);
-        if (innerErr?.name === "AbortError") {
-          timedOut = true;
-          toast.error("Taking too long — your article is saved. We'll process it in the background.");
-          setCapturedTitle(articleMeta?.title || "");
-          setCaptureSuccess(true);
-          window.setTimeout(() => startBreathingToCeremony(), 1500);
-        } else {
-          throw innerErr;
-        }
-      }
-      void timedOut;
-    } catch (e: any) {
-      toast.error(e.message || "Couldn't capture that one");
-    } finally {
-      setCapturing(false);
-    }
-  };
-
-  // Generic breathing transition to any next step with a custom message.
-  const startBreathingTo = (nextStep: Step, message: string) => {
-    setBreathingMessage(message);
-    setBreathing(true);
-    setBreathingLeaving(false);
-    window.setTimeout(() => setBreathingLeaving(true), 1700);
-    window.setTimeout(() => {
-      setBreathing(false);
-      setBreathingLeaving(false);
-      goStep(nextStep);
-    }, 2000);
-  };
-
-  // Post-capture breathing → ceremony (goHome).
-  const startBreathingToCeremony = () => {
-    setBreathingMessage("Perfect. Aura is building your first signal.");
-    setBreathing(true);
-    setBreathingLeaving(false);
-    window.setTimeout(() => setBreathingLeaving(true), 1700);
-    window.setTimeout(() => {
-      setBreathing(false);
-      setBreathingLeaving(false);
-      goHome();
-    }, 2000);
-  };
-
-  // Step 1: save calibration scores then advance to brand assessment (step 2).
-  const handleCalibrationComplete = async (scores: Record<string, number>) => {
-    if (!userId) { goStep(2); return; }
-    try {
-      // Map calibration dimensions to generated_skills format
-      const dimensionCategories: Record<string, string> = {
-        "Strategic Architecture": "Strategic",
-        "C-Suite Stewardship": "Leadership",
-        "Commercial Velocity": "Commercial",
-        "Human-Centric Leadership": "Leadership",
-        "Digital Synthesis": "Technical",
-        "Sector Foresight": "Strategic",
-        "Operational Resilience": "Operational",
-        "Executive Presence": "Leadership",
-        "Geopolitical Fluency": "Strategic",
-        "Value-Based P&L": "Commercial",
-      };
-      const generatedSkills = Object.entries(scores).map(([name, score]) => ({
-        name,
-        category: dimensionCategories[name] || "General",
-        description: `${dimensionCategories[name] || "General"} capability — calibrated at ${score}/100`,
-      }));
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({
-          skill_ratings: scores,
-          audit_results: scores,
-          generated_skills: generatedSkills,
-          audit_completed_at: new Date().toISOString(),
-          audit_method: "self_calibration",
-        })
-        .eq("user_id", userId);
-    } catch (e) {
-      console.warn("Could not save calibration scores:", e);
-    }
-    await saveProgress(2);
-    goStep(2);
-  };
-
-  // ─── Render helpers ───
-  const RAIL = ["Capture", "You", "Calibrate", "Assess"] as const;
-  // A segment is only "done" if that phase actually ran. Users who skipped the
-  // capture-first screen must not see Capture marked complete.
-  const [captureFirstRan, setCaptureFirstRan] = useState(false);
-  useEffect(() => { if (showCaptureFirst) setCaptureFirstRan(true); }, [showCaptureFirst]);
-  // The capture-first result screen means a capture landed this session.
-  useEffect(() => { if (cfPhase === "result") setAlreadyCaptured(true); }, [cfPhase]);
-  // Re-check on entering the closing screen so a capture made earlier counts.
-  useEffect(() => {
-    if (step !== 3 || !userId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { count } = await supabase
-          .from("entries" as any)
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", userId);
-        if (!cancelled && (count ?? 0) > 0) setAlreadyCaptured(true);
-      } catch { /* never block onboarding */ }
-    })();
-    return () => { cancelled = true; };
-  }, [step, userId]);
-  const railIndex = (): number => {
-    if (showCaptureFirst) return 0;
-    if (showConnectStep) return 1;
-    if (step === 0) return 1;
-    if (step === 1) return 2;
-    return 3;
-  };
-  const ProgressDots = () => {
-    if (needsIdentityConfirm || needsPassword) return null;
-    // Bookends: the welcome screen and the closing screen are not phases.
-    if (step === 0 && !welcomeAcknowledged) return null;
-    if (step === 3) return null;
-    const active = railIndex();
-    return (
-      <div className="ob-rail" aria-label={`Step ${active + 1} of ${RAIL.length}: ${RAIL[active]}`}>
-        {RAIL.map((name, i) => (
-          <div key={name} className={`ob-seg${i < active && (i !== 0 || captureFirstRan) ? " done" : ""}${i === active ? " now" : ""}`}>
-            <span className="ob-nm">{name}</span>
-            <span className="ob-bar" />
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const cardShell = (children: React.ReactNode) => (
-    <div
-      className="ob min-h-screen w-full flex items-center justify-center px-5 py-10"
-      style={{ background: "#EAEFF5" }}
-    >
-      <style>{OB_CSS}</style>
-      <div
-        style={{ position: "relative", width: "100%", maxWidth: 580, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
-      >
-        <div
-          className="w-full"
-          style={{
-            maxHeight: "100%",
-            overflowY: "auto",
-            flex: "1 1 auto",
-            minHeight: 0,
-            background: "#FFFFFF",
-            color: "#0F1519",
-            borderRadius: 26,
-            boxShadow: "0 36px 76px -46px rgba(15,21,25,0.30)",
-            padding: "clamp(28px, 5vw, 44px)",
-            border: "1px solid #E2E7EE",
-          }}
-        >
-          <ProgressDots />
-          <AnimatePresence mode="wait" custom={direction} initial={false}>
-            <motion.div
-              key={step}
-              custom={direction}
-              initial={{ opacity: 0, x: direction * 60 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction * -60 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
-          {onboardingVisits >= 3 && (
-            <div style={{ marginTop: 16, textAlign: "center" }}>
-              <button
-                type="button"
-                onClick={skipOnboardingEscape}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#5B6673",
-                  fontSize: 12,
-                  cursor: "pointer",
-                  textDecoration: "underline",
-                }}
-              >
-                Skip onboarding and go to dashboard →
-              </button>
-            </div>
-          )}
-        </div>
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 40,
-            pointerEvents: "none",
-            borderBottomLeftRadius: 26,
-            borderBottomRightRadius: 26,
-            background: "linear-gradient(to bottom, transparent, #FFFFFF)",
-          }}
-        />
-      </div>
-    </div>
-  );
-
-  const eyebrow = (text: string) => (
-    <div className="ob-eyebrow"><span>{text}</span></div>
-  );
-
-  const heading = (text: string) => (
-    <h1 className="ob-h1">{text}</h1>
-  );
-
-  const body = (text: React.ReactNode) => (
-    <p className="ob-body">{text}</p>
-  );
-
-  const primaryBtn = (label: React.ReactNode, onClick: () => void, opts: { disabled?: boolean; loading?: boolean } = {}) => (
-    <button
-      onClick={onClick}
-      disabled={opts.disabled || opts.loading}
-      className="ob-btn"
-      style={{ marginTop: 22 }}
-    >
-      {opts.loading && <Loader2 className="w-4 h-4 animate-spin" />}
-      {label}
-    </button>
-  );
-
-  const ghostLink = (label: string, onClick: () => void) => (
-    <button onClick={onClick} className="ob-ghost">{label}</button>
-  );
-
-  const inputCls = "ob-field";
-  const inputStyle: React.CSSProperties = {};
-
-  if (checking) {
-    return (
-      <div className="ob min-h-screen flex items-center justify-center" style={{ background: "#EAEFF5" }}>
-        <style>{OB_CSS}</style>
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#0670C4" }} />
-      </div>
-    );
-  }
-
-  // ───── FINAL STEP: Connect LinkedIn ─────
-  if (showConnectStep) {
-    return cardShell(
-      <>
-        {eyebrow("Before we begin")}
-        {heading("Connect LinkedIn so Aura writes from your real numbers.")}
-        <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-          Aura reads your posts and how they performed — impressions, engagement, who responded. That's how it learns which of your ideas actually land, instead of guessing.
-        </p>
-        <div
-          className="flex items-center gap-2 mb-6 text-xs"
-          style={{ color: "#98A2AE", padding: "10px 12px", border: "1px solid #E2E7EE", borderRadius: 8, background: "#F2F5F9" }}
-        >
-          <Linkedin className="w-3.5 h-3.5 shrink-0" style={{ color: "#0670C4" }} />
-          <span>Aura can publish for you later, but only after you've read the draft and pressed publish. Nothing leaves your account without you.</span>
-        </div>
-        <p className="mb-6" style={{ fontSize: 13, lineHeight: 1.6, color: "#98A2AE" }}>
-          Skip it and Aura still works — it just writes from your captures alone, without knowing what your audience already rewards.
-        </p>
-        {primaryBtn(
-          <><Linkedin className="w-4 h-4" /> {connectingLI ? "Redirecting to LinkedIn…" : "Connect LinkedIn"}</>,
-          handleConnectLinkedIn,
-          { loading: connectingLI },
-        )}
-        <div className="mt-3">{ghostLink("Skip — I'll connect later", handleSkipConnect)}</div>
-      </>,
-    );
-  }
-
-  // ───── Identity confirmation gate (Fix 5) ─────
-  if (needsIdentityConfirm) {
-    return cardShell(
-      <>
-        <div style={{ textAlign: "center", fontSize: 24, color: "#0670C4", marginBottom: 12 }}>✦</div>
-        {eyebrow("Confirm it's you")}
-        {heading("This invitation was sent to:")}
-        <p
-          className="mb-6"
-          style={{
-            fontSize: 18,
-            fontFamily: "var(--font-mono)",
-            color: "#0F1519",
-            wordBreak: "break-all",
-          }}
-        >
-          {userEmail || "—"}
-        </p>
-        <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-          Is this your email address?
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {primaryBtn(<>Yes, that's me <ArrowRight className="w-4 h-4" /></>, confirmIdentityYes)}
-          <button
-            type="button"
-            onClick={confirmIdentityNo}
-            disabled={signingOut}
-            className="w-full text-sm py-3 transition-colors"
-            style={{ color: "#5B6673", background: "transparent" }}
-          >
-            {signingOut ? "Signing out…" : "No, this isn't mine"}
-          </button>
-        </div>
-      </>,
-    );
-  }
-
-  // ───── STEP -1: Password gate ─────
   const handleSetPassword = async () => {
-    if (!pwd || pwd.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return;
-    }
-    if (pwd !== pwdConfirm) {
-      toast.error("Passwords don't match");
-      return;
-    }
+    if (!pwd || pwd.length < 8) { toast.error("Use at least 8 characters"); return; }
+    if (pwd !== pwdConfirm) { toast.error("Those two don't match"); return; }
     setSettingPwd(true);
     try {
-      // Step 1: Update the password
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
-        password: pwd,
-      });
-      if (updateError) {
-        console.error("Password update failed:", updateError);
-        toast.error("Couldn't set password: " + (updateError.message || "Unknown error"));
-        setSettingPwd(false);
-        return;
-      }
-      console.log("Password update succeeded:", updateData);
-
-      // Step 2: Verify session is still valid after password change
-      const { data: { user: verifiedUser }, error: verifyError } = await supabase.auth.getUser();
-      if (verifyError || !verifiedUser) {
-        console.error("User verification after password set failed:", verifyError);
-        toast.error("Password may not have saved. Please try again.");
-        setSettingPwd(false);
-        return;
-      }
-
-      // Step 3: Mark password_set in metadata (non-critical)
-      const { error: metaError } = await supabase.auth.updateUser({
-        data: { password_set: true },
-      });
-      if (metaError) {
-        console.warn("Metadata update failed (non-critical):", metaError);
-      }
-
-      toast.success(`Password set for ${verifiedUser.email}. You can now log in anytime.`);
-
-      // Step 5: Notify (non-blocking)
-      try {
-        await supabase.functions.invoke("send-account-notification", {
-          body: { type: "password_set", email: verifiedUser.email, first_name: null },
-        });
-      } catch (e) {
-        console.warn("password_set notification failed:", e);
-      }
-
+      const { error } = await supabase.auth.updateUser({ password: pwd });
+      if (error) { toast.error(error.message || "Couldn't set that password"); setSettingPwd(false); return; }
+      const { data: { user: verified } } = await supabase.auth.getUser();
+      if (!verified) { toast.error("Please try that once more."); setSettingPwd(false); return; }
+      await supabase.auth.updateUser({ data: { password_set: true } }).catch(() => {});
+      supabase.functions.invoke("send-account-notification", {
+        body: { type: "password_set", email: verified.email, first_name: null },
+      }).catch(() => {});
       setNeedsPassword(false);
       setPwd(""); setPwdConfirm("");
     } catch (e: any) {
-      console.error("Unexpected error in password setup:", e);
-      toast.error(e?.message || "Something went wrong. Please try again.");
+      toast.error(e?.message || "Something went wrong. Try that once more.");
+    } finally {
       setSettingPwd(false);
     }
   };
 
+  if (checking) {
+    return (
+      <div className="obc" style={{ minBlockSize: "100dvh", background: OB.night, display: "grid", placeItems: "center" }}>
+        <style>{PAGE_CSS}</style>
+        <Loader2 size={20} className="animate-spin" style={{ color: OB.blue }} />
+      </div>
+    );
+  }
+
+  if (needsIdentityConfirm) {
+    return (
+      <>
+        <style>{PAGE_CSS}</style>
+        <PaperShell bead={0} cream footer={escapeFooter}>
+          <h1 style={h1Light}>Is this you?</h1>
+          <p style={{ ...bodyLight, fontFamily: OB.mono, fontSize: 14, color: OB.ink, wordBreak: "break-all" }}>
+            {userEmail || "—"}
+          </p>
+          <p style={bodyLight}>Your invitation went to that address. Confirm it before anything is saved to your name.</p>
+          <button type="button" onClick={confirmIdentityYes} style={{ ...btnPrimary, marginBlockStart: 22 }}>
+            Yes, that's me <ArrowRight size={16} />
+          </button>
+          <button type="button" onClick={confirmIdentityNo} disabled={signingOut} style={btnGhostLight}>
+            {signingOut ? "Signing out…" : "No, this isn't mine"}
+          </button>
+        </PaperShell>
+      </>
+    );
+  }
+
   if (needsPassword) {
-    const pwdInputStyle: React.CSSProperties = {
-      width: "100%",
-      padding: "14px 44px 14px 16px",
-      fontSize: 15.5,
-      background: "#F2F5F9",
-      border: "1px solid #E2E7EE",
-      borderRadius: 12,
-      color: "#0F1519",
-      outline: "none",
-    };
     const checks = {
       length: pwd.length >= 8,
       uppercase: /[A-Z]/.test(pwd),
       lowercase: /[a-z]/.test(pwd),
       number: /[0-9]/.test(pwd),
-      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pwd),
+      special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(pwd),
       match: pwd.length > 0 && pwdConfirm.length > 0 && pwd === pwdConfirm,
     };
     const allValid = Object.values(checks).every(Boolean);
-    const checklist: { key: keyof typeof checks; label: string }[] = [
+    const list: { key: keyof typeof checks; label: string }[] = [
       { key: "length", label: "At least 8 characters" },
-      { key: "uppercase", label: "One uppercase letter (A–Z)" },
-      { key: "lowercase", label: "One lowercase letter (a–z)" },
-      { key: "number", label: "One number (0–9)" },
-      { key: "special", label: "One special character (!@#$%)" },
-      { key: "match", label: "Passwords match" },
+      { key: "uppercase", label: "One capital letter" },
+      { key: "lowercase", label: "One small letter" },
+      { key: "number", label: "One number" },
+      { key: "special", label: "One symbol" },
+      { key: "match", label: "Both match" },
     ];
-    return cardShell(
-      <>
-        {eyebrow("Welcome to the inner circle.")}
-        {heading("Set your password.")}
-        <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-          You're one of the first 50 people in Aura. Set your password to get started.
-        </p>
-        <div style={{ position: "relative", marginBottom: 12 }}>
-          <input
-            type={pwdShow ? "text" : "password"}
-            value={pwd}
-            onChange={(e) => setPwd(e.target.value)}
-            placeholder="Create a password"
-            style={pwdInputStyle}
-            autoComplete="new-password"
-          />
-          <button
-            type="button" onClick={() => setPwdShow((s) => !s)}
-            aria-label={pwdShow ? "Hide password" : "Show password"}
-            style={{
-              position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-              background: "transparent", border: 0, cursor: "pointer",
-              color: "#5B6673", padding: 4,
-            }}
-          >{pwdShow ? <EyeOff size={16} /> : <Eye size={16} />}</button>
-        </div>
-        <div style={{ position: "relative", marginBottom: 8 }}>
-          <input
-            type={pwdShow ? "text" : "password"}
-            value={pwdConfirm}
-            onChange={(e) => setPwdConfirm(e.target.value)}
-            placeholder="Confirm password"
-            style={pwdInputStyle}
-            autoComplete="new-password"
-            onKeyDown={(e) => { if (e.key === "Enter") handleSetPassword(); }}
-          />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, margin: "10px 0 18px" }}>
-          {checklist.map(({ key, label }) => {
-            const ok = checks[key];
-            return (
-              <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-                {ok ? (
-                  <Check size={14} style={{ color: "#12805C" }} />
-                ) : (
-                  <span style={{ width: 14, height: 14, borderRadius: 999, border: "1.5px solid #E2E7EE", display: "inline-block" }} />
-                )}
-                <span style={{ color: ok ? "#0F1519" : "#5B6673" }}>{label}</span>
-              </div>
-            );
-          })}
-        </div>
-        {primaryBtn(
-          <>Set password & continue <ArrowRight className="w-4 h-4" /></>,
-          handleSetPassword,
-          { loading: settingPwd, disabled: !allValid },
-        )}
-      </>,
-    );
-  }
-
-  // ───── STEP 0 ─────
-  if (step === 0 && !welcomeAcknowledged) {
-    const displayName = firstName || prefillFirstName;
-    return cardShell(
-      <>
-        {eyebrow("Private Beta")}
-        {heading(displayName ? `Welcome, ${displayName}.` : "Welcome.")}
-        <div className="text-center space-y-2 mb-10">
-          <p style={{ fontSize: 16, color: "#0F1519", lineHeight: 1.6 }}>
-            You were invited because someone believes the market should see what you know.
-          </p>
-          <p style={{ fontSize: 14, color: "#5B6673", lineHeight: 1.6 }}>
-            Four steps. You can stop anywhere — Aura saves where you are.
-          </p>
-        </div>
-        {primaryBtn(<>Let's begin <ArrowRight className="w-4 h-4" /></>, () => setWelcomeAcknowledged(true))}
-      </>,
-    );
-  }
-
-  // ───── STEP 0 · capture-first screens (after the welcome) ─────
-  if (step === 0 && welcomeAcknowledged && showCaptureFirst) {
-    if (showCaptureFirst && cfPhase === "input") {
-      return cardShell(
-        <>
-          {eyebrow("First — one thing you read")}
-          {heading("Paste a link to something you read this week.")}
-          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
-            An article, a report, a post you disagreed with. Aura reads it now and shows you what it found — before you answer a single question.
-          </p>
-          <p className="mb-2" style={{ fontSize: 13, lineHeight: 1.6, color: "#5B6673" }}>
-            Every question after this is easier once there's something on the table.
-          </p>
-          <p className="mb-5" style={{ fontSize: 13, lineHeight: 1.6, color: "#98A2AE" }}>
-            This is the only input Aura needs. Everything it writes later starts here.
-          </p>
-          <input
-            value={cfValue}
-            onChange={(e) => setCfValue(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") void cfSubmit(); }}
-            placeholder="https://…"
-            className={inputCls}
-            style={{ ...inputStyle, marginBottom: 16 }}
-          />
-          {primaryBtn("Add it", () => void cfSubmit(), { loading: cfBusy, disabled: !cfValue.trim() })}
-          {ghostLink("I'll paste one later", cfSkip)}
-          <p style={{ fontSize: 12, lineHeight: 1.6, color: "#5B6673", marginTop: 8 }}>
-            Nothing is published, now or ever, without you pressing publish.
-          </p>
-        </>,
-      );
-    }
-    if (showCaptureFirst && cfPhase === "reading") {
-      return cardShell(
-        <>
-          {eyebrow("First — one thing you read")}
-          {heading("Aura is reading it.")}
-          <div className="flex items-center gap-2" style={{ color: "#5B6673", fontSize: 14 }}>
-            <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#0670C4" }} />
-            Pulling out the claims worth keeping.
-          </div>
-        </>,
-      );
-    }
-    if (showCaptureFirst && cfPhase === "result") {
-      return cardShell(
-        <>
-          {eyebrow("What Aura found")}
-          {cfTimedOut || cfFragments.length === 0 ? (
-            <>
-              {heading("Aura is still reading it.")}
-              <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-                This one is taking a little longer. Nothing is lost — what Aura finds will be waiting for you on your Home.
-              </p>
-            </>
-          ) : (
-            <>
-              {heading(`Aura pulled ${cfCount} claim${cfCount === 1 ? "" : "s"} out of that.`)}
-              <ul className="mb-6" style={{ listStyle: "none", padding: 0, margin: "0 0 24px" }}>
-                {cfFragments.map((f, i) => (
-                  <li
-                    key={i}
-                    style={{
-                      fontSize: 14,
-                      lineHeight: 1.6,
-                      color: "#0F1519",
-                      borderLeft: "2px solid #0670C4",
-                      paddingLeft: 12,
-                      marginBottom: 10,
-                    }}
-                  >
-                    {f.title}
-                    {f.content ? (
-                      <span
-                        style={{
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                          fontSize: 13,
-                          lineHeight: 1.55,
-                          color: "#5B6673",
-                          marginTop: 4,
-                        }}
-                      >
-                        {f.content}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          {primaryBtn(
-            <>Continue <ArrowRight className="w-4 h-4" /></>,
-            () => setShowCaptureFirst(false),
-          )}
-        </>,
-      );
-    }
-  }
-
-  // ───── STEP 0 (LinkedIn paste + profile form) ─────
-  if (step === 0 && welcomeAcknowledged) {
-    return cardShell(
-      <>
-        {eyebrow("Your starting point")}
-        {!showForm && liProfile ? (
-          <div style={liPanelStyle}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: SB_INK, margin: 0 }}>
-              This is what Aura can already see.
-            </h3>
-            <div style={{ display: "flex", gap: 12, alignItems: "center", marginBlockStart: 14 }}>
-              {liProfile.photo_url && (
-                <img
-                  src={liProfile.photo_url}
-                  alt={liProfile.full_name ? `${liProfile.full_name} on LinkedIn` : "LinkedIn profile photo"}
-                  loading="lazy"
-                  style={{ inlineSize: 56, blockSize: 56, borderRadius: 999, objectFit: "cover", border: `1px solid ${SB_LINE}` }}
-                />
-              )}
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 15.5, fontWeight: 600, color: SB_INK }}>{liProfile.full_name || "Your profile"}</div>
-                {liProfile.headline && (
-                  <div dir="auto" style={{ fontSize: 13, color: SB_MUTED, lineHeight: 1.5, marginBlockStart: 2 }}>{liProfile.headline}</div>
-                )}
-              </div>
-            </div>
-
-            {liPostsCount && liPostsCount > 0 ? (
-              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBlockStart: 16 }}>
-                <div>
-                  <div style={liFigureStyle}>{liPostsCount}</div>
-                  <div style={liFigureLabelStyle}>posts of yours read</div>
-                </div>
-                <div>
-                  <div style={liFigureStyle}>{liProfile.followers ?? "—"}</div>
-                  <div style={liFigureLabelStyle}>people following you</div>
-                </div>
-                <div>
-                  <div style={liFigureStyle}>{liProfile.skills_count ?? "—"}</div>
-                  <div style={liFigureLabelStyle}>skills on record</div>
-                </div>
-              </div>
-            ) : (
-              <p style={{ fontSize: 13.5, color: SB_MUTED, lineHeight: 1.6, marginBlock: "16px 0" }}>
-                We found your profile but no posts we can read yet. Aura will still learn from what you tell it.
-              </p>
-            )}
-
-            <p style={{ fontSize: 13, color: SB_MUTED, lineHeight: 1.6, marginBlock: "14px 0" }}>
-              Aura will write in your voice from these, not from a template.
-            </p>
-            {liPostsNote && (
-              <p style={{ fontSize: 12.5, color: SB_MUTED, lineHeight: 1.6, marginBlockStart: 8 }}>{liPostsNote}</p>
-            )}
-
-            <div style={{ marginBlockStart: 16 }}>
-              <button type="button" style={liPrimaryStyle} onClick={acceptLinkedInProfile}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = SB_ACT_DARK; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = SB_ACT; }}
-              >
-                That's me — continue
-              </button>
-              <button type="button" style={liQuietStyle} onClick={rejectLinkedInProfile}>Wrong person</button>
-            </div>
-          </div>
-        ) : !showForm ? (
-          <>
-            {heading("Start with your LinkedIn address")}
-            <label className="text-xs font-medium block mb-1" style={{ color: SB_MUTED }}>
-              Your LinkedIn address
-            </label>
-            <input
-              className={inputCls}
-              style={inputStyle}
-              value={linkedinUrl}
-              onChange={(e) => { setLinkedinUrl(e.target.value); setLiUrlError(""); }}
-              placeholder="linkedin.com/in/yourname"
-              disabled={liStage !== null}
-              inputMode="url"
-              autoCapitalize="none"
-              spellCheck={false}
-            />
-            <p style={{ fontSize: 12.5, color: SB_MUTED, lineHeight: 1.6, marginBlock: "8px 0" }}>
-              This is the whole setup. Aura reads what you have already written.
-            </p>
-            {liUrlError && (
-              <p style={{ fontSize: 12.5, color: SB_ERR, lineHeight: 1.6, marginBlockStart: 8 }}>{liUrlError}</p>
-            )}
-            <div style={{ marginBlock: "14px 6px" }}>
-              <button
-                type="button"
-                style={{ ...liPrimaryStyle, opacity: liStage !== null || !linkedinUrl.trim() ? 0.6 : 1,
-                  cursor: liStage !== null || !linkedinUrl.trim() ? "default" : "pointer" }}
-                disabled={liStage !== null || !linkedinUrl.trim()}
-                onClick={() => void handleReadLinkedInProfile()}
-              >
-                {liStage !== null && <Loader2 className="w-4 h-4 animate-spin" />}
-                {liStage === "profile" ? "Reading your profile…" : liStage === "posts" ? "Reading your posts…" : "Read my profile"}
-              </button>
-            </div>
-            {liStage !== null && (
-              <p style={{ fontSize: 12, color: SB_MUTED, lineHeight: 1.6 }}>
-                This can take a couple of minutes. You can leave this open.
-              </p>
-            )}
-
-            <div className="flex items-center gap-3 my-4" style={{ color: SB_MUTED, fontSize: 12 }}>
-              <div className="flex-1 h-px" style={{ background: SB_LINE }} />
-              <span>or paste your text instead</span>
-              <div className="flex-1 h-px" style={{ background: SB_LINE }} />
-            </div>
-            <p className="mb-4" style={{ fontSize: 14, lineHeight: 1.7, color: SB_MUTED }}>
-              No address to hand? Paste your headline and About section and Aura reads that instead.
-            </p>
-            <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>
-              Your LinkedIn headline + About section
-            </label>
-            <div className="relative mb-2">
-              <textarea
-                rows={5}
-                className={inputCls}
-                style={{
-                  ...inputStyle,
-                  resize: "vertical",
-                  minHeight: 120,
-                  ...(readingLi ? { backgroundImage: "linear-gradient(90deg, transparent, color-mix(in srgb, #0670C4 8%, transparent), transparent)", backgroundSize: "200% 100%", animation: "auraShimmer 1.6s linear infinite" } : {}),
-                } as React.CSSProperties}
-                placeholder={describeMode
-                  ? `e.g., "I'm a Director at a leading firm in the GCC, focused on strategy and digital change. 10+ years across the region."`
-                  : `e.g., "Director of Strategy | Your Firm\n\nI help organisations make change stick — not by fixing the tools, but by fixing how teams think, lead, and move together..."`}
-                value={linkedinText}
-                onChange={(e) => setLinkedinText(e.target.value)}
-                disabled={readingLi}
-              />
-              <style>{`@keyframes auraShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
-            </div>
-            {!describeMode && (
-              <div className="mb-3">
-                <button
-                  type="button"
-                  onClick={() => setHelperOpen((v) => !v)}
-                  className="text-xs hover:opacity-80 transition-opacity inline-flex items-center gap-1.5"
-                  style={{ color: "#5B6673" }}
-                >
-                  <Lightbulb className="w-4 h-4" /> What should I paste? {helperOpen ? "▾" : "▸"}
-                </button>
-                {helperOpen && (
-                  <div
-                    className="mt-2 p-3 rounded-md"
-                    style={{
-                      fontSize: 14,
-                      lineHeight: 1.625,
-                      color: "#5B6673",
-                      background: "#F2F5F9",
-                      borderLeft: "3px solid #0670C4",
-                    }}
-                  >
-                    <p className="mb-2" style={{ color: "#0F1519" }}>
-                      Go to your LinkedIn profile and copy two things:
-                    </p>
-                    <p className="mb-1">
-                      <strong>1. Your Headline</strong> — the line right below your name<br />
-                      <span style={{ opacity: 0.85 }}>(example: "VP Strategy | Your Firm")</span>
-                    </p>
-                    <p className="mb-2">
-                      <strong>2. Your About section</strong> — click "see more" first, then select all and copy
-                    </p>
-                    <p className="mb-2">
-                      Paste both into the box above. Aura reads it and fills your profile automatically.
-                    </p>
-                    <p style={{ opacity: 0.85 }}>
-                      Don't have your LinkedIn updated? No problem — just describe your role and expertise in your own words. That works too.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-            {linkedinError && <p className="text-xs mb-3" style={{ color: "#C0392B" }}>{linkedinError}</p>}
-            {readingLi && (
-              <div className="mb-4 text-sm" style={{ color: "#5B6673" }}>
-                {liStatusIdx === 0 && "Reading what you pasted..."}
-                {liStatusIdx === 1 && "Extracting your expertise..."}
-                {liStatusIdx === 2 && "Almost there..."}
-              </div>
-            )}
-            <div className="mt-4 mb-4">
-              {primaryBtn(<>Calibrate my profile <ArrowRight className="w-4 h-4" /></>, handleReadLinkedIn, { loading: readingLi, disabled: linkedinText.trim().length < 10 })}
-            </div>
-            <div className="flex items-center gap-3 my-4" style={{ color: "#5B6673", fontSize: 12 }}>
-              <div className="flex-1 h-px" style={{ background: "#E2E7EE" }} />
-              <span>or</span>
-              <div className="flex-1 h-px" style={{ background: "#E2E7EE" }} />
-            </div>
-            {ghostLink("Fill manually instead", () => { setShowForm(true); setUsedLinkedIn(false); })}
-            <div className="mt-2">
-              {ghostLink(
-                describeMode ? "Paste from LinkedIn instead →" : "Or just describe your role in a few sentences →",
-                () => { setDescribeMode((v) => !v); setHelperOpen(false); },
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            {heading("Confirm your profile")}
-            <p className="mb-4" style={{ fontSize: 13, lineHeight: 1.6, color: "#98A2AE" }}>
-              Wrong title or sector, and every draft is aimed at the wrong room.
-            </p>
-            {usedLinkedIn && (
-              <p className="mb-5 flex items-center gap-2 text-sm" style={{ color: "#12805C" }}>
-                <Check className="w-4 h-4" /> Profile read successfully — edit anything that's not quite right.
-              </p>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>First name</label>
-                <input className={inputCls} style={inputStyle} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="e.g. Sarah" />
-              </div>
-              <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Last name</label>
-                <input className={inputCls} style={inputStyle} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="e.g. Al-Rashid" />
-              </div>
-              <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Firm</label>
-                <input className={inputCls} style={inputStyle} value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="e.g. Your company" />
-              </div>
-              <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Level / title</label>
-                <input className={inputCls} style={inputStyle} value={level} onChange={(e) => setLevel(e.target.value)} placeholder="Director" />
-              </div>
-              <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Sector focus</label>
-                <select className={inputCls} style={inputStyle} value={sectorFocus} onChange={(e) => setSectorFocus(e.target.value)}>
-                  <option value="">Select…</option>
-                  {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="mb-3">
-              <CountryPicker
-                value={countryCode}
-                onChange={(name, code) => { setCountry(name); setCountryCode(code); }}
-                label="Where you're based (optional)"
-              />
-              <p style={{ fontSize: 12, lineHeight: 1.6, color: "#98A2AE", marginTop: 6 }}>
-                Used for one thing — the flag on your Aura card. Not your nationality; the country you work from. Leave it blank and nothing changes.
-              </p>
-            </div>
-            <div className="mb-3">
-              <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>Core practice</label>
-              <input className={inputCls} style={inputStyle} value={corePractice} onChange={(e) => setCorePractice(e.target.value)} placeholder="e.g. Strategy, Operations, Technology" />
-            </div>
-            <div className="mb-5">
-              <label className="text-xs font-medium block mb-1" style={{ color: "#5B6673" }}>My 3-year ambition</label>
-              <input className={inputCls} style={inputStyle} value={northStar} onChange={(e) => setNorthStar(e.target.value)} placeholder="This one's yours — what are you building toward?" />
-            </div>
-            <label
-              className="flex items-start gap-3 mb-5 cursor-pointer select-none"
-              style={{
-                padding: "12px 14px",
-                border: "1px solid #E2E7EE",
-                borderRadius: 10,
-                background: "#F2F5F9",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={sharedLearningConsent}
-                onChange={(e) => { setSharedLearningConsent(e.target.checked); setConsentTouched(true); }}
-                style={{ marginTop: 3, width: 16, height: 16, accentColor: "#0670C4" }}
-              />
-              <span style={{ fontSize: 13, lineHeight: 1.55, color: "#0F1519" }}>
-                <strong>Make Aura sharper for people in your field.</strong><br />
-                This isn't running yet. When it starts, Aura will study anonymous patterns across members like you and feed what it learns back into the system — including for you. Ticking this is your permission for that day, not something happening today.<br />
-                Leave it off and nothing changes, now or later. You keep every feature.<br />
-                Never your content, your drafts, or your name. Change it anytime in Settings.
-              </span>
-            </label>
-            {consentTouched && !sharedLearningConsent && (
-              <div style={{ margin: "-8px 0 20px", padding: "14px 16px",
-                border: "1px solid #E2E7EE", borderRadius: 10, background: "#F2F5F9" }}>
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: "#0F1519", margin: 0 }}>
-                  <strong>No problem — you keep every feature.</strong><br />
-                  Nothing is lost. This never touches your content, drafts, or identity — only anonymous patterns across your field, and only once that work actually ships. Off, you still get every improvement; you just don't shape them.
-                </p>
-                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                  <button type="button" onClick={() => setSharedLearningConsent(true)}
-                    style={{ flex: 1, height: 40, borderRadius: 8, fontSize: 13, fontWeight: 600,
-                      background: "#0670C4", color: "#FFFFFF", border: 0, cursor: "pointer" }}>
-                    Keep it on
-                  </button>
-                  <button type="button" onClick={() => setConsentTouched(false)}
-                    style={{ flex: 1, height: 40, borderRadius: 8, fontSize: 13, fontWeight: 500,
-                      background: "transparent", color: "#5B6673", border: "1px solid #E2E7EE", cursor: "pointer" }}>
-                    Leave it off
-                  </button>
-                </div>
-              </div>
-            )}
-            {primaryBtn(<>Confirm & continue <ArrowRight className="w-4 h-4" /></>, handleSaveProfile, { loading: savingProfile, disabled: !profileValid })}
-          </>
-        )}
-      </>,
-    );
-  }
-
-  // ───── STEP 3: FIRST CAPTURE ─────
-  if (step === 3) {
-    const elapsed = Date.now() - articleSearchStartRef.current;
-    const stillSearching = !articleSearchDone && elapsed < 20000;
-
-    if (alreadyCaptured) {
-      return cardShell(
-        <>
-          {eyebrow("You're set")}
-          {heading("That's everything Aura needs.")}
-          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
-            Aura has the read you gave it, your profile, how you rated yourself, and your answers.
-          </p>
-          <p className="mb-6" style={{ fontSize: 14, lineHeight: 1.7, color: "#5B6673" }}>
-            From here it works in the background — reading, connecting, and bringing you what matters.
-          </p>
-          {foundArticle ? (
-            <>
-              <p className="mb-3" style={{ fontSize: 14, lineHeight: 1.7, color: "#0F1519" }}>
-                While you were answering, Aura found this in {sectorFocus || corePractice || "your sector"}.
-              </p>
-              <div
-                className="rounded-xl p-4 mb-5 mt-2"
-                style={{ border: "1px solid #E2E7EE", background: "#F2F5F9" }}
-              >
-                <div className="flex items-start gap-3 mb-2">
-                  <FileText className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#0670C4" }} />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm mb-1" style={{ color: "#0F1519" }}>{foundArticle.title}</p>
-                    <p className="text-xs" style={{ color: "#5B6673" }}>{foundArticle.source || (() => { try { return new URL(foundArticle.url).hostname; } catch { return ""; } })()}</p>
-                  </div>
-                </div>
-                {foundArticle.summary && (
-                  <p className="text-sm italic mb-3" style={{ color: "#5B6673", lineHeight: 1.5 }}>
-                    "{foundArticle.summary}"
-                  </p>
-                )}
-                {primaryBtn(
-                  <>Add it to my library <ArrowRight className="w-4 h-4" /></>,
-                  () => captureArticle(foundArticle.url, {
-                    title: foundArticle.title,
-                    summary: foundArticle.summary,
-                    source: "onboarding_exa",
-                  }),
-                  { loading: capturing }
-                )}
-              </div>
-              <div className="text-center">
-                <button
-                  onClick={() => startBreathingToCeremony()}
-                  className="underline-offset-2 hover:underline"
-                  style={{ background: "transparent", color: "#98A2AE", fontSize: 12 }}
-                >
-                  Not this one
-                </button>
-              </div>
-            </>
-          ) : (
-            primaryBtn(<>Enter Aura ✦</>, () => startBreathingToCeremony())
-          )}
-        </>,
-      );
-    }
-
-    if (captureSuccess) {
-      return cardShell(
-        <>
-          {eyebrow("Your first capture")}
-          {heading("First capture complete.")}
-          <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "#0F1519" }}>
-            Aura is already detecting strategic patterns. After 3-5 more articles, your first signal emerges.
-          </p>
-          <p className="mb-6 italic" style={{ fontSize: 13, lineHeight: 1.7, color: "#5B6673" }}>
-            That's the muscle most leaders never build — Aura builds it for you.
-          </p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="text-center py-6"
-          >
-            <span className="text-2xl inline-block" style={{ color: "#0670C4" }}>✦</span>
-            <h3 className="font-display text-lg mt-3" style={{ color: "#0F1519" }}>
-              {capturedTitle || "Your first intelligence capture"}
-            </h3>
-            <p className="text-sm mt-1" style={{ color: "#98A2AE" }}>
-              Aura is building your first signal.
-            </p>
-          </motion.div>
-          {primaryBtn(<>Continue → <ArrowRight className="w-4 h-4" /></>, () => startBreathingToCeremony())}
-        </>,
-      );
-    }
-
-    return cardShell(
-      <>
-        {eyebrow("Your first capture")}
-        {stillSearching ? (
-          <>
-            {heading("Finding something relevant in your sector...")}
-            <div className="flex items-center gap-3 py-4" style={{ color: "#5B6673" }}>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Aura is searching trusted sources...</span>
-            </div>
-            <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => goHome()}
-                className="underline-offset-2 hover:underline"
-                style={{ background: "transparent", color: "#98A2AE", fontSize: 12 }}
-              >
-                I'll capture later
-              </button>
-            </div>
-          </>
-        ) : foundArticle ? (
-          <>
-            {heading("Aura found something in your sector.")}
-            <div
-              className="rounded-xl p-4 mb-5 mt-2"
-              style={{ border: "1px solid #E2E7EE", background: "#F2F5F9" }}
-            >
-              <div className="flex items-start gap-3 mb-2">
-                <FileText className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#0670C4" }} />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm mb-1" style={{ color: "#0F1519" }}>{foundArticle.title}</p>
-                  <p className="text-xs" style={{ color: "#5B6673" }}>{foundArticle.source || (() => { try { return new URL(foundArticle.url).hostname; } catch { return ""; } })()}</p>
-                </div>
-              </div>
-              {foundArticle.summary && (
-                <p className="text-sm italic mb-3" style={{ color: "#5B6673", lineHeight: 1.5 }}>
-                  "{foundArticle.summary}"
-                </p>
-              )}
-              <p className="text-xs mb-3" style={{ color: "#98A2AE", lineHeight: 1.6 }}>
-                This is how your first signal starts. One capture now — Aura does the rest.
-              </p>
-              {primaryBtn(
-                <>Capture this article <ArrowRight className="w-4 h-4" /></>,
-                () => captureArticle(foundArticle.url, {
-                  title: foundArticle.title,
-                  summary: foundArticle.summary,
-                  source: "onboarding_exa",
-                }),
-                { loading: capturing }
-              )}
-            </div>
-            <div className="my-4 text-xs text-center" style={{ color: "#5B6673" }}>Or paste your own URL:</div>
-            <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} compact />
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => goHome()}
-                className="underline-offset-2 hover:underline"
-                style={{ background: "transparent", color: "#98A2AE", fontSize: 12 }}
-              >
-                I'll capture later
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            {heading("Capture the article that's on your mind right now.")}
-            <p className="mb-5" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-              The one you read at 11pm and thought 'this changes things'. Aura will turn it into your first signal.
-            </p>
-            <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} />
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => goHome()}
-                className="underline-offset-2 hover:underline"
-                style={{ background: "transparent", color: "#98A2AE", fontSize: 12 }}
-              >
-                I'll capture later
-              </button>
-            </div>
-          </>
-        )}
-      </>,
-    );
-  }
-
-  // ───── STEP 1: CALIBRATION ─────
-  if (step === 1) {
+    const pwdField: React.CSSProperties = { ...fieldStyle, paddingInlineEnd: 44 };
     return (
       <>
-        <div
-          className="ob min-h-screen w-full flex items-center justify-center px-5 py-10"
-          style={{ background: "#EAEFF5" }}
-        >
-          <style>{OB_CSS}</style>
-          <div
-            style={{ position: "relative", width: "100%", maxWidth: 580, maxHeight: "calc(100dvh - 80px)", display: "flex", flexDirection: "column" }}
-          >
-            <div
-              className="w-full"
+        <style>{PAGE_CSS}</style>
+        <PaperShell bead={0} cream footer={escapeFooter}>
+          <h1 style={h1Light}>Set your password.</h1>
+          <p style={bodyLight}>One password, then the shelf.</p>
+          <div style={{ position: "relative", marginBlockStart: 18 }}>
+            <input type={pwdShow ? "text" : "password"} value={pwd} onChange={(e) => setPwd(e.target.value)}
+              placeholder="Create a password" style={pwdField} autoComplete="new-password" />
+            <button type="button" onClick={() => setPwdShow((s) => !s)}
+              aria-label={pwdShow ? "Hide password" : "Show password"}
               style={{
-                maxHeight: "100%",
-                overflowY: "auto",
-                flex: "1 1 auto",
-                minHeight: 0,
-                background: "#FFFFFF",
-                color: "#0F1519",
-                borderRadius: 26,
-                boxShadow: "0 36px 76px -46px rgba(15,21,25,0.30)",
-                padding: "clamp(28px, 5vw, 44px)",
-                border: "1px solid #E2E7EE",
-              }}
-            >
-              <ProgressDots />
-              <CalibrationSliders
-                sector={sectorFocus || null}
-                onComplete={handleCalibrationComplete}
-                initialScores={initialSkillScores}
-                onAutoSave={autoSaveScores}
-              />
-            </div>
-            <div
-              aria-hidden
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 40,
-                pointerEvents: "none",
-                borderBottomLeftRadius: 26,
-                borderBottomRightRadius: 26,
-                background: "linear-gradient(to bottom, transparent, #FFFFFF)",
-              }}
-            />
+                position: "absolute", insetInlineEnd: 10, insetBlockStart: "50%", transform: "translateY(-50%)",
+                background: "transparent", border: 0, cursor: "pointer", color: OB.muted, padding: 4,
+              }}>{pwdShow ? <EyeOff size={16} /> : <Eye size={16} />}</button>
           </div>
-        </div>
-        {breathing && <BreathingOverlay leaving={breathingLeaving} message={breathingMessage} />}
+          <input type={pwdShow ? "text" : "password"} value={pwdConfirm} onChange={(e) => setPwdConfirm(e.target.value)}
+            placeholder="Type it again" style={{ ...fieldStyle, marginBlockStart: 10 }} autoComplete="new-password"
+            onKeyDown={(e) => { if (e.key === "Enter" && allValid) void handleSetPassword(); }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, margin: "14px 0 18px" }}>
+            {list.map(({ key, label }) => (
+              <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5 }}>
+                {checks[key]
+                  ? <Check size={14} style={{ color: "#12805C" }} />
+                  : <span style={{ inlineSize: 14, blockSize: 14, borderRadius: 999, border: `1.5px solid ${OB.line}` }} />}
+                <span style={{ color: checks[key] ? OB.ink : OB.muted }}>{label}</span>
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={handleSetPassword} disabled={!allValid || settingPwd}
+            style={{ ...btnPrimary, opacity: !allValid || settingPwd ? 0.5 : 1 }}>
+            {settingPwd ? <Loader2 size={16} className="animate-spin" /> : null} Set it and start
+          </button>
+        </PaperShell>
       </>
     );
   }
 
-  // ───── STEP 2: BRAND ASSESSMENT ─────
+  /* ─────────────────────────── the fourteen screens ─────────────────────── */
+
+  const retryPanel = (retry: () => void) => (
+    <>
+      <h1 style={h1Night}>Give that one more go.</h1>
+      <p style={bodyNight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
+      <button type="button" onClick={retry} style={{ ...btnPrimary, marginBlockStart: 22 }}>Try again</button>
+    </>
+  );
+
+  let content: React.ReactNode = null;
+
+  /* 0 — CREAM */
+  if (screen === 0) {
+    content = (
+      <PaperShell bead={0} cream footer={escapeFooter}>
+        <h1 style={h1Light}>Let's fill this up.</h1>
+        <p style={bodyLight}>
+          Five short steps, and each one gives you something. In five minutes this shelf is yours — and Aura knows
+          how to write the way you already think.
+        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
+          {SHELF.map((s) => <ShelfBadge key={s.key} label={s.label} tone={s.tone} />)}
+        </div>
+        <button type="button" onClick={() => go(1)} style={{ ...btnPrimary, marginBlockStart: 22 }}>Start</button>
+        <p style={footnote}>Nothing gets posted. Ever, unless you press it.</p>
+      </PaperShell>
+    );
+  }
+
+  /* 1 — WHITE, the address */
+  if (screen === 1) {
+    content = (
+      <PaperShell bead={0} footer={escapeFooter}>
+        <h1 style={h1Light}>What's your LinkedIn?</h1>
+        <p style={bodyLight}>
+          Aura reads what's already public — your profile and your recent posts. That's how it learns your sector,
+          your level, and the way you already write.
+        </p>
+        <input
+          value={liInput}
+          onChange={(e) => { setLiInput(e.target.value); setLiError(""); }}
+          onKeyDown={(e) => { if (e.key === "Enter" && liInput.trim()) void readProfile(); }}
+          placeholder="linkedin.com/in/yourname"
+          inputMode="url"
+          style={{ ...fieldStyle, marginBlockStart: 20 }}
+        />
+        {liError ? (
+          <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.err }}>{liError}</p>
+        ) : null}
+        <button type="button" onClick={readProfile} disabled={liBusy || !liInput.trim()}
+          style={{ ...btnPrimary, marginBlockStart: 16, opacity: liBusy || !liInput.trim() ? 0.5 : 1 }}>
+          {liBusy ? <Loader2 size={16} className="animate-spin" /> : null} Read my profile
+        </button>
+        <button type="button" onClick={() => go(MANUAL_SCREEN)} style={btnGhostLight}>
+          I'd rather type it in myself
+        </button>
+        <p style={footnote}>Aura only reads. It never posts.</p>
+      </PaperShell>
+    );
+  }
+
+  /* 2 — NIGHT, reading you */
+  if (screen === 2) {
+    const lines: React.ReactNode[] = [
+      <span key="p"><span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{upPosts}</span> posts read</span>,
+      <span key="w"><span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{upWords}</span> words of your own writing</span>,
+      <span key="s">Sector · {sector || liProfile?.headline ? (sector || "on your profile") : "not yet on file"}</span>,
+      <span key="b">Level · {bandLabel || "we'll confirm it with you"}</span>,
+    ];
+    content = (
+      <NightShell face footer={escapeFooter}>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>Reading you.</h1>
+        <div style={{ marginBlockStart: 26, display: "flex", flexDirection: "column", gap: 12 }}>
+          {lines.slice(0, lineCount).map((l, i) => (
+            <div key={i} className="obc-line" style={{
+              animationDelay: `${i * 60}ms`, opacity: 1,
+              background: OB.nightSoft, border: `1px solid ${OB.lineNight}`, borderRadius: RADIUS.card,
+              padding: "13px 15px", color: "#FFFFFF", fontSize: 14.5,
+            }}>{l}</div>
+          ))}
+        </div>
+        {liBusy ? (
+          <p style={{ ...bodyNight, textAlign: "center" }}>This takes about a minute. You can leave it open.</p>
+        ) : (
+          <button type="button" onClick={() => go(3)} style={{ ...btnPrimary, marginBlockStart: 24 }}>
+            See what I found
+          </button>
+        )}
+      </NightShell>
+    );
+  }
+
+  /* 3 — WHITE, what Aura can see */
+  if (screen === 3) {
+    const figures = [
+      { v: postsRead, l: "posts read" },
+      { v: liProfile?.followers ?? 0, l: "following you" },
+      { v: liProfile?.skills_count ?? 0, l: "skills on record" },
+    ];
+    const nextFromHere = () => go(!firm.trim() || !sector ? MANUAL_SCREEN : 4);
+    content = (
+      <PaperShell bead={1} footer={escapeFooter}>
+        <h1 style={h1Light}>This is what Aura can see.</h1>
+        <div style={{ display: "flex", gap: 13, alignItems: "center", marginBlockStart: 20 }}>
+          {liProfile?.photo_url ? (
+            <img src={liProfile.photo_url} alt={`${liProfile?.full_name || "Your"} LinkedIn photo`} loading="lazy"
+              style={{ inlineSize: 56, blockSize: 56, borderRadius: "50%", objectFit: "cover", border: `1px solid ${OB.line}` }} />
+          ) : null}
+          <div style={{ minInlineSize: 0 }}>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{liProfile?.full_name || `${firstName} ${lastName}`.trim() || "You"}</p>
+            {liProfile?.headline ? (
+              <p style={{ margin: "3px 0 0", fontSize: 12.5, lineHeight: 1.5, color: OB.muted }}>{liProfile.headline}</p>
+            ) : null}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 20, marginBlockStart: 20 }}>
+          {figures.map((f) => (
+            <div key={f.l}>
+              <div style={{ fontFamily: OB.mono, fontSize: 22, fontWeight: 600, color: OB.ink }}>{f.v}</div>
+              <div style={{ fontSize: 11.5, color: OB.muted, marginBlockStart: 4 }}>{f.l}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{
+          marginBlockStart: 20, padding: "13px 15px", borderRadius: RADIUS.card,
+          background: OB.canvas, border: `1px solid ${OB.line}`,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+            <span style={{ fontSize: 14 }}>Level · <strong>{bandLabel || "not set"}</strong></span>
+            <button type="button" onClick={() => setBandPicker((v) => !v)} style={{
+              background: "none", border: "none", color: OB.blue, fontSize: 12.5, cursor: "pointer",
+              textDecoration: "underline", fontFamily: "inherit",
+            }}>change</button>
+          </div>
+          {bandPicker && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBlockStart: 12 }}>
+              {(Object.keys(BAND_LABEL) as Band[]).map((b) => (
+                <button key={b} type="button" onClick={async () => {
+                  setBand(b); setBandPicker(false); setDims(null);
+                  if (userId) {
+                    await (supabase.from("diagnostic_profiles" as any) as any)
+                      .update({ seniority_band: b, band_source: "corrected" }).eq("user_id", userId);
+                  }
+                }} style={{
+                  textAlign: "start", padding: "11px 13px", borderRadius: 12, cursor: "pointer",
+                  border: `1px solid ${band === b ? OB.blue : OB.line}`,
+                  background: band === b ? OB.blueTint : OB.white, fontSize: 14, fontFamily: "inherit", color: OB.ink,
+                }}>{BAND_LABEL[b]}</button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "24px 0 4px" }}>
+          {SHELF.map((s, i) => (
+            <ShelfBadge key={s.key} label={s.label} tone={s.tone}
+              unlocked={i === 0}
+              figure={i === 0 ? (postsRead || "✓") : undefined} />
+          ))}
+        </div>
+
+        <button type="button" onClick={nextFromHere} style={{ ...btnPrimary, marginBlockStart: 18 }}>That's me</button>
+        <button type="button" onClick={() => go(MANUAL_SCREEN)} style={btnGhostLight}>Not quite — let me fix it</button>
+      </PaperShell>
+    );
+  }
+
+  /* 15 — WHITE, the member types it in themselves */
+  if (screen === MANUAL_SCREEN) {
+    const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band;
+    content = (
+      <PaperShell bead={1} footer={escapeFooter}>
+        <h1 style={h1Light}>Tell Aura yourself.</h1>
+        <p style={bodyLight}>Four things, and Aura works from these until you point it at your profile.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockStart: 20 }}>
+          <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" style={fieldStyle} />
+          <input value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="Where you work" style={fieldStyle} />
+          <select value={sector} onChange={(e) => setSector(e.target.value)} style={fieldStyle}>
+            <option value="">Your sector</option>
+            {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {(Object.keys(BAND_LABEL) as Band[]).map((b) => (
+            <button key={b} type="button" onClick={() => setBand(b)} style={{
+              textAlign: "start", padding: "12px 14px", borderRadius: 12, cursor: "pointer",
+              border: `1px solid ${band === b ? OB.blue : OB.line}`,
+              background: band === b ? OB.blueTint : OB.white, fontSize: 14, fontFamily: "inherit", color: OB.ink,
+            }}>{BAND_LABEL[b]}</button>
+          ))}
+        </div>
+        <button type="button" disabled={!ready} onClick={async () => {
+          if (userId) {
+            await (supabase.from("diagnostic_profiles" as any) as any).upsert({
+              user_id: userId, first_name: firstName.trim(), last_name: lastName.trim() || null,
+              firm: firm.trim(), sector_focus: sector, level: band ? BAND_TO_LEVEL[band] : null,
+              seniority_band: band, band_source: "corrected",
+            }, { onConflict: "user_id" });
+          }
+          go(4);
+        }} style={{ ...btnPrimary, marginBlockStart: 20, opacity: ready ? 1 : 0.5 }}>
+          Save and carry on
+        </button>
+      </PaperShell>
+    );
+  }
+
+  /* 4 — NIGHT */
+  if (screen === 4) {
+    content = (
+      <NightShell face footer={escapeFooter}>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>I know who you are. Now I need what you notice.</h1>
+        <p style={{ ...bodyNight, textAlign: "center" }}>
+          Your profile says what you've done. It doesn't say what you think. One link is enough to start.
+        </p>
+        <button type="button" onClick={() => go(5)} style={{ ...btnPrimary, marginBlockStart: 26 }}>Okay</button>
+      </NightShell>
+    );
+  }
+
+  /* 5 — WHITE, the first link */
+  if (screen === 5) {
+    content = (
+      <PaperShell bead={2} footer={escapeFooter}>
+        <h1 style={h1Light}>Something you read this week.</h1>
+        <p style={bodyLight}>
+          An article, a report, a post you disagreed with. Aura reads it and shows you what it found.
+        </p>
+        <input value={linkInput} onChange={(e) => setLinkInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && linkInput.trim()) void sendLink(linkInput); }}
+          placeholder="Paste a link" inputMode="url" style={{ ...fieldStyle, marginBlockStart: 20 }} />
+        <button type="button" disabled={!linkInput.trim()} onClick={() => sendLink(linkInput)}
+          style={{ ...btnPrimary, marginBlockStart: 14, opacity: linkInput.trim() ? 1 : 0.5 }}>Add it</button>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "24px 0 16px" }}>
+          <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
+          <span style={{ fontSize: 11.5, color: OB.muted }}>Nothing to hand?</span>
+          <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
+        </div>
+
+        {suggested ? (
+          <div style={{ border: `1px solid ${OB.line}`, borderRadius: RADIUS.card, padding: 15, background: OB.canvas }}>
+            <p style={{ margin: 0, fontSize: 11.5, color: OB.muted }}>
+              Aura found this while it was reading your profile. From your sector.
+            </p>
+            <p style={{ margin: "9px 0 0", fontSize: 14.5, fontWeight: 700, lineHeight: 1.4 }}>{suggested.title}</p>
+            {suggested.summary ? (
+              <p style={{
+                margin: "6px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted,
+                display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
+              }}>{suggested.summary}</p>
+            ) : null}
+            <button type="button" onClick={() => sendLink(suggested.url, { title: suggested.title, summary: suggested.summary })}
+              style={btnGhostLight}>Use this one instead</button>
+          </div>
+        ) : (
+          <p style={{ fontSize: 12.5, color: OB.muted, lineHeight: 1.55 }}>
+            Aura is still looking for one from your sector. Paste anything you have and it'll start there.
+          </p>
+        )}
+      </PaperShell>
+    );
+  }
+
+  /* 6 — NIGHT, reading it */
+  if (screen === 6) {
+    content = (
+      <NightShell face footer={escapeFooter}>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
+        <p style={{ ...bodyNight, textAlign: "center" }}>Pulling out the bits worth keeping…</p>
+        {claimsSlow && (
+          <>
+            <p style={{ ...bodyNight, textAlign: "center" }}>Still reading — it'll be waiting on your Home.</p>
+            <button type="button" onClick={() => go(8)} style={{ ...btnPrimary, marginBlockStart: 20 }}>Keep going</button>
+          </>
+        )}
+      </NightShell>
+    );
+  }
+
+  /* 7 — NIGHT, three claims */
+  if (screen === 7) {
+    content = (
+      <NightShell footer={escapeFooter}>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>Three claims, and they're yours.</h1>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
+          {claims.slice(0, 3).map((c, i) => (
+            <ClaimCard key={`${c.title}-${i}`} index={i} title={c.title} content={c.content} />
+          ))}
+        </div>
+        <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 22 }}>
+          Aura will watch what moves these while you sleep.
+        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "22px 0 4px" }}>
+          {SHELF.map((s, i) => (
+            <ShelfBadge key={s.key} label={s.label} tone={s.tone} onNight
+              unlocked={i <= 1}
+              figure={i === 0 ? (postsRead || "✓") : i === 1 ? claims.length : undefined} />
+          ))}
+        </div>
+        <button type="button" onClick={() => go(8)} style={{ ...btnPrimary, marginBlockStart: 18 }}>Nice — keep going</button>
+      </NightShell>
+    );
+  }
+
+  /* 8 — NIGHT, before the sliders */
+  if (screen === 8) {
+    const pickedLine = bandLabel && sector ? `Eight sliders. Under a minute. Picked for ${bandLabel} · ${sector}.` : null;
+    content = (
+      <NightShell face footer={escapeFooter}>
+        {contentError ? retryPanel(() => void loadDimensions()) : (
+          <>
+            <h1 style={{ ...h1Night, textAlign: "center" }}>I've read you. Now I want your own read.</h1>
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              This isn't a test and there's no score to beat. Aura compares what you say about yourself against what
+              your posts actually show — and where those two disagree is the interesting part.
+            </p>
+            {pickedLine ? <p style={{ ...bodyNight, textAlign: "center" }}>{pickedLine}</p> : null}
+            <button type="button" onClick={() => { setDimIdx(0); go(9); }} disabled={!dims}
+              style={{ ...btnPrimary, marginBlockStart: 24, opacity: dims ? 1 : 0.5 }}>
+              {dims ? "Okay" : <Loader2 size={16} className="animate-spin" />}
+            </button>
+          </>
+        )}
+      </NightShell>
+    );
+  }
+
+  /* 9 — WHITE ×8, the sliders */
+  if (screen === 9) {
+    if (contentError || !dims) {
+      content = (
+        <PaperShell bead={3} footer={escapeFooter}>
+          <h1 style={h1Light}>Give that one more go.</h1>
+          <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
+          <button type="button" onClick={() => void loadDimensions()} style={{ ...btnPrimary, marginBlockStart: 20 }}>Try again</button>
+        </PaperShell>
+      );
+    } else {
+      const d = dims[Math.min(dimIdx, dims.length - 1)];
+      const value = scores[d.name] ?? 50;
+      const last = dimIdx >= dims.length - 1;
+      content = (
+        <PaperShell bead={3} footer={escapeFooter}>
+          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
+            {dimIdx + 1} / {dims.length}
+          </p>
+          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(22px,6vw,28px)" }}>{d.name}</h1>
+          {d.why_line ? <p style={bodyLight}>{d.why_line}</p> : null}
+          <input
+            type="range" min={0} max={100} step={1} value={value}
+            aria-label={d.name}
+            onChange={(e) => setScore(d.name, Number(e.target.value))}
+            style={{ inlineSize: "100%", marginBlockStart: 26, accentColor: OB.blue }}
+          />
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 14, marginBlockStart: 10 }}>
+            <span style={{ fontSize: 11.5, color: OB.muted, maxInlineSize: "46%" }}>{d.anchor_low}</span>
+            <span style={{ fontSize: 11.5, color: OB.muted, maxInlineSize: "46%", textAlign: "end" }}>{d.anchor_high}</span>
+          </div>
+          <button type="button" onClick={() => {
+            if (!scores[d.name]) setScore(d.name, value);
+            if (last) go(10); else setDimIdx((i) => i + 1);
+          }} style={{ ...btnPrimary, marginBlockStart: 26 }}>
+            {last ? "Done — that's all eight" : "Next"}
+          </button>
+          {last && (
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
+              {SHELF.map((s, i) => (
+                <ShelfBadge key={s.key} label={s.label} tone={s.tone}
+                  unlocked={i <= 2}
+                  figure={i === 0 ? (postsRead || "✓") : i === 1 ? claims.length : i === 2 ? dims.length : undefined} />
+              ))}
+            </div>
+          )}
+        </PaperShell>
+      );
+    }
+  }
+
+  /* 10 — NIGHT, before the six */
+  if (screen === 10) {
+    content = (
+      <NightShell face footer={escapeFooter}>
+        {contentError ? retryPanel(() => void loadQuestions()) : (
+          <>
+            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is the part nobody else does.</h1>
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              Aura won't write a word until it has this. A few questions about how you actually work — read together
+              with the posts it just read, the claims you kept, and the sliders you moved.
+            </p>
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              What comes out isn't a personality type. It's the subjects you genuinely own, the space nobody near you
+              has claimed, and where the ground is still soft.
+            </p>
+            <p style={{ ...bodyNight, textAlign: "center" }}>Six questions. Ninety seconds.</p>
+            <button type="button" onClick={() => { setQIdx(0); go(11); }} disabled={!questions}
+              style={{ ...btnPrimary, marginBlockStart: 24, opacity: questions ? 1 : 0.5 }}>
+              {questions ? "Let's do it" : <Loader2 size={16} className="animate-spin" />}
+            </button>
+          </>
+        )}
+      </NightShell>
+    );
+  }
+
+  /* 11 — WHITE ×6 */
+  if (screen === 11) {
+    if (contentError || !questions) {
+      content = (
+        <PaperShell bead={4} footer={escapeFooter}>
+          <h1 style={h1Light}>Give that one more go.</h1>
+          <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
+          <button type="button" onClick={() => void loadQuestions()} style={{ ...btnPrimary, marginBlockStart: 20 }}>Try again</button>
+        </PaperShell>
+      );
+    } else {
+      const q = questions[Math.min(qIdx, questions.length - 1)];
+      const last = qIdx >= questions.length - 1;
+      const advance = (value: string) => {
+        const next = { ...answers, [`Q${qIdx + 1} ${q.prompt}`]: value };
+        setAnswers(next);
+        setTextAnswer("");
+        if (userId) void saveAnswers(userId, next);
+        if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
+      };
+      content = (
+        <PaperShell bead={4} footer={escapeFooter}>
+          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
+            Question {qIdx + 1} of {questions.length}
+          </p>
+          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{q.prompt}</h1>
+          {q.helper ? <p style={bodyLight}>{q.helper}</p> : null}
+
+          {q.kind === "choice" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
+              {(q.options || []).map((o) => (
+                <button key={o.value} type="button" onClick={() => advance(o.label)} style={{
+                  textAlign: "start", padding: "14px 15px", borderRadius: 14, cursor: "pointer",
+                  border: `1px solid ${OB.line}`, background: OB.white, fontSize: 14.5,
+                  lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
+                  transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
+                }}>{o.label}</button>
+              ))}
+            </div>
+          ) : (
+            <>
+              <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
+                placeholder="One line, your words" style={{ ...fieldStyle, marginBlockStart: 20 }} />
+              <button type="button" disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}
+                style={{ ...btnPrimary, marginBlockStart: 16, opacity: textAnswer.trim() ? 1 : 0.5 }}>Next</button>
+            </>
+          )}
+        </PaperShell>
+      );
+    }
+  }
+
+  /* 12 — NIGHT, the one confetti in the whole journey */
+  if (screen === 12) {
+    content = (
+      <NightShell footer={escapeFooter}>
+        <Confetti />
+        <h1 style={{ ...h1Night, textAlign: "center" }}>You've got a shelf.</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
+          {SHELF.map((s, i) => (
+            <ShelfBadge key={s.key} label={s.label} tone={s.tone} onNight unlocked
+              figure={
+                i === 0 ? (postsRead || "✓")
+                  : i === 1 ? claims.length
+                    : i === 2 ? Object.keys(scores).length
+                      : (reveal?.subjects.length ?? 3)
+              } />
+          ))}
+        </div>
+        <p style={{ ...bodyNight, textAlign: "center" }}>
+          Tonight Aura reads for your three subjects. Tomorrow morning there's something waiting — and every capture
+          adds to the shelf.
+        </p>
+        <button type="button" onClick={() => go(13)} disabled={revealPending}
+          style={{ ...btnPrimary, marginBlockStart: 24, opacity: revealPending ? 0.6 : 1 }}>
+          {revealPending ? <Loader2 size={16} className="animate-spin" /> : null}
+          {revealPending ? "Writing your read…" : "See how people see me"}
+        </button>
+      </NightShell>
+    );
+  }
+
+  /* 13 — FULL-BLEED BLUE */
+  if (screen === 13) {
+    content = (
+      <div className="obc" style={{
+        minBlockSize: "100dvh",
+        background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
+        display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
+      }}>
+        <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: 460 }}>
+          {reveal ? <RevealCard data={reveal} /> : (
+            <div style={{ textAlign: "center", color: "#FFFFFF" }}>
+              <p style={{ fontSize: 16, lineHeight: 1.6 }}>
+                Aura is still writing your read. It'll be on your Home the moment it's done.
+              </p>
+            </div>
+          )}
+          <button type="button" onClick={async () => {
+            const text = reveal ? `${reveal.archetype} — ${reveal.marketRead}` : "My read from Aura";
+            try {
+              if (navigator.share) await navigator.share({ text });
+              else { await navigator.clipboard.writeText(text); toast.success("Copied — paste it anywhere."); }
+            } catch { /* the member changed their mind */ }
+          }} style={{ ...btnPrimary, marginBlockStart: 20, background: OB.night }}>Share this</button>
+          <button type="button" onClick={() => go(14)} style={{
+            ...btnGhostLight, color: "#FFFFFF", border: "1px solid rgba(255,255,255,.55)",
+          }}>Take me in</button>
+        </div>
+      </div>
+    );
+  }
+
+  /* 13b — NIGHT, and only after 13 */
+  if (screen === 14) {
+    content = (
+      <NightShell face footer={escapeFooter}>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>One last thing.</h1>
+        <p style={{ ...bodyNight, textAlign: "center" }}>
+          Connect LinkedIn and Aura can see what only you can see — how your posts actually performed. It learns
+          which of your subjects your audience already rewards, and stops guessing.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 22 }}>
+          {[
+            ["Without it", "Aura writes from your captures"],
+            ["With it", "Aura writes from what lands"],
+          ].map(([k, v]) => (
+            <div key={k} style={{
+              background: OB.nightSoft, border: `1px solid ${OB.lineNight}`, borderRadius: RADIUS.card,
+              padding: "12px 14px", fontSize: 13.5, color: "#FFFFFF",
+            }}>
+              <span style={{ color: OB.mutedNight }}>{k} · </span>{v}
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={connectLinkedIn} disabled={connecting} style={{ ...btnPrimary, marginBlockStart: 22 }}>
+          {connecting ? <Loader2 size={16} className="animate-spin" /> : null} Connect LinkedIn
+        </button>
+        <button type="button" onClick={finish} style={btnGhostNight}>Not now</button>
+        <p style={{ ...footnote, color: OB.mutedNight }}>Aura never posts. You press publish, every time.</p>
+      </NightShell>
+    );
+  }
+
   return (
     <>
-      {cardShell(
-        <>
-          {eyebrow("The part nobody else does")}
-          {heading("This is the part nobody else does.")}
-          <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "#5B6673" }}>
-            Aura will not write a word until it has this. A short assessment, read together with your LinkedIn and everything you have captured, produces your capability radar, the subjects you genuinely own, and where the ground is still soft.
-          </p>
-          {primaryBtn(<>Start the assessment <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
-          <div className="mt-3">{ghostLink("I'll do this later", () => { triggerArticleSearch(); saveProgress(3); goStep(3); })}</div>
-        </>,
-      )}
-      {breathing && <BreathingOverlay leaving={breathingLeaving} message={breathingMessage} />}
-      <BrandAssessmentModal
-        open={assessmentOpen}
-        onOpenChange={(o) => {
-          setAssessmentOpen(o);
-          if (!o) {
-            // closed — assessment may or may not be complete; either way, hand off to home.
-          }
-        }}
-        onNavigate={(_tab) => {
-          setAssessmentOpen(false);
-          triggerArticleSearch();
-          saveProgress(3);
-          goStep(3);
-        }}
-        sector={sectorFocus || corePractice || null}
-        band={seniorityBand}
-        onComplete={async () => {
-          try {
-            if (userId) {
-              await supabase.functions.invoke("send-lifecycle-email", {
-                body: { user_id: userId, email_type: "welcome" },
-              });
-            }
-          } catch (e) {
-            console.warn("welcome email failed:", e);
-          }
-          try { sessionStorage.setItem("aura-onboarding-just-completed", "1"); } catch {}
-          // Fire the article search EF in background so results are ready by Step 3.
-          triggerArticleSearch();
-          await saveProgress(3);
-          setAssessmentOpen(false);
-          goStep(3);
-        }}
-      />
-      {ceremony && (
-        <div
-          className={`aura-ceremony-overlay${ceremonyLeaving ? " is-leaving" : ""}`}
-          role="dialog"
-          aria-label="Aura sees who you are now"
-          style={{ background: "#0F1519", color: "#FFFFFF" }}
-        >
-          {/* 4 progress dots — all filled bronze */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
-            {[0, 1, 2, 3].map((i) => (
-              <span
-                key={i}
-                style={{
-                  width: 8, height: 8, borderRadius: 999,
-                  background: "#00CEC9",
-                  display: "inline-block",
-                }}
-              />
-            ))}
-          </div>
-          <span
-            aria-hidden="true"
-            className="aura-gold-pulse"
-            style={{ fontSize: 24, color: "#5EE3DC", lineHeight: 1, marginBottom: 22 }}
-          >
-            ✦
-          </span>
-          <h2
-            style={{
-              fontFamily: "'Instrument Serif', Georgia, serif",
-              fontSize: "clamp(22px, 3.4vw, 30px)", lineHeight: 1.2, margin: "0 0 28px",
-              color: "#FFFFFF", letterSpacing: "-0.02em",
-              textAlign: "center", maxWidth: 420, padding: "0 16px",
-            }}
-          >
-            Aura sees who you are now — and everything it creates will reflect it.
-          </h2>
-          <button
-            type="button"
-            onClick={completeCeremonyAndNavigate}
-            style={{
-              background: "#FFFFFF",
-              color: "#0F1519",
-              border: 0,
-              borderRadius: 999,
-              fontSize: 15,
-              fontWeight: 600,
-              padding: "14px 28px",
-              width: "100%",
-              maxWidth: 320,
-              cursor: "pointer",
-              fontFamily: "'Inter', system-ui, sans-serif",
-              letterSpacing: "0.01em",
-            }}
-          >
-            Enter my dashboard ✦
-          </button>
-        </div>
-      )}
+      <style>{PAGE_CSS}</style>
+      {content}
     </>
   );
 };
 
-const ArticleManualPaste = ({
-  url, setUrl, onSave, loading, inputCls, inputStyle, compact,
-}: {
-  url: string;
-  setUrl: (v: string) => void;
-  onSave: () => void;
-  loading: boolean;
-  inputCls: string;
-  inputStyle: React.CSSProperties;
-  compact?: boolean;
-}) => (
-  <div className={compact ? "" : "mt-2"}>
-    <input
-      className={inputCls + " mb-2"}
-      style={inputStyle}
-      placeholder="https://..."
-      value={url}
-      onChange={(e) => setUrl(e.target.value)}
-      disabled={loading}
-    />
-    <button
-      onClick={onSave}
-      disabled={loading || !url.trim()}
-      className="ob-btn ob-line"
-      style={{ minHeight: 46, fontSize: 14.5 }}
-    >
-      {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-      Save capture
-    </button>
-  </div>
-);
-
 export default Onboarding;
-
-const BreathingOverlay = ({ leaving, message }: { leaving: boolean; message?: string }) => (
-  <div
-    style={{
-      position: "fixed", inset: 0, zIndex: 100,
-      background: "#0F1519",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      opacity: leaving ? 0 : 1,
-      transition: "opacity 300ms ease-out",
-      overflow: "hidden",
-    }}
-  >
-    <div
-      aria-hidden
-      style={{
-        position: "absolute", inset: 0,
-        background:
-          "radial-gradient(560px 320px at 74% 14%, rgba(0,206,201,0.16), transparent 62%)," +
-          "radial-gradient(460px 300px at 14% 90%, rgba(6,112,196,0.20), transparent 64%)",
-      }}
-    />
-    <p
-      style={{
-        position: "relative",
-        fontFamily: "'Instrument Serif', Georgia, serif",
-        fontSize: "clamp(22px, 3.4vw, 30px)", lineHeight: 1.2,
-        letterSpacing: "-0.02em", color: "#FFFFFF",
-        textAlign: "center", maxWidth: 460, padding: "0 24px",
-      }}
-    >
-      {message || "Now your own read — Aura corrects it from there."}
-    </p>
-  </div>
-);

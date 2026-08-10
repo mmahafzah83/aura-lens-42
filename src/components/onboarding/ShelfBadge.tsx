@@ -1,0 +1,57 @@
+/**
+ * ShelfBadge — the four things the member collects. Locked is a dashed
+ * outline with a question mark; unlocked is a filled gradient with the
+ * member's own figure on it.
+ */
+import { OB, SPRING, RADIUS } from "./tokens";
+
+const CSS = `
+@keyframes sb-pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.sb-unlocked{animation:sb-pop 550ms cubic-bezier(.34,1.56,.64,1) both;}
+@media (prefers-reduced-motion:reduce){ .sb-unlocked{animation:none !important;} }
+`;
+
+export type ShelfBadgeTone = "blue" | "cyan" | "amber" | "deep";
+
+const FILL: Record<ShelfBadgeTone, string> = {
+  blue: `linear-gradient(150deg, ${OB.blue}, ${OB.blueLight})`,
+  cyan: `linear-gradient(150deg, ${OB.blue}, ${OB.cyan})`,
+  amber: `linear-gradient(150deg, ${OB.amber}, #C98F14)`,
+  deep: `linear-gradient(150deg, #04477C, ${OB.blue})`,
+};
+
+interface Props {
+  label: string;
+  unlocked?: boolean;
+  /** The member's own number, shown once unlocked. */
+  figure?: string | number | null;
+  tone?: ShelfBadgeTone;
+  onNight?: boolean;
+}
+
+const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = false }: Props) => (
+  <div style={{ inlineSize: 54, textAlign: "center" }}>
+    <style>{CSS}</style>
+    <div
+      className={unlocked ? "sb-unlocked" : undefined}
+      style={{
+        inlineSize: 54, blockSize: 54, borderRadius: RADIUS.card,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: unlocked ? FILL[tone] : (onNight ? "#141E25" : OB.canvas),
+        border: unlocked ? "1px solid transparent" : `1.5px dashed ${onNight ? OB.lineNight : OB.line}`,
+        color: unlocked ? "#FFFFFF" : (onNight ? OB.mutedNight : OB.muted),
+        transition: `background 300ms ${SPRING}`,
+      }}
+    >
+      {unlocked
+        ? <span style={{ fontFamily: OB.mono, fontSize: 17, fontWeight: 600 }}>{figure ?? "✓"}</span>
+        : <span style={{ fontFamily: OB.mono, fontSize: 16, opacity: 0.7 }}>?</span>}
+    </div>
+    <p style={{
+      margin: "8px 0 0", fontSize: 10.5, lineHeight: 1.35,
+      color: onNight ? OB.mutedNight : OB.muted,
+    }}>{label}</p>
+  </div>
+);
+
+export default ShelfBadge;
