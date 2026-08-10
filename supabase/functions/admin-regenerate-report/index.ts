@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
+import { isAdmin } from "../_shared/adminRole.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,12 +51,7 @@ serve(withObserve("admin-regenerate-report", async (req) => {
   const { data: userData, error: userErr } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
   if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
 
-  const { data: callerProfile } = await admin
-    .from("diagnostic_profiles")
-    .select("is_admin")
-    .eq("user_id", userData.user.id)
-    .maybeSingle();
-  if (callerProfile?.is_admin !== true) return json({ error: "Forbidden" }, 403);
+  if (!(await isAdmin(admin, userData.user.id))) return json({ error: "Forbidden" }, 403);
 
   // --- resolve the target user ---------------------------------------------
   const body = await req.json().catch(() => ({}));

@@ -10,6 +10,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { isAdmin as checkIsAdmin } from "../_shared/adminRole.ts";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import {
   applyPublishedFilter,
@@ -410,9 +411,7 @@ serve(withObserve("capture-report-snapshot", async (req) => {
     if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
     const callerId = userData.user.id;
 
-    const { data: callerProfile } = await admin
-      .from("diagnostic_profiles").select("is_admin").eq("user_id", callerId).maybeSingle();
-    const isAdmin = callerProfile?.is_admin === true;
+    const isAdmin = await checkIsAdmin(admin, callerId);
 
     if (requested && requested !== callerId && !isAdmin) {
       return json({ error: "Forbidden" }, 403);

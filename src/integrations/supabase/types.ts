@@ -960,7 +960,7 @@ export type Database = {
           generated_skills: Json
           id: string
           identity_intelligence: Json
-          is_admin: boolean
+          is_internal: boolean
           last_active_at: string | null
           last_name: string | null
           last_visit_at: string | null
@@ -1013,7 +1013,7 @@ export type Database = {
           generated_skills?: Json
           id?: string
           identity_intelligence?: Json
-          is_admin?: boolean
+          is_internal?: boolean
           last_active_at?: string | null
           last_name?: string | null
           last_visit_at?: string | null
@@ -1066,7 +1066,7 @@ export type Database = {
           generated_skills?: Json
           id?: string
           identity_intelligence?: Json
-          is_admin?: boolean
+          is_internal?: boolean
           last_active_at?: string | null
           last_name?: string | null
           last_visit_at?: string | null
@@ -2546,6 +2546,13 @@ export type Database = {
             foreignKeyName: "linkedin_post_metrics_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "aura_output"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "linkedin_post_metrics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "influence_dashboard_view"
             referencedColumns: ["id"]
           },
@@ -3231,6 +3238,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_events_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "aura_output"
+            referencedColumns: ["post_id"]
+          },
           {
             foreignKeyName: "post_events_post_id_fkey"
             columns: ["post_id"]
@@ -4078,6 +4092,13 @@ export type Database = {
             foreignKeyName: "voice_feedback_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "aura_output"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "voice_feedback_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "influence_dashboard_view"
             referencedColumns: ["id"]
           },
@@ -4198,6 +4219,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "voice_post_outcomes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "aura_output"
+            referencedColumns: ["post_id"]
+          },
           {
             foreignKeyName: "voice_post_outcomes_post_id_fkey"
             columns: ["post_id"]
@@ -4575,6 +4603,21 @@ export type Database = {
       }
     }
     Views: {
+      aura_output: {
+        Row: {
+          post_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          post_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          post_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cockpit_assertions: {
         Row: {
           claim: string | null
@@ -4594,6 +4637,7 @@ export type Database = {
           last_capture: string | null
           lifecycle_emails: number | null
           newest_post_with_text: string | null
+          posts_read: number | null
           posts_through_aura: number | null
           posts_with_text: number | null
           posts_with_text_primary_lang: number | null

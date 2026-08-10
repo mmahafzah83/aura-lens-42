@@ -11,6 +11,7 @@ import { DeckIRSchema, type DeckIR } from "./deckIR.ts";
 import { checkInvariants, splitByTier } from "./invariants.ts";
 import { repairDeck } from "./repair.ts";
 import { compose } from "./compose.ts";
+import { isAdmin } from "../_shared/adminRole.ts";
 import {
   plan,
   writeSlides,
@@ -526,12 +527,7 @@ serve(async (req) => {
 
     // Admin-only self test: run three real signals, one of which carries no number.
     if (body.selftest) {
-      const { data: prof } = await db
-        .from("diagnostic_profiles")
-        .select("is_admin")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (!prof?.is_admin) return json({ error: "forbidden" }, 403);
+      if (!(await isAdmin(db, user.id))) return json({ error: "forbidden" }, 403);
 
       const { data: signals } = await db
         .from("strategic_signals")
@@ -575,9 +571,7 @@ serve(async (req) => {
      * with the new one. Returns the cover hero lines and the frame body of each.
      */
     if (body.voice_ab) {
-      const { data: prof } = await db
-        .from("diagnostic_profiles").select("is_admin").eq("user_id", user.id).maybeSingle();
-      if (!prof?.is_admin) return json({ error: "forbidden" }, 403);
+      if (!(await isAdmin(db, user.id))) return json({ error: "forbidden" }, 403);
 
       const lang: "en" | "ar" = reqLang ?? "en";
       const ctx = await readContext(db, body.signal_id, user.id);
