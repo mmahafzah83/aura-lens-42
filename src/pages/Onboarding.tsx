@@ -294,7 +294,7 @@ const Onboarding = () => {
       else if (!passwordSet) setNeedsPassword(true);
 
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, seniority_band, onboarding_step, skill_ratings, identity_intelligence")
+        .select("first_name, last_name, firm, sector_focus, level, seniority_band, onboarding_step, skill_ratings, identity_intelligence")
         .eq("user_id", uid)
         .maybeSingle();
       const p: any = profile || {};
@@ -307,6 +307,7 @@ const Onboarding = () => {
       if (p.last_name) setLastName(p.last_name);
       if (p.firm) setFirm(p.firm);
       if (p.sector_focus) { setSector(p.sector_focus); setSectorKnown(true); }
+      if (p.level) setLevelTitle(p.level);
       if (p.seniority_band) setBand(p.seniority_band as Band);
       if (p.skill_ratings && typeof p.skill_ratings === "object") setScores(p.skill_ratings as Record<string, number>);
 
