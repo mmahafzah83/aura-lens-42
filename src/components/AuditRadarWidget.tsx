@@ -281,7 +281,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
           </div>
           <div>
             <p className="text-sm font-medium" style={{ color: "var(--ink-7)" }}>Complete your capability diagnostic to reveal your radar</p>
-            <p className="text-xs mt-1" style={{ color: "var(--ink-5)" }}>10 dimensions · 30 evidence questions · takes 5 minutes</p>
+            <p className="text-xs mt-1" style={{ color: "var(--ink-5)" }}>A short set of evidence questions · takes about five minutes</p>
           </div>
           <button
             onClick={onStartAudit}
