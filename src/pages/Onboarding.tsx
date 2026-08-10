@@ -672,6 +672,46 @@ const Onboarding = () => {
   ) : null;
 
   const bandLabel = band ? BAND_LABEL[band] : null;
+
+  /** One writer for the level, wherever it is picked. */
+  const chooseTitle = async (title: string, b: Band) => {
+    setLevelTitle(title);
+    setBand(b);
+    setDims(null);
+    setQuestions(null);
+    if (userId) {
+      try {
+        await (supabase.from("diagnostic_profiles" as any) as any)
+          .update({ level: title, seniority_band: b, band_source: "corrected" })
+          .eq("user_id", userId);
+      } catch (e) { console.warn("[journey] level save failed", e); }
+    }
+  };
+
+  const titleList = (onPick: (t: string, b: Band) => void) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBlockStart: 12 }}>
+      {titlesFailed ? (
+        <>
+          <p style={{ ...bodyLight, margin: 0 }}>Aura couldn't load the list of levels. Nothing is lost.</p>
+          <button type="button" onClick={() => void reloadTitles()} style={{ ...btnGhostLight, marginBlockStart: 0 }}>
+            Try again
+          </button>
+        </>
+      ) : seniorityTitles.map((t) => (
+        <button key={t.title} type="button" onClick={() => onPick(t.title, t.band as Band)} style={{
+          display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10,
+          textAlign: "start", padding: "11px 13px", borderRadius: 12, cursor: "pointer",
+          border: `1px solid ${levelTitle === t.title ? OB.blue : OB.line}`,
+          background: levelTitle === t.title ? OB.blueTint : OB.white,
+          fontSize: 14, fontFamily: "inherit", color: OB.ink,
+        }}>
+          <span>{t.title}</span>
+          <span style={{ fontSize: 11.5, color: OB.muted }}>{TITLE_BAND_LABEL[t.band as TitleBand]}</span>
+        </button>
+      ))}
+    </div>
+  );
+
   const shelfUnlocked = useMemo(() => ({
     profile: screen > 3,
     claims: screen > 7,
