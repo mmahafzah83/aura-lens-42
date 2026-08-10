@@ -20,7 +20,9 @@ const CSS = `
 `;
 
 const ProgressBeads = ({ active }: { active: number }) => (
-  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}>
+  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}
+    role="group"
+    aria-label={`Step ${Math.min(Math.max(active, 0), 4) + 1} of 5 — ${STAGE_NAMES[Math.min(Math.max(active, 0), 4)]}`}>
     <div style={{ display: "flex", gap: 6, alignItems: "center" }} aria-hidden>
       <style>{CSS}</style>
       {[0, 1, 2, 3, 4].map((i) => {
@@ -45,7 +47,7 @@ const ProgressBeads = ({ active }: { active: number }) => (
       fontFamily: OB.mono, fontSize: 9.5, textTransform: "uppercase",
       letterSpacing: "0.12em", color: OB.muted, textAlign: "center",
     }}>
-      {STAGE_NAMES[Math.min(Math.max(active, 0), 4)]}
+      Step {Math.min(Math.max(active, 0), 4) + 1} of 5 · {STAGE_NAMES[Math.min(Math.max(active, 0), 4)]}
     </span>
   </div>
 );
