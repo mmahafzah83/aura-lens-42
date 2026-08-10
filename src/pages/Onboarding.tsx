@@ -1570,7 +1570,6 @@ const Onboarding = () => {
   if (screen === 12) {
     content = (
       <NightShell footer={escapeFooter}>
-        <Confetti />
         <h1 style={{ ...h1Night, textAlign: "center" }}>You've got a shelf.</h1>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
           {SHELF.map((s, i) => (
