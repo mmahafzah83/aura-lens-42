@@ -176,6 +176,7 @@ Deno.serve(async (req) => {
           dropped: 0,
           posts_used: cachedRow.posts_used ?? null,
           language: cachedRow.language ?? "en",
+          detected_language: cachedRow.language ?? "en",
           written_at: cachedRow.updated_at,
         });
       }
