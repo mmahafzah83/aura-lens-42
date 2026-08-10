@@ -136,33 +136,58 @@ Deno.serve(async (req) => {
     }
 
     // --- Apify (sync run) ---
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 120_000);
-    let res: Response;
-    try {
-      res = await fetch(
-        `https://api.apify.com/v2/acts/${ACTOR}/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ profiles: [canonical_url], mode: "details" }),
-          signal: controller.signal,
-        },
-      );
-    } finally {
-      clearTimeout(timer);
+    // The actor's input key has changed over time, so try the documented shape
+    // first and fall back to the older one before giving up.
+    const inputShapes: Record<string, unknown>[] = [
+      { queries: [canonical_url], profileScraperMode: "Full ($8 per 1k)" },
+      { queries: [canonical_url] },
+      { urls: [canonical_url] },
+      { profiles: [canonical_url], mode: "details" },
+    ];
+
+    let item: Record<string, unknown> | null = null;
+    let lastFailure = "";
+    for (const input of inputShapes) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 120_000);
+      let res: Response;
+      try {
+        res = await fetch(
+          `https://api.apify.com/v2/acts/${ACTOR}/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(input),
+            signal: controller.signal,
+          },
+        );
+      } catch (e) {
+        lastFailure = `request failed: ${e instanceof Error ? e.message : String(e)}`;
+        continue;
+      } finally {
+        clearTimeout(timer);
+      }
+
+      if (res.status !== 200 && res.status !== 201) {
+        lastFailure = `status ${res.status}: ${(await res.text()).slice(0, 300)}`;
+        continue;
+      }
+
+      const payload = await res.json();
+      const list: any[] = Array.isArray(payload) ? payload : [];
+      const candidate = (list.find((r) => r && typeof r === "object" && !r.error) ?? null) as
+        | Record<string, unknown>
+        | null;
+      if (candidate) { item = candidate; break; }
+      lastFailure = `no rows returned for input keys ${Object.keys(input).join(", ")}`;
     }
 
-    if (res.status !== 200 && res.status !== 201) {
-      const text = await res.text();
-      return json({ error: "Apify request failed", status: res.status, apify_body: text.slice(0, 500) }, 502);
-    }
-
-    const payload = await res.json();
-    const list: any[] = Array.isArray(payload) ? payload : [];
-    const item = (list[0] ?? null) as Record<string, unknown> | null;
     if (!item) {
-      return json({ error: "No profile returned for this URL", canonical_url }, 502);
+      return json({
+        error: "Aura could not read that profile. Check the address is public and try again.",
+        canonical_url,
+        detail: lastFailure,
+      }, 502);
     }
 
     // --- Defensive mapping: every field may be absent or differently named ---
