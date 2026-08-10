@@ -1270,8 +1270,25 @@ const Onboarding = () => {
       const d = dims[Math.min(dimIdx, dims.length - 1)];
       const value = scores[d.name] ?? 50;
       const last = dimIdx >= dims.length - 1;
+      const values = dims.map((x) => scores[x.name]).filter((v) => typeof v === "number") as number[];
+      const isFlat = values.length === dims.length && Math.max(...values) - Math.min(...values) <= 15;
       content = (
         <PaperShell bead={3} footer={escapeFooter}>
+          {flatWarn ? (
+            <>
+              <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>Can I check something?</h1>
+              <p style={bodyLight}>
+                You put all {dims.length} in more or less the same place. That happens when the sentences don't quite
+                fit, or when it's easier to sit in the middle than to pick. Either is fine — but Aura reads a flat
+                answer as "no strong pattern", and it will write more carefully because of it.
+              </p>
+              <button type="button" onClick={() => { setFlatWarn(false); setDimIdx(0); }}
+                style={{ ...btnPrimary, marginBlockStart: 20 }}>Let me have another look</button>
+              <button type="button" onClick={() => { setFlatAck(true); setFlatWarn(false); go(10); }}
+                style={btnGhostLight}>No, that's right for me</button>
+            </>
+          ) : (
+          <>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             {dimIdx + 1} / {dims.length}
           </p>
@@ -1280,19 +1297,43 @@ const Onboarding = () => {
           <input
             type="range" min={0} max={100} step={1} value={value}
             aria-label={d.name}
+            aria-valuetext={value < 34 ? (d.anchor_low ?? "") : value < 67 ? (d.anchor_mid ?? "") : (d.anchor_high ?? "")}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
             style={{ inlineSize: "100%", marginBlockStart: 26, accentColor: OB.blue }}
           />
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 14, marginBlockStart: 10 }}>
-            <span style={{ fontSize: 11.5, color: OB.muted, maxInlineSize: "46%" }}>{d.anchor_low}</span>
-            <span style={{ fontSize: 11.5, color: OB.muted, maxInlineSize: "46%", textAlign: "end" }}>{d.anchor_high}</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
+            {([
+              ["Low", d.anchor_low, value < 34],
+              ["Middle", d.anchor_mid, value >= 34 && value < 67],
+              ["High", d.anchor_high, value >= 67],
+            ] as [string, string | null, boolean][])
+              .filter(([, text]) => !!text)
+              .map(([tag, text, live]) => (
+                <div key={tag} style={{
+                  display: "flex", gap: 9, fontSize: 12, lineHeight: 1.5,
+                  color: live ? OB.ink : OB.muted,
+                  background: live ? OB.blueTint : "transparent",
+                  border: `1px solid ${live ? OB.blue : "transparent"}`,
+                  borderRadius: RADIUS.card, padding: "8px 10px",
+                  transition: `background 220ms ${EASE}, color 220ms ${EASE}`,
+                }}>
+                  <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2 }}>{tag}</span>
+                  <span>{text}</span>
+                </div>
+              ))}
           </div>
           <button type="button" onClick={() => {
             if (!scores[d.name]) setScore(d.name, value);
-            if (last) go(10); else setDimIdx((i) => i + 1);
+            if (!last) { setDimIdx((i) => i + 1); return; }
+            const finalValues = dims.map((x) => (x.name === d.name ? value : scores[x.name] ?? value));
+            const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
+            if (flatNow && !flatAck) setFlatWarn(true); else go(10);
           }} style={{ ...btnPrimary, marginBlockStart: 26 }}>
             {last ? `Done — that's all ${dims.length}` : "Next"}
           </button>
+          {dimIdx > 0 ? (
+            <button type="button" onClick={() => setDimIdx((i) => Math.max(0, i - 1))} style={btnGhostLight}>Back</button>
+          ) : null}
           {last && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
               {SHELF.map((s, i) => (
@@ -1301,6 +1342,8 @@ const Onboarding = () => {
                   figure={i === 0 ? (postsRead || "✓") : i === 1 ? claims.length : i === 2 ? dims.length : undefined} />
               ))}
             </div>
+          )}
+          </>
           )}
         </PaperShell>
       );
