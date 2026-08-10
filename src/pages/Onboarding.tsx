@@ -1418,7 +1418,7 @@ const Onboarding = () => {
       <NightShell face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
           <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is the part nobody else does.</h1>
+            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is the part that does the work.</h1>
             <p style={{ ...bodyNight, textAlign: "center" }}>
               Aura won't write a word until it has this. A few questions about how you actually work — read together
               with the posts it just read, the claims you kept, and the sliders you moved.
