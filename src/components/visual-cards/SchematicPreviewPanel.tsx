@@ -146,7 +146,7 @@ export default function SchematicPreviewPanel(props: SchematicPreviewPanelProps)
           disabled={loading}
           className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] border border-border/15 hover:border-primary/40"
         >
-          <RefreshCw className="w-3 h-3" /> Regenerate Schematic
+          <RefreshCw className="w-3 h-3" /> Draw again
         </button>
         <button
           type="button"

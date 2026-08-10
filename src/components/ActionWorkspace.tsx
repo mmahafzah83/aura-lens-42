@@ -254,7 +254,7 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
                   disabled={loading}
                   className="text-xs border-border/15"
                 >
-                  <RefreshCw className="w-3 h-3 mr-1.5" /> Regenerate
+                  <RefreshCw className="w-3 h-3 mr-1.5" /> Rewrite
                 </Button>
               </div>
 

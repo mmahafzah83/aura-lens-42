@@ -213,7 +213,7 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
             disabled={loading}
             className="text-xs text-muted-foreground/20 hover:text-muted-foreground/40 transition-colors"
           >
-            {loading ? "Regenerating…" : "Regenerate brief"}
+            {loading ? "Writing…" : "Write it again"}
           </button>
         </div>
       </Fade>

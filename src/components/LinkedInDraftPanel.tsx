@@ -232,7 +232,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
                   disabled={isCurrentLoading}
                   className="text-xs border-border/15"
                 >
-                  <RefreshCw className="w-3 h-3 mr-1.5" /> Regenerate
+                  <RefreshCw className="w-3 h-3 mr-1.5" /> Rewrite
                 </Button>
                 <Button
                   size="sm"
@@ -269,7 +269,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
                     ) : (
                       <ImageIcon className="w-3 h-3 mr-1" />
                     )}
-                    {visualUrl ? "Regenerate" : "Generate"}
+                    {visualUrl ? "Draw again" : "Draw"}
                   </Button>
                 </div>
                 {visualLoading ? (

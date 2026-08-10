@@ -342,7 +342,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
             className="text-xs flex items-center gap-1"
             style={{ color: "var(--ink-5)" }}
           >
-            <RefreshCw className={`w-3 h-3 ${regenerating ? "animate-spin" : ""}`} /> Regenerate
+            <RefreshCw className={`w-3 h-3 ${regenerating ? "animate-spin" : ""}`} /> Rewrite
           </button>
         </div>
         <div className="rounded-xl p-4 space-y-2" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}>

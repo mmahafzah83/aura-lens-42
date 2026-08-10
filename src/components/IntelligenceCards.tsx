@@ -233,7 +233,7 @@ const IntelligenceCards = () => {
 
   const handleRegenerateImage = async () => {
     if (!draftResult?.image_prompt) {
-      toast({ title: "No image prompt", description: "Cannot regenerate without an image concept.", variant: "destructive" });
+      toast({ title: "No image prompt", description: "Cannot draw without an image concept.", variant: "destructive" });
       return;
     }
     setRegeneratingImage(true);
@@ -249,11 +249,11 @@ const IntelligenceCards = () => {
       if (error) throw error;
       if (data?.image_url) {
         setDraftResult(prev => prev ? { ...prev, image_url: data.image_url } : prev);
-        toast({ title: "Image Regenerated", description: "New blackboard schematic generated." });
+        toast({ title: "Image drawn again", description: "New blackboard schematic generated." });
       }
     } catch (err) {
       console.error("Regenerate image failed:", err);
-      toast({ title: "Regeneration Failed", description: "Could not generate a new schematic.", variant: "destructive" });
+      toast({ title: "Couldn't draw a new schematic just now.", description: "Could not generate a new schematic.", variant: "destructive" });
     } finally {
       setRegeneratingImage(false);
     }
@@ -531,7 +531,7 @@ const IntelligenceCards = () => {
                       ) : (
                         <ImageIcon className="w-3.5 h-3.5" />
                       )}
-                      {regeneratingImage ? "Regenerating…" : "Regenerate Image"}
+                      {regeneratingImage ? "Drawing…" : "Draw again"}
                     </button>
                   </div>
                 </div>

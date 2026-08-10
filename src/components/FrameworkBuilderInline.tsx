@@ -398,7 +398,7 @@ const FrameworkBuilderInline = ({
               ) : (
                 <ImageIcon className="w-3 h-3 mr-1.5" />
               )}
-              {diagramUrl ? "Regenerate" : "Generate"} Diagram
+              {diagramUrl ? "Draw again" : "Draw"} diagram
             </Button>
 
             <Button

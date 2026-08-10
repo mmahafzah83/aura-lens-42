@@ -411,7 +411,7 @@ const MyFrameworks = () => {
                         ) : (
                           <RefreshCw className="w-3 h-3 mr-1.5" />
                         )}
-                        Regenerate Diagram
+                        Draw again
                       </Button>
                     )}
 
