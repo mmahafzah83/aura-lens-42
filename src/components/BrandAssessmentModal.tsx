@@ -51,7 +51,7 @@ const SECTION_DEFS: { key: string; label: string; hint: string }[] = [
   { key: "WHAT ONLY YOU CAN DO", label: "What only you can do", hint: "Where your expertise meets an unmet market need" },
   { key: "THE SPACE NOBODY ELSE OWNS", label: "The space nobody else owns", hint: "The gap in the market that's yours to claim" },
   { key: "YOUR 3 TOPICS", label: "Your 3 topics", hint: "The subjects where you have the most to say and the market needs to hear it" },
-  { key: "WHERE TO INVEST NEXT", label: "Where to invest next", hint: "Honest assessment of what's missing and what building it would unlock" },
+  { key: "WHERE TO INVEST NEXT", label: "Where to invest next", hint: "An honest read of what's missing and what building it would unlock" },
   { key: "THE HONEST TRUTH", label: "The honest truth", hint: "Why the thing that's holding you back is actually solvable" },
 ];
 
@@ -876,7 +876,7 @@ function ResultsView({
   const archetype: string = stripMd(
     json?.primary_archetype
     || (extractSection(prose, "HOW THE MARKET SEES YOU").split(/[.\n]/)[0] || "").trim()
-    || "Your Positioning",
+    || "How you come across",
   );
 
   const oneLineDesc = (() => {
@@ -1243,7 +1243,7 @@ const PROCESSING_LINES = [
   "Building something worth waiting for...",
   "Almost there — depth takes a moment...",
   "Still with you — this is worth it...",
-  "Crafting your positioning with care...",
+  "Shaping how you come across, with care...",
   "Nearly there — great analysis takes a moment...",
   "Just a few more seconds...",
 ];
