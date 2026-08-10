@@ -255,6 +255,9 @@ Deno.serve(async (req) => {
       ...posts.map((p, i) => `--- POST ${i + 1} ---\n${p}`),
     ].filter(Boolean).join("\n");
 
+    // The banned vocabulary is data, read once per invocation.
+    const bannedWords = await loadBannedWords(admin);
+
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
