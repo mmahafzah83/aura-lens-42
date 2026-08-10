@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { scorePresence, earliestExperienceYear, type PresenceRow, type PresenceKey } from "@/lib/presenceHealth";
 import { loadLinkedInAddress } from "@/lib/linkedinAddress";
+import DraftProfileCopy, { type DraftTarget } from "@/components/identity/DraftProfileCopy";
 
 /* ── System-B "Signal" values. Module scope, always. ─────────────────────── */
 const INK = "#0F1519";
