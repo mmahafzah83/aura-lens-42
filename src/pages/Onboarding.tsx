@@ -1242,7 +1242,7 @@ const Onboarding = () => {
             if (!scores[d.name]) setScore(d.name, value);
             if (last) go(10); else setDimIdx((i) => i + 1);
           }} style={{ ...btnPrimary, marginBlockStart: 26 }}>
-            {last ? "Done — that's all eight" : "Next"}
+            {last ? `Done — that's all ${dims.length}` : "Next"}
           </button>
           {last && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
