@@ -1060,6 +1060,22 @@ const Onboarding = () => {
           <p style={{ ...bodyLight, marginBlockStart: 18 }}>{EMPTY_POSTS_LINE}</p>
         )}
 
+        {/* Their own words, verbatim. If nothing qualifies, nothing shows. */}
+        {ownLine ? (
+          <figure style={{
+            margin: "20px 0 0", padding: "15px 17px", borderRadius: RADIUS.card,
+            background: OB.canvas, borderInlineStart: `3px solid ${OB.blue}`,
+          }}>
+            <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>You wrote this:</figcaption>
+            <blockquote style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: OB.ink }}>
+              “{ownLine.text}”
+            </blockquote>
+            <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>
+              — your post{ownLine.when ? `, ${ownLine.when}` : ""}
+            </p>
+          </figure>
+        ) : null}
+
         <div style={{
           marginBlockStart: 20, padding: "13px 15px", borderRadius: RADIUS.card,
           background: OB.canvas, border: `1px solid ${OB.line}`,
