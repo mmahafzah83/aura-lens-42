@@ -309,15 +309,16 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSavingScores(false); return; }
 
-    // Update audit_results with edited scores
+    // Merge — never replace. Older keys stay exactly where they are.
+    const merged = { ...(auditResults || {}), ...editScores };
     const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({ audit_results: editScores, skill_ratings: editScores })
+      .update({ audit_results: merged, skill_ratings: merged })
       .eq("user_id", user.id);
 
     if (error) {
       toast.error("Couldn't save scores");
     } else {
-      setAuditResults(editScores);
+      setAuditResults(merged);
       setEditMode(false);
       toast.success("Capability scores updated.");
     }
