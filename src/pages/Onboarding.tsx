@@ -1012,10 +1012,11 @@ const Onboarding = () => {
 
   /* 3 — WHITE, what Aura can see */
   if (screen === 3) {
+    // A zero for posts is never printed — the empty-post line stands in for it.
     const figures = [
-      { v: postsRead ?? 0, l: "posts read" },
-      { v: liProfile?.followers ?? 0, l: "following you" },
-      { v: liProfile?.skills_count ?? 0, l: "skills on record" },
+      ...(postsRead ? [{ v: postsRead, l: "posts read" }] : []),
+      ...(liProfile?.followers ? [{ v: liProfile.followers, l: "following you" }] : []),
+      ...(liProfile?.skills_count ? [{ v: liProfile.skills_count, l: "skills on record" }] : []),
     ];
     // The read succeeded, so the firm, sector and level all come from it.
     // There is no separate page after this one.
@@ -1035,14 +1036,18 @@ const Onboarding = () => {
             ) : null}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 20, marginBlockStart: 20 }}>
-          {figures.map((f) => (
-            <div key={f.l}>
-              <div style={{ fontFamily: OB.mono, fontSize: 22, fontWeight: 600, color: OB.ink }}>{f.v}</div>
-              <div style={{ fontSize: 11.5, color: OB.muted, marginBlockStart: 4 }}>{f.l}</div>
-            </div>
-          ))}
-        </div>
+        {postsRead ? (
+          <div style={{ display: "flex", gap: 20, marginBlockStart: 20 }}>
+            {figures.map((f) => (
+              <div key={f.l}>
+                <div style={{ fontFamily: OB.mono, fontSize: 22, fontWeight: 600, color: OB.ink }}>{f.v}</div>
+                <div style={{ fontSize: 11.5, color: OB.muted, marginBlockStart: 4 }}>{f.l}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ ...bodyLight, marginBlockStart: 18 }}>{EMPTY_POSTS_LINE}</p>
+        )}
 
         <div style={{
           marginBlockStart: 20, padding: "13px 15px", borderRadius: RADIUS.card,
