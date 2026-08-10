@@ -30,21 +30,75 @@ serve(withObserve("brand-assessment", async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { answers, auditScores, sector } = await req.json();
+    const { answers, auditScores, sector, band } = await req.json();
+
+    // Read the member's own material so the report is written from it, not from answers alone.
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const uid = userData.user.id;
+
+    const [snapRes, fragRes, profRes] = await Promise.all([
+      admin.from("linkedin_profile_snapshots")
+        .select("headline, about, experience, skills, followers")
+        .eq("user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(1),
+      admin.from("evidence_fragments")
+        .select("title, content, confidence")
+        .eq("user_id", uid)
+        .order("confidence", { ascending: false })
+        .limit(12),
+      admin.from("diagnostic_profiles")
+        .select("seniority_band, sector_focus")
+        .eq("user_id", uid)
+        .maybeSingle(),
+    ]);
+
+    const snap: any = snapRes.data?.[0] ?? null;
+    const frags: any[] = fragRes.data ?? [];
+    const prof: any = profRes.data ?? {};
+    const resolvedSector = sector || prof.sector_focus || null;
+    const resolvedBand = band || prof.seniority_band || null;
+
+    const bandLine = resolvedBand === "room"
+      ? "They operate at board and owner level — write for someone who sets the agenda in the room."
+      : resolvedBand === "table"
+      ? "They sit at the executive table — write for someone who shapes decisions alongside peers."
+      : resolvedBand === "work"
+      ? "They lead the work itself — write for someone whose credibility comes from delivery."
+      : "";
+
+    const profileBlock = snap
+      ? `THEIR LINKEDIN PROFILE
+Headline: ${snap.headline ?? "Not on file"}
+About: ${typeof snap.about === "string" ? snap.about.slice(0, 2000) : "Not on file"}
+Followers: ${snap.followers ?? "Not on file"}
+Experience: ${JSON.stringify(snap.experience ?? []).slice(0, 3000)}
+Skills: ${JSON.stringify(snap.skills ?? []).slice(0, 1000)}`
+      : "THEIR LINKEDIN PROFILE\nNothing on file.";
+
+    const claimsBlock = frags.length
+      ? `WHAT THEY HAVE CAPTURED (their own claims, strongest first)
+${frags.map((f, i) => `${i + 1}. ${f.title}${f.content ? ` — ${String(f.content).slice(0, 400)}` : ""}`).join("\n")}`
+      : "WHAT THEY HAVE CAPTURED\nNothing captured yet.";
 
     // Build audit scores context for the AI
     const auditContext = typeof auditScores === "string"
       ? auditScores
       : `The user's Objective Evidence Audit scores are: ${JSON.stringify(auditScores, null, 2)}`;
 
-    const userPrompt = `User's sector: ${sector || "Not specified"}
+    const userPrompt = `User's sector: ${resolvedSector || "Not stated — infer it from the headline and captured claims and name it explicitly."}
+Their seniority: ${resolvedBand || "Not stated"}. ${bandLine}
+
+${profileBlock}
+
+${claimsBlock}
 
 ${auditContext}
 
 Here are the user's Brand Assessment answers:
 ${JSON.stringify(answers, null, 2)}
 
-Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the audit scores as factual evidence — do not ask the user for them.`;
+Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the audit scores as factual evidence — do not ask the user for them. Reference at least one of their own captured claims, by its substance, inside THE HONEST TRUTH section. Write for their seniority band. Never write a bracketed placeholder and never write the words "sector name".`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
