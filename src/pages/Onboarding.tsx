@@ -650,7 +650,16 @@ const Onboarding = () => {
       ...(claims.length ? [{ value: String(claims.length), label: "claims kept" }] : []),
       ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
     ];
-    setReveal(toRevealData(results, { figures, excludeSoft: (dims || []).map((d) => d.name) }));
+    setReveal(toRevealData(results, {
+      figures,
+      excludeSoft: (dims || []).map((d) => d.name),
+      sources: {
+        posts: postsRead ?? 0,
+        saved: claims.length,
+        answers: Object.keys(finalAnswers).length,
+        sliders: Object.keys(scores).length,
+      },
+    }));
     setRevealPending(false);
   };
 
@@ -672,6 +681,12 @@ const Onboarding = () => {
           ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
         ],
         excludeSoft: (dims || []).map((x) => x.name),
+        sources: {
+          posts: postsRead ?? 0,
+          saved: claims.length,
+          answers: Object.keys(answers).length,
+          sliders: Object.keys(scores).length,
+        },
       });
       if (d) setReveal(d);
     });
