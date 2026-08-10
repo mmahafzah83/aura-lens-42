@@ -357,7 +357,7 @@ export default function AuraCardPanel({
               role="status"
               style={{
                 border: `1px solid ${RULE}`,
-                background: "var(--surface-subtle)",
+                background: "#F2F5F9",
                 padding: "12px 14px",
                 marginBottom: 14,
                 display: "flex",
@@ -387,7 +387,7 @@ export default function AuraCardPanel({
               role="alert"
               style={{
                 border: `1px solid ${SPOT}`,
-                background: "var(--surface-subtle)",
+                background: "#F2F5F9",
                 padding: "12px 14px",
                 marginBottom: 14,
                 display: "flex",
