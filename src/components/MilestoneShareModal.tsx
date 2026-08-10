@@ -7,13 +7,19 @@ import { toast } from "sonner";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import LinkedInPostSteps from "@/components/LinkedInPostSteps";
 import {
-  EXPORT_GOLD,
   EXPORT_TAGLINE_EN,
   EXPORT_TAGLINE_AR,
-  EXPORT_AR_FONT,
   EXPORT_FOOTER_SIZE_BRAND,
   EXPORT_FOOTER_SIZE_TAGLINE,
 } from "@/lib/exportBrand";
+
+/** System-B "Signal" literals — the export iframe cannot read CSS variables. */
+const NIGHT = "#0F1519";
+const ACTION = "#0670C4";
+const ACCENT = "#E0A82E";
+const CARD_FONT = "Inter, system-ui, sans-serif";
+const MONO = "'IBM Plex Mono', ui-monospace, monospace";
+const AR_FONT = "'Cairo', Inter, sans-serif";
 
 export interface MilestoneShareData {
   /** Display name e.g. "Five Signals Achieved" */
