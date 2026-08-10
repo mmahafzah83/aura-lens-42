@@ -84,6 +84,11 @@ const chip = (bg: string, color: string): React.CSSProperties => ({
   lineHeight: 1.3,
 });
 
+const source = (line?: string) =>
+  line ? (
+    <p style={{ margin: "7px 0 0", fontSize: 11, lineHeight: 1.5, opacity: 0.72 }}>{line}</p>
+  ) : null;
+
 const RevealCard = forwardRef<
   HTMLDivElement,
   { data: RevealData; footer?: RevealFooter; forExport?: boolean }
@@ -114,6 +119,7 @@ const RevealCard = forwardRef<
     {data.marketRead ? (
       <p style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
     ) : null}
+    {source(data.provenance?.read)}
 
     {data.subjects.length > 0 && (
       <>
@@ -123,6 +129,7 @@ const RevealCard = forwardRef<
             <span key={s} style={chip("rgba(255,255,255,0.18)", "#FFFFFF")}>{s}</span>
           ))}
         </div>
+        {source(data.provenance?.subjects)}
       </>
     )}
 
@@ -134,6 +141,7 @@ const RevealCard = forwardRef<
             <span key={s} style={chip(OB.amber, OB.night)}>{s}</span>
           ))}
         </div>
+        {source(data.provenance?.softGround)}
       </>
     )}
 
