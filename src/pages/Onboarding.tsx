@@ -29,6 +29,8 @@ import ProgressBeads from "@/components/onboarding/ProgressBeads";
 import RevealCard, { type RevealData, shareRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
 import StatusRow from "@/components/onboarding/StatusRow";
 import Confetti from "@/components/onboarding/Confetti";
+import MethodNote from "@/components/onboarding/MethodNote";
+import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleBand } from "@/lib/seniorityTitles";
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
@@ -41,6 +43,7 @@ const BAND_LABEL: Record<Band, string> = {
   room: "C-suite & board",
 };
 
+/** Only a last-resort label when the member never picked a title. */
 const BAND_TO_LEVEL: Record<Band, string> = {
   work: "Manager",
   table: "Director",
@@ -55,6 +58,8 @@ const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
 ];
 
 const MANUAL_SCREEN = 15;
+/** A short dark panel that sits between screen 8 and the sliders. */
+const TRUST_SLIDERS_SCREEN = 8.5;
 
 const PAGE_CSS = `
 .obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};}
@@ -114,7 +119,7 @@ interface Dimension {
   name: string; why_line: string | null; anchor_low: string | null; anchor_high: string | null;
 }
 interface JourneyQuestion {
-  prompt: string; helper: string | null; kind: string;
+  prompt: string; helper: string | null; kind: string; max_choices: number | null;
   options: { label: string; value: string }[] | null;
 }
 interface Claim { title: string; content?: string | null; confidence?: number | null }
