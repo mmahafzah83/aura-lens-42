@@ -986,6 +986,8 @@ const Onboarding = () => {
       { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
     ].filter((r) => !r.drop);
     const allLanded = readDone && rows.every((r) => r.done);
+    // Never print a zero for posts or words — the absence is the message.
+    const nothingPublic = readDone && !postsRead && !ownWords;
     content = (
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading you.</h1>
@@ -994,6 +996,9 @@ const Onboarding = () => {
             <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
           ))}
         </div>
+        {nothingPublic ? (
+          <p style={{ ...bodyNight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE}</p>
+        ) : null}
         <button type="button" onClick={() => go(3)} disabled={!allLanded}
           style={{ ...btnPrimary, marginBlockStart: 24, opacity: allLanded ? 1 : 0.5 }}>
           {allLanded ? null : <Loader2 size={16} className="animate-spin" />}
