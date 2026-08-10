@@ -11,6 +11,7 @@ import { DeckIRSchema, type DeckIR } from "./deckIR.ts";
 import { checkInvariants, splitByTier } from "./invariants.ts";
 import { repairDeck } from "./repair.ts";
 import { compose } from "./compose.ts";
+import { isAdmin } from "../_shared/adminRole.ts";
 import {
   plan,
   writeSlides,

@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
+import { isAdmin } from "../_shared/adminRole.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
