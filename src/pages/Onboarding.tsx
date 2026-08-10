@@ -656,6 +656,8 @@ const Onboarding = () => {
           onboarding_completed: true,
           onboarding_step: 4,
           completed: true,
+          instrument_version: 2,
+          ...(band ? { answered_band: band } : {}),
         }, { onConflict: "user_id" });
       } catch (e) { console.warn("[journey] finish save failed", e); }
       try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
