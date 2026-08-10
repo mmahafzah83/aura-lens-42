@@ -13,6 +13,58 @@ export interface RevealData {
   figures: { value: string; label: string }[];
 }
 
+export interface RevealFooter {
+  /** How many of the member's own posts were read. */
+  posts: number;
+  /** How many things the member saved. */
+  saved: number;
+}
+
+/** The caption offered alongside the exported image. */
+export const suggestedCaption = (posts: number): string =>
+  `I let something read my last ${posts || "few"} posts and tell me how my work actually lands. ` +
+  `This is what came back. Curious what yours would say.`;
+
+/**
+ * Renders a mounted reveal card to an image and hands it to the member —
+ * the share sheet on mobile, a download plus a copied caption everywhere else.
+ */
+export async function shareRevealCard(
+  node: HTMLElement,
+  opts: { fileName?: string; format?: "png" | "jpeg"; caption?: string } = {},
+): Promise<"shared" | "downloaded"> {
+  const { toPng, toJpeg } = await import("html-to-image");
+  const rect = node.getBoundingClientRect();
+  const pixelRatio = rect.width > 0 ? 1200 / rect.width : 2;
+  const format = opts.format ?? "png";
+  const dataUrl = format === "jpeg"
+    ? await toJpeg(node, { pixelRatio, quality: 0.92, cacheBust: true })
+    : await toPng(node, { pixelRatio, cacheBust: true });
+
+  const blob = await (await fetch(dataUrl)).blob();
+  const fileName = opts.fileName ?? `my-read-from-aura.${format === "jpeg" ? "jpg" : "png"}`;
+  const file = new File([blob], fileName, { type: blob.type });
+
+  const canShare = (navigator as Navigator & { canShare?: (d: any) => boolean }).canShare;
+  if (navigator.share && canShare?.call(navigator, { files: [file] })) {
+    await navigator.share({ files: [file], text: opts.caption });
+    return "shared";
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  if (opts.caption) {
+    try { await navigator.clipboard.writeText(opts.caption); } catch { /* the member can retype it */ }
+  }
+  return "downloaded";
+}
+
 const chip = (bg: string, color: string): React.CSSProperties => ({
   display: "inline-block",
   padding: "6px 11px",
@@ -24,15 +76,21 @@ const chip = (bg: string, color: string): React.CSSProperties => ({
   lineHeight: 1.3,
 });
 
-const RevealCard = forwardRef<HTMLDivElement, { data: RevealData }>(({ data }, ref) => (
+const RevealCard = forwardRef<
+  HTMLDivElement,
+  { data: RevealData; footer?: RevealFooter; forExport?: boolean }
+>(({ data, footer, forExport = false }, ref) => (
   <div
     ref={ref}
     style={{
       background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
-      borderRadius: RADIUS.hero,
-      padding: "30px 24px 28px",
+      borderRadius: forExport ? 0 : RADIUS.hero,
+      padding: forExport ? "56px 44px 44px" : "30px 24px 28px",
       color: "#FFFFFF",
       fontFamily: OB.ui,
+      display: "flex",
+      flexDirection: "column",
+      ...(forExport ? { inlineSize: 600, minBlockSize: 750 } : null),
     }}
   >
     <p style={{
@@ -81,6 +139,24 @@ const RevealCard = forwardRef<HTMLDivElement, { data: RevealData }>(({ data }, r
         ))}
       </div>
     )}
+
+    {footer ? (
+      <div style={{
+        marginBlockStart: "auto", paddingBlockStart: 26,
+        borderBlockStart: "1px solid rgba(255,255,255,0.28)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <img src="/aura-mark.svg" alt="Aura" width={22} height={22} style={{ display: "block" }} />
+          <span style={{ fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em" }}>
+            Read by Aura · aura-intel.org
+          </span>
+        </div>
+        <p style={{ margin: "10px 0 0", fontSize: 11.5, lineHeight: 1.5, opacity: 0.85 }}>
+          A snapshot of how my work reads from the outside — built from {footer.posts} of my posts
+          and {footer.saved} things I saved.
+        </p>
+      </div>
+    ) : null}
   </div>
 ));
 

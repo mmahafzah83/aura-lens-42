@@ -33,23 +33,36 @@ function splitTail(raw: string): { prose: string; json: any | null } {
 
 export function toRevealData(
   results: Record<string, any> | null | undefined,
-  extras: { figures?: { value: string; label: string }[] } = {},
+  extras: {
+    figures?: { value: string; label: string }[];
+    /** Slider names for this member's band — never legitimate soft ground. */
+    excludeSoft?: string[];
+  } = {},
 ): RevealData | null {
   if (!results) return null;
   const archetype = stripMd(results.primary_archetype);
-  const marketRead = firstSentence(results.market_read || results.positioning_statement || results.interpretation || "");
+  let marketRead = firstSentence(results.market_read || results.positioning_statement || results.interpretation || "");
+  // The heading already says the archetype — never print it twice.
+  if (archetype) {
+    const echo = new RegExp(`^\\s*(you\\s+are\\s+)?(the\\s+)?${archetype.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*[.:—-]*\\s*`, "i");
+    marketRead = marketRead.replace(echo, "").trim();
+    if (marketRead.toLowerCase() === archetype.toLowerCase()) marketRead = "";
+  }
   const subjects: string[] = Array.isArray(results.content_pillars) && results.content_pillars.length
     ? results.content_pillars.map(stripMd)
     : (Array.isArray(results.topics) ? results.topics.map((t: any) => stripMd(t?.title)) : []);
-  const soft: string[] = Array.isArray(results.growth_areas) && results.growth_areas.length
-    ? results.growth_areas.map(stripMd)
-    : (Array.isArray(results.invest_next) ? results.invest_next.map((t: any) => stripMd(t?.area)) : []);
+  const rawSoft: string[] = Array.isArray(results.invest_next) && results.invest_next.length
+    ? results.invest_next.map((t: any) => stripMd(t?.area))
+    : (Array.isArray(results.growth_areas) ? results.growth_areas.map(stripMd) : []);
+  // Slider names are capability dimensions, not gaps — drop them entirely.
+  const banned = new Set((extras.excludeSoft || []).map((s) => stripMd(s).toLowerCase()));
+  const soft = rawSoft.filter((s) => s && !banned.has(s.toLowerCase()));
   if (!archetype && subjects.length === 0) return null;
   return {
     archetype: archetype || "Your read",
     marketRead,
     subjects: subjects.filter(Boolean).slice(0, 3),
-    softGround: soft.filter(Boolean).slice(0, 2),
+    softGround: soft.slice(0, 2),
     figures: extras.figures ?? [],
   };
 }
