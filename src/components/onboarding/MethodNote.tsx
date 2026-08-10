@@ -16,7 +16,7 @@ const MethodNote = ({ onNight = false }: { onNight?: boolean }) => (
     posts, the claims you saved, and your own answers. Built on a combination of established assessment and
     positioning methods: behavioural anchoring, the leadership-pipeline view of seniority, archetype method from
     brand work, and uncontested-space strategy. Aura is not affiliated with any of them. This is a professional
-    read, not a clinical or psychometric test.
+    read, not a clinical or psychological test.
   </p>
 );
 
