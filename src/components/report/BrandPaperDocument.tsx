@@ -491,7 +491,7 @@ function PaperChips({ label, items }: { label: string; items: string[] }) {
             style={{
               fontFamily: FONT.serif, fontSize: 13.5, color: T.ink,
               padding: "5px 10px", border: `1px solid ${T.rule}`, background: T.paper2,
-              lineHeight: 1.4, ...txt(t),
+              lineHeight: 1.4, maxWidth: 600, whiteSpace: "normal", ...txt(t),
             }}
           >
             {t}
@@ -529,7 +529,8 @@ function VoiceSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number
           The voice the market already hears from you, the ground you hold, and
           the parts worth strengthening next.
         </p>
-        <ProsePair label="How you sound" parts={[bp.voice_signature, bp.natural_tone]} />
+        {/* natural_tone is the cover's lede — saying it twice reads as padding. */}
+        <ProsePair label="How you sound" parts={[bp.voice_signature]} />
         <ProsePair label="How you build trust" parts={[bp.trust_pattern, bp.authority_style]} />
         <ProsePair label="Where you are strongest" parts={[bp.zone_of_genius]} />
         <PaperChips label="Your content pillars" items={bp.content_pillars} />
@@ -547,6 +548,16 @@ function ClosingSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: numb
   const parts = archetype.trim().split(/\s+/);
   const tail = parts.pop() || "";
   const head = parts.join(" ");
+  const firstTopic = bp.topics[0]?.title || bp.content_pillars[0] || "";
+  const ninety = bp.invest_next[1]?.insight
+    || (bp.key_barrier ? `Decide: ${bp.key_barrier}` : "");
+  const moves = [
+    firstTopic ? { horizon: "30d", text: `Publish once from "${firstTopic}"` } : null,
+    (bp.invest_next[0]?.insight || bp.uncontested_space)
+      ? { horizon: "60d", text: bp.invest_next[0]?.insight || bp.uncontested_space || "" } : null,
+    ninety ? { horizon: "90d", text: ninety } : null,
+  ].filter((m): m is { horizon: string; text: string } => !!m)
+    .map((m) => ({ horizon: m.horizon, text: capAtSentence(m.text, 180) }));
   const closingData: ReportData = {
     generated_at: bp.generated_at,
     user_id: "",
@@ -573,6 +584,9 @@ function ClosingSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: numb
           </>
         }
         body={bp.positioning_statement || undefined}
+        moves={moves.length ? moves : undefined}
+        paperTitle={PAPER_TITLE}
+        pageLine={`Page ${String(n).padStart(2, "0")} / ${String(total).padStart(2, "0")}`}
         ctaLabel="Find your position ↗"
       />
     </Sheet>
@@ -593,8 +607,8 @@ export default function BrandPaperDocument({
   return (
     <div style={{ background: T.paper2, padding: "24px 0" }}>
       <CoverSheet bp={paper} total={total} />
-      <FindingsSheet bp={paper} total={total} />
-      <SpaceSheet bp={paper} total={total} />
+      <FindingsSheet bp={paper} total={total} showGap={gapOnSheet2} />
+      <SpaceSheet bp={paper} total={total} showGap={!gapOnSheet2} />
       {hasVoice ? <VoiceSheet bp={paper} n={4} total={total} /> : null}
       {showClosing ? <ClosingSheet bp={paper} n={total} total={total} /> : null}
     </div>
