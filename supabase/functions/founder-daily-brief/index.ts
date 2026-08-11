@@ -4,6 +4,10 @@
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { primaryAdminId } from "../_shared/adminRole.ts";
+import {
+  renderEmail, stat as statLine,
+  CANVAS, BORDER, INK as SHELL_INK, INK_SOFT, INK_FAINT, BODY as SANS, MONO as SHELL_MONO,
+} from "../_shared/emailTemplate.ts";
 
 
 const corsHeaders = {
@@ -12,18 +16,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-// ---------- palette / type ----------
-const PAPER = "#F1ECE1";
-const CARD = "#FBF8F1";
-const INK = "#1B1712";
-const RULE = "#E2DACB";
-const MUTED = "#6B6255";
-const TEAL = "#36C5B0";
-const AMBER = "#D6A748";
-const DAMBER = "#B5762A";
-const OX = "#6E2A26";
-const SERIF = "Georgia,'Times New Roman',serif";
-const MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
+// ---------- palette / type (all from the shared shell) ----------
+const CARD = CANVAS;
+const INK = SHELL_INK;
+const RULE = BORDER;
+const MUTED = INK_SOFT;
+const TEAL = "#12805C";
+const AMBER = "#9A6F12";
+const DAMBER = "#8A5A12";
+const OX = "#C0392B";
+const SERIF = SANS;
+const MONO = SHELL_MONO;
 
 // Never use array.length for a displayed number.
 const size = (a: unknown[] | null | undefined): number =>
