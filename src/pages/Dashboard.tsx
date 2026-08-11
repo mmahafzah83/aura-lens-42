@@ -490,7 +490,7 @@ const Dashboard = () => {
         } catch {}
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed, onboarding_completed, onboarding_step, first_name, firm, level, sector_focus, avatar_url, identity_intelligence")
+          .select("completed, onboarding_completed, onboarding_step, first_name, firm, level, sector_focus, seniority_band, last_visit_at, avatar_url, identity_intelligence")
           .eq("user_id", uid)
           .maybeSingle();
 
@@ -502,6 +502,20 @@ const Dashboard = () => {
             firstName: (profile as any).first_name ?? null,
             avatarUrl: (profile as any).avatar_url ?? null,
           }));
+          setProfileSector((profile as any).sector_focus ?? null);
+          setProfileBand((profile as any).seniority_band ?? null);
+          const lastVisit = (profile as any).last_visit_at ?? null;
+          setProfileLastVisit(lastVisit);
+          // The home-address function reads last_visit_at for days_since_last_visit;
+          // nothing else writes it. Refresh at most every 30 minutes.
+          const stale = !lastVisit || (Date.now() - new Date(lastVisit).getTime()) > 30 * 60 * 1000;
+          if (stale) {
+            void supabase
+              .from("diagnostic_profiles" as any)
+              .update({ last_visit_at: new Date().toISOString() } as any)
+              .eq("user_id", uid)
+              .then(({ error }: any) => { if (error) console.warn("last_visit_at write failed", error); });
+          }
         }
 
         // Onboarding must fully complete (onboarding_step >= 4, set at the ceremony)
@@ -537,24 +551,6 @@ const Dashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  const fetchEntries = async () => {
-    const { data } = await supabase
-      .from("entries")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (data) setEntries(data);
-  };
-
-  useEffect(() => {
-    fetchEntries();
-    const channel = supabase
-      .channel('entries-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries' }, () => fetchEntries())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
 
   const handleLogout = async () => {
     await signOutAndLand(navigate);
