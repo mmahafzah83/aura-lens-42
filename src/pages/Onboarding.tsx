@@ -1634,7 +1634,7 @@ const Onboarding = () => {
         <PaperShell bead={4} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
-          <button type="button" onClick={() => void loadQuestions()} style={{ ...btnPrimary, marginBlockStart: 20 }}>Try again</button>
+          <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadQuestions()}>Try again</OBButton></Actions>
         </PaperShell>
       );
     } else {
@@ -1658,6 +1658,14 @@ const Onboarding = () => {
       const opts = q.randomise ? shuffled(q.options || [], qIdx + 1) : (q.options || []);
       const proposedReady = q.kind === "proposed" && !!proposals && proposals.length > 0;
       const proposedFallback = q.kind === "proposed" && (proposalsDead || (proposals !== null && proposals.length === 0));
+      /* "None of these fit" belongs to a list of options, never to an open box. */
+      const showNone = !!q.allow_none && (q.kind === "choice" || q.kind === "multi");
+      /* The cap is printed once, above the options — so a helper that repeats it is dropped. */
+      const helperText = q.helper && !/pick up to/i.test(q.helper) ? q.helper : null;
+      /* A suggestion built from what Aura already read. Never submitted. */
+      const phList = smartPlaceholders(facts, sector || null, String(liProfile?.headline || "") || null);
+      const placeholder = phList[phIdx % phList.length];
+      const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
       const optionButton = (label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
         <button key={label} type="button" disabled={blocked} onClick={onClick} style={{
@@ -1683,7 +1691,7 @@ const Onboarding = () => {
             <p style={{ margin: "6px 0 0", fontSize: 12, color: OB.muted }}>Saved as you go — you can stop any time.</p>
           ) : null}
           <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{q.prompt}</h1>
-          {q.helper ? <p style={bodyLight}>{q.helper}</p> : null}
+          {helperText ? <p style={bodyLight}>{helperText}</p> : null}
           {q.why_asked ? (
             <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted }}>
               <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", marginInlineEnd: 7 }}>Why this</span>
@@ -1706,9 +1714,9 @@ const Onboarding = () => {
                   !multiPicked.includes(o.label) && atCap,
                 ))}
               </div>
-              <button type="button" disabled={multiPicked.length === 0}
-                onClick={() => advance(multiPicked.join(" · "))}
-                style={{ ...btnPrimary, marginBlockStart: 16, opacity: multiPicked.length ? 1 : 0.5 }}>Next</button>
+              <Actions style={{ marginBlockStart: 16 }}>
+                <OBButton disabled={multiPicked.length === 0} onClick={() => advance(multiPicked.join(" · "))}>Next</OBButton>
+              </Actions>
             </>
           ) : q.kind === "proposed" ? (
             proposedReady ? (
@@ -1734,10 +1742,12 @@ const Onboarding = () => {
                 </p>
                 <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
                   aria-label={q.prompt}
+                  onFocus={rotatePlaceholder}
                   onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
-                  placeholder="One line, your words" style={{ ...fieldStyle, marginBlockStart: 12 }} />
-                <button type="button" disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}
-                  style={{ ...btnPrimary, marginBlockStart: 16, opacity: textAnswer.trim() ? 1 : 0.5 }}>Next</button>
+                  placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
+                <Actions style={{ marginBlockStart: 16 }}>
+                  <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                </Actions>
               </>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted, marginBlockStart: 20 }}>
@@ -1748,20 +1758,22 @@ const Onboarding = () => {
             <>
               <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
                 aria-label={q.prompt}
+                onFocus={rotatePlaceholder}
                 onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
-                placeholder="One line, your words" style={{ ...fieldStyle, marginBlockStart: 20 }} />
-              <button type="button" disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}
-                style={{ ...btnPrimary, marginBlockStart: 16, opacity: textAnswer.trim() ? 1 : 0.5 }}>Next</button>
+                placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
+              <Actions style={{ marginBlockStart: 16 }}>
+                <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+              </Actions>
             </>
           )}
 
-          {q.allow_none ? (
-            <button type="button" onClick={() => advance("None of these fit")} style={btnGhostLight}>
-              None of these fit
-            </button>
-          ) : null}
-          {qIdx > 0 ? (
-            <button type="button" onClick={back} style={btnGhostLight}>Back</button>
+          {showNone || qIdx > 0 ? (
+            <Actions style={{ marginBlockStart: 12 }}>
+              {showNone ? (
+                <OBButton variant="tertiary" onClick={() => advance("None of these fit")}>None of these fit</OBButton>
+              ) : null}
+              {qIdx > 0 ? <OBButton variant="tertiary" onClick={back}>Back</OBButton> : null}
+            </Actions>
           ) : null}
         </PaperShell>
       );
