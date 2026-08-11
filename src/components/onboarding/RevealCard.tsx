@@ -8,6 +8,8 @@ import { OB, RADIUS } from "./tokens";
 export interface RevealData {
   archetype: string;
   marketRead: string;
+  /** The second read — a supporting archetype, when one was found. */
+  secondaryRead?: string;
   /** The gap between how they describe themselves and what their writing shows. */
   theGap?: string;
   /** One verbatim sentence from one of their own posts. */
