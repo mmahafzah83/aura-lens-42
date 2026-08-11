@@ -44,6 +44,9 @@ import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyHeader from "@/components/onboarding/JourneyHeader";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
+import BrandPaperDocument from "@/components/report/BrandPaperDocument";
+import { buildBrandPaper, type BrandPaper } from "@/lib/buildBrandPaper";
+import { exportReportPdf } from "@/lib/exportReportPdf";
 import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
@@ -327,6 +330,9 @@ const Onboarding = () => {
   const [phIdx, setPhIdx] = useState(0);
   const [sharing, setSharing] = useState(false);
   const shareRef = useRef<HTMLDivElement | null>(null);
+  const paperMountRef = useRef<HTMLDivElement | null>(null);
+  const [readRaw, setReadRaw] = useState<Record<string, any> | null>(null);
+  const [buildingReport, setBuildingReport] = useState(false);
   /* posting to LinkedIn — offered only where it can actually work */
   const [canPostToLinkedIn, setCanPostToLinkedIn] = useState(false);
   const [captionDraft, setCaptionDraft] = useState("");
@@ -809,6 +815,7 @@ const Onboarding = () => {
   useEffect(() => {
     if (screen !== 13 || reveal || !userId) return;
     loadMarketRead(userId).then((r) => {
+      if (r) setReadRaw(r);
       const d = toRevealData(r, {
         figures: [
           ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
@@ -2160,6 +2167,34 @@ const Onboarding = () => {
       }
     };
 
+    const brandPaper: BrandPaper | null = (() => {
+      if (!readRaw) return null;
+      try {
+        const p = buildBrandPaper(readRaw, { first_name: firstName.trim() || null });
+        return p && (p.positioning_statement || p.market_read || p.topics.length) ? p : null;
+      } catch (e) {
+        console.error("[reveal] brand paper build failed", e);
+        return null;
+      }
+    })();
+
+    const downloadFullReport = async () => {
+      if (!paperMountRef.current) return;
+      setBuildingReport(true);
+      try {
+        const slug = (firstName.trim() || "profile").toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "profile";
+        const date = new Date().toISOString().slice(0, 10);
+        await exportReportPdf(paperMountRef.current, `aura-position-${slug}-${date}.pdf`);
+        toast.success("Report downloaded.");
+      } catch (err) {
+        console.error("[reveal] report export failed", err);
+        toast.error("Couldn't build the report just now — it's waiting for you inside Aura.");
+      } finally {
+        setBuildingReport(false);
+      }
+    };
+
     const saveReadForLater = async () => {
       if (!userId) return;
       setSavingDraft(true);
@@ -2198,6 +2233,14 @@ const Onboarding = () => {
           {reveal ? (
             <div style={{ position: "fixed", insetInlineStart: -10000, insetBlockStart: 0, pointerEvents: "none" }} aria-hidden>
               <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+            </div>
+          ) : null}
+          {reveal && brandPaper ? (
+            <div ref={paperMountRef} aria-hidden style={{
+              position: "fixed", insetInlineStart: -10000, insetBlockStart: 0,
+              inlineSize: 794, pointerEvents: "none", zIndex: -1,
+            }}>
+              <BrandPaperDocument paper={brandPaper} />
             </div>
           ) : null}
           {canPostToLinkedIn && !postedUrl && reveal ? (
@@ -2239,12 +2282,21 @@ const Onboarding = () => {
               ? { borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }
               : { background: "#FFFFFF", color: OB.blue }}
           >Download the image</OBButton>
+          {reveal && brandPaper ? (
+            <OBButton variant="secondary" loading={buildingReport} loadingLabel="Building your report…"
+              onClick={() => void downloadFullReport()}
+              style={{ borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }}
+            >Download the full report</OBButton>
+          ) : null}
           <OBButton variant="tertiary" disabled={savingDraft} onClick={() => void saveReadForLater()}
             style={{ color: "#FFFFFF" }}>Save it for later</OBButton>
           <OBButton variant="tertiary" onClick={() => go(14)}
             style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
           </Actions>
-          <p style={{ margin: "14px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
+          <p style={{ margin: "12px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.72)", textAlign: "center" }}>
+            The image is for sharing. The report is the full read — yours to keep.
+          </p>
+          <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
             Free while Aura is in beta. Your read is private — only you can see it unless you share it.
           </p>
           <div style={{ color: "rgba(255,255,255,.82)" }}>
