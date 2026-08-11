@@ -1204,6 +1204,7 @@ const Onboarding = () => {
                 Read my profile
               </OBButton>
               <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(0)}>Back</OBButton>
             </Actions>
             <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
               Aura reads your profile and your public posts. You get drafts in your own words instead of generic ones.
@@ -1224,6 +1225,10 @@ const Onboarding = () => {
             {nothingPublic ? (
               <p style={{ ...bodyLight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE}</p>
             ) : null}
+            {/* Nothing after this depends on the read being back. */}
+            <Actions style={{ marginBlockStart: 20 }}>
+              <OBButton variant="tertiary" onClick={() => go(4)}>Carry on while it reads</OBButton>
+            </Actions>
           </div>
         ) : null}
 
@@ -1444,7 +1449,7 @@ const Onboarding = () => {
 
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton onClick={() => go(4)}>Continue</OBButton>
-              <OBButton variant="tertiary" onClick={() => go(4)}>Skip this for now</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(4)}>I'll do that later</OBButton>
             </Actions>
           </>
         ) : null}
