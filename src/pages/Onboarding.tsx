@@ -296,6 +296,8 @@ const Onboarding = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [textAnswer, setTextAnswer] = useState("");
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
+  /* One rule for every question: select, see it selected, then Next. */
+  const [singlePicked, setSinglePicked] = useState<string | null>(null);
   const [proposals, setProposals] = useState<{ label: string; why: string }[] | null>(null);
   const [proposalsDead, setProposalsDead] = useState(false);
 
