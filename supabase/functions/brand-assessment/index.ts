@@ -36,7 +36,7 @@ serve(withObserve("brand-assessment", async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const uid = userData.user.id;
 
-    const [snapRes, fragRes, profRes, postRes] = await Promise.all([
+    const [snapRes, fragRes, profRes, postRes, allPostsRes] = await Promise.all([
       admin.from("linkedin_profile_snapshots")
         .select("headline, about, experience, skills, followers, connections, location, education, certifications, languages, raw")
         .eq("user_id", uid)
@@ -56,6 +56,10 @@ serve(withObserve("brand-assessment", async (req) => {
         .eq("user_id", uid)
         .order("like_count", { ascending: false, nullsFirst: false })
         .limit(15),
+      admin.from("linkedin_posts")
+        .select("post_text, like_count, published_at, acquisition")
+        .eq("user_id", uid)
+        .limit(500),
     ]);
 
     const snap: any = snapRes.data?.[0] ?? null;
@@ -64,6 +68,78 @@ serve(withObserve("brand-assessment", async (req) => {
     const posts: any[] = (postRes.data ?? []).filter((p: any) => String(p?.post_text || "").trim());
     const resolvedSector = sector || prof.sector_focus || null;
     const resolvedBand = band || prof.seniority_band || null;
+
+    // The member's slider results, named — so the model can say what they rated
+    // themselves highest on rather than quoting a number.
+    const dimRes = resolvedBand
+      ? await admin.from("capability_dimensions")
+          .select("name, why_line, sector, position")
+          .eq("band", resolvedBand)
+          .eq("active", true)
+      : { data: [] as any[] };
+    const dims: any[] = (dimRes as any).data ?? [];
+    const scoreMap: Record<string, number> = (auditScores && typeof auditScores === "object")
+      ? auditScores as Record<string, number>
+      : {};
+    const namedScores = Object.entries(scoreMap)
+      .filter(([, v]) => typeof v === "number")
+      .map(([k, v]) => {
+        const d = dims.find((x) => String(x.name).toLowerCase() === k.toLowerCase());
+        return { name: d?.name ?? k, why: d?.why_line ?? null, value: v as number };
+      })
+      .sort((a, b) => b.value - a.value);
+    const namedScoresBlock = namedScores.length
+      ? `THEIR OWN RATINGS, WITH THE NAME OF WHAT THEY RATED (highest first)
+${namedScores.map((s) => `- ${s.name}: ${s.value}${s.why ? ` — ${s.why}` : ""}`).join("\n")}
+Always refer to these by name, never as "dimension 5" or a bare number.`
+      : "THEIR OWN RATINGS\nNone on file.";
+
+    // ── WHAT THEIR OWN WRITING SHOWS — computed, never estimated ──
+    const allPosts: any[] = ((allPostsRes as any).data ?? []).filter((p: any) => String(p?.post_text || "").trim());
+    let writingBlock: string;
+    if (allPosts.length < 5) {
+      writingBlock = `WHAT THEIR OWN WRITING SHOWS
+NOT ENOUGH PUBLIC WRITING TO MEASURE`;
+    } else {
+      const lines: string[] = [];
+      const words = allPosts.reduce((n, p) => n + String(p.post_text).trim().split(/\s+/).length, 0);
+      lines.push(`- Posts with text: ${allPosts.length}; total words written: ${words}`);
+      const withDigit = allPosts.filter((p) => /\d/.test(String(p.post_text))).length;
+      lines.push(`- Posts containing a digit: ${Math.round((withDigit / allPosts.length) * 100)}%`);
+
+      const likes = allPosts.map((p) => Number(p.like_count) || 0);
+      const avg = likes.reduce((a, b) => a + b, 0) / likes.length;
+      const best = Math.max(...likes);
+      if (avg > 0 && best / avg >= 1.5) {
+        lines.push(`- Their best post drew ${(best / avg).toFixed(1)}× the reactions of their average post (${best} vs an average of ${avg.toFixed(1)})`);
+      }
+
+      const own = allPosts.filter((p) => String(p.acquisition ?? "") !== "reshare").length;
+      lines.push(`- Their own words: ${own} posts; reshares: ${allPosts.length - own} posts`);
+
+      const months: Record<string, number> = {};
+      for (const p of allPosts) {
+        const d = p.published_at ? String(p.published_at).slice(0, 7) : null;
+        if (d) months[d] = (months[d] ?? 0) + 1;
+      }
+      const peak = Object.entries(months).sort((a, b) => b[1] - a[1])[0];
+      if (peak) {
+        const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+        const recent = allPosts.filter((p) => p.published_at && new Date(p.published_at).getTime() >= cutoff).length;
+        lines.push(`- Busiest month: ${peak[0]} with ${peak[1]} posts. In the last 90 days: ${recent} posts.`);
+      }
+
+      const top3 = [...allPosts].sort((a, b) => (Number(b.like_count) || 0) - (Number(a.like_count) || 0)).slice(0, 3);
+      const top3Block = top3.map((p, i) =>
+        `${i + 1}. [${Number(p.like_count) || 0} reactions] ${String(p.post_text).replace(/\s+/g, " ").slice(0, 600)}`).join("\n");
+
+      writingBlock = `WHAT THEIR OWN WRITING SHOWS
+These figures are computed from their real posts. Treat them as fact. If a figure is absent, it could not be computed — do not invent it.
+${lines.join("\n")}
+
+Their three highest-liked posts, in full (truncated at 600 characters):
+${top3Block}`;
+    }
 
     const bandLine = resolvedBand === "room"
       ? "They operate at board and owner level — write for someone who sets the agenda in the room."
@@ -156,6 +232,10 @@ ${claimsBlock}
 ${postsBlock}
 
 ${selfClaimBlock}
+
+${writingBlock}
+
+${namedScoresBlock}
 
 ${auditContext}
 
