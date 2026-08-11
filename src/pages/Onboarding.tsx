@@ -2285,8 +2285,14 @@ const Onboarding = () => {
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>
                 Aura is still writing your read. It'll be on your Home the moment it's done.
               </p>
+              <Actions style={{ marginBlockStart: 20 }}>
+                <OBButton onClick={() => go(14)}
+                  style={{ background: "#FFFFFF", color: OB.blue }}>Take me in</OBButton>
+              </Actions>
             </div>
           )}
+          {reveal ? (
+          <>
           {/* the same card, laid out for the exported image */}
           {reveal ? (
             <div style={{ position: "fixed", insetInlineStart: -10000, insetBlockStart: 0, pointerEvents: "none" }} aria-hidden>
@@ -2321,13 +2327,17 @@ const Onboarding = () => {
             </div>
           ) : null}
           <Actions style={{ marginBlockStart: 20 }}>
-          <OBButton disabled={!reveal || !brandPaper || busy} loading={buildingReport} loadingLabel="Building your read…"
-            onClick={() => void downloadFullReport()}
-            style={{ background: "#FFFFFF", color: OB.blue }}>Keep the full read</OBButton>
-          <p style={{
-            margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
-            color: "rgba(255,255,255,.80)", textAlign: "center",
-          }}>The full read includes the gap. The card doesn't.</p>
+          {brandPaper ? (
+            <>
+              <OBButton disabled={busy} loading={buildingReport} loadingLabel="Building your read…"
+                onClick={() => void downloadFullReport()}
+                style={{ background: "#FFFFFF", color: OB.blue }}>Keep the full read</OBButton>
+              <p style={{
+                margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
+                color: "rgba(255,255,255,.80)", textAlign: "center",
+              }}>The full read includes the gap. The card doesn't.</p>
+            </>
+          ) : null}
           {postedUrl ? (
             <a href={postedUrl} target="_blank" rel="noopener noreferrer" style={{
               display: "block", textAlign: "center", color: "#FFFFFF", fontSize: 14,
@@ -2370,6 +2380,8 @@ const Onboarding = () => {
             This is a read, not a verdict. <ReadCorrection userId={userId} onNight inline /> ·{" "}
             <MethodNote onNight inline />
           </p>
+          </>
+          ) : null}
         </div>
       </div>
     );

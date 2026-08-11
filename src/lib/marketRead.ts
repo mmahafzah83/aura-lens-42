@@ -131,7 +131,8 @@ export async function loadMarketRead(userId: string): Promise<Record<string, any
     .eq("user_id", userId)
     .maybeSingle();
   const r = (data as any)?.brand_assessment_results;
-  return r && typeof r === "object" ? r : null;
+  // The column defaults to '{}'::jsonb — an empty object means "nothing written yet".
+  return r && typeof r === "object" && Object.keys(r).length ? r : null;
 }
 
 /** Save the six answers immediately, so a failed generation never loses them. */
@@ -174,7 +175,10 @@ export async function generateMarketRead(
     });
     if (error) throw error;
     const interpretation = (data as any)?.interpretation;
-    if (!interpretation) return null;
+    if (!interpretation) {
+      console.error("[marketRead] brand-assessment returned no interpretation", data);
+      return null;
+    }
 
     const { prose, json } = splitTail(String(interpretation));
     const results: Record<string, any> = { ...(json && typeof json === "object" ? json : {}), interpretation: prose || interpretation };
@@ -190,7 +194,7 @@ export async function generateMarketRead(
 
     return results;
   } catch (e) {
-    console.warn("[marketRead] generation failed", e);
+    console.error("[marketRead] generation failed", e);
     return null;
   }
 }
