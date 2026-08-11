@@ -30,6 +30,7 @@ import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import { useOnboardingGate } from "@/hooks/useOnboardingGate";
 import HomeSpine from "@/components/home/HomeSpine";
+import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
 import LinkedInNudge from "@/components/home/LinkedInNudge";
 import AuraRail from "@/components/rail/AuraRail";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
@@ -488,7 +489,7 @@ const Dashboard = () => {
         } catch {}
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed, onboarding_completed, onboarding_step, first_name, firm, level, sector_focus, avatar_url")
+          .select("completed, onboarding_completed, onboarding_step, first_name, firm, level, sector_focus, avatar_url, identity_intelligence")
           .eq("user_id", uid)
           .maybeSingle();
 
@@ -514,7 +515,12 @@ const Dashboard = () => {
           complete: isProfileComplete(profile),
           onboardingDone,
         });
-        if (!isProfileComplete(profile) || !onboardingDone) {
+        // A member who chose "Finish later" is not bounced back — Home catches
+        // them with the resume card instead of a trapdoor.
+        const paused = Boolean(
+          ((profile as any)?.identity_intelligence as Record<string, any> | null)?.journey_paused,
+        );
+        if ((!isProfileComplete(profile) || !onboardingDone) && !paused) {
           navigate("/onboarding", { replace: true });
           return;
         }
@@ -973,6 +979,7 @@ const Dashboard = () => {
           <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={activeTab === "authority" ? undefined : { minHeight: "60vh" }}>
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
+                <ResumeJourneyCard userId={userId} />
                 <LinkedInNudge userId={userId} />
                 <FirstLoginWelcome
                   firstName={user?.firstName ?? null}
