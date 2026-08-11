@@ -189,7 +189,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
       >
         {STEP_LABELS.map((label, idx) => {
           const st = stepStates[idx];
-          const labelColor = st === "done" ? "var(--success)" : st === "current" ? "var(--act)" : "var(--text-muted)";
+          const labelColor = st === "done" ? "var(--success-text)" : st === "current" ? "var(--act)" : "var(--text-muted)";
           const isLast = idx === STEP_LABELS.length - 1;
           return (
             <li
