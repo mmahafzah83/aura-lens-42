@@ -999,6 +999,7 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <HomeSpine
                     userId={userId}
+                    guidedActive={firstFlight.active}
                     onSwitchTab={(t) => switchTab(t as TabValue)}
                     onOpenDraft={(d) => { setDraftPrefill(d as any); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                     onStartSignalPost={(p) => {
