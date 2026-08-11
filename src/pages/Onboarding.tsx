@@ -604,6 +604,7 @@ const Onboarding = () => {
   const submitLink = () => {
     const v = linkInput.trim();
     if (!v) return;
+    if (sendingLinkRef.current) return;
     if (!/^https?:\/\/\S+\.\S+/i.test(v)) {
       setLinkError("That needs to be a web link, starting with https://");
       return;
@@ -615,16 +616,21 @@ const Onboarding = () => {
   const sendLink = async (url: string, meta?: { title?: string; summary?: string }) => {
     const v = url.trim();
     if (!v) return;
+    if (sendingLinkRef.current) return;
+    sendingLinkRef.current = true;
+    setSendingLink(true);
     const startIso = new Date(Date.now() - 10000).toISOString();
     setReadStep(0);
+    setLinkFailed(false);
     go(6);
+    let sent = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const ctrl = new AbortController();
         const to = window.setTimeout(() => ctrl.abort(), 25000);
         try {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
             body: JSON.stringify({
@@ -633,9 +639,17 @@ const Onboarding = () => {
             }),
             signal: ctrl.signal,
           });
+          sent = res.ok;
         } finally { window.clearTimeout(to); }
       }
-    } catch { /* a slow read never blocks the journey */ }
+    } catch { sent = false; /* aborted or offline — nothing was written */ }
+    sendingLinkRef.current = false;
+    setSendingLink(false);
+    if (!sent) {
+      /* nothing will ever land — don't make them watch a 120s ceiling for it */
+      setLinkFailed(true);
+      return;
+    }
     setReadStep(1);
     setCaptureSince(startIso);
     setWatching(true);
