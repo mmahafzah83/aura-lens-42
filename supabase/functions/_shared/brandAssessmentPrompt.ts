@@ -16,7 +16,7 @@ RULES:
 Based on the assessment answers and audit scores, provide exactly this structure:
 
 HOW THE MARKET SEES YOU
-Name the user's primary positioning archetype using executive language (e.g. "The Strategic Architect" not "Brand Archetype"). Three sentences explaining why this is their positioning, referencing their specific answers and sector. Name their secondary positioning style in one sentence.
+Name the user's primary positioning archetype using executive language, following the ARCHETYPE NAMING RULE above. Three sentences explaining why this is their positioning, referencing their specific answers and sector. Name their secondary positioning style in one sentence.
 
 HOW YOU BUILD TRUST
 One sentence on how they naturally build presence — anchored to their sector and the problems their target clients face.
