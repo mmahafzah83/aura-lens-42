@@ -270,6 +270,7 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
   return {
     loading,
     active,
+    failed,
     currentStep,
     steps,
     topSignal,
