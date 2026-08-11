@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { canonicalHandle, profileUrlFor, saveLinkedInAddress } from "@/lib/linkedinAddress";
-import { loadReadStatus, markVerifiedByRead, type LinkedInReadStatus } from "@/lib/linkedinReadStatus";
+import { markVerifiedByRead } from "@/lib/linkedinReadStatus";
+import { loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
 
 /* System-B tokens */
 const ACTION = "#0670C4";
@@ -33,7 +34,7 @@ interface ReadResult {
 }
 
 export default function YourLinkedInCard({ userId }: { userId: string | null }) {
-  const [status, setStatus] = useState<LinkedInReadStatus | null>(null);
+  const [state, setState] = useState<LinkedInState | null>(null);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +44,11 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
   useEffect(() => {
     if (!userId) return;
     let alive = true;
-    void loadReadStatus(userId).then((s) => { if (alive) setStatus(s); });
+    void loadLinkedInState(userId).then((s) => {
+      if (!alive) return;
+      setState(s);
+      if (s.address) setValue(s.address);
+    });
     return () => { alive = false; };
   }, [userId]);
 
@@ -82,7 +87,7 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
         photo: p.photo_url ?? null,
         posts,
       });
-      setStatus("verified_by_read");
+      setState((s) => ({ ...(s ?? { connected: false, handle: null, address: null, canPost: false, lastSyncedAt: null }), handle, address: profile_url, confirmedByRead: true }));
       setExpanded(false);
     } catch {
       setError(READ_ERROR);
@@ -91,7 +96,8 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
     }
   };
 
-  if (!userId || status === null) return null;
+  if (!userId || state === null) return null;
+  const confirmed = state.confirmedByRead;
 
   const shell: React.CSSProperties = {
     background: CARD,
@@ -133,7 +139,7 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
   }
 
   /* Already confirmed — one quiet line. */
-  if (status === "verified_by_read" && !expanded) {
+  if (confirmed && !expanded) {
     return (
       <div
         style={{ ...shell, padding: "12px 16px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 13.5 }}
@@ -157,7 +163,9 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
       <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, marginTop: 8, marginBottom: 14 }}>
         Aura reads what's already public on your profile — your headline and your recent posts —
         so that what it writes sounds like you and not like anyone else.
-        {status !== "verified_by_read" && " We don't have a confirmed address for you yet."}
+        {!confirmed && (state.address
+          ? ` We have ${state.address.replace(/^https?:\/\/(www\.)?/, "")} on file, but Aura hasn't read it yet.`
+          : " We don't have an address for you yet.")}
       </p>
 
       <label htmlFor="linkedin-address" style={{ display: "block", fontSize: 12.5, color: MUTED, marginBottom: 6 }}>
