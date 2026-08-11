@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
 import { toast } from "sonner";
 import { Pencil, Check, X, RefreshCw, Loader2, Calendar, ArrowRight } from "lucide-react";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
@@ -83,9 +84,8 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
     const updateObj: any = {};
     const dbField = field === "industry" ? "sector_focus" : field === "career_target" ? "north_star_goal" : field === "role" ? "level" : field;
     updateObj[dbField] = value;
-    const { error } = await (supabase.from("diagnostic_profiles") as any)
-      .update(updateObj).eq("user_id", user.id);
-    if (error) { toast.error("Couldn't save"); }
+    const ok = await writeProfile(user.id, updateObj, "OnboardingProfileSection.saveField");
+    if (!ok) { toast.error("That didn't save — try once more."); }
     else {
       toast.success("Profile updated.");
       await loadProfile();
@@ -219,16 +219,15 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); return; }
-    const { error } = await (supabase.from("diagnostic_profiles") as any)
-      .update({
-        first_name: fullEditData.first_name,
-        level: fullEditData.level,
-        primary_strength: fullEditData.primary_strength,
-        sector_focus: fullEditData.sector_focus,
-        north_star_goal: fullEditData.north_star_goal,
-        core_practice: fullEditData.core_practice,
-        firm: fullEditData.firm,
-      }).eq("user_id", user.id);
+    const ok = await writeProfile(user.id, {
+      first_name: fullEditData.first_name,
+      level: fullEditData.level,
+      primary_strength: fullEditData.primary_strength,
+      sector_focus: fullEditData.sector_focus,
+      north_star_goal: fullEditData.north_star_goal,
+      core_practice: fullEditData.core_practice,
+      firm: fullEditData.firm,
+    }, "OnboardingProfileSection.saveFullEdit");
     if (error) { toast.error("Couldn't save"); }
     else {
       toast.success("Profile updated.");
