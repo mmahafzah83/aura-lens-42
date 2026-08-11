@@ -1,26 +1,29 @@
 /**
- * The catch for a member who chose "Finish later" part-way through the journey.
+ * The catch for a member who stopped part-way through the journey.
  *
- * Pinned to the top of Home, it states what is already saved — nothing they did
- * may look lost — and carries them back to the exact screen they stopped on.
+ * One line of substance and one action. The masthead already carries the name,
+ * the time and the date, so this card never greets anyone. When there is
+ * nothing to resume it renders nothing at all.
  */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { nEvidence } from "@/constants/vocabulary";
 
-const BLUE = "#0670C4";
-const LINE = "#E2E7EE";
-const MUTED = "#5B6673";
-const INK = "#0F1519";
-
 const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
+const dismissKey = (uid: string) => `aura_resume_hidden_${uid}`;
 
 interface Paused { stage: number; saved: string[]; chose: boolean; }
 
 export default function ResumeJourneyCard({ userId }: { userId: string | null }) {
   const navigate = useNavigate();
   const [paused, setPaused] = useState<Paused | null>(null);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    try { setHidden(localStorage.getItem(dismissKey(userId)) === "1"); } catch { /* noop */ }
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -51,35 +54,50 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
     return () => { alive = false; };
   }, [userId]);
 
-  if (!paused) return null;
+  if (!paused || hidden) return null;
   const left = Math.max(2, (5 - paused.stage) * 2);
 
   return (
     <section style={{
-      background: "#FFFFFF", border: `1px solid ${LINE}`, borderRadius: 18,
+      background: "var(--surface-1)", border: "1px solid var(--rule-outer)", borderRadius: 18,
       padding: 18, marginBlockEnd: 16,
     }}>
-      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: INK }}>
+      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
         {paused.chose
           ? `You're part-way through — ${paused.stage} of 5 done, about ${left} minutes left.`
           : `You started setting up and stopped at step ${paused.stage} of 5. It's all still here.`}
       </h2>
       {paused.saved.length ? (
-        <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.6, color: MUTED }}>
+        <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.6, color: "var(--text-secondary)" }}>
           {paused.saved.join(" · ")}
         </p>
       ) : null}
-      <button
-        type="button"
-        onClick={() => navigate("/onboarding")}
-        style={{
-          marginBlockStart: 14, inlineSize: "100%", minBlockSize: 52, borderRadius: 999,
-          border: "none", background: BLUE, color: "#FFFFFF", fontSize: 15, fontWeight: 600,
-          cursor: "pointer", fontFamily: "inherit",
-        }}
-      >
-        Pick up where I left off
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginBlockStart: 14 }}>
+        <button
+          type="button"
+          onClick={() => navigate("/onboarding")}
+          style={{
+            minBlockSize: 48, padding: "0 22px", borderRadius: 999,
+            border: "none", background: "var(--act)", color: "var(--action-ink)",
+            fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+          }}
+        >
+          Pick up where I left off
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (userId) { try { localStorage.setItem(dismissKey(userId), "1"); } catch { /* noop */ } }
+            setHidden(true);
+          }}
+          style={{
+            background: "none", border: 0, padding: 0, cursor: "pointer", fontFamily: "inherit",
+            fontSize: 13, fontWeight: 500, color: "var(--text-secondary)",
+          }}
+        >
+          Not now
+        </button>
+      </div>
     </section>
   );
 }

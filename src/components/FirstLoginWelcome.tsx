@@ -56,8 +56,7 @@ export function FirstLoginWelcome({ firstName: firstNameProp, onOpenGuide, onDis
   }, [firstNameProp]);
 
   if (open !== undefined ? !open : !visible) return null;
-
-  const firstName = firstNameProp || fetchedName;
+  void firstNameProp; void fetchedName; // the masthead carries the name — this card never greets
 
   const handleExplore = () => {
     try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
@@ -98,31 +97,20 @@ export function FirstLoginWelcome({ firstName: firstNameProp, onOpenGuide, onDis
           <h2
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 22,
-              fontWeight: 500,
+              fontSize: 18,
+              fontWeight: 600,
               color: "var(--ink)",
-              margin: "0 0 10px",
-              lineHeight: 1.3,
-            }}
-          >
-            {firstName ? `Welcome, ${firstName}.` : "Welcome."}
-          </h2>
-
-          <p
-            style={{
-              fontSize: 14,
-              lineHeight: 1.6,
-              color: "var(--ink-3)",
-              margin: "0 0 16px",
+              margin: "0 0 14px",
+              lineHeight: 1.35,
               maxWidth: 520,
             }}
           >
-            Aura is your personal intelligence system. Your expertise is invisible; Aura fixes that. It helps you share your thinking with your market, without adding work to your week. The steps below are the best place to start.
-          </p>
+            Your setup is filed. The guide shows the four things worth doing first.
+          </h2>
 
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
             <Button variant="default" size="sm" onClick={handleExplore}>
-              Explore the Guide
+              Show me the guide
             </Button>
             <button
               type="button"
