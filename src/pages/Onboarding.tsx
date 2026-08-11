@@ -1616,7 +1616,8 @@ const Onboarding = () => {
           </p>
         )}
         <Actions style={{ marginBlockStart: 14 }}>
-          <OBButton disabled={!linkInput.trim()} onClick={() => void submitLink()}>Add it</OBButton>
+          <OBButton disabled={!linkInput.trim() || sendingLink} loading={sendingLink} loadingLabel="Sending…"
+            onClick={() => void submitLink()}>Add it</OBButton>
         </Actions>
 
         {suggested || !suggestDead ? (
@@ -1645,7 +1646,7 @@ const Onboarding = () => {
               </p>
             ) : null}
             <div style={{ marginBlockStart: 14 }}>
-              <OBButton variant="secondary"
+              <OBButton variant="secondary" disabled={sendingLink} loading={sendingLink} loadingLabel="Sending…"
                 onClick={() => void sendLink(suggested.url, { title: suggested.title, summary: suggested.summary })}>
                 Use this one
               </OBButton>
