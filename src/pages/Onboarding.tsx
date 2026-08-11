@@ -1855,31 +1855,32 @@ const Onboarding = () => {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} tone={s.tone} onNight unlocked
+              icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
               figure={
-                i === 0 ? (postsRead || "✓")
-                  : i === 1 ? claims.length
-                    : i === 2 ? Object.keys(scores).length
-                      : (reveal?.subjects.length ?? 3)
+                i === 0 ? (postsRead ? num(postsRead) : "✓")
+                  : i === 1 ? num(claims.length)
+                    : i === 2 ? num(Object.keys(scores).length)
+                      : num(reveal?.subjects.length ?? 3)
               } />
           ))}
         </div>
         <p style={{ ...bodyNight, textAlign: "center" }}>
           {proof && proof.posts > 0 ? (
             <>
-              Aura has {proof.posts} of your posts and {proof.words.toLocaleString()} words in your own voice
+              I have {num(proof.posts)} of your posts and {num(proof.words)} words in your own voice
               {proof.pctWithNumber !== null ? `, ${proof.pctWithNumber}% of them carrying a real number` : ""}
-              {claims.length ? `, plus ${claims.length} claims you kept` : ""}. That is what it writes from — not a
+              {claims.length ? `, plus ${num(claims.length)} subjects you kept` : ""}. That is what I write from — not a
               template.
             </>
           ) : (
             <>
-              {EMPTY_POSTS_LINE}
-              {claims.length ? ` Aura already has ${claims.length} ${claims.length === 1 ? "claim" : "claims"} and your own answers on file.` : " Aura already has your own answers on file."}
+              {EMPTY_POSTS_LINE_NIGHT}
+              {claims.length ? ` I already have ${num(claims.length)} ${claims.length === 1 ? "subject" : "subjects"} and your own answers on file.` : " I already have your own answers on file."}
             </>
           )}
         </p>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Tonight it reads for your three subjects. Tomorrow morning there's something waiting.
+          Tonight I read for your three subjects. Tomorrow morning there's something waiting.
         </p>
         {revealPending && proof && proof.lines.length > 0 ? (
           <WaitProof lines={proof.lines} howLong="Writing your read. About a minute." />
