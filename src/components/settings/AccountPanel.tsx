@@ -3,6 +3,7 @@ import { Camera, Loader2 } from "lucide-react";
 import { downloadBlob } from "@/lib/download";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
 import { AVATAR_LIMITS, checkImage, cutOutBackground, toSquareJpeg } from "@/lib/imagePrep";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
@@ -97,8 +98,8 @@ export default function AccountPanel({ userId, email }: Props) {
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ avatar_url: publicUrl }).eq("user_id", userId);
+      const ok = await writeProfile(userId, { avatar_url: publicUrl }, "AccountPanel.handleUpload");
+      if (!ok) { toast.error("That didn't save — try once more."); return; }
       setAvatarUrl(publicUrl);
       toast.success("Photo updated");
 
@@ -129,8 +130,8 @@ export default function AccountPanel({ userId, email }: Props) {
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ avatar_cutout_url: publicUrl }).eq("user_id", userId);
+      const ok = await writeProfile(userId, { avatar_cutout_url: publicUrl }, "AccountPanel.keepCutout");
+      if (!ok) { toast.error("That didn't save — try once more."); return; }
       setCutoutUrl(publicUrl);
       setCutoutPreview(null);
       setCutoutBlob(null);
@@ -148,20 +149,22 @@ export default function AccountPanel({ userId, email }: Props) {
     setCutoutPreview(null);
     setCutoutBlob(null);
     if (!userId || !cutoutUrl) return;
-    await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({ avatar_cutout_url: null }).eq("user_id", userId);
+    // An explicit clear: the member chose the plain square.
+    const ok = await writeProfile(userId, { avatar_cutout_url: null }, "AccountPanel.usePlainSquare");
+    if (!ok) { toast.error("That didn't save — try once more."); return; }
     setCutoutUrl(null);
   };
 
   const handleSaveName = async () => {
     if (!userId || saving) return;
+    // A blank box is not an instruction to erase the stored name.
+    const next = firstName.trim();
+    if (!next) { toast.error("Give us a name to save."); return; }
     setSaving(true);
-    const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({ first_name: firstName.trim() || null })
-      .eq("user_id", userId);
+    const ok = await writeProfile(userId, { first_name: next }, "AccountPanel.handleSaveName");
     setSaving(false);
-    if (error) { toast.error("Could not save your name"); return; }
-    setInitialName(firstName.trim());
+    if (!ok) { toast.error("That didn't save — try once more."); return; }
+    setInitialName(next);
     toast.success("Name updated");
   };
 

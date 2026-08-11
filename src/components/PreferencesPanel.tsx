@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
 import { toast } from "sonner";
 import type { EditProfileField } from "@/components/EditProfileModal";
 
@@ -274,13 +275,11 @@ export default function PreferencesPanel({
     const next = { ...prefs, [key]: value };
     setProfile((p) => (p ? { ...p, notification_prefs: next } : p));
     try {
-      const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ notification_prefs: next })
-        .eq("user_id", userId);
-      if (error) throw error;
+      const ok = await writeProfile(userId, { notification_prefs: next }, "PreferencesPanel.updatePref");
+      if (!ok) throw new Error("write affected no rows");
     } catch {
       setProfile((p) => (p ? { ...p, notification_prefs: previous } : p));
-      toast.error("Couldn't save — try again");
+      toast.error("That didn't save — try once more.");
     }
   };
 
@@ -291,13 +290,11 @@ export default function PreferencesPanel({
     const next = { ...prefs, ...patch };
     setProfile((p) => (p ? { ...p, notification_prefs: next } : p));
     try {
-      const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ notification_prefs: next })
-        .eq("user_id", userId);
-      if (error) throw error;
+      const ok = await writeProfile(userId, { notification_prefs: next }, "PreferencesPanel.updatePrefs");
+      if (!ok) throw new Error("write affected no rows");
     } catch {
       setProfile((p) => (p ? { ...p, notification_prefs: previous } : p));
-      toast.error("Couldn't save — try again");
+      toast.error("That didn't save — try once more.");
     }
   };
 
@@ -307,13 +304,11 @@ export default function PreferencesPanel({
     const previousTz = profile?.timezone ?? null;
     setProfile((p) => (p ? { ...p, timezone: tz } : p));
     try {
-      const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ timezone: tz })
-        .eq("user_id", userId);
-      if (error) throw error;
+      const ok = await writeProfile(userId, { timezone: tz }, "PreferencesPanel.persistTimezone");
+      if (!ok) throw new Error("write affected no rows");
     } catch {
       setProfile((p) => (p ? { ...p, timezone: previousTz } : p));
-      toast.error("Couldn't save — try again");
+      toast.error("That didn't save — try once more.");
     }
   };
 
@@ -322,13 +317,11 @@ export default function PreferencesPanel({
     const previous = profile?.shared_learning_consent ?? null;
     setProfile((p) => (p ? { ...p, shared_learning_consent: value } : p));
     try {
-      const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ shared_learning_consent: value })
-        .eq("user_id", userId);
-      if (error) throw error;
+      const ok = await writeProfile(userId, { shared_learning_consent: value }, "PreferencesPanel.updateSharedLearning");
+      if (!ok) throw new Error("write affected no rows");
     } catch {
       setProfile((p) => (p ? { ...p, shared_learning_consent: previous } : p));
-      toast.error("Couldn't save — try again");
+      toast.error("That didn't save — try once more.");
     }
   };
 
