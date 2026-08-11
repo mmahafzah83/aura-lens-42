@@ -1152,7 +1152,7 @@ const Onboarding = () => {
     // There is no separate page after this one.
     const nextFromHere = () => go(4);
     content = (
-      <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
         <h1 style={h1Light}>This is what Aura can see.</h1>
         <div style={{ display: "flex", gap: 13, alignItems: "center", marginBlockStart: 20 }}>
           {liProfile?.photo_url ? (
@@ -1317,7 +1317,7 @@ const Onboarding = () => {
   if (screen === MANUAL_SCREEN) {
     const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band && !!levelTitle;
     content = (
-      <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
         <h1 style={h1Light}>Aura couldn't read it — tell it the basics.</h1>
         <p style={bodyLight}>Four things, and Aura works from these until you point it at your profile.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockStart: 20 }}>
@@ -1362,7 +1362,7 @@ const Onboarding = () => {
   /* 5 — WHITE, the first link */
   if (screen === 5) {
     content = (
-      <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>Something you read this week.</h1>
         <p style={bodyLight}>
           An article, a report, a post you disagreed with. Aura reads it and shows you what it found.
@@ -1522,7 +1522,7 @@ const Onboarding = () => {
   if (screen === 9) {
     if (contentError || !dims) {
       content = (
-        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadDimensions()}>Try again</OBButton></Actions>
@@ -1533,7 +1533,7 @@ const Onboarding = () => {
       const value = scores[d.name] ?? 50;
       const last = dimIdx >= dims.length - 1;
       content = (
-        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
           {flatWarn ? (
             <>
               <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>Can I check something?</h1>
@@ -1643,7 +1643,7 @@ const Onboarding = () => {
   if (screen === 11) {
     if (contentError || !questions) {
       content = (
-        <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadQuestions()}>Try again</OBButton></Actions>
@@ -1695,7 +1695,7 @@ const Onboarding = () => {
       );
 
       content = (
-        <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             Question {qIdx + 1} of {questions.length}
           </p>
