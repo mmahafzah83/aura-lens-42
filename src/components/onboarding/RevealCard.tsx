@@ -8,6 +8,12 @@ import { OB, RADIUS } from "./tokens";
 export interface RevealData {
   archetype: string;
   marketRead: string;
+  /** The gap between how they describe themselves and what their writing shows. */
+  theGap?: string;
+  /** One verbatim sentence from one of their own posts. */
+  ownWordsQuote?: string;
+  /** One sentence on what that quote shows. */
+  ownWordsRead?: string;
   subjects: string[];
   softGround: string[];
   figures: { value: string; label: string }[];
@@ -174,6 +180,23 @@ const RevealCard = forwardRef<
         {source(data.provenance?.softGround)}
       </>
     )}
+
+    {!forExport && data.theGap ? (
+      <>
+        <p style={{ margin: "22px 0 6px", fontSize: 11.5, opacity: 0.85 }}>The gap</p>
+        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, opacity: 0.95 }}>{data.theGap}</p>
+      </>
+    ) : null}
+
+    {!forExport && data.ownWordsQuote ? (
+      <>
+        <p style={{ margin: "22px 0 6px", fontSize: 11.5, opacity: 0.85 }}>In your own words</p>
+        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, fontStyle: "italic" }}>“{data.ownWordsQuote}”</p>
+        {data.ownWordsRead ? (
+          <p style={{ margin: "7px 0 0", fontSize: 13, lineHeight: 1.55, opacity: 0.88 }}>{data.ownWordsRead}</p>
+        ) : null}
+      </>
+    ) : null}
 
     {data.figures.length > 0 ? (
       <div style={{ display: "flex", gap: 26, marginBlockStart: 24 }}>

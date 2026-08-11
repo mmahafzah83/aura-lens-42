@@ -110,6 +110,9 @@ export function toRevealData(
   return {
     archetype: archetype || "Your read",
     marketRead,
+    theGap: stripMd(results.the_gap) || undefined,
+    ownWordsQuote: stripMd(results.own_words_quote) || undefined,
+    ownWordsRead: stripMd(results.own_words_read) || undefined,
     subjects: subjects.filter(Boolean).slice(0, 3),
     softGround: soft.slice(0, 2),
     figures: extras.figures ?? [],
