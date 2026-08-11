@@ -4,6 +4,7 @@
  * so the journey page itself stays free of back-office words.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 import { derivePillars } from "@/lib/brandPillars";
 import type { RevealData } from "@/components/onboarding/RevealCard";
 
@@ -141,15 +142,7 @@ export async function loadMarketRead(userId: string): Promise<Record<string, any
  * so it is logged as the failure it is.
  */
 async function writeProfile(userId: string, patch: Record<string, any>, label: string): Promise<boolean> {
-  const { data, error } = await (supabase.from("diagnostic_profiles" as any) as any)
-    .upsert({ user_id: userId, ...patch }, { onConflict: "user_id" })
-    .select("user_id");
-  if (error) { console.error(`[marketRead] ${label} failed`, error); return false; }
-  if (!data || (data as any[]).length === 0) {
-    console.error(`[marketRead] ${label} affected no rows — nothing was saved for user ${userId}`);
-    return false;
-  }
-  return true;
+  return upsertProfile(userId, patch, `marketRead ${label}`);
 }
 
 /** Save the six answers immediately, so a failed generation never loses them. */
