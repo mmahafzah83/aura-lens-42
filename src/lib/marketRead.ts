@@ -90,13 +90,15 @@ export function toRevealData(
 ): RevealData | null {
   if (!results) return null;
   const archetype = stripMd(results.primary_archetype);
-  let marketRead = firstSentence(results.market_read || results.positioning_statement || results.interpretation || "");
-  // The heading already says the archetype — never print it twice.
+  // Strip the archetype echo from the FULL text first — the echo is often the
+  // whole first sentence, so taking firstSentence before stripping empties it.
+  let readSource = String(results.market_read || results.positioning_statement || results.interpretation || "");
   if (archetype) {
     const echo = new RegExp(`^\\s*(you\\s+are\\s+)?(the\\s+)?${archetype.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*[.:—-]*\\s*`, "i");
-    marketRead = marketRead.replace(echo, "").trim();
-    if (marketRead.toLowerCase() === archetype.toLowerCase()) marketRead = "";
+    readSource = readSource.replace(echo, "").trim();
   }
+  let marketRead = firstSentence(readSource);
+  if (archetype && marketRead.toLowerCase() === archetype.toLowerCase()) marketRead = "";
   const subjects: string[] = Array.isArray(results.content_pillars) && results.content_pillars.length
     ? results.content_pillars.map(stripMd)
     : (Array.isArray(results.topics) ? results.topics.map((t: any) => stripMd(t?.title)) : []);
@@ -105,7 +107,10 @@ export function toRevealData(
     : (Array.isArray(results.growth_areas) ? results.growth_areas.map(stripMd) : []);
   // Slider names are capability dimensions, not gaps — drop them entirely.
   const banned = new Set((extras.excludeSoft || []).map((s) => stripMd(s).toLowerCase()));
-  const soft = rawSoft.filter((s) => s && !banned.has(s.toLowerCase()));
+  let soft = rawSoft.filter((s) => s && !banned.has(s.toLowerCase()));
+  // The member's own lowest-rated areas are honest soft ground — if the filter
+  // empties the list entirely, fall back to them rather than render nothing.
+  if (soft.length === 0) soft = rawSoft.filter(Boolean).slice(0, 2);
   const src = extras.sources ?? {};
   if (!archetype && subjects.length === 0) return null;
   return {
