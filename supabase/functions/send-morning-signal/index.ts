@@ -138,7 +138,6 @@ function buildEmail(lead: Finding, others: Finding[]) {
       ${extrasHtml}
       ${divider()}
       ${paragraph("Sent because last night produced something. Quiet nights send nothing.")}
-      <p style="margin:0;font-family:${BODY};font-size:12px;line-height:1.6;color:${INK_FAINT};"><a href="${PAUSE_URL}" style="color:${INK_FAINT};text-decoration:underline;">Pause these emails</a></p>
     `,
   });
 
