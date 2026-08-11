@@ -17,9 +17,9 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const LI_HEADERS = (token: string) => ({
+const LI_HEADERS = (token: string, version: string) => ({
   Authorization: `Bearer ${token}`,
-  "LinkedIn-Version": "",
+  "LinkedIn-Version": version,
   "X-Restli-Protocol-Version": "2.0.0",
 });
 
@@ -99,13 +99,48 @@ Deno.serve(withObserve("linkedin-share-read", async (req) => {
   };
 
   try {
-    // a. reserve an upload slot
-    const initRes = await fetch("https://api.linkedin.com/rest/images?action=initializeUpload", {
-      method: "POST",
-      headers: { ...LI_HEADERS(token), "Content-Type": "application/json" },
-      body: JSON.stringify({ initializeUploadRequest: { owner: author } }),
-    });
-    const initText = await initRes.text();
+    // a. reserve an upload slot — discover the active LinkedIn API version
+    const { data: cachedRow } = await admin
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "linkedin_api_version")
+      .maybeSingle();
+    const cachedRaw = (cachedRow as any)?.value;
+    const cachedVersion =
+      typeof cachedRaw === "string"
+        ? cachedRaw.replace(/"/g, "")
+        : typeof cachedRaw?.version === "string"
+        ? cachedRaw.version
+        : null;
+
+    const candidates = [...new Set([cachedVersion, ...candidateVersions()].filter(Boolean) as string[])];
+
+    let apiVersion = "";
+    let initRes!: Response;
+    let initText = "";
+    for (const v of candidates) {
+      initRes = await fetch("https://api.linkedin.com/rest/images?action=initializeUpload", {
+        method: "POST",
+        headers: { ...LI_HEADERS(token, v), "Content-Type": "application/json" },
+        body: JSON.stringify({ initializeUploadRequest: { owner: author } }),
+      });
+      initText = await initRes.text();
+      if (isVersionRejection(initRes.status, initText)) continue;
+      apiVersion = v;
+      break;
+    }
+
+    if (!apiVersion) {
+      await logFailure("version_discovery", 426, initText);
+      return json({ ok: false, reason: "failed", step: "version_discovery", status: 426 });
+    }
+
+    if (apiVersion !== cachedVersion) {
+      await admin
+        .from("admin_settings")
+        .upsert({ key: "linkedin_api_version", value: apiVersion }, { onConflict: "key" });
+    }
+
     if (!initRes.ok) {
       console.error("[linkedin-share-read] initializeUpload failed", initRes.status, initText);
       await logFailure("initializeUpload", initRes.status, initText);
@@ -140,7 +175,7 @@ Deno.serve(withObserve("linkedin-share-read", async (req) => {
     // c. publish
     const postRes = await fetch("https://api.linkedin.com/rest/posts", {
       method: "POST",
-      headers: { ...LI_HEADERS(token), "Content-Type": "application/json" },
+      headers: { ...LI_HEADERS(token, apiVersion), "Content-Type": "application/json" },
       body: JSON.stringify({
         author,
         commentary: caption,
