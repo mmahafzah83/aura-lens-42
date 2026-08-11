@@ -292,6 +292,33 @@ function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
         <div style={{ borderBottom: `1px solid ${T.rule}` }}>
           {findings.map((f) => <FindingRow key={f.code} f={f} />)}
         </div>
+        {bp.the_gap || bp.own_words_quote ? (
+          <div style={{ marginTop: 26, padding: 20, background: T.paper2, border: `1px solid ${T.rule}` }}>
+            <MonoLabel color={T.spot} size={10.5}>Only you see this</MonoLabel>
+            <h3 style={{
+              fontFamily: FONT.serif, fontSize: 22, fontWeight: 400, lineHeight: 1.2,
+              color: T.ink, margin: "8px 0 0",
+            }}>The gap</h3>
+            {bp.the_gap ? (
+              <p style={{
+                fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.6, color: T.ink2,
+                margin: "10px 0 0", ...txt(bp.the_gap),
+              }}>{bp.the_gap}</p>
+            ) : null}
+            {bp.own_words_quote ? (
+              <p style={{
+                fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.6, color: T.ink,
+                fontStyle: "italic", margin: "14px 0 0", ...txt(bp.own_words_quote),
+              }}>“{bp.own_words_quote}”</p>
+            ) : null}
+            {bp.own_words_read ? (
+              <p style={{
+                fontFamily: FONT.serif, fontSize: 14, lineHeight: 1.6, color: T.ink2,
+                margin: "8px 0 0", ...txt(bp.own_words_read),
+              }}>{bp.own_words_read}</p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       <PaperFooter n={2} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>

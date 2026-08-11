@@ -109,13 +109,6 @@ const source = (line?: string) =>
     <p style={{ margin: "7px 0 0", fontSize: 11, lineHeight: 1.5, opacity: 0.72 }}>{line}</p>
   ) : null;
 
-/** Long prose needs a surface with contrast; it cannot sit on the gradient. */
-const panel: React.CSSProperties = {
-  background: "rgba(15,21,25,0.28)",
-  borderRadius: 20,
-  padding: 18,
-};
-
 /** The private half — heavier surface, because this is the part nobody else sees. */
 const privatePanel: React.CSSProperties = {
   background: "rgba(15,21,25,0.32)",
