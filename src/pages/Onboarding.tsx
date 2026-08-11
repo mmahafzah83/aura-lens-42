@@ -815,17 +815,15 @@ const Onboarding = () => {
         .select("skill_ratings, audit_results").eq("user_id", userId).maybeSingle();
       const existingRatings = ((current as any)?.skill_ratings as Record<string, number>) || {};
       const existingAudit = ((current as any)?.audit_results as Record<string, number>) || {};
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({
-          skill_ratings: { ...existingRatings, ...next },
-          audit_results: { ...existingAudit, ...next },
-          audit_completed_at: new Date().toISOString(), audit_method: "self_read",
-          instrument_version: 2,
-          ...(band ? { answered_band: band } : {}),
-        })
-        .eq("user_id", userId);
-    } catch (e) { console.warn("[journey] slider save failed", e); }
-  }, [userId, band]);
+      await writeProfile({
+        skill_ratings: { ...existingRatings, ...next },
+        audit_results: { ...existingAudit, ...next },
+        audit_completed_at: new Date().toISOString(), audit_method: "self_read",
+        instrument_version: 2,
+        ...(band ? { answered_band: band } : {}),
+      }, "slider save");
+    } catch (e) { console.error("[journey] slider save threw", e); }
+  }, [userId, band, writeProfile]);
 
   const setScore = (name: string, value: number) => {
     setScores((prev) => {
@@ -842,11 +840,11 @@ const Onboarding = () => {
     if (!userId) return;
     await saveAnswers(userId, finalAnswers);
     try {
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ instrument_version: 2, ...(band ? { answered_band: band } : {}) })
-        .eq("user_id", userId);
-    } catch (e) { console.warn("[journey] stamp failed", e); }
+      await writeProfile({ instrument_version: 2, ...(band ? { answered_band: band } : {}) }, "instrument stamp");
+    } catch (e) { console.error("[journey] stamp threw", e); }
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
+    /* the report needs the raw read, not just the card built from it */
+    if (results) setReadRaw(results);
     const figures = [
       ...(postsRead ? [{ value: num(postsRead), label: "posts read" }] : []),
       ...(claims.length ? [{ value: num(claims.length), label: "things you kept" }] : []),
