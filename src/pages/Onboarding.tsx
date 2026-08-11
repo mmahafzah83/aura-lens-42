@@ -1739,9 +1739,11 @@ const Onboarding = () => {
               const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
               if (flatNow && !flatAck) setFlatWarn(true); else go(10);
             }}>{last ? `Done — that's all ${dims.length}` : "Next"}</OBButton>
-            {dimIdx > 0 ? (
-              <OBButton variant="tertiary" onClick={() => setDimIdx((i) => Math.max(0, i - 1))}>Back</OBButton>
-            ) : null}
+            {/* Back always exists here, and the first slider steps back a stage
+                rather than off the beginning of the flow. */}
+            <OBButton variant="tertiary" onClick={() => {
+              if (dimIdx > 0) setDimIdx((i) => Math.max(0, i - 1)); else go(TRUST_SLIDERS_SCREEN);
+            }}>Back</OBButton>
           </Actions>
           {last && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
@@ -1929,14 +1931,12 @@ const Onboarding = () => {
             </>
           )}
 
-          {showNone || qIdx > 0 ? (
-            <Actions style={{ marginBlockStart: 12 }}>
-              {showNone ? (
-                <OBButton variant="tertiary" onClick={() => advance("None of these fit")}>None of these fit</OBButton>
-              ) : null}
-              {qIdx > 0 ? <OBButton variant="tertiary" onClick={back}>Back</OBButton> : null}
-            </Actions>
-          ) : null}
+          <Actions style={{ marginBlockStart: 12 }}>
+            {showNone ? (
+              <OBButton variant="tertiary" onClick={() => advance("None of these fit")}>None of these fit</OBButton>
+            ) : null}
+            <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else go(10); }}>Back</OBButton>
+          </Actions>
         </PaperShell>
       );
     }
