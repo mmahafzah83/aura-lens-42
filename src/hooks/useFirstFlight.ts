@@ -114,8 +114,22 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
     const alreadySkipped = safeGet(skipKey(userId)) === "1" || remote.skipped === true;
     const seen = safeGet(signalSeenKey(userId)) === "1" || remote.signal_seen === true;
 
-    // When the durable read failed, localStorage is the only truth we have:
-    // read from it, show it, and write nothing until a good read confirms.
+    const fired = firedRef.current;
+    ([1, 2, 3, 4] as const).forEach((n) => {
+      if (safeGet(stepFiredKey(userId, n)) === "1") fired.add(n);
+    });
+
+    // When the durable read failed we know nothing new: show what localStorage
+    // holds, write NOTHING (a failed read must never overwrite good progress),
+    // and let the card say so.
+    if (!durableOk) {
+      setDonePersisted(alreadyDone);
+      setSkipped(alreadySkipped);
+      setSignalSeen(seen);
+      setJustCompleted(false);
+      setLoading(false);
+      return;
+    }
 
     if (alreadyDone) safeSet(doneKey(userId), "1");
     if (alreadySkipped) safeSet(skipKey(userId), "1");
@@ -125,22 +139,10 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
     setSkipped(alreadySkipped);
     setSignalSeen(seen);
 
-    const fired = firedRef.current;
-    ([1, 2, 3, 4] as const).forEach((n) => {
-      if (safeGet(stepFiredKey(userId, n)) === "1") fired.add(n);
-    });
     (remote.steps_fired ?? []).forEach((n) => {
       fired.add(n);
       safeSet(stepFiredKey(userId, n), "1");
     });
-
-    if (!durableOk) {
-      setDonePersisted(alreadyDone);
-      setSkipped(alreadySkipped);
-      setSignalSeen(seen);
-      setLoading(false);
-      return;
-    }
 
     try {
       const [connRes, entryRes, docRes, sigRes, postRes] = await Promise.all([
