@@ -22,7 +22,15 @@ import type { ReportData } from "@/lib/buildIdentityReport";
 const SHEET_W = 794;
 const SHEET_H = 1123;
 const PAGE_PAD = 56;
-const PAPER_TITLE = "The Aura Paper № 00";
+export const PAPER_TITLE = "The Aura Paper № 00";
+
+/** Trim to the last full sentence inside the cap — sheets do not reflow. */
+function capAtSentence(s: string, max: number): string {
+  if (!s || s.length <= max) return s;
+  const slice = s.slice(0, max);
+  const cut = slice.lastIndexOf(". ");
+  return cut > max * 0.4 ? slice.slice(0, cut + 1) : slice.trim();
+}
 
 // ── Bidi / Arabic (SLICE 4d) ───────────────────────────────────────────
 const AR_RE = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
@@ -33,7 +41,7 @@ function txt(v?: string | null): React.CSSProperties {
   return {
     direction: "rtl",
     textAlign: "right",
-    fontFamily: "'CairoAR', 'Cairo', 'DM Sans', sans-serif",
+    fontFamily: "'CairoAR', 'Cairo', sans-serif",
   };
 }
 
@@ -149,10 +157,10 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
 
   return (
     <Sheet n={1}>
-      <PaperHeader label="The Assessment Paper" />
+      <PaperHeader label="The Aura Paper" />
       <div style={{ marginTop: 34, flex: 1, display: "flex", flexDirection: "column" }}>
         <MonoLabel color={T.spot} size={13}>
-          The Aura Paper · № 00 · The Assessment Finds You To Be
+          {PAPER_TITLE.replace(" №", " · №")} · The Read Finds You To Be
         </MonoLabel>
         <div style={{ marginTop: 22 }}>
           <ArchetypeTitle name={archetype} />
@@ -199,9 +207,9 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
             How to read this paper — three colours, three meanings
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
-            <LegendCell swatch={T.spot} title="Oxblood — Finding" body="A conclusion drawn from your answers." />
+            <LegendCell swatch={T.spot} title="Finding" body="A conclusion drawn from your answers." />
             <LegendCell swatch={T.live} title="Movement" body="Something live and rising in your positioning." border />
-            <LegendCell swatch={T.action} title="Action" body="Held by you, unclaimed — the next move." border />
+            <LegendCell swatch="var(--a-500)" title="Action" body="Held by you, unclaimed — the next move." border />
           </div>
         </div>
 
@@ -212,7 +220,7 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
         }}>
           <MetaCell label="Prepared for" value={fullName || "—"} sub={level} />
           <MetaCell label="Secondary read" value={bp.secondary_archetype || "—"} />
-          <MetaCell label="Issued" value={todayLabel(bp.generated_at)} sub="Edition 0 · Assessment" />
+          <MetaCell label="Issued" value={todayLabel(bp.generated_at)} sub="Edition 0 · Your read" />
         </div>
       </div>
       <PaperFooter n={1} total={total} paperTitle={PAPER_TITLE} />
