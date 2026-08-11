@@ -833,7 +833,7 @@ const Dashboard = () => {
                       <span
                         aria-label={`${newIntelSignalCount} new signals`}
                         className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
-                        style={{ background: "var(--gold-dark)" }}
+                        style={{ background: "var(--pulse-accent)" }}
                       />
                     )}
                   </button>

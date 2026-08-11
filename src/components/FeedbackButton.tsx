@@ -7,7 +7,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/button";
 
 const RATINGS: { label: string; rating: number; color: string }[] = [
-  { label: "Exceptional", rating: 5, color: "var(--gold-dark, var(--brand))" },
+  { label: "Exceptional", rating: 5, color: "var(--pulse-accent, var(--brand))" },
   { label: "Strong", rating: 4, color: "var(--ink-3)" },
   { label: "Adequate", rating: 3, color: "var(--ink-4)" },
   { label: "Weak", rating: 2, color: "var(--ink-4)" },

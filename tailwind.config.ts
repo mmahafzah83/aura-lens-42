@@ -78,10 +78,10 @@ export default {
         },
         gold: {
           DEFAULT: "hsl(var(--primary))",
-          light: 'var(--gold-light)',
-          dark:  'var(--gold-dark)',
-          glow:  'var(--gold-glow)',
-          pale:  'var(--gold-pale)',
+          light: 'var(--accent-light)',
+          dark:  'var(--pulse-accent)',
+          glow:  'var(--accent-glow)',
+          pale:  'var(--accent-pale)',
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

@@ -1363,7 +1363,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             </div>
           )}
         </div>
-        <span style={{ color: "var(--gold-dark)", fontSize: 18 }}>{showDetailed ? "▾" : "▸"}</span>
+        <span style={{ color: "var(--pulse-accent)", fontSize: 18 }}>{showDetailed ? "▾" : "▸"}</span>
       </button>
 
       {showDetailed && (
