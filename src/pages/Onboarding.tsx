@@ -407,17 +407,11 @@ const Onboarding = () => {
   ): Promise<boolean> => {
     const id = uid ?? userId;
     if (!id) return false;
-    const clean: Record<string, any> = { user_id: id };
+    // The journey never clears a column it does not name, so nulls are dropped
+    // before the shared writer sees them.
+    const clean: Record<string, any> = {};
     for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
-    const { data, error } = await (supabase.from("diagnostic_profiles" as any) as any)
-      .upsert(clean, { onConflict: "user_id" })
-      .select("user_id");
-    if (error) { console.error(`[journey] ${label} failed`, error); return false; }
-    if (!data || (data as any[]).length === 0) {
-      console.error(`[journey] ${label} affected no rows — nothing was saved`);
-      return false;
-    }
-    return true;
+    return upsertProfile(id, clean, `journey ${label}`);
   }, [userId]);
 
   const persistScreen = useCallback(async (next: number) => {
