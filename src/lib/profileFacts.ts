@@ -25,6 +25,7 @@ export interface ProfileFacts {
   certifications?: number;
   skills?: number;
   recommendations?: number;
+  projects?: number;
   topSkills: string[];
   aboutFirstLine?: string;
   recQuote?: RecQuote;
@@ -45,10 +46,24 @@ const oneSentence = (text: string): string | null => {
   return good ?? null;
 };
 
+/** Up to two complete sentences, verbatim. Never a paraphrase. */
+const twoSentences = (text: string): string | null => {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (!clean) return null;
+  const parts = (clean.match(/[^.!?]+[.!?]/g) || []).map((p) => p.trim());
+  for (let i = 0; i < parts.length; i++) {
+    const one = parts[i];
+    const two = parts[i + 1] ? `${one} ${parts[i + 1]}` : null;
+    if (two && two.length >= 80 && two.length <= 300) return two;
+    if (one.length >= 60 && one.length <= 300) return one;
+  }
+  return null;
+};
+
 export const pickRecQuote = (recs: any[]): RecQuote | undefined => {
   for (const r of recs) {
     const body = str(r?.description);
-    const sentence = oneSentence(body);
+    const sentence = twoSentences(body);
     const title = firstClause(str(r?.givenByHeadline));
     if (sentence && title) return { text: sentence, title };
   }
@@ -92,6 +107,7 @@ export async function loadProfileFacts(userId: string): Promise<ProfileFacts | n
       certifications: arr(raw.certifications).length || undefined,
       skills: arr(raw.skills).length || undefined,
       recommendations: recs.length || undefined,
+      projects: arr(raw.projects).length || undefined,
       topSkills: top.slice(0, 5),
       aboutFirstLine: aboutFirstLine || undefined,
       recQuote: pickRecQuote(recs),
