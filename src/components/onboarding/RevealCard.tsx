@@ -187,7 +187,10 @@ const RevealCard = forwardRef<
         borderBlockStart: "1px solid rgba(255,255,255,0.28)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <img src="/aura-mark.svg" alt="Aura" width={22} height={22} style={{ display: "block" }} />
+          {/* A wordmark, not a fetched file — an export must not depend on the network. */}
+          <span style={{
+            fontFamily: OB.ui, fontWeight: 700, fontSize: 13, letterSpacing: "0.14em", color: "#FFFFFF",
+          }}>AURA</span>
           <span style={{ fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em" }}>
             Read by Aura · aura-intel.org
           </span>
