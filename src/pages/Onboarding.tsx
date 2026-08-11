@@ -16,6 +16,7 @@ import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { saveLinkedInAddress, canonicalHandle, loadLinkedInAddress } from "@/lib/linkedinAddress";
+import { markVerifiedByRead } from "@/lib/linkedinReadStatus";
 import usePageMeta from "@/hooks/usePageMeta";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useCapturedClaims } from "@/hooks/useCapturedClaims";
@@ -390,6 +391,35 @@ const Onboarding = () => {
   }, []);
 
   /* ── progress: a closed tab loses nothing ── */
+  /**
+   * One writer for the member's profile row.
+   *
+   * PostgREST answers `.update().eq()` that matches zero rows with HTTP 204 and
+   * no error, so an entire journey once wrote into a row that did not exist and
+   * every try/catch passed. Every write here upserts on `user_id`, returns its
+   * rows, drops nulls so it can never blank a column it does not name, and
+   * logs loudly when it affects nothing.
+   */
+  const writeProfile = useCallback(async (
+    patch: Record<string, any>,
+    label: string,
+    uid?: string | null,
+  ): Promise<boolean> => {
+    const id = uid ?? userId;
+    if (!id) return false;
+    const clean: Record<string, any> = { user_id: id };
+    for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
+    const { data, error } = await (supabase.from("diagnostic_profiles" as any) as any)
+      .upsert(clean, { onConflict: "user_id" })
+      .select("user_id");
+    if (error) { console.error(`[journey] ${label} failed`, error); return false; }
+    if (!data || (data as any[]).length === 0) {
+      console.error(`[journey] ${label} affected no rows — nothing was saved`);
+      return false;
+    }
+    return true;
+  }, [userId]);
+
   const persistScreen = useCallback(async (next: number) => {
     if (!userId) return;
     try { localStorage.setItem(`aura_ob_screen_${userId}`, String(next)); } catch { /* ignore */ }
@@ -402,14 +432,12 @@ const Onboarding = () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("identity_intelligence").eq("user_id", userId).maybeSingle();
       const fresh = ((data as any)?.identity_intelligence as Record<string, any>) || {};
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({
-          identity_intelligence: { ...fresh, journey_screen: next },
-          onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
-        })
-        .eq("user_id", userId);
-    } catch (e) { console.warn("[journey] progress save failed", e); }
-  }, [userId]);
+      await writeProfile({
+        identity_intelligence: { ...fresh, journey_screen: next },
+        onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
+      }, "progress save");
+    } catch (e) { console.error("[journey] progress save threw", e); }
+  }, [userId, writeProfile]);
 
   const go = useCallback((next: number) => {
     setScreen(next);
@@ -439,6 +467,15 @@ const Onboarding = () => {
         .eq("user_id", uid)
         .maybeSingle();
       const p: any = profile || {};
+
+      /* Belt and braces: a trigger creates this row on signup, but anyone who
+         predates it would otherwise spend the whole journey writing into
+         nothing. No row means make one, here, before anything else is saved. */
+      if (!profile) {
+        const { error: makeError } = await (supabase.from("diagnostic_profiles" as any) as any)
+          .insert({ user_id: uid });
+        if (makeError) console.error("[journey] could not create the profile row", makeError);
+      }
 
       if (Number(p.onboarding_step ?? 0) >= 4) {
         navigate("/home", { replace: true });
@@ -510,15 +547,14 @@ const Onboarding = () => {
         setSectorKnown(true);
         if (userId) {
           try {
-            await (supabase.from("diagnostic_profiles" as any) as any)
-              .update({ sector_focus: guessed }).eq("user_id", userId);
+            await writeProfile({ sector_focus: guessed }, "sector save");
           } catch { /* the member can change it on the next screen */ }
         }
       }
 
       if (userId) {
         try {
-          await supabase.from("linkedin_connections").update({ source_status: "verified_by_read" }).eq("user_id", userId);
+          await markVerifiedByRead(userId);
         } catch { /* never block */ }
       }
 
@@ -537,9 +573,7 @@ const Onboarding = () => {
           const b = (detected as string | null) as Band | null;
           if (b && userId) {
             setBand(b);
-            await (supabase.from("diagnostic_profiles" as any) as any)
-              .update({ seniority_band: b, band_source: "detected" })
-              .eq("user_id", userId);
+            await writeProfile({ seniority_band: b, band_source: "detected" }, "level save");
           }
         } catch { /* the member confirms it on the next screen anyway */ }
       }
@@ -781,17 +815,15 @@ const Onboarding = () => {
         .select("skill_ratings, audit_results").eq("user_id", userId).maybeSingle();
       const existingRatings = ((current as any)?.skill_ratings as Record<string, number>) || {};
       const existingAudit = ((current as any)?.audit_results as Record<string, number>) || {};
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({
-          skill_ratings: { ...existingRatings, ...next },
-          audit_results: { ...existingAudit, ...next },
-          audit_completed_at: new Date().toISOString(), audit_method: "self_read",
-          instrument_version: 2,
-          ...(band ? { answered_band: band } : {}),
-        })
-        .eq("user_id", userId);
-    } catch (e) { console.warn("[journey] slider save failed", e); }
-  }, [userId, band]);
+      await writeProfile({
+        skill_ratings: { ...existingRatings, ...next },
+        audit_results: { ...existingAudit, ...next },
+        audit_completed_at: new Date().toISOString(), audit_method: "self_read",
+        instrument_version: 2,
+        ...(band ? { answered_band: band } : {}),
+      }, "slider save");
+    } catch (e) { console.error("[journey] slider save threw", e); }
+  }, [userId, band, writeProfile]);
 
   const setScore = (name: string, value: number) => {
     setScores((prev) => {
@@ -808,11 +840,11 @@ const Onboarding = () => {
     if (!userId) return;
     await saveAnswers(userId, finalAnswers);
     try {
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ instrument_version: 2, ...(band ? { answered_band: band } : {}) })
-        .eq("user_id", userId);
-    } catch (e) { console.warn("[journey] stamp failed", e); }
+      await writeProfile({ instrument_version: 2, ...(band ? { answered_band: band } : {}) }, "instrument stamp");
+    } catch (e) { console.error("[journey] stamp threw", e); }
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
+    /* the report needs the raw read, not just the card built from it */
+    if (results) setReadRaw(results);
     const figures = [
       ...(postsRead ? [{ value: num(postsRead), label: "posts read" }] : []),
       ...(claims.length ? [{ value: num(claims.length), label: "things you kept" }] : []),
@@ -849,7 +881,7 @@ const Onboarding = () => {
   }, [screen, revealPending]);
 
   useEffect(() => {
-    if (screen !== 13 || reveal || !userId) return;
+    if (screen !== 13 || readRaw || !userId) return;
     loadMarketRead(userId).then((r) => {
       if (r) setReadRaw(r);
       const d = toRevealData(r, {
@@ -868,7 +900,7 @@ const Onboarding = () => {
       });
       if (d) setReveal(d);
     });
-  }, [screen, reveal, userId, postsRead, claims.length, scores, dims]);
+  }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
 
   /* ── finishing ── */
   const finish = async () => {
@@ -887,32 +919,31 @@ const Onboarding = () => {
     } catch { /* the read is already on their Home */ }
     if (userId) {
       try {
-        await (supabase.from("diagnostic_profiles" as any) as any).upsert({
-          user_id: userId,
+        /* Merges — writeProfile drops every null, so finishing can never blank
+           a column the journey filled in earlier. */
+        await writeProfile({
           first_name: firstName.trim() || "Member",
-          last_name: lastName.trim() || null,
-          firm: firm.trim() || null,
-          sector_focus: sector || null,
-          level: levelTitle.trim() || (band ? BAND_TO_LEVEL[band] : null),
+          last_name: lastName.trim() || undefined,
+          firm: firm.trim() || undefined,
+          sector_focus: sector || undefined,
+          level: levelTitle.trim() || (band ? BAND_TO_LEVEL[band] : undefined),
           onboarding_completed: true,
           /* the real screen they finished on, never a hard-coded 4 */
           onboarding_step: Math.max(4, screen),
           completed: true,
           instrument_version: 2,
           ...(band ? { answered_band: band } : {}),
-        }, { onConflict: "user_id" });
+        }, "finish save");
         /* finished means no longer paused — Home must stop offering the resume card */
         try {
           const { data: cur } = await (supabase.from("diagnostic_profiles" as any) as any)
             .select("identity_intelligence").eq("user_id", userId).maybeSingle();
           const ii = ((cur as any)?.identity_intelligence as Record<string, any>) || {};
           if (ii.journey_paused) {
-            await (supabase.from("diagnostic_profiles" as any) as any)
-              .update({ identity_intelligence: { ...ii, journey_paused: false } })
-              .eq("user_id", userId);
+            await writeProfile({ identity_intelligence: { ...ii, journey_paused: false } }, "unpause save");
           }
         } catch { /* the completed flags already close the gate */ }
-      } catch (e) { console.warn("[journey] finish save failed", e); }
+      } catch (e) { console.error("[journey] finish save threw", e); }
       try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
     }
     try { localStorage.setItem("aura_onboarding_complete", "true"); } catch { /* ignore */ }
@@ -957,7 +988,13 @@ const Onboarding = () => {
         window.removeEventListener("message", onMessage);
         window.clearInterval(watch);
         setConnecting(false);
-        if (d.ok) { setConnected(true); setConnectNote(""); }
+        if (d.ok) {
+          setConnected(true);
+          setConnectNote("");
+          /* The callback writes the connection row after we did; re-run the
+             confirmation so a read that already happened isn't lost to the race. */
+          if (userId && readDone) void markVerifiedByRead(userId);
+        }
         else setConnectNote(d.message || "LinkedIn didn't finish. You can do this from Settings later.");
       };
       window.addEventListener("message", onMessage);
@@ -990,27 +1027,25 @@ const Onboarding = () => {
             .select("identity_intelligence").eq("user_id", userId).maybeSingle();
           const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
           const alreadyEmailed = Boolean(ii.resume_email_sent_at);
-          await (supabase.from("diagnostic_profiles" as any) as any)
-            .update({
-              identity_intelligence: {
-                ...ii,
-                journey_screen: screen,
-                journey_paused: true,
-                journey_stage: stage,
-                journey_paused_at: new Date().toISOString(),
-                resume_email_sent_at: alreadyEmailed ? ii.resume_email_sent_at : new Date().toISOString(),
-              },
-            })
-            .eq("user_id", userId);
+          await writeProfile({
+            identity_intelligence: {
+              ...ii,
+              journey_screen: screen,
+              journey_paused: true,
+              journey_stage: stage,
+              journey_paused_at: new Date().toISOString(),
+              resume_email_sent_at: alreadyEmailed ? ii.resume_email_sent_at : new Date().toISOString(),
+            },
+          }, "finish later save");
           /* one email, the first time only — never a sequence */
           if (!alreadyEmailed) {
             supabase.functions.invoke("send-resume-email", { body: { stage } }).catch(() => {});
           }
-        } catch (e) { console.warn("[journey] finish later save failed", e); }
+        } catch (e) { console.error("[journey] finish later save threw", e); }
       }
       window.setTimeout(() => navigate("/home"), 900);
     })();
-  }, [persistScreen, screen, navigate, userId]);
+  }, [persistScreen, screen, navigate, userId, writeProfile]);
 
   /** Remembers when their day starts, alongside the time zone we detected. */
   const chooseDailyTime = useCallback(async (slot: "Morning" | "Midday" | "Evening") => {
@@ -1020,11 +1055,9 @@ const Onboarding = () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("ui_dismissals").eq("user_id", userId).maybeSingle();
       const existing = (data?.ui_dismissals && typeof data.ui_dismissals === "object") ? data.ui_dismissals : {};
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ ui_dismissals: { ...existing, daily_time: { slot, time_zone: timeZone, at: new Date().toISOString() } } })
-        .eq("user_id", userId);
+      await writeProfile({ ui_dismissals: { ...existing, daily_time: { slot, time_zone: timeZone, at: new Date().toISOString() } } }, "daily time save");
     } catch { /* they can change it in Settings */ }
-  }, [userId, timeZone]);
+  }, [userId, timeZone, writeProfile]);
 
   /* Pausing is not finishing. The old escape hatch flagged the member as fully
    * onboarded with an empty profile and locked them out of the journey for
@@ -1048,10 +1081,8 @@ const Onboarding = () => {
     setQuestions(null);
     if (userId) {
       try {
-        await (supabase.from("diagnostic_profiles" as any) as any)
-          .update({ level: title, seniority_band: b, band_source: "corrected" })
-          .eq("user_id", userId);
-      } catch (e) { console.warn("[journey] level save failed", e); }
+        await writeProfile({ level: title, seniority_band: b, band_source: "corrected" }, "level save");
+      } catch (e) { console.error("[journey] level save threw", e); }
     }
   };
 
@@ -1484,8 +1515,7 @@ const Onboarding = () => {
                 setSector(v);
                 setSectorKnown(!!v);
                 if (userId && v) {
-                  await (supabase.from("diagnostic_profiles" as any) as any)
-                    .update({ sector_focus: v }).eq("user_id", userId);
+                  await writeProfile({ sector_focus: v }, "sector save");
                 }
               }} style={{ ...fieldStyle, marginBlockStart: 8 }}>
                 <option value="">Your sector</option>
@@ -1578,11 +1608,12 @@ const Onboarding = () => {
         <Actions style={{ marginBlockStart: 20 }}>
         <OBButton disabled={!ready} onClick={async () => {
           if (userId) {
-            await (supabase.from("diagnostic_profiles" as any) as any).upsert({
-              user_id: userId, first_name: firstName.trim(), last_name: lastName.trim() || null,
-              firm: firm.trim(), sector_focus: sector, level: levelTitle || (band ? BAND_TO_LEVEL[band] : null),
+            await writeProfile({
+              first_name: firstName.trim(), last_name: lastName.trim() || undefined,
+              firm: firm.trim(), sector_focus: sector,
+              level: levelTitle || (band ? BAND_TO_LEVEL[band] : undefined),
               seniority_band: band, band_source: "corrected",
-            }, { onConflict: "user_id" });
+            }, "identity save");
           }
           go(4);
         }}>Save and carry on</OBButton>
@@ -2295,16 +2326,22 @@ const Onboarding = () => {
           <>
           {/* the same card, laid out for the exported image */}
           {reveal ? (
-            <div style={{ position: "fixed", insetInlineStart: -10000, insetBlockStart: 0, pointerEvents: "none" }} aria-hidden>
-              <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+            /* html2canvas mis-handles fixed positioning at a large negative
+               offset — an absolute node inside a relative box rasterises. */
+            <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
+              <div style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
+                <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+              </div>
             </div>
           ) : null}
           {reveal && brandPaper ? (
-            <div ref={paperMountRef} aria-hidden style={{
-              position: "fixed", insetInlineStart: -10000, insetBlockStart: 0,
-              inlineSize: 794, pointerEvents: "none", zIndex: -1,
-            }}>
-              <BrandPaperDocument paper={brandPaper} />
+            <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
+              <div ref={paperMountRef} style={{
+                position: "absolute", left: -10000, top: 0,
+                width: 794, pointerEvents: "none", zIndex: -1,
+              }}>
+                <BrandPaperDocument paper={brandPaper} />
+              </div>
             </div>
           ) : null}
           {canPostToLinkedIn && !postedUrl && reveal ? (

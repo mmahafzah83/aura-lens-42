@@ -21,8 +21,21 @@ export async function loadReadStatus(userId: string): Promise<LinkedInReadStatus
 }
 
 export async function markVerifiedByRead(userId: string): Promise<void> {
-  await supabase
+  // The OAuth callback creates this row at a different moment, so an update
+  // can legitimately hit zero rows. Zero rows is never success: fall back to
+  // creating the row, and say so loudly if even that writes nothing.
+  const { data, error } = await supabase
     .from("linkedin_connections")
     .update({ source_status: "verified_by_read" })
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("user_id");
+  if (error) { console.error("[linkedin] confirm read failed", error); return; }
+  if (data && data.length > 0) return;
+  const { data: made, error: insertError } = await supabase
+    .from("linkedin_connections")
+    .insert({ user_id: userId, access_token: "", source_status: "verified_by_read" })
+    .select("user_id");
+  if (insertError || !made || made.length === 0) {
+    console.error("[linkedin] confirm read affected no rows", insertError);
+  }
 }
