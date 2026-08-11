@@ -546,15 +546,14 @@ const Onboarding = () => {
         setSectorKnown(true);
         if (userId) {
           try {
-            await (supabase.from("diagnostic_profiles" as any) as any)
-              .update({ sector_focus: guessed }).eq("user_id", userId);
+            await writeProfile({ sector_focus: guessed }, "sector save");
           } catch { /* the member can change it on the next screen */ }
         }
       }
 
       if (userId) {
         try {
-          await supabase.from("linkedin_connections").update({ source_status: "verified_by_read" }).eq("user_id", userId);
+          await markVerifiedByRead(userId);
         } catch { /* never block */ }
       }
 
@@ -573,9 +572,7 @@ const Onboarding = () => {
           const b = (detected as string | null) as Band | null;
           if (b && userId) {
             setBand(b);
-            await (supabase.from("diagnostic_profiles" as any) as any)
-              .update({ seniority_band: b, band_source: "detected" })
-              .eq("user_id", userId);
+            await writeProfile({ seniority_band: b, band_source: "detected" }, "level save");
           }
         } catch { /* the member confirms it on the next screen anyway */ }
       }
