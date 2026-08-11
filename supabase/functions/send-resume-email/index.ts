@@ -3,7 +3,7 @@
 // the journey. Never a sequence — the caller records that it has been sent.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { emailShell, heading, button } from "../_shared/email-theme.ts";
+import { renderEmail, heading, INK_SOFT } from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,13 +34,13 @@ serve(async (req) => {
       ? `You stopped at step ${stage} of 5. Everything you answered is saved.`
       : `Everything you answered is saved.`;
 
-    const html = emailShell({
+    const html = renderEmail({
       preheader: "Pick up where you left off",
       body: [
         heading("Pick up where you left off"),
-        `<p style="font-size:15px;line-height:1.7;color:#1B2733">${line}</p>`,
-        button("https://www.aura-intel.org/onboarding", "Pick up where I left off"),
+        `<p style="font-size:15px;line-height:1.7;color:${INK_SOFT}">${line}</p>`,
       ].join(""),
+      cta: { href: "https://www.aura-intel.org/onboarding", label: "Pick up where I left off" },
     });
 
     const RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
