@@ -717,6 +717,8 @@ const Onboarding = () => {
     if (screen === 8 || screen === TRUST_SLIDERS_SCREEN || screen === 9) void loadDimensions();
   }, [screen, loadDimensions]);
   useEffect(() => { if (screen === 10 || screen === 11) void loadQuestions(); }, [screen, loadQuestions]);
+  // Retired gate: a saved resume position may still point at it — forward to 8.
+  useEffect(() => { if (screen === TRUST_SLIDERS_SCREEN) go(8); }, [screen]);
 
   /* the member's own figures, read once the posts are in */
   useEffect(() => {
@@ -1216,7 +1218,7 @@ const Onboarding = () => {
       <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
         <h1 style={h1Light}>By the end of this, Aura knows how you work.</h1>
         <p style={bodyLight}>
-          Then it writes like you — and helps the right people see it.
+          Then it writes like you — and helps you be known better on LinkedIn and in the professional circles that matter to you.
         </p>
         <p style={bodyLight}>
           Five short steps, about ten minutes. You can stop anywhere — everything saves as you go.
@@ -1759,9 +1761,12 @@ const Onboarding = () => {
             <p style={{ ...bodyNight, textAlign: "center" }}>
               Where your own read and your posts disagree is where the useful part is.
             </p>
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              No score. Each one asks what you've actually done, in plain sentences rather than numbers.
+            </p>
             {pickedLine ? <p style={{ ...bodyNight, textAlign: "center" }}>{pickedLine}</p> : null}
             <Actions style={{ marginBlockStart: 24 }}>
-              <OBButton onClick={() => { setDimIdx(0); go(TRUST_SLIDERS_SCREEN); }} loading={!dims} loadingLabel="Loading…">
+              <OBButton onClick={() => { setDimIdx(0); go(9); }} loading={!dims} loadingLabel="Loading…">
                 Okay
               </OBButton>
             </Actions>
@@ -1771,28 +1776,7 @@ const Onboarding = () => {
     );
   }
 
-  /* 8.5 — NIGHT, why the sliders are built this way */
-  if (screen === TRUST_SLIDERS_SCREEN) {
-    const sliderCount = dims?.length ?? 0;
-    content = (
-      <NightShell onExit={saveAndExit} footer={escapeFooter}>
-        {contentError || !dims ? retryPanel(() => void loadDimensions()) : (
-          <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>Before you start</h1>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
-              No score. Each one asks what you have actually done, in plain sentences rather than numbers.
-            </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
-              {sliderCount ? `${sliderCount} sliders, picked for your level. Under a minute.` : "Picked for your level. Under a minute."}
-            </p>
-            <Actions style={{ marginBlockStart: 24 }}>
-              <OBButton onClick={() => { setDimIdx(0); go(9); }}>Okay</OBButton>
-            </Actions>
-          </>
-        )}
-      </NightShell>
-    );
-  }
+  /* 8.5 — retired; resume positions are forwarded to screen 8 above. */
 
   /* 9 — WHITE ×8, the sliders */
   if (screen === 9) {
@@ -1871,7 +1855,7 @@ const Onboarding = () => {
             {/* Back always exists here, and the first slider steps back a stage
                 rather than off the beginning of the flow. */}
             <OBButton variant="tertiary" onClick={() => {
-              if (dimIdx > 0) setDimIdx((i) => Math.max(0, i - 1)); else go(TRUST_SLIDERS_SCREEN);
+              if (dimIdx > 0) setDimIdx((i) => Math.max(0, i - 1)); else go(8);
             }}>Back</OBButton>
           </Actions>
           {last && (
