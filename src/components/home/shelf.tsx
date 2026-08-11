@@ -5,6 +5,7 @@ import { WIDGET_DEFS } from "@/components/widgets/widgetData";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import { WidgetBody } from "@/components/widgets/WidgetCards";
 import { nSignals, nEvidence, velocityWord } from "@/constants/vocabulary";
+import { useTierFromImprint, TIER_BANDS } from "@/hooks/useTierFromImprint";
 
 export type ShelfKey = "moves" | "stand" | "own" | "night" | "widgets";
 
@@ -22,6 +23,8 @@ export function buildShelf(
   themes: number,
   layout?: WidgetLayout,
   metrics?: WidgetMetrics | null,
+  /** Band name from useTierFromImprint — the only source of standing. */
+  bandName?: string | null,
 ): ShelfItem[] {
   const f = facts ?? {};
   const ln = f.last_night;
@@ -39,7 +42,7 @@ export function buildShelf(
       key: "stand",
       title: "Where you stand",
       fact: f.imprint != null
-        ? `${f.imprint}/100 · ${f.tier ?? "unbanded"}`
+        ? `${f.imprint}/100${bandName ? ` · ${bandName}` : ""}`
         : "No number yet. Capturing and publishing both feed it.",
     },
     {
