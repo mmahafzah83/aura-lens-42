@@ -32,6 +32,7 @@ import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import StatusRow from "@/components/onboarding/StatusRow";
 import { loadOwnSentence, type OwnSentence } from "@/lib/ownSentence";
 import MethodNote from "@/components/onboarding/MethodNote";
+import Confetti from "@/components/onboarding/Confetti";
 import WaitProof from "@/components/onboarding/WaitProof";
 import WorkProgress from "@/components/onboarding/WorkProgress";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
@@ -2173,6 +2174,7 @@ const Onboarding = () => {
     ];
     content = (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
+        {!revealPending ? <Confetti /> : null}
         {revealPending ? (
           <div style={{ marginBlockEnd: 4 }}>
             <WorkProgress onNight slowAfterMs={20000}
