@@ -2317,42 +2317,52 @@ const Onboarding = () => {
             <OBButton disabled={!reveal || !captionDraft.trim() || busy} loading={posting} loadingLabel="Posting…"
               onClick={() => void postToLinkedIn()}
               style={{ background: "#FFFFFF", color: OB.blue }}>Post it to LinkedIn</OBButton>
-          ) : null}
+          ) : (
+            <OBButton disabled={!reveal || busy} loading={sharing} loadingLabel="Building…"
+              onClick={() => void downloadRead()}
+              style={{ background: "#FFFFFF", color: OB.blue }}>Download the image</OBButton>
+          )}
           {postedUrl ? (
             <a href={postedUrl} target="_blank" rel="noopener noreferrer" style={{
               display: "block", textAlign: "center", color: "#FFFFFF", fontSize: 14,
               textDecoration: "underline", padding: "10px 0",
             }}>View it on LinkedIn</a>
           ) : null}
-          <OBButton
-            variant={canPostToLinkedIn && !postedUrl ? "secondary" : "primary"}
-            disabled={!reveal || busy} loading={sharing} loadingLabel="Building…"
-            onClick={() => void downloadRead()}
-            style={canPostToLinkedIn && !postedUrl
-              ? { borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }
-              : { background: "#FFFFFF", color: OB.blue }}
-          >Download the image</OBButton>
-          {reveal && brandPaper ? (
-            <OBButton variant="secondary" disabled={busy} loading={buildingReport} loadingLabel="Building your report…"
-              onClick={() => void downloadFullReport()}
-              style={{ borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }}
-            >Download the full report</OBButton>
+          <OBButton variant="secondary" disabled={busy} onClick={() => setSaveOpen((v) => !v)}
+            aria-expanded={saveOpen}
+            style={{ borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }}
+          >Save it</OBButton>
+          {saveOpen ? (
+            <div style={{
+              display: "flex", flexDirection: "column", gap: 10, alignItems: "center",
+              padding: "4px 0 2px", color: "rgba(255,255,255,.92)", fontSize: 13.5,
+            }}>
+              <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()} style={quietLink}>
+                {sharing ? "Building…" : "The image, for sharing"}
+              </button>
+              {reveal && brandPaper ? (
+                <button type="button" disabled={busy} onClick={() => void downloadFullReport()} style={quietLink}>
+                  {buildingReport ? "Building your report…" : "The full report, yours to keep"}
+                </button>
+              ) : null}
+              <button type="button" disabled={busy} onClick={() => void saveReadForLater()} style={quietLink}>
+                {savingDraft ? "Saving…" : "Keep it in my drafts"}
+              </button>
+            </div>
           ) : null}
-          <OBButton variant="tertiary" disabled={busy} onClick={() => void saveReadForLater()}
-            style={{ color: "#FFFFFF" }}>Save it for later</OBButton>
           <OBButton variant="tertiary" onClick={() => go(14)}
             style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
           </Actions>
-          <p style={{ margin: "12px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.72)", textAlign: "center" }}>
-            The image is for sharing. The report is the full read — yours to keep.
-          </p>
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
             Free while Aura is in beta. Your read is private — only you can see it unless you share it.
           </p>
-          <div style={{ color: "rgba(255,255,255,.82)" }}>
-            <ReadCorrection userId={userId} onNight />
-            <MethodNote onNight />
-          </div>
+          <p style={{
+            margin: "12px 0 0", fontSize: 12, lineHeight: 1.7,
+            color: "rgba(255,255,255,.80)", textAlign: "center",
+          }}>
+            This is a read, not a verdict. <ReadCorrection userId={userId} onNight inline /> ·{" "}
+            <MethodNote onNight inline />
+          </p>
         </div>
       </div>
     );
