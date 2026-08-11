@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { TIER_BANDS, bandFromKey, bandFromScore } from "@/hooks/useTierFromImprint";
 import { filterPublishedRows, postEffectiveDate } from "@/lib/postProvenance";
+import { RecordLens } from "@/components/home/RecordLens";
+import { useHomeAddress } from "@/hooks/useHomeAddress";
 
 /**
  * MOMENTUM — V23 `s-mo`.
@@ -100,6 +102,8 @@ interface MilestoneRow {
 
 export default function MomentumPage() {
   const { user, isReady } = useAuthReady();
+  // The Record moved off Home and lives here now — same data, its own place.
+  const address = useHomeAddress(user?.id);
   const uid = user?.id ?? null;
 
   const [loaded, setLoaded] = useState(false);
@@ -249,6 +253,20 @@ export default function MomentumPage() {
           What you've built, how often you show up, and what's next.
         </p>
       </header>
+
+      {/* ── The Record ───────────────────────────────────────── */}
+      <RecordLens
+        facts={address.facts}
+        userId={user?.id ?? null}
+        draftDismissed={false}
+        onPublishDraft={() => {
+          try { window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } })); } catch { /* noop */ }
+        }}
+        onDismissDraft={() => { /* dismissal belongs to Home's address */ }}
+        onOpenSignals={() => {
+          try { window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "intelligence" } })); } catch { /* noop */ }
+        }}
+      />
 
       {!hasAnything && (
         <Card>

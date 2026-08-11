@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Avatar from "@/components/systemb/Avatar";
-import { MONO } from "./homeAtoms";
+import { MONO, ReadFailure } from "./homeAtoms";
 import { STANDING } from "@/constants/vocabulary";
 import { useTierFromImprint, TIER_BANDS } from "@/hooks/useTierFromImprint";
 
@@ -32,6 +32,8 @@ function kickerFor(d: Date): string {
 
 export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ userId }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileFailed, setProfileFailed] = useState(false);
+  const [profileNonce, setProfileNonce] = useState(0);
   const [now, setNow] = useState<Date>(() => new Date());
   const tier = useTierFromImprint(userId);
 
@@ -47,15 +49,22 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
     if (!userId) return;
     let alive = true;
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("diagnostic_profiles")
         .select("first_name, avatar_url, level, firm")
         .eq("user_id", userId)
         .maybeSingle();
-      if (alive && data) setProfile(data as Profile);
+      if (!alive) return;
+      if (error) {
+        console.warn("[HomeMasthead] diagnostic_profiles read failed", error);
+        setProfileFailed(true);   // keep whatever profile is already rendered
+        return;
+      }
+      setProfileFailed(false);
+      if (data) setProfile(data as Profile);
     })();
     return () => { alive = false; };
-  }, [userId]);
+  }, [userId, profileNonce]);
 
   const firstName = (profile?.first_name || "").trim();
   const greeting = greetingFor(now.getHours());
@@ -98,7 +107,11 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
         }}>{STANDING.label.toUpperCase()}</div>
         {tier.loading || !band ? (
           <div style={{ ...MONO, fontSize: 12, color: "var(--text-muted)" }}>
-            {tier.loading ? "Reading your standing…" : "Not measured yet."}
+            {tier.loading
+              ? "Reading your standing…"
+              : tier.failed
+                ? "Aura could not read this just now."
+                : "Not measured yet."}
           </div>
         ) : (
           <>
@@ -121,6 +134,8 @@ export const HomeMasthead: React.FC<{ userId: string | null | undefined }> = ({ 
             </div>
           </>
         )}
+        {tier.failed && !tier.loading && <ReadFailure onRetry={tier.refresh} />}
+        {profileFailed && <ReadFailure onRetry={() => setProfileNonce((n) => n + 1)} />}
       </div>
 
       <style>{`

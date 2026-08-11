@@ -118,6 +118,19 @@ export const Muted: React.FC<React.PropsWithChildren<{ style?: React.CSSProperti
   <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: "var(--text-muted)", ...style }}>{children}</p>
 );
 
+/**
+ * ReadFailure — the one honest line shown when a read errored.
+ * Never replaces good data already on screen; it sits beneath it.
+ */
+export const ReadFailure: React.FC<{ onRetry?: () => void; style?: React.CSSProperties }> = ({ onRetry, style }) => (
+  <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", ...style }}>
+    <span style={{ fontSize: 12.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>
+      Aura could not read this just now. Nothing is lost — try again.
+    </span>
+    {onRetry && <TextButton onClick={onRetry}>Try again</TextButton>}
+  </div>
+);
+
 export const Body: React.FC<React.PropsWithChildren<{ style?: React.CSSProperties }>> = ({ children, style }) => (
   <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "var(--text-secondary)", ...style }}>{children}</p>
 );

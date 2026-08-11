@@ -13,8 +13,8 @@ import {
   useHomeAddress, useReadChips,
   type HomeLens, type HomeMove,
 } from "@/hooks/useHomeAddress";
-import { MONO, Kicker, Card, Body, Muted, ActButton, Skeleton } from "./homeAtoms";
-import { RecordLens, ShapeLens } from "./lenses";
+import { MONO, Kicker, Card, Body, Muted, ActButton, Skeleton, ReadFailure } from "./homeAtoms";
+import { ShapeLens } from "./lenses";
 import {
   buildShelf, MovesCard, StandCard, OwnCard, NightCard, WidgetsCard,
   type ShelfKey, type OwnedTheme,
@@ -33,15 +33,11 @@ export interface HomeSpineProps {
   onSwitchTab: (tab: string) => void;
   onStartSignalPost: (p: { topic: string; context: string; signalId: string; signalTitle: string }) => void;
   onOpenDraft?: (d: { id: string; body: string; language: "en" | "ar"; type: "carousel" | "framework" | "linkedin_post"; topic?: string | null }) => void;
+  /** First Flight owns the capture call-to-action while it is running. */
+  guidedActive?: boolean;
 }
 
-const LENS_LABEL: Record<HomeLens, string> = {
-  record: "What happened", shape: "Where you stand",
-};
-const LENSES: HomeLens[] = ["record", "shape"];
-
 const collapseKey = (uid: string) => `aura_home_address_collapsed_${uid}`;
-const lensKey = (uid: string) => `aura_home_lens_${uid}`;
 const draftDismissKey = (id: string) => `move_dismissed_${id}_${new Date().toISOString().slice(0, 10)}`;
 
 /** Map a stored cta_route onto the dashboard's tabs. */
@@ -71,24 +67,20 @@ const stemOf = (t: string) =>
 /** Shorten only a button label; the full title always rides on `title`. */
 const shortLabel = (t: string, max = 52) => (t.length <= max ? t : `${t.slice(0, max - 1).trimEnd()}…`);
 
-export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpineProps) {
+export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActive }: HomeSpineProps) {
   const uid = userId ?? "anon";
   const address = useHomeAddress(userId);
   const facts = address.facts;
   const chips = useReadChips(userId, facts);
-  const tier = useTierFromImprint(userId);
 
   const { layout, metrics } = useWidgetData(userId);
   const [themes, setThemes] = useState<OwnedTheme[]>([]);
+  const [themesLoading, setThemesLoading] = useState(true);
+  const [themesFailed, setThemesFailed] = useState(false);
+  const [themesNonce, setThemesNonce] = useState(0);
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(collapseKey(uid)) === "1"; } catch { return false; }
-  });
-  const [override, setOverride] = useState<{ lens: HomeLens; reason: string } | null>(() => {
-    try {
-      const raw = localStorage.getItem(lensKey(uid));
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
   });
   const [onStage, setOnStage] = useState<ShelfKey | null>(null);
   const [draftDismissed, setDraftDismissed] = useState(false);
@@ -101,47 +93,30 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
   useEffect(() => {
     if (!userId) return;
     let alive = true;
+    setThemesLoading(true);
     (async () => {
-      const sigs = await (supabase.from("strategic_signals" as any) as any)
+      const { data, error } = await (supabase.from("strategic_signals" as any) as any)
         .select("id, signal_title, fragment_count, velocity_status")
         .eq("user_id", userId).eq("status", "active")
         .order("fragment_count", { ascending: false, nullsFirst: false }).limit(6);
       if (!alive) return;
-      setThemes(((sigs?.data as any[]) || []).map((s) => ({
+      setThemesLoading(false);
+      if (error) {
+        // A failed read never wipes signals already on screen.
+        console.warn("[HomeSpine] strategic_signals read failed", error);
+        setThemesFailed(true);
+        return;
+      }
+      setThemesFailed(false);
+      setThemes(((data as any[]) || []).map((s) => ({
         id: s.id, title: s.signal_title, fragments: s.fragment_count ?? 0, velocity: s.velocity_status ?? null,
       })));
     })();
     return () => { alive = false; };
-  }, [userId]);
-
-  // ── the lens: Aura's choice unless the member overrode it ────────
-  const auraLens = address.row?.lens ?? "shape";
-  const auraReason = address.row?.lens_reason ?? "";
-
-  // An override survives until Aura chooses for a *different* reason.
-  useEffect(() => {
-    if (!override || !auraReason) return;
-    if (override.reason !== auraReason) {
-      setOverride(null);
-      try { localStorage.removeItem(lensKey(uid)); } catch { /* noop */ }
-    }
-  }, [auraReason, override, uid]);
+  }, [userId, themesNonce]);
 
   const empty = !!facts && !address.errored && (facts.captures_total ?? 0) === 0;
   const firstRun = (facts?.days_since_signup ?? 99) <= 1;
-  const activeLens: HomeLens = empty ? "shape" : (override?.lens ?? auraLens);
-
-  const chooseLens = useCallback((l: HomeLens) => {
-    setOnStage(null);
-    if (l === auraLens) {
-      setOverride(null);
-      try { localStorage.removeItem(lensKey(uid)); } catch { /* noop */ }
-      return;
-    }
-    const next = { lens: l, reason: auraReason };
-    setOverride(next);
-    try { localStorage.setItem(lensKey(uid), JSON.stringify(next)); } catch { /* noop */ }
-  }, [auraLens, auraReason, uid]);
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
@@ -189,8 +164,8 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
   const moves: HomeMove[] = address.row?.moves ?? [];
   const activeMove: HomeMove | null = moves[moveIdx] ?? moves[0] ?? null;
   const shelf = useMemo(
-    () => buildShelf(facts, moves, facts?.signals_active ?? themes.length, layout, metrics, tier.currentTier?.name ?? null),
-    [facts, moves, themes.length, layout, metrics, tier.currentTier],
+    () => buildShelf(facts, moves, facts?.signals_active ?? themes.length, layout, metrics),
+    [facts, moves, themes.length, layout, metrics],
   );
 
   const generatedAt = address.row?.generated_at ?? null;
@@ -218,22 +193,26 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
   const stage = (() => {
     if (onStage === "moves") return <MovesCard moves={moves} onGo={goRoute} />;
     if (onStage === "stand") return <StandCard facts={facts} userId={userId} />;
-    if (onStage === "own") return <OwnCard themes={themes} onOpen={() => onSwitchTab("intelligence")} />;
-    if (onStage === "night") return <NightCard facts={facts} generatedAt={generatedAt} onOpen={() => onSwitchTab("overnight")} />;
-    if (onStage === "widgets") return <WidgetsCard layout={layout} metrics={metrics} onEdit={() => onSwitchTab("widgets")} />;
-
-    if (activeLens === "record") {
-      if (empty) return null;
+    if (onStage === "own") {
       return (
-        <RecordLens
-          facts={facts} userId={userId} draftDismissed={draftDismissed}
-          onPublishDraft={(id) => { void publishDraft(id); }}
-          onDismissDraft={dismissDraft}
-          onOpenSignals={() => onSwitchTab("intelligence")}
+        <OwnCard
+          themes={themes} loading={themesLoading} failed={themesFailed}
+          onRetry={() => setThemesNonce((n) => n + 1)}
+          onOpen={() => onSwitchTab("intelligence")}
         />
       );
     }
-    return <ShapeLens facts={facts} userId={userId} />;
+    if (onStage === "night") return <NightCard facts={facts} onOpen={() => onSwitchTab("overnight")} />;
+    if (onStage === "widgets") return <WidgetsCard layout={layout} metrics={metrics} onEdit={() => onSwitchTab("widgets")} />;
+
+    // Home ends in one screen: the shape is the only stage. The record now
+    // lives on Momentum.
+    return (
+      <ShapeLens
+        facts={facts} userId={userId}
+        factsFailed={address.errored} onRetryFacts={address.refresh}
+      />
+    );
   })();
 
   const loadingAddress = address.loading && !address.row;
@@ -396,42 +375,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
         )}
       </section>
 
-      {/* 2 — THE LENS BAR */}
-      {!empty && (
-        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {LENSES.map((l) => {
-              const on = l === activeLens && !onStage;
-              return (
-                <button
-                  key={l} type="button" onClick={() => chooseLens(l)} aria-pressed={on}
-                  style={{
-                    borderRadius: 999, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                    fontFamily: "var(--font-body)",
-                    background: on ? "var(--surface-inverse)" : "transparent",
-                    color: on ? "var(--text-inverse)" : "var(--text-secondary)",
-                    border: on ? "1px solid var(--surface-inverse)" : "1px solid var(--rule-outer)",
-                  }}
-                >{LENS_LABEL[l]}</button>
-              );
-            })}
-          </div>
-          {override ? (
-            <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-              You chose this · Aura will keep it
-            </span>
-          ) : auraReason ? (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--text-secondary)" }}>
-              <span aria-hidden style={{
-                inlineSize: 7, blockSize: 7, borderRadius: 999, background: "var(--machine)",
-              }} />
-              Aura chose this — {auraReason}
-            </span>
-          ) : null}
-        </div>
-      )}
-
-      {/* 3 — THE STAGE + THE SHELF */}
+      {/* 2 — THE STAGE + THE SHELF */}
       <div style={{ display: "grid", gap: 18, gridTemplateColumns: "minmax(0, 2.1fr) minmax(240px, 1fr)", alignItems: "start" }}
            className="home-spine-grid">
         <div style={{ display: "grid", gap: 12, minInlineSize: 0 }}>
@@ -439,7 +383,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
             <button type="button" onClick={() => setOnStage(null)} style={{
               justifySelf: "start", background: "none", border: 0, padding: 0, cursor: "pointer",
               fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600, color: "var(--act)",
-            }}>◂ Back to {LENS_LABEL[activeLens].toLowerCase()}</button>
+            }}>◂ Back to where you stand</button>
           )}
 
           {address.loading && !facts ? (
@@ -456,20 +400,28 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
                 Nothing has been saved yet, so there is nothing that happened to show — only where you stand
                 today.
               </Body>
-              <div>
-                <ActButton onClick={() => {
-                  try { window.dispatchEvent(new CustomEvent("aura:open-capture")); } catch { /* noop */ }
-                }}>Keep the first thing you read</ActButton>
-              </div>
+              {/* First Flight already offers the capture button — never two at once. */}
+              {!guidedActive && (
+                <div>
+                  <ActButton onClick={() => {
+                    try { window.dispatchEvent(new CustomEvent("aura:open-capture")); } catch { /* noop */ }
+                  }}>Capture the first thing you read</ActButton>
+                </div>
+              )}
             </Card>
-          ) : <div key={onStage ?? activeLens} className="home-stage">{stage}</div>}
+          ) : <div key={onStage ?? "shape"} className="home-stage">{stage}</div>}
 
-          {empty && !onStage && <ShapeLens facts={facts} userId={userId} />}
+          {empty && !onStage && (
+            <ShapeLens
+              facts={facts} userId={userId}
+              factsFailed={address.errored} onRetryFacts={address.refresh}
+            />
+          )}
         </div>
 
         {/* the shelf */}
         <aside style={{ display: "grid", gap: 10, minInlineSize: 0 }}>
-          <Kicker>Your shelf</Kicker>
+          <Kicker>Look deeper</Kicker>
           {shelf.map((s) => {
             const on = onStage === s.key;
             return (
@@ -487,11 +439,39 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
                     inlineSize: 6, blockSize: 6, borderRadius: 999, background: "var(--machine)",
                   }} />}
                   <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>{s.title}</span>
+                  <span aria-hidden style={{
+                    marginInlineStart: "auto", fontSize: 12, color: "var(--text-muted)",
+                  }}>▸</span>
                 </span>
                 <Muted style={{ fontSize: 12.5 }}>{s.fact}</Muted>
               </button>
             );
           })}
+
+          {/* the quiet index — the rest of Aura, one row each */}
+          <nav aria-label="Elsewhere in Aura" style={{
+            marginBlockStart: 4, paddingBlockStart: 10, borderBlockStart: "1px solid var(--rule-divider)",
+            display: "grid", gap: 2,
+          }}>
+            {([
+              { label: "What happened", tab: "momentum" },
+              { label: "Your signals", tab: "intelligence" },
+              { label: "Your widgets", tab: "widgets" },
+            ] as const).map((r) => (
+              <button
+                key={r.tab} type="button"
+                onClick={() => { onSwitchTab(r.tab); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+                  background: "none", border: 0, padding: "8px 2px", cursor: "pointer",
+                  fontFamily: "var(--font-body)", fontSize: 13, color: "var(--text-secondary)", textAlign: "start",
+                }}
+              >
+                <span>{r.label}</span>
+                <span aria-hidden style={{ fontSize: 12, color: "var(--text-muted)" }}>▸</span>
+              </button>
+            ))}
+          </nav>
         </aside>
       </div>
 

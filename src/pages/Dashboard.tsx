@@ -888,11 +888,7 @@ const Dashboard = () => {
               {/* Global section label removed — each tab owns its own branded header */}
             </div>
             <div className="flex items-center gap-3">
-              <OvernightPulse
-                variant="chip"
-                interactive={activeTab !== "overnight"}
-                onOpen={() => switchTab("overnight" as TabValue)}
-              />
+              {/* Overnight is owned by Home's "While you slept" block — not repeated here. */}
               <AskAuraButton onClick={() => openChat()} />
               <HelpButton onClick={() => setHelpOpen(true)} />
               <NotificationBell />

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  MONO, Card, Kicker, Body, Muted, TextButton,
+  MONO, Card, Kicker, Body, Muted, TextButton, ReadFailure,
   SectionTitle, titleCaseFacet,
 } from "./homeAtoms";
 import type { HomeFacts } from "@/hooks/useHomeAddress";
@@ -38,6 +38,9 @@ const longDate = (iso: string) =>
 export interface ShapeLensProps {
   facts: HomeFacts | null;
   userId: string | null | undefined;
+  /** the address read failed — the facets below may be stale or absent. */
+  factsFailed?: boolean;
+  onRetryFacts?: () => void;
 }
 
 function polygon(values: number[], cx: number, cy: number, r: number): string {
@@ -51,7 +54,7 @@ function polygon(values: number[], cx: number, cy: number, r: number): string {
 
 const CEILING = 0.995;
 
-export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId }) => {
+export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed, onRetryFacts }) => {
   const facets = (facts?.facets ?? []).slice(0, 7);
   const dormant = new Set(facts?.facets_dormant ?? []);
   const past = useShapePast(userId);
@@ -68,7 +71,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId }) => {
   const hasSignals = (facts?.signals_active ?? 0) > 0;
 
   // Only claim nothing has registered when genuinely nothing has.
-  if (facets.length === 0 && !hasCaptures && !hasSignals) {
+  if (facets.length === 0 && !hasCaptures && !hasSignals && !factsFailed) {
     return (
       <Card>
         <Kicker>Where you stand</Kicker>
@@ -78,10 +81,23 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId }) => {
     );
   }
 
+  // A failed read with nothing yet on screen: say so, never fake an empty state.
+  if (facets.length === 0 && factsFailed) {
+    return (
+      <Card>
+        <Kicker>Where you stand</Kicker>
+        <SectionTitle>What Aura can measure about you today</SectionTitle>
+        <ReadFailure onRetry={onRetryFacts} />
+      </Card>
+    );
+  }
+
   const anyDormant = facets.some((f) => dormant.has(f.facet));
   const pastCaption = past.loading
     ? "Reading your earlier shape."
-    : hasPast
+    : past.failed
+      ? "Aura could not read your earlier shape just now."
+      : hasPast
       ? (past.takenOn
         ? `Dotted line: your reading on ${longDate(past.takenOn)}.`
         : "Solid: today. Dotted: thirty days ago.")
@@ -93,8 +109,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId }) => {
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "20px 22px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
         <Kicker>Where you stand</Kicker>
-        <SectionTitle>Where you stand</SectionTitle>
-        <Muted>What Aura can measure about you today.</Muted>
+        <SectionTitle>What Aura can measure about you today</SectionTitle>
       </div>
 
       <div style={{ padding: "20px 22px", display: "grid", gap: 20 }}>
@@ -134,6 +149,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId }) => {
           {facts?.facets_dormant_reason && (
             <Muted style={{ marginBlockStart: 2 }}>{facts.facets_dormant_reason}</Muted>
           )}
+          {factsFailed && <ReadFailure onRetry={onRetryFacts} style={{ marginBlockStart: 2 }} />}
         </div>
 
         <div style={{ display: "grid", gap: 10 }}>
@@ -167,6 +183,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId }) => {
             })}
           </svg>
           <Muted style={{ marginBlockStart: 8 }}>{pastCaption}</Muted>
+          {past.failed && <ReadFailure onRetry={past.reload} style={{ marginBlockStart: 6 }} />}
         </div>
           )}
         </div>

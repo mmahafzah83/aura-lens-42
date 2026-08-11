@@ -1,11 +1,11 @@
 import React from "react";
-import { MONO, Card, Kicker, Body, Muted, ActButton, MachineDot, SectionTitle } from "./homeAtoms";
+import { MONO, Card, Kicker, Body, Muted, ActButton, MachineDot, SectionTitle, ReadFailure } from "./homeAtoms";
 import type { HomeFacts, HomeMove } from "@/hooks/useHomeAddress";
 import { WIDGET_DEFS } from "@/components/widgets/widgetData";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import { WidgetBody } from "@/components/widgets/WidgetCards";
 import { nSignals, nEvidence, velocityWord } from "@/constants/vocabulary";
-import { useTierFromImprint, TIER_BANDS } from "@/hooks/useTierFromImprint";
+import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
 export type ShelfKey = "moves" | "stand" | "own" | "night" | "widgets";
 
@@ -23,8 +23,6 @@ export function buildShelf(
   themes: number,
   layout?: WidgetLayout,
   metrics?: WidgetMetrics | null,
-  /** Band name from useTierFromImprint — the only source of standing. */
-  bandName?: string | null,
 ): ShelfItem[] {
   const f = facts ?? {};
   const ln = f.last_night;
@@ -41,8 +39,9 @@ export function buildShelf(
     {
       key: "stand",
       title: "Where you stand",
+      // The band and the points-to-next belong to HomeMasthead. Here: the number only.
       fact: f.imprint != null
-        ? `${f.imprint}/100${bandName ? ` · ${bandName}` : ""}`
+        ? `${f.imprint}/100`
         : "No number yet. Capturing and publishing both feed it.",
     },
     {
@@ -104,14 +103,9 @@ export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => v
 );
 
 export const StandCard: React.FC<{ facts: HomeFacts | null; userId: string | null | undefined }> = ({ facts, userId }) => {
-  // One source of standing on Home: imprint_snapshots via useTierFromImprint.
+  // The verdict (band, points to next) is owned by HomeMasthead and is not
+  // repeated here. This card is the *why*: the number and its three parts.
   const tier = useTierFromImprint(userId);
-  const band = tier.currentTier;
-  const idx = band ? TIER_BANDS.findIndex((b) => b.key === band.key) : -1;
-  const nextBand = idx >= 0 ? TIER_BANDS[idx + 1] ?? null : null;
-  const pointsToNext = band && nextBand && tier.score != null
-    ? Math.max(0, nextBand.min - Math.round(tier.score))
-    : null;
   const c = facts?.components ?? { signal: null, content: null, capture: null };
   const rows: Array<{ label: string; value: number | null; weight: string }> = [
     { label: "Signal", value: c.signal, weight: "signals you hold" },
@@ -131,13 +125,7 @@ export const StandCard: React.FC<{ facts: HomeFacts | null; userId: string | nul
         <Muted style={{ marginBlockStart: 6 }}>
           {facts?.imprint == null
             ? "No number yet — capture and publish and Aura can measure it"
-            : tier.loading
-              ? "Reading your standing…"
-              : band
-                ? `${band.name}${nextBand && pointsToNext != null
-                    ? ` — ${pointsToNext} points to ${nextBand.name}.`
-                    : " — the top band. It is held, not climbed."}`
-                : "Not measured yet."}
+            : "What the number is made of."}
         </Muted>
       </div>
       <div style={{ padding: "18px 20px", display: "grid", gap: 14 }}>
@@ -156,6 +144,7 @@ export const StandCard: React.FC<{ facts: HomeFacts | null; userId: string | nul
             <Muted>{r.weight}</Muted>
           </div>
         ))}
+        {tier.failed && !tier.loading && <ReadFailure onRetry={tier.refresh} />}
       </div>
     </Card>
   );
@@ -163,14 +152,22 @@ export const StandCard: React.FC<{ facts: HomeFacts | null; userId: string | nul
 
 export interface OwnedTheme { id: string; title: string; fragments: number; velocity: string | null }
 
-export const OwnCard: React.FC<{ themes: OwnedTheme[]; onOpen: () => void }> = ({ themes, onOpen }) => (
+export const OwnCard: React.FC<{
+  themes: OwnedTheme[]; onOpen: () => void;
+  loading?: boolean; failed?: boolean; onRetry?: () => void;
+}> = ({ themes, onOpen, loading, failed, onRetry }) => (
   <Card style={{ padding: 0 }}>
     <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
       <Kicker>What you own</Kicker>
       <SectionTitle>The signals your reading holds up</SectionTitle>
     </div>
     <div style={{ padding: "8px 0" }}>
-      {themes.length === 0 && (
+      {loading && themes.length === 0 && (
+        <div style={{ padding: "12px 20px" }}>
+          <Muted>Reading your signals…</Muted>
+        </div>
+      )}
+      {!loading && !failed && themes.length === 0 && (
         <div style={{ padding: "12px 20px", display: "grid", gap: 6 }}>
           <Body>No signals yet.</Body>
           <Muted>A signal forms when several things you capture point the same way.</Muted>
@@ -186,6 +183,11 @@ export const OwnCard: React.FC<{ themes: OwnedTheme[]; onOpen: () => void }> = (
           </span>
         </div>
       ))}
+      {failed && (
+        <div style={{ padding: "12px 20px" }}>
+          <ReadFailure onRetry={onRetry} />
+        </div>
+      )}
     </div>
     <div style={{ padding: "14px 20px", borderBlockStart: "1px solid var(--rule-divider)" }}>
       <ActButton onClick={onOpen}>Open your signals</ActButton>
@@ -193,26 +195,14 @@ export const OwnCard: React.FC<{ themes: OwnedTheme[]; onOpen: () => void }> = (
   </Card>
 );
 
-export const NightCard: React.FC<{ facts: HomeFacts | null; generatedAt: string | null; onOpen: () => void }> = ({ facts, generatedAt, onOpen }) => {
+export const NightCard: React.FC<{ facts: HomeFacts | null; onOpen: () => void }> = ({ facts, onOpen }) => {
   const ln = facts?.last_night;
-  const clock = (iso: string | null) => {
-    if (!iso) return "—";
-    const d = new Date(iso);
-    const p = (n: number) => String(n).padStart(2, "0");
-    return `${p(d.getHours())}:${p(d.getMinutes())}`;
-  };
   return (
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
         <Kicker>While you slept</Kicker>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBlockStart: 8 }}>
-          <MachineDot />
-          <span style={{ ...MONO, fontSize: 12, color: "var(--text-secondary)" }}>
-            {/* generated_at is when the address was written, not when the
-                overnight run finished — say what the number actually is. */}
-            Prepared {clock(generatedAt)}
-          </span>
-        </div>
+        {/* The "Prepared HH:MM" clock is owned by the night address header. */}
+        <SectionTitle>What Aura did overnight</SectionTitle>
       </div>
       <div style={{ padding: "18px 20px", display: "grid", gap: 10 }}>
         {ln ? (

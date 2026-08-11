@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { nEvidence } from "@/constants/vocabulary";
 
@@ -83,6 +83,8 @@ export interface HomeAddressState {
   row: HomeAddressRow | null;
   /** today's row read straight from the table, available before prose arrives. */
   facts: HomeFacts | null;
+  /** re-run today's read after a failure. */
+  refresh: () => void;
 }
 
 // Must match the home-address edge function, which keys rows in UTC.
@@ -103,13 +105,16 @@ function normalise(raw: any): HomeAddressRow | null {
 }
 
 export function useHomeAddress(userId: string | null | undefined): HomeAddressState {
-  const [state, setState] = useState<HomeAddressState>({
+  const [state, setState] = useState<Omit<HomeAddressState, "refresh">>({
     loading: true, errored: false, row: null, facts: null,
   });
+  const [nonce, setNonce] = useState(0);
+  const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
     if (!userId) return;
     let alive = true;
+    setState((s) => ({ ...s, loading: true }));
 
     (async () => {
       // 1 — the deterministic half, straight from the table, so the page can
@@ -131,15 +136,16 @@ export function useHomeAddress(userId: string | null | undefined): HomeAddressSt
         if (!alive) return;
         if (row) setState({ loading: false, errored: false, row, facts: row.facts });
         else setState((s) => ({ ...s, loading: false, errored: true }));
-      } catch {
+      } catch (e) {
+        console.warn("[useHomeAddress] home-address read failed", e);
         if (alive) setState((s) => ({ ...s, loading: false, errored: true }));
       }
     })();
 
     return () => { alive = false; };
-  }, [userId]);
+  }, [userId, nonce]);
 
-  return state;
+  return { ...state, refresh };
 }
 
 
