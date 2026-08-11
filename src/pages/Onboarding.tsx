@@ -39,6 +39,8 @@ import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleB
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
+import JourneyHeader from "@/components/onboarding/JourneyHeader";
+import { num, cleanHeadline, memberText } from "@/lib/memberText";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
@@ -59,14 +61,24 @@ const BAND_TO_LEVEL: Record<Band, string> = {
 
 const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
   { key: "profile", label: "Your profile", tone: "blue" },
-  { key: "claims", label: "First claims", tone: "cyan" },
+  { key: "claims", label: "First subjects", tone: "cyan" },
   { key: "strengths", label: "Strengths", tone: "deep" },
   { key: "subjects", label: "Your subjects", tone: "amber" },
+];
+
+const SHELF_ICON = ["profile", "saved", "strengths", "subjects"] as const;
+const SHELF_HINT = [
+  "Unlocks when Aura has read your profile",
+  "Unlocks when you save your first thing to read",
+  "Unlocks when you've moved the sliders",
+  "Unlocks when your read is written",
 ];
 
 const MANUAL_SCREEN = 15;
 /** Shown wherever a post or word count would otherwise read zero. */
 const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you save.";
+/** The same truth, in the first person, because the dark screens are Aura speaking. */
+const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you save.";
 /** A short dark panel that sits between screen 8 and the sliders. */
 const TRUST_SLIDERS_SCREEN = 8.5;
 
@@ -83,6 +95,16 @@ const PAGE_CSS = `
 @keyframes obc-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .obc-in{animation:obc-in 450ms ${SPRING} both;}
 .obc-line{opacity:0;animation:obc-in 450ms ${SPRING} both;}
+/* The slider measures a position, not an achievement — so the track never fills. */
+.ob-slider{inline-size:100%;-webkit-appearance:none;appearance:none;background:transparent;}
+.ob-slider::-webkit-slider-runnable-track{block-size:4px;border-radius:999px;background:${OB.line};}
+.ob-slider::-moz-range-track{block-size:4px;border-radius:999px;background:${OB.line};}
+.ob-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;inline-size:24px;block-size:24px;
+  border-radius:999px;background:${OB.blue};border:2px solid #FFFFFF;box-shadow:0 2px 8px rgba(6,112,196,.35);margin-block-start:-10px;cursor:grab;}
+.ob-slider::-moz-range-thumb{inline-size:24px;block-size:24px;border-radius:999px;background:${OB.blue};
+  border:2px solid #FFFFFF;cursor:grab;}
+/* Focus is a soft outer ring — never a second selection state. */
+.ob-opt:focus-visible{outline:none;box-shadow:0 0 0 3px ${OB.blueTint};}
 @media (prefers-reduced-motion:reduce){
   .obc-in,.obc-line{animation:none !important;opacity:1 !important;transform:none !important;}
 }
