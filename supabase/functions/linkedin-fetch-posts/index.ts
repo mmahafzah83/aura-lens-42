@@ -6,6 +6,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { isAdmin } from "../_shared/adminRole.ts";
+import { refreshVoiceProfiles } from "../_shared/voiceRefresh.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
