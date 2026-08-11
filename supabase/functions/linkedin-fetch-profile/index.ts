@@ -136,20 +136,19 @@ Deno.serve(async (req) => {
     }
 
     // --- Apify (sync run) ---
-    // The actor's input key has changed over time, so try the documented shape
-    // first and fall back to the older one before giving up.
+    // One shape that we know returns the full record, and one bare fallback.
+    // Nothing else: every extra attempt was a whole timeout the member waited
+    // through. Two attempts at 45s each — a hard ceiling of 90 seconds.
     const inputShapes: Record<string, unknown>[] = [
       { queries: [canonical_url], profileScraperMode: "Full ($8 per 1k)" },
       { queries: [canonical_url] },
-      { urls: [canonical_url] },
-      { profiles: [canonical_url], mode: "details" },
     ];
 
     let item: Record<string, unknown> | null = null;
     let lastFailure = "";
     for (const input of inputShapes) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 120_000);
+      const timer = setTimeout(() => controller.abort(), 45_000);
       let res: Response;
       try {
         res = await fetch(
