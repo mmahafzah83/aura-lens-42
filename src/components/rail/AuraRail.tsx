@@ -56,12 +56,6 @@ const ITEMS: Array<{
     name: "Widgets", blurb: "Choose what shows on Home, and vote for what comes next." },
 ];
 
-function hhmm(iso: string): string {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
 interface SignalCounts { all: number; accelerating: number; stable: number }
 
 const RAIL_W_COLLAPSED = "78px";
