@@ -676,9 +676,10 @@ const Onboarding = () => {
     } catch (e) { console.warn("[journey] stamp failed", e); }
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
     const figures = [
-      ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
-      ...(claims.length ? [{ value: String(claims.length), label: "claims kept" }] : []),
-      ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
+      ...(postsRead ? [{ value: num(postsRead), label: "posts read" }] : []),
+      ...(claims.length ? [{ value: num(claims.length), label: "subjects kept" }] : []),
+      ...(Object.keys(scores).length
+        ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
     ];
     setReveal(toRevealData(results, {
       figures,
