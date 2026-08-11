@@ -2217,7 +2217,7 @@ const Onboarding = () => {
     /* the four things the report is actually doing, in order */
     const genSteps = [
       { key: "posts", label: "Reading your posts", done: !revealPending || genElapsed > 2000 },
-      { key: "saved", label: "Reading what you saved", done: !revealPending || genElapsed > 6000 },
+      { key: "saved", label: "Reading what you captured", done: !revealPending || genElapsed > 6000 },
       { key: "answers", label: "Weighing your answers", done: !revealPending || genElapsed > 11000 },
       { key: "write", label: "Writing your read", done: !revealPending },
     ];
