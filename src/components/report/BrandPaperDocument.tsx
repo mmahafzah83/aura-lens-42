@@ -24,12 +24,17 @@ const SHEET_H = 1123;
 const PAGE_PAD = 56;
 export const PAPER_TITLE = "The Aura Paper № 00";
 
-/** Trim to the last full sentence inside the cap — sheets do not reflow. */
+/** Trim to the last full sentence inside the cap — sheets do not reflow.
+ *  With no sentence boundary, cut at the last word boundary and close it off
+ *  so a capped line never reads as a hanging clause. */
 function capAtSentence(s: string, max: number): string {
   if (!s || s.length <= max) return s;
   const slice = s.slice(0, max);
   const cut = slice.lastIndexOf(". ");
-  return cut > max * 0.4 ? slice.slice(0, cut + 1) : slice.trim();
+  if (cut > max * 0.4) return slice.slice(0, cut + 1);
+  const word = slice.lastIndexOf(" ");
+  const base = (word > max * 0.4 ? slice.slice(0, word) : slice).trim();
+  return base.replace(/[\s,;:—–-]+$/, "") + ".";
 }
 
 // ── Bidi / Arabic (SLICE 4d) ───────────────────────────────────────────
@@ -290,14 +295,7 @@ function GapPanel({ bp, style }: { bp: BrandPaper; style?: React.CSSProperties }
   );
 }
 
-/** Deterministic budget: past this many characters of findings, the gap moves on. */
-const GAP_BUDGET = 2400;
-function findingsChars(bp: BrandPaper): number {
-  return [bp.market_read, bp.trust_pattern, bp.unique_capability, bp.honest_truth]
-    .filter(Boolean).join(" ").length;
-}
-
-function FindingsSheet({ bp, total, showGap }: { bp: BrandPaper; total: number; showGap: boolean }) {
+function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
   const raw: (Finding | null)[] = [
     bp.market_read ? {
       code: "F · 1", body: bp.market_read,
@@ -339,7 +337,7 @@ function FindingsSheet({ bp, total, showGap }: { bp: BrandPaper; total: number; 
         <div style={{ borderBottom: `1px solid ${T.rule}` }}>
           {findings.map((f) => <FindingRow key={f.code} f={f} />)}
         </div>
-        {showGap ? <GapPanel bp={bp} style={{ marginTop: 26 }} /> : null}
+        {/* The gap panel always lives at the top of Sheet 3 — never here. */}
       </div>
       <PaperFooter n={2} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>
@@ -374,7 +372,7 @@ function TopicBlock({ n, title, description }: { n: string; title: string; descr
   );
 }
 
-function SpaceSheet({ bp, total, showGap }: { bp: BrandPaper; total: number; showGap: boolean }) {
+function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
   const hasInvest = bp.invest_next.length > 0;
   // Older rows carry pillars but no structured topics — fall back so the
   // topics block is never silently empty.
@@ -385,7 +383,7 @@ function SpaceSheet({ bp, total, showGap }: { bp: BrandPaper; total: number; sho
     <Sheet n={3}>
       <PaperHeader label="Ground & Topics" />
       <div style={{ marginTop: 30, flex: 1 }}>
-        {showGap ? <GapPanel bp={bp} style={{ marginBottom: 24 }} /> : null}
+        <GapPanel bp={bp} style={{ marginBottom: 24 }} />
         {bp.uncontested_space ? (
           <PaperFigure
             index={1}
@@ -459,7 +457,14 @@ function SpaceSheet({ bp, total, showGap }: { bp: BrandPaper; total: number; sho
 
 // ── Sheet 4 — Voice, trust, pillars, what to strengthen (SLICE 4d) ──────
 function ProsePair({ label, parts }: { label: string; parts: (string | null)[] }) {
-  const shown = parts.filter((x): x is string => !!x);
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, "").slice(0, 60);
+  const seen: string[] = [];
+  const shown = parts.filter((x): x is string => !!x).filter((x) => {
+    const k = norm(x);
+    if (k && seen.includes(k)) return false;
+    if (k) seen.push(k);
+    return true;
+  });
   if (shown.length === 0) return null;
   return (
     <div style={{ borderTop: `1px solid ${T.rule}`, padding: "16px 0" }}>
@@ -484,14 +489,15 @@ function PaperChips({ label, items }: { label: string; items: string[] }) {
   return (
     <div style={{ borderTop: `1px solid ${T.rule}`, padding: "16px 0" }}>
       <MonoLabel color={T.spot} size={10.5}>{label}</MonoLabel>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 8, marginTop: 10 }}>
         {items.map((t, i) => (
           <span
             key={i}
             style={{
               fontFamily: FONT.serif, fontSize: 13.5, color: T.ink,
-              padding: "5px 10px", border: `1px solid ${T.rule}`, background: T.paper2,
-              lineHeight: 1.4, maxWidth: 600, whiteSpace: "normal", ...txt(t),
+              display: "inline-block", boxSizing: "border-box",
+              padding: "6px 12px", border: `1px solid ${T.rule}`, background: T.paper2,
+              lineHeight: 1.35, maxWidth: 600, whiteSpace: "normal", ...txt(t),
             }}
           >
             {t}
@@ -549,12 +555,16 @@ function ClosingSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: numb
   const tail = parts.pop() || "";
   const head = parts.join(" ");
   const firstTopic = bp.topics[0]?.title || bp.content_pillars[0] || "";
-  const ninety = bp.invest_next[1]?.insight
-    || (bp.key_barrier ? `Decide: ${bp.key_barrier}` : "");
+  const named = (i: number): string => {
+    const x = bp.invest_next[i];
+    if (!x?.insight) return "";
+    return x.area ? `${x.area} — ${x.insight}` : x.insight;
+  };
+  const sixty = named(0) || bp.uncontested_space || "";
+  const ninety = named(1) || (bp.key_barrier ? `Decide: ${bp.key_barrier}` : "");
   const moves = [
     firstTopic ? { horizon: "30d", text: `Publish once from "${firstTopic}"` } : null,
-    (bp.invest_next[0]?.insight || bp.uncontested_space)
-      ? { horizon: "60d", text: bp.invest_next[0]?.insight || bp.uncontested_space || "" } : null,
+    sixty ? { horizon: "60d", text: sixty } : null,
     ninety ? { horizon: "90d", text: ninety } : null,
   ].filter((m): m is { horizon: string; text: string } => !!m)
     .map((m) => ({ horizon: m.horizon, text: capAtSentence(m.text, 180) }));
@@ -604,13 +614,11 @@ export default function BrandPaperDocument({
 }) {
   const hasVoice = voiceSheetHasContent(paper);
   const total = 3 + (hasVoice ? 1 : 0) + (showClosing ? 1 : 0);
-  // Deterministic budget, no measuring: crowded findings push the gap to Sheet 3.
-  const gapOnSheet2 = findingsChars(paper) <= GAP_BUDGET;
   return (
     <div style={{ background: T.paper2, padding: "24px 0" }}>
       <CoverSheet bp={paper} total={total} />
-      <FindingsSheet bp={paper} total={total} showGap={gapOnSheet2} />
-      <SpaceSheet bp={paper} total={total} showGap={!gapOnSheet2} />
+      <FindingsSheet bp={paper} total={total} />
+      <SpaceSheet bp={paper} total={total} />
       {hasVoice ? <VoiceSheet bp={paper} n={4} total={total} /> : null}
       {showClosing ? <ClosingSheet bp={paper} n={total} total={total} /> : null}
     </div>
