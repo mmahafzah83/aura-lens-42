@@ -75,7 +75,7 @@ export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => v
   <Card style={{ padding: 0 }}>
     <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
       <Kicker>Today in order</Kicker>
-      <SectionTitle>What to do, in the order that matters</SectionTitle>
+      <SectionTitle as="h2">What to do, in the order that matters</SectionTitle>
     </div>
     {moves.length === 0 && (
       <div style={{ padding: "18px 20px", display: "grid", gap: 6 }}>
@@ -159,7 +159,7 @@ export const OwnCard: React.FC<{
   <Card style={{ padding: 0 }}>
     <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
       <Kicker>What you own</Kicker>
-      <SectionTitle>The signals your reading holds up</SectionTitle>
+      <SectionTitle as="h2">The signals your reading holds up</SectionTitle>
     </div>
     <div style={{ padding: "8px 0" }}>
       {loading && themes.length === 0 && (
@@ -202,7 +202,7 @@ export const NightCard: React.FC<{ facts: HomeFacts | null; onOpen: () => void }
       <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
         <Kicker>While you slept</Kicker>
         {/* The "Prepared HH:MM" clock is owned by the night address header. */}
-        <SectionTitle>What Aura did overnight</SectionTitle>
+        <SectionTitle as="h2">What Aura did overnight</SectionTitle>
       </div>
       <div style={{ padding: "18px 20px", display: "grid", gap: 10 }}>
         {ln ? (
@@ -236,7 +236,7 @@ export const WidgetsCard: React.FC<{
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
         <Kicker>Your widgets</Kicker>
-        <SectionTitle>The numbers you chose to keep</SectionTitle>
+        <SectionTitle as="h2">The numbers you chose to keep</SectionTitle>
       </div>
       <div style={{ padding: 18, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
         {metrics && on.map((d) => <WidgetBody key={d.key} k={d.key} m={metrics} />)}
