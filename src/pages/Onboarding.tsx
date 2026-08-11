@@ -1929,6 +1929,10 @@ const Onboarding = () => {
       const q = questions[Math.min(qIdx, questions.length - 1)];
       const last = qIdx >= questions.length - 1;
       const advance = (value: string) => {
+        /* one commit per question — a held Enter fired this twice and, because
+           setQIdx is a functional update, both applied and a question was skipped */
+        if (committedQRef.current === qIdx) return;
+        committedQRef.current = qIdx;
         const next = { ...answers, [`Q${qIdx + 1} ${q.prompt}`]: value };
         setAnswers(next);
         setTextAnswer("");
@@ -1938,6 +1942,7 @@ const Onboarding = () => {
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
       const back = () => {
+        committedQRef.current = -1;
         setTextAnswer("");
         setMultiPicked([]);
         setSinglePicked(null);
@@ -1957,8 +1962,9 @@ const Onboarding = () => {
       const placeholder = phList[phIdx % phList.length];
       const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
-      const optionButton = (label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
-        <button key={label} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
+      /* keyed by position, never by label — two options may carry the same text */
+      const optionButton = (key: string | number, label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
+        <button key={key} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
           textAlign: "start", padding: "14px 15px", borderRadius: 14,
           cursor: blocked ? "not-allowed" : "pointer",
           border: `1px solid ${OB.line}`,
@@ -1994,25 +2000,31 @@ const Onboarding = () => {
           {q.kind === "choice" ? (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
-                {opts.map((o) => optionButton(o.label, () => setSinglePicked(o.label), singlePicked === o.label))}
+                {opts.map((o, i) => optionButton(i, o.label, () => setSinglePicked(String(i)), singlePicked === String(i)))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
-                <OBButton disabled={!singlePicked} onClick={() => singlePicked && advance(singlePicked)}>Next</OBButton>
+                <OBButton disabled={!singlePicked} onClick={() => {
+                  if (!singlePicked) return;
+                  advance(opts[Number(singlePicked)]?.label ?? "");
+                }}>Next</OBButton>
               </Actions>
             </>
           ) : q.kind === "multi" ? (
             <>
               <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>Pick up to {cap}</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
-                {opts.map((o) => optionButton(
+                {opts.map((o, i) => optionButton(
+                  i,
                   o.label,
-                  () => setMultiPicked((prev) => prev.includes(o.label) ? prev.filter((x) => x !== o.label) : [...prev, o.label]),
-                  multiPicked.includes(o.label),
-                  !multiPicked.includes(o.label) && atCap,
+                  () => setMultiPicked((prev) => prev.includes(String(i)) ? prev.filter((x) => x !== String(i)) : [...prev, String(i)]),
+                  multiPicked.includes(String(i)),
+                  !multiPicked.includes(String(i)) && atCap,
                 ))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
-                <OBButton disabled={multiPicked.length === 0} onClick={() => advance(multiPicked.join(" · "))}>Next</OBButton>
+                <OBButton disabled={multiPicked.length === 0} onClick={() => advance(
+                  multiPicked.map((i) => opts[Number(i)]?.label ?? "").filter(Boolean).join(" · "),
+                )}>Next</OBButton>
               </Actions>
             </>
           ) : q.kind === "proposed" ? (
@@ -2022,22 +2034,23 @@ const Onboarding = () => {
                   Keep the one that's actually you. The two you drop tell Aura just as much.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
-                  {proposals!.map((pr) => (
+                  {proposals!.map((pr, i) => (
                     /* the two the member is not keeping visibly recede */
-                    <div key={pr.label} style={{
+                    <div key={i} style={{
                       display: "flex", flexDirection: "column",
-                      opacity: singlePicked && singlePicked !== pr.label ? 0.55 : 1,
+                      opacity: singlePicked && singlePicked !== String(i) ? 0.55 : 1,
                       transition: `opacity 220ms ${EASE}`,
                     }}>
-                      {optionButton(pr.label, () => setSinglePicked(pr.label), singlePicked === pr.label, false, pr.why)}
+                      {optionButton(i, pr.label, () => setSinglePicked(String(i)), singlePicked === String(i), false, pr.why)}
                     </div>
                   ))}
                 </div>
                 <Actions style={{ marginBlockStart: 16 }}>
                   <OBButton disabled={!singlePicked} onClick={() => {
                     if (!singlePicked) return;
-                    const dropped = proposals!.filter((x) => x.label !== singlePicked).map((x) => x.label);
-                    advance(`${singlePicked}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
+                    const kept = proposals![Number(singlePicked)]?.label ?? "";
+                    const dropped = proposals!.filter((_, i) => String(i) !== singlePicked).map((x) => x.label);
+                    advance(`${kept}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
                   }}>Next</OBButton>
                 </Actions>
               </>
@@ -2049,7 +2062,10 @@ const Onboarding = () => {
                 <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
                   aria-label={q.prompt}
                   onFocus={rotatePlaceholder}
-                  onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
+                  onKeyDown={(e) => {
+                    if (e.repeat) return;
+                    if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim());
+                  }}
                   placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
                 <Actions style={{ marginBlockStart: 16 }}>
                   <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
@@ -2065,7 +2081,10 @@ const Onboarding = () => {
               <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
                 aria-label={q.prompt}
                 onFocus={rotatePlaceholder}
-                onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
+                onKeyDown={(e) => {
+                  if (e.repeat) return;
+                  if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim());
+                }}
                 placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
