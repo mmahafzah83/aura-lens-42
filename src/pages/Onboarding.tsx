@@ -1509,8 +1509,7 @@ const Onboarding = () => {
                 setSector(v);
                 setSectorKnown(!!v);
                 if (userId && v) {
-                  await (supabase.from("diagnostic_profiles" as any) as any)
-                    .update({ sector_focus: v }).eq("user_id", userId);
+                  await writeProfile({ sector_focus: v }, "sector save");
                 }
               }} style={{ ...fieldStyle, marginBlockStart: 8 }}>
                 <option value="">Your sector</option>
@@ -1603,11 +1602,12 @@ const Onboarding = () => {
         <Actions style={{ marginBlockStart: 20 }}>
         <OBButton disabled={!ready} onClick={async () => {
           if (userId) {
-            await (supabase.from("diagnostic_profiles" as any) as any).upsert({
-              user_id: userId, first_name: firstName.trim(), last_name: lastName.trim() || null,
-              firm: firm.trim(), sector_focus: sector, level: levelTitle || (band ? BAND_TO_LEVEL[band] : null),
+            await writeProfile({
+              first_name: firstName.trim(), last_name: lastName.trim() || undefined,
+              firm: firm.trim(), sector_focus: sector,
+              level: levelTitle || (band ? BAND_TO_LEVEL[band] : undefined),
               seniority_band: band, band_source: "corrected",
-            }, { onConflict: "user_id" });
+            }, "identity save");
           }
           go(4);
         }}>Save and carry on</OBButton>
