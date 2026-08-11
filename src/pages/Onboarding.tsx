@@ -406,7 +406,12 @@ const Onboarding = () => {
     setStep1Phase("reading");
     try {
       if (userId) { try { await saveLinkedInAddress(userId, profile_url); } catch { /* saved again later */ } }
-      const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", { body: { profile_url } });
+      // Both reads start at the same moment. Running them one after the other
+      // was most of the wait, and the posts read never needed the profile.
+      const profilePromise = supabase.functions.invoke("linkedin-fetch-profile", { body: { profile_url } });
+      const postsPromise = supabase.functions.invoke("linkedin-fetch-posts", { body: { profile_url, max_posts: 50 } })
+        .catch(() => ({ data: null } as any));
+      const { data, error } = await profilePromise;
       if (error) throw error;
       if ((data as any)?.error) throw new Error(String((data as any).error));
       const prof: any = (data as any)?.profile ?? data;
@@ -458,9 +463,12 @@ const Onboarding = () => {
         } catch { /* the member confirms it on the next screen anyway */ }
       }
 
-      const { data: postData } = await supabase.functions.invoke("linkedin-fetch-posts", {
-        body: { profile_url, max_posts: 50 },
-      });
+      // The profile is back, so the card can become the result now — the posts
+      // count fills in underneath when it lands. Nothing waits on it.
+      setStep1Phase("result");
+      setLiBusy(false);
+
+      const { data: postData } = await postsPromise;
       const kept = typeof (postData as any)?.kept_own_text === "number" ? (postData as any).kept_own_text : 0;
       setPostsRead(kept);
       if (userId) {
@@ -471,7 +479,6 @@ const Onboarding = () => {
         setOwnWords(0);
       }
       setReadDone(true);
-      setStep1Phase("result");
     } catch (e: any) {
       const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "";
       setLiError(msg && msg.length < 120
