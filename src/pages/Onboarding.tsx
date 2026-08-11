@@ -248,6 +248,7 @@ const Onboarding = () => {
   const [settingPwd, setSettingPwd] = useState(false);
 
   const [screen, setScreen] = useState(0);
+  const screenRef = useRef(0);
 
   /* member facts */
   const [firstName, setFirstName] = useState("");
