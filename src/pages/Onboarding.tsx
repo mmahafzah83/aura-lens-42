@@ -1214,7 +1214,7 @@ const Onboarding = () => {
   if (screen === 0) {
     content = (
       <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
-        <h1 style={h1Light}>By the end of this, Aura writes like you.</h1>
+        <h1 style={h1Light}>By the end of this, Aura knows how you work, writes like you, and helps the right people see it.</h1>
         <p style={bodyLight}>
           Five short steps, about ten minutes. You can stop anywhere — everything saves as you go.
         </p>
