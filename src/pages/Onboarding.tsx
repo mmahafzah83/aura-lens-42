@@ -290,6 +290,13 @@ const Onboarding = () => {
   const [connecting, setConnecting] = useState(false);
   const [connectNote, setConnectNote] = useState("");
   const [connected, setConnected] = useState(false);
+
+  /* 13b — when their day starts, so the overnight read lands at the right hour */
+  const [dailyTime, setDailyTime] = useState<"Morning" | "Midday" | "Evening">("Morning");
+  const timeZone = useMemo(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "your local time"; }
+    catch { return "your local time"; }
+  }, []);
   /* placeholder rotation for open text answers */
   const [phIdx, setPhIdx] = useState(0);
   const [sharing, setSharing] = useState(false);
