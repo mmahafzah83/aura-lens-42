@@ -337,7 +337,7 @@ export function PaperCover({ data }: { data: ReportData }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
           <LegendCell swatch={T.spot} title="Finding" body="A conclusion drawn from your evidence." />
           <LegendCell swatch={T.live} title="Movement" body="Something live and rising in your record." border />
-          <LegendCell swatch={T.action} title="Action" body="Held by you, unclaimed — the next move." border />
+          <LegendCell swatch="var(--a-500)" title="Action" body="Held by you, unclaimed — the next move." border />
         </div>
       </div>
 
@@ -940,7 +940,7 @@ export function ClosingPlate({
           <div style={{ marginTop: 34, maxWidth: 600 }}>
             <div style={{
               fontFamily: FONT.mono, fontSize: 10.5, fontWeight: 700,
-              letterSpacing: "0.16em", textTransform: "uppercase", color: T.action,
+              letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--a-500)",
             }}>Three moves, in order</div>
             {moves.map((m, i) => (
               <div key={i} style={{
