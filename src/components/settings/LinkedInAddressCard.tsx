@@ -36,7 +36,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
     try {
       const next = await saveLinkedInAddress(userId, value);
       setState((s) => ({
-        ...(s ?? { connected: false, confirmedByRead: false, addressConfirmed: false, canPost: false, lastSyncedAt: null }),
+        ...(s ?? { connected: false, confirmedByRead: false, addressConfirmed: false, sourceStatus: null, canPost: false, lastSyncedAt: null }),
         handle: next.handle, address: next.profileUrl,
       }));
       setValue(next.profileUrl ?? "");

@@ -20,6 +20,8 @@ export interface LinkedInState {
   confirmedByRead: boolean;
   /** Same fact, named for readers that ask "is this address confirmed?". */
   addressConfirmed: boolean;
+  /** Raw provenance of the stored address, as the row records it. */
+  sourceStatus: string | null;
   /** Whether Aura may publish for the member (still only on approval). */
   canPost: boolean;
   lastSyncedAt: string | null;
@@ -27,7 +29,8 @@ export interface LinkedInState {
 
 export const EMPTY_LINKEDIN_STATE: LinkedInState = {
   connected: false, handle: null, address: null,
-  confirmedByRead: false, addressConfirmed: false, canPost: false, lastSyncedAt: null,
+  confirmedByRead: false, addressConfirmed: false, sourceStatus: null,
+  canPost: false, lastSyncedAt: null,
 };
 
 export async function loadLinkedInState(userId: string): Promise<LinkedInState> {
@@ -52,6 +55,7 @@ export async function loadLinkedInState(userId: string): Promise<LinkedInState> 
     address: (row.profile_url as string | null) || profileUrlFor(handle),
     confirmedByRead: row.source_status === "verified_by_read",
     addressConfirmed: row.source_status === "verified_by_read",
+    sourceStatus: (row.source_status as string | null) ?? null,
     canPost: connected && scopes.includes("w_member_social"),
     lastSyncedAt: (row.last_synced_at as string | null) ?? null,
   };

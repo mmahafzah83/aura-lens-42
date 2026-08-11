@@ -85,8 +85,8 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
         posts,
       });
       setState((s) => ({
-        ...(s ?? { connected: false, handle: null, address: null, canPost: false, lastSyncedAt: null, addressConfirmed: false }),
-        handle, address: profile_url, confirmedByRead: true, addressConfirmed: true,
+        ...(s ?? { connected: false, handle: null, address: null, canPost: false, lastSyncedAt: null, addressConfirmed: false, sourceStatus: null }),
+        handle, address: profile_url, confirmedByRead: true, addressConfirmed: true, sourceStatus: "verified_by_read",
       }));
       setExpanded(false);
     } catch {
@@ -98,7 +98,8 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
 
   if (!userId || state === null) return null;
   const confirmed = state.confirmedByRead;
-  const guessed = !confirmed && Boolean(state.address);
+  // A guess was never an address — say so rather than presenting it as one.
+  const guessed = state.sourceStatus === "guessed_from_name" && Boolean(state.address);
 
   const shell: React.CSSProperties = {
     background: CARD,
@@ -166,7 +167,9 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
         so that what it writes sounds like you and not like anyone else.
         {!confirmed && (guessed
           ? " We guessed this from your name — check it's right and we'll read it."
-          : " We don't have an address for you yet.")}
+          : state.address
+            ? ` We have ${state.address.replace(/^https?:\/\/(www\.)?/, "")} on file, but Aura hasn't read it yet.`
+            : " We don't have an address for you yet.")}
       </p>
 
       <label htmlFor="linkedin-address" style={{ display: "block", fontSize: 12.5, color: MUTED, marginBottom: 6 }}>
