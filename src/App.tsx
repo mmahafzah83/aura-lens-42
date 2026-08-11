@@ -118,7 +118,7 @@ const App = () => (
             <Route path="/admin/qa" element={<PasswordGate><AdminGate><AdminQA /></AdminGate></PasswordGate>} />
             <Route path="/admin/guide-health" element={<PasswordGate><AdminGate><AdminGuideHealth /></AdminGate></PasswordGate>} />
             <Route path="/admin/standard" element={<PasswordGate><AdminGate><AdminStandard /></AdminGate></PasswordGate>} />
-            <Route path="/onboarding" element={<PasswordGate><Onboarding /></PasswordGate>} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/api/auth/linkedin/callback" element={<LinkedInCallback />} />
             <Route path="/trends/:id" element={<PasswordGate><TrendDetail /></PasswordGate>} />
             <Route path="/terms" element={<Terms />} />
