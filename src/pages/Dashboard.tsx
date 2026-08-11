@@ -1271,6 +1271,8 @@ const Dashboard = () => {
       />
       <BrandAssessmentModal
         open={brandAssessmentOpen}
+        sector={profileSector ?? undefined}
+        band={profileBand ?? undefined}
         onOpenChange={setBrandAssessmentOpen}
         onComplete={() => setBrandAssessmentOpen(false)}
       />
