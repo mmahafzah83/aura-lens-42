@@ -1486,6 +1486,7 @@ const Onboarding = () => {
           }
           go(4);
         }}>Save and carry on</OBButton>
+        <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
         </Actions>
       </PaperShell>
     );
