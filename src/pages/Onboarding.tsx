@@ -1121,11 +1121,9 @@ const Onboarding = () => {
         {nothingPublic ? (
           <p style={{ ...bodyNight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE}</p>
         ) : null}
-        <button type="button" onClick={() => go(3)} disabled={!allLanded}
-          style={{ ...btnPrimary, marginBlockStart: 24, opacity: allLanded ? 1 : 0.5 }}>
-          {allLanded ? null : <Loader2 size={16} className="animate-spin" />}
-          {allLanded ? "See what I found" : "Reading…"}
-        </button>
+        <Actions style={{ marginBlockStart: 24 }}>
+          <OBButton onClick={() => go(3)} loading={!allLanded} loadingLabel="Reading…">See what I found</OBButton>
+        </Actions>
       </NightShell>
     );
   }
