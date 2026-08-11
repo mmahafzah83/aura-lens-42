@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOneMove, type OneMoveDraft, type OneMoveSignal } from "@/hooks/useOneMove";
+import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 
 /**
  * MoveCard — one move, at the top of Home.
@@ -120,6 +121,7 @@ const Support: React.FC<React.PropsWithChildren> = ({ children }) => (
 
 export default function MoveCard({ userId, onOpenDraft, onStartSignalPost }: MoveCardProps) {
   const { loading, draft, signal } = useOneMove(userId);
+  const mayPromiseMorning = useMayPromiseMorning();
   const [tick, setTick] = useState(0);
 
   useEffect(() => { purgeStaleDismissals(); }, []);
@@ -210,7 +212,11 @@ export default function MoveCard({ userId, onOpenDraft, onStartSignalPost }: Mov
         <Headline>
           You passed on today’s <span style={MONO}>{dismissedCount}</span> move{dismissedCount === 1 ? "" : "s"}.
         </Headline>
-        <Support>They return tomorrow morning. Changed your mind?</Support>
+        <Support>
+          {mayPromiseMorning
+            ? "They return tomorrow morning. Changed your mind?"
+            : "They come back the next time there's something worth your name on it. Changed your mind?"}
+        </Support>
         <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
           <div>
             <TextLink onClick={() => { clearDismissals([draft?.id, signal?.id]); setTick((t) => t + 1); }}>
