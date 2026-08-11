@@ -799,11 +799,23 @@ const Onboarding = () => {
           sector_focus: sector || null,
           level: levelTitle.trim() || (band ? BAND_TO_LEVEL[band] : null),
           onboarding_completed: true,
-          onboarding_step: 4,
+          /* the real screen they finished on, never a hard-coded 4 */
+          onboarding_step: Math.max(4, screen),
           completed: true,
           instrument_version: 2,
           ...(band ? { answered_band: band } : {}),
         }, { onConflict: "user_id" });
+        /* finished means no longer paused — Home must stop offering the resume card */
+        try {
+          const { data: cur } = await (supabase.from("diagnostic_profiles" as any) as any)
+            .select("identity_intelligence").eq("user_id", userId).maybeSingle();
+          const ii = ((cur as any)?.identity_intelligence as Record<string, any>) || {};
+          if (ii.journey_paused) {
+            await (supabase.from("diagnostic_profiles" as any) as any)
+              .update({ identity_intelligence: { ...ii, journey_paused: false } })
+              .eq("user_id", userId);
+          }
+        } catch { /* the completed flags already close the gate */ }
       } catch (e) { console.warn("[journey] finish save failed", e); }
       try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
     }
