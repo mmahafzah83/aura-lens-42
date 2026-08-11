@@ -69,9 +69,12 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
           onClick={() => void save()}
           disabled={busy || !valid}
           style={{
-            background: BLUE, color: "#FFFFFF", border: "none", borderRadius: 10,
-            padding: "9px 16px", fontSize: 13, fontWeight: 600,
-            cursor: busy || !valid ? "not-allowed" : "pointer", opacity: busy || !valid ? 0.5 : 1,
+            /* Primary — filled when it works, switched off when it doesn't. Never a paler blue. */
+            background: busy || !valid ? "#E2E7EE" : BLUE,
+            color: busy || !valid ? "#98A2AE" : "#FFFFFF",
+            border: "none", borderRadius: 999, minHeight: 44,
+            padding: "0 22px", fontSize: 14, fontWeight: 600,
+            cursor: busy || !valid ? "not-allowed" : "pointer",
           }}
         >
           {busy ? "Saving…" : "Save address"}
