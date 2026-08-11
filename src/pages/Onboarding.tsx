@@ -467,6 +467,15 @@ const Onboarding = () => {
         .maybeSingle();
       const p: any = profile || {};
 
+      /* Belt and braces: a trigger creates this row on signup, but anyone who
+         predates it would otherwise spend the whole journey writing into
+         nothing. No row means make one, here, before anything else is saved. */
+      if (!profile) {
+        const { error: makeError } = await (supabase.from("diagnostic_profiles" as any) as any)
+          .insert({ user_id: uid });
+        if (makeError) console.error("[journey] could not create the profile row", makeError);
+      }
+
       if (Number(p.onboarding_step ?? 0) >= 4) {
         navigate("/home", { replace: true });
         return;
