@@ -103,6 +103,12 @@ const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll bu
 /** A short dark panel that sits between screen 8 and the sliders. */
 const TRUST_SLIDERS_SCREEN = 8.5;
 
+/** Plain text buttons inside the screen-13 "Save it" row. */
+const quietLink: React.CSSProperties = {
+  background: "none", border: "none", padding: 0, cursor: "pointer",
+  fontFamily: OB.ui, fontSize: 13.5, color: "#FFFFFF", textDecoration: "underline",
+};
+
 const PAGE_CSS = `
 .obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};
   --ob-max:420px;--ob-pad:clamp(22px,6vw,30px);--ob-h1:clamp(25px,7vw,30px);--ob-h2:clamp(21px,5.6vw,26px);
