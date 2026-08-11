@@ -199,7 +199,7 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
       </button>
 
       <p style={{ fontSize: 12, color: MUTED, marginTop: 10, marginBottom: 0 }}>
-        Aura only reads. It never posts.
+        Aura reads your posts, and can publish for you — but only when you approve it. Nothing goes out in your name on its own.
       </p>
       <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginTop: 6, marginBottom: 0 }}>
         Aura stores what it reads so it can write as you. You can delete it any time in Settings.
