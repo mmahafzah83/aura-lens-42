@@ -11,7 +11,7 @@ import HomeMasthead from "@/components/home/HomeMasthead";
 import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 import {
   useHomeAddress, useReadChips,
-  type HomeLens, type HomeMove,
+  type HomeMove,
 } from "@/hooks/useHomeAddress";
 import { MONO, Kicker, Card, Body, Muted, ActButton, Skeleton, ReadFailure } from "./homeAtoms";
 import { ShapeLens } from "./lenses";
@@ -397,8 +397,8 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
             <Card style={{ display: "grid", gap: 12 }}>
               <Kicker>Start here</Kicker>
               <Body style={{ fontSize: 15, color: "var(--text-primary)" }}>
-                Nothing has been saved yet, so there is nothing that happened to show — only where you stand
-                today.
+                Nothing has been captured yet, so there is nothing that happened to show — only where you
+                stand today.
               </Body>
               {/* First Flight already offers the capture button — never two at once. */}
               {!guidedActive && (
