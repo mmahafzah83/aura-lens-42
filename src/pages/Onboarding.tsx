@@ -278,6 +278,11 @@ const Onboarding = () => {
   /* screen 5–7 */
   const [linkInput, setLinkInput] = useState("");
   const [linkError, setLinkError] = useState<string | null>(null);
+  /* one send at a time — a double tap used to capture the same link twice */
+  const [sendingLink, setSendingLink] = useState(false);
+  const sendingLinkRef = useRef(false);
+  /* the read never left the building — never make them watch for nothing */
+  const [linkFailed, setLinkFailed] = useState(false);
   const [suggested, setSuggested] = useState<{ url: string; title: string; summary?: string; source?: string; published_at?: string | null } | null>(null);
   const [suggestDead, setSuggestDead] = useState(false);
   const [readStep, setReadStep] = useState(0);
@@ -302,6 +307,8 @@ const Onboarding = () => {
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
   /* One rule for every question: select, see it selected, then Next. */
   const [singlePicked, setSinglePicked] = useState<string | null>(null);
+  /* the last question index actually committed — a held Enter used to skip one */
+  const committedQRef = useRef<number>(-1);
   const [proposals, setProposals] = useState<{ label: string; why: string }[] | null>(null);
   const [proposalsDead, setProposalsDead] = useState(false);
 
@@ -379,12 +386,17 @@ const Onboarding = () => {
     if (!userId) return;
     try { localStorage.setItem(`aura_ob_screen_${userId}`, String(next)); } catch { /* ignore */ }
     try {
+      /* RACE: identity_intelligence is a whole-object write. A second tab or an
+         Edge Function writing during onboarding can be clobbered. We cannot do a
+         server-side jsonb merge from the client, so we read immediately before the
+         write and merge ONLY the journey keys this function owns — never state
+         captured earlier in the component. */
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("identity_intelligence").eq("user_id", userId).maybeSingle();
-      const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+      const fresh = ((data as any)?.identity_intelligence as Record<string, any>) || {};
       await (supabase.from("diagnostic_profiles" as any) as any)
         .update({
-          identity_intelligence: { ...ii, journey_screen: next },
+          identity_intelligence: { ...fresh, journey_screen: next },
           onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
         })
         .eq("user_id", userId);
@@ -592,6 +604,7 @@ const Onboarding = () => {
   const submitLink = () => {
     const v = linkInput.trim();
     if (!v) return;
+    if (sendingLinkRef.current) return;
     if (!/^https?:\/\/\S+\.\S+/i.test(v)) {
       setLinkError("That needs to be a web link, starting with https://");
       return;
@@ -603,16 +616,21 @@ const Onboarding = () => {
   const sendLink = async (url: string, meta?: { title?: string; summary?: string }) => {
     const v = url.trim();
     if (!v) return;
+    if (sendingLinkRef.current) return;
+    sendingLinkRef.current = true;
+    setSendingLink(true);
     const startIso = new Date(Date.now() - 10000).toISOString();
     setReadStep(0);
+    setLinkFailed(false);
     go(6);
+    let sent = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const ctrl = new AbortController();
         const to = window.setTimeout(() => ctrl.abort(), 25000);
         try {
-          await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
             body: JSON.stringify({
@@ -621,9 +639,17 @@ const Onboarding = () => {
             }),
             signal: ctrl.signal,
           });
+          sent = res.ok;
         } finally { window.clearTimeout(to); }
       }
-    } catch { /* a slow read never blocks the journey */ }
+    } catch { sent = false; /* aborted or offline — nothing was written */ }
+    sendingLinkRef.current = false;
+    setSendingLink(false);
+    if (!sent) {
+      /* nothing will ever land — don't make them watch a 120s ceiling for it */
+      setLinkFailed(true);
+      return;
+    }
     setReadStep(1);
     setCaptureSince(startIso);
     setWatching(true);
@@ -1590,7 +1616,8 @@ const Onboarding = () => {
           </p>
         )}
         <Actions style={{ marginBlockStart: 14 }}>
-          <OBButton disabled={!linkInput.trim()} onClick={() => void submitLink()}>Add it</OBButton>
+          <OBButton disabled={!linkInput.trim() || sendingLink} loading={sendingLink} loadingLabel="Sending…"
+            onClick={() => void submitLink()}>Add it</OBButton>
         </Actions>
 
         {suggested || !suggestDead ? (
@@ -1619,7 +1646,7 @@ const Onboarding = () => {
               </p>
             ) : null}
             <div style={{ marginBlockStart: 14 }}>
-              <OBButton variant="secondary"
+              <OBButton variant="secondary" disabled={sendingLink} loading={sendingLink} loadingLabel="Sending…"
                 onClick={() => void sendLink(suggested.url, { title: suggested.title, summary: suggested.summary })}>
                 Use this one
               </OBButton>
@@ -1645,7 +1672,18 @@ const Onboarding = () => {
       { key: "c", label: "Matched to your sector", done: readStep >= 3 },
     ];
     const settled = claimsSlow && claims.length === 0;
-    content = (
+    content = linkFailed ? (
+      <NightShell onExit={saveAndExit} footer={escapeFooter}>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>That one didn't come through.</h1>
+        <p style={{ ...bodyNight, textAlign: "center" }}>
+          Aura couldn't reach that link. Try another one, or carry on — you can add it later.
+        </p>
+        <Actions style={{ marginBlockStart: 22 }}>
+          <OBButton onClick={() => { setLinkFailed(false); go(5); }}>Try a different link</OBButton>
+          <OBButton variant="tertiary" onClick={() => { setLinkFailed(false); go(8); }}>Carry on</OBButton>
+        </Actions>
+      </NightShell>
+    ) : (
       <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>Finding the parts you can use.</p>
@@ -1891,6 +1929,10 @@ const Onboarding = () => {
       const q = questions[Math.min(qIdx, questions.length - 1)];
       const last = qIdx >= questions.length - 1;
       const advance = (value: string) => {
+        /* one commit per question — a held Enter fired this twice and, because
+           setQIdx is a functional update, both applied and a question was skipped */
+        if (committedQRef.current === qIdx) return;
+        committedQRef.current = qIdx;
         const next = { ...answers, [`Q${qIdx + 1} ${q.prompt}`]: value };
         setAnswers(next);
         setTextAnswer("");
@@ -1900,6 +1942,7 @@ const Onboarding = () => {
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
       const back = () => {
+        committedQRef.current = -1;
         setTextAnswer("");
         setMultiPicked([]);
         setSinglePicked(null);
@@ -1919,8 +1962,9 @@ const Onboarding = () => {
       const placeholder = phList[phIdx % phList.length];
       const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
-      const optionButton = (label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
-        <button key={label} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
+      /* keyed by position, never by label — two options may carry the same text */
+      const optionButton = (key: string | number, label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
+        <button key={key} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
           textAlign: "start", padding: "14px 15px", borderRadius: 14,
           cursor: blocked ? "not-allowed" : "pointer",
           border: `1px solid ${OB.line}`,
@@ -1956,25 +2000,31 @@ const Onboarding = () => {
           {q.kind === "choice" ? (
             <>
               <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
-                {opts.map((o) => optionButton(o.label, () => setSinglePicked(o.label), singlePicked === o.label))}
+                {opts.map((o, i) => optionButton(i, o.label, () => setSinglePicked(String(i)), singlePicked === String(i)))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
-                <OBButton disabled={!singlePicked} onClick={() => singlePicked && advance(singlePicked)}>Next</OBButton>
+                <OBButton disabled={!singlePicked} onClick={() => {
+                  if (!singlePicked) return;
+                  advance(opts[Number(singlePicked)]?.label ?? "");
+                }}>Next</OBButton>
               </Actions>
             </>
           ) : q.kind === "multi" ? (
             <>
               <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>Pick up to {cap}</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
-                {opts.map((o) => optionButton(
+                {opts.map((o, i) => optionButton(
+                  i,
                   o.label,
-                  () => setMultiPicked((prev) => prev.includes(o.label) ? prev.filter((x) => x !== o.label) : [...prev, o.label]),
-                  multiPicked.includes(o.label),
-                  !multiPicked.includes(o.label) && atCap,
+                  () => setMultiPicked((prev) => prev.includes(String(i)) ? prev.filter((x) => x !== String(i)) : [...prev, String(i)]),
+                  multiPicked.includes(String(i)),
+                  !multiPicked.includes(String(i)) && atCap,
                 ))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
-                <OBButton disabled={multiPicked.length === 0} onClick={() => advance(multiPicked.join(" · "))}>Next</OBButton>
+                <OBButton disabled={multiPicked.length === 0} onClick={() => advance(
+                  multiPicked.map((i) => opts[Number(i)]?.label ?? "").filter(Boolean).join(" · "),
+                )}>Next</OBButton>
               </Actions>
             </>
           ) : q.kind === "proposed" ? (
@@ -1984,22 +2034,23 @@ const Onboarding = () => {
                   Keep the one that's actually you. The two you drop tell Aura just as much.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
-                  {proposals!.map((pr) => (
+                  {proposals!.map((pr, i) => (
                     /* the two the member is not keeping visibly recede */
-                    <div key={pr.label} style={{
+                    <div key={i} style={{
                       display: "flex", flexDirection: "column",
-                      opacity: singlePicked && singlePicked !== pr.label ? 0.55 : 1,
+                      opacity: singlePicked && singlePicked !== String(i) ? 0.55 : 1,
                       transition: `opacity 220ms ${EASE}`,
                     }}>
-                      {optionButton(pr.label, () => setSinglePicked(pr.label), singlePicked === pr.label, false, pr.why)}
+                      {optionButton(i, pr.label, () => setSinglePicked(String(i)), singlePicked === String(i), false, pr.why)}
                     </div>
                   ))}
                 </div>
                 <Actions style={{ marginBlockStart: 16 }}>
                   <OBButton disabled={!singlePicked} onClick={() => {
                     if (!singlePicked) return;
-                    const dropped = proposals!.filter((x) => x.label !== singlePicked).map((x) => x.label);
-                    advance(`${singlePicked}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
+                    const kept = proposals![Number(singlePicked)]?.label ?? "";
+                    const dropped = proposals!.filter((_, i) => String(i) !== singlePicked).map((x) => x.label);
+                    advance(`${kept}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
                   }}>Next</OBButton>
                 </Actions>
               </>
@@ -2011,7 +2062,10 @@ const Onboarding = () => {
                 <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
                   aria-label={q.prompt}
                   onFocus={rotatePlaceholder}
-                  onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
+                  onKeyDown={(e) => {
+                    if (e.repeat) return;
+                    if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim());
+                  }}
                   placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
                 <Actions style={{ marginBlockStart: 16 }}>
                   <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
@@ -2027,7 +2081,10 @@ const Onboarding = () => {
               <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
                 aria-label={q.prompt}
                 onFocus={rotatePlaceholder}
-                onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
+                onKeyDown={(e) => {
+                  if (e.repeat) return;
+                  if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim());
+                }}
                 placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
               <Actions style={{ marginBlockStart: 16 }}>
                 <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
@@ -2118,6 +2175,8 @@ const Onboarding = () => {
     const shareFooter = { posts: postsRead ?? 0, saved: claims.length };
     const caption = suggestedCaption(postsRead ?? 0);
     const liveCaption = captionDraft.trim() || caption;
+    /* one rasterisation at a time: post, download and report all read the same DOM node */
+    const busy = sharing || posting || buildingReport || savingDraft;
 
     const downloadRead = async () => {
       if (!shareRef.current) return;
@@ -2137,6 +2196,7 @@ const Onboarding = () => {
 
     const postToLinkedIn = async () => {
       if (!shareRef.current) return;
+      if (busy) return;
       setPosting(true);
       try {
         const { dataUrl } = await rasteriseRevealCard(shareRef.current, { format: "png" });
@@ -2155,6 +2215,7 @@ const Onboarding = () => {
         if (data?.reason === "not_permitted") {
           setCanPostToLinkedIn(false);
           toast.message("Aura can't post for you yet — image saved instead.");
+          setPosting(false);
           await downloadRead();
           return;
         }
@@ -2180,6 +2241,7 @@ const Onboarding = () => {
 
     const downloadFullReport = async () => {
       if (!paperMountRef.current) return;
+      if (busy) return;
       setBuildingReport(true);
       try {
         const slug = (firstName.trim() || "profile").toLowerCase()
@@ -2197,6 +2259,7 @@ const Onboarding = () => {
 
     const saveReadForLater = async () => {
       if (!userId) return;
+      if (busy) return;
       setSavingDraft(true);
       try {
         const { error } = await supabase.from("linkedin_posts").insert({
@@ -2264,7 +2327,7 @@ const Onboarding = () => {
           ) : null}
           <Actions style={{ marginBlockStart: 20 }}>
           {canPostToLinkedIn && !postedUrl ? (
-            <OBButton disabled={!reveal || !captionDraft.trim()} loading={posting} loadingLabel="Posting…"
+            <OBButton disabled={!reveal || !captionDraft.trim() || busy} loading={posting} loadingLabel="Posting…"
               onClick={() => void postToLinkedIn()}
               style={{ background: "#FFFFFF", color: OB.blue }}>Post it to LinkedIn</OBButton>
           ) : null}
@@ -2276,19 +2339,19 @@ const Onboarding = () => {
           ) : null}
           <OBButton
             variant={canPostToLinkedIn && !postedUrl ? "secondary" : "primary"}
-            disabled={!reveal} loading={sharing} loadingLabel="Building…"
+            disabled={!reveal || busy} loading={sharing} loadingLabel="Building…"
             onClick={() => void downloadRead()}
             style={canPostToLinkedIn && !postedUrl
               ? { borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }
               : { background: "#FFFFFF", color: OB.blue }}
           >Download the image</OBButton>
           {reveal && brandPaper ? (
-            <OBButton variant="secondary" loading={buildingReport} loadingLabel="Building your report…"
+            <OBButton variant="secondary" disabled={busy} loading={buildingReport} loadingLabel="Building your report…"
               onClick={() => void downloadFullReport()}
               style={{ borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }}
             >Download the full report</OBButton>
           ) : null}
-          <OBButton variant="tertiary" disabled={savingDraft} onClick={() => void saveReadForLater()}
+          <OBButton variant="tertiary" disabled={busy} onClick={() => void saveReadForLater()}
             style={{ color: "#FFFFFF" }}>Save it for later</OBButton>
           <OBButton variant="tertiary" onClick={() => go(14)}
             style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
