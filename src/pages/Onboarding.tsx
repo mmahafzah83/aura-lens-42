@@ -1044,7 +1044,10 @@ const Onboarding = () => {
     content = (
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading you.</h1>
-        <div style={{ marginBlockStart: 26, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ marginBlockStart: 26 }}>
+          <WorkProgress onNight done={rows.filter((r) => r.done).length} total={rows.length || 1} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {rows.map((r) => (
             <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
           ))}
@@ -1264,7 +1267,10 @@ const Onboarding = () => {
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>Pulling out the bits worth keeping…</p>
-        <div style={{ marginBlockStart: 22, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ marginBlockStart: 22 }}>
+          <WorkProgress onNight done={steps.filter((s) => s.done).length} total={steps.length} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {steps.map((s) => (
             <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
           ))}
