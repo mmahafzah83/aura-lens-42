@@ -935,7 +935,7 @@ const Onboarding = () => {
     return (
       <>
         <style>{PAGE_CSS}</style>
-        <PaperShell bead={0} cream footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
           <h1 style={h1Light}>Is this you?</h1>
           <p style={{ ...bodyLight, fontFamily: OB.mono, fontSize: 14, color: OB.ink, wordBreak: "break-all" }}>
             {userEmail || "—"}
@@ -974,7 +974,7 @@ const Onboarding = () => {
     return (
       <>
         <style>{PAGE_CSS}</style>
-        <PaperShell bead={0} cream footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
           <h1 style={h1Light}>Set your password.</h1>
           <p style={bodyLight}>One password, then the shelf.</p>
           <div style={{ position: "relative", marginBlockStart: 18 }}>
@@ -1025,7 +1025,7 @@ const Onboarding = () => {
   /* 0 — CREAM */
   if (screen === 0) {
     content = (
-      <PaperShell bead={0} cream footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
         <h1 style={h1Light}>Let's fill this up.</h1>
         <p style={bodyLight}>
           Five short steps, and each one gives you something back as you go. It takes about ten minutes, and you can
@@ -1044,7 +1044,7 @@ const Onboarding = () => {
   /* 1 — WHITE, the address */
   if (screen === 1) {
     content = (
-      <PaperShell bead={0} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
         <h1 style={h1Light}>What's your LinkedIn?</h1>
         <p style={bodyLight}>
           So nothing Aura writes for you sounds generic. It reads what's already public — your profile and your
@@ -1120,7 +1120,7 @@ const Onboarding = () => {
     // Never print a zero for posts or words — the absence is the message.
     const nothingPublic = readDone && !postsRead && !ownWords;
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading you.</h1>
         <div style={{ marginBlockStart: 26 }}>
           <WorkProgress onNight done={rows.filter((r) => r.done).length} total={rows.length || 1} />
@@ -1152,7 +1152,7 @@ const Onboarding = () => {
     // There is no separate page after this one.
     const nextFromHere = () => go(4);
     content = (
-      <PaperShell bead={1} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>This is what Aura can see.</h1>
         <div style={{ display: "flex", gap: 13, alignItems: "center", marginBlockStart: 20 }}>
           {liProfile?.photo_url ? (
@@ -1317,7 +1317,7 @@ const Onboarding = () => {
   if (screen === MANUAL_SCREEN) {
     const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band && !!levelTitle;
     content = (
-      <PaperShell bead={1} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>Aura couldn't read it — tell it the basics.</h1>
         <p style={bodyLight}>Four things, and Aura works from these until you point it at your profile.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockStart: 20 }}>
@@ -1349,7 +1349,7 @@ const Onboarding = () => {
   /* 4 — NIGHT */
   if (screen === 4) {
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>I know who you are. Now I need what you notice.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
           Your profile says what you've done. It doesn't say what you think. One link is enough to start.
@@ -1362,7 +1362,7 @@ const Onboarding = () => {
   /* 5 — WHITE, the first link */
   if (screen === 5) {
     content = (
-      <PaperShell bead={2} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
         <h1 style={h1Light}>Something you read this week.</h1>
         <p style={bodyLight}>
           An article, a report, a post you disagreed with. Aura reads it and shows you what it found.
@@ -1418,7 +1418,7 @@ const Onboarding = () => {
       { key: "c", label: "Matched to your sector", done: readStep >= 3 },
     ];
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>Finding the parts you can use.</p>
         <div style={{ marginBlockStart: 22 }}>
@@ -1445,7 +1445,7 @@ const Onboarding = () => {
   /* 7 — NIGHT, three claims */
   if (screen === 7) {
     content = (
-      <NightShell footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Three claims, and they're yours.</h1>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
           {claims.slice(0, 3).map((c, i) => (
@@ -1476,7 +1476,7 @@ const Onboarding = () => {
       ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel}.`
       : null;
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadDimensions()) : (
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>Now your own read.</h1>
@@ -1499,7 +1499,7 @@ const Onboarding = () => {
   if (screen === TRUST_SLIDERS_SCREEN) {
     const sliderCount = dims?.length ?? 0;
     content = (
-      <NightShell footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} footer={escapeFooter}>
         {contentError || !dims ? retryPanel(() => void loadDimensions()) : (
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>Before you start</h1>
@@ -1522,7 +1522,7 @@ const Onboarding = () => {
   if (screen === 9) {
     if (contentError || !dims) {
       content = (
-        <PaperShell bead={3} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadDimensions()}>Try again</OBButton></Actions>
@@ -1533,7 +1533,7 @@ const Onboarding = () => {
       const value = scores[d.name] ?? 50;
       const last = dimIdx >= dims.length - 1;
       content = (
-        <PaperShell bead={3} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
           {flatWarn ? (
             <>
               <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>Can I check something?</h1>
@@ -1615,7 +1615,7 @@ const Onboarding = () => {
   /* 10 — NIGHT, before the six */
   if (screen === 10) {
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is what makes it yours.</h1>
@@ -1643,7 +1643,7 @@ const Onboarding = () => {
   if (screen === 11) {
     if (contentError || !questions) {
       content = (
-        <PaperShell bead={4} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadQuestions()}>Try again</OBButton></Actions>
@@ -1695,7 +1695,7 @@ const Onboarding = () => {
       );
 
       content = (
-        <PaperShell bead={4} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             Question {qIdx + 1} of {questions.length}
           </p>
@@ -1802,7 +1802,7 @@ const Onboarding = () => {
       { key: "write", label: "Writing your read", done: !revealPending },
     ];
     content = (
-      <NightShell footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} footer={escapeFooter}>
         {revealPending ? (
           <div style={{ marginBlockEnd: 4 }}>
             <WorkProgress onNight slowAfterMs={20000}
@@ -1910,7 +1910,7 @@ const Onboarding = () => {
   /* 13b — NIGHT, and only after 13 */
   if (screen === 14) {
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>One last thing.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
           Connect LinkedIn and you find out which of your subjects your audience already rewards — so Aura stops
