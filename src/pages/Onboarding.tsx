@@ -1552,6 +1552,9 @@ const Onboarding = () => {
             <Loader2 size={14} className="animate-spin" /> Looking for one from your sector…
           </div>
         ) : null}
+        <Actions style={{ marginBlockStart: 14 }}>
+          <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
+        </Actions>
       </PaperShell>
     );
   }
