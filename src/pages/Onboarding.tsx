@@ -277,7 +277,9 @@ const Onboarding = () => {
   const [suggestDead, setSuggestDead] = useState(false);
   const [readStep, setReadStep] = useState(0);
   const [claims, setClaims] = useState<Claim[]>([]);
-  const [claimsSlow, setClaimsSlow] = useState(false);
+  const [captureSince, setCaptureSince] = useState<string | null>(null);
+  const [watching, setWatching] = useState(false);
+  const { claims: liveClaims, slow: claimsSlow } = useCapturedClaims({ userId, sinceIso: captureSince, active: watching });
 
   /* screen 9 */
   const [dims, setDims] = useState<Dimension[] | null>(null);
@@ -588,44 +590,22 @@ const Onboarding = () => {
       }
     } catch { /* a slow read never blocks the journey */ }
     setReadStep(1);
-    void watchForClaims(startIso);
+    setCaptureSince(startIso);
+    setWatching(true);
   };
 
-  const watchForClaims = async (startIso: string) => {
-    if (!userId) return;
-    const started = Date.now();
-    /* We admit slowness at 20s but we keep watching to 90s. */
-    const deadline = started + 90000;
-    let admitted = false;
-    while (Date.now() < deadline) {
-      try {
-        const { data: reg } = await (supabase.from("source_registry" as any) as any)
-          .select("id").eq("user_id", userId).gte("created_at", startIso)
-          .order("created_at", { ascending: false }).limit(1);
-        const rid = reg?.[0]?.id;
-        if (rid) {
-          const { data: frags } = await (supabase.from("evidence_fragments" as any) as any)
-            .select("title, content, confidence")
-            .eq("source_registry_id", rid)
-            .order("confidence", { ascending: false })
-            .limit(3);
-          if (frags && frags.length > 0) {
-            setClaims(frags as Claim[]);
-            /* If they've already moved on, take the claims quietly — never yank them back. */
-            if (screenRef.current === 6) {
-              setReadStep(2);
-              window.setTimeout(() => { setReadStep(3); go(7); }, 600);
-            }
-            return;
-          }
-        }
-      } catch { /* keep watching */ }
-      const elapsed = Date.now() - started;
-      if (!admitted && elapsed >= 20000) { admitted = true; setClaimsSlow(true); }
-      await new Promise((r) => window.setTimeout(r, elapsed < 30000 ? 1500 : 3000));
+  /* the hook does the waiting — we only react when the claims land */
+  useEffect(() => {
+    if (liveClaims.length === 0) return;
+    setClaims(liveClaims as Claim[]);
+    setWatching(false);
+    /* If they've already moved on, take the claims quietly — never yank them back. */
+    if (screenRef.current === 6) {
+      setReadStep(2);
+      const t = window.setTimeout(() => { setReadStep(3); go(7); }, 600);
+      return () => window.clearTimeout(t);
     }
-    setClaimsSlow(true);
-  };
+  }, [liveClaims]);
 
   /* ── content resolution: exact, then the sector-free set, then a retry ── */
   const loadDimensions = useCallback(async () => {
