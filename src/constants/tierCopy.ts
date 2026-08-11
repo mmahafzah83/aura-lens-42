@@ -22,14 +22,14 @@ export const TIER_COPY: Record<TierKey, TierCopy> = {
   },
   explorer: {
     meaning:
-      "Your reading is taking shape. Aura can see the themes you keep returning to — the territory becoming yours.",
+      "Your reading is taking shape. Aura can see the signals you keep returning to — the territory becoming yours.",
     howReached: "You've captured enough for real patterns to form.",
     whatLifts:
       "Keep the rhythm, and turn one reading into a post. The moment your voice joins your reading, you move up.",
   },
   strategist: {
     meaning:
-      "Your reading is strong and your themes are clear. You see your market well — the next step is to be seen saying it.",
+      "Your reading is strong and your signals are clear. You see your market well — the next step is to be seen saying it.",
     howReached: "A solid base of signals and a steady habit of capturing.",
     whatLifts:
       "Publish from what you capture. Posts drawn from your own signals are what carry you toward Voice.",
@@ -44,7 +44,7 @@ export const TIER_COPY: Record<TierKey, TierCopy> = {
   },
   presence: {
     meaning:
-      "You're a fixed point in your field. When your market thinks about your subject, it thinks of you.",
+      "You're a fixed point in your field. When your market thinks about your signals, it thinks of you.",
     howReached:
       "Sustained reading, a distinct voice, and a rhythm you've held for the long run.",
     whatLifts:

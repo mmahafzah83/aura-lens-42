@@ -4,6 +4,7 @@ import type { HomeFacts, HomeMove } from "@/hooks/useHomeAddress";
 import { WIDGET_DEFS } from "@/components/widgets/widgetData";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import { WidgetBody } from "@/components/widgets/WidgetCards";
+import { nSignals, nEvidence, velocityWord } from "@/constants/vocabulary";
 
 export type ShelfKey = "moves" | "stand" | "own" | "night" | "widgets";
 
@@ -45,8 +46,8 @@ export function buildShelf(
       key: "own",
       title: "What you own",
       fact: themes > 0
-        ? `${themes} live theme${themes === 1 ? "" : "s"}`
-        : "No themes yet. They form once you have kept a handful of things.",
+        ? `${themes} live ${themes === 1 ? "signal" : "signals"}`
+        : "No signals yet. They form once you have captured a handful of things.",
     },
     {
       key: "night",
@@ -102,7 +103,7 @@ export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => v
 export const StandCard: React.FC<{ facts: HomeFacts | null }> = ({ facts }) => {
   const c = facts?.components ?? { signal: null, content: null, capture: null };
   const rows: Array<{ label: string; value: number | null; weight: string }> = [
-    { label: "Signal", value: c.signal, weight: "themes you hold" },
+    { label: "Signal", value: c.signal, weight: "signals you hold" },
     { label: "Content", value: c.content, weight: "what you published" },
     { label: "Capture", value: c.capture, weight: "what you feed it" },
   ];
@@ -152,13 +153,13 @@ export const OwnCard: React.FC<{ themes: OwnedTheme[]; onOpen: () => void }> = (
   <Card style={{ padding: 0 }}>
     <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
       <Kicker>What you own</Kicker>
-      <SectionTitle>The themes your reading holds up</SectionTitle>
+      <SectionTitle>The signals your reading holds up</SectionTitle>
     </div>
     <div style={{ padding: "8px 0" }}>
       {themes.length === 0 && (
         <div style={{ padding: "12px 20px", display: "grid", gap: 6 }}>
-          <Body>No themes yet.</Body>
-          <Muted>A theme forms when several things you kept point the same way.</Muted>
+          <Body>No signals yet.</Body>
+          <Muted>A signal forms when several things you capture point the same way.</Muted>
         </div>
       )}
       {themes.map((t) => (
@@ -167,13 +168,13 @@ export const OwnCard: React.FC<{ themes: OwnedTheme[]; onOpen: () => void }> = (
         }}>
           <span style={{ fontSize: 13.5, color: "var(--text-primary)" }}>{t.title}</span>
           <span style={{ ...MONO, fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-            {t.fragments} · {t.velocity === "accelerating" ? "growing" : t.velocity === "declining" ? "cooling" : "steady"}
+            {nEvidence(t.fragments)} · {velocityWord(t.velocity)} this week
           </span>
         </div>
       ))}
     </div>
     <div style={{ padding: "14px 20px", borderBlockStart: "1px solid var(--rule-divider)" }}>
-      <ActButton onClick={onOpen}>Open your themes</ActButton>
+      <ActButton onClick={onOpen}>Open your signals</ActButton>
     </div>
   </Card>
 );
@@ -201,7 +202,7 @@ export const NightCard: React.FC<{ facts: HomeFacts | null; generatedAt: string 
         {ln ? (
           <>
             <Body>Read {ln.sources_read} {ln.sources_read === 1 ? "source" : "sources"}.</Body>
-            <Body>Strengthened {ln.themes_strengthened} {ln.themes_strengthened === 1 ? "theme" : "themes"}.</Body>
+            <Body>Strengthened {nSignals(ln.themes_strengthened)}.</Body>
             <Body>
               {ln.drafts_written > 0
                 ? `Wrote ${ln.drafts_written} draft${ln.drafts_written === 1 ? "" : "s"}.`

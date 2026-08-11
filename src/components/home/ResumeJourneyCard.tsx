@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { nEvidence } from "@/constants/vocabulary";
 
 const BLUE = "#0670C4";
 const LINE = "#E2E7EE";
@@ -38,7 +39,7 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
       const strengths = Object.keys(((data as any).skill_ratings as Record<string, unknown>) || {}).length;
       const saved = [
         (data as any).headline || (data as any).seniority_band ? "Your profile is read" : "",
-        claims ? `${claims} ${claims === 1 ? "subject" : "subjects"} saved` : "",
+        claims ? `${nEvidence(claims)} saved` : "",
         strengths ? "your strengths saved" : "",
       ].filter(Boolean) as string[];
       setPaused({

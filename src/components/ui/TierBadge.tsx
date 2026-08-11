@@ -50,7 +50,7 @@ export function TierBadge({ tier, hideTooltip = false, className }: TierBadgePro
 
   return (
     <span className={className} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-      <span style={style} aria-label={`Signal tier: ${label}`}>
+      <span style={style} aria-label={`Signal status: ${label}`}>
         <Icon size={11} strokeWidth={2.25} aria-hidden />
         <span>{label}</span>
       </span>
