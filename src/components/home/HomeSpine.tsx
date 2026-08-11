@@ -73,7 +73,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
   const facts = address.facts;
   const chips = useReadChips(userId, facts);
 
-  const { layout, metrics } = useWidgetData(userId);
+  const { layout, metrics, failed: widgetsFailed, reload: reloadWidgets } = useWidgetData(userId);
   const [themes, setThemes] = useState<OwnedTheme[]>([]);
   const [themesLoading, setThemesLoading] = useState(true);
   const [themesFailed, setThemesFailed] = useState(false);
@@ -203,7 +203,12 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
       );
     }
     if (onStage === "night") return <NightCard facts={facts} onOpen={() => onSwitchTab("overnight")} />;
-    if (onStage === "widgets") return <WidgetsCard layout={layout} metrics={metrics} onEdit={() => onSwitchTab("widgets")} />;
+    if (onStage === "widgets") return (
+      <WidgetsCard
+        layout={layout} metrics={metrics} failed={widgetsFailed} onRetry={reloadWidgets}
+        onEdit={() => onSwitchTab("widgets")}
+      />
+    );
 
     // Home ends in one screen: the shape is the only stage. The record now
     // lives on Momentum.
