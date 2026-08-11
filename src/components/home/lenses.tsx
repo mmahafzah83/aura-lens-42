@@ -64,12 +64,16 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId }) => {
     : null;
   const hasPast = Boolean(pastValues && pastValues.some((v, i) => Math.abs(v - values[i]) > 0.005));
 
-  if (facets.length === 0) {
+  const hasCaptures = (facts?.captures_total ?? 0) > 0;
+  const hasSignals = (facts?.signals_active ?? 0) > 0;
+
+  // Only claim nothing has registered when genuinely nothing has.
+  if (facets.length === 0 && !hasCaptures && !hasSignals) {
     return (
       <Card>
         <Kicker>Where you stand</Kicker>
-        <SectionTitle>Your shape has not registered yet</SectionTitle>
-        <Body>Keep something you have read and finish your calibration — the shape draws itself from those two things.</Body>
+        <SectionTitle>Your shape draws itself as you go</SectionTitle>
+        <Body>Capture something you have read and Aura starts measuring the shape of what you know.</Body>
       </Card>
     );
   }

@@ -15,7 +15,7 @@ const kickerStyle: React.CSSProperties = {
   fontSize: 11,
   letterSpacing: "0.14em",
   textTransform: "uppercase",
-  color: "var(--spot)",
+  color: "var(--act)",
 };
 
 const counterStyle: React.CSSProperties = {
@@ -23,12 +23,12 @@ const counterStyle: React.CSSProperties = {
   fontSize: 11,
   letterSpacing: "0.14em",
   textTransform: "uppercase",
-  color: "var(--ink-3)",
+  color: "var(--text-muted)",
 };
 
 const ctaStyle: React.CSSProperties = {
-  background: "var(--spot)",
-  color: "var(--paper)",
+  background: "var(--act)",
+  color: "var(--text-inverse)",
   border: 0,
   padding: "10px 20px",
   fontFamily: "var(--font-mono)",
@@ -44,7 +44,7 @@ const skipStyle: React.CSSProperties = {
   fontSize: 10,
   letterSpacing: "0.1em",
   textTransform: "uppercase",
-  color: "var(--ink-3)",
+  color: "var(--text-muted)",
   background: "transparent",
   border: 0,
   cursor: "pointer",
@@ -55,19 +55,29 @@ const proseStyle: React.CSSProperties = {
   fontFamily: "var(--font-display)",
   fontSize: 19,
   lineHeight: 1.35,
-  color: "var(--ink)",
+  color: "var(--text-primary)",
   margin: 0,
 };
 
 function Dot({ state }: { state: "done" | "current" | "future" }) {
-  const size = 10;
+  const size = 14;
   if (state === "done") {
-    return <span aria-hidden style={{ width: size, height: size, borderRadius: "50%", background: "var(--spot)", display: "inline-block", flexShrink: 0 }} />;
+    return (
+      <span aria-hidden style={{
+        width: size, height: size, borderRadius: "50%", background: "var(--success)",
+        display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      }}>
+        <svg width="9" height="9" viewBox="0 0 12 12" aria-hidden>
+          <path d="M2 6.4 4.6 9 10 3.2" fill="none" stroke="var(--text-inverse)" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    );
   }
   if (state === "current") {
-    return <span aria-hidden style={{ width: size, height: size, borderRadius: "50%", background: "transparent", border: "1.5px solid var(--spot)", display: "inline-block", flexShrink: 0 }} />;
+    return <span aria-hidden style={{ width: size, height: size, borderRadius: "50%", background: "transparent", border: "2px solid var(--act)", display: "inline-block", flexShrink: 0 }} />;
   }
-  return <span aria-hidden style={{ width: size, height: size, borderRadius: "50%", background: "transparent", border: "1.5px solid var(--ink-3)", display: "inline-block", flexShrink: 0 }} />;
+  return <span aria-hidden style={{ width: size, height: size, borderRadius: "50%", background: "transparent", border: "1.5px solid var(--text-muted)", display: "inline-block", flexShrink: 0 }} />;
 }
 
 export function FirstFlightCard(props: FirstFlightCardProps) {
@@ -84,10 +94,13 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
     return "future";
   }) as Array<"done" | "current" | "future">;
 
+  const doneCount = stepStates.filter((s) => s === "done").length;
+  const remaining = 4 - doneCount;
+
   const container: React.CSSProperties = {
-    background: "var(--paper)",
-    border: "1px solid var(--rule)",
-    borderTop: "2px solid var(--ink)",
+    background: "var(--surface-card)",
+    border: "1px solid var(--rule-outer)",
+    borderTop: "2px solid var(--text-primary)",
     padding: "22px 24px",
     marginBottom: 24,
     boxShadow: "0 1px 0 var(--hair, rgba(255,255,255,0.06))",
@@ -107,7 +120,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
           }
         `}</style>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "16px 8px", gap: 14 }}>
-          <span aria-hidden style={{ fontSize: 40, lineHeight: 1, color: "var(--action)" }}>✦</span>
+          <span aria-hidden style={{ fontSize: 40, lineHeight: 1, color: "var(--act)" }}>✦</span>
           <p style={{ ...proseStyle, fontSize: 20 }}>First Flight complete — Aura is now working for you.</p>
           <button type="button" onClick={ff.retire} style={ctaStyle}>Continue</button>
         </div>
@@ -130,7 +143,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
       onClick: () => { if (topSignal) { onOpenSignal(topSignal); markSignalSeen(); } },
       disabled: !topSignal,
     };
-    return { label: "Write it", onClick: () => topSignal && onWriteFromSignal(topSignal), disabled: !topSignal };
+    return { label: "See the post Aura prepared", onClick: () => topSignal && onWriteFromSignal(topSignal), disabled: !topSignal };
   };
 
   // Waiting: s2 done but s3 pending → no button, italic serif line.
@@ -153,6 +166,11 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
         <span style={counterStyle}>Step {currentStep} of 4</span>
       </div>
 
+      {/* Plain progress */}
+      <div style={{ ...counterStyle, textTransform: "none", letterSpacing: "0.06em", marginTop: -10, marginBottom: 14, textAlign: "end" }}>
+        {doneCount} of 4 done{remaining === 0 ? "" : remaining === 1 ? " — one step left." : ` — ${remaining} steps left.`}
+      </div>
+
       {/* Step rail */}
       <ol
         role="list"
@@ -171,7 +189,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
       >
         {STEP_LABELS.map((label, idx) => {
           const st = stepStates[idx];
-          const labelColor = st === "done" ? "var(--ink)" : st === "current" ? "var(--spot)" : "var(--ink-3)";
+          const labelColor = st === "done" ? "var(--success-text)" : st === "current" ? "var(--act)" : "var(--text-muted)";
           const isLast = idx === STEP_LABELS.length - 1;
           return (
             <li
@@ -188,10 +206,14 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
                   textTransform: "uppercase",
                   color: labelColor,
                   whiteSpace: "nowrap",
+                  fontWeight: st === "current" ? 700 : 400,
+                  textDecoration: st === "done" ? "line-through" : undefined,
+                  textDecorationThickness: st === "done" ? "1px" : undefined,
+                  opacity: st === "done" ? 0.85 : 1,
                 }}>{label}</span>
               </span>
               {!isLast && (
-                <span aria-hidden style={{ flex: 1, height: 1, background: "var(--rule)", marginInline: 6, minWidth: 12 }} />
+                <span aria-hidden style={{ flex: 1, height: 1, background: "var(--rule-outer)", marginInline: 6, minWidth: 12 }} />
               )}
             </li>
           );
@@ -209,12 +231,12 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
                 className="ff-pulse"
                 style={{
                   width: 8, height: 8, borderRadius: "50%",
-                  background: "var(--live)",
+                  background: "var(--machine)",
                   animation: "firstFlightPulse 1.6s ease-in-out infinite",
                   display: "inline-block",
                 }}
               />
-              <span style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 15, color: "var(--ink-2)" }}>
+              <span style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 15, color: "var(--text-secondary)" }}>
                 Reading what you saved… your first signal usually appears within a few minutes.
               </span>
             </div>

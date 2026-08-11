@@ -7,6 +7,8 @@ import { toast } from "@/hooks/use-toast";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import AuraLogo from "@/components/brand/AuraLogo";
 import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
+import HomeMasthead from "@/components/home/HomeMasthead";
+import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 import {
   useHomeAddress, useReadChips,
   type HomeLens, type HomeMove,
@@ -79,6 +81,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
   const address = useHomeAddress(userId);
   const facts = address.facts;
   const chips = useReadChips(userId, facts);
+  const tier = useTierFromImprint(userId);
 
   const [layout, setLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
   const [metrics, setMetrics] = useState<WidgetMetrics | null>(null);
@@ -197,8 +200,8 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
   const moves: HomeMove[] = address.row?.moves ?? [];
   const activeMove: HomeMove | null = moves[moveIdx] ?? moves[0] ?? null;
   const shelf = useMemo(
-    () => buildShelf(facts, moves, facts?.signals_active ?? themes.length, layout, metrics),
-    [facts, moves, themes.length, layout, metrics],
+    () => buildShelf(facts, moves, facts?.signals_active ?? themes.length, layout, metrics, tier.currentTier?.name ?? null),
+    [facts, moves, themes.length, layout, metrics, tier.currentTier],
   );
 
   const generatedAt = address.row?.generated_at ?? null;
@@ -209,7 +212,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
   // ── the stage ────────────────────────────────────────────────────
   const stage = (() => {
     if (onStage === "moves") return <MovesCard moves={moves} onGo={goRoute} />;
-    if (onStage === "stand") return <StandCard facts={facts} />;
+    if (onStage === "stand") return <StandCard facts={facts} userId={userId} />;
     if (onStage === "own") return <OwnCard themes={themes} onOpen={() => onSwitchTab("intelligence")} />;
     if (onStage === "night") return <NightCard facts={facts} generatedAt={generatedAt} onOpen={() => onSwitchTab("overnight")} />;
     if (onStage === "widgets") return <WidgetsCard layout={layout} metrics={metrics} onEdit={() => onSwitchTab("widgets")} />;
@@ -232,6 +235,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
 
   return (
     <div className="home-spine" style={{ display: "grid", gap: 22, marginBlockStart: 22 }}>
+      <HomeMasthead userId={userId} />
       <ResumeJourneyCard userId={userId ?? null} />
       {/* 1 — THE ADDRESS */}
       <section style={{
