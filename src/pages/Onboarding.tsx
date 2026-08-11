@@ -2289,7 +2289,9 @@ const Onboarding = () => {
       try {
         const { dataUrl } = await rasteriseRevealCard(shareRef.current, { format: "png" });
         const imageBase64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
-        const { data, error } = await invokeEdgeFunction<{ ok: boolean; reason?: string; postUrn?: string | null }>(
+        const { data, error } = await invokeEdgeFunction<{
+          ok: boolean; reason?: string; postUrn?: string | null; step?: string; status?: number;
+        }>(
           "linkedin-share-read", { body: { imageBase64, caption: liveCaption } },
         );
         if (error) throw error;
@@ -2307,6 +2309,7 @@ const Onboarding = () => {
           await downloadRead();
           return;
         }
+        console.error("[reveal] post refused", { step: data?.step, status: data?.status, reason: data?.reason });
         toast.error("That didn't go through. Try again, or download the image.");
       } catch (err) {
         console.error("[reveal] post failed", err);
