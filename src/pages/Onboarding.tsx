@@ -326,6 +326,12 @@ const Onboarding = () => {
   const [phIdx, setPhIdx] = useState(0);
   const [sharing, setSharing] = useState(false);
   const shareRef = useRef<HTMLDivElement | null>(null);
+  /* posting to LinkedIn — offered only where it can actually work */
+  const [canPostToLinkedIn, setCanPostToLinkedIn] = useState(false);
+  const [captionDraft, setCaptionDraft] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [postedUrl, setPostedUrl] = useState<string | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
 
   /* loop safety valve — kept from the previous journey */
   const [visits, setVisits] = useState(0);
