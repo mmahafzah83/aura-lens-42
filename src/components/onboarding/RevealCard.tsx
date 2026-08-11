@@ -109,6 +109,18 @@ const source = (line?: string) =>
     <p style={{ margin: "7px 0 0", fontSize: 11, lineHeight: 1.5, opacity: 0.72 }}>{line}</p>
   ) : null;
 
+/** Long prose needs a surface with contrast; it cannot sit on the gradient. */
+const panel: React.CSSProperties = {
+  background: "rgba(15,21,25,0.28)",
+  borderRadius: 20,
+  padding: 18,
+};
+
+const unusedSource = (line?: string) =>
+  line ? (
+    <p style={{ margin: "7px 0 0", fontSize: 11, lineHeight: 1.5, opacity: 0.72 }}>{line}</p>
+  ) : null;
+
 /** The card is a reading experience; it grows once, at the desk-sized breakpoint. */
 const RVC_CSS = `
 @media (min-width:1280px){
