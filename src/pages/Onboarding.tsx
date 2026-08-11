@@ -356,6 +356,7 @@ const Onboarding = () => {
 
   const go = useCallback((next: number) => {
     setScreen(next);
+    screenRef.current = next;
     void track("onboarding_step", { step: `screen_${next}`, step_index: next });
     void persistScreen(next);
     try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
