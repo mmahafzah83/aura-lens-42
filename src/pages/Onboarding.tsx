@@ -37,6 +37,8 @@ import { loadProfileFacts, type ProfileFacts } from "@/lib/profileFacts";
 import { loadPostProof, type PostProof } from "@/lib/postProof";
 import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleBand } from "@/lib/seniorityTitles";
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
+import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
+import { smartPlaceholders } from "@/lib/smartPlaceholders";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
@@ -84,24 +86,8 @@ const PAGE_CSS = `
 @media (prefers-reduced-motion:reduce){
   .obc-in,.obc-line{animation:none !important;opacity:1 !important;transform:none !important;}
 }
+${BUTTON_CSS}
 `;
-
-const btnPrimary: React.CSSProperties = {
-  inlineSize: "100%", minBlockSize: 52, borderRadius: RADIUS.pill, border: "none",
-  background: OB.blue, color: "#FFFFFF", fontSize: "var(--ob-btn)", fontWeight: 600, cursor: "pointer",
-  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9,
-  transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}`, fontFamily: "inherit",
-};
-
-const btnGhostLight: React.CSSProperties = {
-  inlineSize: "100%", minBlockSize: 46, borderRadius: RADIUS.pill,
-  background: "transparent", color: OB.muted, border: `1px solid ${OB.line}`,
-  fontSize: "var(--ob-small)", fontWeight: 500, cursor: "pointer", marginBlockStart: 10, fontFamily: "inherit",
-};
-
-const btnGhostNight: React.CSSProperties = {
-  ...btnGhostLight, color: OB.mutedNight, border: `1px solid ${OB.lineNight}`,
-};
 
 const fieldStyle: React.CSSProperties = {
   inlineSize: "100%", background: OB.canvas, border: `1px solid ${OB.line}`,
@@ -278,6 +264,9 @@ const Onboarding = () => {
   const [revealSlow, setRevealSlow] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [connectNote, setConnectNote] = useState("");
+  const [connected, setConnected] = useState(false);
+  /* placeholder rotation for open text answers */
+  const [phIdx, setPhIdx] = useState(0);
   const [sharing, setSharing] = useState(false);
   const shareRef = useRef<HTMLDivElement | null>(null);
 
@@ -743,7 +732,12 @@ const Onboarding = () => {
     navigate("/home", { replace: true });
   };
 
-  const connectLinkedIn = async () => {
+  /**
+   * Connect in a popup. A full-page redirect from inside the flow throws the
+   * member out at its most fragile moment, so the redirect is only the
+   * fallback — and it says so when it happens.
+   */
+  const connectLinkedIn = async (opts?: { allowRedirect?: boolean }) => {
     setConnecting(true);
     setConnectNote("");
     try {
@@ -753,8 +747,38 @@ const Onboarding = () => {
       });
       if (error) throw error;
       const url = (data as any)?.url || (data as any)?.authUrl;
-      if (url) { window.location.href = url; return; }
-      throw new Error("no url");
+      if (!url) throw new Error("no url");
+
+      const win = window.open(url, "aura_li_oauth", "width=600,height=700,menubar=no,toolbar=no");
+      if (!win) {
+        if (opts?.allowRedirect) {
+          setConnectNote("Your browser blocked the pop-up, so this opens in the same tab. You'll come straight back.");
+          window.location.href = url;
+          return;
+        }
+        setConnectNote("Your browser blocked the pop-up. You can connect from Settings the moment you're in — nothing here is lost.");
+        setConnecting(false);
+        return;
+      }
+
+      const onMessage = (ev: MessageEvent) => {
+        if (ev.origin !== window.location.origin) return;
+        const d: any = ev.data;
+        if (!d || d.source !== "aura-linkedin-oauth") return;
+        window.removeEventListener("message", onMessage);
+        window.clearInterval(watch);
+        setConnecting(false);
+        if (d.ok) { setConnected(true); setConnectNote(""); }
+        else setConnectNote(d.message || "LinkedIn didn't finish. You can do this from Settings later.");
+      };
+      window.addEventListener("message", onMessage);
+      const watch = window.setInterval(() => {
+        if (win.closed) {
+          window.clearInterval(watch);
+          window.removeEventListener("message", onMessage);
+          setConnecting(false);
+        }
+      }, 700);
     } catch {
       setConnectNote("LinkedIn connection only works on aura-intel.org — you can do this from Settings after you're in.");
       setConnecting(false);
@@ -808,9 +832,7 @@ const Onboarding = () => {
       {titlesFailed ? (
         <>
           <p style={{ ...bodyLight, margin: 0 }}>Aura couldn't load the list of levels. Nothing is lost.</p>
-          <button type="button" onClick={() => void reloadTitles()} style={{ ...btnGhostLight, marginBlockStart: 0 }}>
-            Try again
-          </button>
+          <OBButton variant="secondary" onClick={() => void reloadTitles()}>Try again</OBButton>
         </>
       ) : seniorityTitles.map((t) => (
         <button key={t.title} type="button" onClick={() => onPick(t.title, t.band as Band)} style={{
@@ -889,12 +911,12 @@ const Onboarding = () => {
             {userEmail || "—"}
           </p>
           <p style={bodyLight}>Your invitation went to that address. Confirm it before anything is saved to your name.</p>
-          <button type="button" onClick={confirmIdentityYes} style={{ ...btnPrimary, marginBlockStart: 22 }}>
-            Yes, that's me <ArrowRight size={16} />
-          </button>
-          <button type="button" onClick={confirmIdentityNo} disabled={signingOut} style={btnGhostLight}>
-            {signingOut ? "Signing out…" : "No, this isn't mine"}
-          </button>
+          <Actions style={{ marginBlockStart: 22 }}>
+            <OBButton onClick={confirmIdentityYes}>Yes, that's me <ArrowRight size={16} /></OBButton>
+            <OBButton variant="tertiary" onClick={() => void confirmIdentityNo()} loading={signingOut} loadingLabel="Signing out…">
+              No, this isn't mine
+            </OBButton>
+          </Actions>
         </PaperShell>
       </>
     );
@@ -948,10 +970,11 @@ const Onboarding = () => {
               </div>
             ))}
           </div>
-          <button type="button" onClick={handleSetPassword} disabled={!allValid || settingPwd}
-            style={{ ...btnPrimary, opacity: !allValid || settingPwd ? 0.5 : 1 }}>
-            {settingPwd ? <Loader2 size={16} className="animate-spin" /> : null} Set it and start
-          </button>
+          <Actions style={{ marginBlockStart: 0 }}>
+            <OBButton onClick={() => void handleSetPassword()} disabled={!allValid} loading={settingPwd} loadingLabel="Saving…">
+              Set it and start
+            </OBButton>
+          </Actions>
         </PaperShell>
       </>
     );
@@ -963,7 +986,7 @@ const Onboarding = () => {
     <>
       <h1 style={h1Night}>Give that one more go.</h1>
       <p style={bodyNight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
-      <button type="button" onClick={retry} style={{ ...btnPrimary, marginBlockStart: 22 }}>Try again</button>
+      <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={retry}>Try again</OBButton></Actions>
     </>
   );
 
@@ -982,8 +1005,8 @@ const Onboarding = () => {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
           {SHELF.map((s) => <ShelfBadge key={s.key} label={s.label} tone={s.tone} />)}
         </div>
-        <button type="button" onClick={() => go(1)} style={{ ...btnPrimary, marginBlockStart: 22 }}>Start</button>
-        <p style={footnote}>Nothing gets posted. Ever, unless you press it.</p>
+        <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>Start</OBButton></Actions>
+        <p style={footnote}>Nothing gets posted unless you press publish.</p>
       </PaperShell>
     );
   }
@@ -994,12 +1017,8 @@ const Onboarding = () => {
       <PaperShell bead={0} footer={escapeFooter}>
         <h1 style={h1Light}>What's your LinkedIn?</h1>
         <p style={bodyLight}>
-          Aura reads what's already public — your profile and your recent posts. That's how it learns your sector,
-          your level, and the way you already write.
-        </p>
-        <p style={{ ...bodyLight, fontSize: 12.5, marginBlockStart: 10 }}>
-          Aura stores your posts so it can learn your voice. You can delete them, and your whole account, from
-          Settings at any time — and they go for good.
+          So nothing Aura writes for you sounds generic. It reads what's already public — your profile and your
+          recent posts — and picks up your sector, your level and the way you already write.
         </p>
         <input
           value={liInput}
@@ -1012,17 +1031,46 @@ const Onboarding = () => {
         {liError ? (
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.err }}>{liError}</p>
         ) : null}
-        <button type="button" onClick={readProfile} disabled={liBusy || !liInput.trim()}
-          style={{ ...btnPrimary, marginBlockStart: 16, opacity: liBusy || !liInput.trim() ? 0.5 : 1 }}>
-          {liBusy ? <Loader2 size={16} className="animate-spin" /> : null} Read my profile
-        </button>
-        <button type="button" onClick={() => go(MANUAL_SCREEN)} style={btnGhostLight}>
-          I'd rather type it in myself
-        </button>
-        <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
+        <Actions style={{ marginBlockStart: 16 }}>
+          <OBButton onClick={() => void readProfile()} disabled={!liInput.trim()} loading={liBusy} loadingLabel="Reading…">
+            Read my profile
+          </OBButton>
+          <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
+        </Actions>
+        <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
           Aura stores what it reads so it can write as you. You can delete it any time in Settings.
         </p>
-        <p style={footnote}>Aura only reads. It never posts.</p>
+
+        {/* Optional accelerator. Quiet, secondary, never the way through. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "24px 0 14px" }}>
+          <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
+          <span style={{ fontSize: 11.5, color: OB.muted }}>Optional — ten seconds more</span>
+          <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
+        </div>
+        {connected ? (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: RADIUS.card,
+            background: OB.blueTint, fontSize: 13.5, color: OB.ink,
+          }}>
+            <Check size={15} style={{ color: "#12805C" }} /> Connected · Aura can see how your posts performed
+          </div>
+        ) : (
+          <>
+            <p style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+              Connect LinkedIn too and Aura learns which of your subjects your audience already rewards, so it stops
+              guessing.
+            </p>
+            <Actions style={{ marginBlockStart: 12 }}>
+              <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel="Connecting…">
+                Connect LinkedIn
+              </OBButton>
+            </Actions>
+            {connectNote ? (
+              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{connectNote}</p>
+            ) : null}
+          </>
+        )}
+        <p style={footnote}>Aura never posts. You press publish, every time.</p>
       </PaperShell>
     );
   }
@@ -1055,11 +1103,9 @@ const Onboarding = () => {
         {nothingPublic ? (
           <p style={{ ...bodyNight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE}</p>
         ) : null}
-        <button type="button" onClick={() => go(3)} disabled={!allLanded}
-          style={{ ...btnPrimary, marginBlockStart: 24, opacity: allLanded ? 1 : 0.5 }}>
-          {allLanded ? null : <Loader2 size={16} className="animate-spin" />}
-          {allLanded ? "See what I found" : "Reading…"}
-        </button>
+        <Actions style={{ marginBlockStart: 24 }}>
+          <OBButton onClick={() => go(3)} loading={!allLanded} loadingLabel="Reading…">See what I found</OBButton>
+        </Actions>
       </NightShell>
     );
   }
@@ -1103,22 +1149,25 @@ const Onboarding = () => {
           <p style={{ ...bodyLight, marginBlockStart: 18 }}>{EMPTY_POSTS_LINE}</p>
         )}
 
-        {/* Everything else Aura read. Each part computed; anything missing is simply absent. */}
+        {/* What Aura found in your record. Each part computed; anything missing is simply absent. */}
         {facts ? (() => {
           const where = [
             facts.role && facts.company ? `${facts.role} at ${facts.company}` : facts.role || facts.company,
             facts.location,
-            facts.yearsOn ? `${facts.yearsOn} years on LinkedIn` : (facts.joinedYear ? `on LinkedIn since ${facts.joinedYear}` : ""),
           ].filter(Boolean) as string[];
           const counts = [
             facts.roles ? `${facts.roles} ${facts.roles === 1 ? "role" : "roles"}` : "",
             facts.certifications ? `${facts.certifications} certifications` : "",
             facts.skills ? `${facts.skills} skills` : "",
-            facts.recommendations ? `${facts.recommendations} recommendations` : "",
+            facts.projects ? `${facts.projects} projects` : "",
+            facts.joinedYear ? `on LinkedIn since ${facts.joinedYear}` : "",
           ].filter(Boolean);
           if (!where.length && !counts.length && !facts.topSkills.length && !facts.aboutFirstLine) return null;
           return (
             <div style={{ marginBlockStart: 18 }}>
+              <p style={{ margin: "0 0 8px", fontSize: 13.5, fontWeight: 700, color: OB.ink }}>
+                What Aura found in your record
+              </p>
               {where.length ? (
                 <p style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
                   {where.join(" · ")}
@@ -1151,18 +1200,25 @@ const Onboarding = () => {
         })() : null}
 
         {/* What other people wrote about them, verbatim. Nothing here is generated. */}
-        {facts?.recQuote ? (
+        {facts?.recQuote && facts.recommendations ? (
           <figure style={{
             margin: "18px 0 0", padding: "15px 17px", borderRadius: RADIUS.card,
             background: OB.blueTint, borderInlineStart: `3px solid ${OB.blue}`,
           }}>
             <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>
-              Someone you worked with wrote this about you:
+              <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: OB.ink, marginBlockEnd: 6 }}>
+                What people who worked with you said
+              </span>
+              {facts.recommendations} {facts.recommendations === 1 ? "person has" : "people have"} written a
+              recommendation for you
             </figcaption>
             <blockquote style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: 1.6, color: OB.ink }}>
               “{facts.recQuote.text}”
             </blockquote>
             <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>— {facts.recQuote.title}</p>
+            <p style={{ margin: "8px 0 0", fontSize: 11.5, color: OB.muted }}>
+              Aura read all {facts.recommendations}.
+            </p>
           </figure>
         ) : null}
 
@@ -1188,11 +1244,9 @@ const Onboarding = () => {
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             <span style={{ fontSize: 14 }}>Level · <strong>{levelTitle || bandLabel || "not set"}</strong></span>
-            <button type="button" onClick={() => setBandPicker((v) => !v)} style={{
-              border: `1px solid ${OB.blue}`, background: OB.white, color: OB.blue,
-              fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-              padding: "8px 16px", borderRadius: 999, flexShrink: 0,
-            }}>{bandPicker ? "Close" : "Change"}</button>
+            <OBButton variant="tertiary" onClick={() => setBandPicker((v) => !v)} style={{ flexShrink: 0 }}>
+              {bandPicker ? "Close" : "Change"}
+            </OBButton>
           </div>
           {bandPicker && titleList((t, b) => { void chooseTitle(t, b); setBandPicker(false); })}
           {!sector && (
@@ -1222,7 +1276,9 @@ const Onboarding = () => {
           ))}
         </div>
 
-        <button type="button" onClick={nextFromHere} style={{ ...btnPrimary, marginBlockStart: 18 }}>That's me</button>
+        <Actions style={{ marginBlockStart: 18 }}>
+          <OBButton onClick={nextFromHere}>That's me</OBButton>
+        </Actions>
       </PaperShell>
     );
   }
@@ -1244,7 +1300,8 @@ const Onboarding = () => {
         </div>
         <p style={{ ...bodyLight, marginBlockStart: 16, fontWeight: 600, color: OB.ink }}>Your level</p>
         {titleList((t, b) => { setLevelTitle(t); setBand(b); })}
-        <button type="button" disabled={!ready} onClick={async () => {
+        <Actions style={{ marginBlockStart: 20 }}>
+        <OBButton disabled={!ready} onClick={async () => {
           if (userId) {
             await (supabase.from("diagnostic_profiles" as any) as any).upsert({
               user_id: userId, first_name: firstName.trim(), last_name: lastName.trim() || null,
@@ -1253,9 +1310,8 @@ const Onboarding = () => {
             }, { onConflict: "user_id" });
           }
           go(4);
-        }} style={{ ...btnPrimary, marginBlockStart: 20, opacity: ready ? 1 : 0.5 }}>
-          Save and carry on
-        </button>
+        }}>Save and carry on</OBButton>
+        </Actions>
       </PaperShell>
     );
   }
@@ -1268,7 +1324,7 @@ const Onboarding = () => {
         <p style={{ ...bodyNight, textAlign: "center" }}>
           Your profile says what you've done. It doesn't say what you think. One link is enough to start.
         </p>
-        <button type="button" onClick={() => go(5)} style={{ ...btnPrimary, marginBlockStart: 26 }}>Okay</button>
+        <Actions style={{ marginBlockStart: 26 }}><OBButton onClick={() => go(5)}>Okay</OBButton></Actions>
       </NightShell>
     );
   }
@@ -1284,8 +1340,9 @@ const Onboarding = () => {
         <input value={linkInput} onChange={(e) => setLinkInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && linkInput.trim()) void sendLink(linkInput); }}
           placeholder="Paste a link" inputMode="url" style={{ ...fieldStyle, marginBlockStart: 20 }} />
-        <button type="button" disabled={!linkInput.trim()} onClick={() => sendLink(linkInput)}
-          style={{ ...btnPrimary, marginBlockStart: 14, opacity: linkInput.trim() ? 1 : 0.5 }}>Add it</button>
+        <Actions style={{ marginBlockStart: 14 }}>
+          <OBButton disabled={!linkInput.trim()} onClick={() => void sendLink(linkInput)}>Add it</OBButton>
+        </Actions>
 
         {suggested || !suggestDead ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "24px 0 16px" }}>
@@ -1307,8 +1364,12 @@ const Onboarding = () => {
                 display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
               }}>{suggested.summary}</p>
             ) : null}
-            <button type="button" onClick={() => sendLink(suggested.url, { title: suggested.title, summary: suggested.summary })}
-              style={btnGhostLight}>Use this one</button>
+            <div style={{ marginBlockStart: 4 }}>
+              <OBButton variant="tertiary"
+                onClick={() => void sendLink(suggested.url, { title: suggested.title, summary: suggested.summary })}>
+                Use this one
+              </OBButton>
+            </div>
           </div>
         ) : !suggestDead ? (
           <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted }}>
@@ -1329,7 +1390,7 @@ const Onboarding = () => {
     content = (
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
-        <p style={{ ...bodyNight, textAlign: "center" }}>Pulling out the bits worth keeping…</p>
+        <p style={{ ...bodyNight, textAlign: "center" }}>Finding the parts you can use.</p>
         <div style={{ marginBlockStart: 22 }}>
           <WorkProgress onNight done={steps.filter((s) => s.done).length} total={steps.length} />
         </div>
@@ -1344,7 +1405,7 @@ const Onboarding = () => {
         {claimsSlow && (
           <>
             <p style={{ ...bodyNight, textAlign: "center" }}>Still reading — it'll be waiting on your Home.</p>
-            <button type="button" onClick={() => go(8)} style={{ ...btnPrimary, marginBlockStart: 20 }}>Keep going</button>
+            <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => go(8)}>Keep going</OBButton></Actions>
           </>
         )}
       </NightShell>
@@ -1362,7 +1423,7 @@ const Onboarding = () => {
           ))}
         </div>
         <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 22 }}>
-          Aura will watch what moves these while you sleep.
+          You'll know when something moves these — without going looking.
         </p>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "22px 0 4px" }}>
           {SHELF.map((s, i) => (
@@ -1371,7 +1432,7 @@ const Onboarding = () => {
               figure={i === 0 ? (postsRead || "✓") : i === 1 ? claims.length : undefined} />
           ))}
         </div>
-        <button type="button" onClick={() => go(8)} style={{ ...btnPrimary, marginBlockStart: 18 }}>Nice — keep going</button>
+        <Actions style={{ marginBlockStart: 18 }}><OBButton onClick={() => go(8)}>Keep going</OBButton></Actions>
       </NightShell>
     );
   }
@@ -1388,16 +1449,16 @@ const Onboarding = () => {
       <NightShell face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadDimensions()) : (
           <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>I've read you. Now I want your own read.</h1>
+            <h1 style={{ ...h1Night, textAlign: "center" }}>Now your own read.</h1>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              This isn't a test and there's no score to beat. Aura compares what you say about yourself against what
-              your posts actually show — and where those two disagree is the interesting part.
+              Where your own read and your posts disagree is where the useful part is.
             </p>
             {pickedLine ? <p style={{ ...bodyNight, textAlign: "center" }}>{pickedLine}</p> : null}
-            <button type="button" onClick={() => { setDimIdx(0); go(TRUST_SLIDERS_SCREEN); }} disabled={!dims}
-              style={{ ...btnPrimary, marginBlockStart: 24, opacity: dims ? 1 : 0.5 }}>
-              {dims ? "Okay" : <Loader2 size={16} className="animate-spin" />}
-            </button>
+            <Actions style={{ marginBlockStart: 24 }}>
+              <OBButton onClick={() => { setDimIdx(0); go(TRUST_SLIDERS_SCREEN); }} loading={!dims} loadingLabel="Loading…">
+                Okay
+              </OBButton>
+            </Actions>
           </>
         )}
       </NightShell>
@@ -1412,19 +1473,15 @@ const Onboarding = () => {
         {contentError || !dims ? retryPanel(() => void loadDimensions()) : (
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>Before you start</h1>
-            <p style={bodyNight}>
-              These {sliderCount === 8 ? "eight" : sliderCount} are not a personality test. Each one asks what you
-              have actually done, with a real sentence at each end and one in the middle instead of a number — a way
-              of asking that has been used in serious work since the 1960s, because it is harder to fool and harder
-              to flatter.
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              No score. Each one asks what you have actually done, in plain sentences rather than numbers.
             </p>
-            <p style={bodyNight}>
-              They are chosen for your level. A Director and a Consultant are asked different things, because what
-              capability means changes at each step up, not gradually.
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              {sliderCount ? `${sliderCount} sliders, picked for your level. Under a minute.` : "Picked for your level. Under a minute."}
             </p>
-            <button type="button" onClick={() => { setDimIdx(0); go(9); }} style={{ ...btnPrimary, marginBlockStart: 24 }}>
-              Okay
-            </button>
+            <Actions style={{ marginBlockStart: 24 }}>
+              <OBButton onClick={() => { setDimIdx(0); go(9); }}>Okay</OBButton>
+            </Actions>
           </>
         )}
       </NightShell>
@@ -1438,7 +1495,7 @@ const Onboarding = () => {
         <PaperShell bead={3} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
-          <button type="button" onClick={() => void loadDimensions()} style={{ ...btnPrimary, marginBlockStart: 20 }}>Try again</button>
+          <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadDimensions()}>Try again</OBButton></Actions>
         </PaperShell>
       );
     } else {
@@ -1455,10 +1512,12 @@ const Onboarding = () => {
                 fit, or when it's easier to sit in the middle than to pick. Either is fine — but Aura reads a flat
                 answer as "no strong pattern", and it will write more carefully because of it.
               </p>
-              <button type="button" onClick={() => { setFlatWarn(false); setDimIdx(0); }}
-                style={{ ...btnPrimary, marginBlockStart: 20 }}>Let me have another look</button>
-              <button type="button" onClick={() => { setFlatAck(true); setFlatWarn(false); go(10); }}
-                style={btnGhostLight}>No, that's right for me</button>
+              <Actions style={{ marginBlockStart: 20 }}>
+                <OBButton onClick={() => { setFlatWarn(false); setDimIdx(0); }}>Let me have another look</OBButton>
+                <OBButton variant="tertiary" onClick={() => { setFlatAck(true); setFlatWarn(false); go(10); }}>
+                  No, that's right for me
+                </OBButton>
+              </Actions>
             </>
           ) : (
           <>
@@ -1495,18 +1554,18 @@ const Onboarding = () => {
                 </div>
               ))}
           </div>
-          <button type="button" onClick={() => {
-            if (!scores[d.name]) setScore(d.name, value);
-            if (!last) { setDimIdx((i) => i + 1); return; }
-            const finalValues = dims.map((x) => (x.name === d.name ? value : scores[x.name] ?? value));
-            const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
-            if (flatNow && !flatAck) setFlatWarn(true); else go(10);
-          }} style={{ ...btnPrimary, marginBlockStart: 26 }}>
-            {last ? `Done — that's all ${dims.length}` : "Next"}
-          </button>
-          {dimIdx > 0 ? (
-            <button type="button" onClick={() => setDimIdx((i) => Math.max(0, i - 1))} style={btnGhostLight}>Back</button>
-          ) : null}
+          <Actions style={{ marginBlockStart: 26 }}>
+            <OBButton onClick={() => {
+              if (!scores[d.name]) setScore(d.name, value);
+              if (!last) { setDimIdx((i) => i + 1); return; }
+              const finalValues = dims.map((x) => (x.name === d.name ? value : scores[x.name] ?? value));
+              const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
+              if (flatNow && !flatAck) setFlatWarn(true); else go(10);
+            }}>{last ? `Done — that's all ${dims.length}` : "Next"}</OBButton>
+            {dimIdx > 0 ? (
+              <OBButton variant="tertiary" onClick={() => setDimIdx((i) => Math.max(0, i - 1))}>Back</OBButton>
+            ) : null}
+          </Actions>
           {last && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
               {SHELF.map((s, i) => (
@@ -1529,30 +1588,21 @@ const Onboarding = () => {
       <NightShell face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
           <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is the part that does the work.</h1>
+            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is what makes it yours.</h1>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              Aura won't write a word until it has this. A few questions about how you actually work — read together
-              with the posts it just read, the claims you kept, and the sliders you moved.
-            </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
-              What comes out isn't a personality type. It's the subjects you genuinely own, the space nobody near you
-              has claimed, and where the ground is still soft.
-            </p>
-            <p style={bodyNight}>
-              These {questions?.length ?? 9} come from four places: how archetype is used in brand work, the search
-              for uncontested space in strategy, the point-of-view question behind category design, and the coaching
-              question that surfaces what is actually holding someone back.
-            </p>
-            <p style={bodyNight}>
-              There are no right answers and nothing is scored. Aura is looking for your pattern.
+              Nine questions about how you actually work — read together with your posts, your claims and your
+              sliders.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              {questions?.length ?? 9} questions. A couple of minutes. Saved as you go.
+              What comes out is the subjects you own, the space nobody near you has claimed, and where the ground is
+              still soft.
             </p>
-            <button type="button" onClick={() => { setQIdx(0); go(11); }} disabled={!questions}
-              style={{ ...btnPrimary, marginBlockStart: 24, opacity: questions ? 1 : 0.5 }}>
-              {questions ? "Let's do it" : <Loader2 size={16} className="animate-spin" />}
-            </button>
+            <p style={{ ...bodyNight, textAlign: "center" }}>Nine questions. Two minutes. Saved as you go.</p>
+            <Actions style={{ marginBlockStart: 24 }}>
+              <OBButton onClick={() => { setQIdx(0); go(11); }} loading={!questions} loadingLabel="Loading…">
+                Let's do it
+              </OBButton>
+            </Actions>
           </>
         )}
       </NightShell>
@@ -1566,7 +1616,7 @@ const Onboarding = () => {
         <PaperShell bead={4} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
-          <button type="button" onClick={() => void loadQuestions()} style={{ ...btnPrimary, marginBlockStart: 20 }}>Try again</button>
+          <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadQuestions()}>Try again</OBButton></Actions>
         </PaperShell>
       );
     } else {
@@ -1590,6 +1640,14 @@ const Onboarding = () => {
       const opts = q.randomise ? shuffled(q.options || [], qIdx + 1) : (q.options || []);
       const proposedReady = q.kind === "proposed" && !!proposals && proposals.length > 0;
       const proposedFallback = q.kind === "proposed" && (proposalsDead || (proposals !== null && proposals.length === 0));
+      /* "None of these fit" belongs to a list of options, never to an open box. */
+      const showNone = !!q.allow_none && (q.kind === "choice" || q.kind === "multi");
+      /* The cap is printed once, above the options — so a helper that repeats it is dropped. */
+      const helperText = q.helper && !/pick up to/i.test(q.helper) ? q.helper : null;
+      /* A suggestion built from what Aura already read. Never submitted. */
+      const phList = smartPlaceholders(facts, sector || null, String(liProfile?.headline || "") || null);
+      const placeholder = phList[phIdx % phList.length];
+      const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
       const optionButton = (label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
         <button key={label} type="button" disabled={blocked} onClick={onClick} style={{
@@ -1615,7 +1673,7 @@ const Onboarding = () => {
             <p style={{ margin: "6px 0 0", fontSize: 12, color: OB.muted }}>Saved as you go — you can stop any time.</p>
           ) : null}
           <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{q.prompt}</h1>
-          {q.helper ? <p style={bodyLight}>{q.helper}</p> : null}
+          {helperText ? <p style={bodyLight}>{helperText}</p> : null}
           {q.why_asked ? (
             <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted }}>
               <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", marginInlineEnd: 7 }}>Why this</span>
@@ -1638,9 +1696,9 @@ const Onboarding = () => {
                   !multiPicked.includes(o.label) && atCap,
                 ))}
               </div>
-              <button type="button" disabled={multiPicked.length === 0}
-                onClick={() => advance(multiPicked.join(" · "))}
-                style={{ ...btnPrimary, marginBlockStart: 16, opacity: multiPicked.length ? 1 : 0.5 }}>Next</button>
+              <Actions style={{ marginBlockStart: 16 }}>
+                <OBButton disabled={multiPicked.length === 0} onClick={() => advance(multiPicked.join(" · "))}>Next</OBButton>
+              </Actions>
             </>
           ) : q.kind === "proposed" ? (
             proposedReady ? (
@@ -1666,10 +1724,12 @@ const Onboarding = () => {
                 </p>
                 <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
                   aria-label={q.prompt}
+                  onFocus={rotatePlaceholder}
                   onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
-                  placeholder="One line, your words" style={{ ...fieldStyle, marginBlockStart: 12 }} />
-                <button type="button" disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}
-                  style={{ ...btnPrimary, marginBlockStart: 16, opacity: textAnswer.trim() ? 1 : 0.5 }}>Next</button>
+                  placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
+                <Actions style={{ marginBlockStart: 16 }}>
+                  <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                </Actions>
               </>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted, marginBlockStart: 20 }}>
@@ -1680,20 +1740,22 @@ const Onboarding = () => {
             <>
               <input value={textAnswer} onChange={(e) => setTextAnswer(e.target.value)}
                 aria-label={q.prompt}
+                onFocus={rotatePlaceholder}
                 onKeyDown={(e) => { if (e.key === "Enter" && textAnswer.trim()) advance(textAnswer.trim()); }}
-                placeholder="One line, your words" style={{ ...fieldStyle, marginBlockStart: 20 }} />
-              <button type="button" disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}
-                style={{ ...btnPrimary, marginBlockStart: 16, opacity: textAnswer.trim() ? 1 : 0.5 }}>Next</button>
+                placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
+              <Actions style={{ marginBlockStart: 16 }}>
+                <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+              </Actions>
             </>
           )}
 
-          {q.allow_none ? (
-            <button type="button" onClick={() => advance("None of these fit")} style={btnGhostLight}>
-              None of these fit
-            </button>
-          ) : null}
-          {qIdx > 0 ? (
-            <button type="button" onClick={back} style={btnGhostLight}>Back</button>
+          {showNone || qIdx > 0 ? (
+            <Actions style={{ marginBlockStart: 12 }}>
+              {showNone ? (
+                <OBButton variant="tertiary" onClick={() => advance("None of these fit")}>None of these fit</OBButton>
+              ) : null}
+              {qIdx > 0 ? <OBButton variant="tertiary" onClick={back}>Back</OBButton> : null}
+            </Actions>
           ) : null}
         </PaperShell>
       );
@@ -1755,11 +1817,11 @@ const Onboarding = () => {
         {revealPending && proof && proof.lines.length > 0 ? (
           <WaitProof lines={proof.lines} howLong="Writing your read. About a minute." />
         ) : null}
-        <button type="button" onClick={() => go(13)} disabled={revealPending && !revealSlow}
-          style={{ ...btnPrimary, marginBlockStart: 24, opacity: revealPending && !revealSlow ? 0.6 : 1 }}>
-          {revealPending && !revealSlow ? <Loader2 size={16} className="animate-spin" /> : null}
-          {!revealPending ? "See how people see me" : revealSlow ? "See what I have so far" : "Writing your read…"}
-        </button>
+        <Actions style={{ marginBlockStart: 24 }}>
+          <OBButton onClick={() => go(13)} loading={revealPending && !revealSlow} loadingLabel="Writing your read…">
+            {revealPending && revealSlow ? "See what I have so far" : "See how people see me"}
+          </OBButton>
+        </Actions>
       </NightShell>
     );
   }
@@ -1788,7 +1850,8 @@ const Onboarding = () => {
               <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
             </div>
           ) : null}
-          <button type="button" disabled={!reveal || sharing} onClick={async () => {
+          <Actions style={{ marginBlockStart: 20 }}>
+          <OBButton disabled={!reveal} loading={sharing} loadingLabel="Building…" onClick={async () => {
             if (!shareRef.current) return;
             setSharing(true);
             try {
@@ -1801,12 +1864,10 @@ const Onboarding = () => {
             } finally {
               setSharing(false);
             }
-          }} style={{ ...btnPrimary, marginBlockStart: 20, background: OB.night, opacity: !reveal || sharing ? 0.6 : 1 }}>
-            {sharing ? <Loader2 size={16} className="animate-spin" /> : null} Share this
-          </button>
-          <button type="button" onClick={() => go(14)} style={{
-            ...btnGhostLight, color: "#FFFFFF", border: "1px solid rgba(255,255,255,.55)",
-          }}>Take me in</button>
+          }} style={{ background: OB.night }}>Share this</OBButton>
+          <OBButton variant="tertiary" onClick={() => (connected ? void finish() : go(14))}
+            style={{ color: "#FFFFFF" }}>Take me in</OBButton>
+          </Actions>
           <div style={{ color: "rgba(255,255,255,.82)" }}>
             <ReadCorrection userId={userId} onNight />
             <MethodNote onNight />
@@ -1822,8 +1883,8 @@ const Onboarding = () => {
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>One last thing.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Connect LinkedIn and Aura can see what only you can see — how your posts actually performed. It learns
-          which of your subjects your audience already rewards, and stops guessing.
+          Connect LinkedIn and you find out which of your subjects your audience already rewards — so Aura stops
+          guessing.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 22 }}>
           {[
@@ -1838,13 +1899,15 @@ const Onboarding = () => {
             </div>
           ))}
         </div>
-        <button type="button" onClick={connectLinkedIn} disabled={connecting} style={{ ...btnPrimary, marginBlockStart: 22 }}>
-          {connecting ? <Loader2 size={16} className="animate-spin" /> : null} Connect LinkedIn
-        </button>
+        <Actions style={{ marginBlockStart: 22 }}>
+          <OBButton onClick={() => void connectLinkedIn({ allowRedirect: true })} loading={connecting} loadingLabel="Connecting…">
+            Connect LinkedIn
+          </OBButton>
+          <OBButton variant="tertiary" onNight onClick={() => void finish()}>Not now</OBButton>
+        </Actions>
         {connectNote ? (
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.mutedNight }}>{connectNote}</p>
         ) : null}
-        <button type="button" onClick={finish} style={btnGhostNight}>Not now</button>
         <p style={{ ...footnote, color: OB.mutedNight }}>Aura never posts. You press publish, every time.</p>
       </NightShell>
     );

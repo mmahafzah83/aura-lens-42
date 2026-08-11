@@ -111,7 +111,8 @@ ${recs.slice(0, 18).map((r: any, i: number) =>
 ).join("\n")}
 
 These are recommendations written about the member by other people. This is the only external evidence of how the
-market actually sees them. Use it as the primary source for HOW THE MARKET SEES YOU. Where the recommendations agree
+market actually sees them. Use it as the primary source for HOW THE MARKET SEES YOU, and quote or paraphrase at
+least one specific thing a recommender said. Where the recommendations agree
 with the member's own answers, say so. Where they disagree, name the disagreement plainly — that gap is the most
 useful thing in the report. Never invent a recommendation and never quote one that is not above.`
       : "RECOMMENDATIONS WRITTEN ABOUT THEM\nNone on file — say the market evidence is thin rather than inventing perception.";

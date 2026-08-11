@@ -13,6 +13,17 @@ const LinkedInCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       const returnTo = sessionStorage.getItem("aura_li_return");
+      // When onboarding opened this in a popup, the answer goes back through
+      // postMessage — the member never leaves the flow they were in.
+      const popup = typeof window !== "undefined" && !!window.opener && window.name === "aura_li_oauth";
+      const tellOpener = (ok: boolean, message?: string) => {
+        if (!popup) return false;
+        try {
+          window.opener.postMessage({ source: "aura-linkedin-oauth", ok, message }, window.location.origin);
+        } catch { /* the opener may be gone */ }
+        window.setTimeout(() => { try { window.close(); } catch { /* ignore */ } }, 600);
+        return true;
+      };
       const goBack = (fallback: string) => {
         if (returnTo) {
           try { sessionStorage.removeItem("aura_li_return"); } catch {}
@@ -33,6 +44,7 @@ const LinkedInCallback = () => {
         };
         setErrorMsg(messages[error] || errorDescription || `LinkedIn error: ${error}`);
         setStatus("error");
+        if (tellOpener(false, messages[error] || errorDescription || "LinkedIn didn't complete.")) return;
         setTimeout(() => goBack("/dashboard?tab=influence"), 3000);
         return;
       }
@@ -40,6 +52,7 @@ const LinkedInCallback = () => {
       if (!code) {
         setErrorMsg("No authorization code received from LinkedIn.");
         setStatus("error");
+        if (tellOpener(false, "LinkedIn didn't send anything back.")) return;
         setTimeout(() => goBack("/dashboard?tab=influence"), 3000);
         return;
       }
@@ -71,6 +84,7 @@ const LinkedInCallback = () => {
             setErrorMsg(msg);
           }
           setStatus("error");
+          if (tellOpener(false, msg)) return;
           setTimeout(() => goBack("/dashboard?tab=influence"), 4000);
           return;
         }
@@ -94,10 +108,12 @@ const LinkedInCallback = () => {
         }
 
         setStatus("success");
+        if (tellOpener(true)) return;
         setTimeout(() => goBack("/dashboard?tab=influence"), 1500);
       } catch (err: any) {
         setErrorMsg(err.message || "An unexpected error occurred.");
         setStatus("error");
+        if (tellOpener(false, err?.message)) return;
         setTimeout(() => goBack("/dashboard?tab=influence"), 4000);
       }
     };
