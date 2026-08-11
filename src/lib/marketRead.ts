@@ -14,8 +14,16 @@ const stripMd = (s: unknown): string =>
 const firstSentence = (s: string): string => {
   const t = stripMd(s);
   if (!t) return "";
-  const m = t.match(/^(.{20,190}?[.!?])(\s|$)/);
-  return m ? m[1] : t.slice(0, 190);
+  const m = t.match(/^(.{20,240}?[.!?])(\s|$)/);
+  if (m) return m[1];
+  if (t.length <= 240) return t;
+  // No sentence boundary in the window: cut at the last word boundary before
+  // 240 rather than mid-word, tidy trailing punctuation, and close it.
+  const window = t.slice(0, 240);
+  const cut = window.lastIndexOf(" ");
+  const clipped = (cut > 40 ? window.slice(0, cut) : window)
+    .replace(/[\s,;:—–-]+$/, "");
+  return `${clipped}.`;
 };
 
 function splitTail(raw: string): { prose: string; json: any | null } {
