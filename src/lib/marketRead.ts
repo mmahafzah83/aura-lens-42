@@ -110,7 +110,7 @@ export function toRevealData(
   let soft = rawSoft.filter((s) => s && !banned.has(s.toLowerCase()));
   // The member's own lowest-rated areas are honest soft ground — if the filter
   // empties the list entirely, fall back to them rather than render nothing.
-  if (soft.length === 0) soft = rawSoft.filter(Boolean).slice(0, 2);
+  if (soft.length === 0) soft = rawSoft.slice(0, 2).filter(Boolean);
   const src = extras.sources ?? {};
   if (!archetype && subjects.length === 0) return null;
   return {
