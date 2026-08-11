@@ -988,7 +988,13 @@ const Onboarding = () => {
         window.removeEventListener("message", onMessage);
         window.clearInterval(watch);
         setConnecting(false);
-        if (d.ok) { setConnected(true); setConnectNote(""); }
+        if (d.ok) {
+          setConnected(true);
+          setConnectNote("");
+          /* The callback writes the connection row after we did; re-run the
+             confirmation so a read that already happened isn't lost to the race. */
+          if (userId && readDone) void markVerifiedByRead(userId);
+        }
         else setConnectNote(d.message || "LinkedIn didn't finish. You can do this from Settings later.");
       };
       window.addEventListener("message", onMessage);
