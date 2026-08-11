@@ -335,7 +335,7 @@ export function PaperCover({ data }: { data: ReportData }) {
           How to read this paper — three colours, three meanings
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
-          <LegendCell swatch={T.spot} title="Oxblood — Finding" body="A conclusion drawn from your evidence." />
+          <LegendCell swatch={T.spot} title="Finding" body="A conclusion drawn from your evidence." />
           <LegendCell swatch={T.live} title="Movement" body="Something live and rising in your record." border />
           <LegendCell swatch={T.action} title="Action" body="Held by you, unclaimed — the next move." border />
         </div>
@@ -834,6 +834,7 @@ export function PaperPersonaCard({ p }: { p: { who: string; sees: string; gap: s
 export function ClosingPlate({
   data, activeSignals = null, evidenceCount = null, sparkDelta = null,
   headline, body, ctaLabel = "Built from my own record ↗",
+  moves, paperTitle, pageLine,
 }: {
   data: ReportData;
   activeSignals?: number | null;
@@ -842,6 +843,12 @@ export function ClosingPlate({
   headline?: React.ReactNode;
   body?: React.ReactNode;
   ctaLabel?: string;
+  /** Optional three-step plan, rendered under the body when present. */
+  moves?: Array<{ horizon: string; text: string }>;
+  /** Overrides the plate's own footer title. Absent = the Identity Report № 01. */
+  paperTitle?: string;
+  /** e.g. "Page 05 / 05" — appended to the footer line when present. */
+  pageLine?: string;
 }) {
   const p = data.profile;
   const fullName = [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim();
@@ -929,6 +936,30 @@ export function ClosingPlate({
           </p>
         ) : null}
 
+        {moves && moves.length > 0 ? (
+          <div style={{ marginTop: 34, maxWidth: 600 }}>
+            <div style={{
+              fontFamily: FONT.mono, fontSize: 10.5, fontWeight: 700,
+              letterSpacing: "0.16em", textTransform: "uppercase", color: T.action,
+            }}>Three moves, in order</div>
+            {moves.map((m, i) => (
+              <div key={i} style={{
+                display: "grid", gridTemplateColumns: "62px 1fr", gap: 14,
+                marginTop: 14, alignItems: "baseline",
+              }}>
+                <span style={{
+                  fontFamily: FONT.mono, fontSize: 12, fontWeight: 700,
+                  letterSpacing: "0.10em", color: T.live,
+                }}>{m.horizon}</span>
+                <span style={{
+                  fontFamily: FONT.serif, fontSize: 16, lineHeight: 1.5,
+                  color: "rgba(242,245,249,0.9)",
+                }}>{m.text}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
         {showStats ? (
         <div
           style={{
@@ -967,7 +998,9 @@ export function ClosingPlate({
             }}
           >
             <div>{fullName || "—"}</div>
-            <div style={{ color: "rgba(242,245,249,0.6)", marginTop: 3 }}>The Aura Paper № 01 · aura-intel.org</div>
+            <div style={{ color: "rgba(242,245,249,0.6)", marginTop: 3 }}>
+              {paperTitle || "The Aura Paper № 01"} · aura-intel.org{pageLine ? ` · ${pageLine}` : ""}
+            </div>
           </div>
           <span
             style={{
