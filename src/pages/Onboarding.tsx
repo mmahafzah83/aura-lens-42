@@ -1033,10 +1033,17 @@ const Onboarding = () => {
           the way you already think.
         </p>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
-          {SHELF.map((s) => <ShelfBadge key={s.key} label={s.label} tone={s.tone} />)}
+          {SHELF.map((s, i) => (
+            <ShelfBadge key={s.key} label={s.label} tone={s.tone} icon={SHELF_ICON[i]} hint={SHELF_HINT[i]} />
+          ))}
         </div>
+        <p style={{ margin: "12px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted, textAlign: "center" }}>
+          Four things Aura needs. Each one unlocks as you go.
+        </p>
         <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>Start</OBButton></Actions>
-        <p style={footnote}>Nothing gets posted unless you press publish.</p>
+        <p style={footnote}>
+          Free while Aura is in beta. Your read is private — only you can see it unless you share it.
+        </p>
       </PaperShell>
     );
   }
