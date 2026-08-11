@@ -828,12 +828,10 @@ const Onboarding = () => {
     } catch (e) { console.error("[journey] slider save threw", e); }
   }, [userId, band, writeProfile]);
 
+  /* A drag fires onChange per pixel — saving there raced dozens of upserts
+     against each other. State moves live; the save happens when the drag ends. */
   const setScore = (name: string, value: number) => {
-    setScores((prev) => {
-      const next = { ...prev, [name]: value };
-      void saveScores(next);
-      return next;
-    });
+    setScores((prev) => ({ ...prev, [name]: value }));
   };
 
   /* ── the six questions, then the read ── */
