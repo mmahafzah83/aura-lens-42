@@ -390,6 +390,35 @@ const Onboarding = () => {
   }, []);
 
   /* ── progress: a closed tab loses nothing ── */
+  /**
+   * One writer for the member's profile row.
+   *
+   * PostgREST answers `.update().eq()` that matches zero rows with HTTP 204 and
+   * no error, so an entire journey once wrote into a row that did not exist and
+   * every try/catch passed. Every write here upserts on `user_id`, returns its
+   * rows, drops nulls so it can never blank a column it does not name, and
+   * logs loudly when it affects nothing.
+   */
+  const writeProfile = useCallback(async (
+    patch: Record<string, any>,
+    label: string,
+    uid?: string | null,
+  ): Promise<boolean> => {
+    const id = uid ?? userId;
+    if (!id) return false;
+    const clean: Record<string, any> = { user_id: id };
+    for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
+    const { data, error } = await (supabase.from("diagnostic_profiles" as any) as any)
+      .upsert(clean, { onConflict: "user_id" })
+      .select("user_id");
+    if (error) { console.error(`[journey] ${label} failed`, error); return false; }
+    if (!data || (data as any[]).length === 0) {
+      console.error(`[journey] ${label} affected no rows — nothing was saved`);
+      return false;
+    }
+    return true;
+  }, [userId]);
+
   const persistScreen = useCallback(async (next: number) => {
     if (!userId) return;
     try { localStorage.setItem(`aura_ob_screen_${userId}`, String(next)); } catch { /* ignore */ }
@@ -402,14 +431,12 @@ const Onboarding = () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("identity_intelligence").eq("user_id", userId).maybeSingle();
       const fresh = ((data as any)?.identity_intelligence as Record<string, any>) || {};
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({
-          identity_intelligence: { ...fresh, journey_screen: next },
-          onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
-        })
-        .eq("user_id", userId);
-    } catch (e) { console.warn("[journey] progress save failed", e); }
-  }, [userId]);
+      await writeProfile({
+        identity_intelligence: { ...fresh, journey_screen: next },
+        onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
+      }, "progress save");
+    } catch (e) { console.error("[journey] progress save threw", e); }
+  }, [userId, writeProfile]);
 
   const go = useCallback((next: number) => {
     setScreen(next);
