@@ -308,6 +308,10 @@ const Onboarding = () => {
 
   /* loop safety valve — kept from the previous journey */
   const [visits, setVisits] = useState(0);
+  /* step 1 never navigates: it reads in place, then becomes the result card */
+  const [step1Phase, setStep1Phase] = useState<"ask" | "reading" | "result">("ask");
+  /* the inline confirmation shown for a moment when they choose Finish later */
+  const [exitNote, setExitNote] = useState<string>("");
   useEffect(() => {
     try {
       const k = "aura_onboarding_visits";
@@ -379,13 +383,15 @@ const Onboarding = () => {
         const local = Number(localStorage.getItem(`aura_ob_screen_${uid}`) ?? "0");
         if (local > resume) resume = local;
       } catch { /* ignore */ }
+      /* screens 2 and 3 folded into step 1 — a resume there lands on the address card */
+      if (resume === 2 || resume === 3) resume = 1;
       if (resume > 0 && resume < 13) setScreen(resume);
 
       setChecking(false);
     })();
   }, [navigate]);
 
-  /* ── screen 1: read the profile ── */
+  /* ── screen 1: read the profile — in place, never leaving the card ── */
   const readProfile = async () => {
     setLiError("");
     setReadDone(false);
@@ -397,7 +403,7 @@ const Onboarding = () => {
       return;
     }
     setLiBusy(true);
-    go(2);
+    setStep1Phase("reading");
     try {
       if (userId) { try { await saveLinkedInAddress(userId, profile_url); } catch { /* saved again later */ } }
       const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", { body: { profile_url } });
@@ -465,20 +471,23 @@ const Onboarding = () => {
         setOwnWords(0);
       }
       setReadDone(true);
+      setStep1Phase("result");
     } catch (e: any) {
       const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "";
       setLiError(msg && msg.length < 120
         ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
         : "Aura couldn't open that page. Check it matches what you see in your browser on your own profile.");
-      go(1);
+      /* the read failing never moves them: the field, the error and the manual path all stay here */
+      setStep1Phase("ask");
     } finally {
       setLiBusy(false);
     }
   };
 
-  /* ── screen 2: every line resolves on its own and shows itself finishing ── */
-  const upPosts = useCountUp(screen === 2 && postsRead ? postsRead : 0, { duration: 900 });
-  const upWords = useCountUp(screen === 2 && ownWords ? ownWords : 0, { duration: 1100 });
+  /* ── the read resolves line by line, in place on the step-1 card ── */
+  const reading = screen === 1 && step1Phase !== "ask";
+  const upPosts = useCountUp(reading && postsRead ? postsRead : 0, { duration: 900 });
+  const upWords = useCountUp(reading && ownWords ? ownWords : 0, { duration: 1100 });
 
   /* ── the suggested read: asked for on screen 4 so it has a head start ── */
   const suggestRan = useRef(false);
@@ -850,12 +859,43 @@ const Onboarding = () => {
     }
   };
 
-  /* ── escape hatch, unchanged in spirit ── */
-  /** Save & exit — everything already answered stays, and Home is one tap away. */
+  /* ── finish later: a saved place, a said-out-loud confirmation, and a way back ── */
+  /** Which of the five named stages this screen belongs to. */
+  const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
+
+  /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
-    void persistScreen(screen);
-    navigate("/home");
-  }, [persistScreen, screen, navigate]);
+    const stage = stageOf(screen);
+    setExitNote(`Saved at step ${stage} of 5. You can pick this up any time.`);
+    void (async () => {
+      await persistScreen(screen);
+      if (userId) {
+        try {
+          const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+            .select("identity_intelligence").eq("user_id", userId).maybeSingle();
+          const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+          const alreadyEmailed = Boolean(ii.resume_email_sent_at);
+          await (supabase.from("diagnostic_profiles" as any) as any)
+            .update({
+              identity_intelligence: {
+                ...ii,
+                journey_screen: screen,
+                journey_paused: true,
+                journey_stage: stage,
+                journey_paused_at: new Date().toISOString(),
+                resume_email_sent_at: alreadyEmailed ? ii.resume_email_sent_at : new Date().toISOString(),
+              },
+            })
+            .eq("user_id", userId);
+          /* one email, the first time only — never a sequence */
+          if (!alreadyEmailed) {
+            supabase.functions.invoke("send-resume-email", { body: { stage } }).catch(() => {});
+          }
+        } catch (e) { console.warn("[journey] finish later save failed", e); }
+      }
+      window.setTimeout(() => navigate("/home"), 900);
+    })();
+  }, [persistScreen, screen, navigate, userId]);
 
   /** Remembers when their day starts, alongside the time zone we detected. */
   const chooseDailyTime = useCallback(async (slot: "Morning" | "Midday" | "Evening") => {
@@ -1103,74 +1143,8 @@ const Onboarding = () => {
     );
   }
 
-  /* 1 — WHITE, the address */
+  /* 1 — WHITE, the address. The member advances from this card; the code never does. */
   if (screen === 1) {
-    content = (
-      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
-        <h1 style={h1Light}>What's your LinkedIn?</h1>
-        <p style={bodyLight}>
-          So nothing Aura writes for you sounds generic. It reads what's already public — your profile and your
-          recent posts — and picks up your sector, your level and the way you already write.
-        </p>
-        <input
-          value={liInput}
-          onChange={(e) => { setLiInput(e.target.value); setLiError(""); }}
-          onKeyDown={(e) => { if (e.key === "Enter" && liInput.trim()) void readProfile(); }}
-          placeholder="linkedin.com/in/yourname"
-          inputMode="url"
-          style={{ ...fieldStyle, marginBlockStart: 20 }}
-        />
-        {liError ? (
-          <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.err }}>{liError}</p>
-        ) : null}
-        <Actions style={{ marginBlockStart: 16 }}>
-          <OBButton onClick={() => void readProfile()} disabled={!liInput.trim()} loading={liBusy} loadingLabel="Reading…">
-            Read my profile
-          </OBButton>
-          <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
-        </Actions>
-        <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
-          Aura stores what it reads so it can write as you. You can delete it any time in Settings.
-        </p>
-
-        {/* Optional accelerator. Quiet, secondary, never the way through. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "24px 0 14px" }}>
-          <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
-          <span style={{ fontSize: 11.5, color: OB.muted }}>Optional — ten seconds more</span>
-          <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
-        </div>
-        {connected ? (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: RADIUS.card,
-            background: OB.blueTint, fontSize: 13.5, color: OB.ink,
-          }}>
-            <Check size={15} style={{ color: "#12805C" }} /> Connected · Aura can see how your posts performed
-          </div>
-        ) : (
-          <>
-            <p style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
-              Connect LinkedIn too and Aura learns which of your subjects your audience already rewards, so it stops
-              guessing.
-            </p>
-            <Actions style={{ marginBlockStart: 12 }}>
-              <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel="Connecting…">
-                Connect LinkedIn
-              </OBButton>
-            </Actions>
-            {connectNote ? (
-              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{connectNote}</p>
-            ) : null}
-          </>
-        )}
-        <p style={footnote}>Aura never posts. You press publish, every time.</p>
-      </PaperShell>
-    );
-  }
-
-  /* 2 — NIGHT, reading you */
-  if (screen === 2) {
-    // A row never shows a zero and never shows a non-answer: it either
-    // resolves to something real or it is dropped once the read is done.
     const mono = (v: React.ReactNode) => <span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{v}</span>;
     const rows: { key: string; label: string; line: React.ReactNode; done: boolean; drop: boolean }[] = [
       { key: "p", label: "Posts", line: <>{mono(num(upPosts))} posts read</>, done: !!postsRead, drop: readDone && !postsRead },
@@ -1178,44 +1152,76 @@ const Onboarding = () => {
       { key: "s", label: "Sector", line: <>Sector · {mono(sector)}</>, done: !!sector, drop: readDone && !sector },
       { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
     ].filter((r) => !r.drop);
-    const allLanded = readDone && rows.every((r) => r.done);
-    // Never print a zero for posts or words — the absence is the message.
     const nothingPublic = readDone && !postsRead && !ownWords;
-    content = (
-      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>Reading you.</h1>
-        <div style={{ marginBlockStart: 26 }}>
-          <WorkProgress onNight done={rows.filter((r) => r.done).length} total={rows.length || 1} />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {rows.map((r) => (
-            <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
-          ))}
-        </div>
-        {nothingPublic ? (
-          <p style={{ ...bodyNight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE_NIGHT}</p>
-        ) : null}
-        <Actions style={{ marginBlockStart: 24 }}>
-          <OBButton onClick={() => go(3)} loading={!allLanded} loadingLabel="Reading…">Show me what you found</OBButton>
-        </Actions>
-      </NightShell>
-    );
-  }
-
-  /* 3 — WHITE, what Aura can see */
-  if (screen === 3) {
     // A zero for posts is never printed — the empty-post line stands in for it.
     const figures = [
       ...(postsRead ? [{ v: postsRead, l: "posts read" }] : []),
       ...(liProfile?.followers ? [{ v: liProfile.followers, l: "following you" }] : []),
       ...(liProfile?.skills_count ? [{ v: liProfile.skills_count, l: "skills on record" }] : []),
     ];
-    // The read succeeded, so the firm, sector and level all come from it.
-    // There is no separate page after this one.
-    const nextFromHere = () => go(4);
+    const readJustNow = [
+      postsRead ? `${num(postsRead)} posts` : "",
+      ownWords ? `${num(ownWords)} words` : "",
+      "read just now",
+    ].filter(Boolean).join(" · ");
+
     content = (
       <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
-        <h1 style={h1Light}>This is what Aura can see.</h1>
+        {step1Phase === "result" ? (
+          <h1 style={h1Light}>This is what Aura can see.</h1>
+        ) : (
+          <>
+            <h1 style={h1Light}>What's your LinkedIn?</h1>
+            <p style={bodyLight}>
+              So nothing Aura writes for you sounds generic. It reads what's already public — your profile and your
+              recent posts — and picks up your sector, your level and the way you already write.
+            </p>
+          </>
+        )}
+
+        {step1Phase === "ask" ? (
+          <>
+            <input
+              value={liInput}
+              onChange={(e) => { setLiInput(e.target.value); setLiError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && liInput.trim()) void readProfile(); }}
+              placeholder="linkedin.com/in/yourname"
+              inputMode="url"
+              style={{ ...fieldStyle, marginBlockStart: 20 }}
+            />
+            {liError ? (
+              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.err }}>{liError}</p>
+            ) : null}
+            <Actions style={{ marginBlockStart: 16 }}>
+              <OBButton onClick={() => void readProfile()} disabled={!liInput.trim()} loading={liBusy} loadingLabel="Reading…">
+                Read my profile
+              </OBButton>
+              <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
+            </Actions>
+            <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
+              Aura reads your profile and your public posts. You get drafts in your own words instead of generic ones.
+              You can delete what it stored, any time, in Settings.
+            </p>
+          </>
+        ) : null}
+
+        {/* The read happens here, in place. Nothing moves while it lands. */}
+        {step1Phase === "reading" ? (
+          <div style={{ marginBlockStart: 22 }}>
+            <WorkProgress done={rows.filter((r) => r.done).length} total={rows.length || 1} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 14 }}>
+              {rows.map((r) => (
+                <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
+              ))}
+            </div>
+            {nothingPublic ? (
+              <p style={{ ...bodyLight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {step1Phase === "result" ? (
+          <>
         <div style={{ display: "flex", gap: 13, alignItems: "center", marginBlockStart: 20 }}>
           {liProfile?.photo_url ? (
             <img src={liProfile.photo_url} alt={`${liProfile?.full_name || "Your"} LinkedIn photo`} loading="lazy"
@@ -1377,12 +1383,68 @@ const Onboarding = () => {
           )}
         </div>
 
-        <Actions style={{ marginBlockStart: 18 }}>
-          <OBButton onClick={nextFromHere}>That's me</OBButton>
-        </Actions>
+            {/* Both asks, in one place: what Aura reads, what you get, and that you can undo it. */}
+            <div style={{
+              marginBlockStart: 22, padding: "15px 16px", borderRadius: RADIUS.card,
+              background: OB.canvas, border: `1px solid ${OB.line}`,
+            }}>
+              <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: OB.ink }}>
+                TWO THINGS AURA CAN SEE — both are yours to decide.
+              </p>
+
+              <div style={{ display: "flex", gap: 9, marginBlockStart: 14 }}>
+                <Check size={16} style={{ color: "#12805C", flexShrink: 0, marginBlockStart: 2 }} />
+                <div>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: OB.ink }}>What's public · read</p>
+                  <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+                    Your profile and your posts. This is how Aura learns the way you write.
+                  </p>
+                  {readJustNow ? (
+                    <p style={{ margin: "6px 0 0", fontFamily: OB.mono, fontSize: 11.5, color: OB.ink }}>{readJustNow}</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 9, marginBlockStart: 16 }}>
+                {connected ? <Check size={16} style={{ color: "#12805C", flexShrink: 0, marginBlockStart: 2 }} /> : <span style={{ inlineSize: 16, flexShrink: 0 }} />}
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: OB.ink }}>
+                    {connected ? "Connected · Aura can see how your posts performed" : "What's private · not connected"}
+                  </p>
+                  {connected ? null : (
+                    <>
+                      <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+                        How those posts actually performed. This is how Aura learns which of your subjects your
+                        audience already rewards — instead of guessing.
+                      </p>
+                      <Actions style={{ marginBlockStart: 12 }}>
+                        <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel="Connecting…">
+                          Connect LinkedIn
+                        </OBButton>
+                      </Actions>
+                      {connectNote ? (
+                        <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{connectNote}</p>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <p style={{ margin: "16px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
+                Aura only reads. It never posts. You can disconnect either one in Settings.
+              </p>
+            </div>
+
+            <Actions style={{ marginBlockStart: 18 }}>
+              <OBButton onClick={() => go(4)}>Continue</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(4)}>Skip this for now</OBButton>
+            </Actions>
+          </>
+        ) : null}
       </PaperShell>
     );
   }
+
 
   /* 15 — WHITE, only when the read failed or was skipped */
   if (screen === MANUAL_SCREEN) {
@@ -2041,6 +2103,17 @@ const Onboarding = () => {
   return (
     <>
       <style>{PAGE_CSS}</style>
+      {exitNote ? (
+        <div role="status" style={{
+          position: "fixed", insetBlockStart: 12, insetInline: 0, zIndex: 60, display: "flex", justifyContent: "center",
+          pointerEvents: "none",
+        }}>
+          <span style={{
+            background: OB.ink, color: "#FFFFFF", fontSize: 13, borderRadius: 999, padding: "9px 16px",
+            boxShadow: "0 8px 24px rgba(15,21,25,.22)",
+          }}>{exitNote}</span>
+        </div>
+      ) : null}
       {content}
     </>
   );
