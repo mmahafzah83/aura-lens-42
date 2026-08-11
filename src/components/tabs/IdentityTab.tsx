@@ -1055,7 +1055,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 Your territory
                 <InfoTooltip
                   label="Your territories"
-                  text="Your strongest content themes. Gold-highlighted territories have the deepest signal evidence."
+                  text="Your strongest signals. Highlighted territories have the deepest evidence."
                   side="bottom"
                   triggerSize={13}
                 />

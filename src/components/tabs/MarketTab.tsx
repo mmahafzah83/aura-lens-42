@@ -435,7 +435,7 @@ const MarketTab = () => {
       <Dialog open={editingPillars} onOpenChange={setEditingPillars}>
         <DialogContent className="glass-card border-border/30 sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg">Edit Brand Pillars</DialogTitle>
+            <DialogTitle className="text-accent-strong text-lg">Edit Brand Pillars</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground/60 mb-3">
             Define 3 core strategic themes that define your personal brand. Separate with commas.

@@ -1051,7 +1051,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             boxShadow: "0 30px 80px -20px rgba(0,0,0,0.5)",
           }}
         >
-          {/* Gold radial glow behind the glyph */}
+          {/* Accent radial glow behind the glyph */}
           <div
             aria-hidden
             style={{

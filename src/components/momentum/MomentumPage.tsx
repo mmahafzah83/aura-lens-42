@@ -449,7 +449,7 @@ export default function MomentumPage() {
             </div>
             <div
               role="img"
-              aria-label={`Tier ladder. You are in ${band.name} at ${score} points.`}
+              aria-label={`Standing. You are ${band.name} at ${score} points.`}
               style={{
                 display: "flex",
                 borderRadius: 999,
@@ -498,7 +498,7 @@ export default function MomentumPage() {
               })}
             </div>
             <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: "12px 0 0" }}>
-              Tiers describe where you stand. Nothing in Aura is locked behind them — every feature
+              Your standing describes where you stand today. Nothing in Aura is locked behind it — every feature
               is available at every tier.
             </p>
           </Card>

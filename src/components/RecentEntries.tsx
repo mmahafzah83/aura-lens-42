@@ -382,7 +382,7 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
       <Dialog open={!!dedupGroups} onOpenChange={(open) => { if (!open) setDedupGroups(null); }}>
         <DialogContent className="glass-card border-border/30 sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg flex items-center gap-2">
+            <DialogTitle className="text-accent-strong text-lg flex items-center gap-2">
               <Sparkles className="w-5 h-5" />
               {dedupGroups?.length || 0} {t("dedup.found")}
             </DialogTitle>
@@ -425,7 +425,7 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
       <Dialog open={draftOpen} onOpenChange={setDraftOpen}>
         <DialogContent className="glass-card border-border/30 sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg">{t("draft.title")}</DialogTitle>
+            <DialogTitle className="text-accent-strong text-lg">{t("draft.title")}</DialogTitle>
           </DialogHeader>
           <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto break-words" dir="auto" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
             {draftPost}

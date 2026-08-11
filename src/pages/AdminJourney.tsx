@@ -228,7 +228,7 @@ export default function AdminJourney() {
               </ul>
             </div>
             <div style={card}>
-              <div style={{ ...kpiLabel, marginBottom: 8 }}>Near a tier jump</div>
+              <div style={{ ...kpiLabel, marginBottom: 8 }}>Near a standing jump</div>
               <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.7, color: "var(--glass)" }}>
                 {(data?.flags?.near_win ?? []).map((u) => (
                   <li key={u.user_id}>

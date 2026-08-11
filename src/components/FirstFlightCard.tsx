@@ -108,8 +108,9 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
     animation: "firstFlightFade 240ms ease forwards",
   };
 
-  // Completion state (one render).
-  if (justCompleted) {
+  // Completion state (one render). Never celebrate on a failed durable read —
+  // we cannot know this member finished, so we must not say they did.
+  if (justCompleted && !ff.failed) {
     return (
       <section style={container} aria-label="First Flight complete">
         <style>{`
@@ -259,6 +260,15 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
           </div>
         </>
       )}
+
+      {ff.failed ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--rule-divider)" }}>
+          <span style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--text-muted)" }}>
+            Aura could not confirm your progress just now. Nothing is lost — this is showing what your device remembers.
+          </span>
+          <button type="button" onClick={ff.refresh} style={skipStyle} className="ff-skip">Try again</button>
+        </div>
+      ) : null}
     </section>
   );
 }

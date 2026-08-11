@@ -57,7 +57,7 @@ const TrainingModal = ({ open, onOpenChange, onLogged }: TrainingModalProps) => 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="glass-card border-border/30 sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-gradient-gold text-xl">Log Training</DialogTitle>
+          <DialogTitle className="text-accent-strong text-xl">Log Training</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">

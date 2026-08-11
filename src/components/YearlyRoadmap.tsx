@@ -158,7 +158,7 @@ const YearlyRoadmap = () => {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="glass-card border-border/30 sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg">Add Milestone</DialogTitle>
+            <DialogTitle className="text-accent-strong text-lg">Add Milestone</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <Input placeholder="Milestone description…" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} className="bg-secondary border-border/30" />

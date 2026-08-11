@@ -87,7 +87,7 @@ const WeeklyTransformationLens = ({ entries }: { entries: Entry[] }) => {
       <Dialog open={memoOpen} onOpenChange={setMemoOpen}>
         <DialogContent className="glass-card border-border/30 sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg">Weekly Transformation Lens</DialogTitle>
+            <DialogTitle className="text-accent-strong text-lg">Weekly Transformation Lens</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground uppercase tracking-widest">Leadership Memo + Coach's Challenge</p>
           <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto" dir="auto">

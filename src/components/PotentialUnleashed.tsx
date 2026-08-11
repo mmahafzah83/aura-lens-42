@@ -82,7 +82,7 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="glass-card border-border/30 sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg">Brand Mirror</DialogTitle>
+            <DialogTitle className="text-accent-strong text-lg">Brand Mirror</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground uppercase tracking-widest">Based on your last 10 captures</p>
 

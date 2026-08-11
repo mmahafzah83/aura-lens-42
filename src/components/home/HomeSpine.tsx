@@ -4,11 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWidgetData } from "@/components/widgets/useWidgetData";
 import { DRAFT_OPEN_COLUMNS, draftFromLinkedInPost } from "@/lib/draftOpen";
 import { toast } from "@/hooks/use-toast";
-import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import AuraLogo from "@/components/brand/AuraLogo";
 import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
 import HomeMasthead from "@/components/home/HomeMasthead";
-import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 import {
   useHomeAddress, useReadChips,
   type HomeMove,

@@ -144,7 +144,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
         <h2 className="text-section-title text-foreground mb-2">What You're Becoming Known For</h2>
         <p className="text-meta mb-6">Your market positioning derived from LinkedIn activity.</p>
 
-        <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
+        <div className="glass-card-elevated rounded-2xl p-8 accent-glow">
           {authorityTrajectory ? (
             <p className="text-body text-foreground/90 leading-relaxed" dir="auto">
               {authorityTrajectory}
