@@ -2326,16 +2326,22 @@ const Onboarding = () => {
           <>
           {/* the same card, laid out for the exported image */}
           {reveal ? (
-            <div style={{ position: "fixed", insetInlineStart: -10000, insetBlockStart: 0, pointerEvents: "none" }} aria-hidden>
-              <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+            /* html2canvas mis-handles fixed positioning at a large negative
+               offset — an absolute node inside a relative box rasterises. */
+            <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
+              <div style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
+                <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+              </div>
             </div>
           ) : null}
           {reveal && brandPaper ? (
-            <div ref={paperMountRef} aria-hidden style={{
-              position: "fixed", insetInlineStart: -10000, insetBlockStart: 0,
-              inlineSize: 794, pointerEvents: "none", zIndex: -1,
-            }}>
-              <BrandPaperDocument paper={brandPaper} />
+            <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
+              <div ref={paperMountRef} style={{
+                position: "absolute", left: -10000, top: 0,
+                width: 794, pointerEvents: "none", zIndex: -1,
+              }}>
+                <BrandPaperDocument paper={brandPaper} />
+              </div>
             </div>
           ) : null}
           {canPostToLinkedIn && !postedUrl && reveal ? (
