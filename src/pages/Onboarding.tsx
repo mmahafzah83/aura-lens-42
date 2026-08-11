@@ -593,7 +593,10 @@ const Onboarding = () => {
 
   const watchForClaims = async (startIso: string) => {
     if (!userId) return;
-    const deadline = Date.now() + 12000;
+    const started = Date.now();
+    /* We admit slowness at 20s but we keep watching to 90s. */
+    const deadline = started + 90000;
+    let admitted = false;
     while (Date.now() < deadline) {
       try {
         const { data: reg } = await (supabase.from("source_registry" as any) as any)
@@ -608,13 +611,18 @@ const Onboarding = () => {
             .limit(3);
           if (frags && frags.length > 0) {
             setClaims(frags as Claim[]);
-            setReadStep(2);
-            window.setTimeout(() => { setReadStep(3); go(7); }, 600);
+            /* If they've already moved on, take the claims quietly — never yank them back. */
+            if (screenRef.current === 6) {
+              setReadStep(2);
+              window.setTimeout(() => { setReadStep(3); go(7); }, 600);
+            }
             return;
           }
         }
       } catch { /* keep watching */ }
-      await new Promise((r) => window.setTimeout(r, 1800));
+      const elapsed = Date.now() - started;
+      if (!admitted && elapsed >= 20000) { admitted = true; setClaimsSlow(true); }
+      await new Promise((r) => window.setTimeout(r, elapsed < 30000 ? 1500 : 3000));
     }
     setClaimsSlow(true);
   };
