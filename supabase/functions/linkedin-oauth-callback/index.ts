@@ -109,9 +109,6 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
       if (uiRes.ok) userinfo = await uiRes.json();
     } catch (_) { /* optional */ }
 
-    const linkedinId = profile.id || userinfo.sub || "unknown";
-    const displayName =
-      nameFromLinkedIn(userinfo) || nameFromLinkedIn(profile) || "LinkedIn User";
     const handle = vanityFromLinkedIn(profile) || vanityFromLinkedIn(userinfo);
     const profileUrl = profileUrlFor(handle);
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
@@ -144,21 +141,31 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
     // A real profile read outranks whatever the old row said.
     if (snapshot) preserved.source_status = "verified_by_read";
 
+    // A failed /v2/me read must never overwrite a good, confirmed address with
+    // nulls or the "unknown" / "LinkedIn User" placeholders. Each identity key
+    // is included only when this read actually produced a value.
+    const identity: Record<string, unknown> = {};
+    if (profile.id) identity.linkedin_id = profile.id;
+    else if (userinfo.sub) identity.linkedin_id = userinfo.sub;
+    const freshName = nameFromLinkedIn(userinfo) || nameFromLinkedIn(profile);
+    if (freshName) {
+      identity.display_name = freshName;
+      identity.profile_name = freshName;
+    }
+    if (handle) identity.handle = handle;
+    if (profileUrl) identity.profile_url = profileUrl;
+
     const { data: connection, error: insertError } = await adminClient
       .from("linkedin_connections")
       .upsert({
         user_id: user.id,
-        linkedin_id: linkedinId,
-        display_name: displayName,
-        profile_name: displayName,
-        handle,
-        profile_url: profileUrl,
         access_token: accessToken,
         refresh_token: refreshToken,
         token_expires_at: expiresAt,
         scopes: grantedScopes,
         status: "active",
         connected_at: new Date().toISOString(),
+        ...identity,
         ...preserved,
       }, { onConflict: "user_id" })
       .select("id, display_name, connected_at")

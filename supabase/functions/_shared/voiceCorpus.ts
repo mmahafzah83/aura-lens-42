@@ -27,7 +27,6 @@ export function isOwnWriting(row: {
   acquisition?: string | null;
   source_type?: string | null;
   voice_corpus_status?: string | null;
-  tracking_status?: string | null;
 }): boolean {
   if (row.voice_corpus_status === "excluded") return false;
   const text = String(row.post_text ?? "");
@@ -35,7 +34,7 @@ export function isOwnWriting(row: {
   if (row.authorship === "aura_drafted") return false;
   if (row.acquisition === "discovered") return false;
   if (row.source_type === "search_discovery") return false;
-  // An Aura draft is not the member's writing until they actually published it.
-  if (row.source_type === "aura_generated" && row.tracking_status !== "published") return false;
+  // Aura's own drafts never train the member's voice, published or not.
+  if (row.source_type === "aura_generated") return false;
   return true;
 }

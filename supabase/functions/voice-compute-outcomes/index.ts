@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     for (const userId of userIds) {
       const { data: posts, error: postErr } = await admin
         .from("linkedin_posts")
-        .select("id, post_text, published_at, hook_style, ending_type, authorship, acquisition, source_type, voice_corpus_status, tracking_status, like_count, comment_count, repost_count, engagement_score")
+        .select("id, post_text, published_at, hook_style, ending_type, authorship, acquisition, source_type, voice_corpus_status, like_count, comment_count, repost_count, engagement_score")
         .eq("user_id", userId)
         .not("published_at", "is", null)
         .order("published_at", { ascending: true });

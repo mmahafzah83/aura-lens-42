@@ -502,10 +502,14 @@ const Onboarding = () => {
       /* A reload on the reading screens loses the in-memory claims watch, so the
          screen would sit there forever. Read what was actually kept instead. */
       if (resume === 6 || resume === 7) {
-        const { data } = await (supabase.from("evidence_fragments" as any) as any)
-          .select("title, content, confidence").eq("user_id", uid)
-          .order("confidence", { ascending: false }).limit(3);
-        if (data?.length) { setClaims(data as any); resume = 7; } else { resume = 5; }
+        /* A throw here used to skip setChecking(false) and leave the journey on
+           a permanent spinner. Falling back to screen 5 loses nothing. */
+        try {
+          const { data } = await (supabase.from("evidence_fragments" as any) as any)
+            .select("title, content, confidence").eq("user_id", uid)
+            .order("confidence", { ascending: false }).limit(3);
+          if (data?.length) { setClaims(data as any); resume = 7; } else { resume = 5; }
+        } catch { resume = 5; }
       }
       if (resume > 0 && resume <= 14) { setScreen(resume); screenRef.current = resume; }
 
@@ -1123,10 +1127,28 @@ const Onboarding = () => {
 
   /* Without a level there is no set of sliders or questions to load — so ask,
      rather than sitting on a loader or a retry that can never succeed. */
-  const bandPrompt = (bead: number) => (
+  /* Rendered inside the shell of whichever screen it interrupts — a white card
+     in the middle of the dark run would break the surface law. */
+  const bandPrompt = (bead: number, night = false) => {
+    const inner = (
+      <>
+        <h1 style={night ? h1Night : h1Light}>One thing first — which of these is closest to your title?</h1>
+        {titleList((t, b) => { void chooseTitle(t, b); })}
+      </>
+    );
+    return night ? (
+      <NightShell onExit={saveAndExit} footer={escapeFooter}>{inner}</NightShell>
+    ) : (
+      <PaperShell onExit={saveAndExit} bead={bead} footer={escapeFooter}>{inner}</PaperShell>
+    );
+  };
+
+  /* Answering the band prompt clears dims/questions while they reload. That is
+     a wait, not a failure — the failure panel belongs to contentError alone. */
+  const quietLoadPanel = (bead: number) => (
     <PaperShell onExit={saveAndExit} bead={bead} footer={escapeFooter}>
-      <h1 style={h1Light}>One thing first — which of these is closest to your title?</h1>
-      {titleList((t, b) => { void chooseTitle(t, b); })}
+      <h1 style={h1Light}>One moment.</h1>
+      <p style={bodyLight}>Aura is picking the right set for you.</p>
     </PaperShell>
   );
 
@@ -1600,7 +1622,7 @@ const Onboarding = () => {
             </div>
 
             <Actions style={{ marginBlockStart: 18 }}>
-              <OBButton onClick={async () => { await confirmBandIfDetected(); go(4); }}>Continue</OBButton>
+              <OBButton onClick={() => { void confirmBandIfDetected(); go(4); }}>Continue</OBButton>
               <OBButton variant="tertiary" onClick={() => go(4)}>I'll do that later</OBButton>
             </Actions>
           </>
@@ -1808,7 +1830,7 @@ const Onboarding = () => {
 
   /* 8 — NIGHT, before the sliders */
   if (screen === 8) {
-    if (!band) { content = bandPrompt(2); } else {
+    if (!band) { content = bandPrompt(2, true); } else {
     const sliderCount = dims?.length ?? 0;
     // Sector rows do not exist yet — every member gets the band set, so the
     // copy may only promise the level.
@@ -1845,7 +1867,7 @@ const Onboarding = () => {
   if (screen === 9) {
     if (!band) {
       content = bandPrompt(2);
-    } else if (contentError || !dims) {
+    } else if (contentError) {
       content = (
         <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
@@ -1853,6 +1875,8 @@ const Onboarding = () => {
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadDimensions()}>Try again</OBButton></Actions>
         </PaperShell>
       );
+    } else if (!dims) {
+      content = quietLoadPanel(2);
     } else {
       const d = dims[Math.min(dimIdx, dims.length - 1)];
       const value = scores[d.name] ?? 50;
@@ -1946,7 +1970,7 @@ const Onboarding = () => {
 
   /* 10 — NIGHT, before the six */
   if (screen === 10) {
-    if (!band) { content = bandPrompt(3); } else {
+    if (!band) { content = bandPrompt(3, true); } else {
     content = (
       <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
@@ -1977,7 +2001,7 @@ const Onboarding = () => {
   if (screen === 11) {
     if (!band) {
       content = bandPrompt(3);
-    } else if (contentError || !questions) {
+    } else if (contentError) {
       content = (
         <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
@@ -1985,6 +2009,8 @@ const Onboarding = () => {
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadQuestions()}>Try again</OBButton></Actions>
         </PaperShell>
       );
+    } else if (!questions) {
+      content = quietLoadPanel(3);
     } else {
       const q = questions[Math.min(qIdx, questions.length - 1)];
       const last = qIdx >= questions.length - 1;

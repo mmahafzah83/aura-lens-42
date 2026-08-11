@@ -24,14 +24,13 @@ export function canonicalHandle(input: unknown): string | null {
   const v = String(input ?? "").trim();
   if (!v) return null;
   const fromUrl = v.match(/linkedin\.com\/in\/([^/?#\s]+)/i);
-  const raw = fromUrl ? fromUrl[1] : v.replace(/^@/, "");
-  // Same character rules as bareHandle in the edge functions: a display-name
-  // guess full of commas, spaces or ® is not an address that can ever resolve.
-  let cleaned: string;
-  try { cleaned = decodeURIComponent(raw); } catch { cleaned = raw; }
-  cleaned = cleaned.replace(/[^A-Za-z0-9\u0600-\u06FF._-]/g, "").trim();
-  const trimmed = cleaned.replace(/^[.\-_]+/, "").replace(/[.\-_]+$/, "");
-  return trimmed.length >= 3 ? trimmed : null;
+  const raw = (fromUrl ? fromUrl[1] : v.replace(/^@/, "")).trim();
+  // Reject, never launder. A display-name guess full of commas, spaces or ®
+  // cleans up into a plausible-looking slug that can never resolve on
+  // LinkedIn — and then reads as a real address to every surface downstream.
+  if (!raw) return null;
+  if (/[^A-Za-z0-9\u0600-\u06FF._-]/.test(raw)) return null;
+  return raw.length >= 3 ? raw : null;
 }
 
 export const profileUrlFor = (handle: string | null): string | null =>

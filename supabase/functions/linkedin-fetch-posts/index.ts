@@ -216,7 +216,10 @@ Deno.serve(async (req) => {
       const { error } = await db.from("linkedin_connections").update(conn).eq("id", existingConn.id);
       if (error) console.error(`connection update failed: ${error.message}`);
     } else {
-      const { error } = await db.from("linkedin_connections").insert({ user_id: targetUserId, ...conn });
+      // access_token is NOT NULL with no default; an address-only row starts
+      // with an empty token until the member connects LinkedIn properly.
+      const { error } = await db.from("linkedin_connections")
+        .insert({ user_id: targetUserId, access_token: "", ...conn });
       if (error) console.error(`connection insert failed: ${error.message}`);
     }
 
