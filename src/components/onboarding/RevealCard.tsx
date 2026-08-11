@@ -34,10 +34,10 @@ export const suggestedCaption = (posts: number): string =>
  * Renders a mounted reveal card to an image and hands it to the member —
  * the share sheet on mobile, a download plus a copied caption everywhere else.
  */
-export async function shareRevealCard(
+export async function rasteriseRevealCard(
   node: HTMLElement,
-  opts: { fileName?: string; format?: "png" | "jpeg"; caption?: string } = {},
-): Promise<"shared" | "downloaded"> {
+  opts: { format?: "png" | "jpeg" } = {},
+): Promise<{ dataUrl: string; format: "png" | "jpeg" }> {
   const { toPng, toJpeg } = await import("html-to-image");
   // Webfonts must be resolved before rasterising, or html-to-image throws on
   // the cross-origin stylesheet mid-export.
@@ -56,7 +56,14 @@ export async function shareRevealCard(
     format = "jpeg";
     dataUrl = await toJpeg(node, { pixelRatio, quality: 0.92, cacheBust: true, skipFonts: true } as any);
   }
+  return { dataUrl, format };
+}
 
+export async function shareRevealCard(
+  node: HTMLElement,
+  opts: { fileName?: string; format?: "png" | "jpeg"; caption?: string } = {},
+): Promise<"shared" | "downloaded"> {
+  const { dataUrl, format } = await rasteriseRevealCard(node, { format: opts.format });
   const blob = await (await fetch(dataUrl)).blob();
   const fileName = opts.fileName ?? `my-read-from-aura.${format === "jpeg" ? "jpg" : "png"}`;
   const file = new File([blob], fileName, { type: blob.type });
