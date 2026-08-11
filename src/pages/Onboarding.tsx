@@ -383,6 +383,8 @@ const Onboarding = () => {
         const local = Number(localStorage.getItem(`aura_ob_screen_${uid}`) ?? "0");
         if (local > resume) resume = local;
       } catch { /* ignore */ }
+      /* screens 2 and 3 folded into step 1 — a resume there lands on the address card */
+      if (resume === 2 || resume === 3) resume = 1;
       if (resume > 0 && resume < 13) setScreen(resume);
 
       setChecking(false);
