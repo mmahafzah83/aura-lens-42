@@ -124,6 +124,14 @@ Deno.serve(async (req) => {
     const requested = typeof body?.user_id === "string" ? body.user_id.trim() : "";
     const targetUserId = requested && (await isAdmin(anon, user.id)) ? requested : user.id;
 
+    // An admin acting for someone else must name a real member: a typo would
+    // otherwise write a snapshot for an id that belongs to nobody.
+    if (targetUserId !== user.id) {
+      const check = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+      const { data: found, error: lookupErr } = await check.auth.admin.getUserById(targetUserId);
+      if (lookupErr || !found?.user) return json({ error: "unknown user" }, 400);
+    }
+
     const handle = parseHandle(body?.profile_url);
     if (!handle) {
       return json({ error: "Enter a valid LinkedIn profile URL like linkedin.com/in/yourname" }, 400);
