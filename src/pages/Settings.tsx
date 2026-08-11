@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
 import { signOutAndLand } from "@/lib/signOut";
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
 import LinkedInAddressCard from "@/components/settings/LinkedInAddressCard";
@@ -203,8 +204,8 @@ const handleDeleteAccount = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not signed in");
-      const { error } = await supabase.from("diagnostic_profiles").update({ signature_presets: next }).eq("user_id", session.user.id);
-      if (error) throw error;
+      const ok = await writeProfile(session.user.id, { signature_presets: next }, "Settings.persistSignatures");
+      if (!ok) throw new Error("That didn't save — try once more.");
       setSignatures(next);
       toast.success("Signatures saved");
     } catch (e: any) {
@@ -220,11 +221,8 @@ const handleDeleteAccount = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not signed in");
-      const { error } = await supabase
-        .from("diagnostic_profiles")
-        .update({ country: name, country_code: code })
-        .eq("user_id", session.user.id);
-      if (error) throw error;
+      const ok = await writeProfile(session.user.id, { country: name, country_code: code }, "Settings.persistCountry");
+      if (!ok) throw new Error("That didn't save — try once more.");
       setProfile((p) => (p ? { ...p, country: name, country_code: code } : p));
       toast.success("Country saved");
     } catch (e: any) {
@@ -280,11 +278,12 @@ const handleDeleteAccount = async () => {
           ? (publication.monogram_char || publication.name.trim().charAt(0) || "A").slice(0, 1).toUpperCase()
           : undefined,
       };
-      const { error } = await supabase
-        .from("diagnostic_profiles")
-        .update({ identity_intelligence: { ...ii, publication: nextPub } as any })
-        .eq("user_id", session.user.id);
-      if (error) throw error;
+      const ok = await writeProfile(
+        session.user.id,
+        { identity_intelligence: { ...ii, publication: nextPub } as any },
+        "Settings.persistPublication",
+      );
+      if (!ok) throw new Error("That didn't save — try once more.");
       setPublicationState(nextPub);
       toast.success("Publication saved");
     } catch (e: any) {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
 import { Button } from "@/components/ui/button";
 import { AuraCard } from "@/components/ui/AuraCard";
 import { ColourPicker, TemplatePicker, firstThemeFor, themesFor } from "@/components/studio/LookPickers";
@@ -49,12 +50,9 @@ export default function SlideDefaultsCard({ userId }: { userId: string | null })
   const save = useCallback(async () => {
     if (!userId) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("diagnostic_profiles")
-      .update({ default_template: template, default_theme: theme })
-      .eq("user_id", userId);
+    const ok = await writeProfile(userId, { default_template: template, default_theme: theme }, "SlideDefaultsCard.save");
     setSaving(false);
-    if (error) { toast.error("That did not save. Try once more."); return; }
+    if (!ok) { toast.error("That didn't save — try once more."); return; }
     toast.success("Saved. New slides will open in this look.");
   }, [userId, template, theme]);
 
