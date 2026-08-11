@@ -616,7 +616,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
   if ((f.signals_never_published_from ?? 0) > 0 && ts?.title) {
     p.push(`nothing published yet from "${shortTitle(ts.title)}"`);
   } else if ((f.signals_never_published_from ?? 0) > 0) {
-    p.push(`${small(f.signals_never_published_from)} live themes you have never published from`);
+    p.push(`${small(f.signals_never_published_from)} live ${f.signals_never_published_from === 1 ? "theme" : "themes"} you have never published from`);
   }
 
   const nsd = f.last_night?.newest_signal_draft;
