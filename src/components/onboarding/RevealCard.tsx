@@ -163,7 +163,7 @@ const RevealCard = forwardRef<
       </>
     )}
 
-    {data.softGround.length > 0 && (
+    {!forExport && data.softGround.length > 0 && (
       <>
         <p style={{ margin: "18px 0 8px", fontSize: 11.5, opacity: 0.85 }}>Where you're thinnest</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
@@ -188,7 +188,7 @@ const RevealCard = forwardRef<
       <p style={{ margin: "24px 0 0", fontSize: 13.5, lineHeight: 1.6, opacity: 0.92 }}>{EMPTY_POSTS_LINE}</p>
     )}
 
-    {footer ? (
+    {forExport && footer ? (
       <div style={{
         marginBlockStart: "auto", paddingBlockStart: 26,
         borderBlockStart: "1px solid rgba(255,255,255,0.28)",
@@ -208,6 +208,14 @@ const RevealCard = forwardRef<
             : `A snapshot of how my work reads from the outside${footer.saved ? ` — built from ${footer.saved} things I saved` : ""}.`}
         </p>
       </div>
+    ) : null}
+
+    {!forExport ? (
+      <p style={{
+        marginBlockStart: "auto", paddingBlockStart: 22, margin: "22px 0 0",
+        fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em",
+        color: "rgba(255,255,255,0.72)",
+      }}>Read by Aura · aura-intel.org</p>
     ) : null}
   </div>
 ));
