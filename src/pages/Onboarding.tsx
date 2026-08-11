@@ -810,6 +810,12 @@ const Onboarding = () => {
   };
 
   /* ── escape hatch, unchanged in spirit ── */
+  /** Save & exit — everything already answered stays, and Home is one tap away. */
+  const saveAndExit = useCallback(() => {
+    void persistScreen(screen);
+    navigate("/home");
+  }, [persistScreen, screen, navigate]);
+
   const escape = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
