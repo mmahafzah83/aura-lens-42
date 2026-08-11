@@ -103,7 +103,15 @@ export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => v
   </Card>
 );
 
-export const StandCard: React.FC<{ facts: HomeFacts | null }> = ({ facts }) => {
+export const StandCard: React.FC<{ facts: HomeFacts | null; userId: string | null | undefined }> = ({ facts, userId }) => {
+  // One source of standing on Home: imprint_snapshots via useTierFromImprint.
+  const tier = useTierFromImprint(userId);
+  const band = tier.currentTier;
+  const idx = band ? TIER_BANDS.findIndex((b) => b.key === band.key) : -1;
+  const nextBand = idx >= 0 ? TIER_BANDS[idx + 1] ?? null : null;
+  const pointsToNext = band && nextBand && tier.score != null
+    ? Math.max(0, nextBand.min - Math.round(tier.score))
+    : null;
   const c = facts?.components ?? { signal: null, content: null, capture: null };
   const rows: Array<{ label: string; value: number | null; weight: string }> = [
     { label: "Signal", value: c.signal, weight: "signals you hold" },
@@ -121,12 +129,15 @@ export const StandCard: React.FC<{ facts: HomeFacts | null }> = ({ facts }) => {
           <span style={{ ...MONO, fontSize: 13, color: "var(--text-muted)" }}>/100</span>
         </div>
         <Muted style={{ marginBlockStart: 6 }}>
-          {facts?.imprint == null ? "No number yet — capture and publish and Aura can measure it" : facts?.tier ?? "Unbanded"}
-          {facts?.at_top_band
-            ? " — the top band. It is held, not climbed."
-            : facts?.points_to_next_band != null
-              ? ` — ${facts.points_to_next_band} points to ${facts.next_band_name}.`
-              : ""}
+          {facts?.imprint == null
+            ? "No number yet — capture and publish and Aura can measure it"
+            : tier.loading
+              ? "Reading your standing…"
+              : band
+                ? `${band.name}${nextBand && pointsToNext != null
+                    ? ` — ${pointsToNext} points to ${nextBand.name}.`
+                    : " — the top band. It is held, not climbed."}`
+                : "Not measured yet."}
         </Muted>
       </div>
       <div style={{ padding: "18px 20px", display: "grid", gap: 14 }}>
