@@ -1004,7 +1004,7 @@ const Onboarding = () => {
     <>
       <h1 style={h1Night}>Give that one more go.</h1>
       <p style={bodyNight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
-      <button type="button" onClick={retry} style={{ ...btnPrimary, marginBlockStart: 22 }}>Try again</button>
+      <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={retry}>Try again</OBButton></Actions>
     </>
   );
 
@@ -1467,16 +1467,16 @@ const Onboarding = () => {
       <NightShell face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadDimensions()) : (
           <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>I've read you. Now I want your own read.</h1>
+            <h1 style={{ ...h1Night, textAlign: "center" }}>Now your own read.</h1>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              This isn't a test and there's no score to beat. Aura compares what you say about yourself against what
-              your posts actually show — and where those two disagree is the interesting part.
+              Where your own read and your posts disagree is where the useful part is.
             </p>
             {pickedLine ? <p style={{ ...bodyNight, textAlign: "center" }}>{pickedLine}</p> : null}
-            <button type="button" onClick={() => { setDimIdx(0); go(TRUST_SLIDERS_SCREEN); }} disabled={!dims}
-              style={{ ...btnPrimary, marginBlockStart: 24, opacity: dims ? 1 : 0.5 }}>
-              {dims ? "Okay" : <Loader2 size={16} className="animate-spin" />}
-            </button>
+            <Actions style={{ marginBlockStart: 24 }}>
+              <OBButton onClick={() => { setDimIdx(0); go(TRUST_SLIDERS_SCREEN); }} loading={!dims} loadingLabel="Loading…">
+                Okay
+              </OBButton>
+            </Actions>
           </>
         )}
       </NightShell>
@@ -1491,19 +1491,15 @@ const Onboarding = () => {
         {contentError || !dims ? retryPanel(() => void loadDimensions()) : (
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>Before you start</h1>
-            <p style={bodyNight}>
-              These {sliderCount === 8 ? "eight" : sliderCount} are not a personality test. Each one asks what you
-              have actually done, with a real sentence at each end and one in the middle instead of a number — a way
-              of asking that has been used in serious work since the 1960s, because it is harder to fool and harder
-              to flatter.
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              No score. Each one asks what you have actually done, in plain sentences rather than numbers.
             </p>
-            <p style={bodyNight}>
-              They are chosen for your level. A Director and a Consultant are asked different things, because what
-              capability means changes at each step up, not gradually.
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              {sliderCount ? `${sliderCount} sliders, picked for your level. Under a minute.` : "Picked for your level. Under a minute."}
             </p>
-            <button type="button" onClick={() => { setDimIdx(0); go(9); }} style={{ ...btnPrimary, marginBlockStart: 24 }}>
-              Okay
-            </button>
+            <Actions style={{ marginBlockStart: 24 }}>
+              <OBButton onClick={() => { setDimIdx(0); go(9); }}>Okay</OBButton>
+            </Actions>
           </>
         )}
       </NightShell>
@@ -1608,30 +1604,21 @@ const Onboarding = () => {
       <NightShell face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
           <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is the part that does the work.</h1>
+            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is what makes it yours.</h1>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              Aura won't write a word until it has this. A few questions about how you actually work — read together
-              with the posts it just read, the claims you kept, and the sliders you moved.
-            </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
-              What comes out isn't a personality type. It's the subjects you genuinely own, the space nobody near you
-              has claimed, and where the ground is still soft.
-            </p>
-            <p style={bodyNight}>
-              These {questions?.length ?? 9} come from four places: how archetype is used in brand work, the search
-              for uncontested space in strategy, the point-of-view question behind category design, and the coaching
-              question that surfaces what is actually holding someone back.
-            </p>
-            <p style={bodyNight}>
-              There are no right answers and nothing is scored. Aura is looking for your pattern.
+              Nine questions about how you actually work — read together with your posts, your claims and your
+              sliders.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              {questions?.length ?? 9} questions. A couple of minutes. Saved as you go.
+              What comes out is the subjects you own, the space nobody near you has claimed, and where the ground is
+              still soft.
             </p>
-            <button type="button" onClick={() => { setQIdx(0); go(11); }} disabled={!questions}
-              style={{ ...btnPrimary, marginBlockStart: 24, opacity: questions ? 1 : 0.5 }}>
-              {questions ? "Let's do it" : <Loader2 size={16} className="animate-spin" />}
-            </button>
+            <p style={{ ...bodyNight, textAlign: "center" }}>Nine questions. Two minutes. Saved as you go.</p>
+            <Actions style={{ marginBlockStart: 24 }}>
+              <OBButton onClick={() => { setQIdx(0); go(11); }} loading={!questions} loadingLabel="Loading…">
+                Let's do it
+              </OBButton>
+            </Actions>
           </>
         )}
       </NightShell>
