@@ -34,6 +34,10 @@ export interface BrandPaper {
   topics: BrandPaperTopic[];
   invest_next: BrandPaperInvest[];
   honest_truth: string | null;
+  /** The private half of the read — what their own writing shows. */
+  the_gap: string | null;
+  own_words_quote: string | null;
+  own_words_read: string | null;
   /** SLICE 4d — extra narrative slots surfaced on the paper's Voice sheet. */
   zone_of_genius: string | null;
   voice_signature: string | null;
@@ -187,6 +191,9 @@ export function buildBrandPaper(
   const honest_truth = nullOr(
     stripMd(src.honest_truth) || stripMd(extractSection(prose, "THE HONEST TRUTH")),
   );
+  const the_gap = nullOr(stripMd(src.the_gap));
+  const own_words_quote = nullOr(stripMd(src.own_words_quote));
+  const own_words_read = nullOr(stripMd(src.own_words_read));
 
   let topics: BrandPaperTopic[] = [];
   if (Array.isArray(src.topics) && src.topics.length) {
@@ -237,6 +244,9 @@ export function buildBrandPaper(
     topics,
     invest_next,
     honest_truth,
+    the_gap,
+    own_words_quote,
+    own_words_read,
     zone_of_genius: nullOr(stripMd(src.zone_of_genius)),
     voice_signature: nullOr(stripMd(src.voice_signature)),
     authority_style: nullOr(stripMd(src.authority_style)),

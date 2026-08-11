@@ -2321,15 +2321,13 @@ const Onboarding = () => {
             </div>
           ) : null}
           <Actions style={{ marginBlockStart: 20 }}>
-          {canPostToLinkedIn && !postedUrl ? (
-            <OBButton disabled={!reveal || !captionDraft.trim() || busy} loading={posting} loadingLabel="Posting…"
-              onClick={() => void postToLinkedIn()}
-              style={{ background: "#FFFFFF", color: OB.blue }}>Post it to LinkedIn</OBButton>
-          ) : (
-            <OBButton disabled={!reveal || busy} loading={sharing} loadingLabel="Building…"
-              onClick={() => void downloadRead()}
-              style={{ background: "#FFFFFF", color: OB.blue }}>Download the image</OBButton>
-          )}
+          <OBButton disabled={!reveal || !brandPaper || busy} loading={buildingReport} loadingLabel="Building your read…"
+            onClick={() => void downloadFullReport()}
+            style={{ background: "#FFFFFF", color: OB.blue }}>Keep the full read</OBButton>
+          <p style={{
+            margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
+            color: "rgba(255,255,255,.80)", textAlign: "center",
+          }}>The full read includes the gap. The card doesn't.</p>
           {postedUrl ? (
             <a href={postedUrl} target="_blank" rel="noopener noreferrer" style={{
               display: "block", textAlign: "center", color: "#FFFFFF", fontSize: 14,
@@ -2339,22 +2337,23 @@ const Onboarding = () => {
           <OBButton variant="secondary" disabled={busy} onClick={() => setSaveOpen((v) => !v)}
             aria-expanded={saveOpen}
             style={{ borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }}
-          >Save it</OBButton>
+          >Share the card</OBButton>
           {saveOpen ? (
             <div style={{
               display: "flex", flexDirection: "column", gap: 10, alignItems: "center",
               padding: "4px 0 2px", color: "rgba(255,255,255,.92)", fontSize: 13.5,
             }}>
-              <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()} style={quietLink}>
-                {sharing ? "Building…" : "The image, for sharing"}
-              </button>
-              {reveal && brandPaper ? (
-                <button type="button" disabled={busy} onClick={() => void downloadFullReport()} style={quietLink}>
-                  {buildingReport ? "Building your report…" : "The full report, yours to keep"}
+              {canPostToLinkedIn && !postedUrl ? (
+                <button type="button" disabled={!reveal || !captionDraft.trim() || busy}
+                  onClick={() => void postToLinkedIn()} style={quietLink}>
+                  {posting ? "Posting…" : "Post it to LinkedIn"}
                 </button>
               ) : null}
+              <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()} style={quietLink}>
+                {sharing ? "Building…" : "Download the image"}
+              </button>
               <button type="button" disabled={busy} onClick={() => void saveReadForLater()} style={quietLink}>
-                {savingDraft ? "Saving…" : "Keep it in my drafts"}
+                {savingDraft ? "Saving…" : "Save it to my drafts"}
               </button>
             </div>
           ) : null}

@@ -109,11 +109,22 @@ const source = (line?: string) =>
     <p style={{ margin: "7px 0 0", fontSize: 11, lineHeight: 1.5, opacity: 0.72 }}>{line}</p>
   ) : null;
 
-/** Long prose needs a surface with contrast; it cannot sit on the gradient. */
-const panel: React.CSSProperties = {
-  background: "rgba(15,21,25,0.28)",
+/** The private half — heavier surface, because this is the part nobody else sees. */
+const privatePanel: React.CSSProperties = {
+  background: "rgba(15,21,25,0.32)",
   borderRadius: 20,
-  padding: 18,
+  padding: 20,
+};
+
+const onlyYou = (
+  <p style={{
+    margin: 0, fontFamily: OB.mono, fontSize: 10.5, letterSpacing: "0.16em",
+    textTransform: "uppercase", color: "rgba(255,255,255,0.80)",
+  }}>Only you see this</p>
+);
+
+const privateHeading: React.CSSProperties = {
+  margin: "8px 0 0", fontSize: 17, fontWeight: 700, lineHeight: 1.25, color: "#FFFFFF",
 };
 
 /** The card is a reading experience; it grows once, at the desk-sized breakpoint. */
@@ -238,9 +249,43 @@ const RevealCard = forwardRef<
       </>
     )}
 
+    {data.theGap ? (
+      <div style={{ ...privatePanel, marginBlockStart: 24 }}>
+        {onlyYou}
+        <h3 style={privateHeading}>The gap</h3>
+        <p style={{
+          margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, color: "rgba(255,255,255,0.95)",
+        }}>{data.theGap}</p>
+      </div>
+    ) : null}
+
+    {data.ownWordsQuote ? (
+      <div style={{ ...privatePanel, marginBlockStart: 12 }}>
+        {onlyYou}
+        <h3 style={privateHeading}>In your own words</h3>
+        <p style={{
+          margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, fontStyle: "italic",
+          color: "rgba(255,255,255,0.95)",
+        }}>“{data.ownWordsQuote}”</p>
+        {data.ownWordsRead ? (
+          <p style={{
+            margin: "9px 0 0", fontSize: 14, lineHeight: 1.6, color: "rgba(255,255,255,0.88)",
+          }}>{data.ownWordsRead}</p>
+        ) : null}
+      </div>
+    ) : null}
+
+    {data.theGap || data.ownWordsQuote ? (
+      <p style={{
+        margin: "12px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,0.80)",
+      }}>
+        The gap and your own words stay here. Only the card above is ever shared.
+      </p>
+    ) : null}
+
     {data.softGround.length > 0 && (
       <>
-        <p style={{ margin: "18px 0 8px", fontSize: 11.5, opacity: 0.85 }}>Where you're thinnest</p>
+        <p style={{ margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85 }}>Where you're thinnest</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
           {data.softGround.slice(0, 2).map((s) => (
             <span key={s} style={chip(OB.amber, OB.night)}>{s}</span>
@@ -249,27 +294,6 @@ const RevealCard = forwardRef<
         {source(data.provenance?.softGround)}
       </>
     )}
-
-    {data.theGap ? (
-      <>
-        <p style={{ margin: "22px 0 6px", fontSize: 11.5, opacity: 0.85 }}>The gap</p>
-        <div style={panel}>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65 }}>{data.theGap}</p>
-        </div>
-      </>
-    ) : null}
-
-    {data.ownWordsQuote ? (
-      <>
-        <p style={{ margin: "22px 0 6px", fontSize: 11.5, opacity: 0.85 }}>In your own words</p>
-        <div style={panel}>
-          <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, fontStyle: "italic" }}>“{data.ownWordsQuote}”</p>
-          {data.ownWordsRead ? (
-            <p style={{ margin: "9px 0 0", fontSize: 13, lineHeight: 1.55, opacity: 0.9 }}>{data.ownWordsRead}</p>
-          ) : null}
-        </div>
-      </>
-    ) : null}
 
     {data.figures.length > 0 ? (
       <div style={{ display: "flex", gap: 26, marginBlockStart: 24 }}>
