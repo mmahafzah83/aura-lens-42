@@ -7,7 +7,8 @@
  */
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { canonicalHandle, loadLinkedInAddress, saveLinkedInAddress } from "@/lib/linkedinAddress";
+import { canonicalHandle, saveLinkedInAddress } from "@/lib/linkedinAddress";
+import { loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
 
 const BLUE = "#0670C4";
 const LINE = "#E2E7EE";
@@ -15,16 +16,16 @@ const MUTED = "#5B6673";
 
 export default function LinkedInAddressCard({ userId }: { userId: string | null }) {
   const [value, setValue] = useState("");
-  const [saved, setSaved] = useState<string | null>(null);
+  const [state, setState] = useState<LinkedInState | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
     let alive = true;
-    void loadLinkedInAddress(userId).then((a) => {
+    void loadLinkedInState(userId).then((s) => {
       if (!alive) return;
-      setSaved(a.handle);
-      setValue(a.profileUrl ?? "");
+      setState(s);
+      setValue(s.address ?? "");
     }).catch(() => {});
     return () => { alive = false; };
   }, [userId]);
@@ -34,7 +35,10 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
     setBusy(true);
     try {
       const next = await saveLinkedInAddress(userId, value);
-      setSaved(next.handle);
+      setState((s) => ({
+        ...(s ?? { connected: false, confirmedByRead: false, canPost: false, lastSyncedAt: null }),
+        handle: next.handle, address: next.profileUrl,
+      }));
       setValue(next.profileUrl ?? "");
       toast.success("LinkedIn address saved.");
     } catch (e) {
@@ -51,7 +55,9 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
       <div style={{ fontSize: 15, fontWeight: 600, color: "#0F1519" }}>Your LinkedIn address</div>
       <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, marginBlockStart: 6, marginBlockEnd: 12 }}>
         Aura reads your own posts from this address to learn how you write.
-        {saved ? ` Currently reading @${saved}.` : " No address set yet."}
+        {state?.handle
+          ? ` Currently reading @${state.handle}${state.confirmedByRead ? "" : " — Aura hasn't opened it yet"}.`
+          : " No address set yet."}
       </p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input
