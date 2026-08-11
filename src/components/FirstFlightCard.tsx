@@ -64,7 +64,7 @@ function Dot({ state }: { state: "done" | "current" | "future" }) {
   if (state === "done") {
     return (
       <span aria-hidden style={{
-        width: size, height: size, borderRadius: "50%", background: "var(--ok, var(--act))",
+        width: size, height: size, borderRadius: "50%", background: "var(--success)",
         display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
       }}>
         <svg width="9" height="9" viewBox="0 0 12 12" aria-hidden>
@@ -189,7 +189,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
       >
         {STEP_LABELS.map((label, idx) => {
           const st = stepStates[idx];
-          const labelColor = st === "done" ? "var(--ok, var(--act))" : st === "current" ? "var(--act)" : "var(--text-muted)";
+          const labelColor = st === "done" ? "var(--success)" : st === "current" ? "var(--act)" : "var(--text-muted)";
           const isLast = idx === STEP_LABELS.length - 1;
           return (
             <li
