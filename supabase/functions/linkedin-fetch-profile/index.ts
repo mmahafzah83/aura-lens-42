@@ -132,7 +132,22 @@ Deno.serve(async (req) => {
       if (lookupErr || !found?.user) return json({ error: "unknown user" }, 400);
     }
 
-    const handle = parseHandle(body?.profile_url);
+    let handle = parseHandle(body?.profile_url);
+    if (!handle) {
+      // No explicit address from the caller — fall back to what is stored, but
+      // a guessed handle was never an address, and Apify cannot resolve it.
+      const lookup = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+      const { data: conn } = await lookup
+        .from("linkedin_connections")
+        .select("handle, profile_url, source_status")
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+      if (conn?.source_status === "guessed_from_name") {
+        return json({ error: "address_not_confirmed" }, 400);
+      }
+      handle = parseHandle(conn?.profile_url) ??
+        (conn?.handle ? parseHandle(`linkedin.com/in/${conn.handle}`) : null);
+    }
     if (!handle) {
       return json({ error: "Enter a valid LinkedIn profile URL like linkedin.com/in/yourname" }, 400);
     }
