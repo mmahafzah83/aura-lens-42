@@ -1897,7 +1897,6 @@ const Onboarding = () => {
 
   /* 13b — NIGHT, and only after 13 */
   if (screen === 14) {
-    if (connected) { void finish(); }
     content = (
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>One last thing.</h1>
