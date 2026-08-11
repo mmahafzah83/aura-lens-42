@@ -371,7 +371,7 @@ export default function PlatformRulesPanel() {
           </div>
 
           {note && <div style={{ fontSize: 12, color: "#12805C" }}>{note}</div>}
-          {error && <div style={{ fontSize: 12, color: "#B3261E" }}>{error}</div>}
+          {error && <div style={{ fontSize: 12, color: "#C0392B" }}>{error}</div>}
 
           {/* Account categories */}
           <div>
