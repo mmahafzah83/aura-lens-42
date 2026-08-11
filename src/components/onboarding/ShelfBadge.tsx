@@ -32,23 +32,26 @@ interface Props {
   icon?: "profile" | "saved" | "strengths" | "subjects";
   /** What unlocks it, shown on hover and tap. */
   hint?: string;
+  /** A second, quieter line under the label — what the badge is made of. */
+  sublabel?: string;
 }
 
 const ICON = { profile: User, saved: Bookmark, strengths: BarChart3, subjects: Target } as const;
 
-const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = false, icon = "profile", hint }: Props) => {
+const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = false, icon = "profile", hint, sublabel }: Props) => {
   const Icon = ICON[icon];
   /* A zero is not an achievement — a badge with nothing behind it stays empty. */
   const isZero = figure === 0 || figure === "0";
   const on = unlocked && !isZero;
   return (
-  <div style={{ inlineSize: 54, textAlign: "center" }} title={on ? label : (hint || label)}>
+  <div style={{ inlineSize: 88, textAlign: "center" }} title={on ? label : (hint || label)}>
     <style>{CSS}</style>
     <div
       className={on ? "sb-unlocked" : undefined}
       aria-label={on ? label : `${label} — ${hint || "not unlocked yet"}`}
       style={{
         inlineSize: 54, blockSize: 54, borderRadius: RADIUS.card,
+        marginInline: "auto",
         display: "flex", alignItems: "center", justifyContent: "center",
         background: on ? FILL[tone] : (onNight ? "#141E25" : OB.canvas),
         border: on ? "1px solid transparent" : `1.5px dashed ${onNight ? OB.lineNight : OB.line}`,
@@ -64,6 +67,12 @@ const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = 
       margin: "8px 0 0", fontSize: 10.5, lineHeight: 1.35,
       color: onNight ? OB.mutedNight : OB.muted,
     }}>{label}</p>
+    {sublabel ? (
+      <p style={{
+        margin: "3px 0 0", fontSize: 9.5, lineHeight: 1.35,
+        color: onNight ? OB.mutedNight : OB.muted, opacity: 0.6,
+      }}>{sublabel}</p>
+    ) : null}
   </div>
   );
 };

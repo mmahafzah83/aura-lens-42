@@ -70,15 +70,23 @@ const BAND_TO_LEVEL: Record<Band, string> = {
 
 const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
   { key: "profile", label: "Your profile", tone: "blue" },
-  { key: "kept", label: "What you kept", tone: "cyan" },
-  { key: "strengths", label: "Your strengths", tone: "deep" },
-  { key: "read", label: "Your read", tone: "amber" },
+  { key: "kept", label: "Claims kept", tone: "cyan" },
+  { key: "strengths", label: "Strengths", tone: "deep" },
+  { key: "read", label: "Subjects owned", tone: "amber" },
+];
+
+/** The quiet second line — shown only on the promise row and the payoff row. */
+const SHELF_SUB = [
+  "read from your LinkedIn",
+  "ideas saved from your reading",
+  "rated in your own words",
+  "the ground your read gives you",
 ];
 
 const SHELF_ICON = ["profile", "saved", "strengths", "subjects"] as const;
 const SHELF_HINT = [
   "Unlocks when Aura has read your profile",
-  "Unlocks when you keep your first thing",
+  "Unlocks when you keep your first claim",
   "Unlocks when you've moved the sliders",
   "Unlocks when your read is written",
 ];
