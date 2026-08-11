@@ -44,7 +44,7 @@ const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = 
   const isZero = figure === 0 || figure === "0";
   const on = unlocked && !isZero;
   return (
-  <div style={{ inlineSize: 88, textAlign: "center" }} title={on ? label : (hint || label)}>
+  <div style={{ width: "100%", maxWidth: 88, minWidth: 0, textAlign: "center" }} title={on ? label : (hint || label)}>
     <style>{CSS}</style>
     <div
       className={on ? "sb-unlocked" : undefined}
