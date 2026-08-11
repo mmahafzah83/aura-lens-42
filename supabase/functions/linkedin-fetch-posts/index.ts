@@ -219,6 +219,14 @@ Deno.serve(async (req) => {
       if (error) console.error(`connection insert failed: ${error.message}`);
     }
 
+    // Newly imported own posts are what the voice learns from. A failure here
+    // must never fail the import.
+    try {
+      await refreshVoiceProfiles(db, targetUserId);
+    } catch (e) {
+      console.error("voice refresh failed", e);
+    }
+
     return json({
       handle,
       canonical_url,
