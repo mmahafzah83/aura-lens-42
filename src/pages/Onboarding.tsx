@@ -1835,11 +1835,11 @@ const Onboarding = () => {
         {revealPending && proof && proof.lines.length > 0 ? (
           <WaitProof lines={proof.lines} howLong="Writing your read. About a minute." />
         ) : null}
-        <button type="button" onClick={() => go(13)} disabled={revealPending && !revealSlow}
-          style={{ ...btnPrimary, marginBlockStart: 24, opacity: revealPending && !revealSlow ? 0.6 : 1 }}>
-          {revealPending && !revealSlow ? <Loader2 size={16} className="animate-spin" /> : null}
-          {!revealPending ? "See how people see me" : revealSlow ? "See what I have so far" : "Writing your read…"}
-        </button>
+        <Actions style={{ marginBlockStart: 24 }}>
+          <OBButton onClick={() => go(13)} loading={revealPending && !revealSlow} loadingLabel="Writing your read…">
+            {revealPending && revealSlow ? "See what I have so far" : "See how people see me"}
+          </OBButton>
+        </Actions>
       </NightShell>
     );
   }
@@ -1868,7 +1868,8 @@ const Onboarding = () => {
               <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
             </div>
           ) : null}
-          <button type="button" disabled={!reveal || sharing} onClick={async () => {
+          <Actions style={{ marginBlockStart: 20 }}>
+          <OBButton disabled={!reveal} loading={sharing} loadingLabel="Building…" onClick={async () => {
             if (!shareRef.current) return;
             setSharing(true);
             try {
@@ -1881,12 +1882,10 @@ const Onboarding = () => {
             } finally {
               setSharing(false);
             }
-          }} style={{ ...btnPrimary, marginBlockStart: 20, background: OB.night, opacity: !reveal || sharing ? 0.6 : 1 }}>
-            {sharing ? <Loader2 size={16} className="animate-spin" /> : null} Share this
-          </button>
-          <button type="button" onClick={() => go(14)} style={{
-            ...btnGhostLight, color: "#FFFFFF", border: "1px solid rgba(255,255,255,.55)",
-          }}>Take me in</button>
+          }} style={{ background: OB.night }}>Share this</OBButton>
+          <OBButton variant="tertiary" onClick={() => (connected ? void finish() : go(14))}
+            style={{ color: "#FFFFFF" }}>Take me in</OBButton>
+          </Actions>
           <div style={{ color: "rgba(255,255,255,.82)" }}>
             <ReadCorrection userId={userId} onNight />
             <MethodNote onNight />
@@ -1898,12 +1897,13 @@ const Onboarding = () => {
 
   /* 13b — NIGHT, and only after 13 */
   if (screen === 14) {
+    if (connected) { void finish(); }
     content = (
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>One last thing.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Connect LinkedIn and Aura can see what only you can see — how your posts actually performed. It learns
-          which of your subjects your audience already rewards, and stops guessing.
+          Connect LinkedIn and you find out which of your subjects your audience already rewards — so Aura stops
+          guessing.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 22 }}>
           {[
@@ -1918,13 +1918,15 @@ const Onboarding = () => {
             </div>
           ))}
         </div>
-        <button type="button" onClick={connectLinkedIn} disabled={connecting} style={{ ...btnPrimary, marginBlockStart: 22 }}>
-          {connecting ? <Loader2 size={16} className="animate-spin" /> : null} Connect LinkedIn
-        </button>
+        <Actions style={{ marginBlockStart: 22 }}>
+          <OBButton onClick={() => void connectLinkedIn({ allowRedirect: true })} loading={connecting} loadingLabel="Connecting…">
+            Connect LinkedIn
+          </OBButton>
+          <OBButton variant="tertiary" onNight onClick={() => void finish()}>Not now</OBButton>
+        </Actions>
         {connectNote ? (
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.mutedNight }}>{connectNote}</p>
         ) : null}
-        <button type="button" onClick={finish} style={btnGhostNight}>Not now</button>
         <p style={{ ...footnote, color: OB.mutedNight }}>Aura never posts. You press publish, every time.</p>
       </NightShell>
     );
