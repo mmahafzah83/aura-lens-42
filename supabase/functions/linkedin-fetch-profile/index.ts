@@ -261,7 +261,10 @@ Deno.serve(async (req) => {
       .eq("user_id", targetUserId)
       .maybeSingle();
     if (connection) {
-      const connPatch: Record<string, unknown> = { handle, profile_url: canonical_url };
+      // The read itself is what confirms the address.
+      const connPatch: Record<string, unknown> = {
+        handle, profile_url: canonical_url, source_status: "verified_by_read",
+      };
       if (followers !== null) connPatch.followers_total = followers;
       if (full_name) connPatch.profile_name = full_name;
       const { error } = await admin
@@ -269,6 +272,18 @@ Deno.serve(async (req) => {
         .update(connPatch)
         .eq("id", connection.id);
       if (error) console.error("[linkedin-fetch-profile] connection update failed:", error.message);
+    } else {
+      const connInsert: Record<string, unknown> = {
+        user_id: targetUserId,
+        access_token: "",
+        handle,
+        profile_url: canonical_url,
+        source_status: "verified_by_read",
+      };
+      if (followers !== null) connInsert.followers_total = followers;
+      if (full_name) connInsert.profile_name = full_name;
+      const { error } = await admin.from("linkedin_connections").insert(connInsert);
+      if (error) console.error("[linkedin-fetch-profile] connection insert failed:", error.message);
     }
 
     return json({
