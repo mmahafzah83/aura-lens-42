@@ -84,7 +84,7 @@ export default function TierCeremonyModal({
       id: `forced_tier_${forcedTier.toLowerCase()}`,
       user_id: userId,
       milestone_id: `tier_${forcedTier.toLowerCase()}`,
-      milestone_name: `${forcedTier} Tier`,
+      milestone_name: `${forcedTier} standing`,
       context: {},
       earned_at: new Date().toISOString(),
       acknowledged: false,
@@ -423,7 +423,7 @@ export default function TierCeremonyModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`You have reached ${tierName} tier`}
+      aria-label={`You have reached ${tierName} — your new standing`}
       onClick={(e) => {
         if (e.target !== e.currentTarget || busy) return;
         if (step === 0) closeForSession(); else close();
@@ -1029,7 +1029,7 @@ function StepNext({
         {next ? (
           <>
             <div style={{ fontFamily: SERIF, fontSize: 22, color: TEXT, marginBottom: 6 }}>
-              {next.name} tier: {next.threshold} points
+              {next.name} standing: {next.threshold} points
             </div>
             <div style={{ fontSize: 13, color: TEXT_MUTED }}>
               You&apos;re at {score ?? "—"}. Fastest path:
@@ -1037,7 +1037,7 @@ function StepNext({
           </>
         ) : (
           <div style={{ fontFamily: SERIF, fontSize: 22, color: TEXT }}>
-            You&apos;ve reached the top tier — keep compounding.
+            You&apos;ve reached the top standing — keep compounding.
           </div>
         )}
       </div>
