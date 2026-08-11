@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { renderEmail, heading, paragraph, stat } from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,7 +48,16 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
     const subject = `Aura test email — ${new Date().toISOString()}`;
-    const html = `<p>This is a test email sent from the Admin console through the same Resend path lifecycle emails use.</p><p>Sent at ${new Date().toISOString()}.</p>`;
+    const sentAt = new Date().toISOString();
+    const html = renderEmail({
+      preheader: "Aura test email — shell rendering check",
+      body: `
+        ${heading("This is a rendering test")}
+        ${paragraph("Sent from the Admin console through the same Resend path lifecycle emails use, rendered with the shared Aura email shell.")}
+        ${stat(sentAt.slice(11, 16), "Sent at (UTC)")}
+      `,
+      cta: { href: "https://www.aura-intel.org/dashboard", label: "Open Aura" },
+    });
     const messageKey = `TEST_${Date.now()}`;
 
     const resendRes = await fetch("https://api.resend.com/emails", {

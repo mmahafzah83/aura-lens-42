@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
-  renderEmail, heading, paragraph, quote, signature, escapeHtml,
+  renderEmail, heading, paragraph, quote, signature, escapeHtml, note as noteLine,
 } from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
@@ -173,7 +173,15 @@ serve(withObserve("colleague-invite", async (req) => {
             from: "Aura <Mohammad.Mahafdhah@aura-intel.org>",
             to: ["mohammad.mahafdhah@aura-intel.org"],
             subject: `New colleague invite: ${email}`,
-            html: `<p><strong>${callerEmail}</strong> (${inviterName || "unknown name"}) invited <strong>${email}</strong> to the Aura beta.</p>${note ? `<p>Note: "${note}"</p>` : ""}<p>A referral email has been sent to ${email}.</p>`,
+            html: renderEmail({
+              preheader: `${callerEmail} invited ${email} to the Aura beta`,
+              body: `
+                ${heading("New colleague invite")}
+                ${paragraph(`<strong>${escapeHtml(callerEmail)}</strong> (${escapeHtml(inviterName || "unknown name")}) invited <strong>${escapeHtml(email)}</strong> to the Aura beta.`, false)}
+                ${note ? quote(`&ldquo;${escapeHtml(note)}&rdquo;`) : ""}
+                ${noteLine(`A referral email has been sent to ${escapeHtml(email)}.`)}
+              `,
+            }),
             // Admin notification address — no member recipient.
             tags: [{ name: "email_type", value: "colleague_invite_admin" }],
           }),
