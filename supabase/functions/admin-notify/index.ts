@@ -1,4 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import {
+  renderEmail, heading, paragraph, note as noteLine,
+  INK, INK_SOFT, INK_FAINT, BODY, MONO, CANVAS, BORDER,
+} from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,42 +32,36 @@ function renderCard(opts: {
   dedupe_key: string;
 }) {
   const { what, impact, action, detail, body, severity, dedupe_key } = opts;
-  const paper = "#F1ECE1", card = "#FBF8F1", ink = "#1B1712", rule = "#E2DACB", muted = "#6B6255";
-  const serif = "Georgia, 'Times New Roman', serif";
-  const mono = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
   let pill = "";
   if (severity === "critical") {
-    pill = `<div style="display:inline-block;font:11px/1 ${mono};letter-spacing:.14em;text-transform:uppercase;color:#FBF8F1;background:#6E2A26;padding:6px 10px;border-radius:2px;">NEEDS YOU</div>`;
+    pill = `<div style="display:inline-block;margin:0 0 6px;font-family:${MONO};font-size:11px;line-height:1;letter-spacing:.14em;text-transform:uppercase;color:#FFFFFF;background:#C0392B;padding:7px 10px;border-radius:4px;">NEEDS YOU</div>`;
   } else if (severity === "high") {
-    pill = `<div style="display:inline-block;font:11px/1 ${mono};letter-spacing:.14em;text-transform:uppercase;color:#FBF8F1;background:#9A7218;padding:6px 10px;border-radius:2px;">HEADS UP</div>`;
+    pill = `<div style="display:inline-block;margin:0 0 6px;font-family:${MONO};font-size:11px;line-height:1;letter-spacing:.14em;text-transform:uppercase;color:#9A6F12;background:${CANVAS};padding:7px 10px;border-radius:4px;">HEADS UP</div>`;
   }
 
   let inner = "";
   if (what) {
-    inner += `<h1 style="margin:16px 0 0;font:400 22px/1.35 ${serif};color:${ink};">${esc(what)}</h1>`;
+    inner += heading(esc(what));
     if (impact) {
-      inner += `<p style="margin:14px 0 0;font:400 15px/1.55 ${serif};color:${ink};"><span style="color:${muted};">This affects:</span> ${esc(impact)}</p>`;
+      inner += `<p style="margin:0 0 12px;font-family:${BODY};font-size:15px;line-height:1.65;color:${INK};"><span style="color:${INK_SOFT};">This affects:</span> ${esc(impact)}</p>`;
     }
     if (action) {
-      inner += `<p style="margin:10px 0 0;font:400 15px/1.55 ${serif};color:${ink};">👉 <span style="color:${muted};">What to do:</span> ${esc(action)}</p>`;
+      inner += `<p style="margin:0 0 12px;font-family:${BODY};font-size:15px;line-height:1.65;color:${INK};"><span style="color:${INK_SOFT};">What to do:</span> ${esc(action)}</p>`;
     }
     if (detail) {
-      inner += `<p style="margin:18px 0 0;font:400 13px/1.5 ${serif};color:${muted};"><em>Why:</em> ${esc(detail)}</p>`;
+      inner += noteLine(`<em>Why:</em> ${esc(detail)}`);
     }
   } else {
-    inner += `<div style="margin:16px 0 0;padding:14px 16px;border:1px solid ${rule};border-radius:4px;background:${card};font:400 14px/1.55 ${serif};color:${ink};white-space:pre-wrap;">${esc(body)}</div>`;
+    inner += `<div style="margin:0 0 16px;padding:14px 16px;border:1px solid ${BORDER};border-radius:8px;background:${CANVAS};font-family:${BODY};font-size:14px;line-height:1.65;color:${INK};white-space:pre-wrap;">${esc(body)}</div>`;
   }
 
-  const footer = `<p style="margin:22px 0 0;font:11px/1.4 ${mono};letter-spacing:.06em;color:${muted};">source: ${esc(dedupe_key)} · ${new Date().toISOString()}</p>`;
+  const footer = `<p style="margin:22px 0 0;font-family:${MONO};font-size:11px;line-height:1.4;letter-spacing:.06em;color:${INK_FAINT};">source: ${esc(dedupe_key)} · ${new Date().toISOString()}</p>`;
 
-  return `<div style="background:${paper};padding:24px 12px;">
-    <div style="max-width:560px;margin:0 auto;background:${card};border:1px solid ${rule};border-radius:6px;padding:22px 22px 20px;">
-      ${pill}
-      ${inner}
-      ${footer}
-    </div>
-  </div>`;
+  return renderEmail({
+    preheader: what || String(body).slice(0, 120),
+    body: `${pill}${inner}${footer}`,
+  });
 }
 
 Deno.serve(async (req) => {

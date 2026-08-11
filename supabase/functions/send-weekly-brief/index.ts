@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { applyPublishedFilter, filterPublishedRows } from "../_shared/postProvenance.ts";
+import {
+  renderEmail, heading, label, note, stat,
+  CANVAS, BORDER, INK, INK_SOFT, INK_FAINT, ACCENT, BODY, MONO,
+} from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,8 +44,6 @@ interface BuildHtmlOpts {
   topSignals: Array<{ id: string; title: string; currentPct: number; deltaPct: number; whyNow?: string }>;
   postsThisWeek: number;
   postsLastWeek: number;
-  brand: string;
-  brandFont: string;
   headline: string;
   emailParam: string;
   marketPulse: { headline: string; url: string | null; isExternal: boolean } | null;
@@ -52,153 +54,125 @@ interface BuildHtmlOpts {
   readyPost: string | null;
 }
 
+const PREFS_URL = `${APP_URL}/dashboard?settings=notifications`;
+const GOOD = "#12805C";
+const BAD = "#C0392B";
+
+/** One content block, as a table row. Outlook-safe. */
+function row(inner: string): string {
+  return `<tr><td style="padding:0 0 24px;">${inner}</td></tr>`;
+}
+function panel(inner: string, accent?: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${CANVAS};border-radius:8px;${accent ? `border-left:3px solid ${accent};` : ""}"><tr><td style="padding:14px 16px;">${inner}</td></tr></table>`;
+}
+function body14(text: string, color = INK): string {
+  return `<p style="margin:0;font-family:${BODY};font-size:14px;line-height:1.6;color:${color};">${text}</p>`;
+}
+
 function buildHtml(opts: BuildHtmlOpts): string {
   const {
     firstName, dayDate, topSignals, postsThisWeek,
-    brand, brandFont, headline, marketPulse, yourMove, worthReading, activeWeeks, rhythmCopy, readyPost,
+    headline, marketPulse, yourMove, worthReading, activeWeeks, rhythmCopy, readyPost,
   } = opts;
 
-  const sectionHeader = (label: string) =>
-    `<p style="font-size:11px;font-weight:600;color:#8a8480;letter-spacing:0.14em;text-transform:uppercase;margin:0 0 12px;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(label)}</p>`;
+  const rows: string[] = [];
 
-  const marketPulseHtml = marketPulse
-    ? `<div style="margin:0 0 28px;">
-         ${sectionHeader("Market pulse")}
-         <div style="padding:14px 16px;background:#faf8f4;border-radius:8px;">
-           <p style="font-size:14px;line-height:1.55;color:#1a1a1a;margin:0;font-family:'DM Sans',system-ui,sans-serif;">
-             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;margin-right:8px;vertical-align:middle;"></span>
-             ${marketPulse.isExternal
-               ? `${escapeHtml(marketPulse.headline)}${marketPulse.url ? ` &nbsp;<a href="${escapeHtml(marketPulse.url)}" style="color:${brand};font-weight:600;text-decoration:none;">Read →</a>` : ""}`
-               : `<span style="color:#555;font-weight:600;">In your sector this week:</span> ${escapeHtml(marketPulse.headline)}`}
-           </p>
-         </div>
-       </div>`
-    : "";
+  rows.push(row(`
+    ${label("Aura · Weekly brief")}
+    ${heading(escapeHtml(headline))}
+    ${note(escapeHtml(dayDate))}
+  `));
 
-  const yourMoveHtml = `<div style="margin:0 0 28px;padding:20px 24px;background:${brand}0D;border-radius:8px;">
-       ${sectionHeader("Your move this week")}
-       <p style="font-size:15px;line-height:1.6;color:#1a1a1a;margin:0 0 16px;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(yourMove.copy)}</p>
-       <a href="${escapeHtml(yourMove.ctaHref)}" style="display:inline-block;background:${brand};color:#ffffff;padding:11px 28px;border-radius:6px;font-weight:600;font-size:14px;text-decoration:none;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(yourMove.ctaLabel)}</a>
-     </div>`;
+  if (marketPulse) {
+    rows.push(row(`
+      ${label("Market pulse")}
+      ${panel(
+        marketPulse.isExternal
+          ? body14(`${escapeHtml(marketPulse.headline)}${marketPulse.url ? ` &nbsp;<a href="${escapeHtml(marketPulse.url)}" style="color:${ACCENT};font-weight:600;text-decoration:none;">Read &rarr;</a>` : ""}`)
+          : body14(`<span style="color:${INK_SOFT};font-weight:600;">In your sector this week:</span> ${escapeHtml(marketPulse.headline)}`),
+      )}
+    `));
+  }
 
-  const readyPostHtml = readyPost
-    ? `<div style="margin:24px 0;padding:20px 24px;background:#f5f0e8;border-radius:10px;border-left:4px solid ${brand};">
-         <p style="font-size:11px;font-weight:600;color:${brand};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">✦ YOUR POST IS READY</p>
-         <p style="font-size:14px;line-height:1.75;color:#1a1a1a;margin-bottom:16px;white-space:pre-line;">${escapeHtml(readyPost)}</p>
-         <a href="${APP_URL}/home?tab=authority" style="display:inline-block;background:${brand};color:#0d0d0d;padding:10px 20px;border-radius:6px;font-weight:600;font-size:13px;text-decoration:none;">Open in Publish tab →</a>
-       </div>`
-    : "";
+  rows.push(row(`
+    ${label("Your move this week")}
+    ${panel(`
+      ${body14(escapeHtml(yourMove.copy))}
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 0;"><tr>
+        <td align="center" bgcolor="${ACCENT}" style="border-radius:8px;">
+          <a href="${escapeHtml(yourMove.ctaHref)}" style="display:inline-block;padding:0 26px;height:44px;line-height:44px;font-family:${BODY};font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;">${escapeHtml(yourMove.ctaLabel)}</a>
+        </td></tr></table>
+    `)}
+  `));
 
-  let signalsHtml = "";
+  if (readyPost) {
+    rows.push(row(`
+      ${label("Your post is ready")}
+      ${panel(`
+        <p style="margin:0 0 14px;font-family:${BODY};font-size:14px;line-height:1.75;color:${INK};white-space:pre-line;">${escapeHtml(readyPost)}</p>
+        <a href="${APP_URL}/home?tab=authority" style="font-family:${BODY};font-size:14px;font-weight:600;color:${ACCENT};text-decoration:none;">Open in Publish tab &rarr;</a>
+      `, ACCENT)}
+    `));
+  }
+
   if (topSignals.length === 0) {
     const captureHref = appendParams(`${APP_URL}/home`, { email: opts.emailParam });
-    signalsHtml = `<div style="margin:0 0 28px;">
-         ${sectionHeader("Signal pulse")}
-         <div style="padding:14px 16px;background:#faf8f4;border-radius:8px;">
-           <p style="font-size:14px;line-height:1.6;color:#555;margin:0 0 10px;font-family:'DM Sans',system-ui,sans-serif;">No active signals yet. Capture 2-3 articles from your sector to seed your first signal.</p>
-           <a href="${escapeHtml(captureHref)}" style="color:${brand};font-weight:600;font-size:13px;text-decoration:none;font-family:'DM Sans',system-ui,sans-serif;">Capture an article →</a>
-         </div>
-       </div>`;
+    rows.push(row(`
+      ${label("Signal pulse")}
+      ${panel(`
+        ${body14("No active signals yet. Capture 2-3 articles from your sector to seed your first signal.", INK_SOFT)}
+        <p style="margin:10px 0 0;"><a href="${escapeHtml(captureHref)}" style="font-family:${BODY};font-size:14px;font-weight:600;color:${ACCENT};text-decoration:none;">Capture an article &rarr;</a></p>
+      `)}
+    `));
   } else {
-    const rows = topSignals.slice(0, 2).map((s, idx) => {
-      const sign = s.deltaPct > 0 ? "+" : "";
-      const deltaColor = s.deltaPct > 0 ? "#16a34a" : s.deltaPct < 0 ? "#dc2626" : "#888";
-      const deltaText = s.deltaPct === 0 ? "no change" : `${sign}${s.deltaPct} pts`;
-      const borderColor = idx === 0 ? brand : `${brand}40`;
+    const cards = topSignals.slice(0, 2).map((s, idx) => {
+      // Plain language, never a raw number.
+      const movement = s.deltaPct > 0
+        ? `<span style="color:${GOOD};">Strengthening</span> · gained ${s.deltaPct} this week`
+        : s.deltaPct < 0
+          ? `<span style="color:${BAD};">Fading</span> — worth one capture`
+          : "Holding steady";
       const href = appendParams(`${APP_URL}/home`, {
         tab: "intelligence", signal: s.id, email: opts.emailParam,
       });
-      return `<div style="margin-bottom:10px;padding:14px 16px;background:#faf8f4;border-radius:8px;border-left:3px solid ${borderColor};">
-             <a href="${escapeHtml(href)}" style="display:block;font-size:14px;font-weight:600;color:${brand};text-decoration:none;margin-bottom:4px;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(s.title)}</a>
-             <p style="font-size:12px;color:#555;margin:0;font-family:'DM Sans',system-ui,sans-serif;">Confidence <strong style="color:#0d0d0d;">${s.currentPct}%</strong> · <span style="color:${deltaColor};">${escapeHtml(deltaText)}</span> vs 7d ago</p>
-             ${idx === 0 && s.whyNow ? `<p style="font-size:13px;line-height:1.55;color:#3a3835;margin:8px 0 0;font-family:'DM Sans',system-ui,sans-serif;"><span style="color:#888;font-weight:600;">Why now:</span> ${escapeHtml(s.whyNow)}</p>` : ""}
-           </div>`;
-    }).join("");
-    signalsHtml = `<div style="margin:0 0 28px;">${sectionHeader("Signal pulse")}${rows}</div>`;
+      return panel(`
+        <a href="${escapeHtml(href)}" style="display:block;font-family:${BODY};font-size:14px;font-weight:600;color:${ACCENT};text-decoration:none;margin:0 0 6px;">${escapeHtml(s.title)}</a>
+        <p style="margin:0;font-family:${MONO};font-size:11px;line-height:1.5;letter-spacing:.06em;color:${INK_SOFT};">${movement}</p>
+        ${idx === 0 && s.whyNow ? `<p style="margin:8px 0 0;font-family:${BODY};font-size:13px;line-height:1.55;color:${INK_SOFT};"><span style="color:${INK_FAINT};font-weight:600;">Why now:</span> ${escapeHtml(s.whyNow)}</p>` : ""}
+      `, idx === 0 ? ACCENT : BORDER);
+    }).map((c) => `<div style="margin:0 0 10px;">${c}</div>`).join("");
+    rows.push(row(`${label("Signal pulse")}${cards}`));
   }
 
-  const worthReadingHtml = worthReading
-    ? `<div style="margin:0 0 28px;">
-         ${sectionHeader("Worth reading")}
-         <div style="padding:14px 16px;background:#faf8f4;border-radius:8px;">
-           <p style="font-size:14px;line-height:1.5;color:#1a1a1a;margin:0 0 6px;font-family:'DM Sans',system-ui,sans-serif;">
-             <span style="margin-right:8px;">📖</span>
-             <a href="${escapeHtml(worthReading.url)}" style="color:${brand};font-weight:600;text-decoration:none;">${escapeHtml(worthReading.title)}</a>
-           </p>
-           <p style="font-size:12px;color:#888;margin:0 0 8px;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(worthReading.author || "")}${worthReading.author ? " · " : ""}${worthReading.readMinutes} min read</p>
-           <p style="font-size:13px;line-height:1.55;color:#555;margin:0;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(worthReading.why)}</p>
-         </div>
-       </div>`
-    : "";
-
-  const rhythmHtml = `<div style="margin:0 0 8px;">
-       ${sectionHeader("Your rhythm")}
-       <div style="padding:16px 18px;background:#faf8f4;border-radius:8px;">
-         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-           <tr>
-             <td width="50%" valign="top" style="padding-right:8px;">
-               <p style="font-size:22px;font-weight:500;color:#0d0d0d;margin:0 0 4px;line-height:1.1;font-family:'DM Sans',system-ui,sans-serif;">${postsThisWeek}</p>
-               <p style="font-size:11px;color:#888;letter-spacing:0.04em;margin:0;text-transform:uppercase;font-family:'DM Sans',system-ui,sans-serif;">Post${postsThisWeek === 1 ? "" : "s"} this week</p>
-             </td>
-             <td width="50%" valign="top" style="padding-left:8px;">
-               <p style="font-size:22px;font-weight:500;color:#0d0d0d;margin:0 0 4px;line-height:1.1;font-family:'DM Sans',system-ui,sans-serif;">${activeWeeks} <span style="font-size:13px;color:#888;font-weight:400;">of 12</span></p>
-               <p style="font-size:11px;color:#888;letter-spacing:0.04em;margin:0;text-transform:uppercase;font-family:'DM Sans',system-ui,sans-serif;">Weeks active</p>
-             </td>
-           </tr>
-         </table>
-         <p style="font-size:13px;line-height:1.55;color:#555;margin:14px 0 0;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(rhythmCopy)}</p>
-       </div>
-     </div>`;
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your Aura intelligence brief</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background-color:#f0ede8; font-family:'${brandFont}','DM Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
-  a { text-decoration:none; }
-  @media only screen and (max-width:600px) {
-    .email-wrapper { padding:0 !important; }
-    .email-card { border-radius:0 !important; }
-    .content-pad { padding:28px 22px !important; }
-    .hero-pad { padding:36px 24px 28px !important; }
-    .footer-pad { padding:24px 24px !important; }
+  if (worthReading) {
+    rows.push(row(`
+      ${label("Worth reading")}
+      ${panel(`
+        <p style="margin:0 0 6px;font-family:${BODY};font-size:14px;line-height:1.5;">
+          <a href="${escapeHtml(worthReading.url)}" style="color:${ACCENT};font-weight:600;text-decoration:none;">${escapeHtml(worthReading.title)}</a>
+        </p>
+        <p style="margin:0 0 8px;font-family:${MONO};font-size:11px;line-height:1.5;letter-spacing:.06em;color:${INK_FAINT};">${escapeHtml(worthReading.author || "")}${worthReading.author ? " · " : ""}${worthReading.readMinutes} min read</p>
+        ${body14(escapeHtml(worthReading.why), INK_SOFT)}
+      `)}
+    `));
   }
-</style>
-</head>
-<body>
-<div style="display:none;max-height:0;overflow:hidden;">Your weekly Aura intelligence brief — what shifted in your presence landscape this week.</div>
 
-<div class="email-wrapper" style="padding:24px;background-color:#f0ede8;">
-  <div class="email-card" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;">
+  rows.push(row(`
+    ${label("Your rhythm")}
+    ${panel(`
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td width="50%" valign="top" style="padding-right:8px;">${stat(postsThisWeek, `Post${postsThisWeek === 1 ? "" : "s"} this week`)}</td>
+        <td width="50%" valign="top" style="padding-left:8px;">${stat(`${activeWeeks} of 12`, "Weeks active")}</td>
+      </tr></table>
+      ${body14(escapeHtml(rhythmCopy), INK_SOFT)}
+    `)}
+  `));
 
-    <div class="hero-pad" style="padding:40px 40px 32px;background:#1a1714;color:#f0f0f0;">
-      <p style="font-size:11px;color:${brand};letter-spacing:0.14em;text-transform:uppercase;margin-bottom:14px;font-weight:600;font-family:'DM Sans',system-ui,sans-serif;">Aura · Weekly Brief</p>
-      <h1 style="font-family:'Cormorant Garamond',Georgia,'Times New Roman',serif;font-size:30px;line-height:1.2;font-weight:500;color:#f0f0f0;margin-bottom:8px;">${escapeHtml(headline)}</h1>
-      <p style="font-size:13px;color:#9a9590;line-height:1.5;font-family:'DM Sans',system-ui,sans-serif;">${escapeHtml(dayDate)}</p>
-    </div>
-
-    <div class="content-pad" style="padding:36px 40px;color:#1a1a1a;">
-      ${marketPulseHtml}
-      ${yourMoveHtml}
-      ${readyPostHtml}
-      ${signalsHtml}
-      ${worthReadingHtml}
-      ${rhythmHtml}
-    </div>
-
-    <div class="footer-pad" style="padding:28px 40px;background:#faf8f4;border-top:1px solid #ece8e0;">
-      <p style="font-size:12px;color:#888;line-height:1.6;text-align:center;margin-bottom:6px;font-family:'DM Sans',system-ui,sans-serif;">Aura · Personal Intelligence System · aura-intel.org</p>
-      <p style="font-size:11px;color:#aaa;line-height:1.6;text-align:center;font-family:'DM Sans',system-ui,sans-serif;">Manage your preferences from your profile menu in Aura.</p>
-    </div>
-
-  </div>
-</div>
-</body>
-</html>`;
+  return renderEmail({
+    preheader: `Your weekly Aura intelligence brief — what shifted in your standing this week.`,
+    prefsHref: PREFS_URL,
+    body: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows.join("")}</table>`,
+  });
 }
 
 serve(async (req) => {
@@ -245,15 +219,6 @@ serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    const { data: dsRow } = await admin
-      .from('design_system')
-      .select('tokens')
-      .eq('scope', 'global')
-      .eq('is_active', true)
-      .single();
-    const ds = (dsRow?.tokens as any) || {};
-    const BRAND = ds?.colors?.brand?.light || '#B08D3A';
-    const BRAND_FONT = ds?.typography?.body || 'DM Sans';
 
     let targetUserId: string | null = null;
     if (req.method === "POST") {
@@ -597,8 +562,6 @@ Rules:
           topSignals,
           postsThisWeek: postsThisWeek ?? 0,
           postsLastWeek: postsLastWeek ?? 0,
-          brand: BRAND,
-          brandFont: BRAND_FONT,
           headline,
           emailParam,
           marketPulse,

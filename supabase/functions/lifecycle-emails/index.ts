@@ -220,7 +220,7 @@ serve(withObserve("lifecycle-emails", async (req) => {
   // 2) Profiles map
   const { data: profiles } = await admin
     .from("diagnostic_profiles")
-    .select("user_id, first_name, onboarding_completed, onboarding_step, lifecycle_opt_out");
+    .select("user_id, first_name, onboarding_completed, onboarding_step, lifecycle_opt_out, notification_prefs");
   const profileMap = new Map<string, any>();
   for (const p of profiles || []) profileMap.set(p.user_id as string, p);
 
@@ -273,7 +273,11 @@ serve(withObserve("lifecycle-emails", async (req) => {
       const latestSignal = latestSignalRes.data as { signal_title?: string; created_at?: string } | null;
 
       const firstName = (prof?.first_name as string | undefined)?.trim() || "";
-      const lang: Lang = "en";
+      // Member language preference drives the AR copy set + RTL shell.
+      const prefLang = String(
+        (prof?.notification_prefs as Record<string, unknown> | null)?.language ?? "en",
+      ).toLowerCase();
+      const lang: Lang = prefLang.startsWith("ar") ? "ar" : "en";
       const has = (k: MessageKey) => sent.some(s => s.key === k);
 
       // 5. S4 → founder digest

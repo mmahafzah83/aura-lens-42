@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
     if (needsYou.length > 0) {
       const head = needsYou.length === 1 ? "1 thing needs you" : `${needsYou.length} things need you`;
       const tail = keepEye.length ? ` · ${keepEye.length} to keep an eye on` : "";
-      verdictHtml = `<div style="background:#F1E1DD;border:1px solid #d9b3ad;color:#6E2A26;padding:14px 16px;border-radius:8px;font-weight:600">🔴 ${head}${tail}</div>`;
+      verdictHtml = `<div style="background:#F1E1DD;border:1px solid #d9b3ad;color:#C0392B;padding:14px 16px;border-radius:8px;font-weight:600">${head}${tail}</div>`;
     } else if (keepEye.length > 0) {
       verdictHtml = `<div style="background:#F5EBD3;border:1px solid #e3cd97;color:#9A7218;padding:14px 16px;border-radius:8px;font-weight:600">🟡 ${keepEye.length === 1 ? "1 thing" : keepEye.length + " things"} to keep an eye on</div>`;
     } else {
@@ -281,10 +281,10 @@ Deno.serve(async (req) => {
       <div style="border-left:3px solid ${accent};background:#FBF8F1;border:1px solid #E2DACB;border-radius:6px;padding:12px 14px;margin-top:10px">
         <div style="font-weight:600;color:#1B1712;font-size:15px">${esc(a.what || a.subject || "Issue")}</div>
         ${a.impact ? `<div style="color:#6B6255;font-size:13px;margin-top:4px">This affects: ${esc(a.impact)}</div>` : ""}
-        ${a.action ? `<div style="color:#6E2A26;font-size:13px;margin-top:6px">👉 ${esc(a.action)}</div>` : ""}
+        ${a.action ? `<div style="color:#C0392B;font-size:13px;margin-top:6px">${esc(a.action)}</div>` : ""}
       </div>`;
     const alertsSection = (needsYou.length || keepEye.length)
-      ? `<div style="margin-top:16px">${needsYou.map((a) => alertCard(a, "#6E2A26")).join("")}${keepEye.map((a) => alertCard(a, "#D6A748")).join("")}</div>`
+      ? `<div style="margin-top:16px">${needsYou.map((a) => alertCard(a, "#C0392B")).join("")}${keepEye.map((a) => alertCard(a, "#9A6F12")).join("")}</div>`
       : "";
 
     // ===== BUILD HTML =====

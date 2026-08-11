@@ -4,6 +4,10 @@
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { primaryAdminId } from "../_shared/adminRole.ts";
+import {
+  renderEmail, stat as statLine,
+  CANVAS, BORDER, INK as SHELL_INK, INK_SOFT, INK_FAINT, BODY as SANS, MONO as SHELL_MONO,
+} from "../_shared/emailTemplate.ts";
 
 
 const corsHeaders = {
@@ -12,18 +16,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-// ---------- palette / type ----------
-const PAPER = "#F1ECE1";
-const CARD = "#FBF8F1";
-const INK = "#1B1712";
-const RULE = "#E2DACB";
-const MUTED = "#6B6255";
-const TEAL = "#36C5B0";
-const AMBER = "#D6A748";
-const DAMBER = "#B5762A";
-const OX = "#6E2A26";
-const SERIF = "Georgia,'Times New Roman',serif";
-const MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
+// ---------- palette / type (all from the shared shell) ----------
+const CARD = CANVAS;
+const INK = SHELL_INK;
+const RULE = BORDER;
+const MUTED = INK_SOFT;
+const TEAL = "#12805C";
+const AMBER = "#9A6F12";
+const DAMBER = "#8A5A12";
+const OX = "#C0392B";
+const SERIF = SANS;
+const MONO = SHELL_MONO;
 
 // Never use array.length for a displayed number.
 const size = (a: unknown[] | null | undefined): number =>
@@ -112,7 +115,7 @@ function whatId(t: string): string {
   return `<div style="font-family:${SERIF};font-size:14px;line-height:1.6;color:${INK};padding-top:12px"><b>&rarr; What I'd do:</b> ${esc(t)}</div>`;
 }
 function sectionOpen(title: string): string {
-  return `<tr><td style="padding:26px 22px 0;border-top:1px solid ${RULE}">${label(title)}`;
+  return `<tr><td style="padding:26px 0 0;border-top:1px solid ${RULE}">${label(title)}`;
 }
 function sectionClose(advice: string): string {
   return `${whatId(advice)}</td></tr>`;
@@ -747,14 +750,11 @@ Deno.serve(async (req) => {
     const assets = A.assets ?? {};
     const assetTotal = Number(assets.total ?? 0) || 1;
 
-    const html = `<!doctype html><html><body style="margin:0;padding:0;background:${PAPER}">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${PAPER}" style="background:${PAPER};padding:18px 10px">
-<tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${CARD}" style="max-width:680px;background:${CARD};border:1px solid ${RULE}">
+    const brief = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%">
 
 <!-- 1 masthead -->
-<tr><td style="padding:22px 22px 16px;border-bottom:1px solid ${RULE}">
-  <div style="font-family:${SERIF};font-size:22px;color:${INK}">AURA &middot; Daily Brief</div>
+<tr><td style="padding:0 0 16px;border-bottom:1px solid ${RULE}">
+  <div style="font-family:${SERIF};font-size:22px;font-weight:700;color:${INK}">AURA &middot; Daily Brief</div>
   <div style="font-family:${SERIF};font-size:14px;color:${MUTED};padding-top:3px">${esc(weekday)} ${dayNum} ${esc(monthName)}</div>
   <div style="font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:${MUTED};padding-top:8px">Counted live at ${hhmm} UTC</div>
   <div style="font-family:${SERIF};font-size:12px;color:${MUTED};padding-top:4px">Every number below was counted at that moment. Nothing is copied from yesterday.</div>
@@ -763,7 +763,7 @@ Deno.serve(async (req) => {
 </td></tr>
 
 <!-- 2 verdict strip -->
-<tr><td style="padding:16px 22px 0">
+<tr><td style="padding:16px 0 0">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
   ${statBox(String(needsN), "Needs you", OX)}
   ${statBox(String(decideN), "Decide", DAMBER)}
@@ -808,7 +808,7 @@ ${findingsShown.map((f) => `<table role="presentation" width="100%" cellpadding=
 ${sectionClose(needsN > 0 ? "Start at the top of the needs-you list — it is the only part of this brief a user can feel." : "Nothing here is on fire. Use the day for one real user conversation.")}
 
 <!-- 5 three things -->
-<tr><td style="padding:22px 22px 0">
+<tr><td style="padding:22px 0 0">
 ${label("If you do three things today")}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#EDF6F3" style="border:1px solid #BFE3DA"><tr><td style="padding:14px 16px">
 ${recs.map((r, i) => `<div style="font-family:${SERIF};font-size:15px;color:${INK};padding:4px 0"><b>${i + 1}.</b> ${esc(r)}</div>`).join("")}
@@ -905,12 +905,10 @@ ${sectionClose("This number going to zero means logging broke, not that the syst
 ${sectionOpen("The automated work")}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
   <td width="50%" bgcolor="${CARD}" style="border:1px solid ${RULE};padding:12px" valign="top">
-    <div style="font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:${MUTED}">Ran clean</div>
-    <div style="font-family:${MONO};font-size:22px;color:${TEAL};padding-top:5px">${size(jobsOk)}</div>
+    ${statLine(size(jobsOk), "Ran clean")}
   </td>
   <td width="50%" bgcolor="${CARD}" style="border:1px solid ${RULE};padding:12px" valign="top">
-    <div style="font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:${MUTED}">Not due yet</div>
-    <div style="font-family:${MONO};font-size:22px;color:${MUTED};padding-top:5px">${size(jobsNotDue)}</div>
+    ${statLine(size(jobsNotDue), "Not due yet")}
   </td>
 </tr></table>
 ${size(jobsNotDue) > 0 ? `<div style="padding-top:10px">${jobsNotDue.map((j: any) => `<div style="font-family:${MONO};font-size:11px;color:${MUTED};padding:2px 0">${esc(j.name)} — last ran ${j.last_run ? esc(String(j.last_run).slice(0, 10)) : "never"} · schedule ${esc(j.schedule)} · not due yet</div>`).join("")}</div>` : ""}
@@ -919,7 +917,7 @@ ${sectionClose("A weekly job that ran cleanly last week is not a problem on a Su
 
 <!-- 14 engine room -->
 ${sectionOpen("The engine room")}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#EAE3D5" style="border:1px solid ${RULE}"><tr>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${CANVAS}" style="border:1px solid ${RULE}"><tr>
 <td width="50%" valign="top" style="padding:12px 14px">
   ${dotLine(size(jobsFailed) === 0 ? TEAL : OX, `${size(jobsOk)} jobs ran clean`)}
   ${dotLine((A.machine?.queue_failed ?? 0) === 0 ? TEAL : AMBER, `${A.machine?.queue_pending ?? 0} queued, ${A.machine?.queue_failed ?? 0} failed`)}
@@ -956,11 +954,16 @@ ${audit.pairs.map((p) => `<tr>
 ${sectionClose("A cross on any row means do not act on that number until it is reconciled.")}
 
 <!-- 17 footer -->
-<tr><td style="padding:20px 22px 24px;border-top:1px solid ${RULE}">
+<tr><td style="padding:20px 0 4px;border-top:1px solid ${RULE}">
 <div style="font-family:${SERIF};font-size:13px;color:${MUTED};line-height:1.6">This brief arrives every morning even when nothing is wrong. If it does not arrive, that is the alarm.</div>
 </td></tr>
 
-</table></td></tr></table></body></html>`;
+</table>`;
+
+    const html = renderEmail({
+      preheader: `${needsN} need you · ${decideN} to decide · ${watchN} to watch`,
+      body: brief,
+    });
 
     // ===== send =====
     let sent = false;

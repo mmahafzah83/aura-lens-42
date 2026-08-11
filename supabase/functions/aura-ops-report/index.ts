@@ -521,7 +521,7 @@ Deno.serve(async (req) => {
                           `Aura ops — RED: ${shortReason}`;
 
   // ---------- Compose email body ----------
-  const RED = "#6E2A26", AMBER = "#9A7218", GREEN = "#2F5D3A";
+  const RED = "#C0392B", AMBER = "#9A7218", GREEN = "#2F5D3A";
   const verdictColor = verdict === "RED" ? RED : verdict === "AMBER" ? AMBER : GREEN;
 
   const asOf = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
