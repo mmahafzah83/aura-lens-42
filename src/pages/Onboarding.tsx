@@ -1327,7 +1327,7 @@ const Onboarding = () => {
         </p>
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          gap: 8, justifyItems: "center", maxWidth: 420, marginLeft: "auto", marginRight: "auto", margin: "0 auto 6px",
+          gap: 8, justifyItems: "center", maxWidth: 420, margin: "0 auto 6px",
         }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
