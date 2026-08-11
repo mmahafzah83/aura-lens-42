@@ -17,7 +17,6 @@ import WhatsAppOptInModal from "@/components/WhatsAppOptInModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NotificationBell from "@/components/NotificationBell";
 import AskAuraButton from "@/components/AskAuraButton";
-import OvernightPulse from "@/components/systemb/OvernightPulse";
 import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
 import { signOutAndLand } from "@/lib/signOut";
