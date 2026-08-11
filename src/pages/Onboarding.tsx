@@ -41,6 +41,7 @@ import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyHeader from "@/components/onboarding/JourneyHeader";
 import { num, cleanHeadline, memberText } from "@/lib/memberText";
+import { inferSector } from "@/lib/inferSector";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
