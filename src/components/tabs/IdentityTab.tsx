@@ -95,6 +95,7 @@ interface ProfileRow {
   level: string | null;
   firm: string | null;
   sector_focus: string | null;
+  seniority_band?: string | null;
   core_practice: string | null;
   north_star_goal: string | null;
   brand_pillars: string[];
@@ -262,7 +263,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     try {
       const [profileRes, signalsRes] = await withTimeout(Promise.all([
         (supabase.from("diagnostic_profiles" as any) as any)
-          .select("first_name, last_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
+          .select("first_name, last_name, level, firm, sector_focus, seniority_band, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
           .eq("user_id", uid).maybeSingle(),
         (supabase.from("strategic_signals") as any)
           .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids, strength_score, lifecycle_tier")
@@ -275,7 +276,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       } else {
         // Empty stub so the page renders an actionable shell (assessment CTA + ProfileManagement editor)
         setProfile({
-          first_name: null, last_name: null, level: null, firm: null, sector_focus: null,
+          first_name: null, last_name: null, level: null, firm: null, sector_focus: null, seniority_band: null,
           core_practice: null, north_star_goal: null, brand_pillars: [],
           avatar_url: null, onboarding_completed: false, audit_completed_at: null,
           audit_method: null, brand_assessment_completed_at: null, brand_assessment_results: null,
@@ -613,6 +614,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <GuidedJourney journey={journey} onResetDiagnostic={onResetDiagnostic} />
         <BrandAssessmentModal
           open={brandOpen}
+          sector={profile?.sector_focus ?? undefined}
+          band={profile?.seniority_band ?? undefined}
           onOpenChange={(o) => { setBrandOpen(o); if (!o) { if (authUser) loadAll(authUser.id); journey.refresh(); } }}
           onComplete={() => { if (authUser) loadAll(authUser.id); journey.refresh(); }}
         />
@@ -1380,7 +1383,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           if (authUser?.id) loadAll(authUser.id);
         }}
       />
-      <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
+      <BrandAssessmentModal open={brandOpen} sector={profile?.sector_focus ?? undefined} band={profile?.seniority_band ?? undefined} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
       {celebrationsEnabled && marketShareData && (
         <MilestoneShareModal
           open={!!marketShareData}
