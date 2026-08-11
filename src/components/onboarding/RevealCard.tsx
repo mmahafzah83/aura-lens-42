@@ -44,25 +44,21 @@ export async function rasteriseRevealCard(
   node: HTMLElement,
   opts: { format?: "png" | "jpeg" } = {},
 ): Promise<{ dataUrl: string; format: "png" | "jpeg" }> {
-  const { toPng, toJpeg } = await import("html-to-image");
-  // Webfonts must be resolved before rasterising, or html-to-image throws on
-  // the cross-origin stylesheet mid-export.
+  // html2canvas is the proven rasteriser in this codebase (see exportReportPdf).
+  const { default: html2canvas } = await import("html2canvas");
   try { await (document as any).fonts?.ready; } catch { /* nothing to wait for */ }
-  const rect = node.getBoundingClientRect();
-  const pixelRatio = rect.width > 0 ? 1200 / rect.width : 2;
-  let format = opts.format ?? "png";
-  let dataUrl: string;
   try {
-    dataUrl = format === "jpeg"
-      ? await toJpeg(node, { pixelRatio, quality: 0.92, cacheBust: true })
-      : await toPng(node, { pixelRatio, cacheBust: true });
+    const canvas = await html2canvas(node, {
+      scale: 2,
+      backgroundColor: null,
+      useCORS: true,
+      logging: false,
+    });
+    return { dataUrl: canvas.toDataURL("image/png"), format: "png" };
   } catch (err) {
-    // One retry without the fonts — a plainer image beats no image.
-    console.error("[reveal] png export failed, retrying without fonts", err);
-    format = "jpeg";
-    dataUrl = await toJpeg(node, { pixelRatio, quality: 0.92, cacheBust: true, skipFonts: true } as any);
+    console.error("[reveal] html2canvas export failed", err);
+    throw err;
   }
-  return { dataUrl, format };
 }
 
 export async function shareRevealCard(
