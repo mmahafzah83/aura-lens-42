@@ -66,7 +66,7 @@ export interface WidgetMetrics {
   drafts: { count: number; oldestDays: number | null } | null;
 }
 
-const ARABIC = /[\u0600-\u06FF]/;
+export const ARABIC = /[\u0600-\u06FF]/;
 
 /**
  * Week key = the local Monday that starts the calendar week containing `d`

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadLayout, loadWidgetMetrics, DEFAULT_LAYOUT } from "@/components/widgets/widgetData";
+import { ARABIC } from "@/components/widgets/widgetData";
+import { toast } from "@/hooks/use-toast";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import AuraLogo from "@/components/brand/AuraLogo";
 import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
@@ -131,7 +133,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
     }
   }, [auraReason, override, uid]);
 
-  const empty = (facts?.captures_total ?? 0) === 0;
+  const empty = !!facts && !address.errored && (facts.captures_total ?? 0) === 0;
   const firstRun = (facts?.days_since_signup ?? 99) <= 1;
   const activeLens: HomeLens = empty ? "shape" : (override?.lens ?? auraLens);
 
@@ -170,14 +172,18 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
 
   const publishDraft = useCallback(async (id: string) => {
     if (!onOpenDraft) { onSwitchTab("authority"); return; }
-    const { data } = await (supabase.from("linkedin_posts" as any) as any)
-      .select("id, post_text, title, language, content_format").eq("id", id).maybeSingle();
+    const { data, error } = await (supabase.from("linkedin_posts" as any) as any)
+      .select("id, post_text, title, content_type").eq("id", id).maybeSingle();
     const row: any = data;
+    if (error || !row) {
+      toast({ title: "That draft could not be opened" });
+      return;
+    }
     onOpenDraft({
       id,
       body: row?.post_text ?? "",
-      language: row?.language === "ar" ? "ar" : "en",
-      type: row?.content_format === "carousel" ? "carousel" : "linkedin_post",
+      language: ARABIC.test(row?.post_text ?? "") ? "ar" : "en",
+      type: row?.content_type === "carousel" ? "carousel" : "linkedin_post",
       topic: row?.title ?? null,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });

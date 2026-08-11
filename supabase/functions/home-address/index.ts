@@ -82,7 +82,7 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
 
   const [
     profileR, entriesR, fragR, sourcesR, signalsR, imprintR, facetsR,
-    postsR, findingsR, contentR, connR,
+    postsR, findingsR, contentR, connR, activeSignalsCountR,
   ] = await Promise.all([
     admin.from("diagnostic_profiles")
       .select("created_at, last_visit_at, last_active_at").eq("user_id", userId).maybeSingle(),
@@ -104,6 +104,8 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
     admin.from("content_items").select("id, title, signal_id, status, created_at")
       .eq("user_id", userId).gte("created_at", isoDaysAgo(1)),
     admin.from("linkedin_connections").select("id").eq("user_id", userId).eq("status", "active").limit(1),
+    admin.from("strategic_signals").select("id", { count: "exact", head: true })
+      .eq("user_id", userId).eq("status", "active"),
   ]);
 
   const profile: any = profileR.data ?? {};
@@ -136,7 +138,8 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
 
   // — signals —
   const active = signals.filter((s) => s.status === "active");
-  const signals_active = active.length;
+  // Exact count from the database — the 200-row fetch above only picks the top signal.
+  const signals_active = activeSignalsCountR.count ?? active.length;
   const signals_accelerating = active.filter((s) => s.velocity_status === "accelerating").length;
 
   const signalIdsWithPublished = new Set<string>();
