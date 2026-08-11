@@ -750,14 +750,11 @@ Deno.serve(async (req) => {
     const assets = A.assets ?? {};
     const assetTotal = Number(assets.total ?? 0) || 1;
 
-    const html = `<!doctype html><html><body style="margin:0;padding:0;background:${PAPER}">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${PAPER}" style="background:${PAPER};padding:18px 10px">
-<tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${CARD}" style="max-width:680px;background:${CARD};border:1px solid ${RULE}">
+    const brief = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%">
 
 <!-- 1 masthead -->
-<tr><td style="padding:22px 22px 16px;border-bottom:1px solid ${RULE}">
-  <div style="font-family:${SERIF};font-size:22px;color:${INK}">AURA &middot; Daily Brief</div>
+<tr><td style="padding:0 0 16px;border-bottom:1px solid ${RULE}">
+  <div style="font-family:${SERIF};font-size:22px;font-weight:700;color:${INK}">AURA &middot; Daily Brief</div>
   <div style="font-family:${SERIF};font-size:14px;color:${MUTED};padding-top:3px">${esc(weekday)} ${dayNum} ${esc(monthName)}</div>
   <div style="font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:${MUTED};padding-top:8px">Counted live at ${hhmm} UTC</div>
   <div style="font-family:${SERIF};font-size:12px;color:${MUTED};padding-top:4px">Every number below was counted at that moment. Nothing is copied from yesterday.</div>
