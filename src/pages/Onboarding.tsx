@@ -1932,10 +1932,13 @@ const Onboarding = () => {
             } finally {
               setSharing(false);
             }
-          }} style={{ background: OB.night }}>Share this</OBButton>
+          }} style={{ background: "#FFFFFF", color: OB.blue }}>Share this</OBButton>
           <OBButton variant="tertiary" onClick={() => (connected ? void finish() : go(14))}
             style={{ color: "#FFFFFF" }}>Take me in</OBButton>
           </Actions>
+          <p style={{ margin: "14px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
+            Free while Aura is in beta. Your read is private — only you can see it unless you share it.
+          </p>
           <div style={{ color: "rgba(255,255,255,.82)" }}>
             <ReadCorrection userId={userId} onNight />
             <MethodNote onNight />
