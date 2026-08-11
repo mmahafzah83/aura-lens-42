@@ -10,6 +10,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { adminUserIds } from "../_shared/adminRole.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  renderEmail, heading, paragraph, quote, divider,
+  INK_SOFT, INK_FAINT, BODY, MONO,
+} from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,18 +26,6 @@ const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 const CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
 const PAUSE_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
 const FRESH_WINDOW_HOURS = 14;
-
-const SERIF = "Newsreader,Georgia,'Times New Roman',serif";
-const MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
-const UI = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
-
-// Dark-mode safe: mid-tone ink on a mid-tone paper reads in both schemes.
-const PAPER = "#F7F5F1";
-const INK = "#171512";
-const INK_BODY = "#3A342C";
-const INK_MUTE = "#6E665A";
-const RULE = "#DED8CE";
-const ACT = "#1F5FD0"; // blue = user's turn
 
 type Finding = {
   id: string;
