@@ -374,7 +374,7 @@ function TopicBlock({ n, title, description }: { n: string; title: string; descr
   );
 }
 
-function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
+function SpaceSheet({ bp, total, showGap }: { bp: BrandPaper; total: number; showGap: boolean }) {
   const hasInvest = bp.invest_next.length > 0;
   // Older rows carry pillars but no structured topics — fall back so the
   // topics block is never silently empty.
@@ -385,6 +385,7 @@ function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
     <Sheet n={3}>
       <PaperHeader label="Ground & Topics" />
       <div style={{ marginTop: 30, flex: 1 }}>
+        {showGap ? <GapPanel bp={bp} style={{ marginBottom: 24 }} /> : null}
         {bp.uncontested_space ? (
           <PaperFigure
             index={1}
