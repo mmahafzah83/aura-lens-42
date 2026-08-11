@@ -44,20 +44,25 @@ export async function rasteriseRevealCard(
   node: HTMLElement,
   opts: { format?: "png" | "jpeg" } = {},
 ): Promise<{ dataUrl: string; format: "png" | "jpeg" }> {
-  // html2canvas is the proven rasteriser in this codebase (see exportReportPdf).
-  const { default: html2canvas } = await import("html2canvas");
+  // Serialise only the target subtree: cloning the whole document races with
+  // any mid-flight DOM mutation (extensions, toasts) and throws.
+  const { toPng } = await import("html-to-image");
   try { await (document as any).fonts?.ready; } catch { /* nothing to wait for */ }
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  const render = () => toPng(node, {
+    pixelRatio: 2,
+    width: 1080,
+    height: 1350,
+    style: { left: "0", top: "0" },
+  });
+
   try {
-    const canvas = await html2canvas(node, {
-      scale: 2,
-      backgroundColor: null,
-      useCORS: true,
-      logging: false,
-    });
-    return { dataUrl: canvas.toDataURL("image/png"), format: "png" };
+    return { dataUrl: await render(), format: "png" };
   } catch (err) {
-    console.error("[reveal] html2canvas export failed", err);
-    throw err;
+    console.error("[reveal] export failed, retrying once", err);
+    await new Promise((r) => setTimeout(r, 300));
+    return { dataUrl: await render(), format: "png" };
   }
 }
 
@@ -144,7 +149,7 @@ const RevealCard = forwardRef<
   <div
     ref={ref}
     style={{
-      /* Physical properties only in this branch: html2canvas's CSS parser does
+      /* Physical properties only in this branch: the rasteriser's CSS parser does
          not implement logical properties and computes a zero box for them. */
       width: 1080,
       height: 1350,

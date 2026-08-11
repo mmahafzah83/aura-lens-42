@@ -616,16 +616,20 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
   if ((f.signals_never_published_from ?? 0) > 0 && ts?.title) {
     p.push(`nothing published yet from "${shortTitle(ts.title)}"`);
   } else if ((f.signals_never_published_from ?? 0) > 0) {
-    p.push(`${small(f.signals_never_published_from)} live themes you have never published from`);
+    p.push(`${small(f.signals_never_published_from)} live ${f.signals_never_published_from === 1 ? "theme" : "themes"} you have never published from`);
   }
 
   const nsd = f.last_night?.newest_signal_draft;
   if (nsd?.title) p.push(`a draft already written on "${String(nsd.title).slice(0, 70)}"`);
-  else if ((f.drafts_total ?? 0) > 0) p.push(`${small(f.drafts_total)} drafts written and unpublished`);
+  else if ((f.drafts_total ?? 0) > 0) {
+    p.push(`${small(f.drafts_total)} ${f.drafts_total === 1 ? "draft" : "drafts"} written and unpublished`);
+  }
 
   const lastPub = daysAgoFrom(f.last_publish_attempt);
   if (lastPub != null) {
-    p.push(lastPub === 0 ? `you published today` : `${small(lastPub)} days since you last pressed publish`);
+    p.push(lastPub === 0
+      ? `you published today`
+      : `${small(lastPub)} ${lastPub === 1 ? "day" : "days"} since you last pressed publish`);
   } else if ((f.published_total ?? 0) === 0 && (f.captures_total ?? 0) > 0) {
     p.push(`nothing of yours has gone out through Aura yet`);
   }
@@ -633,7 +637,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
   // The two figures, never merged: live on LinkedIn, then made with Aura.
   if ((f.published_total ?? 0) > 0) {
     p.push(
-      `${small(f.published_total)} posts live on LinkedIn and ${small(f.published_through_aura ?? 0)} of them made with Aura`,
+      `${small(f.published_total)} ${f.published_total === 1 ? "post" : "posts"} live on LinkedIn and ${small(f.published_through_aura ?? 0)} of them made with Aura`,
     );
   }
 
@@ -646,7 +650,9 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
 
   if (!f.captured_today && (f.captures_total ?? 0) > 0) p.push(`nothing new of any kind has come in today`);
   if ((f.captures_total ?? 0) === 0) p.push(`nothing captured yet, so nothing here sounds like you`);
-  else if ((f.captures_this_week ?? 0) > 0) p.push(`${small(f.captures_this_week)} things captured this week across all subjects`);
+  else if ((f.captures_this_week ?? 0) > 0) {
+    p.push(`${small(f.captures_this_week)} ${f.captures_this_week === 1 ? "thing" : "things"} captured this week across all subjects`);
+  }
 
   if ((f.facets_dormant?.length ?? 0) > 0) {
     p.push(`your ${String(f.facets_dormant[0]).replace(/_/g, " ")} has never registered in anything you have published`);
@@ -656,7 +662,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
   if (sr > 0) p.push(`Aura read ${small(sr)} ${sr === 1 ? "source" : "sources"} for you overnight`);
 
   if (f.tier && f.next_band_name && f.points_to_next_band != null) {
-    p.push(`${f.points_to_next_band} points between ${f.tier} and ${f.next_band_name}`);
+    p.push(`${f.points_to_next_band} ${f.points_to_next_band === 1 ? "point" : "points"} between ${f.tier} and ${f.next_band_name}`);
   }
 
   if (f.linkedin_connected === false) p.push(`LinkedIn is not connected, so nothing comes back from your posts`);

@@ -39,7 +39,7 @@ export function buildShelf(
       title: "Where you stand",
       fact: f.imprint != null
         ? `${f.imprint}/100 · ${f.tier ?? "unbanded"}`
-        : "No score yet. Publishing once gives Aura something to score.",
+        : "No number yet. Capturing and publishing both feed it.",
     },
     {
       key: "own",
@@ -117,7 +117,7 @@ export const StandCard: React.FC<{ facts: HomeFacts | null }> = ({ facts }) => {
           <span style={{ ...MONO, fontSize: 13, color: "var(--text-muted)" }}>/100</span>
         </div>
         <Muted style={{ marginBlockStart: 6 }}>
-          {facts?.imprint == null ? "No score yet — publish once and Aura can measure it" : facts?.tier ?? "Unbanded"}
+          {facts?.imprint == null ? "No number yet — capture and publish and Aura can measure it" : facts?.tier ?? "Unbanded"}
           {facts?.at_top_band
             ? " — the top band. It is held, not climbed."
             : facts?.points_to_next_band != null
