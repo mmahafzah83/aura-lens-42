@@ -162,9 +162,11 @@ const RevealCard = forwardRef<
       fontFamily: OB.ui,
       display: "flex",
       flexDirection: "column",
+      justifyContent: "space-between",
       overflow: "hidden",
     }}
   >
+    <div>
     <p style={{
       margin: 0, fontSize: 20, letterSpacing: "0.20em", textTransform: "uppercase",
       fontFamily: OB.mono, opacity: 0.85,
@@ -184,15 +186,11 @@ const RevealCard = forwardRef<
         letterSpacing: "0.10em", lineHeight: 1.4, opacity: 0.8,
       }}>{`SECOND READ · ${data.secondaryRead}`}</p>
     ) : null}
+    </div>
 
-    {/* The lower half: two labelled groups, spaced apart so the frame fills. */}
+    {/* The middle group: freed space spreads between groups, never pools. */}
     <div style={{
-      flex: 1, display: "flex", flexDirection: "column",
-      // Sparse reads (no soft ground, no descriptor) must not leave a void —
-      // distribute the remaining height instead of bottom-anchoring.
-      justifyContent: (data.softGround.length === 0 && !data.marketRead)
-        ? "space-between" : "flex-end",
-      gap: 40, marginTop: 48,
+      display: "flex", flexDirection: "column", gap: 40,
     }}>
       {data.subjects.length > 0 ? (
         <div>
@@ -222,14 +220,16 @@ const RevealCard = forwardRef<
             {data.softGround.slice(0, 2).map((s) => (
               <span key={s} style={{
                 display: "inline-block", padding: "12px 20px", borderRadius: RADIUS.chip,
-                background: "rgba(224,168,46,0.28)", border: "1px solid rgba(224,168,46,0.55)",
-                color: "#FFFFFF", fontSize: 17, fontWeight: 600, lineHeight: 1.3,
+                background: "#E0A82E",
+                color: "#0F1519", fontSize: 17, fontWeight: 600, lineHeight: 1.3,
               }}>{s}</span>
             ))}
           </div>
         </div>
       ) : null}
+    </div>
 
+    <div>
       {data.figures.length > 0 ? (
         <div style={{ display: "flex", gap: 56 }}>
           {data.figures.slice(0, 3).map((f) => (
@@ -242,7 +242,6 @@ const RevealCard = forwardRef<
       ) : (
         <p style={{ margin: 0, fontSize: 21, lineHeight: 1.6, opacity: 0.92 }}>{EMPTY_POSTS_LINE}</p>
       )}
-    </div>
 
     <div style={{
       marginTop: 40, paddingTop: 34,
@@ -254,6 +253,7 @@ const RevealCard = forwardRef<
         Read by Aura · aura-intel.org
       </span>
       {footer ? null : null}
+    </div>
     </div>
   </div>
 ) : (
