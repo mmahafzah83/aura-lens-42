@@ -220,8 +220,8 @@ const RevealCard = forwardRef<
             {data.softGround.slice(0, 2).map((s) => (
               <span key={s} style={{
                 display: "inline-block", padding: "12px 20px", borderRadius: RADIUS.chip,
-                background: "rgba(224,168,46,0.28)", border: "1px solid rgba(224,168,46,0.55)",
-                color: "#FFFFFF", fontSize: 17, fontWeight: 600, lineHeight: 1.3,
+                background: "#E0A82E",
+                color: "#0F1519", fontSize: 17, fontWeight: 600, lineHeight: 1.3,
               }}>{s}</span>
             ))}
           </div>
