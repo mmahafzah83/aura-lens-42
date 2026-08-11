@@ -308,6 +308,10 @@ const Onboarding = () => {
 
   /* loop safety valve — kept from the previous journey */
   const [visits, setVisits] = useState(0);
+  /* step 1 never navigates: it reads in place, then becomes the result card */
+  const [step1Phase, setStep1Phase] = useState<"ask" | "reading" | "result">("ask");
+  /* the inline confirmation shown for a moment when they choose Finish later */
+  const [exitNote, setExitNote] = useState<string>("");
   useEffect(() => {
     try {
       const k = "aura_onboarding_visits";
