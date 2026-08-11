@@ -228,7 +228,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
       core_practice: fullEditData.core_practice,
       firm: fullEditData.firm,
     }, "OnboardingProfileSection.saveFullEdit");
-    if (error) { toast.error("Couldn't save"); }
+    if (!ok) { toast.error("That didn't save — try once more."); }
     else {
       toast.success("Profile updated.");
       await loadProfile();

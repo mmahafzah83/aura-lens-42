@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
 import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,9 +105,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
     );
     const wasFirstSave = !hasSavedBefore;
     const pickedBand = bandOfTitle(seniorityTitles, level);
-    const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
-      .upsert({
-        user_id: user.id,
+    const ok = await writeProfile(user.id, {
         first_name: firstName,
         last_name: lastName || null,
         avatar_url: avatarUrl,
@@ -121,9 +120,9 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         generated_skills: skills,
         skill_ratings: ratings,
         ...(mandatoryComplete ? { onboarding_completed: true, completed: true } : {}),
-      }, { onConflict: "user_id" });
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      }, "ProfileManagement.handleSave");
+    if (!ok) {
+      toast({ title: "That didn't save — try once more.", variant: "destructive" });
     } else {
       toast({ title: "Profile saved." });
       if (mandatoryComplete) {
@@ -149,8 +148,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
       const url = data.publicUrl;
       setAvatarUrl(url);
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ avatar_url: url }).eq("user_id", userId);
+      const saved = await writeProfile(userId, { avatar_url: url }, "ProfileManagement.handleAvatarUpload");
+      if (!saved) { toast({ title: "That didn't save — try once more.", variant: "destructive" }); return; }
       toast({ title: "Avatar updated" });
     } catch (e: any) {
       toast({ title: "Upload failed", description: e.message, variant: "destructive" });
@@ -412,9 +411,12 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
               onClick={async () => {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
-                await (supabase.from("diagnostic_profiles" as any) as any)
-                  .update({ completed: false, skill_ratings: {}, generated_skills: [] })
-                  .eq("user_id", user.id);
+                const cleared = await writeProfile(
+                  user.id,
+                  { completed: false, skill_ratings: {}, generated_skills: [] },
+                  "ProfileManagement.resetAssessment",
+                );
+                if (!cleared) { toast({ title: "That didn't save — try once more.", variant: "destructive" }); return; }
                 onResetDiagnostic();
               }}
               className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
