@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
-import { withObserve, logEfError } from "../_shared/observe.ts";
+import { withObserve } from "../_shared/observe.ts";
+import { logError as logEfError } from "../_shared/logError.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   renderEmail, label, heading, paragraph, note, quote, divider, signature,
@@ -174,9 +175,7 @@ serve(withObserve("send-invite", async (req) => {
       ceremonyUrl = ceremony.toString();
     } catch (e) {
       console.warn("[send-invite] could not wrap confirmationUrl, using raw verify URL", e);
-      await logEfError(admin, {
-        function_name: "send-invite",
-        error: e,
+      await logEfError("send-invite", e, {
         severity: "high",
         context: { email, step: "wrap_confirmation_url" },
       });
