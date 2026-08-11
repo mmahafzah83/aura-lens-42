@@ -498,7 +498,15 @@ const Onboarding = () => {
           if (addr.profileUrl) setLiInput(addr.profileUrl);
         } catch { /* ignore */ }
       }
-      if (resume > 0 && resume < 13) { setScreen(resume); screenRef.current = resume; }
+      /* A reload on the reading screens loses the in-memory claims watch, so the
+         screen would sit there forever. Read what was actually kept instead. */
+      if (resume === 6 || resume === 7) {
+        const { data } = await (supabase.from("evidence_fragments" as any) as any)
+          .select("title, content, confidence").eq("user_id", uid)
+          .order("confidence", { ascending: false }).limit(3);
+        if (data?.length) { setClaims(data as any); resume = 7; } else { resume = 5; }
+      }
+      if (resume > 0 && resume <= 14) { setScreen(resume); screenRef.current = resume; }
 
       setChecking(false);
     })();
