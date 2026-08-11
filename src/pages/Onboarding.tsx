@@ -37,6 +37,8 @@ import { loadProfileFacts, type ProfileFacts } from "@/lib/profileFacts";
 import { loadPostProof, type PostProof } from "@/lib/postProof";
 import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleBand } from "@/lib/seniorityTitles";
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
+import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
+import { smartPlaceholders } from "@/lib/smartPlaceholders";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
@@ -84,6 +86,7 @@ const PAGE_CSS = `
 @media (prefers-reduced-motion:reduce){
   .obc-in,.obc-line{animation:none !important;opacity:1 !important;transform:none !important;}
 }
+${BUTTON_CSS}
 `;
 
 const btnPrimary: React.CSSProperties = {
