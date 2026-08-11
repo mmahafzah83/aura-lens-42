@@ -1886,6 +1886,8 @@ const Onboarding = () => {
             aria-label={d.name}
             aria-valuetext={value < 34 ? (d.anchor_low ?? "") : value < 67 ? (d.anchor_mid ?? "") : (d.anchor_high ?? "")}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
+            onPointerUp={(e) => void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) })}
+            onKeyUp={(e) => void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) })}
             style={{ marginBlockStart: 26 }}
           />
           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
@@ -1910,9 +1912,11 @@ const Onboarding = () => {
           </div>
           <Actions style={{ marginBlockStart: 26 }}>
             <OBButton onClick={() => {
+              const committed = { ...scores, [d.name]: value };
               if (!scores[d.name]) setScore(d.name, value);
+              void saveScores(committed);
               if (!last) { setDimIdx((i) => i + 1); return; }
-              const finalValues = dims.map((x) => (x.name === d.name ? value : scores[x.name] ?? value));
+              const finalValues = dims.map((x) => committed[x.name] ?? value);
               const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
               if (flatNow && !flatAck) setFlatWarn(true); else go(10);
             }}>{last ? `Done — that's all ${dims.length}` : "Next"}</OBButton>
