@@ -1555,9 +1555,9 @@ const Onboarding = () => {
           onChange={(e) => { setLinkInput(e.target.value); if (linkError) setLinkError(null); }}
           onKeyDown={(e) => { if (e.key === "Enter") void submitLink(); }}
           placeholder="https://hbr.org/2026/07/the-exit-ready-cfo" inputMode="url"
-          style={{ ...fieldStyle, borderColor: linkError ? "#B3261E" : (fieldStyle as any).borderColor }} />
+          style={{ ...fieldStyle, borderColor: linkError ? "#C0392B" : (fieldStyle as any).borderColor }} />
         {linkError ? (
-          <p style={{ margin: "7px 0 0", fontSize: 12, color: "#B3261E" }}>{linkError}</p>
+          <p style={{ margin: "7px 0 0", fontSize: 12, color: "#C0392B" }}>{linkError}</p>
         ) : (
           <p style={{ margin: "7px 0 0", fontSize: 12, color: OB.muted }}>
             A web link for now. Files and documents are coming.
