@@ -278,6 +278,11 @@ const Onboarding = () => {
   /* screen 5–7 */
   const [linkInput, setLinkInput] = useState("");
   const [linkError, setLinkError] = useState<string | null>(null);
+  /* one send at a time — a double tap used to capture the same link twice */
+  const [sendingLink, setSendingLink] = useState(false);
+  const sendingLinkRef = useRef(false);
+  /* the read never left the building — never make them watch for nothing */
+  const [linkFailed, setLinkFailed] = useState(false);
   const [suggested, setSuggested] = useState<{ url: string; title: string; summary?: string; source?: string; published_at?: string | null } | null>(null);
   const [suggestDead, setSuggestDead] = useState(false);
   const [readStep, setReadStep] = useState(0);
@@ -302,6 +307,8 @@ const Onboarding = () => {
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
   /* One rule for every question: select, see it selected, then Next. */
   const [singlePicked, setSinglePicked] = useState<string | null>(null);
+  /* the last question index actually committed — a held Enter used to skip one */
+  const committedQRef = useRef<number>(-1);
   const [proposals, setProposals] = useState<{ label: string; why: string }[] | null>(null);
   const [proposalsDead, setProposalsDead] = useState(false);
 
@@ -379,12 +386,17 @@ const Onboarding = () => {
     if (!userId) return;
     try { localStorage.setItem(`aura_ob_screen_${userId}`, String(next)); } catch { /* ignore */ }
     try {
+      /* RACE: identity_intelligence is a whole-object write. A second tab or an
+         Edge Function writing during onboarding can be clobbered. We cannot do a
+         server-side jsonb merge from the client, so we read immediately before the
+         write and merge ONLY the journey keys this function owns — never state
+         captured earlier in the component. */
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("identity_intelligence").eq("user_id", userId).maybeSingle();
-      const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+      const fresh = ((data as any)?.identity_intelligence as Record<string, any>) || {};
       await (supabase.from("diagnostic_profiles" as any) as any)
         .update({
-          identity_intelligence: { ...ii, journey_screen: next },
+          identity_intelligence: { ...fresh, journey_screen: next },
           onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
         })
         .eq("user_id", userId);
