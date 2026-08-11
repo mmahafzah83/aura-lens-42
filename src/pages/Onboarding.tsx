@@ -701,7 +701,7 @@ const Onboarding = () => {
 
   /* ── content resolution: exact, then the sector-free set, then a retry ── */
   const loadDimensions = useCallback(async () => {
-    if (!band) return;
+    if (!band) { setContentError(false); return; }
     setContentError(false);
     try {
       const base = () => (supabase.from("capability_dimensions" as any) as any)
@@ -723,7 +723,7 @@ const Onboarding = () => {
   }, [band, sector]);
 
   const loadQuestions = useCallback(async () => {
-    if (!band) return;
+    if (!band) { setContentError(false); return; }
     setContentError(false);
     try {
       const base = () => (supabase.from("onboarding_questions" as any) as any)
