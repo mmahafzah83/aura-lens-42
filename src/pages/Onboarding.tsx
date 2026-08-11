@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { saveLinkedInAddress, canonicalHandle } from "@/lib/linkedinAddress";
+import { saveLinkedInAddress, canonicalHandle, loadLinkedInAddress } from "@/lib/linkedinAddress";
 import usePageMeta from "@/hooks/usePageMeta";
 import { useCountUp } from "@/hooks/useCountUp";
 import { SECTORS } from "@/constants/sectors";
@@ -383,8 +383,15 @@ const Onboarding = () => {
         const local = Number(localStorage.getItem(`aura_ob_screen_${uid}`) ?? "0");
         if (local > resume) resume = local;
       } catch { /* ignore */ }
-      /* screens 2 and 3 folded into step 1 — a resume there lands on the address card */
+      /* screens 2 and 3 folded into step 1 — a resume there lands on the address
+         card with the address already filled, so nothing Aura read is lost. */
       if (resume === 2 || resume === 3) resume = 1;
+      if (resume <= 3) {
+        try {
+          const addr = await loadLinkedInAddress(uid);
+          if (addr.profileUrl) setLiInput(addr.profileUrl);
+        } catch { /* ignore */ }
+      }
       if (resume > 0 && resume < 13) setScreen(resume);
 
       setChecking(false);
