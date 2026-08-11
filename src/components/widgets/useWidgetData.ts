@@ -12,6 +12,7 @@ import {
 export function useWidgetData(userId: string | null | undefined) {
   const [layout, setLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
   const [metrics, setMetrics] = useState<WidgetMetrics | null>(null);
+  const [failed, setFailed] = useState(false);
   const alive = useRef(true);
   const inFlight = useRef(false);
 
@@ -23,8 +24,12 @@ export function useWidgetData(userId: string | null | undefined) {
     try {
       const [l, m] = await Promise.all([loadLayout(userId), loadWidgetMetrics(userId)]);
       if (!alive.current) return;
-      setLayout(l); setMetrics(m);
-    } catch { /* noop — the region simply keeps what it had */ }
+      setLayout(l); setMetrics(m); setFailed(false);
+    } catch (e) {
+      // A failed read never overwrites good data — it only says so.
+      console.warn("[useWidgetData] read failed", e);
+      if (alive.current) setFailed(true);
+    }
     finally { inFlight.current = false; }
   }, [userId]);
 
@@ -46,7 +51,7 @@ export function useWidgetData(userId: string | null | undefined) {
     };
   }, [userId, load]);
 
-  return { layout, metrics, reload: load };
+  return { layout, metrics, failed, reload: load };
 }
 
 export default useWidgetData;
