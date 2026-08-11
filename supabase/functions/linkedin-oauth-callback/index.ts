@@ -109,9 +109,6 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
       if (uiRes.ok) userinfo = await uiRes.json();
     } catch (_) { /* optional */ }
 
-    const linkedinId = profile.id || userinfo.sub || "unknown";
-    const displayName =
-      nameFromLinkedIn(userinfo) || nameFromLinkedIn(profile) || "LinkedIn User";
     const handle = vanityFromLinkedIn(profile) || vanityFromLinkedIn(userinfo);
     const profileUrl = profileUrlFor(handle);
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
