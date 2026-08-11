@@ -49,6 +49,7 @@ import BrandPaperDocument from "@/components/report/BrandPaperDocument";
 import { buildBrandPaper, type BrandPaper } from "@/lib/buildBrandPaper";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
+import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
@@ -987,7 +988,8 @@ const Onboarding = () => {
           setConnectNote("");
           /* The callback writes the connection row after we did; re-run the
              confirmation so a read that already happened isn't lost to the race. */
-          if (userId && readDone) void markVerifiedByRead(userId);
+          // Idempotent, and the popup can return before the read finishes.
+          if (userId) void markVerifiedByRead(userId);
         }
         else setConnectNote(d.message || "LinkedIn didn't finish. You can do this from Settings later.");
       };
