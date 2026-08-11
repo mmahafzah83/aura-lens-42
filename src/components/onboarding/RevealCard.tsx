@@ -149,7 +149,7 @@ const RevealCard = forwardRef<
   <div
     ref={ref}
     style={{
-      /* Physical properties only in this branch: html2canvas's CSS parser does
+      /* Physical properties only in this branch: the rasteriser's CSS parser does
          not implement logical properties and computes a zero box for them. */
       width: 1080,
       height: 1350,
