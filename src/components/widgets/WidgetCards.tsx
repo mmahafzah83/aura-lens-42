@@ -1,5 +1,6 @@
 import React from "react";
 import type { WidgetKey, WidgetMetrics } from "./widgetData";
+import { nSignals, CAPTURE } from "@/constants/vocabulary";
 
 const FF = { fontFamily: "var(--ff-ui)" } as const;
 const MONO: React.CSSProperties = {
@@ -78,7 +79,7 @@ export function widgetContent(k: WidgetKey, m: WidgetMetrics): WidgetContent | n
     const w = m.rhythm.weeks;
     return {
       hero: String(w),
-      sub: w === 1 ? "consecutive week with a capture" : "consecutive weeks with a capture",
+      sub: `${w === 1 ? "consecutive week" : "consecutive weeks"} with a ${CAPTURE.noun}`,
     };
   }
   if (k === "quiet") {
@@ -87,7 +88,7 @@ export function widgetContent(k: WidgetKey, m: WidgetMetrics): WidgetContent | n
     if (count === 0) return { hero: "0", sub: "No signals going quiet. Your reading is keeping them alive." };
     return {
       hero: String(count),
-      sub: `${count === 1 ? "signal quiet" : "signals quiet"} 45+ days without a post${quietestDays != null ? ` · quietest: ${quietestDays}d` : ""}`,
+      sub: `${nSignals(count)} quiet 45+ days without a post${quietestDays != null ? ` · quietest: ${quietestDays}d` : ""}`,
       action: { label: "See them →", tab: "intelligence" },
     };
   }
@@ -124,7 +125,7 @@ export const WidgetBody: React.FC<{ k: WidgetKey; m: WidgetMetrics }> = ({ k, m 
     return (
       <WidgetShell label="Capture rhythm">
         <Big>{w}</Big>
-        <Sub>{w === 1 ? "consecutive week with a capture" : "consecutive weeks with a capture"}</Sub>
+        <Sub>{`${w === 1 ? "consecutive week" : "consecutive weeks"} with a ${CAPTURE.noun}`}</Sub>
       </WidgetShell>
     );
   }
@@ -143,7 +144,7 @@ export const WidgetBody: React.FC<{ k: WidgetKey; m: WidgetMetrics }> = ({ k, m 
       <WidgetShell label="Quiet signals">
         <Big>{count}</Big>
         <Sub>
-          {count === 1 ? "signal quiet" : "signals quiet"} 45+ days without a post
+          {nSignals(count)} quiet 45+ days without a post
           {quietestDays != null ? ` · quietest: ${quietestDays}d` : ""}
         </Sub>
         <ActionLink onClick={() => goTab("intelligence")}>See them →</ActionLink>
