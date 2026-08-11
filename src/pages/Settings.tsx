@@ -91,7 +91,9 @@ const {
   snapshotAt: reportSnapshotAt,
   loading: reportLoading,
 } = useReportSnapshot();
-const [linkedInConnection, setLinkedInConnection] = useState<LinkedInConnection | null>(null);
+/* One reader for the LinkedIn facts — the page used to answer this three
+   different ways and contradict itself between cards. */
+const [liState, setLiState] = useState<LinkedInState>(EMPTY_LINKEDIN_STATE);
 const [linkedInBusy, setLinkedInBusy] = useState(true);
 const [signatures, setSignatures] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
 const [savingSig, setSavingSig] = useState(false);
@@ -161,17 +163,17 @@ const handleDeleteAccount = async () => {
 
   useEffect(() => { void loadProfile(); }, [loadProfile]);
 
-  const loadLinkedInStatus = async () => {
+  const loadLinkedInStatus = useCallback(async () => {
+    if (!authUser?.id) return;
     setLinkedInBusy(true);
     try {
-      const { data } = await supabase.functions.invoke("linkedin-oauth", { body: { action: "status" } });
-      setLinkedInConnection(data?.connection || null);
+      setLiState(await loadLinkedInState(authUser.id));
     } catch (e) {
       console.error("[Settings] LinkedIn status error", e);
     } finally {
       setLinkedInBusy(false);
     }
-  };
+  }, [authUser?.id]);
 
   const handleConnectLinkedIn = async () => {
     setLinkedInBusy(true);
@@ -298,8 +300,8 @@ const handleDeleteAccount = async () => {
   };
 
   useEffect(() => {
-    loadLinkedInStatus();
-  }, []);
+    void loadLinkedInStatus();
+  }, [loadLinkedInStatus]);
 
   const displayName = [profile?.first_name, profile?.last_name]
     .filter(Boolean)
@@ -494,22 +496,22 @@ const handleDeleteAccount = async () => {
           <AuraCard variant="default" hover="none">
             <div className="flex items-start justify-between gap-4">
               <div>
-                {linkedInConnection ? (
+                {liState.connected ? (
                   <>
                     <div
                       className="text-sm font-semibold"
                       style={{ color: "var(--ink)" }}
                     >
-                      {linkedInConnection.display_name || "LinkedIn User"}
+                      {liState.handle ? `linkedin.com/in/${liState.handle}` : "LinkedIn"}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
-                      Connected
+                      {liState.confirmedByRead ? "Connected — Aura has read this profile" : "Connected"}
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="text-sm" style={{ color: "var(--ink)" }}>
-                      Not connected
+                      {liState.address ? `Address on file — ${liState.address.replace(/^https?:\/\/(www\.)?/, "")}` : "Not connected"}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
                       Connect your LinkedIn account to publish and sync analytics.
@@ -518,13 +520,13 @@ const handleDeleteAccount = async () => {
                 )}
               </div>
               <Button
-                variant={linkedInConnection ? "outline" : "default"}
+                variant={liState.connected ? "outline" : "default"}
                 size="sm"
                 loading={linkedInBusy}
                 disabled={linkedInBusy}
-                onClick={linkedInConnection ? handleDisconnectLinkedIn : handleConnectLinkedIn}
+                onClick={liState.connected ? handleDisconnectLinkedIn : handleConnectLinkedIn}
               >
-                {linkedInConnection ? "Disconnect" : "Connect LinkedIn"}
+                {liState.connected ? "Disconnect" : "Connect LinkedIn"}
               </Button>
             </div>
           </AuraCard>
