@@ -97,9 +97,6 @@ function buildSubject(f: Finding): string {
 function provenanceParts(f: Finding): string[] {
   const parts: string[] = [];
   if (f.source && String(f.source).trim()) parts.push(String(f.source).trim());
-  if (f.relevance_score !== null && f.relevance_score !== undefined) {
-    parts.push(`relevance ${Number(f.relevance_score)}`);
-  }
   const theme = firstTheme(f);
   if (theme) parts.push(theme);
   return parts;
@@ -113,49 +110,37 @@ function buildEmail(lead: Finding, others: Finding[]) {
   const extras = others.slice(0, 3);
 
   const implicationHtml = (lead.implication || "").trim()
-    ? `<p style="margin:0 0 18px;font-family:${UI};font-size:15px;line-height:1.65;color:${INK_BODY};">${escapeHtml(lead.implication!.trim())}</p>`
+    ? quote(escapeHtml(lead.implication!.trim()))
     : "";
 
   const provHtml = prov.length
-    ? `<p style="margin:0 0 22px;font-family:${MONO};font-size:11px;line-height:1.6;color:${INK_MUTE};">${escapeHtml(prov.join(" · "))}</p>`
+    ? `<p style="margin:0 0 6px;font-family:${MONO};font-size:11px;line-height:1.6;letter-spacing:.08em;color:${INK_FAINT};">${escapeHtml(prov.join(" · "))}</p>`
     : "";
 
   const extrasHtml = extras.length
-    ? `<div style="margin:22px 0 0;padding-top:16px;border-top:1px solid ${RULE};">` +
+    ? divider() +
       extras.map((e) =>
-        `<p style="margin:0 0 8px;font-family:${UI};font-size:13px;line-height:1.5;">` +
-        `<a href="${escapeHtml(e.url || CTA_URL)}" style="color:${INK_BODY};text-decoration:underline;">${escapeHtml((e.title || e.url || "").trim())}</a></p>`
-      ).join("") +
-      `</div>`
+        `<p style="margin:0 0 8px;font-family:${BODY};font-size:13px;line-height:1.5;">` +
+        `<a href="${escapeHtml(e.url || CTA_URL)}" style="color:${INK_SOFT};text-decoration:underline;">${escapeHtml((e.title || e.url || "").trim())}</a></p>`
+      ).join("")
     : "";
 
-  const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light dark"><title>${escapeHtml(subject)}</title></head>
-<body style="margin:0;padding:0;background:${PAPER};">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(headline)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER};">
-<tr><td align="center" style="padding:28px 12px;">
-  <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;background:${PAPER};border:1px solid ${RULE};border-radius:4px;">
-    <tr><td style="height:2px;line-height:2px;font-size:0;background:#12B5CB;background-image:linear-gradient(90deg,#12B5CB 0%,${ACT} 100%);">&nbsp;</td></tr>
-    <tr><td style="padding:26px 28px 30px;">
-      <p style="margin:0 0 14px;font-family:${MONO};font-size:11px;letter-spacing:.08em;color:${INK_MUTE};">${escapeHtml(kicker)}</p>
-      <h1 style="margin:0 0 14px;font-family:${SERIF};font-size:21px;line-height:1.35;font-weight:600;color:${INK};text-align:left;">${escapeHtml(headline)}</h1>
+  const html = renderEmail({
+    preheader: headline,
+    prefsHref: PAUSE_URL,
+    prefsLabel: "Pause these emails",
+    cta: { href: CTA_URL, label: "Open it in Aura" },
+    body: `
+      <p style="margin:0 0 14px;font-family:${MONO};font-size:11px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">${escapeHtml(kicker)}</p>
+      ${heading(escapeHtml(headline))}
       ${implicationHtml}
       ${provHtml}
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td style="background:${ACT};border-radius:6px;">
-          <a href="${CTA_URL}" style="display:inline-block;padding:12px 22px;font-family:${UI};font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;">Open it in Aura</a>
-        </td></tr></table>
       ${extrasHtml}
-      <div style="margin:26px 0 0;padding-top:14px;border-top:1px solid ${RULE};">
-        <p style="margin:0;font-family:${UI};font-size:12px;line-height:1.6;color:${INK_MUTE};">Sent because last night produced something. Quiet nights send nothing.<br>
-        <a href="${PAUSE_URL}" style="color:${INK_MUTE};text-decoration:underline;">Pause these emails</a></p>
-      </div>
-    </td></tr>
-  </table>
-</td></tr></table>
-</body></html>`;
+      ${divider()}
+      ${paragraph("Sent because last night produced something. Quiet nights send nothing.")}
+      <p style="margin:0;font-family:${BODY};font-size:12px;line-height:1.6;color:${INK_FAINT};"><a href="${PAUSE_URL}" style="color:${INK_FAINT};text-decoration:underline;">Pause these emails</a></p>
+    `,
+  });
 
   const textLines = [
     kicker,
