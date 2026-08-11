@@ -870,7 +870,7 @@ const Onboarding = () => {
       },
     });
     const figures = [
-      ...(claims.length ? [{ value: num(claims.length), label: "claims kept" }] : []),
+      ...(claims.length ? [{ value: num(claims.length), label: "evidence kept" }] : []),
       ...(Object.keys(scores).length
         ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
       ...(built?.subjects.length ? [{ value: num(built.subjects.length), label: "signals found" }] : []),
@@ -911,7 +911,7 @@ const Onboarding = () => {
       });
       if (d) {
         const figures = [
-          ...(claims.length ? [{ value: num(claims.length), label: "claims kept" }] : []),
+          ...(claims.length ? [{ value: num(claims.length), label: "evidence kept" }] : []),
           ...(Object.keys(scores).length
             ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
           ...(d.subjects.length ? [{ value: num(d.subjects.length), label: "signals found" }] : []),
