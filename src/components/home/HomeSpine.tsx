@@ -173,19 +173,13 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
   const publishDraft = useCallback(async (id: string) => {
     if (!onOpenDraft) { onSwitchTab("authority"); return; }
     const { data, error } = await (supabase.from("linkedin_posts" as any) as any)
-      .select("id, post_text, title, content_type").eq("id", id).maybeSingle();
+      .select(DRAFT_OPEN_COLUMNS).eq("id", id).maybeSingle();
     const row: any = data;
     if (error || !row) {
       toast({ title: "That draft could not be opened" });
       return;
     }
-    onOpenDraft({
-      id,
-      body: row?.post_text ?? "",
-      language: ARABIC.test(row?.post_text ?? "") ? "ar" : "en",
-      type: row?.content_type === "carousel" ? "carousel" : "linkedin_post",
-      topic: row?.title ?? null,
-    });
+    onOpenDraft({ ...draftFromLinkedInPost(row), id });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [onOpenDraft, onSwitchTab]);
 

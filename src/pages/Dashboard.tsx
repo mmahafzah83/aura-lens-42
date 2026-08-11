@@ -333,18 +333,11 @@ const Dashboard = () => {
         const tryLinkedInPosts = async () => {
           const { data: r } = await (supabase
             .from("linkedin_posts" as any) as any)
-            .select("id, post_text, created_at")
+            .select(DRAFT_OPEN_COLUMNS)
             .eq("id", draftParam)
             .maybeSingle();
           if (!r) return null;
-          return {
-            id: r.id,
-            body: r.post_text || "",
-            language: "en" as const,
-            type: "linkedin_post" as const,
-            topic: null,
-            _source: "linkedin_posts" as const,
-          };
+          return { ...draftFromLinkedInPost(r), _source: "linkedin_posts" as const };
         };
 
         type DraftPrefillType = NonNullable<typeof draftPrefill>;
@@ -683,7 +676,7 @@ const Dashboard = () => {
       )
       .subscribe();
     return () => { cancelled = true; supabase.removeChannel(channel); };
-  }, [userId, activeTab]);
+  }, [userId, activeTab, profileLastVisit]);
 
   // Keep browser tab title in sync with the active section
   useEffect(() => {
