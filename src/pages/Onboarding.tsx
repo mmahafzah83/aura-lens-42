@@ -885,7 +885,7 @@ const Onboarding = () => {
   /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
     const stage = stageOf(screen);
-    setExitNote(`Saved at step ${stage} of 5. You can pick this up any time.`);
+    setExitNote(`Saved at step ${stage} of 5. Pick it up any time.`);
     void (async () => {
       await persistScreen(screen);
       if (userId) {
