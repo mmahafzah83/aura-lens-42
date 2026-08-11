@@ -11,12 +11,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
-  emailShell,
+  renderEmail,
   heading as headingHtml,
-  button,
-  pullQuote,
-  INK_BODY,
-} from "../_shared/email-theme.ts";
+  quote as quoteBlock,
+  INK_SOFT as INK_BODY,
+  INK_FAINT,
+} from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -149,8 +149,7 @@ function buildEmail(opts: {
   const line6 = `Then it's yours to publish — or not.`;
 
   const excerptClean = escapeHtml(excerpt.slice(0, 140)) + (excerpt.length > 140 ? "…" : "");
-  const quote =
-    `<blockquote dir="auto" style="margin:18px 0;padding:4px 0 4px 18px;border-left:2px solid #D6A748;font-family:Georgia,'Times New Roman',serif;font-style:italic;color:#1B1712;">${excerptClean}</blockquote>`;
+  const quote = quoteBlock(excerptClean);
 
   const closer = `Four minutes. Nothing goes out without you.`;
 
@@ -159,7 +158,7 @@ function buildEmail(opts: {
 
   let ps = "";
   if (velocityStatus === "accelerating") {
-    ps = `<p style="font-size:13px;line-height:1.55;margin:22px 0 0;color:#8A8073;">P.S. — ${escapeHtml(shortTopicClean)} is moving right now. The people reading about it this week are the ones who will remember who said it first.</p>`;
+    ps = `<p style="font-size:13px;line-height:1.55;margin:22px 0 0;color:${INK_FAINT};">P.S. — ${escapeHtml(shortTopicClean)} is moving right now. The people reading about it this week are the ones who will remember who said it first.</p>`;
   }
 
   const body = `
@@ -171,12 +170,22 @@ function buildEmail(opts: {
     ${bodyLine(line4, 8)}
     ${bodyLine(line5, 8)}
     ${bodyLine(line6, 20)}
-    <p style="margin:0 0 8px;">${button(ctaUrl, "Open your draft")}</p>
-    <p style="font-size:12px;line-height:1.5;margin:0;color:#8A8073;">${closer}</p>
+  `;
+
+  const tail = `
+    <p style="font-size:12px;line-height:1.5;margin:16px 0 0;color:${INK_FAINT};">${closer}</p>
     ${ps}
   `;
 
-  return { subject, preheader, html: emailShell({ preheader, body }) };
+  return {
+    subject,
+    preheader,
+    html: renderEmail({
+      preheader,
+      body: body + tail,
+      cta: { href: ctaUrl, label: "Open your draft" },
+    }),
+  };
 }
 
 serve(async (req) => {
