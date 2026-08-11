@@ -1628,24 +1628,31 @@ const Onboarding = () => {
       { key: "b", label: "What Aura found", done: readStep >= 2 || claims.length > 0 },
       { key: "c", label: "Matched to your sector", done: readStep >= 3 },
     ];
+    const settled = claimsSlow && claims.length === 0;
     content = (
       <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>Finding the parts you can use.</p>
-        <div style={{ marginBlockStart: 22 }}>
-          <WorkProgress onNight done={steps.filter((s) => s.done).length} total={steps.length} />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {steps.map((s) => (
-            <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
-          ))}
-        </div>
+        {settled ? null : (
+          <>
+            <div style={{ marginBlockStart: 22 }}>
+              <WorkProgress onNight slowAfterMs={20000} done={steps.filter((s) => s.done).length} total={steps.length} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {steps.map((s) => (
+                <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
+              ))}
+            </div>
+          </>
+        )}
         {proof && proof.lines.length > 0 ? (
           <WaitProof lines={proof.lines} howLong="While you wait — here's what Aura found in your own posts." />
         ) : null}
-        {claimsSlow && (
+        {settled && (
           <>
-            <p style={{ ...bodyNight, textAlign: "center" }}>Still reading — it'll be waiting on your Home.</p>
+            <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 22 }}>
+              Aura is still reading this one. It'll be on your Home when it's done — you don't need to wait here.
+            </p>
             <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => go(8)}>Keep going</OBButton></Actions>
           </>
         )}
