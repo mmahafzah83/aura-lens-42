@@ -51,10 +51,21 @@ export async function loadLayout(userId: string): Promise<WidgetLayout> {
   return normaliseLayout((data as { layout: unknown }).layout);
 }
 
+/** Fired after a layout write resolves so every reader can re-read. */
+export const WIDGET_LAYOUT_EVENT = "aura-widget-layout-changed";
+
+export function notifyLayoutChanged(userId: string) {
+  try {
+    window.dispatchEvent(new CustomEvent(WIDGET_LAYOUT_EVENT, { detail: { userId } }));
+  } catch { /* noop */ }
+}
+
 export async function saveLayout(userId: string, layout: WidgetLayout) {
-  return supabase.from("user_widget_layout")
+  const res = await supabase.from("user_widget_layout")
     .upsert({ user_id: userId, layout: layout as any, updated_at: new Date().toISOString() },
             { onConflict: "user_id" });
+  notifyLayoutChanged(userId);
+  return res;
 }
 
 // ── metrics ────────────────────────────────────────────────────────────────
