@@ -2130,24 +2130,49 @@ const Onboarding = () => {
               <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
             </div>
           ) : null}
+          {canPostToLinkedIn && !postedUrl && reveal ? (
+            <div style={{ marginBlockStart: 18 }}>
+              <label htmlFor="ob-caption" style={{
+                display: "block", fontSize: 12.5, color: "rgba(255,255,255,.85)", marginBlockEnd: 6,
+              }}>What it will say</label>
+              <textarea
+                id="ob-caption"
+                dir="auto"
+                value={captionDraft}
+                onChange={(e) => setCaptionDraft(e.target.value)}
+                rows={4}
+                style={{
+                  inlineSize: "100%", padding: "10px 12px", borderRadius: RADIUS.chip,
+                  border: "1px solid rgba(255,255,255,.35)", background: "rgba(255,255,255,.12)",
+                  color: "#FFFFFF", fontFamily: OB.ui, fontSize: 14, lineHeight: 1.55, resize: "vertical",
+                }}
+              />
+            </div>
+          ) : null}
           <Actions style={{ marginBlockStart: 20 }}>
-          <OBButton disabled={!reveal} loading={sharing} loadingLabel="Building…" onClick={async () => {
-            if (!shareRef.current) return;
-            setSharing(true);
-            try {
-              const how = await shareRevealCard(shareRef.current, { caption });
-              toast.success(how === "shared"
-                ? "Sent to your share sheet."
-                : "Image saved — the caption is on your clipboard, ready to paste.");
-            } catch (err) {
-              console.error("[reveal] share failed", err);
-              toast.error("Couldn't build the image. Your read is safe — it's on your Home.");
-            } finally {
-              setSharing(false);
-            }
-          }} style={{ background: "#FFFFFF", color: OB.blue }}>Share this</OBButton>
+          {canPostToLinkedIn && !postedUrl ? (
+            <OBButton disabled={!reveal || !captionDraft.trim()} loading={posting} loadingLabel="Posting…"
+              onClick={() => void postToLinkedIn()}
+              style={{ background: "#FFFFFF", color: OB.blue }}>Post it to LinkedIn</OBButton>
+          ) : null}
+          {postedUrl ? (
+            <a href={postedUrl} target="_blank" rel="noopener noreferrer" style={{
+              display: "block", textAlign: "center", color: "#FFFFFF", fontSize: 14,
+              textDecoration: "underline", padding: "10px 0",
+            }}>View it on LinkedIn</a>
+          ) : null}
+          <OBButton
+            variant={canPostToLinkedIn && !postedUrl ? "secondary" : "primary"}
+            disabled={!reveal} loading={sharing} loadingLabel="Building…"
+            onClick={() => void downloadRead()}
+            style={canPostToLinkedIn && !postedUrl
+              ? { borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }
+              : { background: "#FFFFFF", color: OB.blue }}
+          >Download the image</OBButton>
+          <OBButton variant="tertiary" disabled={savingDraft} onClick={() => void saveReadForLater()}
+            style={{ color: "#FFFFFF" }}>Save it for later</OBButton>
           <OBButton variant="tertiary" onClick={() => go(14)}
-            style={{ color: "#FFFFFF" }}>Take me in</OBButton>
+            style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
           </Actions>
           <p style={{ margin: "14px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
             Free while Aura is in beta. Your read is private — only you can see it unless you share it.
