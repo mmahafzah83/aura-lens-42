@@ -1118,8 +1118,8 @@ const Onboarding = () => {
     // resolves to something real or it is dropped once the read is done.
     const mono = (v: React.ReactNode) => <span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{v}</span>;
     const rows: { key: string; label: string; line: React.ReactNode; done: boolean; drop: boolean }[] = [
-      { key: "p", label: "Posts", line: <>{mono(upPosts)} posts read</>, done: !!postsRead, drop: readDone && !postsRead },
-      { key: "w", label: "Your own writing", line: <>{mono(upWords)} words of your own writing</>, done: !!ownWords, drop: readDone && !ownWords },
+      { key: "p", label: "Posts", line: <>{mono(num(upPosts))} posts read</>, done: !!postsRead, drop: readDone && !postsRead },
+      { key: "w", label: "Your own writing", line: <>{mono(num(upWords))} words of your own writing</>, done: !!ownWords, drop: readDone && !ownWords },
       { key: "s", label: "Sector", line: <>Sector · {mono(sector)}</>, done: !!sector, drop: readDone && !sector },
       { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
     ].filter((r) => !r.drop);
@@ -1138,10 +1138,10 @@ const Onboarding = () => {
           ))}
         </div>
         {nothingPublic ? (
-          <p style={{ ...bodyNight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE}</p>
+          <p style={{ ...bodyNight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE_NIGHT}</p>
         ) : null}
         <Actions style={{ marginBlockStart: 24 }}>
-          <OBButton onClick={() => go(3)} loading={!allLanded} loadingLabel="Reading…">See what I found</OBButton>
+          <OBButton onClick={() => go(3)} loading={!allLanded} loadingLabel="Reading…">Show me what you found</OBButton>
         </Actions>
       </NightShell>
     );
