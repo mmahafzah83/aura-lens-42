@@ -3,10 +3,9 @@ import { adminUserIds, primaryAdminId } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
-  emailShell, sectionLabel, divider, button,
-  CARD, RULE, INK, INK_BODY, INK_MUTE, AMBER, OXBLOOD,
-  SERIF, BODY, MONO, ARABIC,
-} from "../_shared/email-theme.ts";
+  renderEmail, quote, divider,
+  INK, INK_SOFT, INK_FAINT, BODY, MONO,
+} from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +21,7 @@ type MessageKey = "M1" | "M3" | "M4";
 
 interface Msg {
   subject: string;
+  cta: { href: string; label: string };
   render: (ctx: { firstName: string; signalTitle?: string }) => string;
 }
 
@@ -29,39 +29,39 @@ const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-// ── EN copy (verbatim) ───────────────────────────────────────────
+// ── EN copy (verbatim) ─────────────────────────────────
 const EN: Record<MessageKey, Msg> = {
   M1: {
     subject: "There's a signal waiting in what you already read",
+    cta: { href: DASHBOARD_URL, label: "Start with this →" },
     render: ({ firstName }) => `
       <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,"}</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">You already read the things that matter in your field. That's the hard part — and you've done it for years.</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">Aura's job is the part you never had time for: turning that reading into presence, without adding a task to your week.</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 22px;">It just needs one source to begin. Here's one from your field to start with — capture it, and watch your radar come alive.</p>
-      <div style="margin:0 0 14px;">${button(DASHBOARD_URL, "Start with this →")}</div>
-      <p style="font-family:${MONO};font-size:11px;color:${INK_MUTE};margin:0 0 8px;">Takes 20 seconds. The first one is the only one that feels like effort.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">You already read the things that matter in your field. That's the hard part — and you've done it for years.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">Aura's job is the part you never had time for: turning that reading into presence, without adding a task to your week.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 22px;">It just needs one source to begin. Here's one from your field to start with — capture it, and watch your radar come alive.</p>
+      <p style="font-family:${MONO};font-size:11px;color:${INK_FAINT};margin:0 0 8px;">Takes 20 seconds. The first one is the only one that feels like effort.</p>
     `,
   },
   M3: {
     subject: "You're one step from the moment Aura earns its place",
+    cta: { href: DASHBOARD_URL, label: "Add a source →" },
     render: ({ firstName }) => `
       <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,"}</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">You've started — and Aura's already reading you.</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">Right now it's holding a pattern it can almost name. Two more sources this week and it surfaces your first signal: a piece of your own thinking, made visible.</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 22px;">Most people never see this part. The ones who do tend to keep going — because that's the moment it stops being an app and starts being yours.</p>
-      <div style="margin:0 0 14px;">${button(DASHBOARD_URL, "Add a source →")}</div>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">You've started — and Aura's already reading you.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">Right now it's holding a pattern it can almost name. Two more sources this week and it surfaces your first signal: a piece of your own thinking, made visible.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 22px;">Most people never see this part. The ones who do tend to keep going — because that's the moment it stops being an app and starts being yours.</p>
     `,
   },
   M4: {
     subject: "Aura just found something in how you think",
+    cta: { href: INTELLIGENCE_URL, label: "See your signal →" },
     render: ({ firstName, signalTitle }) => `
       <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,"}</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 14px;">Here it is — the first pattern Aura pulled from your own reading:</p>
-      <blockquote style="margin:14px 0 20px;padding:14px 18px;background:${CARD};border:1px solid ${RULE};border-left:3px solid ${AMBER};border-radius:4px;font-family:${SERIF};font-size:17px;line-height:1.5;color:${INK};font-style:italic;">"${escapeHtml(signalTitle || "your first signal")}"</blockquote>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 16px;">This is the thing: you already knew it. You'd just never said it out loud, in public, where it builds your standing. Aura did the noticing so you don't have to.</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_BODY};margin:0 0 22px;">Your next move is the satisfying one — a post drawn from this signal, in your voice, ready in a minute.</p>
-      <div style="margin:0 0 14px;">${button(INTELLIGENCE_URL, "See your signal →")}</div>
-      <p style="font-family:${MONO};font-size:11px;color:${INK_MUTE};margin:0 0 8px;">This is what every week can feel like now.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 14px;">Here it is — the first pattern Aura pulled from your own reading:</p>
+      ${quote(`"${escapeHtml(signalTitle || "your first signal")}"`)}
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">This is the thing: you already knew it. You'd just never said it out loud, in public, where it builds your standing. Aura did the noticing so you don't have to.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 22px;">Your next move is the satisfying one — a post drawn from this signal, in your voice, ready in a minute.</p>
+      <p style="font-family:${MONO};font-size:11px;color:${INK_FAINT};margin:0 0 8px;">This is what every week can feel like now.</p>
     `,
   },
 };
@@ -69,41 +69,41 @@ const EN: Record<MessageKey, Msg> = {
 // ── AR copy ──────────────────────────────────────────────────────
 const AR: Record<MessageKey, Msg> = {
   M1: {
+    cta: { href: DASHBOARD_URL, label: "ابدأ من هنا ←" },
     subject: "في إشارة تنتظرك داخل ما تقرأه أصلاً",
     render: ({ firstName }) => `
-      <div dir="rtl" lang="ar" style="font-family:${ARABIC};text-align:right;">
+      <div dir="rtl" lang="ar" style="text-align:right;">
         <p style="font-size:15px;line-height:1.85;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `أهلاً ${escapeHtml(firstName)}،` : "أهلاً بك،"}</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_BODY};margin:0 0 16px;">أنت أصلاً تقرأ ما يهم في مجالك — وهذا هو الجزء الصعب، ومارسته لسنوات.</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_BODY};margin:0 0 16px;">مهمة Aura هي الجزء الذي لم يسعفك الوقت له: تحويل هذه القراءة إلى حضور، دون أن تضيف مهمة جديدة إلى أسبوعك.</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_BODY};margin:0 0 22px;">تحتاج فقط مصدراً واحداً للبداية. إليك واحداً من مجالك — التقطه، وسترى رادارك يبدأ بالنبض.</p>
-        <div style="margin:0 0 14px;">${button(DASHBOARD_URL, "ابدأ من هنا ←")}</div>
-        <p style="font-family:${MONO};font-size:11px;color:${INK_MUTE};margin:0 0 8px;">لا تستغرق أكثر من ٢٠ ثانية. الأول فقط هو الذي يحتاج جهداً.</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">أنت أصلاً تقرأ ما يهم في مجالك — وهذا هو الجزء الصعب، ومارسته لسنوات.</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">مهمة Aura هي الجزء الذي لم يسعفك الوقت له: تحويل هذه القراءة إلى حضور، دون أن تضيف مهمة جديدة إلى أسبوعك.</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 22px;">تحتاج فقط مصدراً واحداً للبداية. إليك واحداً من مجالك — التقطه، وسترى رادارك يبدأ بالنبض.</p>
+        <p style="font-family:${MONO};font-size:11px;color:${INK_FAINT};margin:0 0 8px;">لا تستغرق أكثر من ٢٠ ثانية. الأول فقط هو الذي يحتاج جهداً.</p>
       </div>
     `,
   },
   M3: {
+    cta: { href: DASHBOARD_URL, label: "أضف مصدراً ←" },
     subject: "خطوة واحدة تفصلك عن اللحظة التي تُثبت فيها Aura مكانتها",
     render: ({ firstName }) => `
-      <div dir="rtl" lang="ar" style="font-family:${ARABIC};text-align:right;">
+      <div dir="rtl" lang="ar" style="text-align:right;">
         <p style="font-size:15px;line-height:1.85;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `أهلاً ${escapeHtml(firstName)}،` : "أهلاً بك،"}</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_BODY};margin:0 0 16px;">لقد بدأت — و Aura تقرأك من الآن.</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_BODY};margin:0 0 16px;">الآن هي تمسك بنمط تكاد تسميه. مصدران إضافيان هذا الأسبوع، وستُخرج لك أول إشارة: قطعة من تفكيرك أنت، تصبح مرئية.</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_BODY};margin:0 0 22px;">أغلب الناس لا يصلون إلى هنا. ومن يصل، يكمل — لأن هذه اللحظة تتوقف فيها Aura عن كونها تطبيقاً وتصبح لك.</p>
-        <div style="margin:0 0 14px;">${button(DASHBOARD_URL, "أضف مصدراً ←")}</div>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">لقد بدأت — و Aura تقرأك من الآن.</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">الآن هي تمسك بنمط تكاد تسميه. مصدران إضافيان هذا الأسبوع، وستُخرج لك أول إشارة: قطعة من تفكيرك أنت، تصبح مرئية.</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 22px;">أغلب الناس لا يصلون إلى هنا. ومن يصل، يكمل — لأن هذه اللحظة تتوقف فيها Aura عن كونها تطبيقاً وتصبح لك.</p>
       </div>
     `,
   },
   M4: {
+    cta: { href: INTELLIGENCE_URL, label: "شاهد إشارتك ←" },
     subject: "Aura وجدت شيئاً في طريقة تفكيرك",
     render: ({ firstName, signalTitle }) => `
-      <div dir="rtl" lang="ar" style="font-family:${ARABIC};text-align:right;">
+      <div dir="rtl" lang="ar" style="text-align:right;">
         <p style="font-size:15px;line-height:1.85;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `أهلاً ${escapeHtml(firstName)}،` : "أهلاً بك،"}</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_BODY};margin:0 0 14px;">ها هو — أول نمط استخرجته Aura من قراءتك:</p>
-        <blockquote style="margin:14px 0 20px;padding:14px 18px;background:${CARD};border:1px solid ${RULE};border-right:3px solid ${AMBER};border-radius:4px;font-family:${SERIF};font-size:17px;line-height:1.6;color:${INK};font-style:italic;">"${escapeHtml(signalTitle || "إشارتك الأولى")}"</blockquote>
-        <p style="font-size:15px;line-height:1.9;color:${INK_BODY};margin:0 0 16px;">هذا هو المفتاح: كنت تعرفه أصلاً، لكنك لم تقله بصوت عالٍ، علناً، بالشكل الذي يبني مكانتك. Aura لاحظت عنك.</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_BODY};margin:0 0 22px;">خطوتك التالية هي الأكثر متعة — منشور مستخرج من هذه الإشارة، بصوتك، جاهز خلال دقيقة.</p>
-        <div style="margin:0 0 14px;">${button(INTELLIGENCE_URL, "شاهد إشارتك ←")}</div>
-        <p style="font-family:${MONO};font-size:11px;color:${INK_MUTE};margin:0 0 8px;">هذا ما يمكن أن يصير عليه كل أسبوع الآن.</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 14px;">ها هو — أول نمط استخرجته Aura من قراءتك:</p>
+        ${quote(`"${escapeHtml(signalTitle || "إشارتك الأولى")}"`, true)}
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">هذا هو المفتاح: كنت تعرفه أصلاً، لكنك لم تقله بصوت عالٍ، علناً، بالشكل الذي يبني مكانتك. Aura لاحظت عنك.</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 22px;">خطوتك التالية هي الأكثر متعة — منشور مستخرج من هذه الإشارة، بصوتك، جاهز خلال دقيقة.</p>
+        <p style="font-family:${MONO};font-size:11px;color:${INK_FAINT};margin:0 0 8px;">هذا ما يمكن أن يصير عليه كل أسبوع الآن.</p>
       </div>
     `,
   },
@@ -118,8 +118,8 @@ function footer(lang: Lang): string {
     : `You can turn these off anytime.`;
   return `
     ${divider()}
-    <p style="font-family:${BODY};font-size:12px;line-height:1.6;color:${INK_MUTE};margin:0;${ar ? "text-align:right;" : ""}">
-      <a href="${NOTIF_SETTINGS_URL}" style="color:${INK_MUTE};text-decoration:underline;">${text}</a>
+    <p style="font-family:${BODY};font-size:12px;line-height:1.6;color:${INK_FAINT};margin:0;${ar ? "text-align:right;" : ""}">
+      <a href="${NOTIF_SETTINGS_URL}" style="color:${INK_FAINT};text-decoration:underline;">${text}</a>
     </p>
     <p style="font-family:${BODY};font-size:13px;color:${INK};margin:18px 0 0;${ar ? "text-align:right;" : ""}">— Aura</p>
   `;
@@ -130,7 +130,13 @@ function buildEmail(lang: Lang, key: MessageKey, firstName: string, signalTitle?
   const inner = msg.render({ firstName, signalTitle }) + footer(lang);
   return {
     subject: msg.subject,
-    html: emailShell({ preheader: msg.subject, body: inner, maxWidth: 560 }),
+    html: renderEmail({
+      preheader: msg.subject,
+      body: inner,
+      cta: msg.cta,
+      rtl: lang === "ar",
+      prefsHref: NOTIF_SETTINGS_URL,
+    }),
   };
 }
 
@@ -322,19 +328,19 @@ serve(withObserve("lifecycle-emails", async (req) => {
       .maybeSingle();
     if (!existing) {
       const list = founderDigest
-        .map(x => `<li style="margin:4px 0;color:${INK_BODY};">${escapeHtml(x.email)} — ${x.captures} captures, 0 signals</li>`)
+        .map(x => `<li style="margin:4px 0;color:${INK_SOFT};">${escapeHtml(x.email)} — ${x.captures} captures, 0 signals</li>`)
         .join("");
       const body = `
         <p style="font-family:${BODY};font-size:15px;color:${INK};margin:0 0 12px;">Pipeline smell — S4 users (captures ≥ 3, signals = 0):</p>
-        <ul style="font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_BODY};padding-left:18px;margin:0 0 12px;">${list}</ul>
-        <p style="font-family:${MONO};font-size:11px;color:${INK_MUTE};margin:0;">Signal engine may not be firing for these captures.</p>
+        <ul style="font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};padding-left:18px;margin:0 0 12px;">${list}</ul>
+        <p style="font-family:${MONO};font-size:11px;color:${INK_FAINT};margin:0;">Signal engine may not be firing for these captures.</p>
       `;
       try {
         await sendResend(
           RESEND_API_KEY,
           "support@aura-intel.org",
           `[Aura] S4 pipeline alert — ${founderDigest.length} user(s) stuck`,
-          emailShell({ preheader: "S4 pipeline alert", body, maxWidth: 560 }),
+          renderEmail({ preheader: "S4 pipeline alert", body }),
           digestRecipientId,
           digestKey,
         );
