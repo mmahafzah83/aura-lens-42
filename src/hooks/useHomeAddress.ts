@@ -84,11 +84,8 @@ export interface HomeAddressState {
   facts: HomeFacts | null;
 }
 
-const todayKey = () => {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-};
+// Must match the home-address edge function, which keys rows in UTC.
+const todayKey = () => new Date().toISOString().slice(0, 10);
 
 function normalise(raw: any): HomeAddressRow | null {
   if (!raw) return null;

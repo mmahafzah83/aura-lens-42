@@ -94,7 +94,6 @@ const Dashboard = () => {
     description: "Your strategic intelligence command center: signals, captures, content, and presence growth in one place.",
     path: "/dashboard",
   });
-  const [entries, setEntries] = useState<Entry[]>([]);
   const [activeTab, setActiveTab] = useState<TabValue>("home");
   const [captureOpen, setCaptureOpen] = useState(false);
   const [capturePrefillUrl, setCapturePrefillUrl] = useState<string | null>(null);
@@ -116,13 +115,15 @@ const Dashboard = () => {
       markCaptured(pendingCaptureKeyRef.current);
       pendingCaptureKeyRef.current = null;
     }
-    fetchEntries();
   };
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; firstName?: string | null; avatarUrl?: string | null } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [profileSector, setProfileSector] = useState<string | null>(null);
+  const [profileBand, setProfileBand] = useState<string | null>(null);
+  const [profileLastVisit, setProfileLastVisit] = useState<string | null>(null);
   const firstFlight = useFirstFlight(userId);
   const onboardingGate = useOnboardingGate(userId);
   const isFfDimmed = (val: string, isActive: boolean) => firstFlight.dimmedTabs.has(val) && !isActive;
@@ -489,7 +490,7 @@ const Dashboard = () => {
         } catch {}
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed, onboarding_completed, onboarding_step, first_name, firm, level, sector_focus, avatar_url, identity_intelligence")
+          .select("completed, onboarding_completed, onboarding_step, first_name, firm, level, sector_focus, seniority_band, last_visit_at, avatar_url, identity_intelligence")
           .eq("user_id", uid)
           .maybeSingle();
 
@@ -501,6 +502,20 @@ const Dashboard = () => {
             firstName: (profile as any).first_name ?? null,
             avatarUrl: (profile as any).avatar_url ?? null,
           }));
+          setProfileSector((profile as any).sector_focus ?? null);
+          setProfileBand((profile as any).seniority_band ?? null);
+          const lastVisit = (profile as any).last_visit_at ?? null;
+          setProfileLastVisit(lastVisit);
+          // The home-address function reads last_visit_at for days_since_last_visit;
+          // nothing else writes it. Refresh at most every 30 minutes.
+          const stale = !lastVisit || (Date.now() - new Date(lastVisit).getTime()) > 30 * 60 * 1000;
+          if (stale) {
+            void supabase
+              .from("diagnostic_profiles" as any)
+              .update({ last_visit_at: new Date().toISOString() } as any)
+              .eq("user_id", uid)
+              .then(({ error }: any) => { if (error) console.warn("last_visit_at write failed", error); });
+          }
         }
 
         // Onboarding must fully complete (onboarding_step >= 4, set at the ceremony)
@@ -536,24 +551,6 @@ const Dashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  const fetchEntries = async () => {
-    const { data } = await supabase
-      .from("entries")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (data) setEntries(data);
-  };
-
-  useEffect(() => {
-    fetchEntries();
-    const channel = supabase
-      .channel('entries-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries' }, () => fetchEntries())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
 
   const handleLogout = async () => {
     await signOutAndLand(navigate);
@@ -607,7 +604,12 @@ const Dashboard = () => {
     let cancelled = false;
     const check = async () => {
       try {
-        const since = localStorage.getItem("aura_intel_last_visit") || new Date(0).toISOString();
+        // A fresh browser has no local key: fall back to the stored last visit,
+        // then to 7 days ago — never to the epoch, which marks every signal new.
+        const since =
+          localStorage.getItem("aura_intel_last_visit") ||
+          profileLastVisit ||
+          new Date(Date.now() - 7 * 86400000).toISOString();
         const { count } = await (supabase.from("strategic_signals" as any) as any)
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId)
