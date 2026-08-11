@@ -30,7 +30,7 @@ import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import { useOnboardingGate } from "@/hooks/useOnboardingGate";
 import HomeSpine from "@/components/home/HomeSpine";
-import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
+
 import LinkedInNudge from "@/components/home/LinkedInNudge";
 import AuraRail from "@/components/rail/AuraRail";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
