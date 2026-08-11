@@ -409,7 +409,7 @@ const Onboarding = () => {
           if (addr.profileUrl) setLiInput(addr.profileUrl);
         } catch { /* ignore */ }
       }
-      if (resume > 0 && resume < 13) setScreen(resume);
+      if (resume > 0 && resume < 13) { setScreen(resume); screenRef.current = resume; }
 
       setChecking(false);
     })();
