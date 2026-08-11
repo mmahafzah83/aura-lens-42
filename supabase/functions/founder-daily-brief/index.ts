@@ -115,7 +115,7 @@ function whatId(t: string): string {
   return `<div style="font-family:${SERIF};font-size:14px;line-height:1.6;color:${INK};padding-top:12px"><b>&rarr; What I'd do:</b> ${esc(t)}</div>`;
 }
 function sectionOpen(title: string): string {
-  return `<tr><td style="padding:26px 22px 0;border-top:1px solid ${RULE}">${label(title)}`;
+  return `<tr><td style="padding:26px 0 0;border-top:1px solid ${RULE}">${label(title)}`;
 }
 function sectionClose(advice: string): string {
   return `${whatId(advice)}</td></tr>`;
@@ -763,7 +763,7 @@ Deno.serve(async (req) => {
 </td></tr>
 
 <!-- 2 verdict strip -->
-<tr><td style="padding:16px 22px 0">
+<tr><td style="padding:16px 0 0">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
   ${statBox(String(needsN), "Needs you", OX)}
   ${statBox(String(decideN), "Decide", DAMBER)}
@@ -808,7 +808,7 @@ ${findingsShown.map((f) => `<table role="presentation" width="100%" cellpadding=
 ${sectionClose(needsN > 0 ? "Start at the top of the needs-you list — it is the only part of this brief a user can feel." : "Nothing here is on fire. Use the day for one real user conversation.")}
 
 <!-- 5 three things -->
-<tr><td style="padding:22px 22px 0">
+<tr><td style="padding:22px 0 0">
 ${label("If you do three things today")}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#EDF6F3" style="border:1px solid #BFE3DA"><tr><td style="padding:14px 16px">
 ${recs.map((r, i) => `<div style="font-family:${SERIF};font-size:15px;color:${INK};padding:4px 0"><b>${i + 1}.</b> ${esc(r)}</div>`).join("")}
