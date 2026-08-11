@@ -212,7 +212,7 @@ const RevealCard = forwardRef<
 
     {!forExport ? (
       <p style={{
-        marginBlockStart: "auto", paddingBlockStart: 22, margin: "22px 0 0",
+        margin: "22px 0 0", marginBlockStart: "auto", paddingBlockStart: 22,
         fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em",
         color: "rgba(255,255,255,0.72)",
       }}>Read by Aura · aura-intel.org</p>
