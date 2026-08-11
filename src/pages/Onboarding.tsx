@@ -1943,6 +1943,7 @@ const Onboarding = () => {
 
   /* 10 — NIGHT, before the six */
   if (screen === 10) {
+    if (!band) { content = bandPrompt(3); } else {
     content = (
       <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
@@ -1966,11 +1967,14 @@ const Onboarding = () => {
         )}
       </NightShell>
     );
+    }
   }
 
   /* 11 — WHITE, the nine questions */
   if (screen === 11) {
-    if (contentError || !questions) {
+    if (!band) {
+      content = bandPrompt(3);
+    } else if (contentError || !questions) {
       content = (
         <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
