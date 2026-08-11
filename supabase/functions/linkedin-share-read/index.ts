@@ -19,9 +19,22 @@ const json = (body: unknown, status = 200) =>
 
 const LI_HEADERS = (token: string) => ({
   Authorization: `Bearer ${token}`,
-  "LinkedIn-Version": "202506",
+  "LinkedIn-Version": "",
   "X-Restli-Protocol-Version": "2.0.0",
 });
+
+function candidateVersions(): string[] {
+  const now = new Date();
+  const out: string[] = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    out.push(`${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+  }
+  return out;
+}
+
+const isVersionRejection = (status: number, body: string) =>
+  status === 426 || /NONEXISTENT_VERSION/i.test(body);
 
 const looksLikePermission = (status: number, body: string) =>
   status === 401 || status === 403 ||
