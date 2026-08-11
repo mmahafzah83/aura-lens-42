@@ -94,6 +94,8 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
   const [draftDismissed, setDraftDismissed] = useState(false);
   // Which move the address footer is offering. "Not today" promotes the next.
   const [moveIdx, setMoveIdx] = useState(0);
+  // The address above the fold is three sentences; the remainder waits here.
+  const [showRest, setShowRest] = useState(false);
 
   // ── supporting reads ─────────────────────────────────────────────
   useEffect(() => {
@@ -296,8 +298,34 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
                 ? "Aura's read is not available right now. Everything below is still yours."
                 : "Today's address is not written."}
             </p>
-          ) : address.row?.address_md ? (
-            <Prose md={address.row.address_md} />
+          ) : addressBeats.observation ? (
+            <div style={{ display: "grid", gap: 10 }}>
+              {/* beat 1 — one observation */}
+              <p style={{
+                margin: 0, fontSize: 21, lineHeight: 1.3, fontWeight: 700, letterSpacing: "-0.01em",
+                color: "var(--text-inverse)", maxInlineSize: 640,
+              }}>{addressBeats.observation}</p>
+              {/* beat 2 — one recommendation, never more than two sentences */}
+              {addressBeats.recommendation.length > 0 && (
+                <p style={{
+                  margin: 0, fontSize: 15, lineHeight: 1.65, color: "var(--v23-on-night)", maxInlineSize: 600,
+                }}>{addressBeats.recommendation.join(" ")}</p>
+              )}
+              {addressBeats.rest.length > 0 && (
+                <>
+                  {showRest && (
+                    <p style={{
+                      margin: 0, fontSize: 15, lineHeight: 1.65, color: "var(--v23-on-night)", maxInlineSize: 600,
+                    }}>{addressBeats.rest.join(" ")}</p>
+                  )}
+                  <button type="button" onClick={() => setShowRest((v) => !v)} style={{
+                    justifySelf: "start", background: "none", border: 0, padding: 0, cursor: "pointer",
+                    fontFamily: "var(--font-body)", fontSize: 12.5, fontWeight: 600, color: "var(--v23-on-night)",
+                    textDecoration: "underline", textUnderlineOffset: 3,
+                  }}>{showRest ? "Hide the rest" : "Read the rest"}</button>
+                </>
+              )}
+            </div>
           ) : (
             <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: "var(--v23-on-night)" }}>
               {firstRun
@@ -309,52 +337,55 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
           )}
         </div>
 
-        {!collapsed && chips.length > 0 && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBlockStart: 16 }}>
-            {chips.map((c) => (
-              <span key={c.key} style={{
-                ...MONO, fontSize: 11, letterSpacing: ".04em", padding: "5px 10px", borderRadius: 999,
-                border: "1px solid var(--v23-night-line)", color: "var(--v23-on-night)",
-              }}>{c.label}</span>
-            ))}
-          </div>
-        )}
-
         {!collapsed && (
           <div style={{ display: "grid", gap: 10, marginBlockStart: 18 }}>
-            {activeMove && (
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                <button type="button" onClick={() => goRoute(activeMove.cta_route)} style={{
-                  border: 0, borderRadius: 999, padding: "11px 20px", fontSize: 13, fontWeight: 700,
-                  cursor: "pointer", background: "var(--text-inverse)", color: "var(--text-primary)",
-                  fontFamily: "var(--font-body)",
-                }}>{activeMove.title ?? activeMove.what}</button>
-                <button type="button" onClick={openAsk} style={{
-                  borderRadius: 999, padding: "11px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                  background: "transparent", color: "var(--text-inverse)",
-                  border: "1px solid var(--v23-night-line)", fontFamily: "var(--font-body)",
-                }}>Talk to me about this</button>
-                {moves.length > moveIdx + 1 && (
-                  <button type="button" onClick={() => setMoveIdx((i) => i + 1)} style={{
-                    background: "none", border: 0, padding: 0, cursor: "pointer",
-                    fontFamily: "var(--font-body)", fontSize: 12.5, fontWeight: 600,
-                    color: "var(--v23-on-night)",
-                  }}>Not today</button>
-                )}
-              </div>
-            )}
+            {/* beat 3 — one blue action, two quiet chips */}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              {activeMove && (
+                <button
+                  type="button" onClick={() => goRoute(activeMove.cta_route)}
+                  title={moveTitle}
+                  style={{
+                    border: 0, borderRadius: 999, padding: "12px 22px", fontSize: 13.5, fontWeight: 700,
+                    cursor: "pointer", background: "var(--act)", color: "var(--action-ink)",
+                    fontFamily: "var(--font-body)",
+                  }}
+                >{shortLabel(moveTitle)}</button>
+              )}
+              {chipPrompts.map((c) => (
+                <button
+                  key={c.key} type="button"
+                  onClick={() => { if (c.next) setMoveIdx((i) => i + 1); openAsk(c.prompt); }}
+                  style={{
+                    borderRadius: 999, padding: "11px 16px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+                    background: "transparent", color: "var(--v23-on-night)",
+                    border: "1px solid var(--v23-night-line)", fontFamily: "var(--font-body)",
+                  }}
+                >{c.label}</button>
+              ))}
+            </div>
             {activeMove && (
               <Muted style={{ fontSize: 12.5, color: "var(--v23-on-night)" }}>
                 {activeMove.outcome} · about {activeMove.est_minutes} minutes
               </Muted>
             )}
-            {!activeMove && (
-              <div>
-                <button type="button" onClick={openAsk} style={{
-                  borderRadius: 999, padding: "11px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                  background: "transparent", color: "var(--text-inverse)",
-                  border: "1px solid var(--v23-night-line)", fontFamily: "var(--font-body)",
-                }}>Talk to me about this</button>
+            {chips.length > 0 && (
+              <div style={{
+                ...MONO, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+                marginBlockStart: 6, fontSize: 11.5, letterSpacing: ".04em", lineHeight: 1.6,
+                color: "var(--on-dark-1, var(--text-inverse))",
+              }}>
+                <span style={{ opacity: .75 }}>BUILT FROM</span>
+                <span>{chips.map((c) => c.label.toLowerCase()).join(" · ")}</span>
+                <span
+                  aria-label="Everything above is drawn from what you gave Aura and what you have captured."
+                  title="Everything above is drawn from what you gave Aura and what you have captured."
+                  style={{
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    inlineSize: 15, blockSize: 15, borderRadius: 999, cursor: "help",
+                    border: "1px solid var(--machine)", color: "var(--machine)", fontSize: 10, fontWeight: 700,
+                  }}
+                >i</span>
               </div>
             )}
           </div>
