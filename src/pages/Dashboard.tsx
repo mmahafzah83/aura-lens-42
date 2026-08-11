@@ -520,7 +520,12 @@ const Dashboard = () => {
         const paused = Boolean(
           ((profile as any)?.identity_intelligence as Record<string, any> | null)?.journey_paused,
         );
-        if ((!isProfileComplete(profile) || !onboardingDone) && !paused) {
+        // RULE: both sides of a redirect pair must test the identical condition,
+        // or they ping-pong. Onboarding.tsx bounces to Home on onboarding_step >= 4,
+        // so Home must gate on exactly that and nothing else. Adding a profile
+        // completeness test here caused an infinite loop for every member whose
+        // successful journey left `firm` null.
+        if (!onboardingDone && !paused) {
           navigate("/onboarding", { replace: true });
           return;
         }
