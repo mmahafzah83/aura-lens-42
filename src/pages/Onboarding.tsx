@@ -1629,7 +1629,7 @@ const Onboarding = () => {
           </>
         )}
         {proof && proof.lines.length > 0 ? (
-          <WaitProof lines={proof.lines} howLong="While you wait — here's what Aura found in your own posts." />
+            <WaitProof lines={proof.lines} startAt={0} howLong="While you wait — here's what Aura found in your own posts." />
         ) : null}
         {settled && (
           <>
@@ -2069,7 +2069,7 @@ const Onboarding = () => {
             : "I'll keep reading for the subjects in your read. When something is worth your name on it, you'll hear — not before."}
         </p>
         {revealPending && proof && proof.lines.length > 0 ? (
-          <WaitProof lines={proof.lines} howLong="Writing your read. About a minute." />
+          <WaitProof lines={proof.lines} startAt={3} howLong="Writing your read. About a minute." />
         ) : null}
         <Actions style={{ marginBlockStart: 24 }}>
           <OBButton onClick={() => go(13)} loading={revealPending && !revealSlow} loadingLabel="Writing your read…">
@@ -2091,7 +2091,7 @@ const Onboarding = () => {
         display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
       }}>
         <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-          {reveal ? <RevealCard data={reveal} /> : (
+          {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : (
             <div style={{ textAlign: "center", color: "#FFFFFF" }}>
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>
                 Aura is still writing your read. It'll be on your Home the moment it's done.
@@ -2113,8 +2113,9 @@ const Onboarding = () => {
               toast.success(how === "shared"
                 ? "Sent to your share sheet."
                 : "Image saved — the caption is on your clipboard, ready to paste.");
-            } catch {
-              toast.error("Couldn't build the image just now. Try once more.");
+            } catch (err) {
+              console.error("[reveal] share failed", err);
+              toast.error("Couldn't build the image. Your read is safe — it's on your Home.");
             } finally {
               setSharing(false);
             }
