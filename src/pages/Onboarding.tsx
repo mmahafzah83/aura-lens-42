@@ -346,6 +346,8 @@ const Onboarding = () => {
   const [posting, setPosting] = useState(false);
   const [postedUrl, setPostedUrl] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
+  /** The "Save it" row on screen 13 — collapsed until asked for. */
+  const [saveOpen, setSaveOpen] = useState(false);
   /* the two things screen 13 needs: may we post, and what would we say */
   useEffect(() => {
     if (screen !== 13 || !userId) return;
