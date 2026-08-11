@@ -237,7 +237,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
                 }}
               />
               <span style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 15, color: "var(--text-secondary)" }}>
-                Reading what you saved… your first signal usually appears within a few minutes.
+                Reading what you captured… your first signal usually appears within a few minutes.
               </span>
             </div>
             <button type="button" onClick={ff.skip} style={skipStyle} className="ff-skip">I'll explore on my own</button>
