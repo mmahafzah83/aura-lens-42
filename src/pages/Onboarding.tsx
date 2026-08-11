@@ -169,12 +169,13 @@ const wordsIn = (rows: { post_text?: string | null }[]): number =>
 
 /* ──────────────────────────────── shells ────────────────────────────────── */
 
-const NightShell = ({ children, face, footer }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode }) => (
+const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => (
   <div className="obc" style={{
     minBlockSize: "100dvh", background: OB.night, display: "flex", alignItems: "center",
     justifyContent: "center", padding: "28px 20px",
   }}>
     <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+      {onExit ? <JourneyHeader onNight onExit={onExit} /> : null}
       {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace size="var(--ob-face)" /></div> : null}
       {children}
       {footer}
@@ -183,13 +184,14 @@ const NightShell = ({ children, face, footer }: { children: React.ReactNode; fac
 );
 
 const PaperShell = ({
-  children, bead, cream = false, footer,
-}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode }) => (
+  children, bead, cream = false, footer, onExit,
+}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void }) => (
   <div className="obc" style={{
     minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
     display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
   }}>
     <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+      {onExit ? <JourneyHeader onExit={onExit} /> : null}
       <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
         <ProgressBeads active={bead} />
       </div>
