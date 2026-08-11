@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOneMove, type OneMoveDraft, type OneMoveSignal } from "@/hooks/useOneMove";
+import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 
 /**
  * MoveCard — one move, at the top of Home.
@@ -120,6 +121,7 @@ const Support: React.FC<React.PropsWithChildren> = ({ children }) => (
 
 export default function MoveCard({ userId, onOpenDraft, onStartSignalPost }: MoveCardProps) {
   const { loading, draft, signal } = useOneMove(userId);
+  const mayPromiseMorning = useMayPromiseMorning();
   const [tick, setTick] = useState(0);
 
   useEffect(() => { purgeStaleDismissals(); }, []);
