@@ -150,7 +150,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
         <InfoTooltip
           label="Presence Journey"
           slug="tiers"
-          text="Your path from Observer to Presence. Each tier unlocks with specific actions."
+          text="Your path from Observer to Presence. Each standing unlocks with specific actions."
         />
       </div>
       <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, marginBottom: 6, lineHeight: 1.5 }}>

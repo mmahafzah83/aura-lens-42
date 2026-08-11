@@ -95,14 +95,14 @@ export function useQuestProgress(userId: string | null) {
       { id: "p2_first_signal", label: "Reach your first signal", done: signalCount >= 1 },
       { id: "p2_three_signals", label: "Reach 3 active signals", done: signalCount >= 3 },
       { id: "p2_published", label: "Publish a post on LinkedIn", done: publishedCount >= 1 },
-      { id: "p2_strategist", label: "Reach Strategist tier", done: authorityScore >= 35 },
+      { id: "p2_strategist", label: "Reach Strategist standing", done: authorityScore >= 35 },
       { id: "p2_rhythm", label: "Maintain 4-week capture rhythm", done: entryCount >= 8 },
     ];
     const p2Done = p1Done && phase2.every(q => q.done);
 
     const phase3: Quest[] = [
       { id: "p3_five_signal_posts", label: "Publish 5+ posts from signals", done: postsFromSignal >= 5 },
-      { id: "p3_authority", label: "Reach Presence tier", done: authorityScore >= 65 },
+      { id: "p3_authority", label: "Reach Presence standing", done: authorityScore >= 65 },
       { id: "p3_mirror", label: "Complete Market Mirror", done: mirrorCount >= 1 },
       { id: "p3_track", label: "Track 3+ post performances", done: distinctMetricPosts >= 3 },
       { id: "p3_themes", label: "Build 5+ signal coverage", done: themeCount >= 5 },
