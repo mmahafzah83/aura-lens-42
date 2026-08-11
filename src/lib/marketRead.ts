@@ -66,8 +66,15 @@ function ownWordsLine(s: ReadSources): string | undefined {
 }
 
 function postsLine(s: ReadSources): string | undefined {
-  if (!s.posts) return evidenceLine(s);
-  return `From ${plural(s.posts, "post", "posts")} Aura read${s.saved ? ` and ${plural(s.saved, "thing", "things")} you saved` : ""}.`;
+  // The read is written from everything, not just the posts — and a clause
+  // whose count is zero is dropped rather than printed.
+  const parts: string[] = ["your profile"];
+  if (s.posts) parts.push(`${s.posts} of your posts`);
+  if (s.saved) parts.push(`${plural(s.saved, "thing", "things")} you saved`);
+  if (s.answers || s.sliders) parts.push("your own answers");
+  if (parts.length === 1) return "From your profile.";
+  const last = parts.pop() as string;
+  return `From ${parts.join(", ")}, and ${last}.`;
 }
 
 export function toRevealData(
