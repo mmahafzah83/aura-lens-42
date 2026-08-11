@@ -2267,6 +2267,7 @@ const Onboarding = () => {
 
     const downloadRead = async () => {
       if (!shareRef.current) return;
+      if (busy) return;
       setSharing(true);
       try {
         const how = await shareRevealCard(shareRef.current, { caption: liveCaption });
@@ -2368,6 +2369,7 @@ const Onboarding = () => {
     content = (
       <div className="obc" style={{
         minBlockSize: "100dvh",
+        overflow: "clip",
         background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
         display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
       }}>
