@@ -188,7 +188,11 @@ const RevealCard = forwardRef<
     {/* The lower half: two labelled groups, spaced apart so the frame fills. */}
     <div style={{
       flex: 1, display: "flex", flexDirection: "column",
-      justifyContent: "flex-end", gap: 40, marginTop: 48,
+      // Sparse reads (no soft ground, no descriptor) must not leave a void —
+      // distribute the remaining height instead of bottom-anchoring.
+      justifyContent: (data.softGround.length === 0 && !data.marketRead)
+        ? "space-between" : "flex-end",
+      gap: 40, marginTop: 48,
     }}>
       {data.subjects.length > 0 ? (
         <div>
