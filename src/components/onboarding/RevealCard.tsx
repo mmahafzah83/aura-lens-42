@@ -144,8 +144,10 @@ const RevealCard = forwardRef<
   <div
     ref={ref}
     style={{
-      inlineSize: 1080,
-      blockSize: 1350,
+      /* Physical properties only in this branch: html2canvas's CSS parser does
+         not implement logical properties and computes a zero box for them. */
+      width: 1080,
+      height: 1350,
       boxSizing: "border-box",
       background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
       padding: "96px 84px 74px",
@@ -170,7 +172,7 @@ const RevealCard = forwardRef<
     ) : null}
 
     {data.subjects.length > 0 ? (
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBlockStart: 44 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 44 }}>
         {data.subjects.slice(0, 3).map((s) => (
           <span key={s} style={{
             display: "inline-block", padding: "12px 20px", borderRadius: RADIUS.chip,
@@ -182,11 +184,11 @@ const RevealCard = forwardRef<
     ) : null}
 
     {data.figures.length > 0 ? (
-      <div style={{ display: "flex", gap: 64, marginBlockStart: 52 }}>
+      <div style={{ display: "flex", gap: 64, marginTop: 52 }}>
         {data.figures.slice(0, 2).map((f) => (
           <div key={f.label}>
             <div style={{ fontFamily: OB.mono, fontSize: 46, fontWeight: 600, lineHeight: 1 }}>{f.value}</div>
-            <div style={{ fontSize: 17, opacity: 0.85, marginBlockStart: 10 }}>{f.label}</div>
+            <div style={{ fontSize: 17, opacity: 0.85, marginTop: 10 }}>{f.label}</div>
           </div>
         ))}
       </div>
@@ -195,8 +197,8 @@ const RevealCard = forwardRef<
     )}
 
     <div style={{
-      marginBlockStart: "auto", paddingBlockStart: 40,
-      borderBlockStart: "1px solid rgba(255,255,255,0.28)",
+      marginTop: "auto", paddingTop: 40,
+      borderTop: "1px solid rgba(255,255,255,0.28)",
       display: "flex", alignItems: "center", gap: 16,
     }}>
       <span style={{ fontFamily: OB.ui, fontWeight: 700, fontSize: 22, letterSpacing: "0.16em" }}>AURA</span>
