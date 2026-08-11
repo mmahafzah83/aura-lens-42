@@ -469,20 +469,23 @@ const Onboarding = () => {
         setOwnWords(0);
       }
       setReadDone(true);
+      setStep1Phase("result");
     } catch (e: any) {
       const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "";
       setLiError(msg && msg.length < 120
         ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
         : "Aura couldn't open that page. Check it matches what you see in your browser on your own profile.");
-      go(1);
+      /* the read failing never moves them: the field, the error and the manual path all stay here */
+      setStep1Phase("ask");
     } finally {
       setLiBusy(false);
     }
   };
 
-  /* ── screen 2: every line resolves on its own and shows itself finishing ── */
-  const upPosts = useCountUp(screen === 2 && postsRead ? postsRead : 0, { duration: 900 });
-  const upWords = useCountUp(screen === 2 && ownWords ? ownWords : 0, { duration: 1100 });
+  /* ── the read resolves line by line, in place on the step-1 card ── */
+  const reading = screen === 1 && step1Phase !== "ask";
+  const upPosts = useCountUp(reading && postsRead ? postsRead : 0, { duration: 900 });
+  const upWords = useCountUp(reading && ownWords ? ownWords : 0, { duration: 1100 });
 
   /* ── the suggested read: asked for on screen 4 so it has a head start ── */
   const suggestRan = useRef(false);
