@@ -1465,7 +1465,7 @@ const Onboarding = () => {
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             {dimIdx + 1} / {dims.length}
           </p>
-          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(22px,6vw,28px)" }}>{d.name}</h1>
+          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "var(--ob-h2)" }}>{d.name}</h1>
           {d.why_line ? <p style={bodyLight}>{d.why_line}</p> : null}
           <input
             type="range" min={0} max={100} step={1} value={value}
@@ -1483,14 +1483,14 @@ const Onboarding = () => {
               .filter(([, text]) => !!text)
               .map(([tag, text, live]) => (
                 <div key={tag} style={{
-                  display: "flex", gap: 9, fontSize: 12, lineHeight: 1.5,
+                  display: "flex", gap: 9, fontSize: "var(--ob-anchor)", lineHeight: 1.55,
                   color: live ? OB.ink : OB.muted,
                   background: live ? OB.blueTint : "transparent",
                   border: `1px solid ${live ? OB.blue : "transparent"}`,
                   borderRadius: RADIUS.card, padding: "8px 10px",
                   transition: `background 220ms ${EASE}, color 220ms ${EASE}`,
                 }}>
-                  <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2 }}>{tag}</span>
+                  <span style={{ fontFamily: OB.mono, fontSize: "var(--ob-mono)", letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2 }}>{tag}</span>
                   <span>{text}</span>
                 </div>
               ))}
