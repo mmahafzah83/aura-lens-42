@@ -13,8 +13,6 @@ import { useShapePast } from "@/hooks/useHomeExtras";
 
 // ── THE RECORD ─────────────────────────────────────────────────────────────
 // Lives in its own file — the Record has its own data layer and zoom model.
-export { RecordLens } from "./RecordLens";
-export type { RecordLensProps, RecordZoom } from "./RecordLens";
 
 // ── THE SHAPE ──────────────────────────────────────────────────────────────
 
