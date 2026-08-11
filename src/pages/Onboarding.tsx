@@ -546,12 +546,6 @@ const Onboarding = () => {
         }
       }
 
-      if (userId) {
-        try {
-          await markVerifiedByRead(userId);
-        } catch { /* never block */ }
-      }
-
       const full = String(prof?.full_name || "").trim();
       if (full && !firstName.trim()) {
         const parts = full.split(/\s+/);
@@ -985,10 +979,8 @@ const Onboarding = () => {
         if (d.ok) {
           setConnected(true);
           setConnectNote("");
-          /* The callback writes the connection row after we did; re-run the
-             confirmation so a read that already happened isn't lost to the race. */
-          // Idempotent, and the popup can return before the read finishes.
-          if (userId) void markVerifiedByRead(userId);
+          /* The OAuth callback now preserves source_status and re-confirms it
+             from the snapshot, so nothing needs re-writing here. */
         }
         else setConnectNote(d.message || "LinkedIn didn't finish. You can do this from Settings later.");
       };
