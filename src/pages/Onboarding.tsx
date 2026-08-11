@@ -853,6 +853,20 @@ const Onboarding = () => {
     navigate("/home");
   }, [persistScreen, screen, navigate]);
 
+  /** Remembers when their day starts, alongside the time zone we detected. */
+  const chooseDailyTime = useCallback(async (slot: "Morning" | "Midday" | "Evening") => {
+    setDailyTime(slot);
+    if (!userId) return;
+    try {
+      const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("ui_dismissals").eq("user_id", userId).maybeSingle();
+      const existing = (data?.ui_dismissals && typeof data.ui_dismissals === "object") ? data.ui_dismissals : {};
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ ui_dismissals: { ...existing, daily_time: { slot, time_zone: timeZone, at: new Date().toISOString() } } })
+        .eq("user_id", userId);
+    } catch { /* they can change it in Settings */ }
+  }, [userId, timeZone]);
+
   const escape = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
