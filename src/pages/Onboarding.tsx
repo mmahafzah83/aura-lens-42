@@ -859,14 +859,8 @@ const Onboarding = () => {
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
     /* the report needs the raw read, not just the card built from it */
     if (results) setReadRaw(results);
-    const figures = [
-      ...(postsRead ? [{ value: num(postsRead), label: "posts read" }] : []),
-      ...(claims.length ? [{ value: num(claims.length), label: "things you kept" }] : []),
-      ...(Object.keys(scores).length
-        ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
-    ];
-    setReveal(toRevealData(results, {
-      figures,
+    const built = toRevealData(results, {
+      figures: [],
       excludeSoft: (dims || []).map((d) => d.name),
       sources: {
         posts: postsRead ?? 0,
@@ -874,7 +868,14 @@ const Onboarding = () => {
         answers: Object.keys(finalAnswers).length,
         sliders: Object.keys(scores).length,
       },
-    }));
+    });
+    const figures = [
+      ...(claims.length ? [{ value: num(claims.length), label: "claims kept" }] : []),
+      ...(Object.keys(scores).length
+        ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
+      ...(built?.subjects.length ? [{ value: num(built.subjects.length), label: "subjects owned" }] : []),
+    ];
+    setReveal(built ? { ...built, figures } : built);
     setRevealPending(false);
   };
 
@@ -899,11 +900,7 @@ const Onboarding = () => {
     loadMarketRead(userId).then((r) => {
       if (r) setReadRaw(r);
       const d = toRevealData(r, {
-        figures: [
-          ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
-          ...(claims.length ? [{ value: num(claims.length), label: "things you kept" }] : []),
-          ...(Object.keys(scores).length ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
-        ],
+        figures: [],
         excludeSoft: (dims || []).map((x) => x.name),
         sources: {
           posts: postsRead ?? 0,
@@ -912,7 +909,15 @@ const Onboarding = () => {
           sliders: Object.keys(scores).length,
         },
       });
-      if (d) setReveal(d);
+      if (d) {
+        const figures = [
+          ...(claims.length ? [{ value: num(claims.length), label: "claims kept" }] : []),
+          ...(Object.keys(scores).length
+            ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
+          ...(d.subjects.length ? [{ value: num(d.subjects.length), label: "subjects owned" }] : []),
+        ];
+        setReveal({ ...d, figures });
+      }
     });
   }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
 
