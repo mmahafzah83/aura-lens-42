@@ -739,8 +739,8 @@ const Onboarding = () => {
       const d = toRevealData(r, {
         figures: [
           ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
-          ...(claims.length ? [{ value: String(claims.length), label: "claims kept" }] : []),
-          ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
+          ...(claims.length ? [{ value: num(claims.length), label: "subjects kept" }] : []),
+          ...(Object.keys(scores).length ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
         ],
         excludeSoft: (dims || []).map((x) => x.name),
         sources: {
