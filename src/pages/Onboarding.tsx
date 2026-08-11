@@ -32,6 +32,7 @@ import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import StatusRow from "@/components/onboarding/StatusRow";
 import { loadOwnSentence, type OwnSentence } from "@/lib/ownSentence";
 import MethodNote from "@/components/onboarding/MethodNote";
+import Confetti from "@/components/onboarding/Confetti";
 import WaitProof from "@/components/onboarding/WaitProof";
 import WorkProgress from "@/components/onboarding/WorkProgress";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
@@ -446,7 +447,7 @@ const Onboarding = () => {
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/auth", { replace: true }); return; }
+      if (!session) { navigate("/auth?next=%2Fonboarding", { replace: true }); return; }
       const uid = session.user.id;
       setUserId(uid);
       setUserEmail(session.user.email ?? null);
@@ -498,7 +499,15 @@ const Onboarding = () => {
           if (addr.profileUrl) setLiInput(addr.profileUrl);
         } catch { /* ignore */ }
       }
-      if (resume > 0 && resume < 13) { setScreen(resume); screenRef.current = resume; }
+      /* A reload on the reading screens loses the in-memory claims watch, so the
+         screen would sit there forever. Read what was actually kept instead. */
+      if (resume === 6 || resume === 7) {
+        const { data } = await (supabase.from("evidence_fragments" as any) as any)
+          .select("title, content, confidence").eq("user_id", uid)
+          .order("confidence", { ascending: false }).limit(3);
+        if (data?.length) { setClaims(data as any); resume = 7; } else { resume = 5; }
+      }
+      if (resume > 0 && resume <= 14) { setScreen(resume); screenRef.current = resume; }
 
       setChecking(false);
     })();
@@ -561,8 +570,14 @@ const Onboarding = () => {
           const { data: detected } = await (supabase.rpc as any)("detect_seniority_band", { headline });
           const b = (detected as string | null) as Band | null;
           if (b && userId) {
-            setBand(b);
-            await writeProfile({ seniority_band: b, band_source: "detected" }, "level save");
+            /* Never write over a level the member set or confirmed themselves. */
+            const { data: cur } = await (supabase.from("diagnostic_profiles" as any) as any)
+              .select("band_source").eq("user_id", userId).maybeSingle();
+            const src = String((cur as any)?.band_source ?? "");
+            if (src !== "corrected" && src !== "confirmed") {
+              setBand(b);
+              await writeProfile({ seniority_band: b, band_source: "detected" }, "level save");
+            }
           }
         } catch { /* the member confirms it on the next screen anyway */ }
       }
@@ -701,7 +716,7 @@ const Onboarding = () => {
 
   /* ── content resolution: exact, then the sector-free set, then a retry ── */
   const loadDimensions = useCallback(async () => {
-    if (!band) return;
+    if (!band) { setContentError(false); return; }
     setContentError(false);
     try {
       const base = () => (supabase.from("capability_dimensions" as any) as any)
@@ -723,7 +738,7 @@ const Onboarding = () => {
   }, [band, sector]);
 
   const loadQuestions = useCallback(async () => {
-    if (!band) return;
+    if (!band) { setContentError(false); return; }
     setContentError(false);
     try {
       const base = () => (supabase.from("onboarding_questions" as any) as any)
@@ -814,12 +829,10 @@ const Onboarding = () => {
     } catch (e) { console.error("[journey] slider save threw", e); }
   }, [userId, band, writeProfile]);
 
+  /* A drag fires onChange per pixel — saving there raced dozens of upserts
+     against each other. State moves live; the save happens when the drag ends. */
   const setScore = (name: string, value: number) => {
-    setScores((prev) => {
-      const next = { ...prev, [name]: value };
-      void saveScores(next);
-      return next;
-    });
+    setScores((prev) => ({ ...prev, [name]: value }));
   };
 
   /* ── the six questions, then the read ── */
@@ -1094,6 +1107,27 @@ const Onboarding = () => {
         </button>
       ))}
     </div>
+  );
+
+  /** Continuing past the read is the member agreeing with the level Aura detected. */
+  const confirmBandIfDetected = async () => {
+    if (!userId || !band) return;
+    try {
+      const { data: cur } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("band_source").eq("user_id", userId).maybeSingle();
+      if (String((cur as any)?.band_source ?? "") === "detected") {
+        await writeProfile({ band_source: "confirmed" }, "level confirm");
+      }
+    } catch (e) { console.error("[journey] level confirm threw", e); }
+  };
+
+  /* Without a level there is no set of sliders or questions to load — so ask,
+     rather than sitting on a loader or a retry that can never succeed. */
+  const bandPrompt = (bead: number) => (
+    <PaperShell onExit={saveAndExit} bead={bead} footer={escapeFooter}>
+      <h1 style={h1Light}>One thing first — which of these is closest to your title?</h1>
+      {titleList((t, b) => { void chooseTitle(t, b); })}
+    </PaperShell>
   );
 
   const shelfUnlocked = useMemo(() => ({
@@ -1566,7 +1600,7 @@ const Onboarding = () => {
             </div>
 
             <Actions style={{ marginBlockStart: 18 }}>
-              <OBButton onClick={() => go(4)}>Continue</OBButton>
+              <OBButton onClick={async () => { await confirmBandIfDetected(); go(4); }}>Continue</OBButton>
               <OBButton variant="tertiary" onClick={() => go(4)}>I'll do that later</OBButton>
             </Actions>
           </>
@@ -1774,6 +1808,7 @@ const Onboarding = () => {
 
   /* 8 — NIGHT, before the sliders */
   if (screen === 8) {
+    if (!band) { content = bandPrompt(2); } else {
     const sliderCount = dims?.length ?? 0;
     // Sector rows do not exist yet — every member gets the band set, so the
     // copy may only promise the level.
@@ -1789,7 +1824,7 @@ const Onboarding = () => {
               Where your own read and your posts disagree is where the useful part is.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              No score. Each one asks what you've actually done, in plain sentences rather than numbers.
+              This isn't a test. Each one asks what you've actually done, in plain sentences rather than numbers.
             </p>
             {pickedLine ? <p style={{ ...bodyNight, textAlign: "center" }}>{pickedLine}</p> : null}
             <Actions style={{ marginBlockStart: 24 }}>
@@ -1801,13 +1836,16 @@ const Onboarding = () => {
         )}
       </NightShell>
     );
+    }
   }
 
   /* 8.5 — retired; resume positions are forwarded to screen 8 above. */
 
   /* 9 — WHITE ×8, the sliders */
   if (screen === 9) {
-    if (contentError || !dims) {
+    if (!band) {
+      content = bandPrompt(2);
+    } else if (contentError || !dims) {
       content = (
         <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
@@ -1849,6 +1887,8 @@ const Onboarding = () => {
             aria-label={d.name}
             aria-valuetext={value < 34 ? (d.anchor_low ?? "") : value < 67 ? (d.anchor_mid ?? "") : (d.anchor_high ?? "")}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
+            onPointerUp={(e) => void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) })}
+            onKeyUp={(e) => void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) })}
             style={{ marginBlockStart: 26 }}
           />
           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
@@ -1873,9 +1913,11 @@ const Onboarding = () => {
           </div>
           <Actions style={{ marginBlockStart: 26 }}>
             <OBButton onClick={() => {
+              const committed = { ...scores, [d.name]: value };
               if (!scores[d.name]) setScore(d.name, value);
+              void saveScores(committed);
               if (!last) { setDimIdx((i) => i + 1); return; }
-              const finalValues = dims.map((x) => (x.name === d.name ? value : scores[x.name] ?? value));
+              const finalValues = dims.map((x) => committed[x.name] ?? value);
               const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
               if (flatNow && !flatAck) setFlatWarn(true); else go(10);
             }}>{last ? `Done — that's all ${dims.length}` : "Next"}</OBButton>
@@ -1904,6 +1946,7 @@ const Onboarding = () => {
 
   /* 10 — NIGHT, before the six */
   if (screen === 10) {
+    if (!band) { content = bandPrompt(3); } else {
     content = (
       <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
@@ -1927,11 +1970,14 @@ const Onboarding = () => {
         )}
       </NightShell>
     );
+    }
   }
 
   /* 11 — WHITE, the nine questions */
   if (screen === 11) {
-    if (contentError || !questions) {
+    if (!band) {
+      content = bandPrompt(3);
+    } else if (contentError || !questions) {
       content = (
         <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
@@ -2128,6 +2174,7 @@ const Onboarding = () => {
     ];
     content = (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
+        {!revealPending ? <Confetti /> : null}
         {revealPending ? (
           <div style={{ marginBlockEnd: 4 }}>
             <WorkProgress onNight slowAfterMs={20000}
