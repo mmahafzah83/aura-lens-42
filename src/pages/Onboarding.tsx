@@ -918,27 +918,15 @@ const Onboarding = () => {
     } catch { /* they can change it in Settings */ }
   }, [userId, timeZone]);
 
-  const escape = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await (supabase.from("diagnostic_profiles" as any) as any).upsert({
-          user_id: user.id,
-          first_name: (user.user_metadata as any)?.first_name || user.email?.split("@")[0] || "Member",
-          onboarding_completed: true, onboarding_step: 4, completed: true,
-        }, { onConflict: "user_id" });
-      }
-      sessionStorage.removeItem("aura_onboarding_visits");
-    } catch { /* ignore */ }
-    navigate("/home", { replace: true });
-  };
-
+  /* Pausing is not finishing. The old escape hatch flagged the member as fully
+   * onboarded with an empty profile and locked them out of the journey for
+   * good — it now saves the place and leaves, exactly like Finish later. */
   const escapeFooter = visits >= 3 ? (
     <div style={{ textAlign: "center", marginBlockStart: 16 }}>
-      <button type="button" onClick={escape} style={{
+      <button type="button" onClick={saveAndExit} style={{
         background: "none", border: "none", color: OB.muted, fontSize: 12,
         cursor: "pointer", textDecoration: "underline", fontFamily: "inherit",
-      }}>Skip this and take me in →</button>
+      }}>Finish later →</button>
     </div>
   ) : null;
 
