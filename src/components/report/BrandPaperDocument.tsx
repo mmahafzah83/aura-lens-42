@@ -614,7 +614,6 @@ export default function BrandPaperDocument({
 }) {
   const hasVoice = voiceSheetHasContent(paper);
   const total = 3 + (hasVoice ? 1 : 0) + (showClosing ? 1 : 0);
-  // Deterministic budget, no measuring: crowded findings push the gap to Sheet 3.
   return (
     <div style={{ background: T.paper2, padding: "24px 0" }}>
       <CoverSheet bp={paper} total={total} />

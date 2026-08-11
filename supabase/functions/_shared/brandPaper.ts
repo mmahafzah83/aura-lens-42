@@ -157,7 +157,10 @@ function capAtSentence(s: string | null, max: number): string | null {
   if (!s || s.length <= max) return s;
   const slice = s.slice(0, max);
   const cut = slice.lastIndexOf(". ");
-  return (cut > max * 0.4 ? slice.slice(0, cut + 1) : slice.trim()) || null;
+  if (cut > max * 0.4) return slice.slice(0, cut + 1);
+  const word = slice.lastIndexOf(" ");
+  const base = (word > max * 0.4 ? slice.slice(0, word) : slice).trim();
+  return (base.replace(/[\s,;:\u2014\u2013-]+$/, "") + ".") || null;
 }
 
 export function buildBrandPaper(
