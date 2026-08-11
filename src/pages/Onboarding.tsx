@@ -42,6 +42,7 @@ import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyHeader from "@/components/onboarding/JourneyHeader";
 import { num, cleanHeadline, memberText } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
+import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
@@ -219,6 +220,9 @@ const Onboarding = () => {
   useEffect(() => { initThemeFromStorage(); }, []);
 
   const [checking, setChecking] = useState(true);
+  // The morning promise is only made when the system has actually been
+  // delivering. Reads public.morning_promise_state; fails to the honest line.
+  const mayPromiseMorning = useMayPromiseMorning();
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [needsIdentityConfirm, setNeedsIdentityConfirm] = useState(false);
@@ -1914,7 +1918,9 @@ const Onboarding = () => {
           )}
         </p>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Tonight I read for your three subjects. Tomorrow morning there's something waiting.
+          {mayPromiseMorning
+            ? "Tonight I read for your three subjects. Tomorrow morning there's something waiting."
+            : "I'll keep reading for your three subjects. When something is worth your name on it, you'll hear — not before."}
         </p>
         {revealPending && proof && proof.lines.length > 0 ? (
           <WaitProof lines={proof.lines} howLong="Writing your read. About a minute." />
