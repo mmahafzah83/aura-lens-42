@@ -6,7 +6,7 @@ import {
   type RecordBucket, type RecordMilestone, type RecordPublished,
 } from "@/hooks/useRecordTimeline";
 import { ProvenanceMark } from "@/components/systemb";
-import { nEvidence, nSignals } from "@/constants/vocabulary";
+import { nEvidence, nSignals, EVIDENCE, SIGNAL } from "@/constants/vocabulary";
 
 /**
  * THE RECORD — what has actually happened, compressed by age.
@@ -153,7 +153,7 @@ const ThemeChip: React.FC<{
         fontSize: 12.5, color: "var(--text-secondary)",
       }}>
         <span aria-hidden style={{ ...MONO, fontSize: 10 }}>{open ? "▾" : "▸"}</span>
-        {plural(n, "signal found", "signals found")}
+        {`${nSignals(n)} found`}
       </button>
     </div>
     {open && (
@@ -190,8 +190,8 @@ const YearStrip: React.FC<{ months: RecordBucket[]; onPick: (key: string) => voi
           return (
             <button
               key={m.d} type="button" onClick={() => onPick(m.d)}
-              title={`${monthLabel(m.d)} — ${m.cap} saved, ${m.pub} posted`}
-              aria-label={`${monthLabel(m.d)}: ${m.cap} saved, ${m.pub} posted`}
+              title={`${monthLabel(m.d)} — ${m.cap} captured, ${m.pub} posted`}
+              aria-label={`${monthLabel(m.d)}: ${m.cap} captured, ${m.pub} posted`}
               style={{
                 display: "grid", gap: 5, justifyItems: "center", background: "none", border: 0,
                 padding: 0, cursor: "pointer", fontFamily: "var(--font-body)",
@@ -207,7 +207,7 @@ const YearStrip: React.FC<{ months: RecordBucket[]; onPick: (key: string) => voi
         })}
       </div>
       <Muted style={{ fontSize: 12 }}>
-        Each bar is one month. Taller means you saved more that month. Blue means you posted something that month.
+        Each bar is one month. Taller means you captured more that month. Blue means you posted something that month.
       </Muted>
       {!all && asc.length > 18 && (
         <TextButton onClick={() => setAll(true)} style={{ justifySelf: "start", fontSize: 12.5 }}>
@@ -573,8 +573,8 @@ export const RecordLens: React.FC<RecordLensProps> = ({
       <div style={{ borderBlockStart: "1px solid var(--rule-divider)", padding: "16px 20px", display: "grid", gap: 10 }}>
         <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))" }}>
           <Counter n={daysOnRecord ?? "—"} label="days using Aura" />
-          <Counter n={t.fragmentsTotal} label="pieces of evidence saved" />
-          <Counter n={t.themesTotal} label="signals found in them" />
+          <Counter n={t.fragmentsTotal} label={`${EVIDENCE.many.toLowerCase()} captured`} />
+          <Counter n={t.themesTotal} label={`${SIGNAL.many} found in them`} />
           <Counter n={`${nightsProduced}/7`} label="nights Aura found something to write" />
           <Counter n={t.publishedTotal} label="posts live on LinkedIn" blue />
           <Counter n={t.publishedThroughAura} label="written with Aura" blue />

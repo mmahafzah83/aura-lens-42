@@ -229,7 +229,8 @@ export const NightCard: React.FC<{ facts: HomeFacts | null; onOpen: () => void }
 
 export const WidgetsCard: React.FC<{
   layout: WidgetLayout; metrics: WidgetMetrics | null; onEdit: () => void;
-}> = ({ layout, metrics, onEdit }) => {
+  failed?: boolean; onRetry?: () => void;
+}> = ({ layout, metrics, onEdit, failed, onRetry }) => {
   const on = WIDGET_DEFS.filter((d) => layout[d.key]);
   return (
     <Card style={{ padding: 0 }}>
@@ -239,7 +240,8 @@ export const WidgetsCard: React.FC<{
       </div>
       <div style={{ padding: 18, display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
         {metrics && on.map((d) => <WidgetBody key={d.key} k={d.key} m={metrics} />)}
-        {on.length === 0 && (
+        {failed && <ReadFailure onRetry={onRetry} />}
+        {!failed && on.length === 0 && (
           <div style={{ display: "grid", gap: 6 }}>
             <Body>Nothing is pinned here yet.</Body>
             <Muted>Choose the numbers you want to watch and they appear on this card.</Muted>

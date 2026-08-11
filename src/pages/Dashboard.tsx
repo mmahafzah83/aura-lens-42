@@ -225,7 +225,7 @@ const Dashboard = () => {
         newly_earned: [`tier_${tierImprint.currentTier.key}`],
         milestones: [{
           id: `tier_${tierImprint.currentTier.key}`,
-          name: `${tierImprint.currentTier.name} tier`,
+          name: `${tierImprint.currentTier.name} — your new standing`,
         }],
       }
     : null;

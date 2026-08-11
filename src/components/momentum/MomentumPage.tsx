@@ -6,6 +6,8 @@ import { TIER_BANDS, bandFromKey, bandFromScore } from "@/hooks/useTierFromImpri
 import { filterPublishedRows, postEffectiveDate } from "@/lib/postProvenance";
 import { RecordLens } from "@/components/home/RecordLens";
 import { useHomeAddress } from "@/hooks/useHomeAddress";
+import { ReadFailure } from "@/components/home/homeAtoms";
+import { SIGNAL, CAPTURE } from "@/constants/vocabulary";
 
 /**
  * MOMENTUM — V23 `s-mo`.
@@ -113,6 +115,7 @@ export default function MomentumPage() {
   const [tierKey, setTierKey] = useState<string | null>(null);
   const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
   const [overnightOn, setOvernightOn] = useState<boolean | null>(null);
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     if (!uid) return;
@@ -150,6 +153,18 @@ export default function MomentumPage() {
         .eq("user_id", uid)
         .eq("status", "merged"),
     ]);
+
+    // Loading, empty and failed are three different things. A failed read
+    // says so and never overwrites figures already on screen.
+    const anyError = [funnelRes, entriesRes, postsRes, scoreRes, msRes, prefRes, sigLiveRes, sigMergedRes]
+      .map((r: any) => r?.error).find(Boolean);
+    if (anyError) {
+      console.warn("[MomentumPage] read failed", anyError);
+      setFailed(true);
+      setLoaded(true);
+      return;
+    }
+    setFailed(false);
 
     const f = (funnelRes.data as any)?.[0] ?? null;
     setFunnel(
@@ -252,6 +267,7 @@ export default function MomentumPage() {
         <p style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: 0, maxWidth: 620 }}>
           What you've built, how often you show up, and what's next.
         </p>
+        {failed && <ReadFailure onRetry={() => void load()} style={{ marginTop: 4 }} />}
       </header>
 
       {/* ── The Record ───────────────────────────────────────── */}
@@ -333,8 +349,8 @@ export default function MomentumPage() {
               return (
                 <div
                   key={w.start.toISOString()}
-                  title={`Week of ${weekLabel(w.start)} — ${w.captures} captures, ${w.posts} published`}
-                  aria-label={`Week of ${weekLabel(w.start)}: ${w.captures} captures, ${w.posts} published`}
+                  title={`Week of ${weekLabel(w.start)} — ${w.captures} ${CAPTURE.nounPlural}, ${w.posts} published`}
+                  aria-label={`Week of ${weekLabel(w.start)}: ${w.captures} ${CAPTURE.nounPlural}, ${w.posts} published`}
                   style={{
                     width: 34,
                     height: 34,
@@ -378,7 +394,7 @@ export default function MomentumPage() {
           <SectionLabel>What you've built</SectionLabel>
           <Card>
             <div style={{ display: "grid", gap: 10 }}>
-              <FunnelRow label="Captures" value={funnel.captures} note="everything you've saved" width={100} />
+              <FunnelRow label="Captures" value={funnel.captures} note="everything you've captured" width={100} />
               <FunnelRow
                 label="Used in a signal"
                 value={funnel.used_in_signal}
@@ -386,9 +402,9 @@ export default function MomentumPage() {
                 width={pct(funnel.used_in_signal, funnel.captures)}
               />
               <FunnelRow
-                label="Signals formed"
+                label={`${SIGNAL.Many} formed`}
                 value={funnel.signals}
-                note="patterns across your captures"
+                note={`patterns across your ${CAPTURE.nounPlural}`}
                 aside={
                   funnel.mergedSignals > 0
                     ? `${funnel.mergedSignals} later merged into stronger ones`

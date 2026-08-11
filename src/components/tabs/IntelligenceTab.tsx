@@ -493,7 +493,7 @@ export const SignalHero = ({
         Confidence: <strong style={{ color: "var(--brand)", fontWeight: 500 }}>{confPct}%</strong>
         <InfoTooltip
           label="Confidence"
-          text="Evidence strength for this signal. More captures on this theme = higher confidence. Signals below 20% will fade."
+          text="Evidence strength for this signal. More captures on this signal = higher confidence. Signals below 20% will fade."
           side="top"
           triggerSize={14}
         />{" "}
@@ -709,7 +709,7 @@ export const EditorialBlindSpots = ({
           WHAT YOU'RE NOT SEEING
           <InfoTooltip
             label="Blind spots"
-            text="Topics active in your sector that you haven't captured yet. Publishing here expands your territory."
+            text="Signals active in your sector that you haven't captured yet. Publishing here expands your territory."
             side="bottom"
             triggerSize={13}
           />

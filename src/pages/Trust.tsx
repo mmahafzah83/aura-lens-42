@@ -17,7 +17,7 @@ const Trust = () => {
       { title: "Encryption", body: "Your data is encrypted in transit and at rest, and stored on established cloud infrastructure — Supabase, running on AWS, provided through Lovable Cloud." },
       { title: "The one honest limit", body: "Aura is not end-to-end encrypted, and we will not pretend it is. To turn your reading into signals and posts, the system has to read your content. Rather than making it unreadable — which would break the product — we protect it with strict per-account isolation and by exposing it through no feature at all." },
       { title: "The providers behind Aura", body: "A small set of established providers power the intelligence (Anthropic, OpenAI, Google, Perplexity), storage (Supabase), and email (Resend). Each operates under terms that, by default, do not use your data to train their models. The full list is in our Privacy Policy." },
-      { title: "What Aura learns", body: "Your patterns — the themes you return to and the way you sound — so your output gets sharper. Aura never uses your private content to train anything for anyone else." },
+      { title: "What Aura learns", body: "Your patterns — the signals you return to and the way you sound — so your output gets sharper. Aura never uses your private content to train anything for anyone else." },
       { title: "Your control", body: "Export or delete your data at any time; shared, de-identified learning is opt-in and reversible in Settings; and if you delete your account, everything is permanently removed after 30 days. Reach us at support@aura-intel.org." },
     ]}
   />

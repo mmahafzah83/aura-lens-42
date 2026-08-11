@@ -174,7 +174,7 @@ export function useSinceLastVisit(userId: string | null | undefined): SinceLastV
         key: "themes",
         text: fresh.length > THEME_DELTA_CEILING
           ? `Your reading opened new themes — ${strengthening} ${plural(strengthening, "is", "are")} already strengthening.`
-          : `Your reading opened ${fresh.length} new ${plural(fresh.length, "theme", "themes")} Aura now tracks for you.`,
+          : `Your reading opened ${fresh.length} new ${plural(fresh.length, "signal", "signals")} Aura now tracks for you.`,
         actionLabel: "See what's new",
         action: { kind: "tab", tab: "intelligence" },
       });
