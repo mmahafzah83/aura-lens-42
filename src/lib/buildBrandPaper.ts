@@ -154,6 +154,17 @@ function parseInvestFromProse(prose: string): BrandPaperInvest[] {
   return out;
 }
 
+/**
+ * Sheets are fixed 794×1123 boxes with overflow hidden — content is budgeted,
+ * not reflowed. Trim to the last full sentence inside the cap.
+ */
+function capAtSentence(s: string | null, max: number): string | null {
+  if (!s || s.length <= max) return s;
+  const slice = s.slice(0, max);
+  const cut = slice.lastIndexOf(". ");
+  return (cut > max * 0.4 ? slice.slice(0, cut + 1) : slice.trim()) || null;
+}
+
 export function buildBrandPaper(
   results: Record<string, any> | null | undefined,
   profile: BrandPaperProfile | null | undefined,
@@ -220,13 +231,14 @@ export function buildBrandPaper(
     invest_next = src.invest_next
       .map((x: any) => ({
         area: stripMd(x?.area || ""),
-        insight: stripMd(x?.insight || ""),
+        insight: capAtSentence(stripMd(x?.insight || ""), 280) || "",
       }))
       .filter(x => x.area)
       .slice(0, 2);
   }
   if (invest_next.length === 0) {
-    invest_next = parseInvestFromProse(prose);
+    invest_next = parseInvestFromProse(prose)
+      .map((x) => ({ area: x.area, insight: capAtSentence(x.insight, 280) || "" }));
   }
 
   const asList = (v: any, max = 8): string[] =>
@@ -236,14 +248,14 @@ export function buildBrandPaper(
     primary_archetype,
     secondary_archetype,
     positioning_statement,
-    market_read,
-    trust_pattern,
+    market_read: capAtSentence(market_read, 620),
+    trust_pattern: capAtSentence(trust_pattern, 620),
     natural_tone,
-    unique_capability,
+    unique_capability: capAtSentence(unique_capability, 620),
     uncontested_space,
     topics,
     invest_next,
-    honest_truth,
+    honest_truth: capAtSentence(honest_truth, 620),
     the_gap,
     own_words_quote,
     own_words_read,
@@ -251,8 +263,8 @@ export function buildBrandPaper(
     voice_signature: nullOr(stripMd(src.voice_signature)),
     authority_style: nullOr(stripMd(src.authority_style)),
     key_barrier: nullOr(stripMd(src.key_barrier)),
-    content_pillars: asList(src.content_pillars),
-    growth_areas: asList(src.growth_areas),
+    content_pillars: asList(src.content_pillars).slice(0, 3),
+    growth_areas: asList(src.growth_areas).slice(0, 2),
     profile: {
       first_name: profile?.first_name ?? null,
       last_name: profile?.last_name ?? null,
