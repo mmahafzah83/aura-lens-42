@@ -3,6 +3,7 @@
  * link. Deals in like a card off the top of a deck.
  */
 import { OB, SPRING } from "./tokens";
+import { trimToSentence, memberText } from "@/lib/memberText";
 
 const CSS = `
 @keyframes cc-deal{from{opacity:0;transform:translateY(26px) rotate(0deg) scale(.94)}to{opacity:1}}
@@ -34,12 +35,15 @@ const ClaimCard = ({ index, title, content }: Props) => (
     }}
   >
     <style>{CSS}</style>
-    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, lineHeight: 1.35, color: OB.ink }}>{title}</p>
+    <p {...memberText(title)}
+      style={{ margin: 0, fontSize: 13, fontWeight: 700, lineHeight: 1.35, color: OB.ink, ...(memberText(title).style || {}) }}>
+      {title}
+    </p>
     {content ? (
-      <p style={{
+      <p {...memberText(content)} style={{
         margin: "5px 0 0", fontSize: 11, lineHeight: 1.5, color: OB.muted,
-        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-      }}>{content}</p>
+        ...(memberText(content).style || {}),
+      }}>{trimToSentence(content, 170)}</p>
     ) : null}
   </div>
 );
