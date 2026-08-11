@@ -1521,7 +1521,7 @@ const Onboarding = () => {
                 {connected ? <Check size={16} style={{ color: "#12805C", flexShrink: 0, marginBlockStart: 2 }} /> : <span style={{ inlineSize: 16, flexShrink: 0 }} />}
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: OB.ink }}>
-                    {connected ? "Connected · Aura can see how your posts performed" : "What's private · not connected"}
+                    {connected ? "Connected · Aura can read your posts and publish when you approve" : "What's private · not connected"}
                   </p>
                   {connected ? null : (
                     <>
@@ -1543,7 +1543,7 @@ const Onboarding = () => {
               </div>
 
               <p style={{ margin: "16px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
-                Aura only reads. It never posts. You can disconnect either one in Settings.
+                Aura reads your posts, and can publish for you — but only when you approve it. Nothing goes out in your name on its own. You can disconnect either one in Settings.
               </p>
             </div>
 
@@ -2432,7 +2432,7 @@ const Onboarding = () => {
         <Actions style={{ marginBlockStart: 22 }}>
           <OBButton onClick={() => void finish()}>Take me in</OBButton>
         </Actions>
-        <p style={{ ...footnote, color: OB.mutedNight }}>Aura never posts. You press publish, every time.</p>
+        <p style={{ ...footnote, color: OB.mutedNight }}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
       </NightShell>
     );
   }
