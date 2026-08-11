@@ -730,7 +730,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
 
         // Beat 1 — honest, no fabricated progress
         try { sessionStorage.setItem("aura_pending_capture_at", String(Date.now())); } catch { /* noop */ }
-        sonnerToast("Saved. Aura is reading it — this usually takes a few minutes.");
+        sonnerToast("Captured. Aura is reading it — this usually takes a few minutes.");
 
         const voiceSince = new Date(Date.now() - 5000).toISOString();
         const voiceBaseline = await snapshotBaseline(session.user.id);
@@ -908,7 +908,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
       if (!didCelebrate) {
         // Beat 1 — honest, no fabricated progress. Beat 2 lands via the
         // realtime subscription in Dashboard when fragments actually arrive.
-        sonnerToast("Saved. Aura is reading it — this usually takes a few minutes.", {
+        sonnerToast("Captured. Aura is reading it — this usually takes a few minutes.", {
           duration: 4500,
         });
       }

@@ -122,7 +122,7 @@ function CollapsibleItem({
 
 const LOOP_STEPS: { n: string; text: string }[] = [
   { n: "01", text: "You read what you already read. Paste a link, forward a PDF, drop a note. That is the only work Aura asks of you." },
-  { n: "02", text: "Aura reads it with you. Overnight it pulls the evidence out of what you saved and files it by theme." },
+  { n: "02", text: "Aura reads it with you. Overnight it pulls the evidence out of what you captured and files it by signal." },
   { n: "03", text: "Patterns become signals. When several independent sources point the same way, that becomes a signal, with its sources attached." },
   { n: "04", text: "Drafts arrive in your voice. Aura writes from your own signals, in your register, English or Arabic. Nothing publishes itself." },
   { n: "05", text: "Your Imprint compounds. You approve, you publish, and the record builds week over week." },

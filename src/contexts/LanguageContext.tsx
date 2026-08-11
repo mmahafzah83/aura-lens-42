@@ -74,7 +74,7 @@ const translations: Record<string, string> = {
   "account.entries": "entries",
   "account.docChunks": "doc chunks",
   "account.strategicSynthesis": "Strategic Synthesis",
-  "account.keyThemes": "Key Themes",
+  "account.keyThemes": "Key signals",
   "account.strategicQuestions": "Questions for GM Discussion",
   "account.risks": "Risk Factors",
   "account.opportunities": "Opportunities",

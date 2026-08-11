@@ -70,7 +70,7 @@ const BAND_TO_LEVEL: Record<Band, string> = {
 
 const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
   { key: "profile", label: "Your profile", tone: "blue" },
-  { key: "kept", label: "Evidence kept", tone: "cyan" },
+  { key: "kept", label: "Evidence captured", tone: "cyan" },
   { key: "strengths", label: "Strengths", tone: "deep" },
   { key: "read", label: "Signals found", tone: "amber" },
 ];
@@ -870,7 +870,7 @@ const Onboarding = () => {
       },
     });
     const figures = [
-      ...(claims.length ? [{ value: num(claims.length), label: "evidence kept" }] : []),
+      ...(claims.length ? [{ value: num(claims.length), label: "evidence captured" }] : []),
       ...(Object.keys(scores).length
         ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
       ...(built?.subjects.length ? [{ value: num(built.subjects.length), label: "signals found" }] : []),
@@ -911,7 +911,7 @@ const Onboarding = () => {
       });
       if (d) {
         const figures = [
-          ...(claims.length ? [{ value: num(claims.length), label: "evidence kept" }] : []),
+          ...(claims.length ? [{ value: num(claims.length), label: "evidence captured" }] : []),
           ...(Object.keys(scores).length
             ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
           ...(d.subjects.length ? [{ value: num(d.subjects.length), label: "signals found" }] : []),
@@ -2182,7 +2182,7 @@ const Onboarding = () => {
               </>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted, marginBlockStart: 20 }}>
-                <Loader2 size={14} className="animate-spin" /> Reading your posts and what you kept…
+                <Loader2 size={14} className="animate-spin" /> Reading your posts and what you captured…
               </div>
             )
           ) : (
@@ -2257,13 +2257,13 @@ const Onboarding = () => {
             <>
               I have {num(proof.posts)} of your posts and {num(proof.words)} words in your own voice
               {proof.pctWithNumber !== null ? `, ${proof.pctWithNumber}% of them carrying a real number` : ""}
-              {claims.length ? `, plus ${num(claims.length)} things you kept` : ""}. That is what I write from — not a
+              {claims.length ? `, plus ${num(claims.length)} things you captured` : ""}. That is what I write from — not a
               template.
             </>
           ) : (
             <>
               {EMPTY_POSTS_LINE_NIGHT}
-              {claims.length ? ` I already have ${num(claims.length)} ${claims.length === 1 ? "thing" : "things"} you kept and your own answers on file.` : " I already have your own answers on file."}
+              {claims.length ? ` I already have ${num(claims.length)} ${claims.length === 1 ? "thing" : "things"} you captured and your own answers on file.` : " I already have your own answers on file."}
             </>
           )}
         </p>

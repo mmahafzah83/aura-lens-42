@@ -105,7 +105,7 @@ export function useQuestProgress(userId: string | null) {
       { id: "p3_authority", label: "Reach Presence tier", done: authorityScore >= 65 },
       { id: "p3_mirror", label: "Complete Market Mirror", done: mirrorCount >= 1 },
       { id: "p3_track", label: "Track 3+ post performances", done: distinctMetricPosts >= 3 },
-      { id: "p3_themes", label: "Build 5+ theme coverage", done: themeCount >= 5 },
+      { id: "p3_themes", label: "Build 5+ signal coverage", done: themeCount >= 5 },
       { id: "p3_carousel", label: "Generate a carousel", done: carouselCount >= 1 },
     ];
 

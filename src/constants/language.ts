@@ -63,7 +63,7 @@ export const LOADING = {
   captureProgress: [
     "Reading the article...",
     "Finding patterns...",
-    "Saved.",
+    "Captured.",
   ],
 } as const;
 
@@ -71,7 +71,7 @@ export const LOADING = {
 // TOASTS & NOTIFICATIONS
 // ════════════════════════════════════
 export const TOAST = {
-  captureSaved: "Saved. Aura is on it.",
+  captureSaved: "Captured. Aura is on it.",
   draftReady: "Your draft is ready.",
   copied: "Copied. Go put your name on it.",
   draftSaved: "Saved. It's here when you're ready.",
@@ -95,7 +95,7 @@ export const ERROR = {
   sessionExpired: "Session expired. Sign back in — everything's still here.",
   internalError: "Something's off on our end. We're on it.",
   chatError: "Lost the thread. Send that again.",
-  duplicate: "You've already saved this one. Try something new.",
+  duplicate: "You've already captured this one. Try something new.",
   paywall: "Couldn't read that article — it might be behind a paywall. Try pasting the text instead.",
 } as const;
 
@@ -146,7 +146,7 @@ export const SUBTITLES = {
   publishVoice: "Aura learned how you write from your real posts. This is your voice — not AI's.",
   publishDrafts: "These are ready to go. One click, and your expertise is out there working for you — even while you sleep.",
   impact: "Every week you show up, your name reaches rooms you've never been in. That's how advisory calls, board invitations, and speaking slots find you.",
-  focusAreas: "You keep coming back to these themes. There's a reason — and Aura knows what it is.",
+  focusAreas: "You keep coming back to these signals. There's a reason — and Aura knows what it is.",
   capabilities: "The things you do that most people in your space can't. These show up in everything you write.",
 } as const;
 
