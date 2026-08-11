@@ -69,8 +69,6 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
         return;
       }
       const p = data as any;
-      await markVerifiedByRead(userId);
-
       let posts: number | null = null;
       try {
         const { data: postData } = await supabase.functions.invoke("linkedin-fetch-posts", {
