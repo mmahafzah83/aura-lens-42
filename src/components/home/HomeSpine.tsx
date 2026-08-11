@@ -71,7 +71,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
   const uid = userId ?? "anon";
   const address = useHomeAddress(userId);
   const facts = address.facts;
-  const chips = useReadChips(userId, facts);
+  const { chips, failed: chipsFailed, refresh: refreshChips } = useReadChips(userId, facts);
 
   const { layout, metrics, failed: widgetsFailed, reload: reloadWidgets } = useWidgetData(userId);
   const [themes, setThemes] = useState<OwnedTheme[]>([]);
@@ -375,6 +375,9 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
                   }}
                 >i</span>
               </div>
+            )}
+            {chipsFailed && (
+              <ReadFailure onRetry={refreshChips} style={{ marginBlockStart: 4 }} />
             )}
           </div>
         )}
