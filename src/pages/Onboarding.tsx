@@ -360,13 +360,14 @@ const Onboarding = () => {
     if (screen !== 13 || !userId) return;
     let alive = true;
     void (async () => {
-      const { data } = await supabase
-        .from("linkedin_connections")
-        .select("can_post, access_token")
+      // The browser has no grant on access_token / can_post — asking for them
+      // fails the whole query. An active connection is the answer.
+      const { data } = await (supabase.from("linkedin_connections_safe" as any) as any)
+        .select("status")
         .eq("user_id", userId)
         .eq("status", "active")
         .maybeSingle();
-      if (alive) setCanPostToLinkedIn(!!data?.access_token && (data as any)?.can_post !== false);
+      if (alive) setCanPostToLinkedIn(!!data);
     })();
     return () => { alive = false; };
   }, [screen, userId]);
