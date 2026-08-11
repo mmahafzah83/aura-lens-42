@@ -667,5 +667,3 @@ serve(async (req) => {
   }
 });
 
-// Silence unused-import warning: pullQuote is retained for future variants.
-void pullQuote;
