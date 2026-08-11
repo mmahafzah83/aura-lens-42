@@ -979,7 +979,6 @@ const Dashboard = () => {
           <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={activeTab === "authority" ? undefined : { minHeight: "60vh" }}>
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
-                <ResumeJourneyCard userId={userId} />
                 <LinkedInNudge userId={userId} />
                 <FirstLoginWelcome
                   firstName={user?.firstName ?? null}
