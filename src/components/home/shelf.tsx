@@ -103,7 +103,7 @@ export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => v
 export const StandCard: React.FC<{ facts: HomeFacts | null }> = ({ facts }) => {
   const c = facts?.components ?? { signal: null, content: null, capture: null };
   const rows: Array<{ label: string; value: number | null; weight: string }> = [
-    { label: "Signal", value: c.signal, weight: "themes you hold" },
+    { label: "Signal", value: c.signal, weight: "signals you hold" },
     { label: "Content", value: c.content, weight: "what you published" },
     { label: "Capture", value: c.capture, weight: "what you feed it" },
   ];

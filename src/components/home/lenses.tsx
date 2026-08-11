@@ -22,11 +22,11 @@ export type { RecordLensProps, RecordZoom } from "./RecordLens";
 const FACET_WORDS: Record<string, { name: string; line: string }> = {
   conviction:  { name: "Confidence", line: "How sure your writing sounds." },
   discernment: { name: "Perception", line: "How well you read what is changing." },
-  edge:        { name: "Expertise",  line: "How specific your knowledge is." },
+  edge:        { name: "Expertise",  line: "How specific your expertise is." },
   voice:       { name: "Voice",      line: "How much your writing sounds like you." },
   focus:       { name: "Focus",      line: "How much you stay on your main signals." },
   identity:    { name: "Identity",   line: "How clear it is what you stand for." },
-  audience:    { name: "Audience",   line: "How well your topics match who you want to reach." },
+  audience:    { name: "Audience",   line: "How well your signals match who you want to reach." },
 };
 
 const facetWords = (key: string) =>
