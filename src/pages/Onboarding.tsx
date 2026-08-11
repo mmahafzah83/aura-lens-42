@@ -1809,6 +1809,7 @@ const Onboarding = () => {
 
   /* 8 — NIGHT, before the sliders */
   if (screen === 8) {
+    if (!band) { content = bandPrompt(2); } else {
     const sliderCount = dims?.length ?? 0;
     // Sector rows do not exist yet — every member gets the band set, so the
     // copy may only promise the level.
@@ -1824,7 +1825,7 @@ const Onboarding = () => {
               Where your own read and your posts disagree is where the useful part is.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              No score. Each one asks what you've actually done, in plain sentences rather than numbers.
+              This isn't a test. Each one asks what you've actually done, in plain sentences rather than numbers.
             </p>
             {pickedLine ? <p style={{ ...bodyNight, textAlign: "center" }}>{pickedLine}</p> : null}
             <Actions style={{ marginBlockStart: 24 }}>
@@ -1836,13 +1837,16 @@ const Onboarding = () => {
         )}
       </NightShell>
     );
+    }
   }
 
   /* 8.5 — retired; resume positions are forwarded to screen 8 above. */
 
   /* 9 — WHITE ×8, the sliders */
   if (screen === 9) {
-    if (contentError || !dims) {
+    if (!band) {
+      content = bandPrompt(2);
+    } else if (contentError || !dims) {
       content = (
         <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
