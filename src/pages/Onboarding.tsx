@@ -919,32 +919,31 @@ const Onboarding = () => {
     } catch { /* the read is already on their Home */ }
     if (userId) {
       try {
-        await (supabase.from("diagnostic_profiles" as any) as any).upsert({
-          user_id: userId,
+        /* Merges — writeProfile drops every null, so finishing can never blank
+           a column the journey filled in earlier. */
+        await writeProfile({
           first_name: firstName.trim() || "Member",
-          last_name: lastName.trim() || null,
-          firm: firm.trim() || null,
-          sector_focus: sector || null,
-          level: levelTitle.trim() || (band ? BAND_TO_LEVEL[band] : null),
+          last_name: lastName.trim() || undefined,
+          firm: firm.trim() || undefined,
+          sector_focus: sector || undefined,
+          level: levelTitle.trim() || (band ? BAND_TO_LEVEL[band] : undefined),
           onboarding_completed: true,
           /* the real screen they finished on, never a hard-coded 4 */
           onboarding_step: Math.max(4, screen),
           completed: true,
           instrument_version: 2,
           ...(band ? { answered_band: band } : {}),
-        }, { onConflict: "user_id" });
+        }, "finish save");
         /* finished means no longer paused — Home must stop offering the resume card */
         try {
           const { data: cur } = await (supabase.from("diagnostic_profiles" as any) as any)
             .select("identity_intelligence").eq("user_id", userId).maybeSingle();
           const ii = ((cur as any)?.identity_intelligence as Record<string, any>) || {};
           if (ii.journey_paused) {
-            await (supabase.from("diagnostic_profiles" as any) as any)
-              .update({ identity_intelligence: { ...ii, journey_paused: false } })
-              .eq("user_id", userId);
+            await writeProfile({ identity_intelligence: { ...ii, journey_paused: false } }, "unpause save");
           }
         } catch { /* the completed flags already close the gate */ }
-      } catch (e) { console.warn("[journey] finish save failed", e); }
+      } catch (e) { console.error("[journey] finish save threw", e); }
       try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
     }
     try { localStorage.setItem("aura_onboarding_complete", "true"); } catch { /* ignore */ }
