@@ -905,12 +905,10 @@ ${sectionClose("This number going to zero means logging broke, not that the syst
 ${sectionOpen("The automated work")}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
   <td width="50%" bgcolor="${CARD}" style="border:1px solid ${RULE};padding:12px" valign="top">
-    <div style="font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:${MUTED}">Ran clean</div>
-    <div style="font-family:${MONO};font-size:22px;color:${TEAL};padding-top:5px">${size(jobsOk)}</div>
+    ${statLine(size(jobsOk), "Ran clean")}
   </td>
   <td width="50%" bgcolor="${CARD}" style="border:1px solid ${RULE};padding:12px" valign="top">
-    <div style="font-family:${MONO};font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:${MUTED}">Not due yet</div>
-    <div style="font-family:${MONO};font-size:22px;color:${MUTED};padding-top:5px">${size(jobsNotDue)}</div>
+    ${statLine(size(jobsNotDue), "Not due yet")}
   </td>
 </tr></table>
 ${size(jobsNotDue) > 0 ? `<div style="padding-top:10px">${jobsNotDue.map((j: any) => `<div style="font-family:${MONO};font-size:11px;color:${MUTED};padding:2px 0">${esc(j.name)} — last ran ${j.last_run ? esc(String(j.last_run).slice(0, 10)) : "never"} · schedule ${esc(j.schedule)} · not due yet</div>`).join("")}</div>` : ""}
@@ -919,7 +917,7 @@ ${sectionClose("A weekly job that ran cleanly last week is not a problem on a Su
 
 <!-- 14 engine room -->
 ${sectionOpen("The engine room")}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#EAE3D5" style="border:1px solid ${RULE}"><tr>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${CANVAS}" style="border:1px solid ${RULE}"><tr>
 <td width="50%" valign="top" style="padding:12px 14px">
   ${dotLine(size(jobsFailed) === 0 ? TEAL : OX, `${size(jobsOk)} jobs ran clean`)}
   ${dotLine((A.machine?.queue_failed ?? 0) === 0 ? TEAL : AMBER, `${A.machine?.queue_pending ?? 0} queued, ${A.machine?.queue_failed ?? 0} failed`)}
@@ -956,11 +954,16 @@ ${audit.pairs.map((p) => `<tr>
 ${sectionClose("A cross on any row means do not act on that number until it is reconciled.")}
 
 <!-- 17 footer -->
-<tr><td style="padding:20px 22px 24px;border-top:1px solid ${RULE}">
+<tr><td style="padding:20px 0 4px;border-top:1px solid ${RULE}">
 <div style="font-family:${SERIF};font-size:13px;color:${MUTED};line-height:1.6">This brief arrives every morning even when nothing is wrong. If it does not arrive, that is the alarm.</div>
 </td></tr>
 
-</table></td></tr></table></body></html>`;
+</table>`;
+
+    const html = renderEmail({
+      preheader: `${needsN} need you · ${decideN} to decide · ${watchN} to watch`,
+      body: brief,
+    });
 
     // ===== send =====
     let sent = false;
