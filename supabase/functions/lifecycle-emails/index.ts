@@ -4,7 +4,7 @@ import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   renderEmail, quote, divider,
-  INK, INK_SOFT, INK_FAINT, BODY, MONO,
+  INK, INK_SOFT, INK_FAINT, BODY, MONO, ARABIC,
 } from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
@@ -116,12 +116,13 @@ function footer(lang: Lang): string {
   const text = ar
     ? `يمكنك إيقاف هذه الرسائل في أي وقت.`
     : `You can turn these off anytime.`;
+  const font = ar ? ARABIC : BODY;
   return `
     ${divider()}
-    <p style="font-family:${BODY};font-size:12px;line-height:1.6;color:${INK_FAINT};margin:0;${ar ? "text-align:right;" : ""}">
+    <p style="font-family:${font};font-size:12px;line-height:1.6;color:${INK_FAINT};margin:0;${ar ? "text-align:right;" : ""}">
       <a href="${NOTIF_SETTINGS_URL}" style="color:${INK_FAINT};text-decoration:underline;">${text}</a>
     </p>
-    <p style="font-family:${BODY};font-size:13px;color:${INK};margin:18px 0 0;${ar ? "text-align:right;" : ""}">— Aura</p>
+    <p style="font-family:${font};font-size:13px;color:${INK};margin:18px 0 0;${ar ? "text-align:right;" : ""}">— Aura</p>
   `;
 }
 
