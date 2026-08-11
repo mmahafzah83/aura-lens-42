@@ -28,7 +28,6 @@ interface PostRow {
   authorship?: string | null;
   acquisition?: string | null;
   voice_corpus_status?: string | null;
-  tracking_status?: string | null;
 }
 
 export interface RefreshResult {
@@ -134,7 +133,7 @@ function observedUsePhrases(posts: PostRow[]): string[] {
 export async function refreshVoiceProfiles(db: any, userId: string): Promise<RefreshResult> {
   const { data: rows, error } = await db
     .from("linkedin_posts")
-    .select("post_text, post_url, published_at, like_count, comment_count, repost_count, source_type, authorship, acquisition, voice_corpus_status, tracking_status")
+    .select("post_text, post_url, published_at, like_count, comment_count, repost_count, source_type, authorship, acquisition, voice_corpus_status")
     .eq("user_id", userId)
     .not("post_text", "is", null)
     .order("published_at", { ascending: false })
@@ -197,8 +196,15 @@ export async function refreshVoiceProfiles(db: any, userId: string): Promise<Ref
 
     // Curated entries are kept; observed ones are trimmed by rank when over cap.
     const curated = current.filter((e) => e?.source !== "linkedin_export" &&
-      e?.source !== "linkedin_own" && e?.source !== "aura_generated");
-    const observed = [...current.filter((e) => !curated.includes(e)), ...additions]
+      e?.source !== "linkedin_own" && e?.source !== "aura_generated" &&
+      e?.source !== "voice_feedback");
+    // Anything Aura wrote or a feedback sample is not the member's writing —
+    // stored examples from those sources are dropped, not merely stopped.
+    const priorObserved = current.filter(
+      (e) => !curated.includes(e) &&
+        e?.source !== "aura_generated" && e?.source !== "voice_feedback",
+    );
+    const observed = [...priorObserved, ...additions]
       .sort((a, b) => (b?.engagement ?? 0) - (a?.engagement ?? 0));
     const examples = normalizeExamples([...curated, ...observed], MAX_EXAMPLES, "linkedin_own");
 

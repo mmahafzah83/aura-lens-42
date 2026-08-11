@@ -33,18 +33,22 @@ export async function loadLinkedInState(userId: string): Promise<LinkedInState> 
   // and asking for them made Postgres reject the whole query, so every member
   // read back as disconnected.
   const { data, error } = await (supabase.from("linkedin_connections_safe" as any) as any)
-    .select("handle, profile_url, source_status, status, last_synced_at")
+    .select("handle, profile_url, source_status, status, last_synced_at, scopes, connected_at")
     .eq("user_id", userId)
     .maybeSingle();
   if (error || !data) return EMPTY_LINKEDIN_STATE;
   const row = data as any;
   const handle = canonicalHandle(row.handle) ?? canonicalHandle(row.profile_url);
+  // An address-only row also defaults to status 'active'. Only a real OAuth
+  // connection stamps connected_at, and only the posting scope means Aura may
+  // publish on the member's behalf.
+  const connected = row.status === "active" && Boolean(row.connected_at);
   return {
-    connected: row.status === "active",
+    connected,
     handle,
     address: (row.profile_url as string | null) || profileUrlFor(handle),
     confirmedByRead: row.source_status === "verified_by_read",
-    canPost: row.status === "active",
+    canPost: connected && Array.isArray(row.scopes) && row.scopes.includes("w_member_social"),
     lastSyncedAt: (row.last_synced_at as string | null) ?? null,
   };
 }
