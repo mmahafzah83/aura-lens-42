@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { loadLayout, loadWidgetMetrics, DEFAULT_LAYOUT } from "@/components/widgets/widgetData";
+import { useWidgetData } from "@/components/widgets/useWidgetData";
 import { DRAFT_OPEN_COLUMNS, draftFromLinkedInPost } from "@/lib/draftOpen";
 import { toast } from "@/hooks/use-toast";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
@@ -83,8 +83,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
   const chips = useReadChips(userId, facts);
   const tier = useTierFromImprint(userId);
 
-  const [layout, setLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
-  const [metrics, setMetrics] = useState<WidgetMetrics | null>(null);
+  const { layout, metrics } = useWidgetData(userId);
   const [themes, setThemes] = useState<OwnedTheme[]>([]);
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -106,16 +105,11 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
     if (!userId) return;
     let alive = true;
     (async () => {
-      const [l, m, sigs] = await Promise.all([
-        loadLayout(userId),
-        loadWidgetMetrics(userId),
-        (supabase.from("strategic_signals" as any) as any)
-          .select("id, signal_title, fragment_count, velocity_status")
-          .eq("user_id", userId).eq("status", "active")
-          .order("fragment_count", { ascending: false, nullsFirst: false }).limit(6),
-      ]);
+      const sigs = await (supabase.from("strategic_signals" as any) as any)
+        .select("id, signal_title, fragment_count, velocity_status")
+        .eq("user_id", userId).eq("status", "active")
+        .order("fragment_count", { ascending: false, nullsFirst: false }).limit(6);
       if (!alive) return;
-      setLayout(l); setMetrics(m);
       setThemes(((sigs?.data as any[]) || []).map((s) => ({
         id: s.id, title: s.signal_title, fragments: s.fragment_count ?? 0, velocity: s.velocity_status ?? null,
       })));
