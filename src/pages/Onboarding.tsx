@@ -63,15 +63,15 @@ const BAND_TO_LEVEL: Record<Band, string> = {
 
 const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
   { key: "profile", label: "Your profile", tone: "blue" },
-  { key: "claims", label: "First subjects", tone: "cyan" },
-  { key: "strengths", label: "Strengths", tone: "deep" },
-  { key: "subjects", label: "Your subjects", tone: "amber" },
+  { key: "kept", label: "What you kept", tone: "cyan" },
+  { key: "strengths", label: "Your strengths", tone: "deep" },
+  { key: "read", label: "Your read", tone: "amber" },
 ];
 
 const SHELF_ICON = ["profile", "saved", "strengths", "subjects"] as const;
 const SHELF_HINT = [
   "Unlocks when Aura has read your profile",
-  "Unlocks when you save your first thing to read",
+  "Unlocks when you keep your first thing",
   "Unlocks when you've moved the sliders",
   "Unlocks when your read is written",
 ];
@@ -728,7 +728,7 @@ const Onboarding = () => {
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
     const figures = [
       ...(postsRead ? [{ value: num(postsRead), label: "posts read" }] : []),
-      ...(claims.length ? [{ value: num(claims.length), label: "subjects kept" }] : []),
+      ...(claims.length ? [{ value: num(claims.length), label: "things you kept" }] : []),
       ...(Object.keys(scores).length
         ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
     ];
@@ -767,7 +767,7 @@ const Onboarding = () => {
       const d = toRevealData(r, {
         figures: [
           ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
-          ...(claims.length ? [{ value: num(claims.length), label: "subjects kept" }] : []),
+          ...(claims.length ? [{ value: num(claims.length), label: "things you kept" }] : []),
           ...(Object.keys(scores).length ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
         ],
         excludeSoft: (dims || []).map((x) => x.name),
@@ -1136,20 +1136,21 @@ const Onboarding = () => {
   if (screen === 0) {
     content = (
       <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
-        <h1 style={h1Light}>Let's fill this up.</h1>
+        <h1 style={h1Light}>By the end of this, Aura writes like you.</h1>
         <p style={bodyLight}>
-          Five short steps, and each one gives you something back as you go. It takes about ten minutes, and you can
-          stop anywhere — everything is saved as you go. At the end this shelf is yours, and Aura knows how to write
-          the way you already think.
+          Five short steps, about ten minutes. You can stop anywhere — everything saves as you go.
         </p>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
+        <p style={{
+          margin: "26px 0 10px", fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em",
+          textTransform: "uppercase", color: OB.muted,
+        }}>
+          What you'll have when you're done
+        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "0 0 6px" }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} tone={s.tone} icon={SHELF_ICON[i]} hint={SHELF_HINT[i]} />
           ))}
         </div>
-        <p style={{ margin: "12px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted, textAlign: "center" }}>
-          Four things Aura needs. Each one unlocks as you go.
-        </p>
         <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>Start</OBButton></Actions>
         <p style={footnote}>
           Free while Aura is in beta. Your read is private — only you can see it unless you share it.
@@ -1434,8 +1435,8 @@ const Onboarding = () => {
                   {connected ? null : (
                     <>
                       <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
-                        How those posts actually performed. This is how Aura learns which of your subjects your
-                        audience already rewards — instead of guessing.
+                        How those posts actually performed. This is how Aura learns which of the subjects in your read
+                        your audience already rewards — instead of guessing.
                       </p>
                       <Actions style={{ marginBlockStart: 12 }}>
                         <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel="Connecting…">
@@ -1571,7 +1572,7 @@ const Onboarding = () => {
   if (screen === 6) {
     const steps = [
       { key: "a", label: "Article fetched", done: readStep >= 1 },
-      { key: "b", label: "Claims pulled", done: readStep >= 2 || claims.length > 0 },
+      { key: "b", label: "What Aura found", done: readStep >= 2 || claims.length > 0 },
       { key: "c", label: "Matched to your sector", done: readStep >= 3 },
     ];
     content = (
@@ -1603,7 +1604,7 @@ const Onboarding = () => {
   if (screen === 7) {
     content = (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>Three subjects, and they're yours.</h1>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>Here's what Aura found in it.</h1>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
           {claims.slice(0, 3).map((c, i) => (
             <ClaimCard key={`${c.title}-${i}`} index={i} title={c.title} content={c.content} />
@@ -1781,11 +1782,11 @@ const Onboarding = () => {
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is what makes it yours.</h1>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              Nine questions about how you actually work — read together with your posts, your claims and your
+              Nine questions about how you actually work — read together with your posts, what you kept and your
               sliders.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              What comes out is the subjects you own, the space nobody near you has claimed, and where the ground is
+              What comes out is the subjects in your read, the space nobody near you has claimed, and where the ground is
               still soft.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>Nine questions. Two minutes. Saved as you go.</p>
@@ -1926,7 +1927,7 @@ const Onboarding = () => {
               </>
             ) : (
               <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted, marginBlockStart: 20 }}>
-                <Loader2 size={14} className="animate-spin" /> Reading your posts and your claims…
+                <Loader2 size={14} className="animate-spin" /> Reading your posts and what you kept…
               </div>
             )
           ) : (
@@ -1993,20 +1994,20 @@ const Onboarding = () => {
             <>
               I have {num(proof.posts)} of your posts and {num(proof.words)} words in your own voice
               {proof.pctWithNumber !== null ? `, ${proof.pctWithNumber}% of them carrying a real number` : ""}
-              {claims.length ? `, plus ${num(claims.length)} subjects you kept` : ""}. That is what I write from — not a
+              {claims.length ? `, plus ${num(claims.length)} things you kept` : ""}. That is what I write from — not a
               template.
             </>
           ) : (
             <>
               {EMPTY_POSTS_LINE_NIGHT}
-              {claims.length ? ` I already have ${num(claims.length)} ${claims.length === 1 ? "subject" : "subjects"} and your own answers on file.` : " I already have your own answers on file."}
+              {claims.length ? ` I already have ${num(claims.length)} ${claims.length === 1 ? "thing" : "things"} you kept and your own answers on file.` : " I already have your own answers on file."}
             </>
           )}
         </p>
         <p style={{ ...bodyNight, textAlign: "center" }}>
           {mayPromiseMorning
-            ? "Tonight I read for your three subjects. Tomorrow morning there's something waiting."
-            : "I'll keep reading for your three subjects. When something is worth your name on it, you'll hear — not before."}
+            ? "Tonight I read for the subjects in your read. Tomorrow morning there's something waiting."
+            : "I'll keep reading for the subjects in your read. When something is worth your name on it, you'll hear — not before."}
         </p>
         {revealPending && proof && proof.lines.length > 0 ? (
           <WaitProof lines={proof.lines} howLong="Writing your read. About a minute." />
@@ -2101,7 +2102,7 @@ const Onboarding = () => {
           <>
             <div style={{ blockSize: 1, background: OB.lineNight, margin: "24px 0 18px" }} />
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              Connect LinkedIn and you find out which of your subjects your audience already rewards — so nothing
+              Connect LinkedIn and you find out which of the subjects in your read your audience already rewards — so nothing
               written for you is a guess.
             </p>
             <Actions style={{ marginBlockStart: 16 }}>
