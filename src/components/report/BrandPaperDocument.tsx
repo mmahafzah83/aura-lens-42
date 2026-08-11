@@ -24,12 +24,17 @@ const SHEET_H = 1123;
 const PAGE_PAD = 56;
 export const PAPER_TITLE = "The Aura Paper № 00";
 
-/** Trim to the last full sentence inside the cap — sheets do not reflow. */
+/** Trim to the last full sentence inside the cap — sheets do not reflow.
+ *  With no sentence boundary, cut at the last word boundary and close it off
+ *  so a capped line never reads as a hanging clause. */
 function capAtSentence(s: string, max: number): string {
   if (!s || s.length <= max) return s;
   const slice = s.slice(0, max);
   const cut = slice.lastIndexOf(". ");
-  return cut > max * 0.4 ? slice.slice(0, cut + 1) : slice.trim();
+  if (cut > max * 0.4) return slice.slice(0, cut + 1);
+  const word = slice.lastIndexOf(" ");
+  const base = (word > max * 0.4 ? slice.slice(0, word) : slice).trim();
+  return base.replace(/[\s,;:—–-]+$/, "") + ".";
 }
 
 // ── Bidi / Arabic (SLICE 4d) ───────────────────────────────────────────
