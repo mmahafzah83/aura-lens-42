@@ -1167,7 +1167,7 @@ const Onboarding = () => {
           <p style={{ ...bodyLight, marginBlockStart: 18 }}>{EMPTY_POSTS_LINE}</p>
         )}
 
-        {/* Everything else Aura read. Each part computed; anything missing is simply absent. */}
+        {/* What Aura found in your record. Each part computed; anything missing is simply absent. */}
         {facts ? (() => {
           const where = [
             facts.role && facts.company ? `${facts.role} at ${facts.company}` : facts.role || facts.company,
@@ -1178,11 +1178,15 @@ const Onboarding = () => {
             facts.roles ? `${facts.roles} ${facts.roles === 1 ? "role" : "roles"}` : "",
             facts.certifications ? `${facts.certifications} certifications` : "",
             facts.skills ? `${facts.skills} skills` : "",
-            facts.recommendations ? `${facts.recommendations} recommendations` : "",
+            facts.projects ? `${facts.projects} projects` : "",
+            facts.joinedYear ? `on LinkedIn since ${facts.joinedYear}` : "",
           ].filter(Boolean);
           if (!where.length && !counts.length && !facts.topSkills.length && !facts.aboutFirstLine) return null;
           return (
             <div style={{ marginBlockStart: 18 }}>
+              <p style={{ margin: "0 0 8px", fontSize: 13.5, fontWeight: 700, color: OB.ink }}>
+                What Aura found in your record
+              </p>
               {where.length ? (
                 <p style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
                   {where.join(" · ")}
@@ -1215,18 +1219,25 @@ const Onboarding = () => {
         })() : null}
 
         {/* What other people wrote about them, verbatim. Nothing here is generated. */}
-        {facts?.recQuote ? (
+        {facts?.recQuote && facts.recommendations ? (
           <figure style={{
             margin: "18px 0 0", padding: "15px 17px", borderRadius: RADIUS.card,
             background: OB.blueTint, borderInlineStart: `3px solid ${OB.blue}`,
           }}>
             <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>
-              Someone you worked with wrote this about you:
+              <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: OB.ink, marginBlockEnd: 6 }}>
+                What people who worked with you said
+              </span>
+              {facts.recommendations} {facts.recommendations === 1 ? "person has" : "people have"} written a
+              recommendation for you
             </figcaption>
             <blockquote style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: 1.6, color: OB.ink }}>
               “{facts.recQuote.text}”
             </blockquote>
             <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>— {facts.recQuote.title}</p>
+            <p style={{ margin: "8px 0 0", fontSize: 11.5, color: OB.muted }}>
+              Aura read all {facts.recommendations}.
+            </p>
           </figure>
         ) : null}
 
@@ -1252,11 +1263,9 @@ const Onboarding = () => {
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             <span style={{ fontSize: 14 }}>Level · <strong>{levelTitle || bandLabel || "not set"}</strong></span>
-            <button type="button" onClick={() => setBandPicker((v) => !v)} style={{
-              border: `1px solid ${OB.blue}`, background: OB.white, color: OB.blue,
-              fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-              padding: "8px 16px", borderRadius: 999, flexShrink: 0,
-            }}>{bandPicker ? "Close" : "Change"}</button>
+            <OBButton variant="tertiary" onClick={() => setBandPicker((v) => !v)} style={{ flexShrink: 0 }}>
+              {bandPicker ? "Close" : "Change"}
+            </OBButton>
           </div>
           {bandPicker && titleList((t, b) => { void chooseTitle(t, b); setBandPicker(false); })}
           {!sector && (
@@ -1286,7 +1295,9 @@ const Onboarding = () => {
           ))}
         </div>
 
-        <button type="button" onClick={nextFromHere} style={{ ...btnPrimary, marginBlockStart: 18 }}>That's me</button>
+        <Actions style={{ marginBlockStart: 18 }}>
+          <OBButton onClick={nextFromHere}>That's me</OBButton>
+        </Actions>
       </PaperShell>
     );
   }
