@@ -1637,10 +1637,28 @@ const Onboarding = () => {
     }
   }
 
-  /* 12 — NIGHT, the one confetti in the whole journey */
+  /* 12 — NIGHT, the shelf */
   if (screen === 12) {
+    /* the four things the report is actually doing, in order */
+    const genSteps = [
+      { key: "posts", label: "Reading your posts", done: !revealPending || genElapsed > 2000 },
+      { key: "saved", label: "Reading what you saved", done: !revealPending || genElapsed > 6000 },
+      { key: "answers", label: "Weighing your answers", done: !revealPending || genElapsed > 11000 },
+      { key: "write", label: "Writing your read", done: !revealPending },
+    ];
     content = (
       <NightShell footer={escapeFooter}>
+        {revealPending ? (
+          <div style={{ marginBlockEnd: 4 }}>
+            <WorkProgress onNight slowAfterMs={20000}
+              done={genSteps.filter((s) => s.done).length} total={genSteps.length} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockEnd: 22 }}>
+              {genSteps.map((s) => (
+                <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <h1 style={{ ...h1Night, textAlign: "center" }}>You've got a shelf.</h1>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
           {SHELF.map((s, i) => (
