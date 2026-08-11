@@ -18,6 +18,10 @@ export interface LinkedInState {
   address: string | null;
   /** A real profile read came back — the address is proven, not guessed. */
   confirmedByRead: boolean;
+  /** Same fact, named for readers that ask "is this address confirmed?". */
+  addressConfirmed: boolean;
+  /** Raw provenance of the stored address, as the row records it. */
+  sourceStatus: string | null;
   /** Whether Aura may publish for the member (still only on approval). */
   canPost: boolean;
   lastSyncedAt: string | null;
@@ -25,7 +29,8 @@ export interface LinkedInState {
 
 export const EMPTY_LINKEDIN_STATE: LinkedInState = {
   connected: false, handle: null, address: null,
-  confirmedByRead: false, canPost: false, lastSyncedAt: null,
+  confirmedByRead: false, addressConfirmed: false, sourceStatus: null,
+  canPost: false, lastSyncedAt: null,
 };
 
 export async function loadLinkedInState(userId: string): Promise<LinkedInState> {
@@ -33,22 +38,25 @@ export async function loadLinkedInState(userId: string): Promise<LinkedInState> 
   // and asking for them made Postgres reject the whole query, so every member
   // read back as disconnected.
   const { data, error } = await (supabase.from("linkedin_connections_safe" as any) as any)
-    .select("handle, profile_url, source_status, status, last_synced_at, scopes, connected_at")
+    .select("handle, profile_url, source_status, status, last_synced_at, scopes, linkedin_id")
     .eq("user_id", userId)
     .maybeSingle();
   if (error || !data) return EMPTY_LINKEDIN_STATE;
   const row = data as any;
   const handle = canonicalHandle(row.handle) ?? canonicalHandle(row.profile_url);
-  // An address-only row also defaults to status 'active'. Only a real OAuth
-  // connection stamps connected_at, and only the posting scope means Aura may
-  // publish on the member's behalf.
-  const connected = row.status === "active" && Boolean(row.connected_at);
+  // An address-only row defaults to status 'active' AND connected_at now(), so
+  // neither proves anything. Only OAuth can produce a linkedin_id and granted
+  // scopes, and only the posting scope means Aura may publish for the member.
+  const scopes: string[] = Array.isArray(row.scopes) ? row.scopes : [];
+  const connected = row.status === "active" && Boolean(row.linkedin_id) && scopes.length > 0;
   return {
     connected,
     handle,
     address: (row.profile_url as string | null) || profileUrlFor(handle),
     confirmedByRead: row.source_status === "verified_by_read",
-    canPost: connected && Array.isArray(row.scopes) && row.scopes.includes("w_member_social"),
+    addressConfirmed: row.source_status === "verified_by_read",
+    sourceStatus: (row.source_status as string | null) ?? null,
+    canPost: connected && scopes.includes("w_member_social"),
     lastSyncedAt: (row.last_synced_at as string | null) ?? null,
   };
 }

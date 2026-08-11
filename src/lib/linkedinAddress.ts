@@ -24,7 +24,12 @@ export function canonicalHandle(input: unknown): string | null {
   const v = String(input ?? "").trim();
   if (!v) return null;
   const fromUrl = v.match(/linkedin\.com\/in\/([^/?#\s]+)/i);
-  const raw = (fromUrl ? fromUrl[1] : v.replace(/^@/, "")).trim();
+  let raw = (fromUrl ? fromUrl[1] : v.replace(/^@/, "")).trim();
+  // A browser copy-paste of an Arabic vanity URL arrives percent-encoded.
+  // Decode before the character test so the Arabic passes the rule it was
+  // always meant to pass.
+  try { raw = decodeURIComponent(raw); } catch { /* keep the raw string */ }
+  raw = raw.replace(/^[.\-_]+/, "").replace(/[.\-_]+$/, "").trim();
   // Reject, never launder. A display-name guess full of commas, spaces or ®
   // cleans up into a plausible-looking slug that can never resolve on
   // LinkedIn — and then reads as a real address to every surface downstream.

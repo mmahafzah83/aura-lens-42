@@ -84,7 +84,11 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
 
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token || null;
-    const grantedScopes = (typeof tokenData.scope === "string" && tokenData.scope.trim()) ? tokenData.scope.split(/[\s,]+/).filter(Boolean) : ["r_basicprofile", "w_member_social", "r_member_postAnalytics", "r_member_profileAnalytics"];
+    // Only scopes LinkedIn actually returned may ever be stored — a guessed
+    // list would let Aura believe it may publish on a permission never granted.
+    const grantedScopes = (typeof tokenData.scope === "string" && tokenData.scope.trim())
+      ? tokenData.scope.split(/[\s,]+/).filter(Boolean)
+      : [];
     const expiresIn = tokenData.expires_in || 5184000;
 
     // Fetch LinkedIn profile. vanityName must be asked for explicitly — it is
