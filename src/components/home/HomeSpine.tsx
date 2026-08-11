@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadLayout, loadWidgetMetrics, DEFAULT_LAYOUT } from "@/components/widgets/widgetData";
 import { ARABIC } from "@/components/widgets/widgetData";
+import { DRAFT_OPEN_COLUMNS, draftFromLinkedInPost } from "@/lib/draftOpen";
 import { toast } from "@/hooks/use-toast";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import AuraLogo from "@/components/brand/AuraLogo";
