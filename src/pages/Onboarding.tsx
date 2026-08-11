@@ -1580,7 +1580,7 @@ const Onboarding = () => {
             </div>
 
             <Actions style={{ marginBlockStart: 18 }}>
-              <OBButton onClick={() => go(4)}>Continue</OBButton>
+              <OBButton onClick={async () => { await confirmBandIfDetected(); go(4); }}>Continue</OBButton>
               <OBButton variant="tertiary" onClick={() => go(4)}>I'll do that later</OBButton>
             </Actions>
           </>
