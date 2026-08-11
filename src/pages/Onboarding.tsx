@@ -27,7 +27,8 @@ import AuraFace from "@/components/onboarding/AuraFace";
 import ShelfBadge, { type ShelfBadgeTone } from "@/components/onboarding/ShelfBadge";
 import ClaimCard from "@/components/onboarding/ClaimCard";
 import ProgressBeads from "@/components/onboarding/ProgressBeads";
-import RevealCard, { type RevealData, shareRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
+import RevealCard, { type RevealData, shareRevealCard, rasteriseRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import StatusRow from "@/components/onboarding/StatusRow";
 import { loadOwnSentence, type OwnSentence } from "@/lib/ownSentence";
 import MethodNote from "@/components/onboarding/MethodNote";
@@ -326,6 +327,31 @@ const Onboarding = () => {
   const [phIdx, setPhIdx] = useState(0);
   const [sharing, setSharing] = useState(false);
   const shareRef = useRef<HTMLDivElement | null>(null);
+  /* posting to LinkedIn — offered only where it can actually work */
+  const [canPostToLinkedIn, setCanPostToLinkedIn] = useState(false);
+  const [captionDraft, setCaptionDraft] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [postedUrl, setPostedUrl] = useState<string | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  /* the two things screen 13 needs: may we post, and what would we say */
+  useEffect(() => {
+    if (screen !== 13 || !userId) return;
+    let alive = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("linkedin_connections")
+        .select("can_post, access_token")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .maybeSingle();
+      if (alive) setCanPostToLinkedIn(!!data?.access_token && (data as any)?.can_post !== false);
+    })();
+    return () => { alive = false; };
+  }, [screen, userId]);
+  useEffect(() => {
+    if (screen !== 13) return;
+    setCaptionDraft((c) => c || suggestedCaption(postsRead ?? 0));
+  }, [screen, postsRead]);
 
   /* loop safety valve — kept from the previous journey */
   const [visits, setVisits] = useState(0);
@@ -2084,6 +2110,76 @@ const Onboarding = () => {
   if (screen === 13) {
     const shareFooter = { posts: postsRead ?? 0, saved: claims.length };
     const caption = suggestedCaption(postsRead ?? 0);
+    const liveCaption = captionDraft.trim() || caption;
+
+    const downloadRead = async () => {
+      if (!shareRef.current) return;
+      setSharing(true);
+      try {
+        const how = await shareRevealCard(shareRef.current, { caption: liveCaption });
+        toast.success(how === "shared"
+          ? "Sent to your share sheet."
+          : "Image saved — the caption is on your clipboard, ready to paste.");
+      } catch (err) {
+        console.error("[reveal] share failed", err);
+        toast.error("Couldn't build the image. Your read is safe — it's on your Home.");
+      } finally {
+        setSharing(false);
+      }
+    };
+
+    const postToLinkedIn = async () => {
+      if (!shareRef.current) return;
+      setPosting(true);
+      try {
+        const { dataUrl } = await rasteriseRevealCard(shareRef.current, { format: "png" });
+        const imageBase64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+        const { data, error } = await invokeEdgeFunction<{ ok: boolean; reason?: string; postUrn?: string | null }>(
+          "linkedin-share-read", { body: { imageBase64, caption: liveCaption } },
+        );
+        if (error) throw error;
+        if (data?.ok) {
+          setPostedUrl(data.postUrn
+            ? `https://www.linkedin.com/feed/update/${data.postUrn}`
+            : "https://www.linkedin.com/feed/");
+          toast.success("Posted. It's on your LinkedIn now.");
+          return;
+        }
+        if (data?.reason === "not_permitted") {
+          setCanPostToLinkedIn(false);
+          toast.message("Aura can't post for you yet — image saved instead.");
+          await downloadRead();
+          return;
+        }
+        toast.error("That didn't go through. Try again, or download the image.");
+      } catch (err) {
+        console.error("[reveal] post failed", err);
+        toast.error("That didn't go through. Try again, or download the image.");
+      } finally {
+        setPosting(false);
+      }
+    };
+
+    const saveReadForLater = async () => {
+      if (!userId) return;
+      setSavingDraft(true);
+      try {
+        const { error } = await supabase.from("linkedin_posts").insert({
+          user_id: userId,
+          post_text: liveCaption,
+          source_type: "onboarding_reveal",
+          tracking_status: "draft",
+        });
+        if (error) throw error;
+        toast.success("Saved to your drafts.");
+      } catch (err) {
+        console.error("[reveal] save draft failed", err);
+        toast.error("Couldn't save that draft. Your read is safe — it's on your Home.");
+      } finally {
+        setSavingDraft(false);
+      }
+    };
+
     content = (
       <div className="obc" style={{
         minBlockSize: "100dvh",
@@ -2104,24 +2200,49 @@ const Onboarding = () => {
               <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
             </div>
           ) : null}
+          {canPostToLinkedIn && !postedUrl && reveal ? (
+            <div style={{ marginBlockStart: 18 }}>
+              <label htmlFor="ob-caption" style={{
+                display: "block", fontSize: 12.5, color: "rgba(255,255,255,.85)", marginBlockEnd: 6,
+              }}>What it will say</label>
+              <textarea
+                id="ob-caption"
+                dir="auto"
+                value={captionDraft}
+                onChange={(e) => setCaptionDraft(e.target.value)}
+                rows={4}
+                style={{
+                  inlineSize: "100%", padding: "10px 12px", borderRadius: RADIUS.chip,
+                  border: "1px solid rgba(255,255,255,.35)", background: "rgba(255,255,255,.12)",
+                  color: "#FFFFFF", fontFamily: OB.ui, fontSize: 14, lineHeight: 1.55, resize: "vertical",
+                }}
+              />
+            </div>
+          ) : null}
           <Actions style={{ marginBlockStart: 20 }}>
-          <OBButton disabled={!reveal} loading={sharing} loadingLabel="Building…" onClick={async () => {
-            if (!shareRef.current) return;
-            setSharing(true);
-            try {
-              const how = await shareRevealCard(shareRef.current, { caption });
-              toast.success(how === "shared"
-                ? "Sent to your share sheet."
-                : "Image saved — the caption is on your clipboard, ready to paste.");
-            } catch (err) {
-              console.error("[reveal] share failed", err);
-              toast.error("Couldn't build the image. Your read is safe — it's on your Home.");
-            } finally {
-              setSharing(false);
-            }
-          }} style={{ background: "#FFFFFF", color: OB.blue }}>Share this</OBButton>
+          {canPostToLinkedIn && !postedUrl ? (
+            <OBButton disabled={!reveal || !captionDraft.trim()} loading={posting} loadingLabel="Posting…"
+              onClick={() => void postToLinkedIn()}
+              style={{ background: "#FFFFFF", color: OB.blue }}>Post it to LinkedIn</OBButton>
+          ) : null}
+          {postedUrl ? (
+            <a href={postedUrl} target="_blank" rel="noopener noreferrer" style={{
+              display: "block", textAlign: "center", color: "#FFFFFF", fontSize: 14,
+              textDecoration: "underline", padding: "10px 0",
+            }}>View it on LinkedIn</a>
+          ) : null}
+          <OBButton
+            variant={canPostToLinkedIn && !postedUrl ? "secondary" : "primary"}
+            disabled={!reveal} loading={sharing} loadingLabel="Building…"
+            onClick={() => void downloadRead()}
+            style={canPostToLinkedIn && !postedUrl
+              ? { borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }
+              : { background: "#FFFFFF", color: OB.blue }}
+          >Download the image</OBButton>
+          <OBButton variant="tertiary" disabled={savingDraft} onClick={() => void saveReadForLater()}
+            style={{ color: "#FFFFFF" }}>Save it for later</OBButton>
           <OBButton variant="tertiary" onClick={() => go(14)}
-            style={{ color: "#FFFFFF" }}>Take me in</OBButton>
+            style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
           </Actions>
           <p style={{ margin: "14px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
             Free while Aura is in beta. Your read is private — only you can see it unless you share it.

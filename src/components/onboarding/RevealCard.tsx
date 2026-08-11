@@ -34,10 +34,10 @@ export const suggestedCaption = (posts: number): string =>
  * Renders a mounted reveal card to an image and hands it to the member —
  * the share sheet on mobile, a download plus a copied caption everywhere else.
  */
-export async function shareRevealCard(
+export async function rasteriseRevealCard(
   node: HTMLElement,
-  opts: { fileName?: string; format?: "png" | "jpeg"; caption?: string } = {},
-): Promise<"shared" | "downloaded"> {
+  opts: { format?: "png" | "jpeg" } = {},
+): Promise<{ dataUrl: string; format: "png" | "jpeg" }> {
   const { toPng, toJpeg } = await import("html-to-image");
   // Webfonts must be resolved before rasterising, or html-to-image throws on
   // the cross-origin stylesheet mid-export.
@@ -56,7 +56,14 @@ export async function shareRevealCard(
     format = "jpeg";
     dataUrl = await toJpeg(node, { pixelRatio, quality: 0.92, cacheBust: true, skipFonts: true } as any);
   }
+  return { dataUrl, format };
+}
 
+export async function shareRevealCard(
+  node: HTMLElement,
+  opts: { fileName?: string; format?: "png" | "jpeg"; caption?: string } = {},
+): Promise<"shared" | "downloaded"> {
+  const { dataUrl, format } = await rasteriseRevealCard(node, { format: opts.format });
   const blob = await (await fetch(dataUrl)).blob();
   const fileName = opts.fileName ?? `my-read-from-aura.${format === "jpeg" ? "jpg" : "png"}`;
   const file = new File([blob], fileName, { type: blob.type });
@@ -156,7 +163,7 @@ const RevealCard = forwardRef<
       </>
     )}
 
-    {data.softGround.length > 0 && (
+    {!forExport && data.softGround.length > 0 && (
       <>
         <p style={{ margin: "18px 0 8px", fontSize: 11.5, opacity: 0.85 }}>Where you're thinnest</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
@@ -181,7 +188,7 @@ const RevealCard = forwardRef<
       <p style={{ margin: "24px 0 0", fontSize: 13.5, lineHeight: 1.6, opacity: 0.92 }}>{EMPTY_POSTS_LINE}</p>
     )}
 
-    {footer ? (
+    {forExport && footer ? (
       <div style={{
         marginBlockStart: "auto", paddingBlockStart: 26,
         borderBlockStart: "1px solid rgba(255,255,255,0.28)",
@@ -201,6 +208,14 @@ const RevealCard = forwardRef<
             : `A snapshot of how my work reads from the outside${footer.saved ? ` — built from ${footer.saved} things I saved` : ""}.`}
         </p>
       </div>
+    ) : null}
+
+    {!forExport ? (
+      <p style={{
+        margin: "22px 0 0", marginBlockStart: "auto", paddingBlockStart: 22,
+        fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em",
+        color: "rgba(255,255,255,0.72)",
+      }}>Read by Aura · aura-intel.org</p>
     ) : null}
   </div>
 ));

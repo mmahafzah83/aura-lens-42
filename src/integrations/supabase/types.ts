@@ -2480,6 +2480,7 @@ export type Database = {
       linkedin_connections: {
         Row: {
           access_token: string
+          can_post: boolean | null
           claim_token_hash: string | null
           connected_at: string | null
           created_at: string | null
@@ -2490,6 +2491,8 @@ export type Database = {
           id: string
           last_synced_at: string | null
           linkedin_id: string | null
+          post_check_error: string | null
+          post_checked_at: string | null
           profile_name: string | null
           profile_url: string | null
           refresh_token: string | null
@@ -2503,6 +2506,7 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          can_post?: boolean | null
           claim_token_hash?: string | null
           connected_at?: string | null
           created_at?: string | null
@@ -2513,6 +2517,8 @@ export type Database = {
           id?: string
           last_synced_at?: string | null
           linkedin_id?: string | null
+          post_check_error?: string | null
+          post_checked_at?: string | null
           profile_name?: string | null
           profile_url?: string | null
           refresh_token?: string | null
@@ -2526,6 +2532,7 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          can_post?: boolean | null
           claim_token_hash?: string | null
           connected_at?: string | null
           created_at?: string | null
@@ -2536,6 +2543,8 @@ export type Database = {
           id?: string
           last_synced_at?: string | null
           linkedin_id?: string | null
+          post_check_error?: string | null
+          post_checked_at?: string | null
           profile_name?: string | null
           profile_url?: string | null
           refresh_token?: string | null
