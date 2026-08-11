@@ -1110,6 +1110,27 @@ const Onboarding = () => {
     </div>
   );
 
+  /** Continuing past the read is the member agreeing with the level Aura detected. */
+  const confirmBandIfDetected = async () => {
+    if (!userId || !band) return;
+    try {
+      const { data: cur } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("band_source").eq("user_id", userId).maybeSingle();
+      if (String((cur as any)?.band_source ?? "") === "detected") {
+        await writeProfile({ band_source: "confirmed" }, "level confirm");
+      }
+    } catch (e) { console.error("[journey] level confirm threw", e); }
+  };
+
+  /* Without a level there is no set of sliders or questions to load — so ask,
+     rather than sitting on a loader or a retry that can never succeed. */
+  const bandPrompt = (bead: number) => (
+    <PaperShell onExit={saveAndExit} bead={bead} footer={escapeFooter}>
+      <h1 style={h1Light}>One thing first — which of these is closest to your title?</h1>
+      {titleList((t, b) => { void chooseTitle(t, b); })}
+    </PaperShell>
+  );
+
   const shelfUnlocked = useMemo(() => ({
     profile: screen > 3,
     claims: screen > 7,
