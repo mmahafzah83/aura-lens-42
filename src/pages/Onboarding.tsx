@@ -1946,7 +1946,7 @@ const Onboarding = () => {
               setSharing(false);
             }
           }} style={{ background: "#FFFFFF", color: OB.blue }}>Share this</OBButton>
-          <OBButton variant="tertiary" onClick={() => (connected ? void finish() : go(14))}
+          <OBButton variant="tertiary" onClick={() => go(14)}
             style={{ color: "#FFFFFF" }}>Take me in</OBButton>
           </Actions>
           <p style={{ margin: "14px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
@@ -1965,33 +1965,47 @@ const Onboarding = () => {
   if (screen === 14) {
     content = (
       <NightShell onExit={saveAndExit} face footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>One last thing.</h1>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>When should I bring it to you?</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Connect LinkedIn and you find out which of your subjects your audience already rewards — so Aura stops
-          guessing.
+          I read overnight. Tell me when your day starts and that's when it's waiting.
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 22 }}>
-          {[
-            ["Without it", "Aura writes from your captures"],
-            ["With it", "Aura writes from what lands"],
-          ].map(([k, v]) => (
-            <div key={k} style={{
-              background: OB.nightSoft, border: `1px solid ${OB.lineNight}`, borderRadius: RADIUS.card,
-              padding: "12px 14px", fontSize: 13.5, color: "#FFFFFF",
-            }}>
-              <span style={{ color: OB.mutedNight }}>{k} · </span>{v}
-            </div>
+        <div style={{ display: "flex", gap: 9, marginBlockStart: 20 }}>
+          {(["Morning", "Midday", "Evening"] as const).map((slot) => (
+            <button key={slot} type="button" onClick={() => void chooseDailyTime(slot)} style={{
+              flex: 1, padding: "13px 8px", borderRadius: RADIUS.card, cursor: "pointer",
+              fontFamily: "inherit", fontSize: 13.5, fontWeight: dailyTime === slot ? 700 : 500,
+              background: dailyTime === slot ? OB.blue : OB.nightSoft,
+              border: `1px solid ${dailyTime === slot ? OB.blue : OB.lineNight}`,
+              color: "#FFFFFF",
+            }}>{slot}</button>
           ))}
         </div>
+        <p style={{ margin: "10px 0 0", fontSize: 12, color: OB.mutedNight, textAlign: "center" }}>
+          Your time zone · {timeZone}
+        </p>
+
+        {connected ? null : (
+          <>
+            <div style={{ blockSize: 1, background: OB.lineNight, margin: "24px 0 18px" }} />
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              Connect LinkedIn and you find out which of your subjects your audience already rewards — so nothing
+              written for you is a guess.
+            </p>
+            <Actions style={{ marginBlockStart: 16 }}>
+              <OBButton variant="secondary" onNight onClick={() => void connectLinkedIn({ allowRedirect: true })}
+                loading={connecting} loadingLabel="Connecting…">
+                Connect LinkedIn
+              </OBButton>
+            </Actions>
+            {connectNote ? (
+              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.mutedNight }}>{connectNote}</p>
+            ) : null}
+          </>
+        )}
+
         <Actions style={{ marginBlockStart: 22 }}>
-          <OBButton onClick={() => void connectLinkedIn({ allowRedirect: true })} loading={connecting} loadingLabel="Connecting…">
-            Connect LinkedIn
-          </OBButton>
-          <OBButton variant="tertiary" onNight onClick={() => void finish()}>Not now</OBButton>
+          <OBButton onClick={() => void finish()}>Take me in</OBButton>
         </Actions>
-        {connectNote ? (
-          <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.mutedNight }}>{connectNote}</p>
-        ) : null}
         <p style={{ ...footnote, color: OB.mutedNight }}>Aura never posts. You press publish, every time.</p>
       </NightShell>
     );
