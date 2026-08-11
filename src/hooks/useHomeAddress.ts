@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { nEvidence } from "@/constants/vocabulary";
 
 /**
  * useHomeAddress — today's chief-of-staff address.
@@ -176,7 +177,7 @@ export function useReadChips(userId: string | null | undefined, facts: HomeFacts
   if (profile?.linkedin || facts?.linkedin_connected) chips.push({ key: "li", label: "Your LinkedIn" });
   if (profile && profile.answers > 0) chips.push({ key: "as", label: `${profile.answers} answers` });
   if (profile?.calibrated) chips.push({ key: "cal", label: "Your calibration" });
-  if (facts?.fragments_total) chips.push({ key: "fr", label: `${facts.fragments_total} fragments` });
+  if (facts?.fragments_total) chips.push({ key: "fr", label: nEvidence(facts.fragments_total) });
   if (facts?.distinct_sources) chips.push({ key: "src", label: `${facts.distinct_sources} sources` });
   return chips;
 }

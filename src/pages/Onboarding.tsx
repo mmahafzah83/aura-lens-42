@@ -70,15 +70,15 @@ const BAND_TO_LEVEL: Record<Band, string> = {
 
 const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
   { key: "profile", label: "Your profile", tone: "blue" },
-  { key: "kept", label: "Claims kept", tone: "cyan" },
+  { key: "kept", label: "Evidence kept", tone: "cyan" },
   { key: "strengths", label: "Strengths", tone: "deep" },
-  { key: "read", label: "Subjects owned", tone: "amber" },
+  { key: "read", label: "Signals found", tone: "amber" },
 ];
 
 /** The quiet second line — shown only on the promise row and the payoff row. */
 const SHELF_SUB = [
   "read from your LinkedIn",
-  "ideas saved from your reading",
+  "what you captured from your reading",
   "rated in your own words",
   "the ground your read gives you",
 ];
@@ -86,7 +86,7 @@ const SHELF_SUB = [
 const SHELF_ICON = ["profile", "saved", "strengths", "subjects"] as const;
 const SHELF_HINT = [
   "Unlocks when Aura has read your profile",
-  "Unlocks when you keep your first claim",
+  "Unlocks when you capture your first piece of evidence",
   "Unlocks when you've moved the sliders",
   "Unlocks when your read is written",
 ];
@@ -873,7 +873,7 @@ const Onboarding = () => {
       ...(claims.length ? [{ value: num(claims.length), label: "claims kept" }] : []),
       ...(Object.keys(scores).length
         ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
-      ...(built?.subjects.length ? [{ value: num(built.subjects.length), label: "subjects owned" }] : []),
+      ...(built?.subjects.length ? [{ value: num(built.subjects.length), label: "signals found" }] : []),
     ];
     setReveal(built ? { ...built, figures } : built);
     setRevealPending(false);
@@ -914,7 +914,7 @@ const Onboarding = () => {
           ...(claims.length ? [{ value: num(claims.length), label: "claims kept" }] : []),
           ...(Object.keys(scores).length
             ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
-          ...(d.subjects.length ? [{ value: num(d.subjects.length), label: "subjects owned" }] : []),
+          ...(d.subjects.length ? [{ value: num(d.subjects.length), label: "signals found" }] : []),
         ];
         setReveal({ ...d, figures });
       }
@@ -1617,7 +1617,7 @@ const Onboarding = () => {
                   {connected ? null : (
                     <>
                       <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
-                        How those posts actually performed. This is how Aura learns which of the subjects in your read
+                        How those posts actually performed. This is how Aura learns which of the signals in your read
                         your audience already rewards — instead of guessing.
                       </p>
                       <Actions style={{ marginBlockStart: 12 }}>
@@ -2004,7 +2004,7 @@ const Onboarding = () => {
               sliders.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              What comes out is the subjects in your read, the space nobody near you has claimed, and where the ground is
+              What comes out is the signals in your read, the space nobody near you has claimed, and where the ground is
               still soft.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>Nine questions. Two minutes. Saved as you go.</p>
@@ -2269,8 +2269,8 @@ const Onboarding = () => {
         </p>
         <p style={{ ...bodyNight, textAlign: "center" }}>
           {mayPromiseMorning
-            ? "Tonight I read for the subjects in your read. Tomorrow morning there's something waiting."
-            : "I'll keep reading for the subjects in your read. When something is worth your name on it, you'll hear — not before."}
+            ? "Tonight I read for the signals in your read. Tomorrow morning there's something waiting."
+            : "I'll keep reading for the signals in your read. When something is worth your name on it, you'll hear — not before."}
         </p>
         {revealPending && proof && proof.lines.length > 0 ? (
           <WaitProof lines={proof.lines} startAt={3} howLong="Writing your read. About a minute." />
@@ -2544,7 +2544,7 @@ const Onboarding = () => {
           <>
             <div style={{ blockSize: 1, background: OB.lineNight, margin: "24px 0 18px" }} />
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              Connect LinkedIn and you find out which of the subjects in your read your audience already rewards — so nothing
+              Connect LinkedIn and you find out which of the signals in your read your audience already rewards — so nothing
               written for you is a guess.
             </p>
             <Actions style={{ marginBlockStart: 16 }}>

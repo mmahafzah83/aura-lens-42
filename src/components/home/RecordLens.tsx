@@ -6,6 +6,7 @@ import {
   type RecordBucket, type RecordMilestone, type RecordPublished,
 } from "@/hooks/useRecordTimeline";
 import { ProvenanceMark } from "@/components/systemb";
+import { nEvidence, nSignals } from "@/constants/vocabulary";
 
 /**
  * THE RECORD — what has actually happened, compressed by age.
@@ -96,7 +97,7 @@ function milestoneText(m: RecordMilestone): { head: string; sub: string } {
     return { head: "Your first post written with Aura.", sub: postTitle(m.value) };
   }
   return {
-    head: `One topic reached ${m.n ?? 25} pieces of knowledge.`,
+    head: `One signal reached ${nEvidence(m.n ?? 25)}.`,
     sub: postTitle(m.value),
   };
 }
@@ -152,18 +153,18 @@ const ThemeChip: React.FC<{
         fontSize: 12.5, color: "var(--text-secondary)",
       }}>
         <span aria-hidden style={{ ...MONO, fontSize: 10 }}>{open ? "▾" : "▸"}</span>
-        {plural(n, "topic found", "topics found")}
+        {plural(n, "signal found", "signals found")}
       </button>
     </div>
     {open && (
       <div style={{ display: "grid", gap: 4, paddingInlineStart: 4 }}>
-        {loading && <Muted style={{ fontSize: 12.5 }}>Reading the topics…</Muted>}
+        {loading && <Muted style={{ fontSize: 12.5 }}>Reading the signals…</Muted>}
         {!loading && titles.slice(0, 10).map((t, i) => (
           <p key={i} style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: "var(--text-secondary)" }}>{t}</p>
         ))}
         {!loading && n > titles.length && (
           <TextButton onClick={onOpenSignals} style={{ justifySelf: "start", fontSize: 12.5 }}>
-            …and {n - titles.length} more — open the topics board
+            …and {n - titles.length} more — open the signals board
           </TextButton>
         )}
       </div>
@@ -538,7 +539,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
                     </>
                   ) : (
                     <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>
-                      Saved {b.cap} · Aura wrote {b.drafts} ·{" "}
+                      Captured {b.cap} · Aura wrote {b.drafts} ·{" "}
                       <strong style={{ color: "var(--act)", fontWeight: 700 }}>You published {b.pub}</strong>
                     </p>
                   )}
@@ -572,8 +573,8 @@ export const RecordLens: React.FC<RecordLensProps> = ({
       <div style={{ borderBlockStart: "1px solid var(--rule-divider)", padding: "16px 20px", display: "grid", gap: 10 }}>
         <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))" }}>
           <Counter n={daysOnRecord ?? "—"} label="days using Aura" />
-          <Counter n={t.fragmentsTotal} label="pieces of knowledge saved" />
-          <Counter n={t.themesTotal} label="topics found in them" />
+          <Counter n={t.fragmentsTotal} label="pieces of evidence saved" />
+          <Counter n={t.themesTotal} label="signals found in them" />
           <Counter n={`${nightsProduced}/7`} label="nights Aura found something to write" />
           <Counter n={t.publishedTotal} label="posts live on LinkedIn" blue />
           <Counter n={t.publishedThroughAura} label="written with Aura" blue />

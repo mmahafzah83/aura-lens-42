@@ -197,7 +197,7 @@ const RevealCard = forwardRef<
           <p style={{
             margin: "0 0 16px", fontFamily: OB.mono, fontSize: 15,
             letterSpacing: "0.18em", opacity: 0.82,
-          }}>THE SUBJECTS I OWN</p>
+          }}>THE SIGNALS I OWN</p>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
             {data.subjects.slice(0, 3).map((s) => (
               <span key={s} style={{
@@ -289,7 +289,7 @@ const RevealCard = forwardRef<
 
     {data.subjects.length > 0 && (
       <>
-        <p style={{ margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85 }}>The subjects in your read</p>
+        <p style={{ margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85 }}>The signals in your read</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
           {data.subjects.slice(0, 3).map((s) => (
             <span key={s} style={chip("rgba(255,255,255,0.18)", "#FFFFFF")}>{s}</span>

@@ -24,7 +24,7 @@ const FACET_WORDS: Record<string, { name: string; line: string }> = {
   discernment: { name: "Perception", line: "How well you read what is changing." },
   edge:        { name: "Expertise",  line: "How specific your knowledge is." },
   voice:       { name: "Voice",      line: "How much your writing sounds like you." },
-  focus:       { name: "Focus",      line: "How much you stay on your main topics." },
+  focus:       { name: "Focus",      line: "How much you stay on your main signals." },
   identity:    { name: "Identity",   line: "How clear it is what you stand for." },
   audience:    { name: "Audience",   line: "How well your topics match who you want to reach." },
 };
