@@ -4,7 +4,7 @@
  * outcome (200 + reason), never a server fault.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { withObserve } from "../_shared/observe.ts";
+import { withObserve, logEfError } from "../_shared/observe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +19,7 @@ const json = (body: unknown, status = 200) =>
 
 const LI_HEADERS = (token: string) => ({
   Authorization: `Bearer ${token}`,
-  "LinkedIn-Version": "202401",
+  "LinkedIn-Version": "202506",
   "X-Restli-Protocol-Version": "2.0.0",
 });
 
@@ -67,6 +67,15 @@ Deno.serve(withObserve("linkedin-share-read", async (req) => {
 
   const author = memberId.startsWith("urn:") ? memberId : `urn:li:person:${memberId}`;
 
+  const logFailure = (step: string, status: number | null, detail: string) =>
+    logEfError(admin, {
+      function_name: "linkedin-share-read",
+      error: `${step} failed (${status ?? "no status"}): ${detail}`.slice(0, 1000),
+      severity: "high",
+      user_id: user.id,
+      context: { step, status, body: String(detail).slice(0, 2000) },
+    });
+
   const refused = async (detail: string) => {
     await admin.from("linkedin_connections").update({
       can_post: false,
@@ -86,14 +95,18 @@ Deno.serve(withObserve("linkedin-share-read", async (req) => {
     const initText = await initRes.text();
     if (!initRes.ok) {
       console.error("[linkedin-share-read] initializeUpload failed", initRes.status, initText);
+      await logFailure("initializeUpload", initRes.status, initText);
       return looksLikePermission(initRes.status, initText)
         ? await refused(initText)
-        : json({ ok: false, reason: "failed" });
+        : json({ ok: false, reason: "failed", step: "initializeUpload", status: initRes.status });
     }
     const init = JSON.parse(initText);
     const uploadUrl: string = init?.value?.uploadUrl;
     const imageUrn: string = init?.value?.image;
-    if (!uploadUrl || !imageUrn) return json({ ok: false, reason: "failed" });
+    if (!uploadUrl || !imageUrn) {
+      await logFailure("initializeUpload", initRes.status, "missing uploadUrl or image urn");
+      return json({ ok: false, reason: "failed", step: "initializeUpload", status: initRes.status });
+    }
 
     // b. push the bytes
     const bytes = decodeBase64(imageBase64);
@@ -105,9 +118,10 @@ Deno.serve(withObserve("linkedin-share-read", async (req) => {
     if (!putRes.ok) {
       const putText = await putRes.text();
       console.error("[linkedin-share-read] upload failed", putRes.status, putText);
+      await logFailure("upload", putRes.status, putText);
       return looksLikePermission(putRes.status, putText)
         ? await refused(putText)
-        : json({ ok: false, reason: "failed" });
+        : json({ ok: false, reason: "failed", step: "upload", status: putRes.status });
     }
 
     // c. publish
@@ -127,9 +141,10 @@ Deno.serve(withObserve("linkedin-share-read", async (req) => {
     if (!postRes.ok) {
       const postText = await postRes.text();
       console.error("[linkedin-share-read] publish failed", postRes.status, postText);
+      await logFailure("publish", postRes.status, postText);
       return looksLikePermission(postRes.status, postText)
         ? await refused(postText)
-        : json({ ok: false, reason: "failed" });
+        : json({ ok: false, reason: "failed", step: "publish", status: postRes.status });
     }
     const postUrn = postRes.headers.get("x-restli-id") ?? postRes.headers.get("x-linkedin-id") ?? null;
 
@@ -142,6 +157,7 @@ Deno.serve(withObserve("linkedin-share-read", async (req) => {
     return json({ ok: true, postUrn });
   } catch (err) {
     console.error("[linkedin-share-read] unexpected", err);
-    return json({ ok: false, reason: "failed" });
+    await logFailure("unexpected", null, (err as Error)?.message ?? String(err));
+    return json({ ok: false, reason: "failed", step: "unexpected", status: null as unknown as number });
   }
 }));
