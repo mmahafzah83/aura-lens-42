@@ -7,7 +7,7 @@ import { filterPublishedRows, postEffectiveDate } from "@/lib/postProvenance";
 import { RecordLens } from "@/components/home/RecordLens";
 import { useHomeAddress } from "@/hooks/useHomeAddress";
 import { ReadFailure } from "@/components/home/homeAtoms";
-import { nSignals, CAPTURE } from "@/constants/vocabulary";
+import { SIGNAL, CAPTURE } from "@/constants/vocabulary";
 
 /**
  * MOMENTUM — V23 `s-mo`.
@@ -401,7 +401,7 @@ export default function MomentumPage() {
                 width={pct(funnel.used_in_signal, funnel.captures)}
               />
               <FunnelRow
-                label={`${nSignals(funnel.signals)} formed`}
+                label={`${SIGNAL.Many} formed`}
                 value={funnel.signals}
                 note={`patterns across your ${CAPTURE.nounPlural}`}
                 aside={
