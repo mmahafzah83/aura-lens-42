@@ -50,12 +50,7 @@ interface ProfileData {
   country_code: string | null;
 }
 
-interface LinkedInConnection {
-  display_name?: string | null;
-  connected_at?: string;
-  last_synced_at?: string;
-}
-
+import { loadLinkedInState, EMPTY_LINKEDIN_STATE, type LinkedInState } from "@/lib/linkedinState";
 
 export default function Settings() {
   usePageMeta({
