@@ -40,6 +40,10 @@ export function useCapturedClaims(opts: { userId: string | null; sinceIso: strin
       settleTimer = pollTimer = slowTimer = ceilingTimer = undefined;
     };
 
+    /* declared above reconcile on purpose: reconcile closes over it, and a
+       catch-up call placed before the channel exists must not throw (TDZ) */
+    let channelRef: ReturnType<typeof supabase.channel> | null = null;
+
     /* one reconciliation query — used on activate, on settle, and on each poll */
     const reconcile = async () => {
       if (doneRef.current || !mounted) return;
@@ -54,7 +58,7 @@ export function useCapturedClaims(opts: { userId: string | null; sinceIso: strin
           doneRef.current = true;
           setClaims(data as CapturedClaim[]);
           clearAll();
-          void supabase.removeChannel(channel);
+          if (channelRef) { void supabase.removeChannel(channelRef); channelRef = null; }
         }
       } catch { /* the backstop will try again */ }
     };
@@ -72,6 +76,7 @@ export function useCapturedClaims(opts: { userId: string | null; sinceIso: strin
         },
       )
       .subscribe();
+    channelRef = channel;
 
     void reconcile(); /* catch-up: survives a reload */
 
@@ -92,7 +97,7 @@ export function useCapturedClaims(opts: { userId: string | null; sinceIso: strin
     return () => {
       mounted = false;
       clearAll();
-      void supabase.removeChannel(channel);
+      if (channelRef) { void supabase.removeChannel(channelRef); channelRef = null; }
     };
   }, [active, userId, sinceIso]);
 
