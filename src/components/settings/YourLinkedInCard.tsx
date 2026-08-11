@@ -10,7 +10,6 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { canonicalHandle, profileUrlFor, saveLinkedInAddress } from "@/lib/linkedinAddress";
-import { markVerifiedByRead } from "@/lib/linkedinReadStatus";
 import { loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
 
 /* System-B tokens */
@@ -70,8 +69,6 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
         return;
       }
       const p = data as any;
-      await markVerifiedByRead(userId);
-
       let posts: number | null = null;
       try {
         const { data: postData } = await supabase.functions.invoke("linkedin-fetch-posts", {

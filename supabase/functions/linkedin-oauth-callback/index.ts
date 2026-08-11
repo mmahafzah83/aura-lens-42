@@ -118,16 +118,35 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
 
     const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Delete any existing connection for this user
-    await adminClient
+    // The row carries facts this callback does not know — whether a real read
+    // confirmed the address, follower counts, posting permission, the claim
+    // token and the timezone. Deleting the row destroyed all of them, so the
+    // existing values are read first and carried through an upsert.
+    const { data: existing } = await adminClient
       .from("linkedin_connections")
-      .delete()
-      .eq("user_id", user.id);
+      .select("source_status, followers_total, can_post, claim_token_hash, timezone")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-    // Create new active connection
+    const { data: snapshot } = await adminClient
+      .from("linkedin_profile_snapshots")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const preserved: Record<string, unknown> = {};
+    if (existing) {
+      for (const k of ["source_status", "followers_total", "can_post", "claim_token_hash", "timezone"] as const) {
+        const v = (existing as Record<string, unknown>)[k];
+        if (v !== null && v !== undefined) preserved[k] = v;
+      }
+    }
+    // A real profile read outranks whatever the old row said.
+    if (snapshot) preserved.source_status = "verified_by_read";
+
     const { data: connection, error: insertError } = await adminClient
       .from("linkedin_connections")
-      .insert({
+      .upsert({
         user_id: user.id,
         linkedin_id: linkedinId,
         display_name: displayName,
@@ -140,12 +159,13 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
         scopes: grantedScopes,
         status: "active",
         connected_at: new Date().toISOString(),
-      })
+        ...preserved,
+      }, { onConflict: "user_id" })
       .select("id, display_name, connected_at")
       .single();
 
     if (insertError) {
-      console.error("DB insert error:", insertError);
+      console.error("DB upsert error:", insertError);
       return new Response(JSON.stringify({ error: "Failed to store connection" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

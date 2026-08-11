@@ -124,6 +124,14 @@ Deno.serve(async (req) => {
     const requested = typeof body?.user_id === "string" ? body.user_id.trim() : "";
     const targetUserId = requested && (await isAdmin(anon, user.id)) ? requested : user.id;
 
+    // An admin acting for someone else must name a real member: a typo would
+    // otherwise write a snapshot for an id that belongs to nobody.
+    if (targetUserId !== user.id) {
+      const check = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+      const { data: found, error: lookupErr } = await check.auth.admin.getUserById(targetUserId);
+      if (lookupErr || !found?.user) return json({ error: "unknown user" }, 400);
+    }
+
     const handle = parseHandle(body?.profile_url);
     if (!handle) {
       return json({ error: "Enter a valid LinkedIn profile URL like linkedin.com/in/yourname" }, 400);
@@ -261,7 +269,10 @@ Deno.serve(async (req) => {
       .eq("user_id", targetUserId)
       .maybeSingle();
     if (connection) {
-      const connPatch: Record<string, unknown> = { handle, profile_url: canonical_url };
+      // The read itself is what confirms the address.
+      const connPatch: Record<string, unknown> = {
+        handle, profile_url: canonical_url, source_status: "verified_by_read",
+      };
       if (followers !== null) connPatch.followers_total = followers;
       if (full_name) connPatch.profile_name = full_name;
       const { error } = await admin
@@ -269,6 +280,18 @@ Deno.serve(async (req) => {
         .update(connPatch)
         .eq("id", connection.id);
       if (error) console.error("[linkedin-fetch-profile] connection update failed:", error.message);
+    } else {
+      const connInsert: Record<string, unknown> = {
+        user_id: targetUserId,
+        access_token: "",
+        handle,
+        profile_url: canonical_url,
+        source_status: "verified_by_read",
+      };
+      if (followers !== null) connInsert.followers_total = followers;
+      if (full_name) connInsert.profile_name = full_name;
+      const { error } = await admin.from("linkedin_connections").insert(connInsert);
+      if (error) console.error("[linkedin-fetch-profile] connection insert failed:", error.message);
     }
 
     return json({

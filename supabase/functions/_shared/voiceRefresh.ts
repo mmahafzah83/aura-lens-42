@@ -10,11 +10,11 @@
  * and curated `use` phrases are never removed.
  */
 import { scriptOf } from "./linkedinPost.ts";
+import { isOwnWriting } from "./voiceCorpus.ts";
 import { dedupeRuleEntries, normalizeExamples, sanitizeVocabulary, EXAMPLE_CAP } from "./voiceVocab.ts";
 import { toRules, findUseEvidence } from "./voiceRules.ts";
 import { sanitizeStyleText } from "./voiceStyle.ts";
 
-const OWN_SOURCES = ["linkedin_export", "linkedin_own", "aura_generated"];
 const MAX_EXAMPLES = EXAMPLE_CAP;
 
 interface PostRow {
@@ -25,6 +25,10 @@ interface PostRow {
   comment_count: number | null;
   repost_count: number | null;
   source_type: string | null;
+  authorship?: string | null;
+  acquisition?: string | null;
+  voice_corpus_status?: string | null;
+  tracking_status?: string | null;
 }
 
 export interface RefreshResult {
@@ -130,17 +134,16 @@ function observedUsePhrases(posts: PostRow[]): string[] {
 export async function refreshVoiceProfiles(db: any, userId: string): Promise<RefreshResult> {
   const { data: rows, error } = await db
     .from("linkedin_posts")
-    .select("post_text, post_url, published_at, like_count, comment_count, repost_count, source_type")
+    .select("post_text, post_url, published_at, like_count, comment_count, repost_count, source_type, authorship, acquisition, voice_corpus_status, tracking_status")
     .eq("user_id", userId)
-    .in("source_type", OWN_SOURCES)
     .not("post_text", "is", null)
     .order("published_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(`read own posts: ${error.message}`);
 
-  const posts: PostRow[] = (rows ?? []).filter(
-    (p: PostRow) => (p.post_text ?? "").trim().length >= 120,
-  );
+  const posts: PostRow[] = (rows ?? [])
+    .filter(isOwnWriting)
+    .filter((p: PostRow) => (p.post_text ?? "").trim().length >= 120);
 
   const byLang: Record<string, PostRow[]> = { en: [], ar: [] };
   for (const p of posts) byLang[scriptOf(p.post_text!)].push(p);
@@ -181,7 +184,9 @@ export async function refreshVoiceProfiles(db: any, userId: string): Promise<Ref
       if (seen.has(fp)) continue;
       seen.add(fp);
       additions.push({
-        source: p.source_type ?? "linkedin_own",
+        // Stored as observed writing, whatever the row's source_type: the
+        // curated/observed split below keys on this value.
+        source: "linkedin_own",
         content: p.post_text,
         url: p.post_url,
         published_at: p.published_at,

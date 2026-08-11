@@ -16,7 +16,6 @@ import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { saveLinkedInAddress, canonicalHandle, loadLinkedInAddress } from "@/lib/linkedinAddress";
-import { markVerifiedByRead } from "@/lib/linkedinReadStatus";
 import usePageMeta from "@/hooks/usePageMeta";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useCapturedClaims } from "@/hooks/useCapturedClaims";
@@ -361,13 +360,14 @@ const Onboarding = () => {
     if (screen !== 13 || !userId) return;
     let alive = true;
     void (async () => {
-      const { data } = await supabase
-        .from("linkedin_connections")
-        .select("can_post, access_token")
+      // The browser has no grant on access_token / can_post — asking for them
+      // fails the whole query. An active connection is the answer.
+      const { data } = await (supabase.from("linkedin_connections_safe" as any) as any)
+        .select("status")
         .eq("user_id", userId)
         .eq("status", "active")
         .maybeSingle();
-      if (alive) setCanPostToLinkedIn(!!data?.access_token && (data as any)?.can_post !== false);
+      if (alive) setCanPostToLinkedIn(!!data);
     })();
     return () => { alive = false; };
   }, [screen, userId]);
@@ -545,12 +545,6 @@ const Onboarding = () => {
             await writeProfile({ sector_focus: guessed }, "sector save");
           } catch { /* the member can change it on the next screen */ }
         }
-      }
-
-      if (userId) {
-        try {
-          await markVerifiedByRead(userId);
-        } catch { /* never block */ }
       }
 
       const full = String(prof?.full_name || "").trim();
@@ -986,10 +980,8 @@ const Onboarding = () => {
         if (d.ok) {
           setConnected(true);
           setConnectNote("");
-          /* The callback writes the connection row after we did; re-run the
-             confirmation so a read that already happened isn't lost to the race. */
-          // Idempotent, and the popup can return before the read finishes.
-          if (userId) void markVerifiedByRead(userId);
+          /* The OAuth callback now preserves source_status and re-confirms it
+             from the snapshot, so nothing needs re-writing here. */
         }
         else setConnectNote(d.message || "LinkedIn didn't finish. You can do this from Settings later.");
       };

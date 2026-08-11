@@ -29,20 +29,22 @@ export const EMPTY_LINKEDIN_STATE: LinkedInState = {
 };
 
 export async function loadLinkedInState(userId: string): Promise<LinkedInState> {
-  const { data, error } = await supabase
-    .from("linkedin_connections")
-    .select("handle, profile_url, source_status, access_token, can_post, status, last_synced_at")
+  // The safe view only: the browser has no grant on access_token / can_post,
+  // and asking for them made Postgres reject the whole query, so every member
+  // read back as disconnected.
+  const { data, error } = await (supabase.from("linkedin_connections_safe" as any) as any)
+    .select("handle, profile_url, source_status, status, last_synced_at")
     .eq("user_id", userId)
     .maybeSingle();
   if (error || !data) return EMPTY_LINKEDIN_STATE;
   const row = data as any;
   const handle = canonicalHandle(row.handle) ?? canonicalHandle(row.profile_url);
   return {
-    connected: Boolean(row.access_token) && row.status !== "revoked",
+    connected: row.status === "active",
     handle,
     address: (row.profile_url as string | null) || profileUrlFor(handle),
     confirmedByRead: row.source_status === "verified_by_read",
-    canPost: Boolean(row.access_token) && row.can_post !== false,
+    canPost: row.status === "active",
     lastSyncedAt: (row.last_synced_at as string | null) ?? null,
   };
 }

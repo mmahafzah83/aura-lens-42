@@ -27,12 +27,15 @@ export function isOwnWriting(row: {
   acquisition?: string | null;
   source_type?: string | null;
   voice_corpus_status?: string | null;
+  tracking_status?: string | null;
 }): boolean {
   if (row.voice_corpus_status === "excluded") return false;
   const text = String(row.post_text ?? "");
   if (text.trim().length <= MIN_POST_CHARS) return false;
   if (row.authorship === "aura_drafted") return false;
   if (row.acquisition === "discovered") return false;
-  if (row.source_type === "search_discovery" || row.source_type === "aura_generated") return false;
+  if (row.source_type === "search_discovery") return false;
+  // An Aura draft is not the member's writing until they actually published it.
+  if (row.source_type === "aura_generated" && row.tracking_status !== "published") return false;
   return true;
 }

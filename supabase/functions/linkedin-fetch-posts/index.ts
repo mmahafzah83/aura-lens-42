@@ -6,6 +6,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { isAdmin } from "../_shared/adminRole.ts";
+import { refreshVoiceProfiles } from "../_shared/voiceRefresh.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -217,6 +218,14 @@ Deno.serve(async (req) => {
     } else {
       const { error } = await db.from("linkedin_connections").insert({ user_id: targetUserId, ...conn });
       if (error) console.error(`connection insert failed: ${error.message}`);
+    }
+
+    // Newly imported own posts are what the voice learns from. A failure here
+    // must never fail the import.
+    try {
+      await refreshVoiceProfiles(db, targetUserId);
+    } catch (e) {
+      console.error("voice refresh failed", e);
     }
 
     return json({

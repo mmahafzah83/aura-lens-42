@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { loadReadStatus } from "@/lib/linkedinReadStatus";
+import { loadLinkedInState } from "@/lib/linkedinState";
 
 const ACTION = "#0670C4";
 const INK = "#0F1519";
@@ -23,15 +23,15 @@ export default function LinkedInNudge({ userId }: { userId: string | null }) {
     if (!userId) return;
     let alive = true;
     (async () => {
-      const [status, profile] = await Promise.all([
-        loadReadStatus(userId),
+      const [state, profile] = await Promise.all([
+        loadLinkedInState(userId),
         supabase.from("diagnostic_profiles").select("ui_dismissals").eq("user_id", userId).maybeSingle(),
       ]);
       if (!alive) return;
       const raw = (profile.data as { ui_dismissals?: unknown } | null)?.ui_dismissals;
       const map = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, boolean>) : {};
       setDismissals(map);
-      setShow(status !== "verified_by_read" && !map[KEY]);
+      setShow(!state.confirmedByRead && !map[KEY]);
     })();
     return () => { alive = false; };
   }, [userId]);
