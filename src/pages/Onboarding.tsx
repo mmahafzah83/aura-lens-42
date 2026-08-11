@@ -1318,7 +1318,8 @@ const Onboarding = () => {
         </div>
         <p style={{ ...bodyLight, marginBlockStart: 16, fontWeight: 600, color: OB.ink }}>Your level</p>
         {titleList((t, b) => { setLevelTitle(t); setBand(b); })}
-        <button type="button" disabled={!ready} onClick={async () => {
+        <Actions style={{ marginBlockStart: 20 }}>
+        <OBButton disabled={!ready} onClick={async () => {
           if (userId) {
             await (supabase.from("diagnostic_profiles" as any) as any).upsert({
               user_id: userId, first_name: firstName.trim(), last_name: lastName.trim() || null,
@@ -1327,9 +1328,8 @@ const Onboarding = () => {
             }, { onConflict: "user_id" });
           }
           go(4);
-        }} style={{ ...btnPrimary, marginBlockStart: 20, opacity: ready ? 1 : 0.5 }}>
-          Save and carry on
-        </button>
+        }}>Save and carry on</OBButton>
+        </Actions>
       </PaperShell>
     );
   }
@@ -1342,7 +1342,7 @@ const Onboarding = () => {
         <p style={{ ...bodyNight, textAlign: "center" }}>
           Your profile says what you've done. It doesn't say what you think. One link is enough to start.
         </p>
-        <button type="button" onClick={() => go(5)} style={{ ...btnPrimary, marginBlockStart: 26 }}>Okay</button>
+        <Actions style={{ marginBlockStart: 26 }}><OBButton onClick={() => go(5)}>Okay</OBButton></Actions>
       </NightShell>
     );
   }
@@ -1358,8 +1358,9 @@ const Onboarding = () => {
         <input value={linkInput} onChange={(e) => setLinkInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && linkInput.trim()) void sendLink(linkInput); }}
           placeholder="Paste a link" inputMode="url" style={{ ...fieldStyle, marginBlockStart: 20 }} />
-        <button type="button" disabled={!linkInput.trim()} onClick={() => sendLink(linkInput)}
-          style={{ ...btnPrimary, marginBlockStart: 14, opacity: linkInput.trim() ? 1 : 0.5 }}>Add it</button>
+        <Actions style={{ marginBlockStart: 14 }}>
+          <OBButton disabled={!linkInput.trim()} onClick={() => void sendLink(linkInput)}>Add it</OBButton>
+        </Actions>
 
         {suggested || !suggestDead ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "24px 0 16px" }}>
@@ -1381,8 +1382,12 @@ const Onboarding = () => {
                 display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
               }}>{suggested.summary}</p>
             ) : null}
-            <button type="button" onClick={() => sendLink(suggested.url, { title: suggested.title, summary: suggested.summary })}
-              style={btnGhostLight}>Use this one</button>
+            <div style={{ marginBlockStart: 4 }}>
+              <OBButton variant="tertiary"
+                onClick={() => void sendLink(suggested.url, { title: suggested.title, summary: suggested.summary })}>
+                Use this one
+              </OBButton>
+            </div>
           </div>
         ) : !suggestDead ? (
           <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 12.5, color: OB.muted }}>
@@ -1403,7 +1408,7 @@ const Onboarding = () => {
     content = (
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
-        <p style={{ ...bodyNight, textAlign: "center" }}>Pulling out the bits worth keeping…</p>
+        <p style={{ ...bodyNight, textAlign: "center" }}>Finding the parts you can use.</p>
         <div style={{ marginBlockStart: 22 }}>
           <WorkProgress onNight done={steps.filter((s) => s.done).length} total={steps.length} />
         </div>
@@ -1418,7 +1423,7 @@ const Onboarding = () => {
         {claimsSlow && (
           <>
             <p style={{ ...bodyNight, textAlign: "center" }}>Still reading — it'll be waiting on your Home.</p>
-            <button type="button" onClick={() => go(8)} style={{ ...btnPrimary, marginBlockStart: 20 }}>Keep going</button>
+            <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => go(8)}>Keep going</OBButton></Actions>
           </>
         )}
       </NightShell>
@@ -1436,7 +1441,7 @@ const Onboarding = () => {
           ))}
         </div>
         <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 22 }}>
-          Aura will watch what moves these while you sleep.
+          You'll know when something moves these — without going looking.
         </p>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "22px 0 4px" }}>
           {SHELF.map((s, i) => (
@@ -1445,7 +1450,7 @@ const Onboarding = () => {
               figure={i === 0 ? (postsRead || "✓") : i === 1 ? claims.length : undefined} />
           ))}
         </div>
-        <button type="button" onClick={() => go(8)} style={{ ...btnPrimary, marginBlockStart: 18 }}>Nice — keep going</button>
+        <Actions style={{ marginBlockStart: 18 }}><OBButton onClick={() => go(8)}>Keep going</OBButton></Actions>
       </NightShell>
     );
   }
