@@ -56,8 +56,7 @@ export function FirstLoginWelcome({ firstName: firstNameProp, onOpenGuide, onDis
   }, [firstNameProp]);
 
   if (open !== undefined ? !open : !visible) return null;
-
-  const firstName = firstNameProp || fetchedName;
+  void firstNameProp; void fetchedName; // the masthead carries the name — this card never greets
 
   const handleExplore = () => {
     try { localStorage.setItem("aura_welcome_briefing_done", "1"); } catch {}
