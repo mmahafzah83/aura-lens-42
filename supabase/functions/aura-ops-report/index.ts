@@ -4,7 +4,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { primaryAdminId } from "../_shared/adminRole.ts";
-import { emailShell, heading as headingHtml, INK, INK_BODY, INK_MUTE, RULE, SERIF, BODY, MONO } from "../_shared/email-theme.ts";
+import { renderEmail as emailShell, heading as headingHtml, INK, INK_SOFT as INK_BODY, INK_FAINT as INK_MUTE, BORDER as RULE, BODY as SERIF, BODY, MONO } from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

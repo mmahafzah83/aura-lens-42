@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
+import { logError as logEfError } from "../_shared/logError.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   renderEmail, label, heading, paragraph, note, quote, divider, signature,
@@ -13,8 +14,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Where Supabase sends the user AFTER it verifies the invite token.
-const REDIRECT_URL = "https://aura-intel.org/auth";
+// Where Supabase sends the user AFTER it verifies the invite token: straight
+// into The Collection. Onboarding redirects to auth itself if no session yet.
+const REDIRECT_URL = "https://aura-intel.org/onboarding";
 // Public ceremony page shown BEFORE the token is verified — the user clicks
 // "Let the world see what I know →" here, which then triggers Supabase verify.
 const ACCEPTANCE_URL = "https://aura-intel.org/accept-invitation";
@@ -34,18 +36,19 @@ const buildEmailHtml = () => {
     ${heading("{{GREETING}} your Aura is ready.")}
     ${paragraph("I built Aura because the smartest people I know stay invisible. Not for lack of expertise — for lack of a way to turn what they already read and think into something the market can see.")}
     ${paragraph("Aura reads what you read, finds the pattern in it, and drafts a post in your own voice. You approve it. That's the whole loop.")}
+    {{INVITER_LINE_BLOCK}}
     {{INVITER_NOTE_BLOCK}}
     ${divider()}
     ${label("Your first ten minutes")}
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 8px;">
       ${step("01", "Give Aura one thing you read", "A link. Aura reads it and shows you what it found, before it asks you anything.")}
       ${step("02", "Tell Aura who you are", "Paste your LinkedIn headline. No forms.")}
-      ${step("03", "Calibrate your strengths", "Ten sliders, your own read. Aura corrects it from there.")}
+      ${step("03", "Rate your strengths", "Ten sliders, your own read. Aura corrects it from there.")}
       ${step("04", "See how the market reads you", "The first thing Aura gives back.")}
     </table>
     ${divider()}
     ${paragraph("Fewer than 50 people have access right now. I read your profile myself before sending this.")}
-    ${note("This link expires in 24 hours.")}
+    ${note("This link is single-use. If it stops working, reply to this email and I'll send another.")}
     ${signature()}
   `;
 
@@ -172,6 +175,26 @@ serve(withObserve("send-invite", async (req) => {
       ceremonyUrl = ceremony.toString();
     } catch (e) {
       console.warn("[send-invite] could not wrap confirmationUrl, using raw verify URL", e);
+      await logEfError("send-invite", e, {
+        severity: "high",
+        context: { email, step: "wrap_confirmation_url" },
+      });
+    }
+
+    // Name the inviter when we can resolve a first name — never a placeholder.
+    let inviterLine = "";
+    try {
+      const { data: inviterProf } = await admin
+        .from("diagnostic_profiles")
+        .select("first_name")
+        .eq("user_id", callerId)
+        .maybeSingle();
+      const inviterFirst = ((inviterProf as any)?.first_name || "").trim();
+      if (inviterFirst) {
+        inviterLine = paragraph(`${esc(inviterFirst)} thought you should have this.`, false);
+      }
+    } catch (e) {
+      console.warn("[send-invite] inviter lookup failed", e);
     }
 
     const inviterNoteBlock = inviterNote ? quote(esc(inviterNote)) : "";
@@ -182,6 +205,7 @@ serve(withObserve("send-invite", async (req) => {
       .replace(/{{GREETING}}/g, greeting)
       .replace(/{{CONFIRMATION_URL}}/g, ceremonyUrl)
       .replace(/{{INVITER_NOTE_BLOCK}}/g, inviterNoteBlock)
+      .replace(/{{INVITER_LINE_BLOCK}}/g, inviterLine)
       .replace(/{{EMAIL}}/g, email);
 
     // Send via Resend

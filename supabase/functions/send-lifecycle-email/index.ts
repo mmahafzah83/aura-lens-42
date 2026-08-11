@@ -18,19 +18,19 @@ const FROM = "Aura <Mohammad.Mahafdhah@aura-intel.org>";
 const FROM_INVITES = "Aura <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
-type EmailType = "welcome" | "day1" | "day3" | "day7" | "first_signal" | "inactive" | "silence" | "post_ready" | "aura_card_ready" | "aura_card_nudge" | "aura_card_monthly";
+type EmailType = "day1" | "day3" | "day7" | "inactive" | "silence" | "post_ready" | "aura_card_ready" | "aura_card_nudge" | "aura_card_monthly";
 
 const BODY_FONT = BODY_FONT_STACK;
 
 // Every lifecycle email renders through the one shared System-B shell.
-function shell(_BRAND: string, _FONT: string, body: string) {
-  return renderEmail({ body });
+function shell(_BRAND: string, _FONT: string, body: string, preheader: string) {
+  return renderEmail({ preheader, body });
 }
 
 function ctaButton(_BRAND: string, label: string, href: string) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr>
-    <td align="center" bgcolor="${INK}" style="border-radius:999px;">
-      <a href="${href}" style="display:inline-block;padding:0 30px;height:48px;line-height:48px;font-family:${BODY_FONT};font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:999px;">${label}</a>
+    <td align="center" bgcolor="${ACCENT}" style="border-radius:8px;">
+      <a href="${href}" style="display:inline-block;padding:0 30px;height:48px;line-height:48px;font-family:${BODY_FONT};font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;">${label}</a>
     </td>
   </tr></table>`;
 }
@@ -76,44 +76,13 @@ function buildEmail(
     return "You're building your intelligence foundation.";
   })();
 
-  if (type === "welcome") {
-    const subject = "Your intelligence is active";
-    const body = `
-      ${heading(`Welcome to Aura, ${name}.`)}
-      <p style="margin:0 0 18px;">Your system is live. Every article you capture, every insight you note, every voice memo you record — Aura finds the strategic patterns you didn't know were there.</p>
-      <p style="margin:0 0 18px;">Your first mission: capture one thing you read this week that shaped your thinking about ${focus}. That single capture seeds your signal graph.</p>
-      <p style="margin:0 0 18px;">One capture. That's the beginning.</p>
-      ${ctaButton(BRAND, "Make your first capture", APP_URL)}
-      ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body) };
-  }
-
-  if (type === "first_signal") {
-    const top = topSignals[0];
-    const subject = "Your first signal is live";
-    const body = top
-      ? `
-        ${heading(`${name}, your first signal just formed.`)}
-        <p style="margin:0 0 18px;">Aura connected your captures into a pattern: <strong>${top.signal_title}</strong>. This is the topic where your reading runs deepest.</p>
-        <p style="margin:0 0 18px;">Aura can draft a LinkedIn post from this signal — in your voice, grounded in what you actually read. One click and you have your first post.</p>
-        ${ctaButton(BRAND, "Draft from your signal", `${APP_URL}/dashboard?tab=publish`)}
-        ${signoff(name, level)}`
-      : `
-        ${heading(`${name}, your signals are forming.`)}
-        <p style="margin:0 0 18px;">The captures you've made are being analyzed — signals emerge when Aura detects recurring themes across multiple sources.</p>
-        <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
-        ${ctaButton(BRAND, "Capture something", APP_URL)}
-        ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body) };
-  }
-
   if (type === "day1") {
     const subject = "Your first signals are forming";
     const top = topSignals[0];
     const body = top
       ? `
         ${heading(`${name}, your signal graph is forming.`)}
-        <p style="margin:0 0 18px;">Aura detected ${signalCount} pattern${signalCount === 1 ? "" : "s"} from your captures. Your strongest: <strong>${top.signal_title}</strong> at ${Math.round(top.confidence * 100)}% confidence.</p>
+        <p style="margin:0 0 18px;">Aura detected ${signalCount} pattern${signalCount === 1 ? "" : "s"} from your captures. Your strongest right now: <strong>${top.signal_title}</strong>.</p>
         <p style="margin:0 0 18px;">This is the topic where your intelligence runs deepest. One more capture on this topic strengthens the signal. Two more and Aura can generate a post that sounds like you wrote it.</p>
         ${ctaButton(BRAND, "See your signals", `${APP_URL}/dashboard?tab=intelligence`)}
         ${signoff(name, level)}`
@@ -123,7 +92,7 @@ function buildEmail(
         <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
         ${ctaButton(BRAND, "Capture something", APP_URL)}
         ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body) };
+    return { subject, html: shell(BRAND, FONT, body, subject) };
   }
 
   if (type === "day3") {
@@ -138,14 +107,14 @@ function buildEmail(
       <p style="margin:0 0 18px;">Publishing from your strongest signal builds presence fastest. Your signals are ready.</p>
       ${ctaButton(BRAND, "Generate your first post", `${APP_URL}/dashboard?tab=publish`)}
       ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body) };
+    return { subject, html: shell(BRAND, FONT, body, subject) };
   }
 
   if (type === "day7") {
     const subject = "Your Aura brief";
     const top = topSignals[0];
     const topLine = top
-      ? `<strong>${top.signal_title}</strong> leads at ${Math.round(top.confidence * 100)}%.`
+      ? `Your strongest right now: <strong>${top.signal_title}</strong>.`
       : "No leading signal yet — a few more captures and signals start to form.";
     const fadingLine = fadingCount > 0
       ? `${fadingCount} signal${fadingCount === 1 ? "" : "s"} fading — they need fresh evidence.`
@@ -159,7 +128,7 @@ function buildEmail(
       <p style="margin:0 0 18px;">Your signals are ready to publish from.</p>
       ${ctaButton(BRAND, "Open your weekly brief", `${APP_URL}/dashboard?tab=intelligence`)}
       ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body) };
+    return { subject, html: shell(BRAND, FONT, body, subject) };
   }
 
   if (type === "post_ready") {
@@ -173,18 +142,18 @@ function buildEmail(
       <p style="margin:0 0 18px;">One tap and it is live.</p>
       ${ctaButton(BRAND, "Open in Publish tab", `${APP_URL}/home?tab=authority`)}
       ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body) };
+    return { subject, html: shell(BRAND, FONT, body, subject) };
   }
 
   if (type === "aura_card_ready") {
     const subject = "Your Aura Card is ready";
     const body = `
       ${heading(`${name}, your Aura Card is ready.`)}
-      <p style="margin:0 0 18px;">You finished the four steps — assessment, skills, photo, and country. Aura now has enough to render a shareable read of who you are, in one card.</p>
+      <p style="margin:0 0 18px;">You finished the four steps — the questions, your strengths, your photo, and where you work. Aura now has enough to render a shareable read of who you are, in one card.</p>
       <p style="margin:0 0 18px;">Open My Story to preview it, download the PNG, or share it to LinkedIn.</p>
       ${ctaButton(BRAND, "See your card", `${APP_URL}/dashboard?tab=identity`)}
       ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body) };
+    return { subject, html: shell(BRAND, FONT, body, subject) };
   }
 
   if (type === "aura_card_nudge") {
@@ -195,7 +164,7 @@ function buildEmail(
       const k = g.toLowerCase();
       if (k === "photo") return "Add a profile photo";
       if (k === "country") return "Set your country";
-      if (k === "assessment") return "Complete the Brand Assessment";
+      if (k === "assessment") return "Finish the few questions";
       if (k === "radar" || k === "skills") return "Fill in your skills radar";
       return g;
     };
@@ -207,7 +176,7 @@ function buildEmail(
       <p style="margin:0 0 18px;">A few minutes and the card is yours to preview, download, and share.</p>
       ${ctaButton(BRAND, "Finish and see your card", `${APP_URL}/dashboard?tab=identity`)}
       ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body) };
+    return { subject, html: shell(BRAND, FONT, body, subject) };
   }
 
   if (type === "aura_card_monthly") {
@@ -219,7 +188,7 @@ function buildEmail(
       <p style="margin:0 0 18px;">Open it, download the PNG, or share it to LinkedIn.</p>
       ${ctaButton(BRAND, "View this month's card", `${APP_URL}/dashboard?tab=identity`)}
       ${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body) };
+    return { subject, html: shell(BRAND, FONT, body, subject) };
   }
 
   // silence / inactive — both paths use the same signal-decay framing
@@ -228,7 +197,7 @@ function buildEmail(
   const topFadingTitle = f1?.signal_title || "leading";
   const subject = `Your ${topFadingTitle} signal is decaying`;
   const f1Line = f1
-    ? `Your '<strong>${f1.signal_title}</strong>' dropped to ${Math.round(f1.confidence * 100)}% confidence.`
+    ? `Your strongest right now: <strong>${f1.signal_title}</strong>. It needs fresh evidence.`
     : "Your strongest signals are losing freshness.";
   const f2Line = f2
     ? ` ${f2.signal_title} is now <strong>${f2.velocity_status || "fading"}</strong>.`
@@ -243,7 +212,7 @@ function buildEmail(
     <p style="margin:0 0 18px;">One capture brings them back. Consistency matters more than volume here.</p>
     ${ctaButton(BRAND, "Capture now", APP_URL)}
     ${signoff(name, level)}`;
-  return { subject, html: shell(BRAND, FONT, body) };
+  return { subject, html: shell(BRAND, FONT, body, subject) };
 }
 
 serve(withObserve("send-lifecycle-email", async (req) => {
@@ -315,7 +284,7 @@ serve(withObserve("send-lifecycle-email", async (req) => {
         });
       }
     }
-    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "first_signal", "inactive", "silence", "post_ready", "aura_card_ready", "aura_card_nudge", "aura_card_monthly"];
+    const types: EmailType[] = ["day1", "day3", "day7", "inactive", "silence", "post_ready", "aura_card_ready", "aura_card_nudge", "aura_card_monthly"];
     if (!types.includes(email_type)) {
       return new Response(JSON.stringify({ error: "invalid email_type" }), {
         status: 400,
