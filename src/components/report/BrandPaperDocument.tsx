@@ -290,14 +290,7 @@ function GapPanel({ bp, style }: { bp: BrandPaper; style?: React.CSSProperties }
   );
 }
 
-/** Deterministic budget: past this many characters of findings, the gap moves on. */
-const GAP_BUDGET = 2400;
-function findingsChars(bp: BrandPaper): number {
-  return [bp.market_read, bp.trust_pattern, bp.unique_capability, bp.honest_truth]
-    .filter(Boolean).join(" ").length;
-}
-
-function FindingsSheet({ bp, total, showGap }: { bp: BrandPaper; total: number; showGap: boolean }) {
+function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
   const raw: (Finding | null)[] = [
     bp.market_read ? {
       code: "F · 1", body: bp.market_read,
@@ -339,7 +332,7 @@ function FindingsSheet({ bp, total, showGap }: { bp: BrandPaper; total: number; 
         <div style={{ borderBottom: `1px solid ${T.rule}` }}>
           {findings.map((f) => <FindingRow key={f.code} f={f} />)}
         </div>
-        {showGap ? <GapPanel bp={bp} style={{ marginTop: 26 }} /> : null}
+        {/* The gap panel always lives at the top of Sheet 3 — never here. */}
       </div>
       <PaperFooter n={2} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>
