@@ -15,7 +15,7 @@ const INK = "#0F1519";
 
 const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
 
-interface Paused { stage: number; saved: string[]; }
+interface Paused { stage: number; saved: string[]; chose: boolean; }
 
 export default function ResumeJourneyCard({ userId }: { userId: string | null }) {
   const navigate = useNavigate();
@@ -26,14 +26,14 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
     let alive = true;
     void (async () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("identity_intelligence, onboarding_step, headline, seniority_band, skill_ratings")
+        .select("identity_intelligence, onboarding_step, onboarding_completed, headline, seniority_band, skill_ratings")
         .eq("user_id", userId)
         .maybeSingle();
       if (!alive || !data) return;
       const ii = ((data as any).identity_intelligence as Record<string, any>) || {};
-      const done = Number((data as any).onboarding_step ?? 0) >= 4;
-      if (done || !ii.journey_paused) { setPaused(null); return; }
       const screen = Number(ii.journey_screen ?? 0);
+      const finished = Boolean((data as any).onboarding_completed) || Number((data as any).onboarding_step ?? 0) >= 4;
+      if (finished || screen <= 0) { setPaused(null); return; }
       const claims = Array.isArray(ii.claims) ? ii.claims.length : 0;
       const strengths = Object.keys(((data as any).skill_ratings as Record<string, unknown>) || {}).length;
       const saved = [
@@ -41,7 +41,11 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
         claims ? `${claims} ${claims === 1 ? "subject" : "subjects"} saved` : "",
         strengths ? "your strengths saved" : "",
       ].filter(Boolean) as string[];
-      setPaused({ stage: Number(ii.journey_stage ?? stageOf(screen)) || 1, saved });
+      setPaused({
+        stage: Number(ii.journey_stage ?? stageOf(screen)) || 1,
+        saved,
+        chose: Boolean(ii.journey_paused),
+      });
     })();
     return () => { alive = false; };
   }, [userId]);
@@ -55,7 +59,9 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
       padding: 18, marginBlockEnd: 16,
     }}>
       <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: INK }}>
-        You're part-way through — {paused.stage} of 5 done, about {left} minutes left.
+        {paused.chose
+          ? `You're part-way through — ${paused.stage} of 5 done, about ${left} minutes left.`
+          : `You started setting up and stopped at step ${paused.stage} of 5. It's all still here.`}
       </h2>
       {paused.saved.length ? (
         <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.6, color: MUTED }}>
