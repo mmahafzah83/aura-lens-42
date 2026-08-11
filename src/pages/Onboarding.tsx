@@ -1021,27 +1021,25 @@ const Onboarding = () => {
             .select("identity_intelligence").eq("user_id", userId).maybeSingle();
           const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
           const alreadyEmailed = Boolean(ii.resume_email_sent_at);
-          await (supabase.from("diagnostic_profiles" as any) as any)
-            .update({
-              identity_intelligence: {
-                ...ii,
-                journey_screen: screen,
-                journey_paused: true,
-                journey_stage: stage,
-                journey_paused_at: new Date().toISOString(),
-                resume_email_sent_at: alreadyEmailed ? ii.resume_email_sent_at : new Date().toISOString(),
-              },
-            })
-            .eq("user_id", userId);
+          await writeProfile({
+            identity_intelligence: {
+              ...ii,
+              journey_screen: screen,
+              journey_paused: true,
+              journey_stage: stage,
+              journey_paused_at: new Date().toISOString(),
+              resume_email_sent_at: alreadyEmailed ? ii.resume_email_sent_at : new Date().toISOString(),
+            },
+          }, "finish later save");
           /* one email, the first time only — never a sequence */
           if (!alreadyEmailed) {
             supabase.functions.invoke("send-resume-email", { body: { stage } }).catch(() => {});
           }
-        } catch (e) { console.warn("[journey] finish later save failed", e); }
+        } catch (e) { console.error("[journey] finish later save threw", e); }
       }
       window.setTimeout(() => navigate("/home"), 900);
     })();
-  }, [persistScreen, screen, navigate, userId]);
+  }, [persistScreen, screen, navigate, userId, writeProfile]);
 
   /** Remembers when their day starts, alongside the time zone we detected. */
   const chooseDailyTime = useCallback(async (slot: "Morning" | "Midday" | "Evening") => {
@@ -1051,11 +1049,9 @@ const Onboarding = () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("ui_dismissals").eq("user_id", userId).maybeSingle();
       const existing = (data?.ui_dismissals && typeof data.ui_dismissals === "object") ? data.ui_dismissals : {};
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ ui_dismissals: { ...existing, daily_time: { slot, time_zone: timeZone, at: new Date().toISOString() } } })
-        .eq("user_id", userId);
+      await writeProfile({ ui_dismissals: { ...existing, daily_time: { slot, time_zone: timeZone, at: new Date().toISOString() } } }, "daily time save");
     } catch { /* they can change it in Settings */ }
-  }, [userId, timeZone]);
+  }, [userId, timeZone, writeProfile]);
 
   /* Pausing is not finishing. The old escape hatch flagged the member as fully
    * onboarded with an empty profile and locked them out of the journey for
@@ -1079,10 +1075,8 @@ const Onboarding = () => {
     setQuestions(null);
     if (userId) {
       try {
-        await (supabase.from("diagnostic_profiles" as any) as any)
-          .update({ level: title, seniority_band: b, band_source: "corrected" })
-          .eq("user_id", userId);
-      } catch (e) { console.warn("[journey] level save failed", e); }
+        await writeProfile({ level: title, seniority_band: b, band_source: "corrected" }, "level save");
+      } catch (e) { console.error("[journey] level save threw", e); }
     }
   };
 
