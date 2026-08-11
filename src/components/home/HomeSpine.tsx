@@ -55,26 +55,21 @@ function tabForRoute(route: string): string | null {
   return t;
 }
 
-const firstSentence = (md: string) => {
-  const plain = md.replace(/[#*_`>]/g, "").trim();
-  const m = /^(.+?[.?!])(\s|$)/.exec(plain);
-  return (m?.[1] ?? plain).slice(0, 180);
-};
+const plainOf = (md: string) =>
+  md.replace(/[#*_`>]/g, "").replace(/\s*\n+\s*/g, " ").replace(/\s{2,}/g, " ").trim();
 
-/** Very small markdown: paragraphs, **bold**, and single line breaks. */
-const Prose: React.FC<{ md: string }> = ({ md }) => (
-  <div style={{ display: "grid", gap: 12 }}>
-    {md.split(/\n{2,}/).map((para, i) => (
-      <p key={i} style={{ margin: 0, fontSize: 15.5, lineHeight: 1.65, color: "var(--text-inverse)" }}>
-        {para.split(/(\*\*[^*]+\*\*)/g).map((chunk, j) =>
-          chunk.startsWith("**") && chunk.endsWith("**")
-            ? <strong key={j} style={{ fontWeight: 700 }}>{chunk.slice(2, -2)}</strong>
-            : <span key={j}>{chunk}</span>,
-        )}
-      </p>
-    ))}
-  </div>
-);
+/** Split the address into whole sentences — never cut mid-sentence. */
+const sentencesOf = (md: string): string[] =>
+  plainOf(md).split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
+
+const firstSentence = (md: string) => sentencesOf(md)[0] ?? plainOf(md);
+
+/** A comparable stem so the same title is never printed twice in one card. */
+const stemOf = (t: string) =>
+  t.toLowerCase().replace(/[…]/g, "").replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim().slice(0, 40);
+
+/** Shorten only a button label; the full title always rides on `title`. */
+const shortLabel = (t: string, max = 52) => (t.length <= max ? t : `${t.slice(0, max - 1).trimEnd()}…`);
 
 export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpineProps) {
   const uid = userId ?? "anon";
@@ -159,11 +154,9 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
     if (tab) { onSwitchTab(tab); window.scrollTo({ top: 0, behavior: "smooth" }); }
   }, [onSwitchTab]);
 
-  const openAsk = useCallback(() => {
+  const openAsk = useCallback((prompt: string) => {
     try {
-      window.dispatchEvent(new CustomEvent("aura-open-chat", {
-        detail: { prompt: "Talk to me about today's address." },
-      }));
+      window.dispatchEvent(new CustomEvent("aura-open-chat", { detail: { prompt } }));
     } catch { /* noop */ }
   }, []);
 
@@ -203,6 +196,22 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
     ? new Date(generatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
     : null;
 
+  // ── three beats: one observation, one recommendation, one action ──
+  const moveTitle = activeMove?.title ?? activeMove?.what ?? "";
+  const addressBeats = useMemo(() => {
+    const all = address.row?.address_md ? sentencesOf(address.row.address_md) : [];
+    if (!all.length) return { observation: "", recommendation: [] as string[], rest: [] as string[] };
+    const observation = all[0];
+    const obsStem = stemOf(observation);
+    const titleStem = stemOf(moveTitle);
+    const tail = all.slice(1).filter((s) => {
+      if (!titleStem || titleStem.length < 12) return true;
+      // The title already appears in the observation — do not print it twice.
+      return !(obsStem.includes(titleStem.slice(0, 24)) && stemOf(s).includes(titleStem.slice(0, 24)));
+    });
+    return { observation, recommendation: tail.slice(0, 2), rest: tail.slice(2) };
+  }, [address.row?.address_md, moveTitle]);
+
   // ── the stage ────────────────────────────────────────────────────
   const stage = (() => {
     if (onStage === "moves") return <MovesCard moves={moves} onGo={goRoute} />;
@@ -226,6 +235,19 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
   })();
 
   const loadingAddress = address.loading && !address.row;
+  const chipPrompts: { key: string; label: string; prompt: string; next?: boolean }[] = [
+    {
+      key: "evidence", label: "Show me the evidence first",
+      prompt: moveTitle
+        ? `Show me the evidence behind "${moveTitle}" before I act on it.`
+        : "Show me the evidence behind today's read.",
+    },
+    {
+      key: "other", label: "Not this one — pick another",
+      prompt: "Not this one. Pick another move for me today and say why.",
+      next: moves.length > moveIdx + 1,
+    },
+  ];
 
   return (
     <div className="home-spine" style={{ display: "grid", gap: 22, marginBlockStart: 22 }}>
