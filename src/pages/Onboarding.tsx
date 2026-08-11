@@ -1168,17 +1168,29 @@ const Onboarding = () => {
               style={{ inlineSize: 56, blockSize: 56, borderRadius: "50%", objectFit: "cover", border: `1px solid ${OB.line}` }} />
           ) : null}
           <div style={{ minInlineSize: 0 }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{liProfile?.full_name || `${firstName} ${lastName}`.trim() || "You"}</p>
-            {liProfile?.headline ? (
-              <p style={{ margin: "3px 0 0", fontSize: 12.5, lineHeight: 1.5, color: OB.muted }}>{liProfile.headline}</p>
-            ) : null}
+            {(() => {
+              const name = liProfile?.full_name || `${firstName} ${lastName}`.trim() || "You";
+              const head = cleanHeadline(liProfile?.headline);
+              return (
+                <>
+                  <p {...memberText(name)} style={{ margin: 0, fontSize: 16, fontWeight: 700, ...(memberText(name).style || {}) }}>{name}</p>
+                  {head ? (
+                    <p {...memberText(head)} style={{
+                      margin: "3px 0 0", fontSize: 12.5, lineHeight: 1.5, color: OB.muted,
+                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                      ...(memberText(head).style || {}),
+                    }}>{head}</p>
+                  ) : null}
+                </>
+              );
+            })()}
           </div>
         </div>
         {postsRead ? (
           <div style={{ display: "flex", gap: 20, marginBlockStart: 20 }}>
             {figures.map((f) => (
               <div key={f.l}>
-                <div style={{ fontFamily: OB.mono, fontSize: 22, fontWeight: 600, color: OB.ink }}>{f.v}</div>
+                <div style={{ fontFamily: OB.mono, fontSize: 22, fontWeight: 600, color: OB.ink }}>{num(f.v)}</div>
                 <div style={{ fontSize: 11.5, color: OB.muted, marginBlockStart: 4 }}>{f.l}</div>
               </div>
             ))}
@@ -1194,10 +1206,10 @@ const Onboarding = () => {
             facts.location,
           ].filter(Boolean) as string[];
           const counts = [
-            facts.roles ? `${facts.roles} ${facts.roles === 1 ? "role" : "roles"}` : "",
-            facts.certifications ? `${facts.certifications} certifications` : "",
-            facts.skills ? `${facts.skills} skills` : "",
-            facts.projects ? `${facts.projects} projects` : "",
+            facts.roles ? `${num(facts.roles)} ${facts.roles === 1 ? "role" : "roles"}` : "",
+            facts.certifications ? `${num(facts.certifications)} certifications` : "",
+            facts.skills ? `${num(facts.skills)} skills` : "",
+            facts.projects ? `${num(facts.projects)} projects` : "",
             facts.joinedYear ? `on LinkedIn since ${facts.joinedYear}` : "",
           ].filter(Boolean);
           if (!where.length && !counts.length && !facts.topSkills.length && !facts.aboutFirstLine) return null;
@@ -1207,7 +1219,7 @@ const Onboarding = () => {
                 What Aura found in your record
               </p>
               {where.length ? (
-                <p style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+                <p {...memberText(where.join(" · "))} style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
                   {where.join(" · ")}
                 </p>
               ) : null}
@@ -1220,7 +1232,7 @@ const Onboarding = () => {
               {facts.topSkills.length ? (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBlockStart: 10 }}>
                   {facts.topSkills.map((s) => (
-                    <span key={s} style={{
+                    <span key={s} {...memberText(s)} style={{
                       fontSize: 11.5, color: OB.ink, background: OB.canvas,
                       border: `1px solid ${OB.line}`, borderRadius: RADIUS.chip, padding: "4px 8px",
                     }}>{s}</span>
@@ -1228,9 +1240,9 @@ const Onboarding = () => {
                 </div>
               ) : null}
               {facts.aboutFirstLine ? (
-                <p style={{
+                <p {...memberText(facts.aboutFirstLine)} style={{
                   margin: "12px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6,
-                  color: OB.muted, fontStyle: "italic",
+                  color: OB.muted, fontStyle: "italic", ...(memberText(facts.aboutFirstLine).style || {}),
                 }}>“{facts.aboutFirstLine}”</p>
               ) : null}
             </div>
@@ -1247,15 +1259,18 @@ const Onboarding = () => {
               <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: OB.ink, marginBlockEnd: 6 }}>
                 What people who worked with you said
               </span>
-              {facts.recommendations} {facts.recommendations === 1 ? "person has" : "people have"} written a
+              {num(facts.recommendations)} {facts.recommendations === 1 ? "person has" : "people have"} written a
               recommendation for you
             </figcaption>
-            <blockquote style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: 1.6, color: OB.ink }}>
+            <blockquote {...memberText(facts.recQuote.text)} style={{
+              margin: 0, fontSize: "var(--ob-body)", lineHeight: 1.6, color: OB.ink,
+              ...(memberText(facts.recQuote.text).style || {}),
+            }}>
               “{facts.recQuote.text}”
             </blockquote>
-            <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>— {facts.recQuote.title}</p>
+            <p {...memberText(facts.recQuote.title)} style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>— {facts.recQuote.title}</p>
             <p style={{ margin: "8px 0 0", fontSize: 11.5, color: OB.muted }}>
-              Aura read all {facts.recommendations}.
+              Aura read all {num(facts.recommendations)}.
             </p>
           </figure>
         ) : null}
@@ -1267,7 +1282,9 @@ const Onboarding = () => {
             background: OB.canvas, borderInlineStart: `3px solid ${OB.blue}`,
           }}>
             <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>You wrote this:</figcaption>
-            <blockquote style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: OB.ink }}>
+            <blockquote {...memberText(ownLine.text)} style={{
+              margin: 0, fontSize: 15, lineHeight: 1.6, color: OB.ink, ...(memberText(ownLine.text).style || {}),
+            }}>
               “{ownLine.text}”
             </blockquote>
             <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>
@@ -1289,8 +1306,8 @@ const Onboarding = () => {
           {bandPicker && titleList((t, b) => { void chooseTitle(t, b); setBandPicker(false); })}
           {!sector && (
             <div style={{ marginBlockStart: 12 }}>
-              <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Aura couldn't tell your sector — pick it once.</label>
-              <select id="ob-sector" value={sector} onChange={async (e) => {
+              <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Which sector should Aura use?</label>
+              <select id="ob-sector" value={sector || sectorGuess || ""} onChange={async (e) => {
                 const v = e.target.value;
                 setSector(v);
                 setSectorKnown(!!v);
@@ -1304,14 +1321,6 @@ const Onboarding = () => {
               </select>
             </div>
           )}
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "24px 0 4px" }}>
-          {SHELF.map((s, i) => (
-            <ShelfBadge key={s.key} label={s.label} tone={s.tone}
-              unlocked={i === 0}
-              figure={i === 0 ? (postsRead || "✓") : undefined} />
-          ))}
         </div>
 
         <Actions style={{ marginBlockStart: 18 }}>
