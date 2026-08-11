@@ -2103,6 +2103,17 @@ const Onboarding = () => {
   return (
     <>
       <style>{PAGE_CSS}</style>
+      {exitNote ? (
+        <div role="status" style={{
+          position: "fixed", insetBlockStart: 12, insetInline: 0, zIndex: 60, display: "flex", justifyContent: "center",
+          pointerEvents: "none",
+        }}>
+          <span style={{
+            background: OB.ink, color: "#FFFFFF", fontSize: 13, borderRadius: 999, padding: "9px 16px",
+            boxShadow: "0 8px 24px rgba(15,21,25,.22)",
+          }}>{exitNote}</span>
+        </div>
+      ) : null}
       {content}
     </>
   );
