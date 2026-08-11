@@ -1513,7 +1513,7 @@ const Onboarding = () => {
         <PaperShell bead={3} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
-          <button type="button" onClick={() => void loadDimensions()} style={{ ...btnPrimary, marginBlockStart: 20 }}>Try again</button>
+          <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadDimensions()}>Try again</OBButton></Actions>
         </PaperShell>
       );
     } else {
@@ -1530,10 +1530,12 @@ const Onboarding = () => {
                 fit, or when it's easier to sit in the middle than to pick. Either is fine — but Aura reads a flat
                 answer as "no strong pattern", and it will write more carefully because of it.
               </p>
-              <button type="button" onClick={() => { setFlatWarn(false); setDimIdx(0); }}
-                style={{ ...btnPrimary, marginBlockStart: 20 }}>Let me have another look</button>
-              <button type="button" onClick={() => { setFlatAck(true); setFlatWarn(false); go(10); }}
-                style={btnGhostLight}>No, that's right for me</button>
+              <Actions style={{ marginBlockStart: 20 }}>
+                <OBButton onClick={() => { setFlatWarn(false); setDimIdx(0); }}>Let me have another look</OBButton>
+                <OBButton variant="tertiary" onClick={() => { setFlatAck(true); setFlatWarn(false); go(10); }}>
+                  No, that's right for me
+                </OBButton>
+              </Actions>
             </>
           ) : (
           <>
@@ -1570,18 +1572,18 @@ const Onboarding = () => {
                 </div>
               ))}
           </div>
-          <button type="button" onClick={() => {
-            if (!scores[d.name]) setScore(d.name, value);
-            if (!last) { setDimIdx((i) => i + 1); return; }
-            const finalValues = dims.map((x) => (x.name === d.name ? value : scores[x.name] ?? value));
-            const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
-            if (flatNow && !flatAck) setFlatWarn(true); else go(10);
-          }} style={{ ...btnPrimary, marginBlockStart: 26 }}>
-            {last ? `Done — that's all ${dims.length}` : "Next"}
-          </button>
-          {dimIdx > 0 ? (
-            <button type="button" onClick={() => setDimIdx((i) => Math.max(0, i - 1))} style={btnGhostLight}>Back</button>
-          ) : null}
+          <Actions style={{ marginBlockStart: 26 }}>
+            <OBButton onClick={() => {
+              if (!scores[d.name]) setScore(d.name, value);
+              if (!last) { setDimIdx((i) => i + 1); return; }
+              const finalValues = dims.map((x) => (x.name === d.name ? value : scores[x.name] ?? value));
+              const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
+              if (flatNow && !flatAck) setFlatWarn(true); else go(10);
+            }}>{last ? `Done — that's all ${dims.length}` : "Next"}</OBButton>
+            {dimIdx > 0 ? (
+              <OBButton variant="tertiary" onClick={() => setDimIdx((i) => Math.max(0, i - 1))}>Back</OBButton>
+            ) : null}
+          </Actions>
           {last && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
               {SHELF.map((s, i) => (
