@@ -1326,8 +1326,8 @@ const Onboarding = () => {
           What you'll have when you're done
         </p>
         <div style={{
-          display: "flex", flexWrap: "wrap", justifyContent: "space-between",
-          gap: 8, margin: "0 0 6px",
+          display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: 8, justifyItems: "center", maxWidth: 420, marginLeft: "auto", marginRight: "auto", margin: "0 auto 6px",
         }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
@@ -1833,8 +1833,8 @@ const Onboarding = () => {
           You'll know when something moves these — without going looking.
         </p>
         <div style={{
-          display: "flex", flexWrap: "wrap", justifyContent: "space-between",
-          gap: 8, margin: "22px 0 4px",
+          display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: 8, justifyItems: "center", maxWidth: 420, margin: "22px auto 4px",
         }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} tone={s.tone} onNight
@@ -1973,8 +1973,8 @@ const Onboarding = () => {
           </Actions>
           {last && (
             <div style={{
-              display: "flex", flexWrap: "wrap", justifyContent: "space-between",
-              gap: 8, marginBlockStart: 22,
+              display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+              gap: 8, justifyItems: "center", maxWidth: 420, marginLeft: "auto", marginRight: "auto", marginTop: 22,
             }}>
               {SHELF.map((s, i) => (
                 <ShelfBadge key={s.key} label={s.label} tone={s.tone}
@@ -2237,8 +2237,8 @@ const Onboarding = () => {
         ) : null}
         <h1 style={{ ...h1Night, textAlign: "center" }}>You've got a shelf.</h1>
         <div style={{
-          display: "flex", flexWrap: "wrap", justifyContent: "space-between",
-          gap: 8, margin: "26px 0 6px",
+          display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: 8, justifyItems: "center", maxWidth: 420, margin: "26px auto 6px",
         }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
