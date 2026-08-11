@@ -281,6 +281,9 @@ const Onboarding = () => {
   const [revealSlow, setRevealSlow] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [connectNote, setConnectNote] = useState("");
+  const [connected, setConnected] = useState(false);
+  /* placeholder rotation for open text answers */
+  const [phIdx, setPhIdx] = useState(0);
   const [sharing, setSharing] = useState(false);
   const shareRef = useRef<HTMLDivElement | null>(null);
 
@@ -746,7 +749,12 @@ const Onboarding = () => {
     navigate("/home", { replace: true });
   };
 
-  const connectLinkedIn = async () => {
+  /**
+   * Connect in a popup. A full-page redirect from inside the flow throws the
+   * member out at its most fragile moment, so the redirect is only the
+   * fallback — and it says so when it happens.
+   */
+  const connectLinkedIn = async (opts?: { allowRedirect?: boolean }) => {
     setConnecting(true);
     setConnectNote("");
     try {
@@ -756,8 +764,38 @@ const Onboarding = () => {
       });
       if (error) throw error;
       const url = (data as any)?.url || (data as any)?.authUrl;
-      if (url) { window.location.href = url; return; }
-      throw new Error("no url");
+      if (!url) throw new Error("no url");
+
+      const win = window.open(url, "aura_li_oauth", "width=600,height=700,menubar=no,toolbar=no");
+      if (!win) {
+        if (opts?.allowRedirect) {
+          setConnectNote("Your browser blocked the pop-up, so this opens in the same tab. You'll come straight back.");
+          window.location.href = url;
+          return;
+        }
+        setConnectNote("Your browser blocked the pop-up. You can connect from Settings the moment you're in — nothing here is lost.");
+        setConnecting(false);
+        return;
+      }
+
+      const onMessage = (ev: MessageEvent) => {
+        if (ev.origin !== window.location.origin) return;
+        const d: any = ev.data;
+        if (!d || d.source !== "aura-linkedin-oauth") return;
+        window.removeEventListener("message", onMessage);
+        window.clearInterval(watch);
+        setConnecting(false);
+        if (d.ok) { setConnected(true); setConnectNote(""); }
+        else setConnectNote(d.message || "LinkedIn didn't finish. You can do this from Settings later.");
+      };
+      window.addEventListener("message", onMessage);
+      const watch = window.setInterval(() => {
+        if (win.closed) {
+          window.clearInterval(watch);
+          window.removeEventListener("message", onMessage);
+          setConnecting(false);
+        }
+      }, 700);
     } catch {
       setConnectNote("LinkedIn connection only works on aura-intel.org — you can do this from Settings after you're in.");
       setConnecting(false);
