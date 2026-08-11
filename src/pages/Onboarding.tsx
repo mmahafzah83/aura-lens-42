@@ -749,6 +749,19 @@ const Onboarding = () => {
 
   /* ── finishing ── */
   const finish = async () => {
+    // The read is emailed once, at the end, so it lives somewhere permanent.
+    try {
+      if (reveal) {
+        await supabase.functions.invoke("send-read-email", {
+          body: {
+            archetype: reveal.archetype,
+            marketRead: reveal.marketRead,
+            subjects: reveal.subjects,
+            softGround: reveal.softGround,
+          },
+        });
+      }
+    } catch { /* the read is already on their Home */ }
     if (userId) {
       try {
         await (supabase.from("diagnostic_profiles" as any) as any).upsert({
