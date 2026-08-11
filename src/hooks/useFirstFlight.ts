@@ -21,6 +21,8 @@ export interface FirstFlightState {
   retire: () => void;
   skip: () => void;
   refresh: () => void;
+  /** A read errored — what is shown may be incomplete. */
+  failed: boolean;
   dimmedTabs: Set<string>;
 }
 
@@ -68,15 +70,23 @@ async function mergeFirstFlight(userId: string, patch: FirstFlightRecord): Promi
   }
 }
 
-async function readFirstFlight(userId: string): Promise<FirstFlightRecord> {
+/**
+ * Read the durable half. `ok:false` means the read errored — which is NOT the
+ * same as "this member has no record", and must never be treated as "not done".
+ */
+async function readFirstFlight(userId: string): Promise<{ ok: boolean; record: FirstFlightRecord }> {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("diagnostic_profiles").select("ui_dismissals").eq("user_id", userId).maybeSingle();
+    if (error) throw error;
     const d = (data?.ui_dismissals && typeof data.ui_dismissals === "object")
       ? (data.ui_dismissals as Record<string, unknown>) : {};
-    return (d.first_flight && typeof d.first_flight === "object") ? (d.first_flight as FirstFlightRecord) : {};
-  } catch {
-    return {};
+    const record = (d.first_flight && typeof d.first_flight === "object")
+      ? (d.first_flight as FirstFlightRecord) : {};
+    return { ok: true, record };
+  } catch (e) {
+    console.warn("[useFirstFlight] durable read failed", e);
+    return { ok: false, record: {} };
   }
 }
 
@@ -89,6 +99,7 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
   const [donePersisted, setDonePersisted] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const [signalSeen, setSignalSeen] = useState(false);
+  const [failed, setFailed] = useState(false);
   // Steps already reported, merged from localStorage + the database.
   const firedRef = useRef<Set<number>>(new Set());
 
@@ -97,10 +108,14 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
 
     // The database is the truth; localStorage is the instant cache. Either
     // saying done/skipped means done/skipped.
-    const remote = await readFirstFlight(userId);
+    const { ok: durableOk, record: remote } = await readFirstFlight(userId);
+    setFailed(!durableOk);
     const alreadyDone = safeGet(doneKey(userId)) === "1" || remote.done === true;
     const alreadySkipped = safeGet(skipKey(userId)) === "1" || remote.skipped === true;
     const seen = safeGet(signalSeenKey(userId)) === "1" || remote.signal_seen === true;
+
+    // When the durable read failed, localStorage is the only truth we have:
+    // read from it, show it, and write nothing until a good read confirms.
 
     if (alreadyDone) safeSet(doneKey(userId), "1");
     if (alreadySkipped) safeSet(skipKey(userId), "1");
@@ -118,6 +133,14 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
       fired.add(n);
       safeSet(stepFiredKey(userId, n), "1");
     });
+
+    if (!durableOk) {
+      setDonePersisted(alreadyDone);
+      setSkipped(alreadySkipped);
+      setSignalSeen(seen);
+      setLoading(false);
+      return;
+    }
 
     try {
       const [connRes, entryRes, docRes, sigRes, postRes] = await Promise.all([
