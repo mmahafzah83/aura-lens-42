@@ -64,11 +64,15 @@ export const MONO: React.CSSProperties = {
   fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums",
 };
 
-export const Kicker: React.FC<React.PropsWithChildren<{ style?: React.CSSProperties }>> = ({ children, style }) => (
-  <div style={{
+export const Kicker: React.FC<React.PropsWithChildren<{
+  style?: React.CSSProperties;
+  /** Render as a real heading where the kicker is the section's title. */
+  as?: "div" | "h2" | "h3";
+}>> = ({ children, style, as: Tag = "div" }) => (
+  <Tag style={{
     ...MONO, fontSize: 10.5, letterSpacing: ".12em", textTransform: "uppercase",
-    color: "var(--text-muted)", ...style,
-  }}>{children}</div>
+    color: "var(--text-muted)", margin: 0, fontWeight: 400, ...style,
+  }}>{children}</Tag>
 );
 
 /**
@@ -158,7 +162,7 @@ export const MachineLine: React.FC<React.PropsWithChildren> = ({ children }) => 
 
 export const Skeleton: React.FC<{ h?: number; w?: string | number; radius?: number }> = ({ h = 14, w = "100%", radius = 6 }) => (
   <div aria-hidden className="aura-skeleton" style={{
-    blockSize: h, inlineSize: w, borderRadius: radius, background: "var(--surface-subtle)",
+    blockSize: h, inlineSize: w, borderRadius: radius,
   }} />
 );
 
