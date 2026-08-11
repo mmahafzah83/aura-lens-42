@@ -1055,7 +1055,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   <Linkedin className="w-4 h-4" /> Connect LinkedIn
                 </Button>
                 <p className="text-xs mt-3 max-w-sm" style={{ color: "var(--ink-3)", lineHeight: 1.55 }}>
-                  Connection syncs your followers, impressions, and per-post performance automatically. Read-only — Aura never posts on your behalf.
+                  Connection syncs your followers, impressions, and per-post performance automatically. Aura reads your posts, and can publish for you — but only when you approve it. Nothing goes out in your name on its own.
                 </p>
               </div>
             ) : (
