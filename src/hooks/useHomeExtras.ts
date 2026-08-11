@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -17,17 +17,25 @@ export interface ShapePast {
   /** facet -> 0..1, as it stood roughly thirty days ago. Null when no snapshot is old enough. */
   values: Record<string, number> | null;
   takenOn: string | null;
+  /** the query errored — distinct from "no snapshot exists". */
+  failed: boolean;
+  reload: () => void;
 }
 
 export function useShapePast(userId: string | null | undefined): ShapePast {
-  const [state, setState] = useState<ShapePast>({ loading: true, values: null, takenOn: null });
+  const [state, setState] = useState<{ loading: boolean; values: Record<string, number> | null; takenOn: string | null; failed: boolean }>(
+    { loading: true, values: null, takenOn: null, failed: false },
+  );
+  const [nonce, setNonce] = useState(0);
+  const reload = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
     if (!userId) return;
     let alive = true;
+    setState((s) => ({ ...s, loading: true }));
     (async () => {
       const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { data } = await (supabase.from("imprint_snapshots" as any) as any)
+      const { data, error } = await (supabase.from("imprint_snapshots" as any) as any)
         .select("facet_vector, created_at")
         .eq("user_id", userId)
         .lte("created_at", cutoff)
@@ -35,9 +43,15 @@ export function useShapePast(userId: string | null | undefined): ShapePast {
         .limit(1)
         .maybeSingle();
       if (!alive) return;
+      if (error) {
+        console.warn("[useShapePast] imprint_snapshots read failed", error);
+        // Keep whatever was already read; only flag the failure.
+        setState((s) => ({ ...s, loading: false, failed: true }));
+        return;
+      }
       const vec = (data as any)?.facet_vector;
       if (!vec || typeof vec !== "object") {
-        setState({ loading: false, values: null, takenOn: null });
+        setState({ loading: false, values: null, takenOn: null, failed: false });
         return;
       }
       const out: Record<string, number> = {};
@@ -49,12 +63,13 @@ export function useShapePast(userId: string | null | undefined): ShapePast {
         loading: false,
         values: Object.keys(out).length ? out : null,
         takenOn: (data as any)?.created_at ?? null,
+        failed: false,
       });
     })();
     return () => { alive = false; };
-  }, [userId]);
+  }, [userId, nonce]);
 
-  return state;
+  return { ...state, reload };
 }
 
 // The shared-space lens is closed. Its reads lived here and have been removed.

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { MONO, Card, Kicker, Body, Muted, MachineDot, PublishPill, TextButton, SectionTitle } from "./homeAtoms";
+import { MONO, Card, Kicker, Body, Muted, MachineDot, PublishPill, TextButton, SectionTitle, ReadFailure } from "./homeAtoms";
 import type { HomeFacts } from "@/hooks/useHomeAddress";
 import {
   useRecordTimeline, useThemeTitles,
@@ -387,8 +387,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
         <Kicker>What happened</Kicker>
-        <SectionTitle>What happened</SectionTitle>
-        <Muted>Everything here already happened. Nothing here is a guess.</Muted>
+        <SectionTitle>Everything here already happened</SectionTitle>
       </div>
 
       {/* the year strip */}
@@ -455,7 +454,8 @@ export const RecordLens: React.FC<RecordLensProps> = ({
           )}
 
           {t.loading && <Muted>Reading your record…</Muted>}
-          {!t.loading && rows.length === 0 && (
+          {!t.loading && t.failed && <ReadFailure onRetry={t.reload} />}
+          {!t.loading && !t.failed && rows.length === 0 && (
             <Muted>
               {zoom === "published"
                 ? "Nothing has been published yet."

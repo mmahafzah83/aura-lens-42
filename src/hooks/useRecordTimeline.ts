@@ -53,12 +53,16 @@ export interface RecordTimeline {
   themesTotal: number;
   /** rows read on first paint — reported for the record's own honesty */
   rowsFetched: number;
+  /** the read errored — distinct from "the record is empty". */
+  failed: boolean;
+  reload: () => void;
 }
 
 const EMPTY: RecordTimeline = {
   loading: true, days: [], weeks: [], months: [], published: [], milestones: [],
   signupAt: null, publishedTotal: 0, publishedThroughAura: 0, publishedSentFromAura: 0,
   publishedReturned: 0, fragmentsTotal: 0, themesTotal: 0, rowsFetched: 0,
+  failed: false, reload: () => { /* replaced by the hook */ },
 };
 
 const asBuckets = (v: any): RecordBucket[] =>
@@ -69,15 +73,23 @@ const asBuckets = (v: any): RecordBucket[] =>
 
 export function useRecordTimeline(userId: string | null | undefined): RecordTimeline {
   const [state, setState] = useState<RecordTimeline>(EMPTY);
+  const [nonce, setNonce] = useState(0);
+  const reload = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
     if (!userId) return;
     let alive = true;
+    setState((s) => ({ ...s, loading: true }));
     (async () => {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
       const { data, error } = await (supabase.rpc as any)("home_record_timeline", { p_tz: tz });
       if (!alive) return;
-      if (error || !data) { setState((s) => ({ ...s, loading: false })); return; }
+      if (error || !data) {
+        console.warn("[useRecordTimeline] home_record_timeline read failed", error);
+        // Keep any rows already on screen — only flag the failure.
+        setState((s) => ({ ...s, loading: false, failed: true }));
+        return;
+      }
       const t: any = data;
       const days = asBuckets(t.days);
       const weeks = asBuckets(t.weeks);
@@ -103,12 +115,14 @@ export function useRecordTimeline(userId: string | null | undefined): RecordTime
         fragmentsTotal: Number(t.fragments_total ?? 0),
         themesTotal: Number(t.themes_total ?? 0),
         rowsFetched: days.length + weeks.length + months.length + published.length + milestones.length,
+        failed: false,
+        reload,
       });
     })();
     return () => { alive = false; };
-  }, [userId]);
+  }, [userId, nonce, reload]);
 
-  return state;
+  return { ...state, reload };
 }
 
 /** Theme titles for one bucket — fetched only when the chip is opened. */

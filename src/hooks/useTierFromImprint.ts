@@ -62,6 +62,8 @@ function writeAck(map: Record<string, number>) {
 
 export interface UseTierFromImprintResult {
   loading: boolean;
+  /** the snapshot read errored — distinct from "no snapshots yet". */
+  failed: boolean;
   /** Latest imprint score (0–100) or null when no snapshots. */
   score: number | null;
   /** Current tier derived from the latest snapshot. */
@@ -89,6 +91,7 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
   const [delta, setDelta] = useState<number | null>(null);
   const [crossed, setCrossed] = useState(false);
   const [scoreComponents, setScoreComponents] = useState<{ signal: number; content: number; capture: number } | null>(null);
+  const [failed, setFailed] = useState(false);
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -105,6 +108,7 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
         .order("created_at", { ascending: false })
         .limit(2);
       if (error) throw error;
+      setFailed(false);
       const rows = (data || []) as Array<{ imprint: number | null; tier: string | null; components: any; created_at: string }>;
       const latest = rows[0]?.imprint ?? null;
       const prior  = rows[1]?.imprint ?? null;
@@ -138,7 +142,8 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
       setCrossed(!!cur && isUpward && !alreadyAck);
     } catch (e) {
       console.warn("[useTierFromImprint] load failed", e);
-      setScore(null); setCurrentTier(null); setPreviousTier(null); setDelta(null); setCrossed(false); setScoreComponents(null);
+      // A failed read must never wipe good data already on screen.
+      setFailed(true);
     } finally {
       setLoading(false);
     }
@@ -168,7 +173,7 @@ export function useTierFromImprint(userId: string | null | undefined): UseTierFr
     setCrossed(false);
   }, [currentTier]);
 
-  return { loading, score, currentTier, previousTier, delta, crossed, scoreComponents, acknowledge, refresh: load };
+  return { loading, failed, score, currentTier, previousTier, delta, crossed, scoreComponents, acknowledge, refresh: load };
 }
 
 export default useTierFromImprint;

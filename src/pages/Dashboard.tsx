@@ -17,7 +17,6 @@ import WhatsAppOptInModal from "@/components/WhatsAppOptInModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NotificationBell from "@/components/NotificationBell";
 import AskAuraButton from "@/components/AskAuraButton";
-import OvernightPulse from "@/components/systemb/OvernightPulse";
 import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
 import { signOutAndLand } from "@/lib/signOut";
@@ -888,11 +887,7 @@ const Dashboard = () => {
               {/* Global section label removed — each tab owns its own branded header */}
             </div>
             <div className="flex items-center gap-3">
-              <OvernightPulse
-                variant="chip"
-                interactive={activeTab !== "overnight"}
-                onOpen={() => switchTab("overnight" as TabValue)}
-              />
+              {/* Overnight is owned by Home's "While you slept" block — not repeated here. */}
               <AskAuraButton onClick={() => openChat()} />
               <HelpButton onClick={() => setHelpOpen(true)} />
               <NotificationBell />
@@ -1003,6 +998,7 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <HomeSpine
                     userId={userId}
+                    guidedActive={firstFlight.active}
                     onSwitchTab={(t) => switchTab(t as TabValue)}
                     onOpenDraft={(d) => { setDraftPrefill(d as any); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                     onStartSignalPost={(p) => {
