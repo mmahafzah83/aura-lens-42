@@ -859,12 +859,43 @@ const Onboarding = () => {
     }
   };
 
-  /* ── escape hatch, unchanged in spirit ── */
-  /** Save & exit — everything already answered stays, and Home is one tap away. */
+  /* ── finish later: a saved place, a said-out-loud confirmation, and a way back ── */
+  /** Which of the five named stages this screen belongs to. */
+  const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
+
+  /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
-    void persistScreen(screen);
-    navigate("/home");
-  }, [persistScreen, screen, navigate]);
+    const stage = stageOf(screen);
+    setExitNote(`Saved at step ${stage} of 5. You can pick this up any time.`);
+    void (async () => {
+      await persistScreen(screen);
+      if (userId) {
+        try {
+          const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+            .select("identity_intelligence").eq("user_id", userId).maybeSingle();
+          const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+          const alreadyEmailed = Boolean(ii.resume_email_sent_at);
+          await (supabase.from("diagnostic_profiles" as any) as any)
+            .update({
+              identity_intelligence: {
+                ...ii,
+                journey_screen: screen,
+                journey_paused: true,
+                journey_stage: stage,
+                journey_paused_at: new Date().toISOString(),
+                resume_email_sent_at: alreadyEmailed ? ii.resume_email_sent_at : new Date().toISOString(),
+              },
+            })
+            .eq("user_id", userId);
+          /* one email, the first time only — never a sequence */
+          if (!alreadyEmailed) {
+            supabase.functions.invoke("send-resume-email", { body: { stage } }).catch(() => {});
+          }
+        } catch (e) { console.warn("[journey] finish later save failed", e); }
+      }
+      window.setTimeout(() => navigate("/home"), 900);
+    })();
+  }, [persistScreen, screen, navigate, userId]);
 
   /** Remembers when their day starts, alongside the time zone we detected. */
   const chooseDailyTime = useCallback(async (slot: "Morning" | "Midday" | "Evening") => {
