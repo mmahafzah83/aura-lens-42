@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     const message = (error as Error)?.name === "AbortError"
-      ? "LinkedIn fetch timed out after 120 seconds. Try again."
+      ? "LinkedIn fetch timed out after 45 seconds. Try again."
       : (error as Error).message;
     console.error("linkedin-fetch-profile error:", error);
     return json({ error: message }, 500);

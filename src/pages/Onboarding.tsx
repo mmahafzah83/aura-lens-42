@@ -468,7 +468,8 @@ const Onboarding = () => {
       setStep1Phase("result");
       setLiBusy(false);
 
-      const { data: postData } = await postsPromise;
+      const [, postsSettled] = await Promise.allSettled([profilePromise, postsPromise]);
+      const postData = postsSettled.status === "fulfilled" ? (postsSettled.value as any)?.data : null;
       const kept = typeof (postData as any)?.kept_own_text === "number" ? (postData as any).kept_own_text : 0;
       setPostsRead(kept);
       if (userId) {

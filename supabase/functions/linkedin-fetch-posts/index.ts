@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
 
     // --- Apify (sync run) ---
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 120_000);
+    const timer = setTimeout(() => controller.abort(), 45_000);
     let res: Response;
     try {
       res = await fetch(
