@@ -162,6 +162,7 @@ const RevealCard = forwardRef<
       fontFamily: OB.ui,
       display: "flex",
       flexDirection: "column",
+      justifyContent: "space-between",
       overflow: "hidden",
     }}
   >
