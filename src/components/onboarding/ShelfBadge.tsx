@@ -38,22 +38,25 @@ const ICON = { profile: User, saved: Bookmark, strengths: BarChart3, subjects: T
 
 const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = false, icon = "profile", hint }: Props) => {
   const Icon = ICON[icon];
+  /* A zero is not an achievement — a badge with nothing behind it stays empty. */
+  const isZero = figure === 0 || figure === "0";
+  const on = unlocked && !isZero;
   return (
-  <div style={{ inlineSize: 54, textAlign: "center" }} title={unlocked ? label : (hint || label)}>
+  <div style={{ inlineSize: 54, textAlign: "center" }} title={on ? label : (hint || label)}>
     <style>{CSS}</style>
     <div
-      className={unlocked ? "sb-unlocked" : undefined}
-      aria-label={unlocked ? label : `${label} — ${hint || "not unlocked yet"}`}
+      className={on ? "sb-unlocked" : undefined}
+      aria-label={on ? label : `${label} — ${hint || "not unlocked yet"}`}
       style={{
         inlineSize: 54, blockSize: 54, borderRadius: RADIUS.card,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: unlocked ? FILL[tone] : (onNight ? "#141E25" : OB.canvas),
-        border: unlocked ? "1px solid transparent" : `1.5px dashed ${onNight ? OB.lineNight : OB.line}`,
-        color: unlocked ? "#FFFFFF" : (onNight ? OB.mutedNight : OB.muted),
+        background: on ? FILL[tone] : (onNight ? "#141E25" : OB.canvas),
+        border: on ? "1px solid transparent" : `1.5px dashed ${onNight ? OB.lineNight : OB.line}`,
+        color: on ? "#FFFFFF" : (onNight ? OB.mutedNight : OB.muted),
         transition: `background 300ms ${SPRING}`,
       }}
     >
-      {unlocked
+      {on
         ? <span style={{ fontFamily: OB.mono, fontSize: 17, fontWeight: 600 }}>{figure ?? "✓"}</span>
         : <Icon size={20} strokeWidth={1.5} color="#98A2AE" />}
     </div>

@@ -39,12 +39,23 @@ export async function shareRevealCard(
   opts: { fileName?: string; format?: "png" | "jpeg"; caption?: string } = {},
 ): Promise<"shared" | "downloaded"> {
   const { toPng, toJpeg } = await import("html-to-image");
+  // Webfonts must be resolved before rasterising, or html-to-image throws on
+  // the cross-origin stylesheet mid-export.
+  try { await (document as any).fonts?.ready; } catch { /* nothing to wait for */ }
   const rect = node.getBoundingClientRect();
   const pixelRatio = rect.width > 0 ? 1200 / rect.width : 2;
-  const format = opts.format ?? "png";
-  const dataUrl = format === "jpeg"
-    ? await toJpeg(node, { pixelRatio, quality: 0.92, cacheBust: true })
-    : await toPng(node, { pixelRatio, cacheBust: true });
+  let format = opts.format ?? "png";
+  let dataUrl: string;
+  try {
+    dataUrl = format === "jpeg"
+      ? await toJpeg(node, { pixelRatio, quality: 0.92, cacheBust: true })
+      : await toPng(node, { pixelRatio, cacheBust: true });
+  } catch (err) {
+    // One retry without the fonts — a plainer image beats no image.
+    console.error("[reveal] png export failed, retrying without fonts", err);
+    format = "jpeg";
+    dataUrl = await toJpeg(node, { pixelRatio, quality: 0.92, cacheBust: true, skipFonts: true } as any);
+  }
 
   const blob = await (await fetch(dataUrl)).blob();
   const fileName = opts.fileName ?? `my-read-from-aura.${format === "jpeg" ? "jpg" : "png"}`;
@@ -176,7 +187,10 @@ const RevealCard = forwardRef<
         borderBlockStart: "1px solid rgba(255,255,255,0.28)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <img src="/aura-mark.svg" alt="Aura" width={22} height={22} style={{ display: "block" }} />
+          {/* A wordmark, not a fetched file — an export must not depend on the network. */}
+          <span style={{
+            fontFamily: OB.ui, fontWeight: 700, fontSize: 13, letterSpacing: "0.14em", color: "#FFFFFF",
+          }}>AURA</span>
           <span style={{ fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em" }}>
             Read by Aura · aura-intel.org
           </span>

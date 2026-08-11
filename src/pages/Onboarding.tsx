@@ -296,6 +296,8 @@ const Onboarding = () => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [textAnswer, setTextAnswer] = useState("");
   const [multiPicked, setMultiPicked] = useState<string[]>([]);
+  /* One rule for every question: select, see it selected, then Next. */
+  const [singlePicked, setSinglePicked] = useState<string | null>(null);
   const [proposals, setProposals] = useState<{ label: string; why: string }[] | null>(null);
   const [proposalsDead, setProposalsDead] = useState(false);
 
@@ -1627,7 +1629,7 @@ const Onboarding = () => {
           </>
         )}
         {proof && proof.lines.length > 0 ? (
-          <WaitProof lines={proof.lines} howLong="While you wait — here's what Aura found in your own posts." />
+            <WaitProof lines={proof.lines} startAt={0} howLong="While you wait — here's what Aura found in your own posts." />
         ) : null}
         {settled && (
           <>
@@ -1860,12 +1862,14 @@ const Onboarding = () => {
         setAnswers(next);
         setTextAnswer("");
         setMultiPicked([]);
+        setSinglePicked(null);
         if (userId) void saveAnswers(userId, next);
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
       const back = () => {
         setTextAnswer("");
         setMultiPicked([]);
+        setSinglePicked(null);
         setQIdx((i) => Math.max(0, i - 1));
       };
       const cap = q.kind === "multi" ? (q.max_choices ?? (q.options?.length || 99)) : 1;
@@ -1917,9 +1921,14 @@ const Onboarding = () => {
           ) : null}
 
           {q.kind === "choice" ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
-              {opts.map((o) => optionButton(o.label, () => advance(o.label)))}
-            </div>
+            <>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
+                {opts.map((o) => optionButton(o.label, () => setSinglePicked(o.label), singlePicked === o.label))}
+              </div>
+              <Actions style={{ marginBlockStart: 16 }}>
+                <OBButton disabled={!singlePicked} onClick={() => singlePicked && advance(singlePicked)}>Next</OBButton>
+              </Actions>
+            </>
           ) : q.kind === "multi" ? (
             <>
               <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>Pick up to {cap}</p>
@@ -1942,15 +1951,24 @@ const Onboarding = () => {
                   Keep the one that's actually you. The two you drop tell Aura just as much.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
-                  {proposals!.map((pr) => optionButton(
-                    pr.label,
-                    () => {
-                      const dropped = proposals!.filter((x) => x.label !== pr.label).map((x) => x.label);
-                      advance(`${pr.label}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
-                    },
-                    false, false, pr.why,
+                  {proposals!.map((pr) => (
+                    /* the two the member is not keeping visibly recede */
+                    <div key={pr.label} style={{
+                      display: "flex", flexDirection: "column",
+                      opacity: singlePicked && singlePicked !== pr.label ? 0.55 : 1,
+                      transition: `opacity 220ms ${EASE}`,
+                    }}>
+                      {optionButton(pr.label, () => setSinglePicked(pr.label), singlePicked === pr.label, false, pr.why)}
+                    </div>
                   ))}
                 </div>
+                <Actions style={{ marginBlockStart: 16 }}>
+                  <OBButton disabled={!singlePicked} onClick={() => {
+                    if (!singlePicked) return;
+                    const dropped = proposals!.filter((x) => x.label !== singlePicked).map((x) => x.label);
+                    advance(`${singlePicked}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
+                  }}>Next</OBButton>
+                </Actions>
               </>
             ) : proposedFallback ? (
               <>
@@ -2051,7 +2069,7 @@ const Onboarding = () => {
             : "I'll keep reading for the subjects in your read. When something is worth your name on it, you'll hear — not before."}
         </p>
         {revealPending && proof && proof.lines.length > 0 ? (
-          <WaitProof lines={proof.lines} howLong="Writing your read. About a minute." />
+          <WaitProof lines={proof.lines} startAt={3} howLong="Writing your read. About a minute." />
         ) : null}
         <Actions style={{ marginBlockStart: 24 }}>
           <OBButton onClick={() => go(13)} loading={revealPending && !revealSlow} loadingLabel="Writing your read…">
@@ -2073,7 +2091,7 @@ const Onboarding = () => {
         display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
       }}>
         <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-          {reveal ? <RevealCard data={reveal} /> : (
+          {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : (
             <div style={{ textAlign: "center", color: "#FFFFFF" }}>
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>
                 Aura is still writing your read. It'll be on your Home the moment it's done.
@@ -2095,8 +2113,9 @@ const Onboarding = () => {
               toast.success(how === "shared"
                 ? "Sent to your share sheet."
                 : "Image saved — the caption is on your clipboard, ready to paste.");
-            } catch {
-              toast.error("Couldn't build the image just now. Try once more.");
+            } catch (err) {
+              console.error("[reveal] share failed", err);
+              toast.error("Couldn't build the image. Your read is safe — it's on your Home.");
             } finally {
               setSharing(false);
             }
