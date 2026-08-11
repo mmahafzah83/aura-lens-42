@@ -40,7 +40,7 @@ import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyHeader from "@/components/onboarding/JourneyHeader";
-import { num, cleanHeadline, memberText } from "@/lib/memberText";
+import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
 import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 
@@ -75,6 +75,20 @@ const SHELF_HINT = [
   "Unlocks when you've moved the sliders",
   "Unlocks when your read is written",
 ];
+
+/** Domain and age of a suggested read — a senior reader wants to know where a link goes. */
+const sourceLine = (a: { url: string; source?: string; published_at?: string | null }): string => {
+  let domain = (a.source || "").trim();
+  try { domain = new URL(a.url).hostname.replace(/^www\./, ""); } catch { /* keep whatever came back */ }
+  const iso = a.published_at;
+  if (!iso) return domain;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return domain;
+  const days = Math.floor((Date.now() - t) / 86400000);
+  const age = days <= 0 ? "today" : days === 1 ? "1 day ago" : days < 30 ? `${days} days ago`
+    : days < 60 ? "1 month ago" : `${Math.floor(days / 30)} months ago`;
+  return domain ? `${domain} · ${age}` : age;
+};
 
 const MANUAL_SCREEN = 15;
 /** Shown wherever a post or word count would otherwise read zero. */
@@ -257,7 +271,8 @@ const Onboarding = () => {
 
   /* screen 5–7 */
   const [linkInput, setLinkInput] = useState("");
-  const [suggested, setSuggested] = useState<{ url: string; title: string; summary?: string; source?: string } | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [suggested, setSuggested] = useState<{ url: string; title: string; summary?: string; source?: string; published_at?: string | null } | null>(null);
   const [suggestDead, setSuggestDead] = useState(false);
   const [readStep, setReadStep] = useState(0);
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -535,6 +550,17 @@ const Onboarding = () => {
   }, [screen, sector, firm, band, liProfile]);
 
   /* ── screen 5/6: send the link, then watch for what came out of it ── */
+  const submitLink = () => {
+    const v = linkInput.trim();
+    if (!v) return;
+    if (!/^https?:\/\/\S+\.\S+/i.test(v)) {
+      setLinkError("That needs to be a web link, starting with https://");
+      return;
+    }
+    setLinkError(null);
+    void sendLink(v);
+  };
+
   const sendLink = async (url: string, meta?: { title?: string; summary?: string }) => {
     const v = url.trim();
     if (!v) return;
@@ -1520,13 +1546,25 @@ const Onboarding = () => {
       <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>Something you read this week.</h1>
         <p style={bodyLight}>
-          An article, a report, a post you disagreed with. Aura reads it and shows you what it found.
+          Paste a link to an article or a post. Aura reads it and shows you what it found.
         </p>
-        <input value={linkInput} onChange={(e) => setLinkInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && linkInput.trim()) void sendLink(linkInput); }}
-          placeholder="Paste a link" inputMode="url" style={{ ...fieldStyle, marginBlockStart: 20 }} />
+        <label htmlFor="ob-link" style={{
+          display: "block", margin: "20px 0 6px", fontSize: 12.5, fontWeight: 600, color: OB.ink,
+        }}>Link</label>
+        <input id="ob-link" value={linkInput}
+          onChange={(e) => { setLinkInput(e.target.value); if (linkError) setLinkError(null); }}
+          onKeyDown={(e) => { if (e.key === "Enter") void submitLink(); }}
+          placeholder="https://hbr.org/2026/07/the-exit-ready-cfo" inputMode="url"
+          style={{ ...fieldStyle, borderColor: linkError ? "#B3261E" : (fieldStyle as any).borderColor }} />
+        {linkError ? (
+          <p style={{ margin: "7px 0 0", fontSize: 12, color: "#B3261E" }}>{linkError}</p>
+        ) : (
+          <p style={{ margin: "7px 0 0", fontSize: 12, color: OB.muted }}>
+            A web link for now. Files and documents are coming.
+          </p>
+        )}
         <Actions style={{ marginBlockStart: 14 }}>
-          <OBButton disabled={!linkInput.trim()} onClick={() => void sendLink(linkInput)}>Add it</OBButton>
+          <OBButton disabled={!linkInput.trim()} onClick={() => void submitLink()}>Add it</OBButton>
         </Actions>
 
         {suggested || !suggestDead ? (
@@ -1540,17 +1578,22 @@ const Onboarding = () => {
         {suggested ? (
           <div style={{ border: `1px solid ${OB.line}`, borderRadius: RADIUS.card, padding: 15, background: OB.canvas }}>
             <p style={{ margin: 0, fontSize: 11.5, color: OB.muted }}>
-              Aura found this while it was reading your profile. From your sector.
+              Aura found this in your sector while it read your profile.
             </p>
-            <p style={{ margin: "9px 0 0", fontSize: 14.5, fontWeight: 700, lineHeight: 1.4 }}>{suggested.title}</p>
+            <p style={{ margin: "9px 0 0", fontSize: 14.5, fontWeight: 700, lineHeight: 1.4 }} {...memberText(suggested.title)}>
+              {suggested.title}
+            </p>
+            <p style={{
+              margin: "5px 0 0", fontFamily: OB.mono, fontSize: 11, color: OB.muted, letterSpacing: "0.02em",
+            }}>{sourceLine(suggested)}</p>
             {suggested.summary ? (
-              <p style={{
-                margin: "6px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted,
-                display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
-              }}>{suggested.summary}</p>
+              <p style={{ margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}
+                {...memberText(suggested.summary)}>
+                {trimToSentence(suggested.summary, 220)}
+              </p>
             ) : null}
-            <div style={{ marginBlockStart: 4 }}>
-              <OBButton variant="tertiary"
+            <div style={{ marginBlockStart: 14 }}>
+              <OBButton variant="secondary"
                 onClick={() => void sendLink(suggested.url, { title: suggested.title, summary: suggested.summary })}>
                 Use this one
               </OBButton>
