@@ -2110,6 +2110,76 @@ const Onboarding = () => {
   if (screen === 13) {
     const shareFooter = { posts: postsRead ?? 0, saved: claims.length };
     const caption = suggestedCaption(postsRead ?? 0);
+    const liveCaption = captionDraft.trim() || caption;
+
+    const downloadRead = async () => {
+      if (!shareRef.current) return;
+      setSharing(true);
+      try {
+        const how = await shareRevealCard(shareRef.current, { caption: liveCaption });
+        toast.success(how === "shared"
+          ? "Sent to your share sheet."
+          : "Image saved — the caption is on your clipboard, ready to paste.");
+      } catch (err) {
+        console.error("[reveal] share failed", err);
+        toast.error("Couldn't build the image. Your read is safe — it's on your Home.");
+      } finally {
+        setSharing(false);
+      }
+    };
+
+    const postToLinkedIn = async () => {
+      if (!shareRef.current) return;
+      setPosting(true);
+      try {
+        const { dataUrl } = await rasteriseRevealCard(shareRef.current, { format: "png" });
+        const imageBase64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+        const { data, error } = await invokeEdgeFunction<{ ok: boolean; reason?: string; postUrn?: string | null }>(
+          "linkedin-share-read", { body: { imageBase64, caption: liveCaption } },
+        );
+        if (error) throw error;
+        if (data?.ok) {
+          setPostedUrl(data.postUrn
+            ? `https://www.linkedin.com/feed/update/${data.postUrn}`
+            : "https://www.linkedin.com/feed/");
+          toast.success("Posted. It's on your LinkedIn now.");
+          return;
+        }
+        if (data?.reason === "not_permitted") {
+          setCanPostToLinkedIn(false);
+          toast.message("Aura can't post for you yet — image saved instead.");
+          await downloadRead();
+          return;
+        }
+        toast.error("That didn't go through. Try again, or download the image.");
+      } catch (err) {
+        console.error("[reveal] post failed", err);
+        toast.error("That didn't go through. Try again, or download the image.");
+      } finally {
+        setPosting(false);
+      }
+    };
+
+    const saveReadForLater = async () => {
+      if (!userId) return;
+      setSavingDraft(true);
+      try {
+        const { error } = await supabase.from("linkedin_posts").insert({
+          user_id: userId,
+          post_text: liveCaption,
+          source_type: "onboarding_reveal",
+          tracking_status: "draft",
+        });
+        if (error) throw error;
+        toast.success("Saved to your drafts.");
+      } catch (err) {
+        console.error("[reveal] save draft failed", err);
+        toast.error("Couldn't save that draft. Your read is safe — it's on your Home.");
+      } finally {
+        setSavingDraft(false);
+      }
+    };
+
     content = (
       <div className="obc" style={{
         minBlockSize: "100dvh",
