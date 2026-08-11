@@ -30,7 +30,7 @@ import NpsSurveyModal from "@/components/NpsSurveyModal";
 import FirstLoginWelcome from "@/components/FirstLoginWelcome";
 import { useOnboardingGate } from "@/hooks/useOnboardingGate";
 import HomeSpine from "@/components/home/HomeSpine";
-import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
+
 import LinkedInNudge from "@/components/home/LinkedInNudge";
 import AuraRail from "@/components/rail/AuraRail";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
@@ -979,7 +979,6 @@ const Dashboard = () => {
           <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={activeTab === "authority" ? undefined : { minHeight: "60vh" }}>
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
-                <ResumeJourneyCard userId={userId} />
                 <LinkedInNudge userId={userId} />
                 <FirstLoginWelcome
                   firstName={user?.firstName ?? null}
