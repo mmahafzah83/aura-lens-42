@@ -1035,12 +1035,8 @@ const Onboarding = () => {
       <PaperShell bead={0} footer={escapeFooter}>
         <h1 style={h1Light}>What's your LinkedIn?</h1>
         <p style={bodyLight}>
-          Aura reads what's already public — your profile and your recent posts. That's how it learns your sector,
-          your level, and the way you already write.
-        </p>
-        <p style={{ ...bodyLight, fontSize: 12.5, marginBlockStart: 10 }}>
-          Aura stores your posts so it can learn your voice. You can delete them, and your whole account, from
-          Settings at any time — and they go for good.
+          So nothing Aura writes for you sounds generic. It reads what's already public — your profile and your
+          recent posts — and picks up your sector, your level and the way you already write.
         </p>
         <input
           value={liInput}
@@ -1053,17 +1049,46 @@ const Onboarding = () => {
         {liError ? (
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.err }}>{liError}</p>
         ) : null}
-        <button type="button" onClick={readProfile} disabled={liBusy || !liInput.trim()}
-          style={{ ...btnPrimary, marginBlockStart: 16, opacity: liBusy || !liInput.trim() ? 0.5 : 1 }}>
-          {liBusy ? <Loader2 size={16} className="animate-spin" /> : null} Read my profile
-        </button>
-        <button type="button" onClick={() => go(MANUAL_SCREEN)} style={btnGhostLight}>
-          I'd rather type it in myself
-        </button>
-        <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
+        <Actions style={{ marginBlockStart: 16 }}>
+          <OBButton onClick={() => void readProfile()} disabled={!liInput.trim()} loading={liBusy} loadingLabel="Reading…">
+            Read my profile
+          </OBButton>
+          <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
+        </Actions>
+        <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
           Aura stores what it reads so it can write as you. You can delete it any time in Settings.
         </p>
-        <p style={footnote}>Aura only reads. It never posts.</p>
+
+        {/* Optional accelerator. Quiet, secondary, never the way through. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "24px 0 14px" }}>
+          <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
+          <span style={{ fontSize: 11.5, color: OB.muted }}>Optional — ten seconds more</span>
+          <span style={{ blockSize: 1, background: OB.line, flex: 1 }} />
+        </div>
+        {connected ? (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: RADIUS.card,
+            background: OB.blueTint, fontSize: 13.5, color: OB.ink,
+          }}>
+            <Check size={15} style={{ color: "#12805C" }} /> Connected · Aura can see how your posts performed
+          </div>
+        ) : (
+          <>
+            <p style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+              Connect LinkedIn too and Aura learns which of your subjects your audience already rewards, so it stops
+              guessing.
+            </p>
+            <Actions style={{ marginBlockStart: 12 }}>
+              <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel="Connecting…">
+                Connect LinkedIn
+              </OBButton>
+            </Actions>
+            {connectNote ? (
+              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{connectNote}</p>
+            ) : null}
+          </>
+        )}
+        <p style={footnote}>Aura never posts. You press publish, every time.</p>
       </PaperShell>
     );
   }
