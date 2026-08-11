@@ -114,7 +114,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
       } catch (e) {
         console.warn("password_set notification failed:", e);
       }
-      // Ceremony pause — intentional. Show the gold ✦ and the "setting up"
+      // Ceremony pause — intentional. Show the accent ✦ and the "setting up"
       // line, then proceed to onboarding after 800ms.
       setSubmitted(true);
       window.setTimeout(() => {

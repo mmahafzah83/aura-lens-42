@@ -231,7 +231,7 @@ const SkillRadar = () => {
               strokeWidth={1.5}
               strokeDasharray="6 3"
             />
-            {/* User (gold) */}
+            {/* User (accent) */}
             <Radar
               name="current"
               dataKey="current"

@@ -325,7 +325,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
                 </div>
               </div>
 
-              {/* Bottom: gold line + brand + bilingual tagline */}
+              {/* Bottom: accent line + brand + bilingual tagline */}
               <div>
                 <div style={{ height: 1, background: ACCENT, width: 60, marginBottom: 12 }} />
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

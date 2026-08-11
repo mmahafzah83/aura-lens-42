@@ -18,8 +18,8 @@ const SIZE_CLASSES: Record<Size, string> = {
 
 /**
  * Reusable initials avatar.
- * Light mode: gold-pale background, gold-dark initials.
- * Dark mode: gold-dark tinted background, gold-light initials.
+ * Light mode: pale accent background, deep accent initials.
+ * Dark mode: deep accent tinted background, light accent initials.
  * Initials = first letter of firstName + first letter of lastName.
  */
 export default function UserAvatar({

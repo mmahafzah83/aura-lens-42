@@ -141,7 +141,7 @@ export default function OAuthConsent() {
                 disabled={busy}
                 onClick={() => decide(true)}
                 className="flex-1 py-2.5 rounded-lg font-medium"
-                style={{ background: "var(--gold, #C5A55A)", color: "var(--paper)", opacity: busy ? 0.6 : 1 }}
+                style={{ background: "var(--act)", color: "var(--text-inverse)", opacity: busy ? 0.6 : 1 }}
               >
                 {busy ? "Working…" : "Approve"}
               </button>
