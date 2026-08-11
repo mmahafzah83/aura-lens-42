@@ -589,6 +589,13 @@ const Onboarding = () => {
     loadOwnSentence(userId).then((s) => { if (s) setOwnLine(s); }).catch(() => {});
   }, [userId, screen, ownLine]);
 
+  /* everything else Aura already read — the whole profile, not three numbers */
+  useEffect(() => {
+    if (!userId || facts) return;
+    if (screen !== 2 && screen !== 3) return;
+    loadProfileFacts(userId).then((f) => { if (f) setFacts(f); }).catch(() => {});
+  }, [userId, screen, facts]);
+
   /* three spaces Aura proposes — fetched the moment a proposed question is in view */
   useEffect(() => {
     if (screen !== 11 || !questions) return;
@@ -677,6 +684,14 @@ const Onboarding = () => {
     // Never trap the member on the last screen.
     const t = window.setTimeout(() => setRevealSlow(true), 20000);
     return () => window.clearTimeout(t);
+  }, [screen, revealPending]);
+
+  /* the report wait has four steps; the clock drives the first three */
+  useEffect(() => {
+    if (screen !== 12 || !revealPending) { setGenElapsed(0); return; }
+    const started = Date.now();
+    const i = window.setInterval(() => setGenElapsed(Date.now() - started), 500);
+    return () => window.clearInterval(i);
   }, [screen, revealPending]);
 
   useEffect(() => {
