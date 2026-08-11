@@ -1323,7 +1323,7 @@ const Onboarding = () => {
           {!sector && (
             <div style={{ marginBlockStart: 12 }}>
               <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Which sector should Aura use?</label>
-              <select id="ob-sector" value={sector || sectorGuess || ""} onChange={async (e) => {
+              <select id="ob-sector" value={sector} onChange={async (e) => {
                 const v = e.target.value;
                 setSector(v);
                 setSectorKnown(!!v);
