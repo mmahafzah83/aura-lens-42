@@ -395,7 +395,22 @@ const Onboarding = () => {
       setLiProfile(prof);
 
       const readSector = String(prof?.sector || prof?.industry || "").trim();
-      if (!sector && readSector) { setSector(readSector); setSectorKnown(true); }
+      // The read first; failing that, what the headline, skills and about say.
+      const guessed = readSector || inferSector({
+        headline: prof?.headline,
+        topSkills: prof?.top_skills || prof?.raw?.topSkills || [],
+        about: prof?.about || prof?.raw?.about,
+      }) || "";
+      if (!sector && guessed) {
+        setSector(guessed);
+        setSectorKnown(true);
+        if (userId) {
+          try {
+            await (supabase.from("diagnostic_profiles" as any) as any)
+              .update({ sector_focus: guessed }).eq("user_id", userId);
+          } catch { /* the member can change it on the next screen */ }
+        }
+      }
 
       if (userId) {
         try {
