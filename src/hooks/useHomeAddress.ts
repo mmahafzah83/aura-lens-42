@@ -120,11 +120,15 @@ export function useHomeAddress(userId: string | null | undefined): HomeAddressSt
       // 1 — the deterministic half, straight from the table, so the page can
       //     draw itself before any prose exists.
       try {
-        const { data } = await (supabase.from("home_address" as any) as any)
+        const { data, error } = await (supabase.from("home_address" as any) as any)
           .select("*").eq("user_id", userId).eq("address_date", todayKey()).maybeSingle();
+        if (error) throw error;
         const row = normalise(data);
         if (alive && row) setState((s) => ({ ...s, row, facts: row.facts }));
-      } catch { /* the function call below is the real attempt */ }
+      } catch (e) {
+        // The function call below is the real attempt; still say it failed.
+        console.warn("[useHomeAddress] cached row read failed", e);
+      }
 
       // 2 — the function: returns today's cached row, or generates it once.
       try {
@@ -153,21 +157,38 @@ export function useHomeAddress(userId: string | null | undefined): HomeAddressSt
 
 export interface ReadChip { key: string; label: string }
 
-export function useReadChips(userId: string | null | undefined, facts: HomeFacts | null): ReadChip[] {
+export interface ReadChipsState {
+  chips: ReadChip[];
+  failed: boolean;
+  refresh: () => void;
+}
+
+export function useReadChips(userId: string | null | undefined, facts: HomeFacts | null): ReadChipsState {
   const [profile, setProfile] = useState<{ answers: number; calibrated: boolean; linkedin: boolean } | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [nonce, setNonce] = useState(0);
+  const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
     if (!userId) return;
     let alive = true;
     (async () => {
       // The LinkedIn address lives on linkedin_connections — the profile columns are deprecated.
-      const [{ data }, { data: conn }] = await Promise.all([
+      const [{ data, error }, { data: conn, error: connErr }] = await Promise.all([
         supabase.from("diagnostic_profiles")
           .select("brand_assessment_answers, skill_ratings").eq("user_id", userId).maybeSingle(),
         supabase.from("linkedin_connections")
           .select("handle, profile_url").eq("user_id", userId).maybeSingle(),
       ]);
-      if (!alive || !data) return;
+      if (!alive) return;
+      if (error || connErr) {
+        // A failed read never overwrites chips already on screen.
+        console.warn("[useReadChips] read failed", error || connErr);
+        setFailed(true);
+        return;
+      }
+      setFailed(false);
+      if (!data) return;
       const a = (data as any).brand_assessment_answers;
       const s = (data as any).skill_ratings;
       setProfile({
@@ -177,7 +198,7 @@ export function useReadChips(userId: string | null | undefined, facts: HomeFacts
       });
     })();
     return () => { alive = false; };
-  }, [userId]);
+  }, [userId, nonce]);
 
   const chips: ReadChip[] = [];
   if (profile?.linkedin || facts?.linkedin_connected) chips.push({ key: "li", label: "Your LinkedIn" });
@@ -185,5 +206,5 @@ export function useReadChips(userId: string | null | undefined, facts: HomeFacts
   if (profile?.calibrated) chips.push({ key: "cal", label: "Your calibration" });
   if (facts?.fragments_total) chips.push({ key: "fr", label: nEvidence(facts.fragments_total) });
   if (facts?.distinct_sources) chips.push({ key: "src", label: `${facts.distinct_sources} sources` });
-  return chips;
+  return { chips, failed, refresh };
 }
