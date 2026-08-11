@@ -20,7 +20,7 @@ export interface HomeMove {
   est_minutes: number;
 }
 
-export type HomeLens = "record" | "shape";
+type HomeLens = "record" | "shape";
 
 export interface HomeFacts {
   as_of?: string;

@@ -107,9 +107,9 @@ const sourceLine = (a: { url: string; source?: string; published_at?: string | n
 
 const MANUAL_SCREEN = 15;
 /** Shown wherever a post or word count would otherwise read zero. */
-const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you save.";
+const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you capture.";
 /** The same truth, in the first person, because the dark screens are Aura speaking. */
-const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you save.";
+const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you capture.";
 /** A short dark panel that sits between screen 8 and the sliders. */
 const TRUST_SLIDERS_SCREEN = 8.5;
 
@@ -2000,7 +2000,7 @@ const Onboarding = () => {
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is what makes it yours.</h1>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              Nine questions about how you actually work — read together with your posts, what you kept and your
+              Nine questions about how you actually work — read together with your posts, what you captured and your
               sliders.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>

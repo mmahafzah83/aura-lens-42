@@ -715,7 +715,7 @@ export const EditorialBlindSpots = ({
           />
         </span>
         <ExpandablePanel label="How are blind spots detected?" align="right">
-          Aura compares your captured themes against active conversations in your sector. Topics your peers discuss that you have zero captures on appear here.
+          Aura compares your captured signals against active conversations in your sector. Signals your peers discuss that you have zero captures on appear here.
         </ExpandablePanel>
       </div>
 
@@ -817,7 +817,7 @@ export const EditorialBlindSpots = ({
         <div style={{ padding: "20px 16px", background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10 }}>
           <p style={{ fontSize: 12, color: "var(--glass-2)", margin: "0 0 12px", lineHeight: 1.55 }}>
             {(data?.items?.length ?? 0) > 0
-              ? `Your radar covers ${coveragePct}% of the active conversations in your sector. No new blind spots this week — Aura surfaces them as your themes widen.`
+              ? `Your radar covers ${coveragePct}% of the active conversations in your sector. No new blind spots this week — Aura surfaces them as your signals widen.`
               : "Aura is still mapping your sector's live conversation. Your blind spots sharpen as you capture."}
           </p>
           <Button size="sm" variant="outline" onClick={() => load(true)} disabled={loading}>
