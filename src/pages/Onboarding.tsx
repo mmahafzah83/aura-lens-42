@@ -67,7 +67,13 @@ const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will bui
 const TRUST_SLIDERS_SCREEN = 8.5;
 
 const PAGE_CSS = `
-.obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};}
+.obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};
+  --ob-max:420px;--ob-pad:clamp(22px,6vw,30px);--ob-h1:clamp(25px,7vw,30px);--ob-h2:clamp(21px,5.6vw,26px);
+  --ob-body:15px;--ob-small:12.5px;--ob-mono:9.5px;--ob-btn:15px;--ob-anchor:11.5px;--ob-lh:1.65;--ob-face:96px;}
+@media (min-width:768px){.obc{--ob-max:560px;}}
+@media (min-width:1280px){.obc{
+  --ob-max:680px;--ob-pad:44px;--ob-h1:34px;--ob-h2:30px;--ob-body:17px;--ob-small:14px;
+  --ob-mono:11px;--ob-btn:16.5px;--ob-anchor:13.5px;--ob-lh:1.7;--ob-face:120px;}}
 .obc *,.obc *::before,.obc *::after{box-sizing:border-box;}
 .obc :focus-visible{outline:2px solid ${OB.blue};outline-offset:3px;border-radius:8px;}
 @keyframes obc-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -80,7 +86,7 @@ const PAGE_CSS = `
 
 const btnPrimary: React.CSSProperties = {
   inlineSize: "100%", minBlockSize: 52, borderRadius: RADIUS.pill, border: "none",
-  background: OB.blue, color: "#FFFFFF", fontSize: 15.5, fontWeight: 600, cursor: "pointer",
+  background: OB.blue, color: "#FFFFFF", fontSize: "var(--ob-btn)", fontWeight: 600, cursor: "pointer",
   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9,
   transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}`, fontFamily: "inherit",
 };
@@ -88,7 +94,7 @@ const btnPrimary: React.CSSProperties = {
 const btnGhostLight: React.CSSProperties = {
   inlineSize: "100%", minBlockSize: 46, borderRadius: RADIUS.pill,
   background: "transparent", color: OB.muted, border: `1px solid ${OB.line}`,
-  fontSize: 14.5, fontWeight: 500, cursor: "pointer", marginBlockStart: 10, fontFamily: "inherit",
+  fontSize: "var(--ob-small)", fontWeight: 500, cursor: "pointer", marginBlockStart: 10, fontFamily: "inherit",
 };
 
 const btnGhostNight: React.CSSProperties = {
@@ -102,20 +108,20 @@ const fieldStyle: React.CSSProperties = {
 };
 
 const h1Light: React.CSSProperties = {
-  margin: 0, fontSize: "clamp(26px,7.2vw,34px)", fontWeight: 800,
+  margin: 0, fontSize: "var(--ob-h1)", fontWeight: 800,
   letterSpacing: "-0.03em", lineHeight: 1.1, color: OB.ink,
 };
 
 const h1Night: React.CSSProperties = { ...h1Light, color: "#FFFFFF" };
 
 const bodyLight: React.CSSProperties = {
-  margin: "12px 0 0", fontSize: 15, lineHeight: 1.65, color: OB.muted,
+  margin: "12px 0 0", fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.muted,
 };
 
 const bodyNight: React.CSSProperties = { ...bodyLight, color: OB.mutedNight };
 
 const footnote: React.CSSProperties = {
-  margin: "14px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted, textAlign: "center",
+  margin: "14px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center",
 };
 
 /* ──────────────────────────────── helpers ───────────────────────────────── */
@@ -158,8 +164,8 @@ const NightShell = ({ children, face, footer }: { children: React.ReactNode; fac
     minBlockSize: "100dvh", background: OB.night, display: "flex", alignItems: "center",
     justifyContent: "center", padding: "28px 20px",
   }}>
-    <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: 420 }}>
-      {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace /></div> : null}
+    <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+      {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace size="var(--ob-face)" /></div> : null}
       {children}
       {footer}
     </div>
@@ -173,13 +179,13 @@ const PaperShell = ({
     minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
     display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
   }}>
-    <div style={{ inlineSize: "100%", maxInlineSize: 460 }}>
+    <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
       <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
         <ProgressBeads active={bead} />
       </div>
       <div className="obc-in" style={{
         background: OB.white, borderRadius: RADIUS.hero, border: `1px solid ${OB.line}`,
-        padding: "clamp(22px,6vw,32px)", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
+        padding: "var(--ob-pad)", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
       }}>
         {children}
       </div>
