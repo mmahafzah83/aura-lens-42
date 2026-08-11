@@ -135,7 +135,7 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
       <Dialog open={draftOpen} onOpenChange={setDraftOpen}>
         <DialogContent className="glass-card-elevated border-border/10 sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-xl" style={{ fontFamily: "var(--font-display)" }}>{t("draft.title")}</DialogTitle>
+            <DialogTitle className="text-accent-strong text-xl" style={{ fontFamily: "var(--font-display)" }}>{t("draft.title")}</DialogTitle>
           </DialogHeader>
           <div className="bg-secondary/20 rounded-xl p-6 mt-3 text-sm text-foreground/90 leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto break-words border border-border/8">
             {draftPost}

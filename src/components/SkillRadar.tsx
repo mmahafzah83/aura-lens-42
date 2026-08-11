@@ -332,7 +332,7 @@ const SkillRadar = () => {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="glass-card border-border/30 sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg">Set 12-Month Targets</DialogTitle>
+            <DialogTitle className="text-accent-strong text-lg">Set 12-Month Targets</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 mt-2 max-h-[50vh] overflow-y-auto">
             {Object.keys(targets).map((p) => (

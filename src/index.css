@@ -234,7 +234,7 @@ html *:not(canvas):not(video):not(iframe) {
   --vellum: var(--paper-2); --vellum-2: var(--paper-3);
   --ink-4: var(--ink-3); --ink-5: var(--ink-3);
 
-  /* bronze/brand/gold → spot (blue, the action colour).
+  /* bronze/brand → spot (blue, the action colour).
      Amber (--action) is DEADLINE-only and must never be brand/primary. */
   --bronze: var(--spot);
   --bronze-deep: var(--spot);
@@ -389,7 +389,6 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     /* Influence page tokens */
     --influence-bg: 36 28% 6%;
     --influence-surface: 36 22% 9%;
-    --influence-accent-gold: 40 63% 56%;
     --influence-accent-blue: 207 100% 62%;
   }
 
@@ -585,12 +584,12 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
     transition: box-shadow 250ms ease-in-out;
   }
 
-  .gold-glow {
+  .accent-glow {
     box-shadow: 0 0 48px -12px color-mix(in srgb, var(--deadline) 20%, transparent),
                 0 0 96px -24px color-mix(in srgb, var(--deadline) 8%, transparent);
   }
 
-  .text-gradient-gold {
+  .text-accent-strong {
     color: var(--color-accent);
     font-family: var(--font-body);
     font-weight: 700;
@@ -2084,7 +2083,7 @@ button[aria-label="Notifications"]:focus-visible {
   .aura-pulse-accent { animation: none; }
 }
 
-/* ── Publish ceremony toast — warm parchment with subtle gold shimmer ── */
+/* ── Publish ceremony toast — subtle accent shimmer ── */
 .aura-publish-ceremony {
   background:
     linear-gradient(120deg,
@@ -2132,8 +2131,7 @@ button[aria-label="Notifications"]:focus-visible {
   transition-duration: 100ms;
 }
 
-/* Warm gold focus ring — keyboard navigation matches the brand,
-   not the browser's default blue. */
+/* Focus ring — keyboard navigation uses the System-B action colour. */
 *:focus-visible { outline:2px solid var(--border-focus); outline-offset:2px; border-radius:4px; }
 
 /* shadcn owns the name --primary (HSL triple). Semantic blue is --act.
@@ -2159,7 +2157,6 @@ button[aria-label="Notifications"]:focus-visible {
   --surface-glass:0 0% 100% / 0.7;
   --influence-bg:210 33% 96%;
   --influence-surface:0 0% 100%;
-  --influence-accent-gold:41 76% 53%;
   --influence-accent-blue:207 94% 40%;
 }
 

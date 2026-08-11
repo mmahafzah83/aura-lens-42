@@ -177,7 +177,7 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
 
           {/* Priority Move Hero */}
           {advisory.priorityMove && (
-            <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
+            <div className="glass-card-elevated rounded-2xl p-8 accent-glow">
               <div className="flex items-center gap-2 mb-4">
                 <Target className="w-4 h-4 text-primary" />
                 <p className="text-label text-xs">Priority Strategic Move</p>

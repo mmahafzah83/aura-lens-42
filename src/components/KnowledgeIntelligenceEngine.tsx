@@ -220,7 +220,7 @@ const KnowledgeIntelligenceEngine = () => {
 
       {/* Strategic Identity Summary — Hero */}
       {result.strategic_identity_summary && (
-        <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
+        <div className="glass-card-elevated rounded-2xl p-8 accent-glow">
           <p className="text-label text-xs mb-3">Your Market Position</p>
           <p className="text-body text-foreground/90 leading-relaxed" dir="auto">
             {result.strategic_identity_summary}

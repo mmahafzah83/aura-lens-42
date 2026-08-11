@@ -190,7 +190,7 @@ const LinkedInProfileAnalyzer = () => {
           </div>
 
           {/* Strategic Positioning — Hero */}
-          <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
+          <div className="glass-card-elevated rounded-2xl p-8 accent-glow">
             <div className="flex items-center gap-2 mb-4">
               <Target className="w-5 h-5 text-primary/70" />
               <h3 className="text-sm font-semibold text-foreground">Your Market Position</h3>

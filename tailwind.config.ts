@@ -76,13 +76,6 @@ export default {
           foreground: "hsl(var(--card-foreground))",
           hover: "hsl(var(--card-hover))",
         },
-        gold: {
-          DEFAULT: "hsl(var(--primary))",
-          light: 'var(--accent-light)',
-          dark:  'var(--pulse-accent)',
-          glow:  'var(--accent-glow)',
-          pale:  'var(--accent-pale)',
-        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -109,16 +102,8 @@ export default {
           6: 'var(--ink-4)',
           7: 'var(--ink-3)',
         },
-        paper: {
-          DEFAULT: 'var(--paper)',
-          2: 'var(--paper-2)',
-          3: 'var(--paper-3)',
-        },
-        vellum: 'var(--vellum)',
         /* System-A scales */
         rule:     'var(--rule)',
-        spot:     { DEFAULT: 'var(--spot)', 2: 'var(--spot-2)' },
-        obsidian: { DEFAULT: 'var(--ob-bg)', page: 'var(--ob-page)', panel: 'var(--ob-panel)', raised: 'var(--ob-raised)', field: 'var(--ob-field)' },
         hair:     { DEFAULT: 'var(--hair)', grid: 'var(--grid)' },
         glass:    { DEFAULT: 'var(--glass)', 2: 'var(--glass-2)', 3: 'var(--glass-3)' },
         live:     'var(--live)',
@@ -134,10 +119,6 @@ export default {
           'warning-light':'var(--semantic-warning-light)',
           info:           'var(--semantic-info)',
           'info-light':   'var(--semantic-info-light)',
-        },
-        signal: {
-          orange:        'var(--signal-orange)',
-          'orange-light':'var(--signal-orange-light)',
         },
         surface: {
           page:        'var(--paper)',
