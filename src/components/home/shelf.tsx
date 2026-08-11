@@ -115,7 +115,7 @@ export const StandCard: React.FC<{ facts: HomeFacts | null; userId: string | nul
   return (
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "18px 20px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
-        <Kicker>Where you stand</Kicker>
+        <Kicker as="h2">Where you stand</Kicker>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <span style={{ ...MONO, fontSize: 34, fontWeight: 700, color: "var(--text-primary)" }}>
             {facts?.imprint ?? "—"}
