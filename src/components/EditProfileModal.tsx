@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
 import { toast } from "sonner";
 import CountryPicker from "@/components/CountryPicker";
 import { useSeniorityTitles, bandOfTitle } from "@/lib/seniorityTitles";
@@ -42,6 +43,10 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
   const [northStar, setNorthStar] = useState("");
   const [country, setCountry] = useState<string | null>(null);
   const [countryCode, setCountryCode] = useState<string | null>(null);
+  /* What was on file when the modal opened. Only fields the member actually
+     changed are ever written, so saving one field can never blank the rest. */
+  const initialRef = useRef<Record<string, any>>({});
+  const [bandLocked, setBandLocked] = useState(false);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const firmRef = useRef<HTMLInputElement>(null);
   const sectorRef = useRef<HTMLSelectElement>(null);
@@ -68,7 +73,7 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     setLoading(true);
     (async () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, level, core_practice, north_star_goal, country, country_code")
+        .select("first_name, last_name, firm, sector_focus, level, core_practice, north_star_goal, country, country_code, band_source")
         .eq("user_id", userId)
         .maybeSingle();
       if (cancelled) return;
@@ -81,6 +86,18 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
       setNorthStar(p.north_star_goal || "");
       setCountry(p.country || null);
       setCountryCode(p.country_code || null);
+      setBandLocked(p.band_source === "corrected");
+      initialRef.current = {
+        first_name: p.first_name || "",
+        last_name: p.last_name || "",
+        firm: p.firm || "",
+        sector_focus: p.sector_focus || "",
+        level: p.level || "",
+        core_practice: p.core_practice || "",
+        north_star_goal: p.north_star_goal || "",
+        country: p.country || null,
+        country_code: p.country_code || null,
+      };
       const sf = p.sector_focus || "";
       if (sf && !SECTOR_OPTIONS.includes(sf)) {
         setSectorFocus("Other");
@@ -111,24 +128,41 @@ export default function EditProfileModal({ open, onClose, userId, focusField, on
     if (!userId || saving) return;
     setSaving(true);
     const resolvedSector = sectorFocus === "Other" ? sectorOther.trim() : sectorFocus;
-    const pickedBand = bandOfTitle(seniorityTitles, level);
-    const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({
-        first_name: firstName.trim() || null,
-        last_name: lastName.trim() || null,
-        firm: firm.trim() || null,
-        sector_focus: resolvedSector || null,
-        level: level.trim() || null,
-        ...(pickedBand ? { seniority_band: pickedBand, band_source: "corrected" } : {}),
-        core_practice: corePractice.trim() || null,
-        north_star_goal: northStar.trim() || null,
-        country: country || null,
-        country_code: countryCode || null,
-      })
-      .eq("user_id", userId);
+    const was = initialRef.current;
+    const patch: Record<string, any> = {};
+    /* A field is written only if the member changed it. An emptied box is an
+       explicit clear of that one column — never of any other. */
+    const put = (key: string, value: string) => {
+      const next = value.trim();
+      if (next === String(was[key] ?? "")) return;
+      patch[key] = next || null;
+    };
+    put("first_name", firstName);
+    put("last_name", lastName);
+    put("firm", firm);
+    put("sector_focus", resolvedSector);
+    put("level", level);
+    put("core_practice", corePractice);
+    put("north_star_goal", northStar);
+    if ((country || null) !== (was.country ?? null)) patch.country = country || null;
+    if ((countryCode || null) !== (was.country_code ?? null)) patch.country_code = countryCode || null;
+
+    // The band is owned by the journey. A band the member already corrected
+    // there is left exactly as it is.
+    if (patch.level !== undefined && !bandLocked) {
+      const pickedBand = bandOfTitle(seniorityTitles, level);
+      if (pickedBand) { patch.seniority_band = pickedBand; patch.band_source = "corrected"; }
+    }
+
+    if (!Object.keys(patch).length) {
+      setSaving(false);
+      onClose();
+      return;
+    }
+    const ok = await writeProfile(userId, patch, "EditProfileModal.handleSave");
     setSaving(false);
-    if (error) {
-      toast.error("Could not save profile");
+    if (!ok) {
+      toast.error("That didn't save — try once more.");
       return;
     }
     toast.success("Profile updated");
