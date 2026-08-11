@@ -406,7 +406,12 @@ const Onboarding = () => {
     setStep1Phase("reading");
     try {
       if (userId) { try { await saveLinkedInAddress(userId, profile_url); } catch { /* saved again later */ } }
-      const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", { body: { profile_url } });
+      // Both reads start at the same moment. Running them one after the other
+      // was most of the wait, and the posts read never needed the profile.
+      const profilePromise = supabase.functions.invoke("linkedin-fetch-profile", { body: { profile_url } });
+      const postsPromise = supabase.functions.invoke("linkedin-fetch-posts", { body: { profile_url, max_posts: 50 } })
+        .catch(() => ({ data: null } as any));
+      const { data, error } = await profilePromise;
       if (error) throw error;
       if ((data as any)?.error) throw new Error(String((data as any).error));
       const prof: any = (data as any)?.profile ?? data;
@@ -458,9 +463,12 @@ const Onboarding = () => {
         } catch { /* the member confirms it on the next screen anyway */ }
       }
 
-      const { data: postData } = await supabase.functions.invoke("linkedin-fetch-posts", {
-        body: { profile_url, max_posts: 50 },
-      });
+      // The profile is back, so the card can become the result now — the posts
+      // count fills in underneath when it lands. Nothing waits on it.
+      setStep1Phase("result");
+      setLiBusy(false);
+
+      const { data: postData } = await postsPromise;
       const kept = typeof (postData as any)?.kept_own_text === "number" ? (postData as any).kept_own_text : 0;
       setPostsRead(kept);
       if (userId) {
@@ -471,7 +479,6 @@ const Onboarding = () => {
         setOwnWords(0);
       }
       setReadDone(true);
-      setStep1Phase("result");
     } catch (e: any) {
       const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "";
       setLiError(msg && msg.length < 120
@@ -792,11 +799,23 @@ const Onboarding = () => {
           sector_focus: sector || null,
           level: levelTitle.trim() || (band ? BAND_TO_LEVEL[band] : null),
           onboarding_completed: true,
-          onboarding_step: 4,
+          /* the real screen they finished on, never a hard-coded 4 */
+          onboarding_step: Math.max(4, screen),
           completed: true,
           instrument_version: 2,
           ...(band ? { answered_band: band } : {}),
         }, { onConflict: "user_id" });
+        /* finished means no longer paused — Home must stop offering the resume card */
+        try {
+          const { data: cur } = await (supabase.from("diagnostic_profiles" as any) as any)
+            .select("identity_intelligence").eq("user_id", userId).maybeSingle();
+          const ii = ((cur as any)?.identity_intelligence as Record<string, any>) || {};
+          if (ii.journey_paused) {
+            await (supabase.from("diagnostic_profiles" as any) as any)
+              .update({ identity_intelligence: { ...ii, journey_paused: false } })
+              .eq("user_id", userId);
+          }
+        } catch { /* the completed flags already close the gate */ }
       } catch (e) { console.warn("[journey] finish save failed", e); }
       try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
     }
@@ -866,7 +885,7 @@ const Onboarding = () => {
   /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
     const stage = stageOf(screen);
-    setExitNote(`Saved at step ${stage} of 5. You can pick this up any time.`);
+    setExitNote(`Saved at step ${stage} of 5. Pick it up any time.`);
     void (async () => {
       await persistScreen(screen);
       if (userId) {
@@ -911,27 +930,15 @@ const Onboarding = () => {
     } catch { /* they can change it in Settings */ }
   }, [userId, timeZone]);
 
-  const escape = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await (supabase.from("diagnostic_profiles" as any) as any).upsert({
-          user_id: user.id,
-          first_name: (user.user_metadata as any)?.first_name || user.email?.split("@")[0] || "Member",
-          onboarding_completed: true, onboarding_step: 4, completed: true,
-        }, { onConflict: "user_id" });
-      }
-      sessionStorage.removeItem("aura_onboarding_visits");
-    } catch { /* ignore */ }
-    navigate("/home", { replace: true });
-  };
-
+  /* Pausing is not finishing. The old escape hatch flagged the member as fully
+   * onboarded with an empty profile and locked them out of the journey for
+   * good — it now saves the place and leaves, exactly like Finish later. */
   const escapeFooter = visits >= 3 ? (
     <div style={{ textAlign: "center", marginBlockStart: 16 }}>
-      <button type="button" onClick={escape} style={{
+      <button type="button" onClick={saveAndExit} style={{
         background: "none", border: "none", color: OB.muted, fontSize: 12,
         cursor: "pointer", textDecoration: "underline", fontFamily: "inherit",
-      }}>Skip this and take me in →</button>
+      }}>Finish later →</button>
     </div>
   ) : null;
 
@@ -1197,6 +1204,7 @@ const Onboarding = () => {
                 Read my profile
               </OBButton>
               <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(0)}>Back</OBButton>
             </Actions>
             <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
               Aura reads your profile and your public posts. You get drafts in your own words instead of generic ones.
@@ -1217,6 +1225,10 @@ const Onboarding = () => {
             {nothingPublic ? (
               <p style={{ ...bodyLight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE}</p>
             ) : null}
+            {/* Nothing after this depends on the read being back. */}
+            <Actions style={{ marginBlockStart: 20 }}>
+              <OBButton variant="tertiary" onClick={() => go(4)}>Carry on while it reads</OBButton>
+            </Actions>
           </div>
         ) : null}
 
@@ -1437,7 +1449,7 @@ const Onboarding = () => {
 
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton onClick={() => go(4)}>Continue</OBButton>
-              <OBButton variant="tertiary" onClick={() => go(4)}>Skip this for now</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(4)}>I'll do that later</OBButton>
             </Actions>
           </>
         ) : null}
@@ -1474,6 +1486,7 @@ const Onboarding = () => {
           }
           go(4);
         }}>Save and carry on</OBButton>
+        <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
         </Actions>
       </PaperShell>
     );
@@ -1539,6 +1552,9 @@ const Onboarding = () => {
             <Loader2 size={14} className="animate-spin" /> Looking for one from your sector…
           </div>
         ) : null}
+        <Actions style={{ marginBlockStart: 14 }}>
+          <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
+        </Actions>
       </PaperShell>
     );
   }
@@ -1726,9 +1742,11 @@ const Onboarding = () => {
               const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
               if (flatNow && !flatAck) setFlatWarn(true); else go(10);
             }}>{last ? `Done — that's all ${dims.length}` : "Next"}</OBButton>
-            {dimIdx > 0 ? (
-              <OBButton variant="tertiary" onClick={() => setDimIdx((i) => Math.max(0, i - 1))}>Back</OBButton>
-            ) : null}
+            {/* Back always exists here, and the first slider steps back a stage
+                rather than off the beginning of the flow. */}
+            <OBButton variant="tertiary" onClick={() => {
+              if (dimIdx > 0) setDimIdx((i) => Math.max(0, i - 1)); else go(TRUST_SLIDERS_SCREEN);
+            }}>Back</OBButton>
           </Actions>
           {last && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
@@ -1916,14 +1934,12 @@ const Onboarding = () => {
             </>
           )}
 
-          {showNone || qIdx > 0 ? (
-            <Actions style={{ marginBlockStart: 12 }}>
-              {showNone ? (
-                <OBButton variant="tertiary" onClick={() => advance("None of these fit")}>None of these fit</OBButton>
-              ) : null}
-              {qIdx > 0 ? <OBButton variant="tertiary" onClick={back}>Back</OBButton> : null}
-            </Actions>
-          ) : null}
+          <Actions style={{ marginBlockStart: 12 }}>
+            {showNone ? (
+              <OBButton variant="tertiary" onClick={() => advance("None of these fit")}>None of these fit</OBButton>
+            ) : null}
+            <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else go(10); }}>Back</OBButton>
+          </Actions>
         </PaperShell>
       );
     }

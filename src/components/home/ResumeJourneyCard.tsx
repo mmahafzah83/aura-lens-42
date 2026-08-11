@@ -37,9 +37,9 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
       const claims = Array.isArray(ii.claims) ? ii.claims.length : 0;
       const strengths = Object.keys(((data as any).skill_ratings as Record<string, unknown>) || {}).length;
       const saved = [
-        (data as any).headline || (data as any).seniority_band ? "Your profile is read." : "",
-        claims ? `${claims} ${claims === 1 ? "subject is" : "subjects are"} saved.` : "",
-        strengths ? "Your strengths are saved." : "",
+        (data as any).headline || (data as any).seniority_band ? "Your profile is read" : "",
+        claims ? `${claims} ${claims === 1 ? "subject" : "subjects"} saved` : "",
+        strengths ? "your strengths saved" : "",
       ].filter(Boolean) as string[];
       setPaused({ stage: Number(ii.journey_stage ?? stageOf(screen)) || 1, saved });
     })();
@@ -55,14 +55,11 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
       padding: 18, marginBlockEnd: 16,
     }}>
       <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: INK }}>
-        You're part-way through.
+        You're part-way through — {paused.stage} of 5 done, about {left} minutes left.
       </h2>
-      <p style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.6, color: MUTED }}>
-        {paused.stage} of 5 done — about {left} minutes left.
-      </p>
       {paused.saved.length ? (
         <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.6, color: MUTED }}>
-          {paused.saved.join(" ")}
+          {paused.saved.join(" · ")}
         </p>
       ) : null}
       <button
