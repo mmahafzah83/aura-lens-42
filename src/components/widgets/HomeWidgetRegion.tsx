@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
-import { loadLayout, loadWidgetMetrics, DEFAULT_LAYOUT, WIDGET_DEFS } from "./widgetData";
-import type { WidgetLayout, WidgetMetrics } from "./widgetData";
+import { WIDGET_DEFS } from "./widgetData";
+import { useWidgetData } from "./useWidgetData";
 import { WidgetBody } from "./WidgetCards";
 
 /**
@@ -9,20 +8,7 @@ import { WidgetBody } from "./WidgetCards";
  * renders nothing at all when the user has switched every widget off.
  */
 export default function HomeWidgetRegion({ userId }: { userId: string | null }) {
-  const [layout, setLayout] = useState<WidgetLayout>(DEFAULT_LAYOUT);
-  const [metrics, setMetrics] = useState<WidgetMetrics | null>(null);
-
-  useEffect(() => {
-    if (!userId) return;
-    let alive = true;
-    (async () => {
-      const [l, m] = await Promise.all([loadLayout(userId), loadWidgetMetrics(userId)]);
-      if (!alive) return;
-      setLayout(l);
-      setMetrics(m);
-    })();
-    return () => { alive = false; };
-  }, [userId]);
+  const { layout, metrics } = useWidgetData(userId);
 
   if (!metrics) return null;
   const on = WIDGET_DEFS.filter(d => layout[d.key]);

@@ -208,7 +208,9 @@ export const NightCard: React.FC<{ facts: HomeFacts | null; generatedAt: string 
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBlockStart: 8 }}>
           <MachineDot />
           <span style={{ ...MONO, fontSize: 12, color: "var(--text-secondary)" }}>
-            Last run {clock(generatedAt)}
+            {/* generated_at is when the address was written, not when the
+                overnight run finished — say what the number actually is. */}
+            Prepared {clock(generatedAt)}
           </span>
         </div>
       </div>
