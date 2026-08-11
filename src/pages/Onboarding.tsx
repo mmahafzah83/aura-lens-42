@@ -446,7 +446,7 @@ const Onboarding = () => {
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/auth", { replace: true }); return; }
+      if (!session) { navigate("/auth?next=%2Fonboarding", { replace: true }); return; }
       const uid = session.user.id;
       setUserId(uid);
       setUserEmail(session.user.email ?? null);
@@ -569,8 +569,14 @@ const Onboarding = () => {
           const { data: detected } = await (supabase.rpc as any)("detect_seniority_band", { headline });
           const b = (detected as string | null) as Band | null;
           if (b && userId) {
-            setBand(b);
-            await writeProfile({ seniority_band: b, band_source: "detected" }, "level save");
+            /* Never write over a level the member set or confirmed themselves. */
+            const { data: cur } = await (supabase.from("diagnostic_profiles" as any) as any)
+              .select("band_source").eq("user_id", userId).maybeSingle();
+            const src = String((cur as any)?.band_source ?? "");
+            if (src !== "corrected" && src !== "confirmed") {
+              setBand(b);
+              await writeProfile({ seniority_band: b, band_source: "detected" }, "level save");
+            }
           }
         } catch { /* the member confirms it on the next screen anyway */ }
       }
