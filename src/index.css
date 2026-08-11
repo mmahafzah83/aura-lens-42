@@ -246,10 +246,10 @@ html *:not(canvas):not(video):not(iframe) {
   --brand: var(--spot);
   --brand-surface: var(--paper-2);
   --brand-line: var(--rule);
-  --gold-light: var(--spot);
-  --gold-dark:  var(--spot);
-  --gold-glow:  var(--spot);
-  --gold-pale:  var(--paper-2);
+  --accent-light: var(--spot);
+  --pulse-accent:  var(--spot);
+  --accent-glow:  var(--spot);
+  --accent-pale:  var(--paper-2);
 
   /* signal/orange → live (teal, real-time only) */
   --signal: var(--live);
@@ -339,6 +339,9 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   background-size: 200% 100%;
   animation: skeleton-pulse 1.5s ease-in-out infinite;
   border-radius: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aura-skeleton { animation: none; }
 }
 
 @layer base {
@@ -1475,15 +1478,15 @@ aside .aura-theme-toggle {
   --success-darkest:  #0a1a0a;
   /* OFF-SYSTEM — no Tier-1 equivalent yet */
   --success-mid:      #4a8a4a;
-  --gold-pale:        color-mix(in srgb, var(--action) 10%, var(--paper));
-  --gold-light:       var(--spot);
-  --gold-mid:         var(--spot);
-  --gold-text:        var(--spot);
-  /* --gold-dark declared once at the root alias block (~line 184) → var(--spot) */
-  --gold-pale-2:      color-mix(in srgb, var(--action) 8%, var(--paper));
-  --gold-mid-2:       var(--spot);
-  --gold-pale-3:      color-mix(in srgb, var(--action) 12%, var(--paper));
-  --gold-mid-3:       var(--spot);
+  --accent-pale:        color-mix(in srgb, var(--action) 10%, var(--paper));
+  --accent-light:       var(--spot);
+  --accent-mid:         var(--spot);
+  --accent-text:        var(--spot);
+  /* --pulse-accent declared once at the root alias block (~line 184) → var(--spot) */
+  --accent-pale-2:      color-mix(in srgb, var(--action) 8%, var(--paper));
+  --accent-mid-2:       var(--spot);
+  --accent-pale-3:      color-mix(in srgb, var(--action) 12%, var(--paper));
+  --accent-mid-3:       var(--spot);
 }
 
 /* Theme-aware surface tokens — dark mode overrides */
@@ -2068,17 +2071,17 @@ button[aria-label="Notifications"]:focus-visible {
 }
 
 /* Ceremony glyph pulse — used in onboarding completion and tier upgrade */
-@keyframes gold-pulse {
+@keyframes pulse-accent {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%      { opacity: 0.7; transform: scale(1.1); }
 }
-.aura-gold-pulse {
-  animation: gold-pulse 2s ease-in-out infinite;
+.aura-pulse-accent {
+  animation: pulse-accent 2s ease-in-out infinite;
   display: inline-block;
-  color: var(--gold-dark, var(--brand));
+  color: var(--pulse-accent, var(--brand));
 }
 @media (prefers-reduced-motion: reduce) {
-  .aura-gold-pulse { animation: none; }
+  .aura-pulse-accent { animation: none; }
 }
 
 /* ── Publish ceremony toast — warm parchment with subtle gold shimmer ── */

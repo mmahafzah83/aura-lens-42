@@ -146,7 +146,7 @@ const ThemeChip: React.FC<{
   <div style={{ display: "grid", gap: 8 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <MachineDot size={6} />
-      <button type="button" onClick={onToggle} aria-expanded={open} style={{
+      <button type="button" onClick={onToggle} aria-expanded={open} className="ha-i ha-pill" style={{
         display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer",
         borderRadius: 999, padding: "5px 12px", background: "var(--surface-subtle)",
         border: "1px solid var(--rule-outer)", fontFamily: "var(--font-body)",
@@ -405,6 +405,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
           return (
             <button
               key={z.k} type="button" onClick={() => chooseZoom(z.k)} aria-pressed={on}
+              className="ha-i ha-pill"
               style={{
                 borderRadius: 999, padding: "6px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
                 fontFamily: "var(--font-body)",
@@ -466,7 +467,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
           {visible.map((r, idx) => {
             if (r.kind === "quiet") {
               return (
-                <div key={`q-${r.at}-${idx}`} style={{ position: "relative", marginBlockEnd: 16 }}>
+                <div key={`q-${r.at}-${idx}`} role="group" aria-label="Quiet period" style={{ position: "relative", marginBlockEnd: 16 }}>
                   <Knot tone="quiet" />
                   <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--text-muted)" }}>
                     {r.state === "night"
@@ -484,7 +485,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
             if (r.kind === "milestone") {
               const { head, sub } = milestoneText(r.m);
               return (
-                <div key={`m-${r.at}-${idx}`} style={{ position: "relative", marginBlockEnd: 18 }}>
+                <div key={`m-${r.at}-${idx}`} role="group" aria-label="Milestone" style={{ position: "relative", marginBlockEnd: 18 }}>
                   <Knot tone="dark" />
                   <div style={{
                     background: "var(--surface-inverse)", borderRadius: 12, padding: "13px 15px",
@@ -502,7 +503,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
 
             if (r.kind === "pubday") {
               return (
-                <div key={`pd-${r.at}`} style={{ position: "relative", marginBlockEnd: 16 }}>
+                <div key={`pd-${r.at}`} role="group" aria-label={`Published — ${dayLabel(r.at)}`} style={{ position: "relative", marginBlockEnd: 16 }}>
                   <Knot tone="pub" />
                   <RowLabel>{dayLabel(r.at)}</RowLabel>
                   <div style={{ marginBlockStart: 6, display: "grid", gap: 10 }}>
@@ -520,7 +521,11 @@ export const RecordLens: React.FC<RecordLensProps> = ({
             const machine = b.themes > 0 || b.drafts > 0 || b.nights > 0;
 
             return (
-              <div key={`b-${grain}-${b.d}`} style={{ position: "relative", marginBlockEnd: 18 }}>
+              <div
+                key={`b-${grain}-${b.d}`} role="group"
+                aria-label={`${label} — ${pubs.length > 0 ? "you published" : machine ? "Aura worked" : "quiet"}`}
+                style={{ position: "relative", marginBlockEnd: 18 }}
+              >
                 <Knot tone={pubs.length > 0 ? "pub" : machine ? "machine" : "plain"} />
                 <RowLabel id={grain === "month" ? monthId(b.d) : undefined}>{label}</RowLabel>
                 <div style={{ display: "grid", gap: 7, marginBlockStart: 6 }}>

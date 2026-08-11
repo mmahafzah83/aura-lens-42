@@ -833,7 +833,7 @@ const Dashboard = () => {
                       <span
                         aria-label={`${newIntelSignalCount} new signals`}
                         className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
-                        style={{ background: "var(--gold-dark)" }}
+                        style={{ background: "var(--pulse-accent)" }}
                       />
                     )}
                   </button>
@@ -998,6 +998,7 @@ const Dashboard = () => {
                 <ErrorBoundary>
                   <HomeSpine
                     userId={userId}
+                    activeTab={activeTab}
                     guidedActive={firstFlight.active}
                     onSwitchTab={(t) => switchTab(t as TabValue)}
                     onOpenDraft={(d) => { setDraftPrefill(d as any); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}

@@ -78,9 +78,9 @@ export default function ScoreBreakdown({ userId }: Props) {
   const total = weighted.total || (signalPts + contentPts + consistencyPts);
 
   const rows = [
-    { label: "Signal",      val: signalPts,      max: 40, color: "var(--gold-dark)" },
-    { label: "Content",     val: contentPts,     max: 40, color: "var(--gold-dark)" },
-    { label: "Consistency", val: consistencyPts, max: 20, color: "var(--gold-dark)" },
+    { label: "Signal",      val: signalPts,      max: 40, color: "var(--pulse-accent)" },
+    { label: "Content",     val: contentPts,     max: 40, color: "var(--pulse-accent)" },
+    { label: "Consistency", val: consistencyPts, max: 20, color: "var(--pulse-accent)" },
   ];
 
   // Animate progress bars from 0 → actual on first mount only.

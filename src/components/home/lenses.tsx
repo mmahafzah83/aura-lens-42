@@ -73,7 +73,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
     return (
       <Card>
         <Kicker>Where you stand</Kicker>
-        <SectionTitle>Your shape draws itself as you go</SectionTitle>
+        <SectionTitle as="h2">Your shape draws itself as you go</SectionTitle>
         <Body>Capture something you have read and Aura starts measuring the shape of what you know.</Body>
       </Card>
     );
@@ -84,7 +84,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
     return (
       <Card>
         <Kicker>Where you stand</Kicker>
-        <SectionTitle>What Aura can measure about you today</SectionTitle>
+        <SectionTitle as="h2">What Aura can measure about you today</SectionTitle>
         <ReadFailure onRetry={onRetryFacts} />
       </Card>
     );
@@ -107,7 +107,7 @@ export const ShapeLens: React.FC<ShapeLensProps> = ({ facts, userId, factsFailed
     <Card style={{ padding: 0 }}>
       <div style={{ padding: "20px 22px", borderBlockEnd: "1px solid var(--rule-divider)" }}>
         <Kicker>Where you stand</Kicker>
-        <SectionTitle>What Aura can measure about you today</SectionTitle>
+        <SectionTitle as="h2">What Aura can measure about you today</SectionTitle>
       </div>
 
       <div style={{ padding: "20px 22px", display: "grid", gap: 20 }}>

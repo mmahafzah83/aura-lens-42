@@ -5,7 +5,6 @@ import {
   ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import OvernightPulse, { useOvernightLastRun } from "@/components/systemb/OvernightPulse";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { TooltipPanel } from "@/components/systemb/Tooltip";
 import Avatar from "@/components/systemb/Avatar";
@@ -57,12 +56,6 @@ const ITEMS: Array<{
     name: "Widgets", blurb: "Choose what shows on Home, and vote for what comes next." },
 ];
 
-function hhmm(iso: string): string {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
 interface SignalCounts { all: number; accelerating: number; stable: number }
 
 const RAIL_W_COLLAPSED = "78px";
@@ -82,7 +75,6 @@ const GROUPS: Array<{ header: string; items: RailTab[] }> = [
 export default function AuraRail({
   activeTab, onSelect, onOpenAsk, onOpenCapture, newSignalCount = 0,
 }: AuraRailProps) {
-  const lastRun = useOvernightLastRun();
   const [, setSearchParams] = useSearchParams();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uid, setUid] = useState<string | null>(null);
@@ -440,13 +432,6 @@ export default function AuraRail({
             {collapseToggle}
           </div>
 
-          {/* THE OVERNIGHT CARD — one shared heartbeat component and query. */}
-          <OvernightPulse
-            variant="card"
-            onOpen={() => { setFlyout(null); onSelect("overnight"); }}
-            style={{ margin: "14px 14px 2px" }}
-          />
-
           <nav className="flex flex-col" style={{ flex: 1, paddingBottom: 8 }}>
             {GROUPS.map((g) => (
               <div key={g.header}>
@@ -508,17 +493,14 @@ export default function AuraRail({
         </button>
         <div aria-hidden style={{ height: 20 }} />
 
-        {/* THE LIVE STRIP — cyan means the machine is awake. */}
+        {/* THE LIVE STRIP — cyan means the machine is awake. The overnight
+            numbers are stated once, on Home; the rail only shows liveness. */}
         <div
           tabIndex={0}
           role="status"
-          aria-label={lastRun ? `The Overnight last ran at ${hhmm(lastRun)}` : "The Overnight has not run yet"}
-          onMouseEnter={showTip("The Overnight", lastRun
-            ? `Aura's night run finished at ${hhmm(lastRun)}. Findings appear on Home.`
-            : "Aura's night run has not produced findings yet.")}
-          onFocus={showTip("The Overnight", lastRun
-            ? `Aura's night run finished at ${hhmm(lastRun)}. Findings appear on Home.`
-            : "Aura's night run has not produced findings yet.")}
+          aria-label="Aura runs overnight. Findings appear on Home."
+          onMouseEnter={showTip("The Overnight", "Aura reads overnight. Findings appear on Home.")}
+          onFocus={showTip("The Overnight", "Aura reads overnight. Findings appear on Home.")}
           onMouseLeave={hideTip}
           onBlur={hideTip}
           style={{
@@ -530,12 +512,6 @@ export default function AuraRail({
             width: 6, height: 6, borderRadius: 999, background: "var(--machine)",
             boxShadow: "var(--v23-ask-glow)",
           }} />
-          <span style={{
-            fontFamily: "var(--ff-mono)", fontSize: 9.5, letterSpacing: ".06em",
-            fontVariantNumeric: "tabular-nums", color: "var(--v23-on-night)",
-          }}>
-            {lastRun ? hhmm(lastRun) : "waiting"}
-          </span>
         </div>
 
         <nav className="flex flex-col items-center" style={{ gap: 6, flex: 1 }}>

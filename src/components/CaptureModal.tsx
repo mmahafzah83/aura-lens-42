@@ -1062,7 +1062,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onDuplicate, onOpenChat,
             }}
           />
           <div
-            className="aura-gold-pulse"
+            className="aura-pulse-accent"
             style={{
               position: "relative", fontSize: 42, lineHeight: 1,
               color: "#00807B",

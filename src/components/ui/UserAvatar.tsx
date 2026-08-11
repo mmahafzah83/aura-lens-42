@@ -48,7 +48,7 @@ export default function UserAvatar({
       title={title ?? fullName ?? undefined}
       className={cn(
         "inline-flex items-center justify-center rounded-full font-[family-name:var(--font-display)] font-medium select-none shrink-0",
-        "bg-[var(--gold-pale)] border border-[var(--gold-dark)]/20 text-[var(--gold-dark)]",
+        "bg-[var(--accent-pale)] border border-[var(--pulse-accent)]/20 text-[var(--pulse-accent)]",
         SIZE_CLASSES[size],
         className,
       )}
