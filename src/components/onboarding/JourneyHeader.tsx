@@ -22,7 +22,7 @@ const JourneyHeader = ({ onNight = false, onExit }: { onNight?: boolean; onExit:
       className="ob-btn ob-btn-tertiary"
       style={{ color: onNight ? OB.mutedNight : OB.muted }}
     >
-      Save &amp; exit
+      Finish later
     </button>
   </div>
 );
