@@ -1774,7 +1774,7 @@ const Onboarding = () => {
         background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
         display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
       }}>
-        <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: 460 }}>
+        <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
           {reveal ? <RevealCard data={reveal} /> : (
             <div style={{ textAlign: "center", color: "#FFFFFF" }}>
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>
