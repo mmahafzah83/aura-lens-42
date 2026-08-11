@@ -1,6 +1,6 @@
 import React from "react";
 import type { WidgetKey, WidgetMetrics } from "./widgetData";
-import { nSignals, CAPTURE } from "@/constants/vocabulary";
+import { SIGNAL, CAPTURE } from "@/constants/vocabulary";
 
 const FF = { fontFamily: "var(--ff-ui)" } as const;
 const MONO: React.CSSProperties = {
@@ -88,7 +88,7 @@ export function widgetContent(k: WidgetKey, m: WidgetMetrics): WidgetContent | n
     if (count === 0) return { hero: "0", sub: "No signals going quiet. Your reading is keeping them alive." };
     return {
       hero: String(count),
-      sub: `${nSignals(count)} quiet 45+ days without a post${quietestDays != null ? ` · quietest: ${quietestDays}d` : ""}`,
+      sub: `${count === 1 ? SIGNAL.one : SIGNAL.many} quiet 45+ days without a post${quietestDays != null ? ` · quietest: ${quietestDays}d` : ""}`,
       action: { label: "See them →", tab: "intelligence" },
     };
   }
@@ -144,7 +144,7 @@ export const WidgetBody: React.FC<{ k: WidgetKey; m: WidgetMetrics }> = ({ k, m 
       <WidgetShell label="Quiet signals">
         <Big>{count}</Big>
         <Sub>
-          {nSignals(count)} quiet 45+ days without a post
+          {count === 1 ? SIGNAL.one : SIGNAL.many} quiet 45+ days without a post
           {quietestDays != null ? ` · quietest: ${quietestDays}d` : ""}
         </Sub>
         <ActionLink onClick={() => goTab("intelligence")}>See them →</ActionLink>
