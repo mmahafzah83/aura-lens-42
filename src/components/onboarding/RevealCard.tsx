@@ -8,6 +8,8 @@ import { OB, RADIUS } from "./tokens";
 export interface RevealData {
   archetype: string;
   marketRead: string;
+  /** The second read — a supporting archetype, when one was found. */
+  secondaryRead?: string;
   /** The gap between how they describe themselves and what their writing shows. */
   theGap?: string;
   /** One verbatim sentence from one of their own posts. */
@@ -173,36 +175,73 @@ const RevealCard = forwardRef<
     }}>{data.archetype}</h2>
 
     {data.marketRead ? (
-      <p style={{ margin: "30px 0 0", fontSize: 22, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
+      <p style={{ margin: "26px 0 0", fontSize: 22, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
     ) : null}
 
-    {data.subjects.length > 0 ? (
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 44 }}>
-        {data.subjects.slice(0, 3).map((s) => (
-          <span key={s} style={{
-            display: "inline-block", padding: "12px 20px", borderRadius: RADIUS.chip,
-            background: "rgba(255,255,255,0.18)", color: "#FFFFFF",
-            fontSize: 17, fontWeight: 600, lineHeight: 1.3,
-          }}>{s}</span>
-        ))}
-      </div>
+    {data.secondaryRead ? (
+      <p style={{
+        margin: "20px 0 0", fontFamily: OB.mono, fontSize: 18,
+        letterSpacing: "0.10em", lineHeight: 1.4, opacity: 0.8,
+      }}>{`SECOND READ · ${data.secondaryRead}`}</p>
     ) : null}
 
-    {data.figures.length > 0 ? (
-      <div style={{ display: "flex", gap: 64, marginTop: 52 }}>
-        {data.figures.slice(0, 2).map((f) => (
-          <div key={f.label}>
-            <div style={{ fontFamily: OB.mono, fontSize: 46, fontWeight: 600, lineHeight: 1 }}>{f.value}</div>
-            <div style={{ fontSize: 17, opacity: 0.85, marginTop: 10 }}>{f.label}</div>
+    {/* The lower half: two labelled groups, spaced apart so the frame fills. */}
+    <div style={{
+      flex: 1, display: "flex", flexDirection: "column",
+      justifyContent: "flex-end", gap: 40, marginTop: 48,
+    }}>
+      {data.subjects.length > 0 ? (
+        <div>
+          <p style={{
+            margin: "0 0 16px", fontFamily: OB.mono, fontSize: 15,
+            letterSpacing: "0.18em", opacity: 0.82,
+          }}>THE SUBJECTS I OWN</p>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
+            {data.subjects.slice(0, 3).map((s) => (
+              <span key={s} style={{
+                display: "inline-block", padding: "12px 20px", borderRadius: RADIUS.chip,
+                background: "rgba(255,255,255,0.18)", color: "#FFFFFF",
+                fontSize: 17, fontWeight: 600, lineHeight: 1.3,
+              }}>{s}</span>
+            ))}
           </div>
-        ))}
-      </div>
-    ) : (
-      <p style={{ margin: "52px 0 0", fontSize: 21, lineHeight: 1.6, opacity: 0.92 }}>{EMPTY_POSTS_LINE}</p>
-    )}
+        </div>
+      ) : null}
+
+      {data.softGround.length > 0 ? (
+        <div>
+          <p style={{
+            margin: "0 0 16px", fontFamily: OB.mono, fontSize: 15,
+            letterSpacing: "0.18em", opacity: 0.82,
+          }}>SHARPENING NEXT</p>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
+            {data.softGround.slice(0, 2).map((s) => (
+              <span key={s} style={{
+                display: "inline-block", padding: "12px 20px", borderRadius: RADIUS.chip,
+                background: "rgba(224,168,46,0.28)", border: "1px solid rgba(224,168,46,0.55)",
+                color: "#FFFFFF", fontSize: 17, fontWeight: 600, lineHeight: 1.3,
+              }}>{s}</span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {data.figures.length > 0 ? (
+        <div style={{ display: "flex", gap: 56 }}>
+          {data.figures.slice(0, 3).map((f) => (
+            <div key={f.label}>
+              <div style={{ fontFamily: OB.mono, fontSize: 46, fontWeight: 600, lineHeight: 1 }}>{f.value}</div>
+              <div style={{ fontSize: 17, opacity: 0.85, marginTop: 10 }}>{f.label}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p style={{ margin: 0, fontSize: 21, lineHeight: 1.6, opacity: 0.92 }}>{EMPTY_POSTS_LINE}</p>
+      )}
+    </div>
 
     <div style={{
-      marginTop: "auto", paddingTop: 40,
+      marginTop: 40, paddingTop: 34,
       borderTop: "1px solid rgba(255,255,255,0.28)",
       display: "flex", alignItems: "center", gap: 16,
     }}>

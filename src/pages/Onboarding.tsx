@@ -70,15 +70,23 @@ const BAND_TO_LEVEL: Record<Band, string> = {
 
 const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
   { key: "profile", label: "Your profile", tone: "blue" },
-  { key: "kept", label: "What you kept", tone: "cyan" },
-  { key: "strengths", label: "Your strengths", tone: "deep" },
-  { key: "read", label: "Your read", tone: "amber" },
+  { key: "kept", label: "Claims kept", tone: "cyan" },
+  { key: "strengths", label: "Strengths", tone: "deep" },
+  { key: "read", label: "Subjects owned", tone: "amber" },
+];
+
+/** The quiet second line — shown only on the promise row and the payoff row. */
+const SHELF_SUB = [
+  "read from your LinkedIn",
+  "ideas saved from your reading",
+  "rated in your own words",
+  "the ground your read gives you",
 ];
 
 const SHELF_ICON = ["profile", "saved", "strengths", "subjects"] as const;
 const SHELF_HINT = [
   "Unlocks when Aura has read your profile",
-  "Unlocks when you keep your first thing",
+  "Unlocks when you keep your first claim",
   "Unlocks when you've moved the sliders",
   "Unlocks when your read is written",
 ];
@@ -851,14 +859,8 @@ const Onboarding = () => {
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
     /* the report needs the raw read, not just the card built from it */
     if (results) setReadRaw(results);
-    const figures = [
-      ...(postsRead ? [{ value: num(postsRead), label: "posts read" }] : []),
-      ...(claims.length ? [{ value: num(claims.length), label: "things you kept" }] : []),
-      ...(Object.keys(scores).length
-        ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
-    ];
-    setReveal(toRevealData(results, {
-      figures,
+    const built = toRevealData(results, {
+      figures: [],
       excludeSoft: (dims || []).map((d) => d.name),
       sources: {
         posts: postsRead ?? 0,
@@ -866,7 +868,14 @@ const Onboarding = () => {
         answers: Object.keys(finalAnswers).length,
         sliders: Object.keys(scores).length,
       },
-    }));
+    });
+    const figures = [
+      ...(claims.length ? [{ value: num(claims.length), label: "claims kept" }] : []),
+      ...(Object.keys(scores).length
+        ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
+      ...(built?.subjects.length ? [{ value: num(built.subjects.length), label: "subjects owned" }] : []),
+    ];
+    setReveal(built ? { ...built, figures } : built);
     setRevealPending(false);
   };
 
@@ -891,11 +900,7 @@ const Onboarding = () => {
     loadMarketRead(userId).then((r) => {
       if (r) setReadRaw(r);
       const d = toRevealData(r, {
-        figures: [
-          ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
-          ...(claims.length ? [{ value: num(claims.length), label: "things you kept" }] : []),
-          ...(Object.keys(scores).length ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
-        ],
+        figures: [],
         excludeSoft: (dims || []).map((x) => x.name),
         sources: {
           posts: postsRead ?? 0,
@@ -904,7 +909,15 @@ const Onboarding = () => {
           sliders: Object.keys(scores).length,
         },
       });
-      if (d) setReveal(d);
+      if (d) {
+        const figures = [
+          ...(claims.length ? [{ value: num(claims.length), label: "claims kept" }] : []),
+          ...(Object.keys(scores).length
+            ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
+          ...(d.subjects.length ? [{ value: num(d.subjects.length), label: "subjects owned" }] : []),
+        ];
+        setReveal({ ...d, figures });
+      }
     });
   }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
 
@@ -1312,9 +1325,13 @@ const Onboarding = () => {
         }}>
           What you'll have when you're done
         </p>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "0 0 6px" }}>
+        <div style={{
+          display: "flex", flexWrap: "wrap", justifyContent: "space-between",
+          gap: 8, margin: "0 0 6px",
+        }}>
           {SHELF.map((s, i) => (
-            <ShelfBadge key={s.key} label={s.label} tone={s.tone} icon={SHELF_ICON[i]} hint={SHELF_HINT[i]} />
+            <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
+              tone={s.tone} icon={SHELF_ICON[i]} hint={SHELF_HINT[i]} />
           ))}
         </div>
         <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>Start</OBButton></Actions>
@@ -1815,7 +1832,10 @@ const Onboarding = () => {
         <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 22 }}>
           You'll know when something moves these — without going looking.
         </p>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "22px 0 4px" }}>
+        <div style={{
+          display: "flex", flexWrap: "wrap", justifyContent: "space-between",
+          gap: 8, margin: "22px 0 4px",
+        }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} tone={s.tone} onNight
               icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
@@ -1952,7 +1972,10 @@ const Onboarding = () => {
             }}>Back</OBButton>
           </Actions>
           {last && (
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
+            <div style={{
+              display: "flex", flexWrap: "wrap", justifyContent: "space-between",
+              gap: 8, marginBlockStart: 22,
+            }}>
               {SHELF.map((s, i) => (
                 <ShelfBadge key={s.key} label={s.label} tone={s.tone}
                   icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
@@ -2213,9 +2236,13 @@ const Onboarding = () => {
           </div>
         ) : null}
         <h1 style={{ ...h1Night, textAlign: "center" }}>You've got a shelf.</h1>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
+        <div style={{
+          display: "flex", flexWrap: "wrap", justifyContent: "space-between",
+          gap: 8, margin: "26px 0 6px",
+        }}>
           {SHELF.map((s, i) => (
-            <ShelfBadge key={s.key} label={s.label} tone={s.tone} onNight unlocked
+            <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
+              tone={s.tone} onNight unlocked
               icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
               figure={
                 i === 0 ? (postsRead ? num(postsRead) : "✓")

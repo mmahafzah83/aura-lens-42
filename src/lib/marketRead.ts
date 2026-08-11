@@ -111,6 +111,7 @@ export function toRevealData(
   return {
     archetype: archetype || "Your read",
     marketRead,
+    secondaryRead: stripMd(results.secondary_archetype) || undefined,
     theGap: stripMd(results.the_gap) || undefined,
     ownWordsQuote: stripMd(results.own_words_quote) || undefined,
     ownWordsRead: stripMd(results.own_words_read) || undefined,

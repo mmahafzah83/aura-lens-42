@@ -22,7 +22,15 @@ import type { ReportData } from "@/lib/buildIdentityReport";
 const SHEET_W = 794;
 const SHEET_H = 1123;
 const PAGE_PAD = 56;
-const PAPER_TITLE = "The Aura Paper № 00";
+export const PAPER_TITLE = "The Aura Paper № 00";
+
+/** Trim to the last full sentence inside the cap — sheets do not reflow. */
+function capAtSentence(s: string, max: number): string {
+  if (!s || s.length <= max) return s;
+  const slice = s.slice(0, max);
+  const cut = slice.lastIndexOf(". ");
+  return cut > max * 0.4 ? slice.slice(0, cut + 1) : slice.trim();
+}
 
 // ── Bidi / Arabic (SLICE 4d) ───────────────────────────────────────────
 const AR_RE = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
@@ -33,7 +41,7 @@ function txt(v?: string | null): React.CSSProperties {
   return {
     direction: "rtl",
     textAlign: "right",
-    fontFamily: "'CairoAR', 'Cairo', 'DM Sans', sans-serif",
+    fontFamily: "'CairoAR', 'Cairo', sans-serif",
   };
 }
 
@@ -149,10 +157,10 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
 
   return (
     <Sheet n={1}>
-      <PaperHeader label="The Assessment Paper" />
+      <PaperHeader label="The Aura Paper" />
       <div style={{ marginTop: 34, flex: 1, display: "flex", flexDirection: "column" }}>
         <MonoLabel color={T.spot} size={13}>
-          The Aura Paper · № 00 · The Assessment Finds You To Be
+          {PAPER_TITLE.replace(" №", " · №")} · The Read Finds You To Be
         </MonoLabel>
         <div style={{ marginTop: 22 }}>
           <ArchetypeTitle name={archetype} />
@@ -199,9 +207,9 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
             How to read this paper — three colours, three meanings
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
-            <LegendCell swatch={T.spot} title="Oxblood — Finding" body="A conclusion drawn from your answers." />
+            <LegendCell swatch={T.spot} title="Finding" body="A conclusion drawn from your answers." />
             <LegendCell swatch={T.live} title="Movement" body="Something live and rising in your positioning." border />
-            <LegendCell swatch={T.action} title="Action" body="Held by you, unclaimed — the next move." border />
+            <LegendCell swatch="var(--a-500)" title="Action" body="Held by you, unclaimed — the next move." border />
           </div>
         </div>
 
@@ -212,7 +220,7 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
         }}>
           <MetaCell label="Prepared for" value={fullName || "—"} sub={level} />
           <MetaCell label="Secondary read" value={bp.secondary_archetype || "—"} />
-          <MetaCell label="Issued" value={todayLabel(bp.generated_at)} sub="Edition 0 · Assessment" />
+          <MetaCell label="Issued" value={todayLabel(bp.generated_at)} sub="Edition 0 · Your read" />
         </div>
       </div>
       <PaperFooter n={1} total={total} paperTitle={PAPER_TITLE} />
@@ -250,11 +258,50 @@ function FindingRow({ f }: { f: Finding }) {
   );
 }
 
-function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
+/** The private panel — it lives on Sheet 2 unless the findings crowd it out. */
+function GapPanel({ bp, style }: { bp: BrandPaper; style?: React.CSSProperties }) {
+  if (!bp.the_gap && !bp.own_words_quote) return null;
+  return (
+    <div style={{ padding: 20, background: T.paper2, border: `1px solid ${T.rule}`, ...style }}>
+      <MonoLabel color={T.spot} size={10.5}>Only you see this</MonoLabel>
+      <h3 style={{
+        fontFamily: FONT.serif, fontSize: 22, fontWeight: 400, lineHeight: 1.2,
+        color: T.ink, margin: "8px 0 0",
+      }}>The gap</h3>
+      {bp.the_gap ? (
+        <p style={{
+          fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.6, color: T.ink2,
+          margin: "10px 0 0", ...txt(bp.the_gap),
+        }}>{bp.the_gap}</p>
+      ) : null}
+      {bp.own_words_quote ? (
+        <p style={{
+          fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.6, color: T.ink,
+          fontStyle: "italic", margin: "14px 0 0", ...txt(bp.own_words_quote),
+        }}>“{bp.own_words_quote}”</p>
+      ) : null}
+      {bp.own_words_read ? (
+        <p style={{
+          fontFamily: FONT.serif, fontSize: 14, lineHeight: 1.6, color: T.ink2,
+          margin: "8px 0 0", ...txt(bp.own_words_read),
+        }}>{bp.own_words_read}</p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Deterministic budget: past this many characters of findings, the gap moves on. */
+const GAP_BUDGET = 2400;
+function findingsChars(bp: BrandPaper): number {
+  return [bp.market_read, bp.trust_pattern, bp.unique_capability, bp.honest_truth]
+    .filter(Boolean).join(" ").length;
+}
+
+function FindingsSheet({ bp, total, showGap }: { bp: BrandPaper; total: number; showGap: boolean }) {
   const raw: (Finding | null)[] = [
     bp.market_read ? {
       code: "F · 1", body: bp.market_read,
-      source: "Source — Assessment answers × capability calibration",
+      source: "Source — Your answers × your ratings",
     } : null,
     bp.trust_pattern ? {
       code: "F · 2", body: bp.trust_pattern,
@@ -292,33 +339,7 @@ function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
         <div style={{ borderBottom: `1px solid ${T.rule}` }}>
           {findings.map((f) => <FindingRow key={f.code} f={f} />)}
         </div>
-        {bp.the_gap || bp.own_words_quote ? (
-          <div style={{ marginTop: 26, padding: 20, background: T.paper2, border: `1px solid ${T.rule}` }}>
-            <MonoLabel color={T.spot} size={10.5}>Only you see this</MonoLabel>
-            <h3 style={{
-              fontFamily: FONT.serif, fontSize: 22, fontWeight: 400, lineHeight: 1.2,
-              color: T.ink, margin: "8px 0 0",
-            }}>The gap</h3>
-            {bp.the_gap ? (
-              <p style={{
-                fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.6, color: T.ink2,
-                margin: "10px 0 0", ...txt(bp.the_gap),
-              }}>{bp.the_gap}</p>
-            ) : null}
-            {bp.own_words_quote ? (
-              <p style={{
-                fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.6, color: T.ink,
-                fontStyle: "italic", margin: "14px 0 0", ...txt(bp.own_words_quote),
-              }}>“{bp.own_words_quote}”</p>
-            ) : null}
-            {bp.own_words_read ? (
-              <p style={{
-                fontFamily: FONT.serif, fontSize: 14, lineHeight: 1.6, color: T.ink2,
-                margin: "8px 0 0", ...txt(bp.own_words_read),
-              }}>{bp.own_words_read}</p>
-            ) : null}
-          </div>
-        ) : null}
+        {showGap ? <GapPanel bp={bp} style={{ marginTop: 26 }} /> : null}
       </div>
       <PaperFooter n={2} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>
@@ -353,7 +374,7 @@ function TopicBlock({ n, title, description }: { n: string; title: string; descr
   );
 }
 
-function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
+function SpaceSheet({ bp, total, showGap }: { bp: BrandPaper; total: number; showGap: boolean }) {
   const hasInvest = bp.invest_next.length > 0;
   // Older rows carry pillars but no structured topics — fall back so the
   // topics block is never silently empty.
@@ -364,6 +385,7 @@ function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
     <Sheet n={3}>
       <PaperHeader label="Ground & Topics" />
       <div style={{ marginTop: 30, flex: 1 }}>
+        {showGap ? <GapPanel bp={bp} style={{ marginBottom: 24 }} /> : null}
         {bp.uncontested_space ? (
           <PaperFigure
             index={1}
@@ -469,7 +491,7 @@ function PaperChips({ label, items }: { label: string; items: string[] }) {
             style={{
               fontFamily: FONT.serif, fontSize: 13.5, color: T.ink,
               padding: "5px 10px", border: `1px solid ${T.rule}`, background: T.paper2,
-              lineHeight: 1.4, ...txt(t),
+              lineHeight: 1.4, maxWidth: 600, whiteSpace: "normal", ...txt(t),
             }}
           >
             {t}
@@ -507,7 +529,8 @@ function VoiceSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number
           The voice the market already hears from you, the ground you hold, and
           the parts worth strengthening next.
         </p>
-        <ProsePair label="How you sound" parts={[bp.voice_signature, bp.natural_tone]} />
+        {/* natural_tone is the cover's lede — saying it twice reads as padding. */}
+        <ProsePair label="How you sound" parts={[bp.voice_signature]} />
         <ProsePair label="How you build trust" parts={[bp.trust_pattern, bp.authority_style]} />
         <ProsePair label="Where you are strongest" parts={[bp.zone_of_genius]} />
         <PaperChips label="Your content pillars" items={bp.content_pillars} />
@@ -525,6 +548,16 @@ function ClosingSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: numb
   const parts = archetype.trim().split(/\s+/);
   const tail = parts.pop() || "";
   const head = parts.join(" ");
+  const firstTopic = bp.topics[0]?.title || bp.content_pillars[0] || "";
+  const ninety = bp.invest_next[1]?.insight
+    || (bp.key_barrier ? `Decide: ${bp.key_barrier}` : "");
+  const moves = [
+    firstTopic ? { horizon: "30d", text: `Publish once from "${firstTopic}"` } : null,
+    (bp.invest_next[0]?.insight || bp.uncontested_space)
+      ? { horizon: "60d", text: bp.invest_next[0]?.insight || bp.uncontested_space || "" } : null,
+    ninety ? { horizon: "90d", text: ninety } : null,
+  ].filter((m): m is { horizon: string; text: string } => !!m)
+    .map((m) => ({ horizon: m.horizon, text: capAtSentence(m.text, 180) }));
   const closingData: ReportData = {
     generated_at: bp.generated_at,
     user_id: "",
@@ -551,6 +584,9 @@ function ClosingSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: numb
           </>
         }
         body={bp.positioning_statement || undefined}
+        moves={moves.length ? moves : undefined}
+        paperTitle={PAPER_TITLE}
+        pageLine={`Page ${String(n).padStart(2, "0")} / ${String(total).padStart(2, "0")}`}
         ctaLabel="Find your position ↗"
       />
     </Sheet>
@@ -568,11 +604,13 @@ export default function BrandPaperDocument({
 }) {
   const hasVoice = voiceSheetHasContent(paper);
   const total = 3 + (hasVoice ? 1 : 0) + (showClosing ? 1 : 0);
+  // Deterministic budget, no measuring: crowded findings push the gap to Sheet 3.
+  const gapOnSheet2 = findingsChars(paper) <= GAP_BUDGET;
   return (
     <div style={{ background: T.paper2, padding: "24px 0" }}>
       <CoverSheet bp={paper} total={total} />
-      <FindingsSheet bp={paper} total={total} />
-      <SpaceSheet bp={paper} total={total} />
+      <FindingsSheet bp={paper} total={total} showGap={gapOnSheet2} />
+      <SpaceSheet bp={paper} total={total} showGap={!gapOnSheet2} />
       {hasVoice ? <VoiceSheet bp={paper} n={4} total={total} /> : null}
       {showClosing ? <ClosingSheet bp={paper} n={total} total={total} /> : null}
     </div>
