@@ -1172,7 +1172,6 @@ const Onboarding = () => {
           const where = [
             facts.role && facts.company ? `${facts.role} at ${facts.company}` : facts.role || facts.company,
             facts.location,
-            facts.yearsOn ? `${facts.yearsOn} years on LinkedIn` : (facts.joinedYear ? `on LinkedIn since ${facts.joinedYear}` : ""),
           ].filter(Boolean) as string[];
           const counts = [
             facts.roles ? `${facts.roles} ${facts.roles === 1 ? "role" : "roles"}` : "",
