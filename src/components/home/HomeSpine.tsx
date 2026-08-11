@@ -266,8 +266,12 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
             Aura · your chief of staff
           </span>
           {generatedLabel && (
-            <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".08em", color: "var(--v23-on-night)" }}>
-              {generatedLabel}
+            <span style={{
+              ...MONO, display: "inline-flex", alignItems: "center", gap: 6,
+              fontSize: 10.5, letterSpacing: ".08em", color: "var(--machine)",
+            }}>
+              <span aria-hidden style={{ inlineSize: 6, blockSize: 6, borderRadius: 999, background: "var(--machine)" }} />
+              Prepared {generatedLabel}
             </span>
           )}
           <button
