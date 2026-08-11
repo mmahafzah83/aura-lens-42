@@ -385,7 +385,7 @@ const Onboarding = () => {
     })();
   }, [navigate]);
 
-  /* ── screen 1: read the profile ── */
+  /* ── screen 1: read the profile — in place, never leaving the card ── */
   const readProfile = async () => {
     setLiError("");
     setReadDone(false);
@@ -397,7 +397,7 @@ const Onboarding = () => {
       return;
     }
     setLiBusy(true);
-    go(2);
+    setStep1Phase("reading");
     try {
       if (userId) { try { await saveLinkedInAddress(userId, profile_url); } catch { /* saved again later */ } }
       const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", { body: { profile_url } });
