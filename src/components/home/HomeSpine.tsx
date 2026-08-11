@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { loadLayout, loadWidgetMetrics, DEFAULT_LAYOUT } from "@/components/widgets/widgetData";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import AuraLogo from "@/components/brand/AuraLogo";
+import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
 import {
   useHomeAddress, useReadChips,
   type HomeLens, type HomeMove,
@@ -231,6 +232,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft }: HomeSpin
 
   return (
     <div className="home-spine" style={{ display: "grid", gap: 22, marginBlockStart: 22 }}>
+      <ResumeJourneyCard userId={userId ?? null} />
       {/* 1 — THE ADDRESS */}
       <section style={{
         background: "var(--v23-night)", borderRadius: 16, padding: "22px 24px",
