@@ -130,7 +130,7 @@ export function FirstFlightCard(props: FirstFlightCardProps) {
 
   const stepCopy: Record<number, string> = {
     1: "Connect LinkedIn so Aura reads how the market already sees you.",
-    2: "Save one thing you read this week. 30 seconds.",
+    2: "Capture one thing you read this week. 30 seconds.",
     3: "Aura found your first signal. Open it.",
     4: "Your signal is ready to become a post — everything is pre-filled.",
   };
