@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/track";
 
@@ -36,22 +36,88 @@ function safeSet(key: string, val: string) {
   try { localStorage.setItem(key, val); } catch { /* noop */ }
 }
 
+/** The durable half of First Flight, as it lives in ui_dismissals.first_flight. */
+interface FirstFlightRecord {
+  done?: boolean;
+  done_at?: string;
+  skipped?: boolean;
+  skipped_at?: string;
+  signal_seen?: boolean;
+  signal_seen_at?: string;
+  steps_fired?: number[];
+}
+
+/**
+ * Merge a patch into diagnostic_profiles.ui_dismissals.first_flight without
+ * touching any other key in the object. Never throws: a failed write leaves
+ * localStorage in charge and the member unblocked.
+ */
+async function mergeFirstFlight(userId: string, patch: FirstFlightRecord): Promise<void> {
+  try {
+    const { data } = await supabase
+      .from("diagnostic_profiles").select("ui_dismissals").eq("user_id", userId).maybeSingle();
+    const existing = (data?.ui_dismissals && typeof data.ui_dismissals === "object")
+      ? (data.ui_dismissals as Record<string, unknown>) : {};
+    const prev = (existing.first_flight && typeof existing.first_flight === "object")
+      ? (existing.first_flight as FirstFlightRecord) : {};
+    const steps = Array.from(new Set([...(prev.steps_fired ?? []), ...(patch.steps_fired ?? [])])).sort();
+    const next = { ...existing, first_flight: { ...prev, ...patch, ...(steps.length ? { steps_fired: steps } : {}) } };
+    await supabase.from("diagnostic_profiles").update({ ui_dismissals: next as any }).eq("user_id", userId);
+  } catch (e) {
+    console.warn("[useFirstFlight] persist failed", e);
+  }
+}
+
+async function readFirstFlight(userId: string): Promise<FirstFlightRecord> {
+  try {
+    const { data } = await supabase
+      .from("diagnostic_profiles").select("ui_dismissals").eq("user_id", userId).maybeSingle();
+    const d = (data?.ui_dismissals && typeof data.ui_dismissals === "object")
+      ? (data.ui_dismissals as Record<string, unknown>) : {};
+    return (d.first_flight && typeof d.first_flight === "object") ? (d.first_flight as FirstFlightRecord) : {};
+  } catch {
+    return {};
+  }
+}
+
 export function useFirstFlight(userId: string | null | undefined): FirstFlightState {
   const [loading, setLoading] = useState(true);
   const [steps, setSteps] = useState({ s1: false, s2: false, s3: false, s4: false });
   const [topSignal, setTopSignal] = useState<FirstFlightSignal | null>(null);
   const [skipped, setSkipped] = useState(false);
   const [retiredLocal, setRetiredLocal] = useState(false);
+  const [donePersisted, setDonePersisted] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const [signalSeen, setSignalSeen] = useState(false);
+  // Steps already reported, merged from localStorage + the database.
+  const firedRef = useRef<Set<number>>(new Set());
 
   const compute = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
 
-    const alreadyDone = safeGet(doneKey(userId)) === "1";
-    const alreadySkipped = safeGet(skipKey(userId)) === "1";
+    // The database is the truth; localStorage is the instant cache. Either
+    // saying done/skipped means done/skipped.
+    const remote = await readFirstFlight(userId);
+    const alreadyDone = safeGet(doneKey(userId)) === "1" || remote.done === true;
+    const alreadySkipped = safeGet(skipKey(userId)) === "1" || remote.skipped === true;
+    const seen = safeGet(signalSeenKey(userId)) === "1" || remote.signal_seen === true;
+
+    if (alreadyDone) safeSet(doneKey(userId), "1");
+    if (alreadySkipped) safeSet(skipKey(userId), "1");
+    if (seen) safeSet(signalSeenKey(userId), "1");
+
+    setDonePersisted(alreadyDone);
     setSkipped(alreadySkipped);
-    setSignalSeen(safeGet(signalSeenKey(userId)) === "1");
+    setSignalSeen(seen);
+
+    const fired = firedRef.current;
+    ([1, 2, 3, 4] as const).forEach((n) => {
+      if (safeGet(stepFiredKey(userId, n)) === "1") fired.add(n);
+    });
+    (remote.steps_fired ?? []).forEach((n) => {
+      fired.add(n);
+      safeSet(stepFiredKey(userId, n), "1");
+    });
 
     try {
       const [connRes, entryRes, docRes, sigRes, postRes] = await Promise.all([
@@ -82,35 +148,43 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
         explanation: sigRow.explanation ?? null,
       } : null);
 
-      // Detect whether this is the very first FF evaluation for this user
-      // (no step-fired flags yet). Used to decide grandfathering vs celebration.
-      const anyStepFiredBefore = [1,2,3,4].some(n => !!safeGet(stepFiredKey(userId, n)));
+      // Very first evaluation for this member = nothing fired anywhere yet.
+      const anyStepFiredBefore = fired.size > 0;
 
       // Grandfather: all four already true on the very first load → retire silently.
       let grandfathered = false;
       if (!alreadyDone && !alreadySkipped && !anyStepFiredBefore && s1 && s2 && s3 && s4) {
         safeSet(doneKey(userId), "1");
-        // Mark all step flags so we don't fire per-step events for grandfathered users.
-        ([1,2,3,4] as const).forEach(n => safeSet(stepFiredKey(userId, n), "1"));
+        ([1, 2, 3, 4] as const).forEach(n => { safeSet(stepFiredKey(userId, n), "1"); fired.add(n); });
         setRetiredLocal(true);
+        setDonePersisted(true);
         grandfathered = true;
+        void mergeFirstFlight(userId, {
+          done: true, done_at: new Date().toISOString(), steps_fired: [1, 2, 3, 4],
+        });
       }
 
       if (!grandfathered) {
-        // Per-step tracking (fire once each).
-        ([1,2,3,4] as const).forEach((n) => {
+        // Per-step funnel events — once per member, ever.
+        const newlyFired: number[] = [];
+        ([1, 2, 3, 4] as const).forEach((n) => {
           const flag = [s1, s2, s3, s4][n - 1];
-          if (flag && !safeGet(stepFiredKey(userId, n))) {
+          if (flag && !fired.has(n)) {
+            fired.add(n);
+            newlyFired.push(n);
             safeSet(stepFiredKey(userId, n), "1");
             void track(`first_flight_step_${n}`);
           }
         });
+        if (newlyFired.length) void mergeFirstFlight(userId, { steps_fired: newlyFired });
 
         // Completion celebration: s4 true, not already done, not skipped.
         if (s4 && !alreadyDone && !alreadySkipped) {
           safeSet(doneKey(userId), "1");
+          setDonePersisted(true);
           setJustCompleted(true);
           void track("first_flight_complete");
+          void mergeFirstFlight(userId, { done: true, done_at: new Date().toISOString() });
         }
       }
     } catch (e) {
@@ -133,26 +207,28 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
   }, [compute]);
 
   const skip = useCallback(() => {
-    if (!userId) return;
+    if (!userId || skipped) return;
     safeSet(skipKey(userId), "1");
     setSkipped(true);
     void track("first_flight_skipped");
-  }, [userId]);
+    void mergeFirstFlight(userId, { skipped: true, skipped_at: new Date().toISOString() });
+  }, [userId, skipped]);
 
   const retire = useCallback(() => {
     if (!userId) return;
     safeSet(doneKey(userId), "1");
     setRetiredLocal(true);
+    setDonePersisted(true);
     setJustCompleted(false);
+    void mergeFirstFlight(userId, { done: true, done_at: new Date().toISOString() });
   }, [userId]);
 
   const markSignalSeen = useCallback(() => {
-    if (!userId) return;
+    if (!userId || signalSeen) return;
     safeSet(signalSeenKey(userId), "1");
     setSignalSeen(true);
-  }, [userId]);
-
-  const alreadyDonePersisted = userId ? safeGet(doneKey(userId)) === "1" : false;
+    void mergeFirstFlight(userId, { signal_seen: true, signal_seen_at: new Date().toISOString() });
+  }, [userId, signalSeen]);
 
   const currentStep: 1 | 2 | 3 | 4 = !steps.s1 ? 1 : !steps.s2 ? 2 : (!steps.s3 || !signalSeen) ? 3 : 4;
 
@@ -160,7 +236,7 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
     && !loading
     && !skipped
     && !retiredLocal
-    && !(alreadyDonePersisted && !justCompleted);
+    && !(donePersisted && !justCompleted);
 
   const litTabs = new Set<string>(["home"]);
   if (currentStep >= 3) litTabs.add("intelligence");
