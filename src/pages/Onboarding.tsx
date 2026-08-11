@@ -332,6 +332,25 @@ const Onboarding = () => {
   const [posting, setPosting] = useState(false);
   const [postedUrl, setPostedUrl] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
+  /* the two things screen 13 needs: may we post, and what would we say */
+  useEffect(() => {
+    if (screen !== 13 || !userId) return;
+    let alive = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("linkedin_connections")
+        .select("can_post, access_token")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .maybeSingle();
+      if (alive) setCanPostToLinkedIn(!!data?.access_token && (data as any)?.can_post !== false);
+    })();
+    return () => { alive = false; };
+  }, [screen, userId]);
+  useEffect(() => {
+    if (screen !== 13) return;
+    setCaptionDraft((c) => c || suggestedCaption(postsRead ?? 0));
+  }, [screen, postsRead]);
 
   /* loop safety valve — kept from the previous journey */
   const [visits, setVisits] = useState(0);
