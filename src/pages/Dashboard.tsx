@@ -94,7 +94,6 @@ const Dashboard = () => {
     description: "Your strategic intelligence command center: signals, captures, content, and presence growth in one place.",
     path: "/dashboard",
   });
-  const [entries, setEntries] = useState<Entry[]>([]);
   const [activeTab, setActiveTab] = useState<TabValue>("home");
   const [captureOpen, setCaptureOpen] = useState(false);
   const [capturePrefillUrl, setCapturePrefillUrl] = useState<string | null>(null);
@@ -116,13 +115,15 @@ const Dashboard = () => {
       markCaptured(pendingCaptureKeyRef.current);
       pendingCaptureKeyRef.current = null;
     }
-    fetchEntries();
   };
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; firstName?: string | null; avatarUrl?: string | null } | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [profileSector, setProfileSector] = useState<string | null>(null);
+  const [profileBand, setProfileBand] = useState<string | null>(null);
+  const [profileLastVisit, setProfileLastVisit] = useState<string | null>(null);
   const firstFlight = useFirstFlight(userId);
   const onboardingGate = useOnboardingGate(userId);
   const isFfDimmed = (val: string, isActive: boolean) => firstFlight.dimmedTabs.has(val) && !isActive;
