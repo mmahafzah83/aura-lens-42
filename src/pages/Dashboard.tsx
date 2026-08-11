@@ -604,7 +604,12 @@ const Dashboard = () => {
     let cancelled = false;
     const check = async () => {
       try {
-        const since = localStorage.getItem("aura_intel_last_visit") || new Date(0).toISOString();
+        // A fresh browser has no local key: fall back to the stored last visit,
+        // then to 7 days ago — never to the epoch, which marks every signal new.
+        const since =
+          localStorage.getItem("aura_intel_last_visit") ||
+          profileLastVisit ||
+          new Date(Date.now() - 7 * 86400000).toISOString();
         const { count } = await (supabase.from("strategic_signals" as any) as any)
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId)
