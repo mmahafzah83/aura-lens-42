@@ -31,7 +31,9 @@ import StatusRow from "@/components/onboarding/StatusRow";
 import { loadOwnSentence, type OwnSentence } from "@/lib/ownSentence";
 import MethodNote from "@/components/onboarding/MethodNote";
 import WaitProof from "@/components/onboarding/WaitProof";
+import WorkProgress from "@/components/onboarding/WorkProgress";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
+import { loadProfileFacts, type ProfileFacts } from "@/lib/profileFacts";
 import { loadPostProof, type PostProof } from "@/lib/postProof";
 import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleBand } from "@/lib/seniorityTitles";
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
@@ -67,7 +69,13 @@ const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will bui
 const TRUST_SLIDERS_SCREEN = 8.5;
 
 const PAGE_CSS = `
-.obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};}
+.obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};
+  --ob-max:420px;--ob-pad:clamp(22px,6vw,30px);--ob-h1:clamp(25px,7vw,30px);--ob-h2:clamp(21px,5.6vw,26px);
+  --ob-body:15px;--ob-small:12.5px;--ob-mono:9.5px;--ob-btn:15px;--ob-anchor:11.5px;--ob-lh:1.65;--ob-face:96px;}
+@media (min-width:768px){.obc{--ob-max:560px;}}
+@media (min-width:1280px){.obc{
+  --ob-max:680px;--ob-pad:44px;--ob-h1:34px;--ob-h2:30px;--ob-body:17px;--ob-small:14px;
+  --ob-mono:11px;--ob-btn:16.5px;--ob-anchor:13.5px;--ob-lh:1.7;--ob-face:120px;}}
 .obc *,.obc *::before,.obc *::after{box-sizing:border-box;}
 .obc :focus-visible{outline:2px solid ${OB.blue};outline-offset:3px;border-radius:8px;}
 @keyframes obc-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
@@ -80,7 +88,7 @@ const PAGE_CSS = `
 
 const btnPrimary: React.CSSProperties = {
   inlineSize: "100%", minBlockSize: 52, borderRadius: RADIUS.pill, border: "none",
-  background: OB.blue, color: "#FFFFFF", fontSize: 15.5, fontWeight: 600, cursor: "pointer",
+  background: OB.blue, color: "#FFFFFF", fontSize: "var(--ob-btn)", fontWeight: 600, cursor: "pointer",
   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9,
   transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}`, fontFamily: "inherit",
 };
@@ -88,7 +96,7 @@ const btnPrimary: React.CSSProperties = {
 const btnGhostLight: React.CSSProperties = {
   inlineSize: "100%", minBlockSize: 46, borderRadius: RADIUS.pill,
   background: "transparent", color: OB.muted, border: `1px solid ${OB.line}`,
-  fontSize: 14.5, fontWeight: 500, cursor: "pointer", marginBlockStart: 10, fontFamily: "inherit",
+  fontSize: "var(--ob-small)", fontWeight: 500, cursor: "pointer", marginBlockStart: 10, fontFamily: "inherit",
 };
 
 const btnGhostNight: React.CSSProperties = {
@@ -102,20 +110,20 @@ const fieldStyle: React.CSSProperties = {
 };
 
 const h1Light: React.CSSProperties = {
-  margin: 0, fontSize: "clamp(26px,7.2vw,34px)", fontWeight: 800,
+  margin: 0, fontSize: "var(--ob-h1)", fontWeight: 800,
   letterSpacing: "-0.03em", lineHeight: 1.1, color: OB.ink,
 };
 
 const h1Night: React.CSSProperties = { ...h1Light, color: "#FFFFFF" };
 
 const bodyLight: React.CSSProperties = {
-  margin: "12px 0 0", fontSize: 15, lineHeight: 1.65, color: OB.muted,
+  margin: "12px 0 0", fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.muted,
 };
 
 const bodyNight: React.CSSProperties = { ...bodyLight, color: OB.mutedNight };
 
 const footnote: React.CSSProperties = {
-  margin: "14px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted, textAlign: "center",
+  margin: "14px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center",
 };
 
 /* ──────────────────────────────── helpers ───────────────────────────────── */
@@ -158,8 +166,8 @@ const NightShell = ({ children, face, footer }: { children: React.ReactNode; fac
     minBlockSize: "100dvh", background: OB.night, display: "flex", alignItems: "center",
     justifyContent: "center", padding: "28px 20px",
   }}>
-    <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: 420 }}>
-      {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace /></div> : null}
+    <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+      {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace size="var(--ob-face)" /></div> : null}
       {children}
       {footer}
     </div>
@@ -173,13 +181,13 @@ const PaperShell = ({
     minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
     display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
   }}>
-    <div style={{ inlineSize: "100%", maxInlineSize: 460 }}>
+    <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
       <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
         <ProgressBeads active={bead} />
       </div>
       <div className="obc-in" style={{
         background: OB.white, borderRadius: RADIUS.hero, border: `1px solid ${OB.line}`,
-        padding: "clamp(22px,6vw,32px)", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
+        padding: "var(--ob-pad)", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
       }}>
         {children}
       </div>
@@ -261,6 +269,8 @@ const Onboarding = () => {
   const [proof, setProof] = useState<PostProof | null>(null);
   /* one verbatim sentence of their own, shown back to them on the confirm screen */
   const [ownLine, setOwnLine] = useState<OwnSentence | null>(null);
+  const [facts, setFacts] = useState<ProfileFacts | null>(null);
+  const [genElapsed, setGenElapsed] = useState(0);
 
   /* screen 13 */
   const [reveal, setReveal] = useState<RevealData | null>(null);
@@ -581,6 +591,13 @@ const Onboarding = () => {
     loadOwnSentence(userId).then((s) => { if (s) setOwnLine(s); }).catch(() => {});
   }, [userId, screen, ownLine]);
 
+  /* everything else Aura already read — the whole profile, not three numbers */
+  useEffect(() => {
+    if (!userId || facts) return;
+    if (screen !== 2 && screen !== 3) return;
+    loadProfileFacts(userId).then((f) => { if (f) setFacts(f); }).catch(() => {});
+  }, [userId, screen, facts]);
+
   /* three spaces Aura proposes — fetched the moment a proposed question is in view */
   useEffect(() => {
     if (screen !== 11 || !questions) return;
@@ -669,6 +686,14 @@ const Onboarding = () => {
     // Never trap the member on the last screen.
     const t = window.setTimeout(() => setRevealSlow(true), 20000);
     return () => window.clearTimeout(t);
+  }, [screen, revealPending]);
+
+  /* the report wait has four steps; the clock drives the first three */
+  useEffect(() => {
+    if (screen !== 12 || !revealPending) { setGenElapsed(0); return; }
+    const started = Date.now();
+    const i = window.setInterval(() => setGenElapsed(Date.now() - started), 500);
+    return () => window.clearInterval(i);
   }, [screen, revealPending]);
 
   useEffect(() => {
@@ -1019,7 +1044,10 @@ const Onboarding = () => {
     content = (
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading you.</h1>
-        <div style={{ marginBlockStart: 26, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ marginBlockStart: 26 }}>
+          <WorkProgress onNight done={rows.filter((r) => r.done).length} total={rows.length || 1} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {rows.map((r) => (
             <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
           ))}
@@ -1074,6 +1102,69 @@ const Onboarding = () => {
         ) : (
           <p style={{ ...bodyLight, marginBlockStart: 18 }}>{EMPTY_POSTS_LINE}</p>
         )}
+
+        {/* Everything else Aura read. Each part computed; anything missing is simply absent. */}
+        {facts ? (() => {
+          const where = [
+            facts.role && facts.company ? `${facts.role} at ${facts.company}` : facts.role || facts.company,
+            facts.location,
+            facts.yearsOn ? `${facts.yearsOn} years on LinkedIn` : (facts.joinedYear ? `on LinkedIn since ${facts.joinedYear}` : ""),
+          ].filter(Boolean) as string[];
+          const counts = [
+            facts.roles ? `${facts.roles} ${facts.roles === 1 ? "role" : "roles"}` : "",
+            facts.certifications ? `${facts.certifications} certifications` : "",
+            facts.skills ? `${facts.skills} skills` : "",
+            facts.recommendations ? `${facts.recommendations} recommendations` : "",
+          ].filter(Boolean);
+          if (!where.length && !counts.length && !facts.topSkills.length && !facts.aboutFirstLine) return null;
+          return (
+            <div style={{ marginBlockStart: 18 }}>
+              {where.length ? (
+                <p style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+                  {where.join(" · ")}
+                </p>
+              ) : null}
+              {counts.length ? (
+                <p style={{
+                  margin: "8px 0 0", fontFamily: OB.mono, fontSize: "var(--ob-small)",
+                  letterSpacing: "0.02em", color: OB.ink,
+                }}>{counts.join(" · ")}</p>
+              ) : null}
+              {facts.topSkills.length ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBlockStart: 10 }}>
+                  {facts.topSkills.map((s) => (
+                    <span key={s} style={{
+                      fontSize: 11.5, color: OB.ink, background: OB.canvas,
+                      border: `1px solid ${OB.line}`, borderRadius: RADIUS.chip, padding: "4px 8px",
+                    }}>{s}</span>
+                  ))}
+                </div>
+              ) : null}
+              {facts.aboutFirstLine ? (
+                <p style={{
+                  margin: "12px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6,
+                  color: OB.muted, fontStyle: "italic",
+                }}>“{facts.aboutFirstLine}”</p>
+              ) : null}
+            </div>
+          );
+        })() : null}
+
+        {/* What other people wrote about them, verbatim. Nothing here is generated. */}
+        {facts?.recQuote ? (
+          <figure style={{
+            margin: "18px 0 0", padding: "15px 17px", borderRadius: RADIUS.card,
+            background: OB.blueTint, borderInlineStart: `3px solid ${OB.blue}`,
+          }}>
+            <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>
+              Someone you worked with wrote this about you:
+            </figcaption>
+            <blockquote style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: 1.6, color: OB.ink }}>
+              “{facts.recQuote.text}”
+            </blockquote>
+            <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>— {facts.recQuote.title}</p>
+          </figure>
+        ) : null}
 
         {/* Their own words, verbatim. If nothing qualifies, nothing shows. */}
         {ownLine ? (
@@ -1239,7 +1330,10 @@ const Onboarding = () => {
       <NightShell face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>Pulling out the bits worth keeping…</p>
-        <div style={{ marginBlockStart: 22, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ marginBlockStart: 22 }}>
+          <WorkProgress onNight done={steps.filter((s) => s.done).length} total={steps.length} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {steps.map((s) => (
             <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
           ))}
@@ -1371,7 +1465,7 @@ const Onboarding = () => {
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             {dimIdx + 1} / {dims.length}
           </p>
-          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(22px,6vw,28px)" }}>{d.name}</h1>
+          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "var(--ob-h2)" }}>{d.name}</h1>
           {d.why_line ? <p style={bodyLight}>{d.why_line}</p> : null}
           <input
             type="range" min={0} max={100} step={1} value={value}
@@ -1389,14 +1483,14 @@ const Onboarding = () => {
               .filter(([, text]) => !!text)
               .map(([tag, text, live]) => (
                 <div key={tag} style={{
-                  display: "flex", gap: 9, fontSize: 12, lineHeight: 1.5,
+                  display: "flex", gap: 9, fontSize: "var(--ob-anchor)", lineHeight: 1.55,
                   color: live ? OB.ink : OB.muted,
                   background: live ? OB.blueTint : "transparent",
                   border: `1px solid ${live ? OB.blue : "transparent"}`,
                   borderRadius: RADIUS.card, padding: "8px 10px",
                   transition: `background 220ms ${EASE}, color 220ms ${EASE}`,
                 }}>
-                  <span style={{ fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2 }}>{tag}</span>
+                  <span style={{ fontFamily: OB.mono, fontSize: "var(--ob-mono)", letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2 }}>{tag}</span>
                   <span>{text}</span>
                 </div>
               ))}
@@ -1606,10 +1700,28 @@ const Onboarding = () => {
     }
   }
 
-  /* 12 — NIGHT, the one confetti in the whole journey */
+  /* 12 — NIGHT, the shelf */
   if (screen === 12) {
+    /* the four things the report is actually doing, in order */
+    const genSteps = [
+      { key: "posts", label: "Reading your posts", done: !revealPending || genElapsed > 2000 },
+      { key: "saved", label: "Reading what you saved", done: !revealPending || genElapsed > 6000 },
+      { key: "answers", label: "Weighing your answers", done: !revealPending || genElapsed > 11000 },
+      { key: "write", label: "Writing your read", done: !revealPending },
+    ];
     content = (
       <NightShell footer={escapeFooter}>
+        {revealPending ? (
+          <div style={{ marginBlockEnd: 4 }}>
+            <WorkProgress onNight slowAfterMs={20000}
+              done={genSteps.filter((s) => s.done).length} total={genSteps.length} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockEnd: 22 }}>
+              {genSteps.map((s) => (
+                <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <h1 style={{ ...h1Night, textAlign: "center" }}>You've got a shelf.</h1>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
           {SHELF.map((s, i) => (
@@ -1662,7 +1774,7 @@ const Onboarding = () => {
         background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
         display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
       }}>
-        <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: 460 }}>
+        <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
           {reveal ? <RevealCard data={reveal} /> : (
             <div style={{ textAlign: "center", color: "#FFFFFF" }}>
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>

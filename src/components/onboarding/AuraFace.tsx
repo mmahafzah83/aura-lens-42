@@ -16,7 +16,7 @@ const CSS = `
 }
 `;
 
-const AuraFace = ({ size = 96 }: { size?: number }) => (
+const AuraFace = ({ size = 96 }: { size?: number | string }) => (
   <div
     aria-hidden
     style={{ inlineSize: size, blockSize: size, position: "relative", margin: "0 auto" }}

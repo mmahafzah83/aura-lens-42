@@ -38,7 +38,7 @@ serve(withObserve("brand-assessment", async (req) => {
 
     const [snapRes, fragRes, profRes, postRes] = await Promise.all([
       admin.from("linkedin_profile_snapshots")
-        .select("headline, about, experience, skills, followers")
+        .select("headline, about, experience, skills, followers, connections, location, education, certifications, languages, raw")
         .eq("user_id", uid)
         .order("created_at", { ascending: false })
         .limit(1),
@@ -73,14 +73,48 @@ serve(withObserve("brand-assessment", async (req) => {
       ? "They lead the work itself — write for someone whose credibility comes from delivery."
       : "";
 
+    const raw: any = (snap?.raw && typeof snap.raw === "object") ? snap.raw : {};
+    const rawArr = (k: string): any[] => (Array.isArray(raw[k]) ? raw[k] : []);
+    const cut = (v: unknown, n: number) => JSON.stringify(v ?? []).slice(0, n);
+
     const profileBlock = snap
-      ? `THEIR LINKEDIN PROFILE
+      ? `THEIR LINKEDIN PROFILE — read all of it, this is evidence of standing that answers cannot provide
 Headline: ${snap.headline ?? "Not on file"}
+Location: ${raw?.location?.linkedinText ?? snap.location ?? "Not on file"}
+On LinkedIn since: ${raw?.registeredAt ?? "Not on file"}
+Followers: ${snap.followers ?? "Not on file"} · Connections: ${snap.connections ?? raw?.connectionsCount ?? "Not on file"}
+Creator mode: ${raw?.creator ?? "Not on file"} · Verified: ${raw?.verified ?? "Not on file"}
 About: ${typeof snap.about === "string" ? snap.about.slice(0, 2000) : "Not on file"}
-Followers: ${snap.followers ?? "Not on file"}
-Experience: ${JSON.stringify(snap.experience ?? []).slice(0, 3000)}
-Skills: ${JSON.stringify(snap.skills ?? []).slice(0, 1000)}`
+Experience (every role, with dates and duration): ${cut(snap.experience ?? rawArr("experience"), 6000)}
+Education: ${cut(snap.education ?? rawArr("education"), 1200)}
+Top skills: ${cut(rawArr("topSkills"), 600)}
+Skills: ${cut(snap.skills ?? rawArr("skills"), 1500)}
+Certifications: ${cut(snap.certifications ?? rawArr("certifications"), 1500)}
+Languages: ${cut(snap.languages ?? rawArr("languages"), 400)}
+Projects: ${cut(rawArr("projects"), 1200)}
+Courses: ${cut(rawArr("courses"), 600)}
+Honours and awards: ${cut(rawArr("honorsAndAwards"), 600)}
+Volunteering: ${cut(rawArr("volunteering"), 600)}
+Interests: ${cut(rawArr("interests"), 600)}
+
+Use the CAREER SHAPE as evidence: how long they stayed in each role, the moves between companies and sectors,
+where they have stayed put, what they stopped doing. That shape is standing, and their answers cannot show it.`
       : "THEIR LINKEDIN PROFILE\nNothing on file.";
+
+    // Other people describing this member in their own words — the only external
+    // evidence of market perception the product ever gets.
+    const recs = rawArr("receivedRecommendations");
+    const recsBlock = recs.length
+      ? `RECOMMENDATIONS WRITTEN ABOUT THEM BY OTHER PEOPLE (${recs.length})
+${recs.slice(0, 18).map((r: any, i: number) =>
+  `${i + 1}. ${String(r?.givenBy ?? "Someone")}${r?.givenByHeadline ? ` (${String(r.givenByHeadline).split("|")[0].trim()})` : ""}: ${String(r?.description ?? "").replace(/\s+/g, " ").slice(0, 700)}`
+).join("\n")}
+
+These are recommendations written about the member by other people. This is the only external evidence of how the
+market actually sees them. Use it as the primary source for HOW THE MARKET SEES YOU. Where the recommendations agree
+with the member's own answers, say so. Where they disagree, name the disagreement plainly — that gap is the most
+useful thing in the report. Never invent a recommendation and never quote one that is not above.`
+      : "RECOMMENDATIONS WRITTEN ABOUT THEM\nNone on file — say the market evidence is thin rather than inventing perception.";
 
     const claimsBlock = frags.length
       ? `WHAT THEY HAVE CAPTURED (their own claims, strongest first)
@@ -113,6 +147,8 @@ Compare that claim against their actual posts above and their captured claims. I
 Their seniority: ${resolvedBand || "Not stated"}. ${bandLine}
 
 ${profileBlock}
+
+${recsBlock}
 
 ${claimsBlock}
 

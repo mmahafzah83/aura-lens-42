@@ -89,12 +89,22 @@ const source = (line?: string) =>
     <p style={{ margin: "7px 0 0", fontSize: 11, lineHeight: 1.5, opacity: 0.72 }}>{line}</p>
   ) : null;
 
+/** The card is a reading experience; it grows once, at the desk-sized breakpoint. */
+const RVC_CSS = `
+@media (min-width:1280px){
+  .rvc{padding:44px 38px 38px !important;}
+  .rvc-arch{font-size:46px !important;}
+  .rvc-read{font-size:17px !important;line-height:1.7 !important;}
+}
+`;
+
 const RevealCard = forwardRef<
   HTMLDivElement,
   { data: RevealData; footer?: RevealFooter; forExport?: boolean }
 >(({ data, footer, forExport = false }, ref) => (
   <div
     ref={ref}
+    className={forExport ? undefined : "rvc"}
     style={{
       background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
       borderRadius: forExport ? 0 : RADIUS.hero,
@@ -106,18 +116,20 @@ const RevealCard = forwardRef<
       ...(forExport ? { inlineSize: 600, minBlockSize: 750 } : null),
     }}
   >
+    {forExport ? null : <style>{RVC_CSS}</style>}
     <p style={{
       margin: 0, fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase",
       fontFamily: OB.mono, opacity: 0.85,
     }}>How people see you</p>
 
-    <h2 style={{
+    <h2 className={forExport ? undefined : "rvc-arch"} style={{
       margin: "12px 0 0", fontSize: "clamp(34px, 9vw, 40px)", fontWeight: 900,
       lineHeight: 1.02, letterSpacing: "-0.03em",
     }}>{data.archetype}</h2>
 
     {data.marketRead ? (
-      <p style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
+      <p className={forExport ? undefined : "rvc-read"}
+        style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
     ) : null}
     {source(data.provenance?.read)}
 
