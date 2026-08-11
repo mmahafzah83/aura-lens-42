@@ -393,12 +393,14 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
            className="home-spine-grid">
         <div style={{ display: "grid", gap: 12, minInlineSize: 0 }}>
           {onStage && (
-            <button type="button" onClick={() => setOnStage(null)} style={{
+            <button type="button" onClick={() => setOnStage(null)} className="ha-i ha-text" style={{
               justifySelf: "start", background: "none", border: 0, padding: 0, cursor: "pointer",
               fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+              textDecoration: "none",
             }}>◂ Back to where you stand</button>
           )}
 
+          <div id="home-stage" aria-live="polite">
           {address.loading && !facts ? (
             <Card style={{ display: "grid", gap: 12 }}>
               <Skeleton h={18} w="40%" />
@@ -423,6 +425,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
               )}
             </Card>
           ) : <div key={onStage ?? "shape"} className="home-stage">{stage}</div>}
+          </div>
 
           {empty && !onStage && (
             <ShapeLens
@@ -434,12 +437,14 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
 
         {/* the shelf */}
         <aside style={{ display: "grid", gap: 10, minInlineSize: 0 }}>
-          <Kicker>Look deeper</Kicker>
+          <Kicker as="h2">Look deeper</Kicker>
           {shelf.map((s) => {
             const on = onStage === s.key;
             return (
               <button
                 key={s.key} type="button" onClick={() => setOnStage(on ? null : s.key)} aria-pressed={on}
+                aria-controls="home-stage"
+                className="ha-i ha-shelf"
                 style={{
                   textAlign: "start", cursor: "pointer", borderRadius: 14, padding: "13px 14px",
                   background: "var(--surface-card)", fontFamily: "var(--font-body)",
@@ -452,7 +457,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
                     inlineSize: 6, blockSize: 6, borderRadius: 999, background: "var(--machine)",
                   }} />}
                   <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>{s.title}</span>
-                  <span aria-hidden style={{
+                  <span aria-hidden className="ha-chev" style={{
                     marginInlineStart: "auto", fontSize: 12, color: "var(--text-muted)",
                   }}>▸</span>
                 </span>
@@ -470,20 +475,28 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
               { label: "What happened", tab: "momentum" },
               { label: "Your signals", tab: "intelligence" },
               { label: "Your widgets", tab: "widgets" },
-            ] as const).map((r) => (
+            ] as const).map((r) => {
+              const current = activeTab === r.tab;
+              return (
               <button
                 key={r.tab} type="button"
+                aria-label={`${r.label} — open this view`}
+                aria-current={current ? "page" : undefined}
                 onClick={() => { onSwitchTab(r.tab); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                className="ha-i ha-index"
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
                   background: "none", border: 0, padding: "8px 2px", cursor: "pointer",
-                  fontFamily: "var(--font-body)", fontSize: 13, color: "var(--text-secondary)", textAlign: "start",
+                  fontFamily: "var(--font-body)", fontSize: 13, textAlign: "start",
+                  color: current ? "var(--text-primary)" : "var(--text-secondary)",
+                  fontWeight: current ? 700 : 400,
                 }}
               >
                 <span>{r.label}</span>
-                <span aria-hidden style={{ fontSize: 12, color: "var(--text-muted)" }}>▸</span>
+                <span aria-hidden className="ha-chev" style={{ fontSize: 12, color: "var(--text-muted)" }}>▸</span>
               </button>
-            ))}
+            );
+            })}
           </nav>
         </aside>
       </div>
