@@ -135,14 +135,29 @@ export async function loadMarketRead(userId: string): Promise<Record<string, any
   return r && typeof r === "object" && Object.keys(r).length ? r : null;
 }
 
+/**
+ * Every write here is an upsert on `user_id` that returns its rows. A write
+ * matching zero rows is a silent loss — PostgREST answers 204 with no error —
+ * so it is logged as the failure it is.
+ */
+async function writeProfile(userId: string, patch: Record<string, any>, label: string): Promise<boolean> {
+  const { data, error } = await (supabase.from("diagnostic_profiles" as any) as any)
+    .upsert({ user_id: userId, ...patch }, { onConflict: "user_id" })
+    .select("user_id");
+  if (error) { console.error(`[marketRead] ${label} failed`, error); return false; }
+  if (!data || (data as any[]).length === 0) {
+    console.error(`[marketRead] ${label} affected no rows — nothing was saved for user ${userId}`);
+    return false;
+  }
+  return true;
+}
+
 /** Save the six answers immediately, so a failed generation never loses them. */
 export async function saveAnswers(userId: string, answers: Record<string, string>): Promise<void> {
   try {
-    await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({ brand_assessment_answers: answers })
-      .eq("user_id", userId);
+    await writeProfile(userId, { brand_assessment_answers: answers }, "answers save");
   } catch (e) {
-    console.warn("[marketRead] answers save failed", e);
+    console.error("[marketRead] answers save threw", e);
   }
 }
 
@@ -184,13 +199,11 @@ export async function generateMarketRead(
     const results: Record<string, any> = { ...(json && typeof json === "object" ? json : {}), interpretation: prose || interpretation };
     const pillars = derivePillars(results);
 
-    await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({
-        brand_assessment_results: results,
-        brand_assessment_completed_at: new Date().toISOString(),
-        ...(pillars.length ? { brand_pillars: pillars } : {}),
-      })
-      .eq("user_id", userId);
+    await writeProfile(userId, {
+      brand_assessment_results: results,
+      brand_assessment_completed_at: new Date().toISOString(),
+      ...(pillars.length ? { brand_pillars: pillars } : {}),
+    }, "market read save");
 
     return results;
   } catch (e) {
