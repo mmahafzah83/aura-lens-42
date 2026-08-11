@@ -1479,7 +1479,7 @@ const Onboarding = () => {
   if (screen === 7) {
     content = (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>Three claims, and they're yours.</h1>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>Three subjects, and they're yours.</h1>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
           {claims.slice(0, 3).map((c, i) => (
             <ClaimCard key={`${c.title}-${i}`} index={i} title={c.title} content={c.content} />
@@ -1491,8 +1491,9 @@ const Onboarding = () => {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "22px 0 4px" }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} tone={s.tone} onNight
+              icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
               unlocked={i <= 1}
-              figure={i === 0 ? (postsRead || "✓") : i === 1 ? claims.length : undefined} />
+              figure={i === 0 ? (postsRead ? num(postsRead) : "✓") : i === 1 ? num(claims.length) : undefined} />
           ))}
         </div>
         <Actions style={{ marginBlockStart: 18 }}><OBButton onClick={() => go(8)}>Keep going</OBButton></Actions>
@@ -1591,10 +1592,11 @@ const Onboarding = () => {
           {d.why_line ? <p style={bodyLight}>{d.why_line}</p> : null}
           <input
             type="range" min={0} max={100} step={1} value={value}
+            className="ob-slider"
             aria-label={d.name}
             aria-valuetext={value < 34 ? (d.anchor_low ?? "") : value < 67 ? (d.anchor_mid ?? "") : (d.anchor_high ?? "")}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
-            style={{ inlineSize: "100%", marginBlockStart: 26, accentColor: OB.blue }}
+            style={{ marginBlockStart: 26 }}
           />
           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
             {([
@@ -1607,10 +1609,9 @@ const Onboarding = () => {
                 <div key={tag} style={{
                   display: "flex", gap: 9, fontSize: "var(--ob-anchor)", lineHeight: 1.55,
                   color: live ? OB.ink : OB.muted,
-                  background: live ? OB.blueTint : "transparent",
-                  border: `1px solid ${live ? OB.blue : "transparent"}`,
-                  borderRadius: RADIUS.card, padding: "8px 10px",
-                  transition: `background 220ms ${EASE}, color 220ms ${EASE}`,
+                  fontWeight: live ? 600 : 400,
+                  padding: "6px 0",
+                  transition: `color 220ms ${EASE}`,
                 }}>
                   <span style={{ fontFamily: OB.mono, fontSize: "var(--ob-mono)", letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2 }}>{tag}</span>
                   <span>{text}</span>
@@ -1633,8 +1634,9 @@ const Onboarding = () => {
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
               {SHELF.map((s, i) => (
                 <ShelfBadge key={s.key} label={s.label} tone={s.tone}
+                  icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
                   unlocked={i <= 2}
-                  figure={i === 0 ? (postsRead || "✓") : i === 1 ? claims.length : i === 2 ? dims.length : undefined} />
+                  figure={i === 0 ? (postsRead ? num(postsRead) : "✓") : i === 1 ? num(claims.length) : i === 2 ? num(dims.length) : undefined} />
               ))}
             </div>
           )}
@@ -1713,11 +1715,13 @@ const Onboarding = () => {
       const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
       const optionButton = (label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
-        <button key={label} type="button" disabled={blocked} onClick={onClick} style={{
+        <button key={label} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
           textAlign: "start", padding: "14px 15px", borderRadius: 14,
           cursor: blocked ? "not-allowed" : "pointer",
-          border: `1px solid ${picked ? OB.blue : OB.line}`,
+          border: `1px solid ${OB.line}`,
+          borderInlineStart: picked ? `2px solid ${OB.blue}` : `1px solid ${OB.line}`,
           background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
+          fontWeight: picked ? 600 : 400,
           lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
           opacity: blocked ? 0.45 : 1,
           transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
