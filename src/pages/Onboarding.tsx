@@ -89,23 +89,6 @@ const PAGE_CSS = `
 ${BUTTON_CSS}
 `;
 
-const btnPrimary: React.CSSProperties = {
-  inlineSize: "100%", minBlockSize: 52, borderRadius: RADIUS.pill, border: "none",
-  background: OB.blue, color: "#FFFFFF", fontSize: "var(--ob-btn)", fontWeight: 600, cursor: "pointer",
-  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9,
-  transition: `transform 220ms ${EASE}, opacity 220ms ${EASE}`, fontFamily: "inherit",
-};
-
-const btnGhostLight: React.CSSProperties = {
-  inlineSize: "100%", minBlockSize: 46, borderRadius: RADIUS.pill,
-  background: "transparent", color: OB.muted, border: `1px solid ${OB.line}`,
-  fontSize: "var(--ob-small)", fontWeight: 500, cursor: "pointer", marginBlockStart: 10, fontFamily: "inherit",
-};
-
-const btnGhostNight: React.CSSProperties = {
-  ...btnGhostLight, color: OB.mutedNight, border: `1px solid ${OB.lineNight}`,
-};
-
 const fieldStyle: React.CSSProperties = {
   inlineSize: "100%", background: OB.canvas, border: `1px solid ${OB.line}`,
   color: OB.ink, fontSize: 15.5, fontFamily: "inherit", padding: "14px 16px",
@@ -849,9 +832,7 @@ const Onboarding = () => {
       {titlesFailed ? (
         <>
           <p style={{ ...bodyLight, margin: 0 }}>Aura couldn't load the list of levels. Nothing is lost.</p>
-          <button type="button" onClick={() => void reloadTitles()} style={{ ...btnGhostLight, marginBlockStart: 0 }}>
-            Try again
-          </button>
+          <OBButton variant="secondary" onClick={() => void reloadTitles()}>Try again</OBButton>
         </>
       ) : seniorityTitles.map((t) => (
         <button key={t.title} type="button" onClick={() => onPick(t.title, t.band as Band)} style={{
@@ -930,12 +911,12 @@ const Onboarding = () => {
             {userEmail || "—"}
           </p>
           <p style={bodyLight}>Your invitation went to that address. Confirm it before anything is saved to your name.</p>
-          <button type="button" onClick={confirmIdentityYes} style={{ ...btnPrimary, marginBlockStart: 22 }}>
-            Yes, that's me <ArrowRight size={16} />
-          </button>
-          <button type="button" onClick={confirmIdentityNo} disabled={signingOut} style={btnGhostLight}>
-            {signingOut ? "Signing out…" : "No, this isn't mine"}
-          </button>
+          <Actions style={{ marginBlockStart: 22 }}>
+            <OBButton onClick={confirmIdentityYes}>Yes, that's me <ArrowRight size={16} /></OBButton>
+            <OBButton variant="tertiary" onClick={() => void confirmIdentityNo()} loading={signingOut} loadingLabel="Signing out…">
+              No, this isn't mine
+            </OBButton>
+          </Actions>
         </PaperShell>
       </>
     );
@@ -989,10 +970,11 @@ const Onboarding = () => {
               </div>
             ))}
           </div>
-          <button type="button" onClick={handleSetPassword} disabled={!allValid || settingPwd}
-            style={{ ...btnPrimary, opacity: !allValid || settingPwd ? 0.5 : 1 }}>
-            {settingPwd ? <Loader2 size={16} className="animate-spin" /> : null} Set it and start
-          </button>
+          <Actions style={{ marginBlockStart: 0 }}>
+            <OBButton onClick={() => void handleSetPassword()} disabled={!allValid} loading={settingPwd} loadingLabel="Saving…">
+              Set it and start
+            </OBButton>
+          </Actions>
         </PaperShell>
       </>
     );
@@ -1023,8 +1005,8 @@ const Onboarding = () => {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
           {SHELF.map((s) => <ShelfBadge key={s.key} label={s.label} tone={s.tone} />)}
         </div>
-        <button type="button" onClick={() => go(1)} style={{ ...btnPrimary, marginBlockStart: 22 }}>Start</button>
-        <p style={footnote}>Nothing gets posted. Ever, unless you press it.</p>
+        <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>Start</OBButton></Actions>
+        <p style={footnote}>Nothing gets posted unless you press publish.</p>
       </PaperShell>
     );
   }
