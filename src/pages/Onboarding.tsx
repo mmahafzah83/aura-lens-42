@@ -1103,6 +1103,69 @@ const Onboarding = () => {
           <p style={{ ...bodyLight, marginBlockStart: 18 }}>{EMPTY_POSTS_LINE}</p>
         )}
 
+        {/* Everything else Aura read. Each part computed; anything missing is simply absent. */}
+        {facts ? (() => {
+          const where = [
+            facts.role && facts.company ? `${facts.role} at ${facts.company}` : facts.role || facts.company,
+            facts.location,
+            facts.yearsOn ? `${facts.yearsOn} years on LinkedIn` : (facts.joinedYear ? `on LinkedIn since ${facts.joinedYear}` : ""),
+          ].filter(Boolean) as string[];
+          const counts = [
+            facts.roles ? `${facts.roles} ${facts.roles === 1 ? "role" : "roles"}` : "",
+            facts.certifications ? `${facts.certifications} certifications` : "",
+            facts.skills ? `${facts.skills} skills` : "",
+            facts.recommendations ? `${facts.recommendations} recommendations` : "",
+          ].filter(Boolean);
+          if (!where.length && !counts.length && !facts.topSkills.length && !facts.aboutFirstLine) return null;
+          return (
+            <div style={{ marginBlockStart: 18 }}>
+              {where.length ? (
+                <p style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+                  {where.join(" · ")}
+                </p>
+              ) : null}
+              {counts.length ? (
+                <p style={{
+                  margin: "8px 0 0", fontFamily: OB.mono, fontSize: "var(--ob-small)",
+                  letterSpacing: "0.02em", color: OB.ink,
+                }}>{counts.join(" · ")}</p>
+              ) : null}
+              {facts.topSkills.length ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBlockStart: 10 }}>
+                  {facts.topSkills.map((s) => (
+                    <span key={s} style={{
+                      fontSize: 11.5, color: OB.ink, background: OB.canvas,
+                      border: `1px solid ${OB.line}`, borderRadius: RADIUS.chip, padding: "4px 8px",
+                    }}>{s}</span>
+                  ))}
+                </div>
+              ) : null}
+              {facts.aboutFirstLine ? (
+                <p style={{
+                  margin: "12px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6,
+                  color: OB.muted, fontStyle: "italic",
+                }}>“{facts.aboutFirstLine}”</p>
+              ) : null}
+            </div>
+          );
+        })() : null}
+
+        {/* What other people wrote about them, verbatim. Nothing here is generated. */}
+        {facts?.recQuote ? (
+          <figure style={{
+            margin: "18px 0 0", padding: "15px 17px", borderRadius: RADIUS.card,
+            background: OB.blueTint, borderInlineStart: `3px solid ${OB.blue}`,
+          }}>
+            <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>
+              Someone you worked with wrote this about you:
+            </figcaption>
+            <blockquote style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: 1.6, color: OB.ink }}>
+              “{facts.recQuote.text}”
+            </blockquote>
+            <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>— {facts.recQuote.title}</p>
+          </figure>
+        ) : null}
+
         {/* Their own words, verbatim. If nothing qualifies, nothing shows. */}
         {ownLine ? (
           <figure style={{
