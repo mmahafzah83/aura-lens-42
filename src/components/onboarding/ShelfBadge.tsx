@@ -4,6 +4,7 @@
  * member's own figure on it.
  */
 import { OB, SPRING, RADIUS } from "./tokens";
+import { User, Bookmark, BarChart3, Target } from "lucide-react";
 
 const CSS = `
 @keyframes sb-pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
@@ -27,13 +28,22 @@ interface Props {
   figure?: string | number | null;
   tone?: ShelfBadgeTone;
   onNight?: boolean;
+  /** Which outline icon a locked badge carries — never a question mark. */
+  icon?: "profile" | "saved" | "strengths" | "subjects";
+  /** What unlocks it, shown on hover and tap. */
+  hint?: string;
 }
 
-const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = false }: Props) => (
-  <div style={{ inlineSize: 54, textAlign: "center" }}>
+const ICON = { profile: User, saved: Bookmark, strengths: BarChart3, subjects: Target } as const;
+
+const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = false, icon = "profile", hint }: Props) => {
+  const Icon = ICON[icon];
+  return (
+  <div style={{ inlineSize: 54, textAlign: "center" }} title={unlocked ? label : (hint || label)}>
     <style>{CSS}</style>
     <div
       className={unlocked ? "sb-unlocked" : undefined}
+      aria-label={unlocked ? label : `${label} — ${hint || "not unlocked yet"}`}
       style={{
         inlineSize: 54, blockSize: 54, borderRadius: RADIUS.card,
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -45,13 +55,14 @@ const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = 
     >
       {unlocked
         ? <span style={{ fontFamily: OB.mono, fontSize: 17, fontWeight: 600 }}>{figure ?? "✓"}</span>
-        : <span style={{ fontFamily: OB.mono, fontSize: 16, opacity: 0.7 }}>?</span>}
+        : <Icon size={20} strokeWidth={1.5} color="#98A2AE" />}
     </div>
     <p style={{
       margin: "8px 0 0", fontSize: 10.5, lineHeight: 1.35,
       color: onNight ? OB.mutedNight : OB.muted,
     }}>{label}</p>
   </div>
-);
+  );
+};
 
 export default ShelfBadge;
