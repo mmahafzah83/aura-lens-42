@@ -5147,6 +5147,14 @@ export type Database = {
         }
         Relationships: []
       }
+      morning_promise_state: {
+        Row: {
+          may_promise: boolean | null
+          runs_checked: number | null
+          runs_that_sent: number | null
+        }
+        Relationships: []
+      }
       post_provenance: {
         Row: {
           acquisition: string | null
