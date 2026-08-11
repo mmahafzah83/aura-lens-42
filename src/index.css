@@ -340,6 +340,9 @@ html[dir="rtl"] { --font-display: var(--font-arabic); --font-serif: var(--font-a
   animation: skeleton-pulse 1.5s ease-in-out infinite;
   border-radius: 4px;
 }
+@media (prefers-reduced-motion: reduce) {
+  .aura-skeleton { animation: none; }
+}
 
 @layer base {
   :root {
