@@ -44,25 +44,21 @@ export async function rasteriseRevealCard(
   node: HTMLElement,
   opts: { format?: "png" | "jpeg" } = {},
 ): Promise<{ dataUrl: string; format: "png" | "jpeg" }> {
-  const { toPng, toJpeg } = await import("html-to-image");
-  // Webfonts must be resolved before rasterising, or html-to-image throws on
-  // the cross-origin stylesheet mid-export.
+  // html2canvas is the proven rasteriser in this codebase (see exportReportPdf).
+  const { default: html2canvas } = await import("html2canvas");
   try { await (document as any).fonts?.ready; } catch { /* nothing to wait for */ }
-  const rect = node.getBoundingClientRect();
-  const pixelRatio = rect.width > 0 ? 1200 / rect.width : 2;
-  let format = opts.format ?? "png";
-  let dataUrl: string;
   try {
-    dataUrl = format === "jpeg"
-      ? await toJpeg(node, { pixelRatio, quality: 0.92, cacheBust: true })
-      : await toPng(node, { pixelRatio, cacheBust: true });
+    const canvas = await html2canvas(node, {
+      scale: 2,
+      backgroundColor: null,
+      useCORS: true,
+      logging: false,
+    });
+    return { dataUrl: canvas.toDataURL("image/png"), format: "png" };
   } catch (err) {
-    // One retry without the fonts — a plainer image beats no image.
-    console.error("[reveal] png export failed, retrying without fonts", err);
-    format = "jpeg";
-    dataUrl = await toJpeg(node, { pixelRatio, quality: 0.92, cacheBust: true, skipFonts: true } as any);
+    console.error("[reveal] html2canvas export failed", err);
+    throw err;
   }
-  return { dataUrl, format };
 }
 
 export async function shareRevealCard(
@@ -113,6 +109,13 @@ const source = (line?: string) =>
     <p style={{ margin: "7px 0 0", fontSize: 11, lineHeight: 1.5, opacity: 0.72 }}>{line}</p>
   ) : null;
 
+/** Long prose needs a surface with contrast; it cannot sit on the gradient. */
+const panel: React.CSSProperties = {
+  background: "rgba(15,21,25,0.28)",
+  borderRadius: 20,
+  padding: 18,
+};
+
 /** The card is a reading experience; it grows once, at the desk-sized breakpoint. */
 const RVC_CSS = `
 @media (min-width:1280px){
@@ -125,34 +128,100 @@ const RVC_CSS = `
 const RevealCard = forwardRef<
   HTMLDivElement,
   { data: RevealData; footer?: RevealFooter; forExport?: boolean }
->(({ data, footer, forExport = false }, ref) => (
+>(({ data, footer, forExport = false }, ref) => forExport ? (
+  /* ── the shareable frame: one fixed 1080 × 1350 image, nothing that scrolls ── */
   <div
     ref={ref}
-    className={forExport ? undefined : "rvc"}
     style={{
+      inlineSize: 1080,
+      blockSize: 1350,
+      boxSizing: "border-box",
       background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
-      borderRadius: forExport ? 0 : RADIUS.hero,
-      padding: forExport ? "56px 44px 44px" : "30px 24px 28px",
+      padding: "96px 84px 74px",
       color: "#FFFFFF",
       fontFamily: OB.ui,
       display: "flex",
       flexDirection: "column",
-      ...(forExport ? { inlineSize: 600, minBlockSize: 750 } : null),
+      overflow: "hidden",
     }}
   >
-    {forExport ? null : <style>{RVC_CSS}</style>}
+    <p style={{
+      margin: 0, fontSize: 20, letterSpacing: "0.20em", textTransform: "uppercase",
+      fontFamily: OB.mono, opacity: 0.85,
+    }}>How people see you</p>
+
+    <h2 style={{
+      margin: "34px 0 0", fontSize: 54, fontWeight: 900, lineHeight: 1.04, letterSpacing: "-0.03em",
+    }}>{data.archetype}</h2>
+
+    {data.marketRead ? (
+      <p style={{ margin: "30px 0 0", fontSize: 22, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
+    ) : null}
+
+    {data.subjects.length > 0 ? (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBlockStart: 44 }}>
+        {data.subjects.slice(0, 3).map((s) => (
+          <span key={s} style={{
+            display: "inline-block", padding: "12px 20px", borderRadius: RADIUS.chip,
+            background: "rgba(255,255,255,0.18)", color: "#FFFFFF",
+            fontSize: 17, fontWeight: 600, lineHeight: 1.3,
+          }}>{s}</span>
+        ))}
+      </div>
+    ) : null}
+
+    {data.figures.length > 0 ? (
+      <div style={{ display: "flex", gap: 64, marginBlockStart: 52 }}>
+        {data.figures.slice(0, 2).map((f) => (
+          <div key={f.label}>
+            <div style={{ fontFamily: OB.mono, fontSize: 46, fontWeight: 600, lineHeight: 1 }}>{f.value}</div>
+            <div style={{ fontSize: 17, opacity: 0.85, marginBlockStart: 10 }}>{f.label}</div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p style={{ margin: "52px 0 0", fontSize: 21, lineHeight: 1.6, opacity: 0.92 }}>{EMPTY_POSTS_LINE}</p>
+    )}
+
+    <div style={{
+      marginBlockStart: "auto", paddingBlockStart: 40,
+      borderBlockStart: "1px solid rgba(255,255,255,0.28)",
+      display: "flex", alignItems: "center", gap: 16,
+    }}>
+      <span style={{ fontFamily: OB.ui, fontWeight: 700, fontSize: 22, letterSpacing: "0.16em" }}>AURA</span>
+      <span style={{ fontFamily: OB.mono, fontSize: 18, letterSpacing: "0.06em", opacity: 0.88 }}>
+        Read by Aura · aura-intel.org
+      </span>
+      {footer ? null : null}
+    </div>
+  </div>
+) : (
+  <div
+    ref={ref}
+    className="rvc"
+    style={{
+      background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
+      borderRadius: RADIUS.hero,
+      padding: "30px 24px 28px",
+      color: "#FFFFFF",
+      fontFamily: OB.ui,
+      display: "flex",
+      flexDirection: "column",
+    }}
+  >
+    <style>{RVC_CSS}</style>
     <p style={{
       margin: 0, fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase",
       fontFamily: OB.mono, opacity: 0.85,
     }}>How people see you</p>
 
-    <h2 className={forExport ? undefined : "rvc-arch"} style={{
+    <h2 className="rvc-arch" style={{
       margin: "12px 0 0", fontSize: "clamp(34px, 9vw, 40px)", fontWeight: 900,
       lineHeight: 1.02, letterSpacing: "-0.03em",
     }}>{data.archetype}</h2>
 
     {data.marketRead ? (
-      <p className={forExport ? undefined : "rvc-read"}
+      <p className="rvc-read"
         style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
     ) : null}
     {source(data.provenance?.read)}
@@ -169,7 +238,7 @@ const RevealCard = forwardRef<
       </>
     )}
 
-    {!forExport && data.softGround.length > 0 && (
+    {data.softGround.length > 0 && (
       <>
         <p style={{ margin: "18px 0 8px", fontSize: 11.5, opacity: 0.85 }}>Where you're thinnest</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
@@ -181,20 +250,24 @@ const RevealCard = forwardRef<
       </>
     )}
 
-    {!forExport && data.theGap ? (
+    {data.theGap ? (
       <>
         <p style={{ margin: "22px 0 6px", fontSize: 11.5, opacity: 0.85 }}>The gap</p>
-        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, opacity: 0.95 }}>{data.theGap}</p>
+        <div style={panel}>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.65 }}>{data.theGap}</p>
+        </div>
       </>
     ) : null}
 
-    {!forExport && data.ownWordsQuote ? (
+    {data.ownWordsQuote ? (
       <>
         <p style={{ margin: "22px 0 6px", fontSize: 11.5, opacity: 0.85 }}>In your own words</p>
-        <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, fontStyle: "italic" }}>“{data.ownWordsQuote}”</p>
-        {data.ownWordsRead ? (
-          <p style={{ margin: "7px 0 0", fontSize: 13, lineHeight: 1.55, opacity: 0.88 }}>{data.ownWordsRead}</p>
-        ) : null}
+        <div style={panel}>
+          <p style={{ margin: 0, fontSize: 14.5, lineHeight: 1.6, fontStyle: "italic" }}>“{data.ownWordsQuote}”</p>
+          {data.ownWordsRead ? (
+            <p style={{ margin: "9px 0 0", fontSize: 13, lineHeight: 1.55, opacity: 0.9 }}>{data.ownWordsRead}</p>
+          ) : null}
+        </div>
       </>
     ) : null}
 
@@ -211,35 +284,11 @@ const RevealCard = forwardRef<
       <p style={{ margin: "24px 0 0", fontSize: 13.5, lineHeight: 1.6, opacity: 0.92 }}>{EMPTY_POSTS_LINE}</p>
     )}
 
-    {forExport && footer ? (
-      <div style={{
-        marginBlockStart: "auto", paddingBlockStart: 26,
-        borderBlockStart: "1px solid rgba(255,255,255,0.28)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          {/* A wordmark, not a fetched file — an export must not depend on the network. */}
-          <span style={{
-            fontFamily: OB.ui, fontWeight: 700, fontSize: 13, letterSpacing: "0.14em", color: "#FFFFFF",
-          }}>AURA</span>
-          <span style={{ fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em" }}>
-            Read by Aura · aura-intel.org
-          </span>
-        </div>
-        <p style={{ margin: "10px 0 0", fontSize: 11.5, lineHeight: 1.5, opacity: 0.85 }}>
-          {footer.posts > 0
-            ? `A snapshot of how my work reads from the outside — built from ${footer.posts} of my posts${footer.saved ? ` and ${footer.saved} things I saved` : ""}.`
-            : `A snapshot of how my work reads from the outside${footer.saved ? ` — built from ${footer.saved} things I saved` : ""}.`}
-        </p>
-      </div>
-    ) : null}
-
-    {!forExport ? (
-      <p style={{
-        margin: "22px 0 0", marginBlockStart: "auto", paddingBlockStart: 22,
-        fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em",
-        color: "rgba(255,255,255,0.72)",
-      }}>Read by Aura · aura-intel.org</p>
-    ) : null}
+    <p style={{
+      margin: "22px 0 0", marginBlockStart: "auto", paddingBlockStart: 22,
+      fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em",
+      color: "rgba(255,255,255,0.72)",
+    }}>Read by Aura · aura-intel.org</p>
   </div>
 ));
 
