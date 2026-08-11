@@ -135,7 +135,7 @@ export function useSinceLastVisit(userId: string | null | undefined): SinceLastV
       if (!t.sane || t.delta === 0) {
         text = `${t.total} ${plural(t.total, "source", "sources")} now back ${title}.`;
       } else if (t.delta > SOURCE_DELTA_CEILING) {
-        text = `${title} kept growing — ${t.total} ${plural(t.total, "source", "sources")} now back this theme.`;
+        text = `${title} kept growing — ${t.total} ${plural(t.total, "source", "sources")} now back this signal.`;
       } else {
         text = `You captured ${t.delta} more ${plural(t.delta, "source", "sources")} about ${title} — ${t.total} now back this theme.`;
       }
