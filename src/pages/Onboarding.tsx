@@ -2175,6 +2175,8 @@ const Onboarding = () => {
     const shareFooter = { posts: postsRead ?? 0, saved: claims.length };
     const caption = suggestedCaption(postsRead ?? 0);
     const liveCaption = captionDraft.trim() || caption;
+    /* one rasterisation at a time: post, download and report all read the same DOM node */
+    const busy = sharing || posting || buildingReport || savingDraft;
 
     const downloadRead = async () => {
       if (!shareRef.current) return;
@@ -2194,6 +2196,7 @@ const Onboarding = () => {
 
     const postToLinkedIn = async () => {
       if (!shareRef.current) return;
+      if (busy) return;
       setPosting(true);
       try {
         const { dataUrl } = await rasteriseRevealCard(shareRef.current, { format: "png" });
@@ -2212,6 +2215,7 @@ const Onboarding = () => {
         if (data?.reason === "not_permitted") {
           setCanPostToLinkedIn(false);
           toast.message("Aura can't post for you yet — image saved instead.");
+          setPosting(false);
           await downloadRead();
           return;
         }
@@ -2237,6 +2241,7 @@ const Onboarding = () => {
 
     const downloadFullReport = async () => {
       if (!paperMountRef.current) return;
+      if (busy) return;
       setBuildingReport(true);
       try {
         const slug = (firstName.trim() || "profile").toLowerCase()
@@ -2254,6 +2259,7 @@ const Onboarding = () => {
 
     const saveReadForLater = async () => {
       if (!userId) return;
+      if (busy) return;
       setSavingDraft(true);
       try {
         const { error } = await supabase.from("linkedin_posts").insert({
@@ -2321,7 +2327,7 @@ const Onboarding = () => {
           ) : null}
           <Actions style={{ marginBlockStart: 20 }}>
           {canPostToLinkedIn && !postedUrl ? (
-            <OBButton disabled={!reveal || !captionDraft.trim()} loading={posting} loadingLabel="Posting…"
+            <OBButton disabled={!reveal || !captionDraft.trim() || busy} loading={posting} loadingLabel="Posting…"
               onClick={() => void postToLinkedIn()}
               style={{ background: "#FFFFFF", color: OB.blue }}>Post it to LinkedIn</OBButton>
           ) : null}
@@ -2333,19 +2339,19 @@ const Onboarding = () => {
           ) : null}
           <OBButton
             variant={canPostToLinkedIn && !postedUrl ? "secondary" : "primary"}
-            disabled={!reveal} loading={sharing} loadingLabel="Building…"
+            disabled={!reveal || busy} loading={sharing} loadingLabel="Building…"
             onClick={() => void downloadRead()}
             style={canPostToLinkedIn && !postedUrl
               ? { borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }
               : { background: "#FFFFFF", color: OB.blue }}
           >Download the image</OBButton>
           {reveal && brandPaper ? (
-            <OBButton variant="secondary" loading={buildingReport} loadingLabel="Building your report…"
+            <OBButton variant="secondary" disabled={busy} loading={buildingReport} loadingLabel="Building your report…"
               onClick={() => void downloadFullReport()}
               style={{ borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }}
             >Download the full report</OBButton>
           ) : null}
-          <OBButton variant="tertiary" disabled={savingDraft} onClick={() => void saveReadForLater()}
+          <OBButton variant="tertiary" disabled={busy} onClick={() => void saveReadForLater()}
             style={{ color: "#FFFFFF" }}>Save it for later</OBButton>
           <OBButton variant="tertiary" onClick={() => go(14)}
             style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
