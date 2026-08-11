@@ -267,6 +267,7 @@ export default function MomentumPage() {
         <p style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: 0, maxWidth: 620 }}>
           What you've built, how often you show up, and what's next.
         </p>
+        {failed && <ReadFailure onRetry={() => void load()} style={{ marginTop: 4 }} />}
       </header>
 
       {/* ── The Record ───────────────────────────────────────── */}
