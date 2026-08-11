@@ -84,7 +84,10 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
         photo: p.photo_url ?? null,
         posts,
       });
-      setState((s) => ({ ...(s ?? { connected: false, handle: null, address: null, canPost: false, lastSyncedAt: null }), handle, address: profile_url, confirmedByRead: true }));
+      setState((s) => ({
+        ...(s ?? { connected: false, handle: null, address: null, canPost: false, lastSyncedAt: null, addressConfirmed: false }),
+        handle, address: profile_url, confirmedByRead: true, addressConfirmed: true,
+      }));
       setExpanded(false);
     } catch {
       setError(READ_ERROR);
@@ -95,6 +98,7 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
 
   if (!userId || state === null) return null;
   const confirmed = state.confirmedByRead;
+  const guessed = !confirmed && Boolean(state.address);
 
   const shell: React.CSSProperties = {
     background: CARD,
@@ -160,8 +164,8 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
       <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, marginTop: 8, marginBottom: 14 }}>
         Aura reads what's already public on your profile — your headline and your recent posts —
         so that what it writes sounds like you and not like anyone else.
-        {!confirmed && (state.address
-          ? ` We have ${state.address.replace(/^https?:\/\/(www\.)?/, "")} on file, but Aura hasn't read it yet.`
+        {!confirmed && (guessed
+          ? " We guessed this from your name — check it's right and we'll read it."
           : " We don't have an address for you yet.")}
       </p>
 
