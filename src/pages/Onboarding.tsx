@@ -1862,12 +1862,14 @@ const Onboarding = () => {
         setAnswers(next);
         setTextAnswer("");
         setMultiPicked([]);
+        setSinglePicked(null);
         if (userId) void saveAnswers(userId, next);
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
       const back = () => {
         setTextAnswer("");
         setMultiPicked([]);
+        setSinglePicked(null);
         setQIdx((i) => Math.max(0, i - 1));
       };
       const cap = q.kind === "multi" ? (q.max_choices ?? (q.options?.length || 99)) : 1;
@@ -1919,9 +1921,14 @@ const Onboarding = () => {
           ) : null}
 
           {q.kind === "choice" ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
-              {opts.map((o) => optionButton(o.label, () => advance(o.label)))}
-            </div>
+            <>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 20 }}>
+                {opts.map((o) => optionButton(o.label, () => setSinglePicked(o.label), singlePicked === o.label))}
+              </div>
+              <Actions style={{ marginBlockStart: 16 }}>
+                <OBButton disabled={!singlePicked} onClick={() => singlePicked && advance(singlePicked)}>Next</OBButton>
+              </Actions>
+            </>
           ) : q.kind === "multi" ? (
             <>
               <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>Pick up to {cap}</p>
@@ -1944,15 +1951,24 @@ const Onboarding = () => {
                   Keep the one that's actually you. The two you drop tell Aura just as much.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 10 }}>
-                  {proposals!.map((pr) => optionButton(
-                    pr.label,
-                    () => {
-                      const dropped = proposals!.filter((x) => x.label !== pr.label).map((x) => x.label);
-                      advance(`${pr.label}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
-                    },
-                    false, false, pr.why,
+                  {proposals!.map((pr) => (
+                    /* the two the member is not keeping visibly recede */
+                    <div key={pr.label} style={{
+                      display: "flex", flexDirection: "column",
+                      opacity: singlePicked && singlePicked !== pr.label ? 0.55 : 1,
+                      transition: `opacity 220ms ${EASE}`,
+                    }}>
+                      {optionButton(pr.label, () => setSinglePicked(pr.label), singlePicked === pr.label, false, pr.why)}
+                    </div>
                   ))}
                 </div>
+                <Actions style={{ marginBlockStart: 16 }}>
+                  <OBButton disabled={!singlePicked} onClick={() => {
+                    if (!singlePicked) return;
+                    const dropped = proposals!.filter((x) => x.label !== singlePicked).map((x) => x.label);
+                    advance(`${singlePicked}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
+                  }}>Next</OBButton>
+                </Actions>
               </>
             ) : proposedFallback ? (
               <>
