@@ -39,6 +39,9 @@ import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleB
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
+import JourneyHeader from "@/components/onboarding/JourneyHeader";
+import { num, cleanHeadline, memberText } from "@/lib/memberText";
+import { inferSector } from "@/lib/inferSector";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
@@ -59,14 +62,24 @@ const BAND_TO_LEVEL: Record<Band, string> = {
 
 const SHELF: { key: string; label: string; tone: ShelfBadgeTone }[] = [
   { key: "profile", label: "Your profile", tone: "blue" },
-  { key: "claims", label: "First claims", tone: "cyan" },
+  { key: "claims", label: "First subjects", tone: "cyan" },
   { key: "strengths", label: "Strengths", tone: "deep" },
   { key: "subjects", label: "Your subjects", tone: "amber" },
+];
+
+const SHELF_ICON = ["profile", "saved", "strengths", "subjects"] as const;
+const SHELF_HINT = [
+  "Unlocks when Aura has read your profile",
+  "Unlocks when you save your first thing to read",
+  "Unlocks when you've moved the sliders",
+  "Unlocks when your read is written",
 ];
 
 const MANUAL_SCREEN = 15;
 /** Shown wherever a post or word count would otherwise read zero. */
 const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you save.";
+/** The same truth, in the first person, because the dark screens are Aura speaking. */
+const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you save.";
 /** A short dark panel that sits between screen 8 and the sliders. */
 const TRUST_SLIDERS_SCREEN = 8.5;
 
@@ -83,6 +96,16 @@ const PAGE_CSS = `
 @keyframes obc-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .obc-in{animation:obc-in 450ms ${SPRING} both;}
 .obc-line{opacity:0;animation:obc-in 450ms ${SPRING} both;}
+/* The slider measures a position, not an achievement — so the track never fills. */
+.ob-slider{inline-size:100%;-webkit-appearance:none;appearance:none;background:transparent;}
+.ob-slider::-webkit-slider-runnable-track{block-size:4px;border-radius:999px;background:${OB.line};}
+.ob-slider::-moz-range-track{block-size:4px;border-radius:999px;background:${OB.line};}
+.ob-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;inline-size:24px;block-size:24px;
+  border-radius:999px;background:${OB.blue};border:2px solid #FFFFFF;box-shadow:0 2px 8px rgba(6,112,196,.35);margin-block-start:-10px;cursor:grab;}
+.ob-slider::-moz-range-thumb{inline-size:24px;block-size:24px;border-radius:999px;background:${OB.blue};
+  border:2px solid #FFFFFF;cursor:grab;}
+/* Focus is a soft outer ring — never a second selection state. */
+.ob-opt:focus-visible{outline:none;box-shadow:0 0 0 3px ${OB.blueTint};}
 @media (prefers-reduced-motion:reduce){
   .obc-in,.obc-line{animation:none !important;opacity:1 !important;transform:none !important;}
 }
@@ -147,12 +170,13 @@ const wordsIn = (rows: { post_text?: string | null }[]): number =>
 
 /* ──────────────────────────────── shells ────────────────────────────────── */
 
-const NightShell = ({ children, face, footer }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode }) => (
+const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => (
   <div className="obc" style={{
     minBlockSize: "100dvh", background: OB.night, display: "flex", alignItems: "center",
     justifyContent: "center", padding: "28px 20px",
   }}>
     <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+      {onExit ? <JourneyHeader onNight onExit={onExit} /> : null}
       {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace size="var(--ob-face)" /></div> : null}
       {children}
       {footer}
@@ -161,13 +185,14 @@ const NightShell = ({ children, face, footer }: { children: React.ReactNode; fac
 );
 
 const PaperShell = ({
-  children, bead, cream = false, footer,
-}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode }) => (
+  children, bead, cream = false, footer, onExit,
+}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void }) => (
   <div className="obc" style={{
     minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
     display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
   }}>
     <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+      {onExit ? <JourneyHeader onExit={onExit} /> : null}
       <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
         <ProgressBeads active={bead} />
       </div>
@@ -265,6 +290,13 @@ const Onboarding = () => {
   const [connecting, setConnecting] = useState(false);
   const [connectNote, setConnectNote] = useState("");
   const [connected, setConnected] = useState(false);
+
+  /* 13b — when their day starts, so the overnight read lands at the right hour */
+  const [dailyTime, setDailyTime] = useState<"Morning" | "Midday" | "Evening">("Morning");
+  const timeZone = useMemo(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "your local time"; }
+    catch { return "your local time"; }
+  }, []);
   /* placeholder rotation for open text answers */
   const [phIdx, setPhIdx] = useState(0);
   const [sharing, setSharing] = useState(false);
@@ -371,7 +403,22 @@ const Onboarding = () => {
       setLiProfile(prof);
 
       const readSector = String(prof?.sector || prof?.industry || "").trim();
-      if (!sector && readSector) { setSector(readSector); setSectorKnown(true); }
+      // The read first; failing that, what the headline, skills and about say.
+      const guessed = readSector || inferSector({
+        headline: prof?.headline,
+        topSkills: prof?.top_skills || prof?.raw?.topSkills || [],
+        about: prof?.about || prof?.raw?.about,
+      }) || "";
+      if (!sector && guessed) {
+        setSector(guessed);
+        setSectorKnown(true);
+        if (userId) {
+          try {
+            await (supabase.from("diagnostic_profiles" as any) as any)
+              .update({ sector_focus: guessed }).eq("user_id", userId);
+          } catch { /* the member can change it on the next screen */ }
+        }
+      }
 
       if (userId) {
         try {
@@ -652,9 +699,10 @@ const Onboarding = () => {
     } catch (e) { console.warn("[journey] stamp failed", e); }
     const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
     const figures = [
-      ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
-      ...(claims.length ? [{ value: String(claims.length), label: "claims kept" }] : []),
-      ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
+      ...(postsRead ? [{ value: num(postsRead), label: "posts read" }] : []),
+      ...(claims.length ? [{ value: num(claims.length), label: "subjects kept" }] : []),
+      ...(Object.keys(scores).length
+        ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
     ];
     setReveal(toRevealData(results, {
       figures,
@@ -691,8 +739,8 @@ const Onboarding = () => {
       const d = toRevealData(r, {
         figures: [
           ...(postsRead ? [{ value: String(postsRead), label: "posts read" }] : []),
-          ...(claims.length ? [{ value: String(claims.length), label: "claims kept" }] : []),
-          ...(Object.keys(scores).length ? [{ value: String(Object.keys(scores).length), label: "strengths on record" }] : []),
+          ...(claims.length ? [{ value: num(claims.length), label: "subjects kept" }] : []),
+          ...(Object.keys(scores).length ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
         ],
         excludeSoft: (dims || []).map((x) => x.name),
         sources: {
@@ -708,6 +756,19 @@ const Onboarding = () => {
 
   /* ── finishing ── */
   const finish = async () => {
+    // The read is emailed once, at the end, so it lives somewhere permanent.
+    try {
+      if (reveal) {
+        await supabase.functions.invoke("send-read-email", {
+          body: {
+            archetype: reveal.archetype,
+            marketRead: reveal.marketRead,
+            subjects: reveal.subjects,
+            softGround: reveal.softGround,
+          },
+        });
+      }
+    } catch { /* the read is already on their Home */ }
     if (userId) {
       try {
         await (supabase.from("diagnostic_profiles" as any) as any).upsert({
@@ -786,6 +847,26 @@ const Onboarding = () => {
   };
 
   /* ── escape hatch, unchanged in spirit ── */
+  /** Save & exit — everything already answered stays, and Home is one tap away. */
+  const saveAndExit = useCallback(() => {
+    void persistScreen(screen);
+    navigate("/home");
+  }, [persistScreen, screen, navigate]);
+
+  /** Remembers when their day starts, alongside the time zone we detected. */
+  const chooseDailyTime = useCallback(async (slot: "Morning" | "Midday" | "Evening") => {
+    setDailyTime(slot);
+    if (!userId) return;
+    try {
+      const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("ui_dismissals").eq("user_id", userId).maybeSingle();
+      const existing = (data?.ui_dismissals && typeof data.ui_dismissals === "object") ? data.ui_dismissals : {};
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ ui_dismissals: { ...existing, daily_time: { slot, time_zone: timeZone, at: new Date().toISOString() } } })
+        .eq("user_id", userId);
+    } catch { /* they can change it in Settings */ }
+  }, [userId, timeZone]);
+
   const escape = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -905,7 +986,7 @@ const Onboarding = () => {
     return (
       <>
         <style>{PAGE_CSS}</style>
-        <PaperShell bead={0} cream footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
           <h1 style={h1Light}>Is this you?</h1>
           <p style={{ ...bodyLight, fontFamily: OB.mono, fontSize: 14, color: OB.ink, wordBreak: "break-all" }}>
             {userEmail || "—"}
@@ -944,7 +1025,7 @@ const Onboarding = () => {
     return (
       <>
         <style>{PAGE_CSS}</style>
-        <PaperShell bead={0} cream footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
           <h1 style={h1Light}>Set your password.</h1>
           <p style={bodyLight}>One password, then the shelf.</p>
           <div style={{ position: "relative", marginBlockStart: 18 }}>
@@ -995,7 +1076,7 @@ const Onboarding = () => {
   /* 0 — CREAM */
   if (screen === 0) {
     content = (
-      <PaperShell bead={0} cream footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
         <h1 style={h1Light}>Let's fill this up.</h1>
         <p style={bodyLight}>
           Five short steps, and each one gives you something back as you go. It takes about ten minutes, and you can
@@ -1003,10 +1084,17 @@ const Onboarding = () => {
           the way you already think.
         </p>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
-          {SHELF.map((s) => <ShelfBadge key={s.key} label={s.label} tone={s.tone} />)}
+          {SHELF.map((s, i) => (
+            <ShelfBadge key={s.key} label={s.label} tone={s.tone} icon={SHELF_ICON[i]} hint={SHELF_HINT[i]} />
+          ))}
         </div>
+        <p style={{ margin: "12px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted, textAlign: "center" }}>
+          Four things Aura needs. Each one unlocks as you go.
+        </p>
         <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>Start</OBButton></Actions>
-        <p style={footnote}>Nothing gets posted unless you press publish.</p>
+        <p style={footnote}>
+          Free while Aura is in beta. Your read is private — only you can see it unless you share it.
+        </p>
       </PaperShell>
     );
   }
@@ -1014,7 +1102,7 @@ const Onboarding = () => {
   /* 1 — WHITE, the address */
   if (screen === 1) {
     content = (
-      <PaperShell bead={0} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
         <h1 style={h1Light}>What's your LinkedIn?</h1>
         <p style={bodyLight}>
           So nothing Aura writes for you sounds generic. It reads what's already public — your profile and your
@@ -1081,8 +1169,8 @@ const Onboarding = () => {
     // resolves to something real or it is dropped once the read is done.
     const mono = (v: React.ReactNode) => <span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{v}</span>;
     const rows: { key: string; label: string; line: React.ReactNode; done: boolean; drop: boolean }[] = [
-      { key: "p", label: "Posts", line: <>{mono(upPosts)} posts read</>, done: !!postsRead, drop: readDone && !postsRead },
-      { key: "w", label: "Your own writing", line: <>{mono(upWords)} words of your own writing</>, done: !!ownWords, drop: readDone && !ownWords },
+      { key: "p", label: "Posts", line: <>{mono(num(upPosts))} posts read</>, done: !!postsRead, drop: readDone && !postsRead },
+      { key: "w", label: "Your own writing", line: <>{mono(num(upWords))} words of your own writing</>, done: !!ownWords, drop: readDone && !ownWords },
       { key: "s", label: "Sector", line: <>Sector · {mono(sector)}</>, done: !!sector, drop: readDone && !sector },
       { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
     ].filter((r) => !r.drop);
@@ -1090,7 +1178,7 @@ const Onboarding = () => {
     // Never print a zero for posts or words — the absence is the message.
     const nothingPublic = readDone && !postsRead && !ownWords;
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading you.</h1>
         <div style={{ marginBlockStart: 26 }}>
           <WorkProgress onNight done={rows.filter((r) => r.done).length} total={rows.length || 1} />
@@ -1101,10 +1189,10 @@ const Onboarding = () => {
           ))}
         </div>
         {nothingPublic ? (
-          <p style={{ ...bodyNight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE}</p>
+          <p style={{ ...bodyNight, marginBlockStart: 16 }}>{EMPTY_POSTS_LINE_NIGHT}</p>
         ) : null}
         <Actions style={{ marginBlockStart: 24 }}>
-          <OBButton onClick={() => go(3)} loading={!allLanded} loadingLabel="Reading…">See what I found</OBButton>
+          <OBButton onClick={() => go(3)} loading={!allLanded} loadingLabel="Reading…">Show me what you found</OBButton>
         </Actions>
       </NightShell>
     );
@@ -1122,7 +1210,7 @@ const Onboarding = () => {
     // There is no separate page after this one.
     const nextFromHere = () => go(4);
     content = (
-      <PaperShell bead={1} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
         <h1 style={h1Light}>This is what Aura can see.</h1>
         <div style={{ display: "flex", gap: 13, alignItems: "center", marginBlockStart: 20 }}>
           {liProfile?.photo_url ? (
@@ -1130,17 +1218,29 @@ const Onboarding = () => {
               style={{ inlineSize: 56, blockSize: 56, borderRadius: "50%", objectFit: "cover", border: `1px solid ${OB.line}` }} />
           ) : null}
           <div style={{ minInlineSize: 0 }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{liProfile?.full_name || `${firstName} ${lastName}`.trim() || "You"}</p>
-            {liProfile?.headline ? (
-              <p style={{ margin: "3px 0 0", fontSize: 12.5, lineHeight: 1.5, color: OB.muted }}>{liProfile.headline}</p>
-            ) : null}
+            {(() => {
+              const name = liProfile?.full_name || `${firstName} ${lastName}`.trim() || "You";
+              const head = cleanHeadline(liProfile?.headline);
+              return (
+                <>
+                  <p {...memberText(name)} style={{ margin: 0, fontSize: 16, fontWeight: 700, ...(memberText(name).style || {}) }}>{name}</p>
+                  {head ? (
+                    <p {...memberText(head)} style={{
+                      margin: "3px 0 0", fontSize: 12.5, lineHeight: 1.5, color: OB.muted,
+                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                      ...(memberText(head).style || {}),
+                    }}>{head}</p>
+                  ) : null}
+                </>
+              );
+            })()}
           </div>
         </div>
         {postsRead ? (
           <div style={{ display: "flex", gap: 20, marginBlockStart: 20 }}>
             {figures.map((f) => (
               <div key={f.l}>
-                <div style={{ fontFamily: OB.mono, fontSize: 22, fontWeight: 600, color: OB.ink }}>{f.v}</div>
+                <div style={{ fontFamily: OB.mono, fontSize: 22, fontWeight: 600, color: OB.ink }}>{num(f.v)}</div>
                 <div style={{ fontSize: 11.5, color: OB.muted, marginBlockStart: 4 }}>{f.l}</div>
               </div>
             ))}
@@ -1156,10 +1256,10 @@ const Onboarding = () => {
             facts.location,
           ].filter(Boolean) as string[];
           const counts = [
-            facts.roles ? `${facts.roles} ${facts.roles === 1 ? "role" : "roles"}` : "",
-            facts.certifications ? `${facts.certifications} certifications` : "",
-            facts.skills ? `${facts.skills} skills` : "",
-            facts.projects ? `${facts.projects} projects` : "",
+            facts.roles ? `${num(facts.roles)} ${facts.roles === 1 ? "role" : "roles"}` : "",
+            facts.certifications ? `${num(facts.certifications)} certifications` : "",
+            facts.skills ? `${num(facts.skills)} skills` : "",
+            facts.projects ? `${num(facts.projects)} projects` : "",
             facts.joinedYear ? `on LinkedIn since ${facts.joinedYear}` : "",
           ].filter(Boolean);
           if (!where.length && !counts.length && !facts.topSkills.length && !facts.aboutFirstLine) return null;
@@ -1169,7 +1269,7 @@ const Onboarding = () => {
                 What Aura found in your record
               </p>
               {where.length ? (
-                <p style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+                <p {...memberText(where.join(" · "))} style={{ margin: 0, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
                   {where.join(" · ")}
                 </p>
               ) : null}
@@ -1182,7 +1282,7 @@ const Onboarding = () => {
               {facts.topSkills.length ? (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBlockStart: 10 }}>
                   {facts.topSkills.map((s) => (
-                    <span key={s} style={{
+                    <span key={s} {...memberText(s)} style={{
                       fontSize: 11.5, color: OB.ink, background: OB.canvas,
                       border: `1px solid ${OB.line}`, borderRadius: RADIUS.chip, padding: "4px 8px",
                     }}>{s}</span>
@@ -1190,9 +1290,9 @@ const Onboarding = () => {
                 </div>
               ) : null}
               {facts.aboutFirstLine ? (
-                <p style={{
+                <p {...memberText(facts.aboutFirstLine)} style={{
                   margin: "12px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.6,
-                  color: OB.muted, fontStyle: "italic",
+                  color: OB.muted, fontStyle: "italic", ...(memberText(facts.aboutFirstLine).style || {}),
                 }}>“{facts.aboutFirstLine}”</p>
               ) : null}
             </div>
@@ -1209,15 +1309,18 @@ const Onboarding = () => {
               <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: OB.ink, marginBlockEnd: 6 }}>
                 What people who worked with you said
               </span>
-              {facts.recommendations} {facts.recommendations === 1 ? "person has" : "people have"} written a
+              {num(facts.recommendations)} {facts.recommendations === 1 ? "person has" : "people have"} written a
               recommendation for you
             </figcaption>
-            <blockquote style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: 1.6, color: OB.ink }}>
+            <blockquote {...memberText(facts.recQuote.text)} style={{
+              margin: 0, fontSize: "var(--ob-body)", lineHeight: 1.6, color: OB.ink,
+              ...(memberText(facts.recQuote.text).style || {}),
+            }}>
               “{facts.recQuote.text}”
             </blockquote>
-            <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>— {facts.recQuote.title}</p>
+            <p {...memberText(facts.recQuote.title)} style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>— {facts.recQuote.title}</p>
             <p style={{ margin: "8px 0 0", fontSize: 11.5, color: OB.muted }}>
-              Aura read all {facts.recommendations}.
+              Aura read all {num(facts.recommendations)}.
             </p>
           </figure>
         ) : null}
@@ -1229,7 +1332,9 @@ const Onboarding = () => {
             background: OB.canvas, borderInlineStart: `3px solid ${OB.blue}`,
           }}>
             <figcaption style={{ fontSize: 11.5, color: OB.muted, marginBlockEnd: 8 }}>You wrote this:</figcaption>
-            <blockquote style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: OB.ink }}>
+            <blockquote {...memberText(ownLine.text)} style={{
+              margin: 0, fontSize: 15, lineHeight: 1.6, color: OB.ink, ...(memberText(ownLine.text).style || {}),
+            }}>
               “{ownLine.text}”
             </blockquote>
             <p style={{ margin: "9px 0 0", fontSize: 11.5, color: OB.muted }}>
@@ -1251,7 +1356,7 @@ const Onboarding = () => {
           {bandPicker && titleList((t, b) => { void chooseTitle(t, b); setBandPicker(false); })}
           {!sector && (
             <div style={{ marginBlockStart: 12 }}>
-              <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Aura couldn't tell your sector — pick it once.</label>
+              <label htmlFor="ob-sector" style={{ fontSize: 12.5, color: OB.muted }}>Which sector should Aura use?</label>
               <select id="ob-sector" value={sector} onChange={async (e) => {
                 const v = e.target.value;
                 setSector(v);
@@ -1268,14 +1373,6 @@ const Onboarding = () => {
           )}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "24px 0 4px" }}>
-          {SHELF.map((s, i) => (
-            <ShelfBadge key={s.key} label={s.label} tone={s.tone}
-              unlocked={i === 0}
-              figure={i === 0 ? (postsRead || "✓") : undefined} />
-          ))}
-        </div>
-
         <Actions style={{ marginBlockStart: 18 }}>
           <OBButton onClick={nextFromHere}>That's me</OBButton>
         </Actions>
@@ -1287,7 +1384,7 @@ const Onboarding = () => {
   if (screen === MANUAL_SCREEN) {
     const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band && !!levelTitle;
     content = (
-      <PaperShell bead={1} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
         <h1 style={h1Light}>Aura couldn't read it — tell it the basics.</h1>
         <p style={bodyLight}>Four things, and Aura works from these until you point it at your profile.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockStart: 20 }}>
@@ -1319,7 +1416,7 @@ const Onboarding = () => {
   /* 4 — NIGHT */
   if (screen === 4) {
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>I know who you are. Now I need what you notice.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
           Your profile says what you've done. It doesn't say what you think. One link is enough to start.
@@ -1332,7 +1429,7 @@ const Onboarding = () => {
   /* 5 — WHITE, the first link */
   if (screen === 5) {
     content = (
-      <PaperShell bead={2} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>Something you read this week.</h1>
         <p style={bodyLight}>
           An article, a report, a post you disagreed with. Aura reads it and shows you what it found.
@@ -1388,7 +1485,7 @@ const Onboarding = () => {
       { key: "c", label: "Matched to your sector", done: readStep >= 3 },
     ];
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>Reading it.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>Finding the parts you can use.</p>
         <div style={{ marginBlockStart: 22 }}>
@@ -1415,8 +1512,8 @@ const Onboarding = () => {
   /* 7 — NIGHT, three claims */
   if (screen === 7) {
     content = (
-      <NightShell footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>Three claims, and they're yours.</h1>
+      <NightShell onExit={saveAndExit} footer={escapeFooter}>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>Three subjects, and they're yours.</h1>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
           {claims.slice(0, 3).map((c, i) => (
             <ClaimCard key={`${c.title}-${i}`} index={i} title={c.title} content={c.content} />
@@ -1428,8 +1525,9 @@ const Onboarding = () => {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "22px 0 4px" }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} tone={s.tone} onNight
+              icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
               unlocked={i <= 1}
-              figure={i === 0 ? (postsRead || "✓") : i === 1 ? claims.length : undefined} />
+              figure={i === 0 ? (postsRead ? num(postsRead) : "✓") : i === 1 ? num(claims.length) : undefined} />
           ))}
         </div>
         <Actions style={{ marginBlockStart: 18 }}><OBButton onClick={() => go(8)}>Keep going</OBButton></Actions>
@@ -1446,7 +1544,7 @@ const Onboarding = () => {
       ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel}.`
       : null;
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadDimensions()) : (
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>Now your own read.</h1>
@@ -1469,7 +1567,7 @@ const Onboarding = () => {
   if (screen === TRUST_SLIDERS_SCREEN) {
     const sliderCount = dims?.length ?? 0;
     content = (
-      <NightShell footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} footer={escapeFooter}>
         {contentError || !dims ? retryPanel(() => void loadDimensions()) : (
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>Before you start</h1>
@@ -1492,7 +1590,7 @@ const Onboarding = () => {
   if (screen === 9) {
     if (contentError || !dims) {
       content = (
-        <PaperShell bead={3} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadDimensions()}>Try again</OBButton></Actions>
@@ -1503,7 +1601,7 @@ const Onboarding = () => {
       const value = scores[d.name] ?? 50;
       const last = dimIdx >= dims.length - 1;
       content = (
-        <PaperShell bead={3} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
           {flatWarn ? (
             <>
               <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>Can I check something?</h1>
@@ -1528,10 +1626,11 @@ const Onboarding = () => {
           {d.why_line ? <p style={bodyLight}>{d.why_line}</p> : null}
           <input
             type="range" min={0} max={100} step={1} value={value}
+            className="ob-slider"
             aria-label={d.name}
             aria-valuetext={value < 34 ? (d.anchor_low ?? "") : value < 67 ? (d.anchor_mid ?? "") : (d.anchor_high ?? "")}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
-            style={{ inlineSize: "100%", marginBlockStart: 26, accentColor: OB.blue }}
+            style={{ marginBlockStart: 26 }}
           />
           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
             {([
@@ -1544,10 +1643,9 @@ const Onboarding = () => {
                 <div key={tag} style={{
                   display: "flex", gap: 9, fontSize: "var(--ob-anchor)", lineHeight: 1.55,
                   color: live ? OB.ink : OB.muted,
-                  background: live ? OB.blueTint : "transparent",
-                  border: `1px solid ${live ? OB.blue : "transparent"}`,
-                  borderRadius: RADIUS.card, padding: "8px 10px",
-                  transition: `background 220ms ${EASE}, color 220ms ${EASE}`,
+                  fontWeight: live ? 600 : 400,
+                  padding: "6px 0",
+                  transition: `color 220ms ${EASE}`,
                 }}>
                   <span style={{ fontFamily: OB.mono, fontSize: "var(--ob-mono)", letterSpacing: "0.12em", textTransform: "uppercase", color: OB.muted, flexShrink: 0, paddingBlockStart: 2 }}>{tag}</span>
                   <span>{text}</span>
@@ -1570,8 +1668,9 @@ const Onboarding = () => {
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBlockStart: 22 }}>
               {SHELF.map((s, i) => (
                 <ShelfBadge key={s.key} label={s.label} tone={s.tone}
+                  icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
                   unlocked={i <= 2}
-                  figure={i === 0 ? (postsRead || "✓") : i === 1 ? claims.length : i === 2 ? dims.length : undefined} />
+                  figure={i === 0 ? (postsRead ? num(postsRead) : "✓") : i === 1 ? num(claims.length) : i === 2 ? num(dims.length) : undefined} />
               ))}
             </div>
           )}
@@ -1585,7 +1684,7 @@ const Onboarding = () => {
   /* 10 — NIGHT, before the six */
   if (screen === 10) {
     content = (
-      <NightShell face footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is what makes it yours.</h1>
@@ -1613,7 +1712,7 @@ const Onboarding = () => {
   if (screen === 11) {
     if (contentError || !questions) {
       content = (
-        <PaperShell bead={4} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadQuestions()}>Try again</OBButton></Actions>
@@ -1650,11 +1749,13 @@ const Onboarding = () => {
       const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
       const optionButton = (label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
-        <button key={label} type="button" disabled={blocked} onClick={onClick} style={{
+        <button key={label} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
           textAlign: "start", padding: "14px 15px", borderRadius: 14,
           cursor: blocked ? "not-allowed" : "pointer",
-          border: `1px solid ${picked ? OB.blue : OB.line}`,
+          border: `1px solid ${OB.line}`,
+          borderInlineStart: picked ? `2px solid ${OB.blue}` : `1px solid ${OB.line}`,
           background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
+          fontWeight: picked ? 600 : 400,
           lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
           opacity: blocked ? 0.45 : 1,
           transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
@@ -1665,7 +1766,7 @@ const Onboarding = () => {
       );
 
       content = (
-        <PaperShell bead={4} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             Question {qIdx + 1} of {questions.length}
           </p>
@@ -1772,7 +1873,7 @@ const Onboarding = () => {
       { key: "write", label: "Writing your read", done: !revealPending },
     ];
     content = (
-      <NightShell footer={escapeFooter}>
+      <NightShell onExit={saveAndExit} footer={escapeFooter}>
         {revealPending ? (
           <div style={{ marginBlockEnd: 4 }}>
             <WorkProgress onNight slowAfterMs={20000}
@@ -1788,31 +1889,32 @@ const Onboarding = () => {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, margin: "26px 0 6px" }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} tone={s.tone} onNight unlocked
+              icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
               figure={
-                i === 0 ? (postsRead || "✓")
-                  : i === 1 ? claims.length
-                    : i === 2 ? Object.keys(scores).length
-                      : (reveal?.subjects.length ?? 3)
+                i === 0 ? (postsRead ? num(postsRead) : "✓")
+                  : i === 1 ? num(claims.length)
+                    : i === 2 ? num(Object.keys(scores).length)
+                      : num(reveal?.subjects.length ?? 3)
               } />
           ))}
         </div>
         <p style={{ ...bodyNight, textAlign: "center" }}>
           {proof && proof.posts > 0 ? (
             <>
-              Aura has {proof.posts} of your posts and {proof.words.toLocaleString()} words in your own voice
+              I have {num(proof.posts)} of your posts and {num(proof.words)} words in your own voice
               {proof.pctWithNumber !== null ? `, ${proof.pctWithNumber}% of them carrying a real number` : ""}
-              {claims.length ? `, plus ${claims.length} claims you kept` : ""}. That is what it writes from — not a
+              {claims.length ? `, plus ${num(claims.length)} subjects you kept` : ""}. That is what I write from — not a
               template.
             </>
           ) : (
             <>
-              {EMPTY_POSTS_LINE}
-              {claims.length ? ` Aura already has ${claims.length} ${claims.length === 1 ? "claim" : "claims"} and your own answers on file.` : " Aura already has your own answers on file."}
+              {EMPTY_POSTS_LINE_NIGHT}
+              {claims.length ? ` I already have ${num(claims.length)} ${claims.length === 1 ? "subject" : "subjects"} and your own answers on file.` : " I already have your own answers on file."}
             </>
           )}
         </p>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Tonight it reads for your three subjects. Tomorrow morning there's something waiting.
+          Tonight I read for your three subjects. Tomorrow morning there's something waiting.
         </p>
         {revealPending && proof && proof.lines.length > 0 ? (
           <WaitProof lines={proof.lines} howLong="Writing your read. About a minute." />
@@ -1864,10 +1966,13 @@ const Onboarding = () => {
             } finally {
               setSharing(false);
             }
-          }} style={{ background: OB.night }}>Share this</OBButton>
-          <OBButton variant="tertiary" onClick={() => (connected ? void finish() : go(14))}
+          }} style={{ background: "#FFFFFF", color: OB.blue }}>Share this</OBButton>
+          <OBButton variant="tertiary" onClick={() => go(14)}
             style={{ color: "#FFFFFF" }}>Take me in</OBButton>
           </Actions>
+          <p style={{ margin: "14px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
+            Free while Aura is in beta. Your read is private — only you can see it unless you share it.
+          </p>
           <div style={{ color: "rgba(255,255,255,.82)" }}>
             <ReadCorrection userId={userId} onNight />
             <MethodNote onNight />
@@ -1880,34 +1985,48 @@ const Onboarding = () => {
   /* 13b — NIGHT, and only after 13 */
   if (screen === 14) {
     content = (
-      <NightShell face footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>One last thing.</h1>
+      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>When should I bring it to you?</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Connect LinkedIn and you find out which of your subjects your audience already rewards — so Aura stops
-          guessing.
+          I read overnight. Tell me when your day starts and that's when it's waiting.
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 22 }}>
-          {[
-            ["Without it", "Aura writes from your captures"],
-            ["With it", "Aura writes from what lands"],
-          ].map(([k, v]) => (
-            <div key={k} style={{
-              background: OB.nightSoft, border: `1px solid ${OB.lineNight}`, borderRadius: RADIUS.card,
-              padding: "12px 14px", fontSize: 13.5, color: "#FFFFFF",
-            }}>
-              <span style={{ color: OB.mutedNight }}>{k} · </span>{v}
-            </div>
+        <div style={{ display: "flex", gap: 9, marginBlockStart: 20 }}>
+          {(["Morning", "Midday", "Evening"] as const).map((slot) => (
+            <button key={slot} type="button" onClick={() => void chooseDailyTime(slot)} style={{
+              flex: 1, padding: "13px 8px", borderRadius: RADIUS.card, cursor: "pointer",
+              fontFamily: "inherit", fontSize: 13.5, fontWeight: dailyTime === slot ? 700 : 500,
+              background: dailyTime === slot ? OB.blue : OB.nightSoft,
+              border: `1px solid ${dailyTime === slot ? OB.blue : OB.lineNight}`,
+              color: "#FFFFFF",
+            }}>{slot}</button>
           ))}
         </div>
+        <p style={{ margin: "10px 0 0", fontSize: 12, color: OB.mutedNight, textAlign: "center" }}>
+          Your time zone · {timeZone}
+        </p>
+
+        {connected ? null : (
+          <>
+            <div style={{ blockSize: 1, background: OB.lineNight, margin: "24px 0 18px" }} />
+            <p style={{ ...bodyNight, textAlign: "center" }}>
+              Connect LinkedIn and you find out which of your subjects your audience already rewards — so nothing
+              written for you is a guess.
+            </p>
+            <Actions style={{ marginBlockStart: 16 }}>
+              <OBButton variant="secondary" onNight onClick={() => void connectLinkedIn({ allowRedirect: true })}
+                loading={connecting} loadingLabel="Connecting…">
+                Connect LinkedIn
+              </OBButton>
+            </Actions>
+            {connectNote ? (
+              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.mutedNight }}>{connectNote}</p>
+            ) : null}
+          </>
+        )}
+
         <Actions style={{ marginBlockStart: 22 }}>
-          <OBButton onClick={() => void connectLinkedIn({ allowRedirect: true })} loading={connecting} loadingLabel="Connecting…">
-            Connect LinkedIn
-          </OBButton>
-          <OBButton variant="tertiary" onNight onClick={() => void finish()}>Not now</OBButton>
+          <OBButton onClick={() => void finish()}>Take me in</OBButton>
         </Actions>
-        {connectNote ? (
-          <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.mutedNight }}>{connectNote}</p>
-        ) : null}
         <p style={{ ...footnote, color: OB.mutedNight }}>Aura never posts. You press publish, every time.</p>
       </NightShell>
     );

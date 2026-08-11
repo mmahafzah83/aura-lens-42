@@ -147,7 +147,7 @@ const RevealCard = forwardRef<
 
     {data.softGround.length > 0 && (
       <>
-        <p style={{ margin: "18px 0 8px", fontSize: 11.5, opacity: 0.85 }}>Ground still soft</p>
+        <p style={{ margin: "18px 0 8px", fontSize: 11.5, opacity: 0.85 }}>Where you're thinnest</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
           {data.softGround.slice(0, 2).map((s) => (
             <span key={s} style={chip(OB.amber, OB.night)}>{s}</span>

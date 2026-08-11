@@ -7,8 +7,8 @@ import { OB, EASE } from "./tokens";
 /** The five named stages. Only the active one is ever labelled. */
 export const STAGE_NAMES = [
   "Know you",
-  "Take what you read",
-  "Your own read",
+  "What you read",
+  "Your strengths",
   "A few questions",
   "Your read",
 ] as const;
