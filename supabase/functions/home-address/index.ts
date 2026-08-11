@@ -82,7 +82,7 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
 
   const [
     profileR, entriesR, fragR, sourcesR, signalsR, imprintR, facetsR,
-    postsR, findingsR, contentR, connR, activeSignalsCountR,
+    postsR, findingsR, contentR, connR,
   ] = await Promise.all([
     admin.from("diagnostic_profiles")
       .select("created_at, last_visit_at, last_active_at").eq("user_id", userId).maybeSingle(),
@@ -92,7 +92,7 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
     admin.from("source_registry").select("id", { count: "exact", head: true }).eq("user_id", userId),
     admin.from("strategic_signals")
       .select("id, signal_title, status, fragment_count, signal_velocity, velocity_status, created_at, updated_at, priority_score, supporting_evidence_ids")
-      .eq("user_id", userId).order("priority_score", { ascending: false, nullsFirst: false }).limit(200),
+      .eq("user_id", userId).order("priority_score", { ascending: false, nullsFirst: false }).limit(2000),
     admin.from("imprint_snapshots").select("imprint, tier, components, created_at")
       .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     admin.from("facet_states").select("facet, value").eq("user_id", userId),
@@ -104,8 +104,6 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
     admin.from("content_items").select("id, title, signal_id, status, created_at")
       .eq("user_id", userId).gte("created_at", isoDaysAgo(1)),
     admin.from("linkedin_connections").select("id").eq("user_id", userId).eq("status", "active").limit(1),
-    admin.from("strategic_signals").select("id", { count: "exact", head: true })
-      .eq("user_id", userId).eq("status", "active"),
   ]);
 
   const profile: any = profileR.data ?? {};
@@ -138,8 +136,7 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
 
   // — signals —
   const active = signals.filter((s) => s.status === "active");
-  // Exact count from the database — the 200-row fetch above only picks the top signal.
-  const signals_active = activeSignalsCountR.count ?? active.length;
+  const signals_active = active.length;
   const signals_accelerating = active.filter((s) => s.velocity_status === "accelerating").length;
 
   const signalIdsWithPublished = new Set<string>();

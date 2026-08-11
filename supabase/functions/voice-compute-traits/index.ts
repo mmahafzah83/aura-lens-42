@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     // --- corpus ---
     const { data: rows, error: postsErr } = await admin
       .from("linkedin_posts")
-      .select("id, post_text, authorship, acquisition, source_type, voice_corpus_status, tracking_status")
+      .select("id, post_text, authorship, acquisition, source_type, voice_corpus_status")
       .eq("user_id", userId)
       .not("post_text", "is", null);
     if (postsErr) throw new Error(`corpus fetch failed: ${postsErr.message}`);
