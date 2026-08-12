@@ -193,6 +193,7 @@ export interface StudioPanelProps {
   onOpenCapture?: () => void;
 }
 
+
 export default function StudioPanel({
   signalPrefill,
   onSignalPrefillConsumed,
