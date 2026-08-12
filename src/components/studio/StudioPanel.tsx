@@ -1374,6 +1374,16 @@ export default function StudioPanel({
     }
   }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow, lang]);
 
+  /** Wait out an in-flight save, then report the settled result. */
+  const saveDraftSettled = useCallback(async (opts?: { silent?: boolean }) => {
+    let r = await saveDraft(opts);
+    for (let i = 0; r.skipped && i < 40; i += 1) {
+      await new Promise((res) => window.setTimeout(res, 100));
+      r = await saveDraft(opts);
+    }
+    return r;
+  }, [saveDraft]);
+
   /**
    * Publishing to LinkedIn from a content_items draft needs a linkedin_posts
    * row. This makes one and remembers where the piece came from, so the
