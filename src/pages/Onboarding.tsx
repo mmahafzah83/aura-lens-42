@@ -50,6 +50,7 @@ import { buildBrandPaper, type BrandPaper } from "@/lib/buildBrandPaper";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 import { writeProfile as upsertProfile } from "@/lib/profileWrite";
+import { ensureTimezone, browserTimezone } from "@/lib/ensureTimezone";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
@@ -947,8 +948,11 @@ const Onboarding = () => {
           sector_focus: sector || undefined,
           level: levelTitle.trim() || (band ? BAND_TO_LEVEL[band] : undefined),
           onboarding_completed: true,
-          /* the real screen they finished on, never a hard-coded 4 */
-          onboarding_step: Math.max(4, screen),
+          /* The STEP, not the screen. The screen index lives in
+             identity_intelligence.journey_screen — overloading this column made
+             every `onboarding_step >= 4` gate pass for the wrong reason. */
+          onboarding_step: 4,
+          ...(browserTimezone() ? { timezone: browserTimezone() as string } : {}),
           completed: true,
           instrument_version: 2,
           ...(band ? { answered_band: band } : {}),
