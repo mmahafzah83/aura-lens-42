@@ -1417,7 +1417,7 @@ export default function StudioPanel({
       persistNow();
       return newId;
     }
-    const id = await saveDraft();
+    const id = await saveDraft({ silent: true });
     if (id) { postRowRef.current = id; persistNow(); }
     return id;
   }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft, persistNow]);
