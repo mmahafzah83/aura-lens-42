@@ -129,7 +129,6 @@ const Dashboard = () => {
   const [profileLastVisit, setProfileLastVisit] = useState<string | null>(null);
   const firstFlight = useFirstFlight(userId);
   const onboardingGate = useOnboardingGate(userId);
-  const isFfDimmed = (val: string, isActive: boolean) => firstFlight.dimmedTabs.has(val) && !isActive;
   /* Doors, not tabs: First Flight dims the group when none of its members is lit. */
   const isDoorDimmed = (g: typeof NAV_GROUPS[number]) =>
     isGroupDimmed(g, firstFlight.dimmedTabs, activeTab);
