@@ -1256,10 +1256,11 @@ export default function StudioPanel({
       if (draftSource === "content_items") {
         // A content_items draft keeps its own row; the linkedin_posts twin is
         // created only when the piece is actually published.
-        await supabase
+        const { error: ciErr } = await supabase
           .from("content_items")
           .update({ body: content, language: writeLang, ...(title ? { title } : {}) } as any)
           .eq("id", draftId);
+        if (ciErr) { console.error("draft not saved", ciErr); return null; }
         return draftId;
       }
       // Never overwrite what the edge functions wrote into source_metadata.
@@ -1278,7 +1279,7 @@ export default function StudioPanel({
        */
       const original = (existing as any)?.original_generated_text ?? generatedTextRef.current;
       const edit = editFields(original, content);
-      await supabase
+      const { error: lpErr } = await supabase
         .from("linkedin_posts")
         .update({
           post_text: content,
@@ -1289,6 +1290,7 @@ export default function StudioPanel({
           ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", draftId);
+      if (lpErr) { console.error("draft not saved", lpErr); return null; }
       return draftId;
     }
     // The original is the text as GENERATED, never the text on screen: a member
