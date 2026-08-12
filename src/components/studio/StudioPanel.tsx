@@ -3306,7 +3306,7 @@ export default function StudioPanel({
                   {T.confirmDiscardSlidesHead[lang]}
                 </p>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <ButtonPrimary
+                  <ButtonGhost
                     onClick={() => {
                       setDeck(null);
                       setDeckSource(null);
@@ -3321,7 +3321,7 @@ export default function StudioPanel({
                     style={{ minHeight: 44 }}
                   >
                     {T.confirmDiscardSlidesYes[lang]}
-                  </ButtonPrimary>
+                  </ButtonGhost>
                   <ButtonGhost onClick={() => setPendingFormat(null)} style={{ minHeight: 44 }}>
                     {T.replaceNo[lang]}
                   </ButtonGhost>
@@ -3376,6 +3376,7 @@ export default function StudioPanel({
                 published,
               }}
               showWords={false}
+              rtlShell={rtlShell}
             />
             <ZoneStage
               lang={lang}
@@ -3434,6 +3435,7 @@ export default function StudioPanel({
                 onLength={(n) => { if (deckBusy) return; setDeckLength(n); if (deck) void makeSlides(n); }}
                 hasDeck={Boolean(deck)}
                 disabled={busy === "export" || deckBusy}
+                rtlShell={rtlShell}
               />
             ) : (
               <ZoneInspector
@@ -3449,6 +3451,7 @@ export default function StudioPanel({
                 pictureNotice={pictureNotice}
                 onMove={move}
                 portraitState={portrait.state}
+                rtlShell={rtlShell}
               />
             )}
           </div>
