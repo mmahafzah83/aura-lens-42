@@ -1522,7 +1522,7 @@ export default function StudioPanel({
           .catch(() => { /* never surfaced */ });
       }
     },
-    [pieceMeta, userId, content, writeLang],
+    [pieceMeta, userId, content, writeLang, lang],
   );
 
   /* ---------- step 3: the slides, right here ---------------------- */
