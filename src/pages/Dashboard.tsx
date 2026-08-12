@@ -1165,12 +1165,9 @@ const Dashboard = () => {
             }}
           >
             {(() => {
-              const home = NAV_ITEMS.find(n => n.value === "home")!;
-              const intel = NAV_ITEMS.find(n => n.value === "intelligence")!;
-              const pub = NAV_ITEMS.find(n => n.value === "authority")!;
-              const imp = NAV_ITEMS.find(n => n.value === "influence")!;
-              const ordered = [home, intel, null, pub, imp] as const;
-              return ordered.map((tab, idx) => {
+              const byKey = (k: string) => NAV_GROUPS.find(g => g.key === k)!;
+              const ordered = [byKey("home"), byKey("signals"), null, byKey("write"), byKey("record")] as const;
+              return ordered.map((tab) => {
                 if (tab === null) {
                   return (
                     <button
@@ -1197,14 +1194,15 @@ const Dashboard = () => {
                     </button>
                   );
                 }
-                const isActive = activeTab === tab.value;
+                const isActive = isGroupActive(tab, activeTab);
+                const dimmed = isDoorDimmed(tab);
                 return (
                   <button
-                    key={`mobile-${tab.value}`}
-                    onClick={() => switchTab(tab.value)}
+                    key={`mobile-${tab.key}`}
+                    onClick={() => openDoor(tab)}
                     className="flex flex-col items-center justify-center"
-                    style={{ gap: 4, opacity: isFfDimmed(tab.value, isActive) ? 0.45 : 1 }}
-                    title={isFfDimmed(tab.value, isActive) ? "Your first post comes first" : undefined}
+                    style={{ gap: 4, opacity: dimmed ? 0.45 : 1 }}
+                    title={dimmed ? "Your first post comes first" : undefined}
                   >
                     <span
                       className="flex items-center justify-center"
