@@ -2587,7 +2587,22 @@ export default function StudioPanel({
               {T.loading[lang]}
             </p>
           )}
-          {!cardsLoading && cards.length === 0 && (
+          {!cardsLoading && cards.length === 0 && totalSignals === -1 && (
+            <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+                {T.subjectsUnreadable[lang]}
+              </p>
+              <ButtonGhost onClick={() => setCardsNonce((n) => n + 1)} style={{ minHeight: 44 }}>
+                {T.subjectsRetry[lang]}
+              </ButtonGhost>
+            </div>
+          )}
+          {!cardsLoading && cards.length === 0 && totalSignals > 0 && (
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+              {T.nothingNewToRank[lang]}
+            </p>
+          )}
+          {!cardsLoading && cards.length === 0 && totalSignals === 0 && (
             <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
                 {T.chooseEmpty[lang]}
