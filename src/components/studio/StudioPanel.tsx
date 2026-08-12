@@ -242,6 +242,10 @@ export default function StudioPanel({
   /** Things the guard could not fix. The draft is still shown. */
   const [genWarnings, setGenWarnings] = useState<string[]>([]);
   const genRunId = useRef(0);
+  /** One deck build at a time wins: the newest, never the slowest. */
+  const deckRunId = useRef(0);
+  /** Same law for the angles list. */
+  const angleRunId = useRef(0);
   /** The exact text Aura last generated. Anything else is the member's own. */
   const generatedTextRef = useRef<string | null>(null);
   // Figures the provenance guard removed from the last generation.
@@ -263,6 +267,8 @@ export default function StudioPanel({
   const [pickedAngleId, setPickedAngleId] = useState<string | null>(null);
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
+  /** A refine directive waiting on the member's word, when they own the text. */
+  const [askRefine, setAskRefine] = useState<string | null>(null);
   /**
    * The linkedin_posts row this piece lives in. Held in a ref, not state, so an
    * async sequence never re-reads a null captured at render and inserts twice.
@@ -825,6 +831,12 @@ export default function StudioPanel({
     postRowRef.current = null;
     originDraftRef.current = null;
     generatedTextRef.current = null;
+    setGatePayload(null);
+    chosenDirectionRef.current = null;
+    fingerprintRef.current = {};
+    unsourcedRemovedRef.current = 0;
+    unsourcedEntitiesRemovedRef.current = 0;
+    setAskRefine(null);
     setPublished(false);
     setPostUrl(null);
     setLinkInput("");
@@ -888,6 +900,12 @@ export default function StudioPanel({
       postRowRef.current = d._source === "linkedin_posts" ? d.id : null;
       originDraftRef.current = null;
       generatedTextRef.current = null;
+      setGatePayload(null);
+      chosenDirectionRef.current = null;
+      fingerprintRef.current = {};
+      unsourcedRemovedRef.current = 0;
+      unsourcedEntitiesRemovedRef.current = 0;
+      setAskRefine(null);
       persistNow({
         content: d.body,
         deck: null,
@@ -1183,14 +1201,17 @@ export default function StudioPanel({
   const loadAngles = useCallback(async () => {
     const target = choice;
     if (!target) return;
+    const runId = ++angleRunId.current;
     setAnglesError(false);
     setAnglesBusy(true);
     setAnglesOpen(true);
     setPickedAngleId(null);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 60000);
     try {
       const { data: sess } = await supabase.auth.getSession();
       const freshToken = sess?.session?.access_token;
-      if (!freshToken) { setAnglesError(true); return; }
+      if (!freshToken) { if (runId === angleRunId.current) setAnglesError(true); return; }
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
         method: "POST",
         headers: {
@@ -1198,6 +1219,7 @@ export default function StudioPanel({
           Authorization: `Bearer ${freshToken}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
+        signal: controller.signal,
         body: JSON.stringify({
           action: "generate_directions",
           topic: target.title,
@@ -1207,6 +1229,7 @@ export default function StudioPanel({
         }),
       });
       const json = await res.json().catch(() => null);
+      if (runId !== angleRunId.current) return;
       const list = Array.isArray(json?.directions) ? json.directions : [];
       const clean = list
         .map((d: any, i: number) => ({ id: String(d?.id ?? i + 1), angle: String(d?.angle ?? "").trim() }))
@@ -1215,9 +1238,11 @@ export default function StudioPanel({
       if (!res.ok || clean.length === 0) { setAnglesError(true); setAngles([]); return; }
       setAngles(clean);
     } catch {
-      setAnglesError(true);
+      // An abort is a timeout: the member sees the failure line, not a dead button.
+      if (runId === angleRunId.current) setAnglesError(true);
     } finally {
-      setAnglesBusy(false);
+      window.clearTimeout(timer);
+      if (runId === angleRunId.current) setAnglesBusy(false);
     }
   }, [choice, writeLang]);
 
@@ -1256,10 +1281,11 @@ export default function StudioPanel({
       if (draftSource === "content_items") {
         // A content_items draft keeps its own row; the linkedin_posts twin is
         // created only when the piece is actually published.
-        await supabase
+        const { error: ciErr } = await supabase
           .from("content_items")
           .update({ body: content, language: writeLang, ...(title ? { title } : {}) } as any)
           .eq("id", draftId);
+        if (ciErr) { console.error("draft not saved", ciErr); return null; }
         return draftId;
       }
       // Never overwrite what the edge functions wrote into source_metadata.
@@ -1278,7 +1304,7 @@ export default function StudioPanel({
        */
       const original = (existing as any)?.original_generated_text ?? generatedTextRef.current;
       const edit = editFields(original, content);
-      await supabase
+      const { error: lpErr } = await supabase
         .from("linkedin_posts")
         .update({
           post_text: content,
@@ -1289,6 +1315,7 @@ export default function StudioPanel({
           ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", draftId);
+      if (lpErr) { console.error("draft not saved", lpErr); return null; }
       return draftId;
     }
     // The original is the text as GENERATED, never the text on screen: a member
@@ -1405,7 +1432,7 @@ export default function StudioPanel({
    * Always an UPDATE against a known row id, never an INSERT.
    */
   const syncRowToScreen = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<boolean> => {
       const title = pieceTitle();
       const { data: existing } = await supabase
         .from("linkedin_posts")
@@ -1414,7 +1441,7 @@ export default function StudioPanel({
         .maybeSingle();
       const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
       const edit = editFields((existing as any)?.original_generated_text ?? generatedTextRef.current, content);
-      await supabase
+      const { error } = await supabase
         .from("linkedin_posts")
         .update({
           post_text: content,
@@ -1425,6 +1452,8 @@ export default function StudioPanel({
           ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", id);
+      if (error) { console.error("sync to screen failed", error); return false; }
+      return true;
     },
     [content, choice, pieceTitle, pieceMeta],
   );
@@ -1446,7 +1475,7 @@ export default function StudioPanel({
       // A replay of an already-published post must never reset real numbers,
       // nor stamp a client clock over the server's own publish time.
       const fresh = !alreadyPublished && !(existing as any)?.published_at;
-      await supabase
+      const { error: pubErr } = await supabase
         .from("linkedin_posts")
         .update({
           tracking_status: "published",
@@ -1467,11 +1496,13 @@ export default function StudioPanel({
           source_metadata: { ...prev, ...pieceMeta(), ...(url ? { external_url: url } : {}) },
         } as any)
         .eq("id", id);
+      if (pubErr) { console.error("publish not recorded", pubErr); setProblem(T.saveFailed[lang]); }
 
       // The content_items twin is retired, or the invariant grows a duplicate.
       const origin = originDraftRef.current;
       if (origin?.source === "content_items") {
-        await supabase.from("content_items").update({ status: "published" } as any).eq("id", origin.id);
+        const { error: twinErr } = await supabase.from("content_items").update({ status: "published" } as any).eq("id", origin.id);
+        if (twinErr) console.error("twin not retired", twinErr);
       }
       // Spent. A later publish in this session must not re-mark this twin.
       originDraftRef.current = null;
@@ -1516,7 +1547,7 @@ export default function StudioPanel({
           .catch(() => { /* never surfaced */ });
       }
     },
-    [pieceMeta, userId, content, writeLang],
+    [pieceMeta, userId, content, writeLang, lang],
   );
 
   /* ---------- step 3: the slides, right here ---------------------- */
@@ -1550,10 +1581,11 @@ export default function StudioPanel({
       .eq("id", rowId)
       .maybeSingle();
     const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
-    await supabase
+    const { error } = await supabase
       .from("linkedin_posts")
       .update({ source_metadata: { ...prev, deck: { ...d, theme: th, template: tpl } } } as any)
       .eq("id", rowId);
+    if (error) console.warn("deck not persisted", error);
   }, []);
 
   /** Every deck edit is a first-class save, not a memory-only tweak. */
@@ -1573,6 +1605,7 @@ export default function StudioPanel({
     if (!content.trim()) { setProblem(T.slidesNeedPost[lang]); return; }
     if (content.trim().length < SLIDES_MIN_CHARS) { setProblem(T.slidesTooShort[lang]); return; }
     if (!choice?.id) { setProblem(T.typedTopicNoSlides[lang]); return; }
+    const runId = ++deckRunId.current;
     const builtFrom = content;
     setStep(3);
     setSub("build");
@@ -1606,6 +1639,7 @@ export default function StudioPanel({
         signal: controller.signal,
       });
       const raced = await Promise.race([call, timeout]);
+      if (runId !== deckRunId.current) return;
       if (raced === "timeout" || timedOut) {
         setProblem(T.slidesTimedOut[lang]);
         return;
@@ -1616,10 +1650,12 @@ export default function StudioPanel({
       if (!result?.ok) {
         // An empty list is no message at all, so it falls back like a missing one.
         const raw: string[] = Array.isArray(result?.failures) ? result.failures.filter((f: unknown) => typeof f === "string" && f.trim()) : [];
+        if (runId !== deckRunId.current) return;
         setDeckFailures(raw.length > 0 ? raw.map(plainFailure) : [T.slidesFailedPlain[lang]]);
         return;
       }
       const parsed = DeckIRSchema.safeParse(result.deck);
+      if (runId !== deckRunId.current) return;
       if (!parsed.success) { setDeckFailures([T.slidesFailedShape[lang]]); return; }
       setDeck({ ...parsed.data, theme, template });
       setDeckSource(builtFrom);
@@ -1631,10 +1667,11 @@ export default function StudioPanel({
         console.warn("deck not persisted", e),
       );
     } catch (err) {
-      setDeckFailures([await slidesFailureSentence(err)]);
+      const sentence = await slidesFailureSentence(err);
+      if (runId === deckRunId.current) setDeckFailures([sentence]);
     } finally {
       window.clearTimeout(timer);
-      setDeckBusy(false);
+      if (runId === deckRunId.current) setDeckBusy(false);
     }
   }, [choice, content, theme, template, deckLength, writeLang, lang, saveDraft, draftId, persistDeck, slidesFailureSentence]);
 
@@ -1728,8 +1765,14 @@ export default function StudioPanel({
     setBusyMessage(T.posting[lang]);
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
-    // What is on screen is what publishes.
-    await syncRowToScreen(id);
+    // What is on screen is what publishes. If it did not land, nothing goes out.
+    const synced = await syncRowToScreen(id);
+    if (!synced) {
+      setBusy(null);
+      setBusyMessage(null);
+      setProblem(T.saveFailed[lang]);
+      return;
+    }
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
       // P1b — the member always decides. `advisory` publishes past the gate
       // and the override is recorded as its own event.
@@ -1788,7 +1831,7 @@ export default function StudioPanel({
     const id = await saveDraft();
     setBusy(null);
     setBusyMessage(null);
-    if (!id) { setProblem(T.postFailed[lang]); return; }
+    if (!id) { setProblem(T.saveFailed[lang]); return; }
     /**
      * Y5 — A CONTROL CALLED "COME BACK LATER" HAS TO TAKE YOU SOMEWHERE.
      *
@@ -2138,7 +2181,13 @@ export default function StudioPanel({
           subject={choice?.title ?? null}
           signalId={choice?.id ?? null}
           busy={generating}
-          onRefine={(directive) => void generate(undefined, undefined, directive)}
+          onRefine={(directive) => {
+            // Words the member owns are never silently replaced.
+            const ownWords =
+              content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
+            if (ownWords) { setAskRefine(directive); return; }
+            void generate(undefined, undefined, directive);
+          }}
           onUseOpening={(line) => {
             const lines = content.split("\n");
             const idx = lines.findIndex((l) => l.trim().length > 0);
@@ -2147,6 +2196,32 @@ export default function StudioPanel({
             changeContent(lines.join("\n"));
           }}
         />
+      )}
+      {askRefine && (
+        <div
+          style={{
+            marginTop: 10, background: "var(--surface-subtle)",
+            border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
+          }}
+        >
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
+            {T.refineReplaceHead[lang]}
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <ButtonPrimary
+              onClick={() => {
+                void generate(undefined, undefined, askRefine);
+                setAskRefine(null);
+              }}
+              style={{ minHeight: 44 }}
+            >
+              {T.refineReplaceYes[lang]}
+            </ButtonPrimary>
+            <ButtonGhost onClick={() => setAskRefine(null)} style={{ minHeight: 44 }}>
+              {T.refineReplaceNo[lang]}
+            </ButtonGhost>
+          </div>
+        </div>
       )}
     </>
   );
@@ -3167,9 +3242,9 @@ export default function StudioPanel({
                   setDeck((d) => (d ? { ...d, template: id, theme: next } : d));
                 }}
                 length={deckLength}
-                onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
+                onLength={(n) => { if (deckBusy) return; setDeckLength(n); if (deck) void makeSlides(n); }}
                 hasDeck={Boolean(deck)}
-                disabled={busy === "export"}
+                disabled={busy === "export" || deckBusy}
               />
             ) : (
               <ZoneInspector
