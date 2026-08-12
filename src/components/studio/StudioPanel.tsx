@@ -370,6 +370,8 @@ export default function StudioPanel({
   const [pictureNotice, setPictureNotice] = useState<string | null>(null);
 
   const [draftId, setDraftId] = useState<string | null>(null);
+  /** Always holds the row the piece is bound to, one render ahead of state. */
+  const draftIdRef = useRef<string | null>(null);
   /** Which table the open draft came from. Decides the publish promotion. */
   const [draftSource, setDraftSource] = useState<"content_items" | "linkedin_posts" | null>(null);
   const [drafts, setDrafts] = useState<StudioDraft[]>([]);
@@ -661,7 +663,7 @@ export default function StudioPanel({
     const saved = pendingRestore;
     if (!saved) return;
     setPendingRestore(null);
-    if (typeof saved.draftId === "string" && saved.draftId) setDraftId(saved.draftId);
+    if (typeof saved.draftId === "string" && saved.draftId) { setDraftId(saved.draftId); draftIdRef.current = saved.draftId; }
     if (typeof saved.postRowId === "string" && saved.postRowId) postRowRef.current = saved.postRowId;
     if (saved.draftSource === "content_items" || saved.draftSource === "linkedin_posts") {
       setDraftSource(saved.draftSource);
@@ -834,8 +836,13 @@ export default function StudioPanel({
     setStep(1);
     setSub("build");
     setDraftId(null);
+    draftIdRef.current = null;
     setDraftSource(null);
     postRowRef.current = null;
+    setPickedAngleId(null);
+    setAngles([]);
+    setAnglesOpen(false);
+    setAnglesError(false);
     originDraftRef.current = null;
     generatedTextRef.current = null;
     setGatePayload(null);
@@ -906,7 +913,12 @@ export default function StudioPanel({
   const openDraft = useCallback(
     async (d: StudioDraft, source: string) => {
       setDraftId(d.id);
+      draftIdRef.current = d.id;
       setDraftSource(d._source);
+      setPickedAngleId(null);
+      setAngles([]);
+      setAnglesOpen(false);
+      setAnglesError(false);
       // A new piece is in the room: forget the row the last one created.
       postRowRef.current = d._source === "linkedin_posts" ? d.id : null;
       originDraftRef.current = null;
@@ -1266,6 +1278,14 @@ export default function StudioPanel({
     chosenDirectionRef.current = d.angle;
   }, []);
 
+  /**
+   * Once there are words on screen the forward action is "Use these words".
+   * The angles panel must not linger beside it with a second primary.
+   */
+  useEffect(() => {
+    if (Boolean(pasted.trim()) || Boolean(content.trim())) setAnglesOpen(false);
+  }, [pasted, content]);
+
   /* ---------- the draft row --------------------------------------- */
   /** The subject, written as a title so the Library never shows a raw line. */
   const pieceTitle = useCallback((): string => {
@@ -1287,30 +1307,38 @@ export default function StudioPanel({
     [choice, typedTopic, writeLang],
   );
 
-  const savingRef = useRef(false);
-  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<{ id: string | null; failed: boolean; skipped?: boolean }> => {
-    // A save is already in flight. That is not a failure and not a refusal.
-    if (savingRef.current) return { id: null, failed: false, skipped: true };
+  /**
+   * ONE SAVE AT A TIME, AND EVERY CALLER GETS THE SAME ANSWER.
+   *
+   * A second call while a save is in flight does NOT start a second write and
+   * does NOT refuse: it returns the promise already running, so the caller
+   * awaits it and receives the same settled { id, failed }.
+   */
+  const savingPromiseRef = useRef<Promise<{ id: string | null; failed: boolean }> | null>(null);
+  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<{ id: string | null; failed: boolean }> => {
+    if (savingPromiseRef.current) return savingPromiseRef.current;
     if (!userId || !content.trim()) return { id: null, failed: false };
-    savingRef.current = true;
-    try {
+    const run = (async (): Promise<{ id: string | null; failed: boolean }> => {
     const title = pieceTitle();
-    if (draftId) {
+    // Never the closed-over draftId: an insert that has just happened updates
+    // the ref immediately, while state arrives a render later.
+    const rowId = draftIdRef.current ?? postRowRef.current;
+    if (rowId) {
       if (draftSource === "content_items") {
         // A content_items draft keeps its own row; the linkedin_posts twin is
         // created only when the piece is actually published.
         const { error: ciErr } = await supabase
           .from("content_items")
           .update({ body: content, language: writeLang, ...(title ? { title } : {}) } as any)
-          .eq("id", draftId);
+          .eq("id", rowId);
         if (ciErr) { console.error("draft not saved", ciErr); if (!opts?.silent) setProblem(T.saveFailed[lang]); return { id: null, failed: true }; }
-        return { id: draftId, failed: false };
+        return { id: rowId, failed: false };
       }
       // Never overwrite what the edge functions wrote into source_metadata.
       const { data: existing } = await supabase
         .from("linkedin_posts")
         .select("source_metadata, original_generated_text")
-        .eq("id", draftId)
+        .eq("id", rowId)
         .maybeSingle();
       const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
       /**
@@ -1332,9 +1360,9 @@ export default function StudioPanel({
           source_metadata: { ...prev, ...pieceMeta() },
           ...(edit.edited_at ? edit : {}),
         } as any)
-        .eq("id", draftId);
+        .eq("id", rowId);
       if (lpErr) { console.error("draft not saved", lpErr); if (!opts?.silent) setProblem(T.saveFailed[lang]); return { id: null, failed: true }; }
-      return { id: draftId, failed: false };
+      return { id: rowId, failed: false };
     }
     // The original is the text as GENERATED, never the text on screen: a member
     // who edits before the first save must still leave the original behind.
@@ -1363,26 +1391,21 @@ export default function StudioPanel({
       .single();
     if (error) { console.error("draft not saved", error); if (!opts?.silent) setProblem(T.saveFailed[lang]); return { id: null, failed: true }; }
     const id = (ins as any)?.id as string;
+    draftIdRef.current = id;
+    postRowRef.current = id;
     setDraftId(id);
     setDraftSource("linkedin_posts");
-    postRowRef.current = id;
     // An identifier that must survive a reload is written the moment it exists.
     persistNow();
     return { id, failed: false };
+    })();
+    savingPromiseRef.current = run;
+    try {
+      return await run;
     } finally {
-      savingRef.current = false;
+      savingPromiseRef.current = null;
     }
-  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow, lang]);
-
-  /** Wait out an in-flight save, then report the settled result. */
-  const saveDraftSettled = useCallback(async (opts?: { silent?: boolean }) => {
-    let r = await saveDraft(opts);
-    for (let i = 0; r.skipped && i < 40; i += 1) {
-      await new Promise((res) => window.setTimeout(res, 100));
-      r = await saveDraft(opts);
-    }
-    return r;
-  }, [saveDraft]);
+  }, [userId, content, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow, lang]);
 
   /**
    * Publishing to LinkedIn from a content_items draft needs a linkedin_posts
@@ -1868,7 +1891,7 @@ export default function StudioPanel({
     setBusy("save");
     setProblem(null);
     setBusyMessage(T.savingPiece[lang]);
-    const { id, failed } = await saveDraftSettled();
+    const { id, failed } = await saveDraft();
     setBusy(null);
     setBusyMessage(null);
     if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
@@ -1884,7 +1907,7 @@ export default function StudioPanel({
         window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "library" } }));
       } catch { /* navigation is never allowed to throw at a member */ }
     }, 450);
-  }, [saveDraftSettled, lang]);
+  }, [saveDraft, lang]);
 
   /**
    * L3 — "settled" means: every slide has reported a fit AND two consecutive
@@ -2358,12 +2381,18 @@ export default function StudioPanel({
             <ButtonPrimary
               onClick={async () => {
                 if (canSave) {
-                  const { id, failed } = await saveDraftSettled();
+                  setBusy("save");
+                  setProblem(null);
+                  setBusyMessage(T.savingPiece[lang]);
+                  const { id, failed } = await saveDraft();
+                  setBusy(null);
+                  setBusyMessage(null);
                   if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
                 }
                 startNewPiece();
                 setConfirmNewPiece(false);
               }}
+              disabled={busy === "save"}
               style={{ minHeight: 44 }}
             >
               {L.newPieceYes[lang]}
@@ -2636,6 +2665,10 @@ export default function StudioPanel({
                     const next = { id: c.signalId, title: c.title, insight: c.insight };
                     if (choice?.id === c.signalId) return;
                     if (published || content.trim()) { setPendingSubject(next); return; }
+                    setPickedAngleId(null);
+                    setAngles([]);
+                    setAnglesOpen(false);
+                    setAnglesError(false);
                     setChoice(next);
                     setTypedTopic("");
                   }}
@@ -2698,6 +2731,10 @@ export default function StudioPanel({
                         const next = { id: s.id, title: s.title, insight: s.insight };
                         if (choice?.id === s.id) return;
                         if (published || content.trim()) { setPendingSubject(next); return; }
+                        setPickedAngleId(null);
+                        setAngles([]);
+                        setAnglesOpen(false);
+                        setAnglesError(false);
                         setChoice(next);
                         setTypedTopic("");
                       }}
@@ -2822,7 +2859,7 @@ export default function StudioPanel({
                     {anglesBusy ? T.anglesLoading[lang] : (anglesOpen ? T.hideAngles[lang] : T.seeAngles[lang])}
                   </ButtonGhost>
                 )}
-                {anglesOpen && !anglesBusy && (
+                {!advances && anglesOpen && !anglesBusy && (
                   <div style={{ marginTop: 6, width: "100%" }}>
                     {anglesError ? (
                       <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>
