@@ -7,7 +7,7 @@
  * navigation, wordmark, avatar or member name — the shell owns all of that —
  * and it never sets a page height, page padding or a page-level `dir`.
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
