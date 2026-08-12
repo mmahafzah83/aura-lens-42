@@ -195,7 +195,6 @@ export interface StudioPanelProps {
   active?: boolean;
 }
 
-
 export default function StudioPanel({
   signalPrefill,
   onSignalPrefillConsumed,
@@ -371,6 +370,9 @@ export default function StudioPanel({
   const fitsRef = useRef<Record<number, FitState>>({});
   fitsRef.current = fits;
   const [changingLine, setChangingLine] = useState(false);
+  /** Bumped whenever the export portal mounts or unmounts, so the fit map is
+   *  invalidated on a remount exactly as it is on a look change. */
+  const [portalGen, setPortalGen] = useState(0);
   const [pictureNotice, setPictureNotice] = useState<string | null>(null);
 
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -2049,11 +2051,19 @@ export default function StudioPanel({
     setDeckFailures([]);
   }, [sub]);
 
-  /** A theme or template change changes the physical slide layout; any
-   *  previous fit measurements are from the previous look and must reset. */
+  /** The portal's mounted-ness. Its change is what invalidates the fit map on
+   *  a tab leave-and-return; without it stale reports satisfy the settle check. */
+  const portalMounted = (active || busy === "export") && Boolean(deck);
+  useEffect(() => {
+    setPortalGen((g) => g + 1);
+  }, [portalMounted]);
+
+  /** A theme or template change changes the physical slide layout; a portal
+   *  remount replaces the writers entirely. Either way any previous fit
+   *  measurements are stale and must reset BEFORE the new slides report. */
   useLayoutEffect(() => {
     setFits({});
-  }, [theme, template]);
+  }, [theme, template, portalGen]);
 
   /* THE PIECE STATE. Derived, never stored twice, never inferred from the
      highest step visited. `deriveDone` owns every tick and clamps the
@@ -3621,6 +3631,8 @@ export default function StudioPanel({
           and alive for as long as a deck exists — it is both the source of the
           exported file and the ONE writer of fit state. Portalled to <body> so
           no ancestor can clip it. */}
+      {/* `busy === "export"` is what keeps this portal alive through a cold
+          export started from another tab — do not remove that term. */}
       {deck && (active || busy === "export") &&
         createPortal(
           <div
