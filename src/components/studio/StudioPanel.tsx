@@ -1605,6 +1605,7 @@ export default function StudioPanel({
     if (!content.trim()) { setProblem(T.slidesNeedPost[lang]); return; }
     if (content.trim().length < SLIDES_MIN_CHARS) { setProblem(T.slidesTooShort[lang]); return; }
     if (!choice?.id) { setProblem(T.typedTopicNoSlides[lang]); return; }
+    const runId = ++deckRunId.current;
     const builtFrom = content;
     setStep(3);
     setSub("build");
@@ -1638,6 +1639,7 @@ export default function StudioPanel({
         signal: controller.signal,
       });
       const raced = await Promise.race([call, timeout]);
+      if (runId !== deckRunId.current) return;
       if (raced === "timeout" || timedOut) {
         setProblem(T.slidesTimedOut[lang]);
         return;
@@ -1648,10 +1650,12 @@ export default function StudioPanel({
       if (!result?.ok) {
         // An empty list is no message at all, so it falls back like a missing one.
         const raw: string[] = Array.isArray(result?.failures) ? result.failures.filter((f: unknown) => typeof f === "string" && f.trim()) : [];
+        if (runId !== deckRunId.current) return;
         setDeckFailures(raw.length > 0 ? raw.map(plainFailure) : [T.slidesFailedPlain[lang]]);
         return;
       }
       const parsed = DeckIRSchema.safeParse(result.deck);
+      if (runId !== deckRunId.current) return;
       if (!parsed.success) { setDeckFailures([T.slidesFailedShape[lang]]); return; }
       setDeck({ ...parsed.data, theme, template });
       setDeckSource(builtFrom);
@@ -1663,10 +1667,11 @@ export default function StudioPanel({
         console.warn("deck not persisted", e),
       );
     } catch (err) {
-      setDeckFailures([await slidesFailureSentence(err)]);
+      const sentence = await slidesFailureSentence(err);
+      if (runId === deckRunId.current) setDeckFailures([sentence]);
     } finally {
       window.clearTimeout(timer);
-      setDeckBusy(false);
+      if (runId === deckRunId.current) setDeckBusy(false);
     }
   }, [choice, content, theme, template, deckLength, writeLang, lang, saveDraft, draftId, persistDeck, slidesFailureSentence]);
 
