@@ -228,6 +228,13 @@ export default function StudioPanel({
 
   const [cards, setCards] = useState<StartCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
+  /**
+   * How many active subjects the member owns. -1 means the look itself failed —
+   * that is a different sentence from "you have nothing".
+   */
+  const [totalSignals, setTotalSignals] = useState(0);
+  /** Bumped by "Try again" to re-run the subjects loader. */
+  const [cardsNonce, setCardsNonce] = useState(0);
   const [choice, setChoice] = useState<Choice | null>(null);
   const [typedTopic, setTypedTopic] = useState("");
   const [pasted, setPasted] = useState("");
