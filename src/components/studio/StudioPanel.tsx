@@ -2874,7 +2874,7 @@ export default function StudioPanel({
                         {!pickedAngleId && (
                           <button
                             type="button"
-                            onClick={() => { setAnglesOpen(false); chosenDirectionRef.current = null; void generate(); }}
+                            onClick={() => { setAnglesOpen(false); void generate(); }}
                             style={{
                               marginTop: 10, minHeight: 44, padding: 0, background: "transparent", border: 0,
                               cursor: "pointer", fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)",
