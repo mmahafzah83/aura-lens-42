@@ -263,6 +263,8 @@ export default function StudioPanel({
   const [pickedAngleId, setPickedAngleId] = useState<string | null>(null);
   /** Asked before a language rewrite would replace words the member owns. */
   const [askLangSwitch, setAskLangSwitch] = useState<Lang | null>(null);
+  /** A refine directive waiting on the member's word, when they own the text. */
+  const [askRefine, setAskRefine] = useState<string | null>(null);
   /**
    * The linkedin_posts row this piece lives in. Held in a ref, not state, so an
    * async sequence never re-reads a null captured at render and inserts twice.
@@ -825,6 +827,12 @@ export default function StudioPanel({
     postRowRef.current = null;
     originDraftRef.current = null;
     generatedTextRef.current = null;
+    setGatePayload(null);
+    chosenDirectionRef.current = null;
+    fingerprintRef.current = {};
+    unsourcedRemovedRef.current = 0;
+    unsourcedEntitiesRemovedRef.current = 0;
+    setAskRefine(null);
     setPublished(false);
     setPostUrl(null);
     setLinkInput("");
