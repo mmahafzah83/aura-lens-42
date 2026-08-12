@@ -1407,7 +1407,7 @@ export default function StudioPanel({
    * Always an UPDATE against a known row id, never an INSERT.
    */
   const syncRowToScreen = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<boolean> => {
       const title = pieceTitle();
       const { data: existing } = await supabase
         .from("linkedin_posts")
@@ -1416,7 +1416,7 @@ export default function StudioPanel({
         .maybeSingle();
       const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
       const edit = editFields((existing as any)?.original_generated_text ?? generatedTextRef.current, content);
-      await supabase
+      const { error } = await supabase
         .from("linkedin_posts")
         .update({
           post_text: content,
@@ -1427,6 +1427,8 @@ export default function StudioPanel({
           ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", id);
+      if (error) { console.error("sync to screen failed", error); return false; }
+      return true;
     },
     [content, choice, pieceTitle, pieceMeta],
   );
@@ -1448,7 +1450,7 @@ export default function StudioPanel({
       // A replay of an already-published post must never reset real numbers,
       // nor stamp a client clock over the server's own publish time.
       const fresh = !alreadyPublished && !(existing as any)?.published_at;
-      await supabase
+      const { error: pubErr } = await supabase
         .from("linkedin_posts")
         .update({
           tracking_status: "published",
@@ -1469,11 +1471,13 @@ export default function StudioPanel({
           source_metadata: { ...prev, ...pieceMeta(), ...(url ? { external_url: url } : {}) },
         } as any)
         .eq("id", id);
+      if (pubErr) { console.error("publish not recorded", pubErr); setProblem(T.saveFailed[lang]); }
 
       // The content_items twin is retired, or the invariant grows a duplicate.
       const origin = originDraftRef.current;
       if (origin?.source === "content_items") {
-        await supabase.from("content_items").update({ status: "published" } as any).eq("id", origin.id);
+        const { error: twinErr } = await supabase.from("content_items").update({ status: "published" } as any).eq("id", origin.id);
+        if (twinErr) console.error("twin not retired", twinErr);
       }
       // Spent. A later publish in this session must not re-mark this twin.
       originDraftRef.current = null;
