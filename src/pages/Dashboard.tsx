@@ -54,6 +54,8 @@ import OvernightPage from "@/components/overnight/OvernightPage";
 import MomentumPage from "@/components/momentum/MomentumPage";
 import WidgetsPage from "@/components/widgets/WidgetsPage";
 import StudioPanel from "@/components/studio/StudioPanel";
+import { NAV_GROUPS, groupForTab, isGroupActive, isGroupDimmed } from "@/components/nav/navGroups";
+import SubTabs from "@/components/nav/SubTabs";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
