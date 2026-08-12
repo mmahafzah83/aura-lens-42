@@ -2558,6 +2558,87 @@ export type Database = {
         }
         Relationships: []
       }
+      linkedin_connections_guessed_20260812: {
+        Row: {
+          access_token: string | null
+          can_post: boolean | null
+          claim_token_hash: string | null
+          connected_at: string | null
+          created_at: string | null
+          display_name: string | null
+          followers_total: number | null
+          followers_total_at: string | null
+          handle: string | null
+          id: string | null
+          last_synced_at: string | null
+          linkedin_id: string | null
+          post_check_error: string | null
+          post_checked_at: string | null
+          profile_name: string | null
+          profile_url: string | null
+          refresh_token: string | null
+          scopes: string[] | null
+          source_status: string | null
+          status: string | null
+          timezone: string | null
+          token_expires_at: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          can_post?: boolean | null
+          claim_token_hash?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          followers_total?: number | null
+          followers_total_at?: string | null
+          handle?: string | null
+          id?: string | null
+          last_synced_at?: string | null
+          linkedin_id?: string | null
+          post_check_error?: string | null
+          post_checked_at?: string | null
+          profile_name?: string | null
+          profile_url?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          source_status?: string | null
+          status?: string | null
+          timezone?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          can_post?: boolean | null
+          claim_token_hash?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          followers_total?: number | null
+          followers_total_at?: string | null
+          handle?: string | null
+          id?: string | null
+          last_synced_at?: string | null
+          linkedin_id?: string | null
+          post_check_error?: string | null
+          post_checked_at?: string | null
+          profile_name?: string | null
+          profile_url?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          source_status?: string | null
+          status?: string | null
+          timezone?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       linkedin_post_metrics: {
         Row: {
           comments: number
