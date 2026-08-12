@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import {
-  EXPORT_GOLD,
+  EXPORT_ACTION,
   EXPORT_URL,
   EXPORT_TAGLINE_EN,
   EXPORT_TAGLINE_AR,
@@ -29,12 +29,12 @@ export interface CredentialData {
   topSignalConfidence?: number; // 0..1
 }
 
-const BG = "#0c0b0a";
-const GOLD = EXPORT_GOLD;
-const GOLD_LINE = "rgba(6,112,196,.25)";
-const TEXT = "#f0ede8";
-const TEXT_MUTED = "rgba(240,237,232,.4)";
-const TEXT_HINT = "rgba(240,237,232,.2)";
+const BG = "#0F1519";
+const ACCENT = EXPORT_ACTION;
+const LINE = "rgba(6,112,196,.35)";
+const TEXT = "#FFFFFF";
+const TEXT_MUTED = "rgba(255,255,255,.62)";
+const TEXT_HINT = "rgba(255,255,255,.32)";
 const SERIF = "'Cormorant Garamond', 'Cairo', Georgia, serif";
 const SANS = "'DM Sans', system-ui, sans-serif";
 
@@ -51,7 +51,7 @@ function Corners({ size }: { size: Size }) {
     position: "absolute",
     width: s,
     height: s,
-    borderColor: GOLD_LINE,
+    borderColor: LINE,
     borderStyle: "solid",
     borderWidth: 0,
     ...pos,
@@ -88,7 +88,7 @@ function Footer({ size }: { size: Size }) {
           fontSize: EXPORT_FOOTER_SIZE_BRAND,
           letterSpacing: ".25em",
           textTransform: "uppercase",
-          color: GOLD,
+          color: ACCENT,
           fontWeight: 500,
         }}
       >
@@ -177,7 +177,7 @@ export const ConceptA = forwardRef<HTMLDivElement, { data: CredentialData; size?
                 fontFamily: SERIF,
                 fontSize: size === "wide" ? 220 : 200,
                 lineHeight: 1,
-                color: GOLD,
+                color: ACCENT,
                 fontWeight: 400,
               }}
             >
@@ -198,7 +198,7 @@ export const ConceptA = forwardRef<HTMLDivElement, { data: CredentialData; size?
 
           {/* Divider */}
           {size === "wide" && (
-            <div style={{ width: 1, background: GOLD_LINE, alignSelf: "stretch" }} />
+            <div style={{ width: 1, background: LINE, alignSelf: "stretch" }} />
           )}
 
           {/* Right — tier + identity */}
@@ -236,9 +236,9 @@ export const ConceptA = forwardRef<HTMLDivElement, { data: CredentialData; size?
                       textTransform: "uppercase",
                       padding: "6px 12px",
                       borderRadius: 999,
-                      border: `1px solid ${active ? GOLD : GOLD_LINE}`,
-                      background: active ? "rgba(6,112,196,.12)" : "transparent",
-                      color: active ? GOLD : passed ? TEXT_MUTED : TEXT_HINT,
+                      border: `1px solid ${active ? ACCENT : LINE}`,
+                      background: active ? "rgba(6,112,196,.18)" : "transparent",
+                      color: active ? ACCENT : passed ? TEXT_MUTED : TEXT_HINT,
                       fontWeight: active ? 600 : 400,
                     }}
                   >
@@ -306,7 +306,7 @@ export const ConceptB = forwardRef<HTMLDivElement, { data: CredentialData; size?
               fontSize: 11,
               letterSpacing: ".35em",
               textTransform: "uppercase",
-              color: GOLD,
+              color: ACCENT,
               marginBottom: 36,
             }}
           >
@@ -378,12 +378,12 @@ export const ConceptC = forwardRef<HTMLDivElement, { data: CredentialData; size?
                 fontSize: 10,
                 letterSpacing: ".3em",
                 textTransform: "uppercase",
-                color: GOLD,
+                color: ACCENT,
               }}
             >
               Tracking · {data.tierName}
             </div>
-            <div style={{ marginTop: 8, height: 1, width: 56, background: GOLD }} />
+            <div style={{ marginTop: 8, height: 1, width: 56, background: ACCENT }} />
           </div>
 
           <div>
@@ -403,7 +403,7 @@ export const ConceptC = forwardRef<HTMLDivElement, { data: CredentialData; size?
                 style={{
                   marginTop: 22,
                   fontSize: 16,
-                  color: GOLD,
+                  color: ACCENT,
                   letterSpacing: ".05em",
                   
                 }}
