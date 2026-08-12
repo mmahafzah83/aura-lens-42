@@ -1899,8 +1899,6 @@ export default function StudioPanel({
   useEffect(() => {
     if (sub !== "look") return;
     setDeckFailures([]);
-    setFits({});
-    fitsRef.current = {};
   }, [sub]);
 
   /* THE PIECE STATE. Derived, never stored twice, never inferred from the
