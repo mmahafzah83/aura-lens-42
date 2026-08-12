@@ -64,7 +64,14 @@ export async function saveLinkedInAddress(userId: string, input: string): Promis
   const handle = canonicalHandle(input);
   if (!handle) throw new Error("That doesn't look like a LinkedIn address.");
   const profile_url = profileUrlFor(handle) as string;
-  const patch = { handle, profile_url, updated_at: new Date().toISOString() };
+  // The member typed it themselves. That is not a read, so it is not
+  // `verified_by_read` — but it is not a guess either.
+  const patch = {
+    handle,
+    profile_url,
+    source_status: "member_entered",
+    updated_at: new Date().toISOString(),
+  };
 
   // Update first: the row usually exists, and `access_token` is required on
   // insert, so an address-only row starts with an empty token until the member
