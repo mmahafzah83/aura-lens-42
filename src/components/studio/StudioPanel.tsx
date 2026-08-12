@@ -370,6 +370,8 @@ export default function StudioPanel({
   const [pictureNotice, setPictureNotice] = useState<string | null>(null);
 
   const [draftId, setDraftId] = useState<string | null>(null);
+  /** Always holds the row the piece is bound to, one render ahead of state. */
+  const draftIdRef = useRef<string | null>(null);
   /** Which table the open draft came from. Decides the publish promotion. */
   const [draftSource, setDraftSource] = useState<"content_items" | "linkedin_posts" | null>(null);
   const [drafts, setDrafts] = useState<StudioDraft[]>([]);
