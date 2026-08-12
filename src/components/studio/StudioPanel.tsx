@@ -663,7 +663,7 @@ export default function StudioPanel({
     const saved = pendingRestore;
     if (!saved) return;
     setPendingRestore(null);
-    if (typeof saved.draftId === "string" && saved.draftId) setDraftId(saved.draftId);
+    if (typeof saved.draftId === "string" && saved.draftId) { setDraftId(saved.draftId); draftIdRef.current = saved.draftId; }
     if (typeof saved.postRowId === "string" && saved.postRowId) postRowRef.current = saved.postRowId;
     if (saved.draftSource === "content_items" || saved.draftSource === "linkedin_posts") {
       setDraftSource(saved.draftSource);
@@ -836,8 +836,13 @@ export default function StudioPanel({
     setStep(1);
     setSub("build");
     setDraftId(null);
+    draftIdRef.current = null;
     setDraftSource(null);
     postRowRef.current = null;
+    setPickedAngleId(null);
+    setAngles([]);
+    setAnglesOpen(false);
+    setAnglesError(false);
     originDraftRef.current = null;
     generatedTextRef.current = null;
     setGatePayload(null);
@@ -908,7 +913,12 @@ export default function StudioPanel({
   const openDraft = useCallback(
     async (d: StudioDraft, source: string) => {
       setDraftId(d.id);
+      draftIdRef.current = d.id;
       setDraftSource(d._source);
+      setPickedAngleId(null);
+      setAngles([]);
+      setAnglesOpen(false);
+      setAnglesError(false);
       // A new piece is in the room: forget the row the last one created.
       postRowRef.current = d._source === "linkedin_posts" ? d.id : null;
       originDraftRef.current = null;
@@ -1873,7 +1883,7 @@ export default function StudioPanel({
     setBusy("save");
     setProblem(null);
     setBusyMessage(T.savingPiece[lang]);
-    const { id, failed } = await saveDraftSettled();
+    const { id, failed } = await saveDraft();
     setBusy(null);
     setBusyMessage(null);
     if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
@@ -1889,7 +1899,7 @@ export default function StudioPanel({
         window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "library" } }));
       } catch { /* navigation is never allowed to throw at a member */ }
     }, 450);
-  }, [saveDraftSettled, lang]);
+  }, [saveDraft, lang]);
 
   /**
    * L3 — "settled" means: every slide has reported a fit AND two consecutive
@@ -2363,7 +2373,7 @@ export default function StudioPanel({
             <ButtonPrimary
               onClick={async () => {
                 if (canSave) {
-                  const { id, failed } = await saveDraftSettled();
+                  const { id, failed } = await saveDraft();
                   if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
                 }
                 startNewPiece();
@@ -2641,6 +2651,10 @@ export default function StudioPanel({
                     const next = { id: c.signalId, title: c.title, insight: c.insight };
                     if (choice?.id === c.signalId) return;
                     if (published || content.trim()) { setPendingSubject(next); return; }
+                    setPickedAngleId(null);
+                    setAngles([]);
+                    setAnglesOpen(false);
+                    setAnglesError(false);
                     setChoice(next);
                     setTypedTopic("");
                   }}
@@ -2703,6 +2717,10 @@ export default function StudioPanel({
                         const next = { id: s.id, title: s.title, insight: s.insight };
                         if (choice?.id === s.id) return;
                         if (published || content.trim()) { setPendingSubject(next); return; }
+                        setPickedAngleId(null);
+                        setAngles([]);
+                        setAnglesOpen(false);
+                        setAnglesError(false);
                         setChoice(next);
                         setTypedTopic("");
                       }}
