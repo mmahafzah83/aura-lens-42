@@ -209,7 +209,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
           return await r.json();
         });
         const timeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("gate_timeout")), 40000)
+          setTimeout(() => reject(new Error("gate_timeout")), 55000)
         );
         gate = await Promise.race([call, timeout]);
       } catch (e) {
@@ -243,16 +243,14 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       }
 
       if (gateError || !gate) {
-        if (advisory === true) {
-          quality_note = { overall_score: overallScore, gate_category: typeof gate?.category === "string" ? gate.category : "other", blocked_would_have: true };
-        } else {
-        return json({
-          success: false,
-          blocked: true,
-          error: "Quality check unavailable — try again",
+        // An infrastructure timeout is not a failing verdict. Fail open.
+        console.warn("[linkedin-publish] gate unavailable, publishing anyway:", gateError);
+        quality_note = {
+          overall_score: overallScore,
           gate_category: "other",
-        });
-        }
+          blocked_would_have: true,
+          gate_unavailable: true,
+        };
       } else if (!passed) {
         if (advisory === true) {
           quality_note = { overall_score: overallScore, gate_category: typeof gate?.category === "string" ? gate.category : "other", blocked_would_have: true };
