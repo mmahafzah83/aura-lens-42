@@ -427,6 +427,12 @@ export const T = {
   },
   langSwitchYes: { en: "Rewrite it", ar: "أعد كتابته" },
   langSwitchNo: { en: "Keep what I have", ar: "أبقِ ما لديّ" },
+  refineReplaceHead: {
+    en: "Replace your words with a new version?",
+    ar: "استبدال نصك بنسخة جديدة؟",
+  },
+  refineReplaceYes: { en: "Replace them", ar: "استبدلها" },
+  refineReplaceNo: { en: "Keep my words", ar: "احتفظ بنصي" },
 
   // Failures in our own words
   slidesFailedPlain: {
