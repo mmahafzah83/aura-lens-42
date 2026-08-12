@@ -3486,9 +3486,15 @@ export default function StudioPanel({
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {/* Every label states exactly what survives it. */}
-                <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
-                  {T.newPost[lang]}
-                </ButtonPrimary>
+                {format === "slides" && exported ? (
+                  <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
+                    {T.newPost[lang]}
+                  </ButtonGhost>
+                ) : (
+                  <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
+                    {T.newPost[lang]}
+                  </ButtonPrimary>
+                )}
                 {subjectHasMore && (
                   <ButtonGhost onClick={() => startNewPiece({ choice })} style={{ minHeight: 44 }}>
                     {T.newPostSameSubject[lang]}
@@ -3515,7 +3521,9 @@ export default function StudioPanel({
               </p>
               {content.length > POST_MAX_CHARS && (
                 <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: "0 0 10px" }}>
-                  {T.overLimitHead[lang]} {content.length - POST_MAX_CHARS} {T.overLimitTail[lang]}
+                  {T.overLimitHead[lang]}{" "}
+                  <span style={{ fontFamily: "var(--ff-mono)" }}>{content.length - POST_MAX_CHARS}</span>{" "}
+                  {T.overLimitTail[lang]}
                 </p>
               )}
               {!published && (
@@ -3580,12 +3588,12 @@ export default function StudioPanel({
                 </ButtonGhost>
               </div>
 
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "0 0 14px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "0 0 14px" }}>
                 {T.whySlidesManual[lang]}
               </p>
 
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
-                1 · {T.s4Get[lang]}
+                <span style={{ fontFamily: "var(--ff-mono)" }}>1</span> · {T.s4Get[lang]}
               </p>
               {exported ? (
                 <ButtonGhost onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
@@ -3598,14 +3606,14 @@ export default function StudioPanel({
               )}
 
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 8px" }}>
-                2 · {T.s4Open[lang]}
+                <span style={{ fontFamily: "var(--ff-mono)" }}>2</span> · {T.s4Open[lang]}
               </p>
               <ButtonGhost onClick={() => void openLinkedIn()} style={{ minHeight: 44 }}>
                 {T.openLinkedIn[lang]}
               </ButtonGhost>
 
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 6px" }}>
-                3 · {T.s4Link[lang]}
+                <span style={{ fontFamily: "var(--ff-mono)" }}>3</span> · {T.s4Link[lang]}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <label htmlFor="studio-link" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
@@ -3618,7 +3626,7 @@ export default function StudioPanel({
                   placeholder={T.linkPlaceholder[lang]}
                   disabled={linkSaved || published}
                   style={{
-                    flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
+                    flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 8,
                     background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
                     fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14, color: "var(--text-primary)",
                     textAlign: rtlShell ? "right" : "left",
@@ -3645,7 +3653,7 @@ export default function StudioPanel({
                 </p>
               )}
               {/* One sentence on why the link matters, as the member's benefit. */}
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "10px 0 0" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "10px 0 0" }}>
                 {T.whyLink[lang]}
               </p>
             </>
@@ -3659,7 +3667,7 @@ export default function StudioPanel({
           no ancestor can clip it. */}
       {/* `busy === "export"` is what keeps this portal alive through a cold
           export started from another tab — do not remove that term. */}
-      {portalMounted &&
+      {portalMounted && deck &&
         createPortal(
           <div
             aria-hidden="true"
