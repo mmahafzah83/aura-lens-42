@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { canonicalHandle, profileUrlFor, saveLinkedInAddress } from "@/lib/linkedinAddress";
-import { loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
+import { EMPTY_LINKEDIN_STATE, loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
 
 /* System-B tokens */
 const ACTION = "#0670C4";
@@ -86,7 +86,7 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
         posts,
       });
       setState((s) => ({
-        ...(s ?? { connected: false, handle: null, address: null, canPost: false, lastSyncedAt: null, addressConfirmed: false, sourceStatus: null }),
+        ...(s ?? EMPTY_LINKEDIN_STATE),
         handle, address: profile_url, confirmedByRead: true, addressConfirmed: true, sourceStatus: "verified_by_read",
       }));
       setExpanded(false);

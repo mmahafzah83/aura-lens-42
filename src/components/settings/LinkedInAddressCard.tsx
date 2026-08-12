@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { canonicalHandle, saveLinkedInAddress } from "@/lib/linkedinAddress";
-import { loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
+import { EMPTY_LINKEDIN_STATE, loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
 
 const BLUE = "#0670C4";
 const LINE = "#E2E7EE";
@@ -36,7 +36,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
     try {
       const next = await saveLinkedInAddress(userId, value);
       setState((s) => ({
-        ...(s ?? { connected: false, confirmedByRead: false, addressConfirmed: false, sourceStatus: null, canPost: false, lastSyncedAt: null }),
+        ...(s ?? EMPTY_LINKEDIN_STATE),
         handle: next.handle, address: next.profileUrl,
       }));
       setValue(next.profileUrl ?? "");
