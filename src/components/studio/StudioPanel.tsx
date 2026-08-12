@@ -199,6 +199,7 @@ export default function StudioPanel({
   draftPrefill,
   onDraftPrefillConsumed,
   onOpenCapture,
+  active = true,
 }: StudioPanelProps = {}) {
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
