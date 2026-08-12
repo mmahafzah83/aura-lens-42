@@ -130,10 +130,12 @@ export const T = {
 
   // Angles — an optional look at four ways in, before the words are written.
   seeAngles: { en: "See angles first", ar: "اعرض الزوايا أولاً" },
+  hideAngles: { en: "Hide the angles", ar: "أخفِ الزوايا" },
   chooseAngle: { en: "Choose your angle", ar: "اختر زاويتك" },
   anglesLoading: { en: "Finding angles…", ar: "جارٍ إيجاد الزوايا…" },
   anglesFailed: { en: "Could not find angles just now. Write it instead.", ar: "تعذّر إيجاد الزوايا الآن. اكتبه مباشرة." },
   skipAngles: { en: "skip — just write it", ar: "تخطَّ — اكتبه مباشرة" },
+  writeWithAngle: { en: "Write it with this angle", ar: "اكتبه بهذه الزاوية" },
 
   // Step 1 — choose
   chooseHead: { en: "What is this post about?", ar: "عن ماذا يدور هذا المنشور؟" },
