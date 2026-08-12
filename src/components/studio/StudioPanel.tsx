@@ -191,7 +191,10 @@ export interface StudioPanelProps {
   draftPrefill?: any;
   onDraftPrefillConsumed?: () => void;
   onOpenCapture?: () => void;
+  /** True only while the Write tab is the visible tab. Gates the export portal. */
+  active?: boolean;
 }
+
 
 export default function StudioPanel({
   signalPrefill,
@@ -199,6 +202,7 @@ export default function StudioPanel({
   draftPrefill,
   onDraftPrefillConsumed,
   onOpenCapture,
+  active = true,
 }: StudioPanelProps = {}) {
   /* ---------- session and preferences ---------------------------- */
   const [ready, setReady] = useState(false);
@@ -528,13 +532,24 @@ export default function StudioPanel({
   useEffect(() => {
     const measure = () => {
       setNarrow(window.innerWidth < 900);
-      const w = canvasBoxRef.current?.clientWidth ?? 520;
+      // Inside a hidden tab the box measures 0; measuring then would floor the
+      // preview at 260px and nothing would recompute on return.
+      const w = canvasBoxRef.current?.clientWidth ?? 0;
+      if (w === 0) return;
       const gutter = window.innerWidth < PHONE_MAX_WIDTH ? 0 : 28;
       setCanvasWidth(clampCanvasWidth(w - gutter));
     };
     measure();
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    // Returning to the tab gives the box a width again — re-measure without
+    // waiting for a resize event.
+    const box = canvasBoxRef.current;
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => measure()) : null;
+    if (ro && box) ro.observe(box);
+    return () => {
+      window.removeEventListener("resize", measure);
+      ro?.disconnect();
+    };
   }, [deck, step, isPhone]);
 
   /* ---------- bring back the piece -------------------------------- */
@@ -1945,9 +1960,18 @@ export default function StudioPanel({
   const exportFile = useCallback(async () => {
     // Never fails silently: if it cannot run, the member is told why.
     if (!deck) { setProblem(T.exportNoDeck[lang]); return; }
+    // A cold portal (the member just came back to the tab, or the portal was
+    // unmounted while away) needs a beat to mount and lay out before anything
+    // can be measured. busy === "export" is what keeps it mounted.
+    const cold = !exportMountRef.current;
+    if (cold) {
+      setBusy("export");
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    }
     // Always the fixed-width export mount, never the on-screen preview.
     const mount = exportMountRef.current;
-    if (!mount) { setProblem(T.exportNotReady[lang]); return; }
+    if (!mount) { setProblem(T.exportNotReady[lang]); if (cold) setBusy(null); return; }
     setBusy("export");
     setProblem(null);
     setStatus(null);
@@ -3597,7 +3621,7 @@ export default function StudioPanel({
           and alive for as long as a deck exists — it is both the source of the
           exported file and the ONE writer of fit state. Portalled to <body> so
           no ancestor can clip it. */}
-      {deck &&
+      {deck && (active || busy === "export") &&
         createPortal(
           <div
             aria-hidden="true"

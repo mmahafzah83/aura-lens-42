@@ -101,7 +101,11 @@ export function useFitLadder(
     }
     // Ladder exhausted and still short of room. Report rather than render broken.
     if (!state.failed) setState({ step: ceiling, scale: FIT_SCALES[ceiling], failed: true, reason });
-  });
+    // Measure only when something that can change the outcome changed: the
+    // fonts landing, new content (signature), a ladder rung, or the ceiling.
+    // Without this array every parent render forced a full reflow per slide.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontsReady, signature, state.step, ceiling]);
 
   return state;
 }

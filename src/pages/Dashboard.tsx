@@ -1141,6 +1141,7 @@ const Dashboard = () => {
             <div hidden={activeTab !== "authority"} className={activeTab === "authority" ? "aura-page" : undefined}>
               <ErrorBoundary>
                 <StudioPanel
+                  active={activeTab === "authority"}
                   signalPrefill={signalDraftPrefill}
                   onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
                   draftPrefill={draftPrefill}

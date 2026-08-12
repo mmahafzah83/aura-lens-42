@@ -12,7 +12,14 @@ import { CANVAS_H, CANVAS_W, Slide } from "../render/Slide";
 import type { FitState } from "../render/useFitLadder";
 import type { ThemeName } from "../render/themes";
 
-export function StudioCanvas({
+/**
+ * Memoised: the export portal re-renders with every StudioPanel keystroke and
+ * the slides must not re-render with it. This does NOT weaken the theme /
+ * template re-measure path — a `key` change always remounts regardless of
+ * React.memo, so every slide still re-reports its fit. Do not "optimise" the
+ * key away on the assumption memo covers it.
+ */
+function StudioCanvasImpl({
   deck, theme, template, width, current, onFit, mountRef,
 }: {
   deck: DeckIR;
@@ -74,5 +81,7 @@ export function StudioCanvas({
     </div>
   );
 }
+
+export const StudioCanvas = React.memo(StudioCanvasImpl);
 
 export default StudioCanvas;
