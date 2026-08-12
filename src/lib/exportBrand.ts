@@ -6,8 +6,9 @@
  * read CSS variables — colors and font families MUST be literal constants.
  */
 
-/** Dark-mode gold — legible on the dark export background (AA pass on #0c0b0a / #111118). */
-export const EXPORT_GOLD = "#D4B056";
+/** System-B action blue — the one accent on every export. Literal by design:
+ *  html2canvas rasterises in an iframe that cannot read CSS variables. */
+export const EXPORT_ACTION = "#0670C4";
 
 /** Brand line (URL) — same on every export. */
 export const EXPORT_URL = "aura-intel.org";

@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  Compass, Radar, Moon, PenLine, BarChart3, Paperclip, X, Library, Flame, LayoutGrid,
-  ChevronLeft, ChevronRight, Sparkles,
-} from "lucide-react";
+import { Compass, Paperclip, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { NAV_GROUPS, isGroupActive, type NavGroup } from "@/components/nav/navGroups";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { TooltipPanel } from "@/components/systemb/Tooltip";
 import Avatar from "@/components/systemb/Avatar";
@@ -34,43 +32,15 @@ interface AuraRailProps {
   newSignalCount?: number;
 }
 
-const ITEMS: Array<{
-  value: RailTab; label: string; icon: typeof Compass; testId: string;
-  name: string; blurb: string; hasFlyout?: boolean;
-}> = [
-  { value: "home",         label: "Home",     icon: Compass,   testId: "nav-home",
-    name: "Home", blurb: "Your brief: what moved and what to do next." },
-  { value: "intelligence", label: "Signals",  icon: Radar,     testId: "nav-intelligence",
-    name: "Signals", blurb: "Patterns Aura found across everything you captured.", hasFlyout: true },
-  { value: "library",      label: "Library",  icon: Library,   testId: "nav-library",
-    name: "Library", blurb: "Everything you've captured, and what Aura made of it." },
-  { value: "overnight",    label: "Night",    icon: Moon,      testId: "nav-overnight",
-    name: "The Overnight", blurb: "What Aura read and drafted while you slept." },
-  { value: "authority",    label: "Compose",  icon: PenLine,   testId: "nav-publish",
-    name: "Composer", blurb: "Draft, refine and publish in your own voice." },
-  { value: "influence",    label: "Data",     icon: BarChart3, testId: "nav-impact",
-    name: "Analytics", blurb: "What your published work actually did." },
-  { value: "momentum",     label: "Momentum", icon: Flame,     testId: "nav-momentum",
-    name: "Momentum", blurb: "What you've built, how often you show up, and what's next." },
-  { value: "widgets",      label: "Widgets",  icon: LayoutGrid, testId: "nav-widgets",
-    name: "Widgets", blurb: "Choose what shows on Home, and vote for what comes next." },
-];
+/** Five doors. The tab values behind each one are unchanged — see navGroups. */
+const DOORS: NavGroup[] = NAV_GROUPS;
+const hasFlyout = (g: NavGroup) => g.key === "signals";
 
 interface SignalCounts { all: number; accelerating: number; stable: number }
 
 const RAIL_W_COLLAPSED = "78px";
 const RAIL_W_EXPANDED = "236px";
 const NAV_KEY = "aura_nav_expanded";
-
-/** Grouped order for the expanded sidebar. Values map 1:1 to ITEMS + the
- *  bottom-block destinations; no new destinations are introduced. */
-const GROUPS: Array<{ header: string; items: RailTab[] }> = [
-  { header: "Every day", items: ["home"] },
-  { header: "Your intelligence", items: ["intelligence", "library", "overnight"] },
-  { header: "Your voice", items: ["authority"] },
-  { header: "Your proof", items: ["momentum", "influence"] },
-  { header: "Yours", items: ["identity", "widgets"] },
-];
 
 export default function AuraRail({
   activeTab, onSelect, onOpenAsk, onOpenCapture, newSignalCount = 0,
@@ -278,15 +248,13 @@ export default function AuraRail({
     </button>
   );
 
-  const itemByValue = (v: RailTab) => ITEMS.find((i) => i.value === v);
-
-  const groupHeader = (text: string) => (
-    <div key={`h-${text}`} aria-hidden style={{
-      fontFamily: "var(--ff-mono)", fontSize: 8, letterSpacing: ".22em",
-      textTransform: "uppercase", color: "#77828C",
-      padding: "14px 18px 6px",
-    }}>{text}</div>
-  );
+  /* Clicking a door opens its primary member — never yanks you off a
+     sub-view that already lives behind that door. */
+  const open = (g: NavGroup) => {
+    setFlyout(null);
+    if (isGroupActive(g, activeTab)) return;
+    onSelect(g.primary as RailTab);
+  };
 
   const rowStyle = (active: boolean): React.CSSProperties => ({
     display: "flex", alignItems: "center", gap: 10, width: "100%",
@@ -312,19 +280,19 @@ export default function AuraRail({
     }}>{text}</span>
   );
 
-  const expandedRow = (key: RailTab) => {
-    if (key === "identity") {
-      const active = activeTab === "identity";
+  const expandedRow = (g: NavGroup) => {
+    const active = isGroupActive(g, activeTab);
+    if (g.key === "you") {
       return (
         <button
-          key="identity"
+          key={g.key}
           type="button"
-          aria-label="My Story"
+          aria-label={g.label}
           aria-current={active ? "page" : undefined}
-          data-testid="nav-mystory"
+          data-testid={g.testId}
           data-active={active ? "true" : "false"}
           className="cursor-pointer v23-focus"
-          onClick={() => { setFlyout(null); onSelect("identity"); }}
+          onClick={() => open(g)}
           onMouseEnter={hoverOn}
           onMouseLeave={hoverOff}
           style={rowStyle(active)}
@@ -333,48 +301,43 @@ export default function AuraRail({
           <AuraRing userId={uid} size={28} gap="var(--v23-night)">
             <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
           </AuraRing>
-          <span>My Story</span>
+          <span>{g.label}</span>
         </button>
       );
     }
-    const item = itemByValue(key);
-    if (!item) return null;
-    const active = activeTab === item.value;
     return (
       <button
-        key={item.value}
+        key={g.key}
         type="button"
-        aria-label={item.name}
+        aria-label={g.label}
         aria-current={active ? "page" : undefined}
-        aria-haspopup={item.hasFlyout ? "true" : undefined}
-        aria-expanded={item.hasFlyout ? (flyout === item.value) : undefined}
-        data-testid={item.testId}
+        aria-haspopup={hasFlyout(g) ? "true" : undefined}
+        aria-expanded={hasFlyout(g) ? (flyout === "intelligence") : undefined}
+        data-testid={g.testId}
         data-active={active ? "true" : "false"}
         className="cursor-pointer v23-focus"
         onClick={() => {
-          if (item.hasFlyout && active) {
-            setFlyout(flyout === item.value ? null : item.value);
-            if (flyout !== item.value) void loadCounts();
+          if (hasFlyout(g) && active) {
+            setFlyout(flyout === "intelligence" ? null : "intelligence");
+            if (flyout !== "intelligence") void loadCounts();
             return;
           }
-          setFlyout(null);
-          onSelect(item.value);
+          open(g);
         }}
         onMouseEnter={hoverOn}
         onMouseLeave={hoverOff}
         style={rowStyle(active)}
       >
         {active && <ActiveBarWide />}
-        <item.icon size={15} strokeWidth={1.75} />
-        <span>{item.name}</span>
-        {item.value === "intelligence" && newSignalCount > 0 && !active && (
+        <g.icon size={15} strokeWidth={1.75} />
+        <span>{g.label}</span>
+        {g.key === "signals" && newSignalCount > 0 && !active && (
           <span aria-label={`${newSignalCount} new signals`} style={{
             marginLeft: "auto", width: 6, height: 6, borderRadius: 999,
             background: "var(--machine)",
           }} />
         )}
-        {item.value === "library" && libraryCount !== null && countPill(String(libraryCount))}
-        {item.value === "authority" && draftCount !== null && draftCount > 0
+        {g.key === "write" && draftCount !== null && draftCount > 0
           && countPill(`${draftCount} draft${draftCount === 1 ? "" : "s"}`)}
       </button>
     );
@@ -432,13 +395,8 @@ export default function AuraRail({
             {collapseToggle}
           </div>
 
-          <nav className="flex flex-col" style={{ flex: 1, paddingBottom: 8 }}>
-            {GROUPS.map((g) => (
-              <div key={g.header}>
-                {groupHeader(g.header)}
-                {g.items.map((v) => expandedRow(v))}
-              </div>
-            ))}
+          <nav className="flex flex-col" style={{ flex: 1, paddingBottom: 8, paddingTop: 10 }}>
+            {DOORS.map((g) => expandedRow(g))}
           </nav>
 
           <div style={{ borderTop: "1px solid var(--v23-night-line)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 8, padding: "10px 14px 0" }}>
@@ -515,38 +473,37 @@ export default function AuraRail({
         </div>
 
         <nav className="flex flex-col items-center" style={{ gap: 6, flex: 1 }}>
-          {ITEMS.map((item) => {
-            const active = activeTab === item.value;
+          {DOORS.filter((g) => g.key !== "you").map((g) => {
+            const active = isGroupActive(g, activeTab);
             return (
               <button
-                key={item.value}
+                key={g.key}
                 type="button"
-                aria-label={item.name}
+                aria-label={g.label}
                 aria-current={active ? "page" : undefined}
-                aria-haspopup={item.hasFlyout ? "true" : undefined}
-                aria-expanded={item.hasFlyout ? (flyout === item.value) : undefined}
-                data-testid={item.testId}
+                aria-haspopup={hasFlyout(g) ? "true" : undefined}
+                aria-expanded={hasFlyout(g) ? (flyout === "intelligence") : undefined}
+                data-testid={g.testId}
                 data-active={active ? "true" : "false"}
                 className="cursor-pointer"
                 onClick={() => {
-                  if (item.hasFlyout && active) {
-                    setFlyout(flyout === item.value ? null : item.value);
-                    if (flyout !== item.value) void loadCounts();
+                  if (hasFlyout(g) && active) {
+                    setFlyout(flyout === "intelligence" ? null : "intelligence");
+                    if (flyout !== "intelligence") void loadCounts();
                     return;
                   }
-                  setFlyout(null);
-                  onSelect(item.value);
+                  open(g);
                 }}
-                onMouseEnter={(e) => { hoverOn(e); showTip(item.name, item.blurb)(e); }}
+                onMouseEnter={(e) => { hoverOn(e); showTip(g.label, g.blurb)(e); }}
                 onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
-                onFocus={showTip(item.name, item.blurb)}
+                onFocus={showTip(g.label, g.blurb)}
                 onBlur={hideTip}
                 style={railBtn(active)}
               >
                 {active && <ActiveBar />}
-                <item.icon size={18} strokeWidth={1.75} />
-                <span style={labelStyle(active)}>{item.label}</span>
-                {item.value === "intelligence" && newSignalCount > 0 && !active && (
+                <g.icon size={18} strokeWidth={1.75} />
+                <span style={labelStyle(active)}>{g.label}</span>
+                {g.key === "signals" && newSignalCount > 0 && !active && (
                   <span
                     aria-label={`${newSignalCount} new signals`}
                     style={{
@@ -579,25 +536,31 @@ export default function AuraRail({
         </nav>
 
         <div className="flex flex-col items-center" style={{ gap: 6, paddingTop: 10, borderTop: "1px solid var(--v23-night-line)", width: 62 }}>
+          {(() => {
+            const you = DOORS.find((g) => g.key === "you")!;
+            const active = isGroupActive(you, activeTab);
+            return (
           <button
             type="button"
-            aria-label="My Story"
-            data-testid="nav-mystory"
-            data-active={activeTab === "identity" ? "true" : "false"}
+            aria-label={you.label}
+            data-testid={you.testId}
+            data-active={active ? "true" : "false"}
             className="cursor-pointer"
-            onClick={() => { onSelect("identity"); setFlyout(null); }}
-            onMouseEnter={(e) => { hoverOn(e); showTip("My Story", "Your story, positioning and reports.")(e); }}
+            onClick={() => open(you)}
+            onMouseEnter={(e) => { hoverOn(e); showTip(you.label, you.blurb)(e); }}
             onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
-            onFocus={showTip("My Story", "Your story, positioning and reports.")}
+            onFocus={showTip(you.label, you.blurb)}
             onBlur={hideTip}
-            style={railBtn(activeTab === "identity")}
+            style={railBtn(active)}
           >
-            {activeTab === "identity" && <ActiveBar />}
+            {active && <ActiveBar />}
             <AuraRing userId={uid} size={28} gap="var(--v23-night)">
               <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
             </AuraRing>
-            <span style={labelStyle(activeTab === "identity")}>My Story</span>
+            <span style={labelStyle(active)}>{you.label}</span>
           </button>
+            );
+          })()}
         </div>
       </aside>
       )}

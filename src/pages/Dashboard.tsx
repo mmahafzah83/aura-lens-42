@@ -54,6 +54,8 @@ import OvernightPage from "@/components/overnight/OvernightPage";
 import MomentumPage from "@/components/momentum/MomentumPage";
 import WidgetsPage from "@/components/widgets/WidgetsPage";
 import StudioPanel from "@/components/studio/StudioPanel";
+import { NAV_GROUPS, groupForTab, isGroupActive, isGroupDimmed } from "@/components/nav/navGroups";
+import SubTabs from "@/components/nav/SubTabs";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -127,7 +129,15 @@ const Dashboard = () => {
   const [profileLastVisit, setProfileLastVisit] = useState<string | null>(null);
   const firstFlight = useFirstFlight(userId);
   const onboardingGate = useOnboardingGate(userId);
-  const isFfDimmed = (val: string, isActive: boolean) => firstFlight.dimmedTabs.has(val) && !isActive;
+  /* Doors, not tabs: First Flight dims the group when none of its members is lit. */
+  const isDoorDimmed = (g: typeof NAV_GROUPS[number]) =>
+    isGroupDimmed(g, firstFlight.dimmedTabs, activeTab);
+  /* Clicking a door opens its primary member — unless the member you are on
+     already lives behind that door, in which case the click is a no-op. */
+  const openDoor = (g: typeof NAV_GROUPS[number]) => {
+    if (isGroupActive(g, activeTab)) return;
+    switchTab(g.primary as TabValue);
+  };
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
   const [showDiagnostic, setShowDiagnostic] = useState(false);
@@ -805,35 +815,29 @@ const Dashboard = () => {
               >
                 Your space
               </div>
-              {NAV_ITEMS.map((item) => {
-                const isActive = activeTab === item.value;
-                const navTestId = ({
-                  home: "nav-home",
-                  identity: "nav-mystory",
-                  intelligence: "nav-intelligence",
-                  authority: "nav-publish",
-                  influence: "nav-impact",
-                } as Record<string, string>)[item.value] || `nav-${item.value}`;
+              {NAV_GROUPS.map((item) => {
+                const isActive = isGroupActive(item, activeTab);
+                const dimmed = isDoorDimmed(item);
                 return (
                   <button
-                    key={item.value}
-                    onClick={() => switchTab(item.value)}
-                    data-testid={navTestId}
+                    key={item.key}
+                    onClick={() => { setMobileSidebarOpen(false); openDoor(item); }}
+                    data-testid={item.testId}
                     data-active={isActive ? "true" : "false"}
                     className={`w-full flex items-center gap-3 aura-nav-item ${isActive ? "is-active" : ""}`}
                     style={{
                       padding: "10px 24px",
                       fontWeight: isActive ? 500 : 400,
-                      opacity: isFfDimmed(item.value, isActive) ? 0.45 : 1,
+                      opacity: dimmed ? 0.45 : 1,
                     }}
-                    title={isFfDimmed(item.value, isActive) ? "Your first post comes first" : undefined}
+                    title={dimmed ? "Your first post comes first" : undefined}
                   >
                     <item.icon
                       className="w-4.5 h-4.5"
                       style={{ color: isActive ? "var(--aura-accent)" : "var(--aura-t3)" }}
                     />
                     <span className="text-sm font-medium">{item.label}</span>
-                    {item.value === "intelligence" && newIntelSignalCount > 0 && !isActive && (
+                    {item.key === "signals" && newIntelSignalCount > 0 && !isActive && (
                       <span
                         aria-label={`${newIntelSignalCount} new signals`}
                         className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
@@ -975,8 +979,33 @@ const Dashboard = () => {
               : "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12 overflow-hidden"
           }
         >
+          {/* Inside a door that holds two views, this is how you move between
+              them. The page headers below keep naming the specific view. */}
+          {(() => {
+            const g = groupForTab(activeTab);
+            if (!g || g.members.length < 2) return null;
+            return (
+              <SubTabs
+                ariaLabel={g.label}
+                active={activeTab}
+                onSelect={(v) => switchTab(v as TabValue)}
+                options={g.members.map((m) => ({
+                  value: m,
+                  label: NAV_ITEMS.find((n) => n.value === m)?.pageHeader ?? m,
+                }))}
+              />
+            );
+          })()}
+
           {/* Tab Content */}
-          <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={activeTab === "authority" ? undefined : { minHeight: "60vh" }}>
+          <div
+            className="tab-content-spring aura-page-fade relative"
+            key={activeTab}
+            id={`subpanel-${activeTab}`}
+            role={(groupForTab(activeTab)?.members.length ?? 1) > 1 ? "tabpanel" : undefined}
+            aria-labelledby={(groupForTab(activeTab)?.members.length ?? 1) > 1 ? `subtab-${activeTab}` : undefined}
+            style={activeTab === "authority" ? undefined : { minHeight: "60vh" }}
+          >
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
                 <LinkedInNudge userId={userId} />
@@ -1160,12 +1189,9 @@ const Dashboard = () => {
             }}
           >
             {(() => {
-              const home = NAV_ITEMS.find(n => n.value === "home")!;
-              const intel = NAV_ITEMS.find(n => n.value === "intelligence")!;
-              const pub = NAV_ITEMS.find(n => n.value === "authority")!;
-              const imp = NAV_ITEMS.find(n => n.value === "influence")!;
-              const ordered = [home, intel, null, pub, imp] as const;
-              return ordered.map((tab, idx) => {
+              const byKey = (k: string) => NAV_GROUPS.find(g => g.key === k)!;
+              const ordered = [byKey("home"), byKey("signals"), null, byKey("write"), byKey("record")] as const;
+              return ordered.map((tab) => {
                 if (tab === null) {
                   return (
                     <button
@@ -1192,14 +1218,15 @@ const Dashboard = () => {
                     </button>
                   );
                 }
-                const isActive = activeTab === tab.value;
+                const isActive = isGroupActive(tab, activeTab);
+                const dimmed = isDoorDimmed(tab);
                 return (
                   <button
-                    key={`mobile-${tab.value}`}
-                    onClick={() => switchTab(tab.value)}
+                    key={`mobile-${tab.key}`}
+                    onClick={() => openDoor(tab)}
                     className="flex flex-col items-center justify-center"
-                    style={{ gap: 4, opacity: isFfDimmed(tab.value, isActive) ? 0.45 : 1 }}
-                    title={isFfDimmed(tab.value, isActive) ? "Your first post comes first" : undefined}
+                    style={{ gap: 4, opacity: dimmed ? 0.45 : 1 }}
+                    title={dimmed ? "Your first post comes first" : undefined}
                   >
                     <span
                       className="flex items-center justify-center"
