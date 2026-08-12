@@ -943,6 +943,9 @@ export default function StudioPanel({
       unsourcedRemovedRef.current = 0;
       unsourcedEntitiesRemovedRef.current = 0;
       setAskRefine(null);
+      // The member has chosen a path: any outstanding offer is answered.
+      setPreparedDraft(null);
+      setPendingRestore(null);
       persistNow({
         content: d.body,
         deck: null,
@@ -1165,6 +1168,9 @@ export default function StudioPanel({
     setGenErrorDetail(null);
     setGenWarnings([]);
     setNotReady(null);
+    // Writing instead of answering IS an answer: clear the standing offers.
+    setPreparedDraft(null);
+    setPendingRestore(null);
     setGenerating(true);
     setBusyMessage(T.writing[lang]);
     setStep(2);
@@ -2359,16 +2365,26 @@ export default function StudioPanel({
      member with a QUESTION — a confirmation, a restore offer, a pending
      change — that question owns the single primary. Every FORWARD action on
      the screen steps down to a ghost until the question is answered. */
+  /* Each term below MIRRORS ITS BANNER'S OWN RENDER GUARD exactly. A question
+     may only take the primary on a screen where it is actually ON SCREEN —
+     otherwise the member is left with no primary at all. If you change a
+     banner's render condition, change its term here in the same edit. */
   const confirmOwnsPrimary =
-    Boolean(confirmNewPiece) ||
-    Boolean(pendingSubject) ||
-    Boolean(askReplace) ||
-    Boolean(askRefine) ||
-    Boolean(askLangSwitch) ||
-    Boolean(pendingFormat) ||
-    Boolean(pendingRestore) ||
-    Boolean(preparedDraft) ||
-    confirmingPost;
+    Boolean(confirmNewPiece) ||                                   // top-level, every step
+    (Boolean(pendingSubject) && step === 1) ||
+    (Boolean(askReplace) && step === 1 && showPaste) ||
+    (Boolean(askRefine) && step === 2) ||                          // writeArea renders on step 2 only
+    (Boolean(askLangSwitch) && step === 2) ||
+    (pendingFormat === "post" && step === 3) ||
+    (Boolean(pendingRestore) && !content && !deck) ||
+    (Boolean(preparedDraft) && !content && !deck && !pendingRestore) ||
+    (confirmingPost && step === 4 && format !== "slides" && !published && busy !== "post");
+
+  /* Step 1 with nothing captured yet: the ONLY move that goes forward is
+     capture, so it owns the primary and "Write it" (disabled anyway) is a
+     ghost. Mirrors the empty-state banner's own guard. */
+  const captureEmpty =
+    !cardsLoading && cards.length === 0 && totalSignals === 0 && Boolean(onOpenCapture);
 
   const onContinue = async () => {
     if (step === 1) {
@@ -2513,7 +2529,7 @@ export default function StudioPanel({
             {L.preparedLine[lang].replace("{subject}", preparedDraft.title || preparedDraft.topic || "")}
           </span>
           <span style={{ flex: 1 }} />
-          <ButtonGhost
+          <ButtonPrimary
             onClick={() => {
               const d = preparedDraft;
               setPreparedDraft(null);
@@ -2522,7 +2538,7 @@ export default function StudioPanel({
             style={{ minHeight: 44 }}
           >
             {T.openDraft[lang]}
-          </ButtonGhost>
+          </ButtonPrimary>
           <button
             type="button"
             onClick={() => setPreparedDraft(null)}
@@ -2567,9 +2583,9 @@ export default function StudioPanel({
               )}
           </span>
           <span style={{ flex: 1 }} />
-          <ButtonGhost onClick={carryOnRestore} style={{ minHeight: 44 }}>
+          <ButtonPrimary onClick={carryOnRestore} style={{ minHeight: 44 }}>
             {T.openDraft[lang]}
-          </ButtonGhost>
+          </ButtonPrimary>
           <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
             {T.newPost[lang]}
           </ButtonGhost>
@@ -2661,7 +2677,7 @@ export default function StudioPanel({
       )}
 
       {step === 1 && (
-        <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+        <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} lang={lang} rtlShell={rtlShell} defaultOpen>
           {/* W9 — a tick nobody earned must name who earned it. */}
           {posture === "delegator" && choice?.id && !wordsReady && (
             <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "0 0 14px" }}>
@@ -2717,9 +2733,15 @@ export default function StudioPanel({
                 {T.chooseEmpty[lang]}
               </p>
               {onOpenCapture && (
-                <ButtonPrimary onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
-                  {T.captureNow[lang]}
-                </ButtonPrimary>
+                confirmOwnsPrimary ? (
+                  <ButtonGhost onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                    {T.captureNow[lang]}
+                  </ButtonGhost>
+                ) : (
+                  <ButtonPrimary onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                    {T.captureNow[lang]}
+                  </ButtonPrimary>
+                )
               )}
             </div>
           )}
@@ -2895,11 +2917,13 @@ export default function StudioPanel({
             /* Exactly one primary. A pending subject change owns it (its
                confirm is the primary), so the forward action stands down. */
             const forwardIsGhost =
-              confirmOwnsPrimary || (anglesOpen && Boolean(pickedAngleId) && !anglesBusy && !anglesError);
+              confirmOwnsPrimary ||
+              captureEmpty ||
+              (anglesOpen && Boolean(pickedAngleId) && !anglesBusy && !anglesError);
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
                 {advances ? (
-                  confirmOwnsPrimary ? (
+                  confirmOwnsPrimary || captureEmpty ? (
                     <ButtonGhost onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
                       {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
                     </ButtonGhost>
@@ -3130,6 +3154,7 @@ export default function StudioPanel({
           subtitle={wordsReady ? T.writeHelp[lang] : undefined}
           align={rtlShell ? "right" : "left"}
           lang={lang}
+          rtlShell={rtlShell}
         >
           {/* One fallback only, identical for everyone: if there are no words
               yet, offer the same "Write it" that step 1 offers. */}
@@ -3279,7 +3304,7 @@ export default function StudioPanel({
       {step === 3 && (
         <>
           {/* The job first: what shape should this take? */}
-          <StageCard title={T.formatHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+          <StageCard title={T.formatHead[lang]} align={rtlShell ? "right" : "left"} lang={lang} rtlShell={rtlShell} defaultOpen>
             <div style={{ display: "grid", gap: 10 }}>
               {([
                 ["post", T.formatWords[lang], T.formatWordsHelp[lang]],
@@ -3334,7 +3359,7 @@ export default function StudioPanel({
                   {T.confirmDiscardSlidesHead[lang]}
                 </p>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <ButtonGhost
+                  <ButtonPrimary
                     onClick={() => {
                       setDeck(null);
                       setDeckSource(null);
@@ -3349,7 +3374,7 @@ export default function StudioPanel({
                     style={{ minHeight: 44 }}
                   >
                     {T.confirmDiscardSlidesYes[lang]}
-                  </ButtonGhost>
+                  </ButtonPrimary>
                   <ButtonGhost onClick={() => setPendingFormat(null)} style={{ minHeight: 44 }}>
                     {T.replaceNo[lang]}
                   </ButtonGhost>
@@ -3495,7 +3520,7 @@ export default function StudioPanel({
       )}
 
       {step === 4 && (
-        <StageCard title={T.publishHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+        <StageCard title={T.publishHead[lang]} align={rtlShell ? "right" : "left"} lang={lang} rtlShell={rtlShell} defaultOpen>
           {/* P9 — THE ENDING. Whichever route the member took, the cycle closes
               here, in the main column, with three ways onward. Nothing on this
               panel can be pressed twice into a second post. */}
@@ -3520,8 +3545,10 @@ export default function StudioPanel({
                 )}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {/* Every label states exactly what survives it. */}
-                {(format === "slides" && exported) || confirmOwnsPrimary ? (
+                {/* Every label states exactly what survives it. On the slides
+                    screen the export and save-link actions are the forward
+                    move, so New post is always the ghost there. */}
+                {format === "slides" || confirmOwnsPrimary ? (
                   <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
                     {T.newPost[lang]}
                   </ButtonGhost>
