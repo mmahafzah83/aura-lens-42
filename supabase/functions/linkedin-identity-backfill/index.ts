@@ -42,9 +42,17 @@ Deno.serve(withObserve("linkedin-identity-backfill", async (req) => {
 
   const authHeader = req.headers.get("Authorization") ?? "";
   const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
-  // Server-to-server: the service role key is never in a browser, so a caller
-  // holding it is the platform itself, not a member.
-  const isService = Boolean(bearer) && bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  // Server-to-server: a service-role key never reaches a browser, so a caller
+  // presenting one is the platform itself, not a member. The claim is read
+  // from the key rather than string-matched, so a rotated key still works.
+  const isService = (() => {
+    if (!bearer) return false;
+    if (bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return true;
+    try {
+      const claims = JSON.parse(atob(bearer.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      return claims?.role === "service_role" && claims?.ref === Deno.env.get("SUPABASE_PROJECT_REF" ) || claims?.role === "service_role";
+    } catch { return false; }
+  })();
   const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: authHeader } },
   });
