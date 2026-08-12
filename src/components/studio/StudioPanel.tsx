@@ -242,6 +242,10 @@ export default function StudioPanel({
   /** Things the guard could not fix. The draft is still shown. */
   const [genWarnings, setGenWarnings] = useState<string[]>([]);
   const genRunId = useRef(0);
+  /** One deck build at a time wins: the newest, never the slowest. */
+  const deckRunId = useRef(0);
+  /** Same law for the angles list. */
+  const angleRunId = useRef(0);
   /** The exact text Aura last generated. Anything else is the member's own. */
   const generatedTextRef = useRef<string | null>(null);
   // Figures the provenance guard removed from the last generation.
