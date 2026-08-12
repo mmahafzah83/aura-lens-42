@@ -2077,20 +2077,6 @@ export default function StudioPanel({
     );
   }
 
-  if (askingPosture) {
-    return shell(
-      <PostureQuestion
-        lang={lang}
-        value={posture}
-        onChange={setPosture}
-        onContinue={() => {
-          try { localStorage.setItem(POSTURE_KEY, posture); } catch { /* a lost preference is not an error */ }
-          setAskingPosture(false);
-        }}
-      />,
-    );
-  }
-
   const subLink = (key: SubNav, label: string) => (
     <button
       key={key}
