@@ -41,12 +41,18 @@ Deno.serve(withObserve("linkedin-identity-backfill", async (req) => {
   const admin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   const authHeader = req.headers.get("Authorization") ?? "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  // Server-to-server: the service role key is never in a browser, so a caller
+  // holding it is the platform itself, not a member.
+  const isService = Boolean(bearer) && bearer === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: authHeader } },
   });
-  const { data: { user } } = await anon.auth.getUser();
-  if (!user) return json({ error: "Not authenticated" }, 401);
-  if (!(await isAdmin(anon, user.id))) return json({ error: "Admins only" }, 403);
+  if (!isService) {
+    const { data: { user } } = await anon.auth.getUser();
+    if (!user) return json({ error: "Not authenticated" }, 401);
+    if (!(await isAdmin(anon, user.id))) return json({ error: "Admins only" }, 403);
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch { /* empty body */ }
