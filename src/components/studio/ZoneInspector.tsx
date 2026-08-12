@@ -20,7 +20,7 @@ const heading: React.CSSProperties = {
 const smallBtn: React.CSSProperties = {
   minHeight: 44,
   padding: "0 12px",
-  borderRadius: 10,
+  borderRadius: 8,
   border: "1px solid var(--border-default)",
   background: "var(--surface-card)",
   color: "var(--text-primary)",
@@ -48,9 +48,11 @@ export const ZoneInspector: React.FC<{
   onMove: (from: number, to: number) => void;
   /** Z1 — the real state of the member's own portrait, decided upstream. */
   portraitState?: "ready" | "preparing" | "failed" | "none";
+  /** Arabic shell — Cairo needs 1.9 on shell text. */
+  rtlShell?: boolean;
 }> = ({
   lang, writeLang, deck, current, onDeck, attention, onChangeLine, changing,
-  onUploadPicture, pictureNotice, onMove, portraitState = "none",
+  onUploadPicture, pictureNotice, onMove, portraitState = "none", rtlShell = false,
 }) => {
   const slotLabel = (key: string) =>
     (lang === "ar" ? slotLabelAr[key] : undefined) ?? SLOT_LABEL[key] ?? key;
@@ -82,7 +84,7 @@ export const ZoneInspector: React.FC<{
       style={{
         background: isPhone ? "transparent" : "var(--surface-card)",
         border: isPhone ? "0" : "1px solid var(--border-default)",
-        borderRadius: 14,
+        borderRadius: 20,
         padding: isPhone ? 0 : 14,
         display: "grid",
         gap: 14,
@@ -168,8 +170,8 @@ export const ZoneInspector: React.FC<{
           role="status"
           aria-live="polite"
           style={{
-            fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.6, margin: 0,
-            padding: "10px 12px", borderRadius: 10,
+            fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.6, margin: 0,
+            padding: "10px 12px", borderRadius: 12,
             background: "var(--error-tint)", color: "var(--error)",
           }}
         >
@@ -203,7 +205,7 @@ export const ZoneInspector: React.FC<{
                 minHeight: 44,
                 background: "var(--surface-subtle)",
                 border: "1px solid var(--border-default)",
-                borderRadius: 10,
+                borderRadius: 8,
                 padding: "9px 11px",
                 fontFamily: "var(--ff-ui)",
                 fontSize: fieldSize,
