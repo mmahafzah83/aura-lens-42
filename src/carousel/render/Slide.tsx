@@ -20,6 +20,36 @@ import {
 } from "../deckIR";
 import { getTheme, type Theme, type ThemeName } from "./themes";
 import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
+
+/**
+ * A cheap, stable digest of EVERY text-bearing slot on a slide.
+ *
+ * The fit ladder's measure effect is dependency-gated, so anything that can
+ * change the rendered height MUST be in the signature. Before this existed
+ * only the headline was, which meant shortening body copy never cleared a
+ * "does not fit" notice — the repair loop the inspector offers was dead.
+ */
+export function slotsTextDigest(slots: unknown): number {
+  let h = 5381;
+  const feed = (s: string) => {
+    for (let i = 0; i < s.length; i += 1) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  };
+  const walk = (v: unknown) => {
+    if (v == null) return;
+    if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") { feed(String(v)); return; }
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (typeof v === "object") {
+      const node = v as { runs?: Run[] };
+      if (Array.isArray(node.runs)) { feed(plainText(node as { runs: Run[] })); return; }
+      for (const key of Object.keys(v as Record<string, unknown>).sort()) {
+        feed(key);
+        walk((v as Record<string, unknown>)[key]);
+      }
+    }
+  };
+  walk(slots);
+  return h;
+}
 import { INV_16_MEDIA_IN_DOM } from "../invariants";
 import {
   MEDIA_BY_ARCHETYPE, droppableSlotCount, pictureTextPlan,
