@@ -3621,7 +3621,7 @@ export default function StudioPanel({
           and alive for as long as a deck exists — it is both the source of the
           exported file and the ONE writer of fit state. Portalled to <body> so
           no ancestor can clip it. */}
-      {deck &&
+      {deck && (active || busy === "export") &&
         createPortal(
           <div
             aria-hidden="true"
