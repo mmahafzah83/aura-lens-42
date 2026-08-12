@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logAIUsage } from "../_shared/logAIUsage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,6 +30,7 @@ serve(async (req) => {
   }
 
   try {
+    const startedAt = Date.now();
     const { post_text, language, signal_title, voice_tone, user_sector, target_register, grounding_text, content_kind } = await req.json();
 
     if (!post_text) {
@@ -86,7 +88,7 @@ Return JSON:
       },
       body: JSON.stringify({
         model: JUDGE_MODEL,
-        max_tokens: 4096,
+        max_tokens: 1200,
         system: `${systemPrompt}\n\nReturn ONLY the JSON object. No prose, no markdown fences.`,
         messages: [
           { role: "user", content: `Post to evaluate:\n\n${post_text}\n\n${signal_title ? `Signal: "${signal_title}"` : ""}\n${voice_tone ? `Expected voice tone: ${voice_tone}` : ""}\n${user_sector ? `Sector: ${user_sector}` : ""}` },
@@ -126,6 +128,18 @@ Return JSON:
     else if (a.register_match === false) category = "language";
     else if (Number(scores.specificity ?? 10) < 6 || a.domain_match === false) category = "generic";
     result.category = category;
+
+    try {
+      await logAIUsage({
+        function_name: "evaluate-content-quality",
+        provider: "anthropic",
+        model: JUDGE_MODEL,
+        input_tokens: data?.usage?.input_tokens ?? 0,
+        output_tokens: data?.usage?.output_tokens ?? 0,
+        success: true,
+        metadata: { latency_ms: Date.now() - startedAt, language: language ?? null, content_kind: content_kind ?? null },
+      });
+    } catch (_) { /* never block the verdict */ }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

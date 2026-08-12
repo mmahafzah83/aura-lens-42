@@ -938,7 +938,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       content = stripLabels(content);
 
       // Quality gate — challenge the output before returning
-      // Quality gate intentionally uses a different model (GPT-4o) for independent evaluation
+      // Quality gate intentionally uses a different model (Anthropic Sonnet) for independent evaluation
       let gateResult: any = null;
       let gateSkipReason: string | null = null;
       let hookReplaced = false;
@@ -961,9 +961,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         });
         const timeout = new Promise((resolve) => {
           setTimeout(() => {
-            console.warn("[generate-authority-content] quality gate timed out after 12s — skipped");
+            console.warn("[generate-authority-content] quality gate timed out after 45s — skipped");
             resolve({ data: null, error: "timeout" });
-          }, 12000);
+          }, 45000);
         });
         const gateRes: any = await Promise.race([gatePromise, timeout]);
         if (gateRes?.data && !gateRes?.error) {
