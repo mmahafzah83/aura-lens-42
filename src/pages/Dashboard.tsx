@@ -130,6 +130,15 @@ const Dashboard = () => {
   const firstFlight = useFirstFlight(userId);
   const onboardingGate = useOnboardingGate(userId);
   const isFfDimmed = (val: string, isActive: boolean) => firstFlight.dimmedTabs.has(val) && !isActive;
+  /* Doors, not tabs: First Flight dims the group when none of its members is lit. */
+  const isDoorDimmed = (g: typeof NAV_GROUPS[number]) =>
+    isGroupDimmed(g, firstFlight.dimmedTabs, activeTab);
+  /* Clicking a door opens its primary member — unless the member you are on
+     already lives behind that door, in which case the click is a no-op. */
+  const openDoor = (g: typeof NAV_GROUPS[number]) => {
+    if (isGroupActive(g, activeTab)) return;
+    switchTab(g.primary as TabValue);
+  };
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
   const [showDiagnostic, setShowDiagnostic] = useState(false);
