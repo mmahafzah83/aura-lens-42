@@ -864,6 +864,7 @@ function InstrumentSlide({ deck, slide, theme: themeName, template, onFit }: Sli
    */
   const baseSignature =
     `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}` +
+    `:${tpl.id}` +
     `:${plainText(slide.slots.headline)}:${variant}:${photo ?? "no-photo"}`;
   const [drops, setDrops] = useState(0);
   const lastBase = useRef(baseSignature);

@@ -3394,8 +3394,10 @@ export default function StudioPanel({
             style={{ position: "absolute", left: -99999, top: 0, width: EXPORT_WIDTH }}
           >
             <StudioCanvas
+              key={`${theme}:${template}`}
               deck={deck}
               theme={theme}
+              template={template}
               width={EXPORT_WIDTH}
               current={current}
               onFit={reportFit}
