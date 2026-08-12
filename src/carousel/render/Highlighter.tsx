@@ -743,7 +743,11 @@ export function HighlighterSlide({ deck, slide, theme: themeName, template, onFi
 
   const signature =
     `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}:${tpl.id}` +
-    `:${plainText(slide.slots.headline)}:t${slotsTextDigest(slide.slots)}`;
+    `:t${slotsTextDigest(slide.slots)}` +
+    `:p${plainText(deck.profile.name)}|${plainText(deck.profile.title)}|${deck.profile.handle ?? ""}|${deck.slides.length}` +
+    // The header tag reads OTHER slides' chips, so it must be in every
+    // slide's signature or slide 1 never re-measures after editing slide 3.
+    `:g${firstThemeTag(deck)?.text ?? ""}`;
   const fit = useFitLadder(ref, signature, MAX_FIT_STEP);
   const s = sizesFor(fit.scale, tpl, p);
   const hideTails = fit.step >= 2;
