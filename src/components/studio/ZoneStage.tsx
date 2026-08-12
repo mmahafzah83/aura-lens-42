@@ -25,6 +25,7 @@ export const ZoneStage: React.FC<{
   lang: Lang;
   deck: DeckIR | null;
   theme: ThemeName;
+  template?: string | null;
   width: number;
   current: number;
   onCurrent: (i: number) => void;
@@ -37,7 +38,7 @@ export const ZoneStage: React.FC<{
   /** Rendered inside this wrapper, so the three-zone grid keeps exactly three children. */
   footer?: React.ReactNode;
 }> = ({
-  lang, deck, theme, width, current, onCurrent, onFit, mountRef, boxRef, empty,
+  lang, deck, theme, template, width, current, onCurrent, onFit, mountRef, boxRef, empty,
   showCanvas, footer,
 }) => {
   const count = deck?.slides.length ?? 0;
@@ -76,6 +77,7 @@ export const ZoneStage: React.FC<{
             <StudioCanvas
               deck={deck}
               theme={theme}
+              template={template}
               width={width}
               current={current}
               onFit={onFit}

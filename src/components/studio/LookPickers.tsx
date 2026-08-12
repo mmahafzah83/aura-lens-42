@@ -47,15 +47,17 @@ export const TemplatePicker: React.FC<{
   lang: Lang;
   value: string;
   onChange: (id: string) => void;
-}> = ({ lang, value, onChange }) => (
+  disabled?: boolean;
+}> = ({ lang, value, onChange, disabled }) => (
   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
     {TEMPLATE_LIST.map((id) => (
       <button
         key={id}
         type="button"
         aria-pressed={id === value}
+        disabled={disabled}
         onClick={() => onChange(id)}
-        style={pill(id === value)}
+        style={{ ...pill(id === value), opacity: disabled ? 0.45 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
       >
         {TEMPLATES[id].label[lang === "ar" ? "ar" : "en"]}
       </button>
@@ -68,7 +70,8 @@ export const ColourPicker: React.FC<{
   template: string;
   value: string;
   onChange: (t: ThemeName) => void;
-}> = ({ lang, template, value, onChange }) => (
+  disabled?: boolean;
+}> = ({ lang, template, value, onChange, disabled }) => (
   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
     {themesFor(template).map((t) => (
       <button
@@ -76,6 +79,7 @@ export const ColourPicker: React.FC<{
         type="button"
         aria-label={themeLabel(t, lang)}
         aria-pressed={t === value}
+        disabled={disabled}
         onClick={() => onChange(t)}
         style={{
           display: "grid",
@@ -84,7 +88,8 @@ export const ColourPicker: React.FC<{
           padding: 0,
           background: "transparent",
           border: 0,
-          cursor: "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.45 : 1,
         }}
       >
         <span

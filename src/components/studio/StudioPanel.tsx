@@ -7,7 +7,7 @@
  * navigation, wordmark, avatar or member name — the shell owns all of that —
  * and it never sets a page height, page padding or a page-level `dir`.
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -1825,7 +1825,8 @@ export default function StudioPanel({
     // Never fails silently: if it cannot run, the member is told why.
     if (!deck) { setProblem(T.exportNoDeck[lang]); return; }
     // Always the fixed-width export mount, never the on-screen preview.
-    if (!exportMountRef.current) { setProblem(T.exportNotReady[lang]); return; }
+    const mount = exportMountRef.current;
+    if (!mount) { setProblem(T.exportNotReady[lang]); return; }
     setBusy("export");
     setProblem(null);
     setStatus(null);
@@ -1837,8 +1838,9 @@ export default function StudioPanel({
     try {
       const settled = await waitForSlidesSettled(deck.slides.length);
       if (!settled) { setProblem(T.exportNotReady[lang]); return; }
+      if (!mount.isConnected) { setProblem(T.exportNotReady[lang]); return; }
       setBusyMessage(T.exporting[lang]);
-      const nodes = collectSlideNodes(exportMountRef.current);
+      const nodes = collectSlideNodes(mount);
       if (nodes.length === 0) { setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
       setExported(true);
@@ -1903,7 +1905,7 @@ export default function StudioPanel({
 
   /** A theme or template change changes the physical slide layout; any
    *  previous fit measurements are from the previous look and must reset. */
-  useEffect(() => {
+  useLayoutEffect(() => {
     setFits({});
   }, [theme, template]);
 
@@ -3115,6 +3117,7 @@ export default function StudioPanel({
               lang={lang}
               deck={deck}
               theme={theme}
+              template={template}
               width={canvasWidth}
               current={current}
               onCurrent={setCurrent}
@@ -3166,6 +3169,7 @@ export default function StudioPanel({
                 length={deckLength}
                 onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
                 hasDeck={Boolean(deck)}
+                disabled={busy === "export"}
               />
             ) : (
               <ZoneInspector

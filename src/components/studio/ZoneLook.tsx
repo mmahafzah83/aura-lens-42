@@ -35,7 +35,9 @@ export const ZoneLook: React.FC<{
   length: 5 | 7 | 10;
   onLength: (n: 5 | 7 | 10) => void;
   hasDeck: boolean;
-}> = ({ lang, theme, onTheme, template, onTemplate, length, onLength, hasDeck }) => (
+  /** True while an export is running: the look must not change under it. */
+  disabled?: boolean;
+}> = ({ lang, theme, onTheme, template, onTemplate, length, onLength, hasDeck, disabled }) => (
   <div
     style={{
       background: "var(--surface-card)",
@@ -51,7 +53,7 @@ export const ZoneLook: React.FC<{
 
     <div style={{ display: "grid", gap: 8 }}>
       <p style={heading}>{T.lookTemplate[lang]}</p>
-      <TemplatePicker lang={lang} value={template} onChange={onTemplate} />
+      <TemplatePicker lang={lang} value={template} onChange={onTemplate} disabled={disabled} />
       {/* Free, and instant: switching the family re-draws the slides that
           already exist. Nothing is sent anywhere and nothing is re-written. */}
       <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
@@ -61,7 +63,7 @@ export const ZoneLook: React.FC<{
 
     <div style={{ display: "grid", gap: 8 }}>
       <p style={heading}>{T.lookTheme[lang]}</p>
-      <ColourPicker lang={lang} template={template} value={theme} onChange={onTheme} />
+      <ColourPicker lang={lang} template={template} value={theme} onChange={onTheme} disabled={disabled} />
     </div>
 
     <div style={{ display: "grid", gap: 8 }}>
@@ -72,8 +74,9 @@ export const ZoneLook: React.FC<{
             key={n}
             type="button"
             aria-pressed={n === length}
+            disabled={disabled}
             onClick={() => onLength(n)}
-            style={pill(n === length)}
+            style={{ ...pill(n === length), opacity: disabled ? 0.45 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
           >
             {n}
           </button>
