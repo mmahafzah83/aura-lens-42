@@ -1627,7 +1627,7 @@ export default function StudioPanel({
       }, 90000);
     });
     try {
-      const rowId = await saveDraft();
+      const rowId = await saveDraft({ silent: true });
       const call = supabase.functions.invoke("generate-deck", {
         body: {
           signal_id: choice.id,
