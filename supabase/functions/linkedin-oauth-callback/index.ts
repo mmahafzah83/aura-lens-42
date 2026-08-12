@@ -125,7 +125,7 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
     // existing values are read first and carried through an upsert.
     const { data: existing } = await adminClient
       .from("linkedin_connections")
-      .select("source_status, followers_total, can_post, claim_token_hash, timezone")
+      .select("followers_total, can_post, claim_token_hash, timezone")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -137,13 +137,11 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
 
     const preserved: Record<string, unknown> = {};
     if (existing) {
-      for (const k of ["source_status", "followers_total", "can_post", "claim_token_hash", "timezone"] as const) {
+      for (const k of ["followers_total", "can_post", "claim_token_hash", "timezone"] as const) {
         const v = (existing as Record<string, unknown>)[k];
         if (v !== null && v !== undefined) preserved[k] = v;
       }
     }
-    // A real profile read outranks whatever the old row said.
-    if (snapshot) preserved.source_status = "verified_by_read";
 
     // A failed /v2/me read must never overwrite a good, confirmed address with
     // nulls or the "unknown" / "LinkedIn User" placeholders. Each identity key
@@ -158,6 +156,14 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
     }
     if (handle) identity.handle = handle;
     if (profileUrl) identity.profile_url = profileUrl;
+
+    // The address comes from the token, never from the name. This read either
+    // produced a public identifier — in which case the address is established
+    // by the member's own OAuth identity — or it produced only a member id,
+    // which we say plainly instead of inventing a slug. An old row's status is
+    // never carried forward: this connect is the newer fact.
+    if (handle) identity.source_status = "verified_by_read";
+    else if (identity.linkedin_id) identity.source_status = snapshot ? "verified_by_read" : "confirmed_by_identity";
 
     const { data: connection, error: insertError } = await adminClient
       .from("linkedin_connections")
