@@ -88,7 +88,7 @@ Return JSON:
       },
       body: JSON.stringify({
         model: JUDGE_MODEL,
-        max_tokens: 1200,
+        max_tokens: 2000,
         system: `${systemPrompt}\n\nReturn ONLY the JSON object. No prose, no markdown fences.`,
         messages: [
           { role: "user", content: `Post to evaluate:\n\n${post_text}\n\n${signal_title ? `Signal: "${signal_title}"` : ""}\n${voice_tone ? `Expected voice tone: ${voice_tone}` : ""}\n${user_sector ? `Sector: ${user_sector}` : ""}` },
@@ -130,7 +130,7 @@ Return JSON:
     result.category = category;
 
     try {
-      await logAIUsage({
+      const usagePayload = {
         function_name: "evaluate-content-quality",
         provider: "anthropic",
         model: JUDGE_MODEL,
@@ -138,7 +138,13 @@ Return JSON:
         output_tokens: data?.usage?.output_tokens ?? 0,
         success: true,
         metadata: { latency_ms: Date.now() - startedAt, language: language ?? null, content_kind: content_kind ?? null },
-      });
+      };
+      // Never sit on the critical path: both callers race this function.
+      if (typeof (EdgeRuntime as any).waitUntil === "function") {
+        (EdgeRuntime as any).waitUntil(logAIUsage(usagePayload));
+      } else {
+        void logAIUsage(usagePayload);
+      }
     } catch (_) { /* never block the verdict */ }
 
     return new Response(JSON.stringify(result), {
