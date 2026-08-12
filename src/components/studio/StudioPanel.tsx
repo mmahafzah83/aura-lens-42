@@ -943,6 +943,9 @@ export default function StudioPanel({
       unsourcedRemovedRef.current = 0;
       unsourcedEntitiesRemovedRef.current = 0;
       setAskRefine(null);
+      // The member has chosen a path: any outstanding offer is answered.
+      setPreparedDraft(null);
+      setPendingRestore(null);
       persistNow({
         content: d.body,
         deck: null,
