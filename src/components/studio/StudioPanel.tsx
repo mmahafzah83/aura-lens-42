@@ -1868,10 +1868,9 @@ export default function StudioPanel({
     setBusy("save");
     setProblem(null);
     setBusyMessage(T.savingPiece[lang]);
-    const { id, failed, skipped } = await saveDraft();
+    const { id, failed } = await saveDraftSettled();
     setBusy(null);
     setBusyMessage(null);
-    if (skipped) return; // a save is already running; saying anything would be a lie
     if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
     /**
      * Y5 — A CONTROL CALLED "COME BACK LATER" HAS TO TAKE YOU SOMEWHERE.
@@ -1885,7 +1884,7 @@ export default function StudioPanel({
         window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "library" } }));
       } catch { /* navigation is never allowed to throw at a member */ }
     }, 450);
-  }, [saveDraft, lang]);
+  }, [saveDraftSettled, lang]);
 
   /**
    * L3 — "settled" means: every slide has reported a fit AND two consecutive
