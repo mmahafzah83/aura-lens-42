@@ -3143,7 +3143,7 @@ export default function StudioPanel({
                 {T.editAfterPublishHead[lang]}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <ButtonPrimary
+                <ButtonGhost
                   onClick={() => {
                     const carried = content;
                     const keep = choice;
@@ -3154,7 +3154,7 @@ export default function StudioPanel({
                   style={{ minHeight: 44 }}
                 >
                   {T.editAfterPublishYes[lang]}
-                </ButtonPrimary>
+                </ButtonGhost>
                 <ButtonGhost onClick={() => setStep(4)} style={{ minHeight: 44 }}>
                   {T.keepAsIs[lang]}
                 </ButtonGhost>
