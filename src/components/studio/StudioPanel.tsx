@@ -2165,7 +2165,13 @@ export default function StudioPanel({
           subject={choice?.title ?? null}
           signalId={choice?.id ?? null}
           busy={generating}
-          onRefine={(directive) => void generate(undefined, undefined, directive)}
+          onRefine={(directive) => {
+            // Words the member owns are never silently replaced.
+            const ownWords =
+              content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
+            if (ownWords) { setAskRefine(directive); return; }
+            void generate(undefined, undefined, directive);
+          }}
           onUseOpening={(line) => {
             const lines = content.split("\n");
             const idx = lines.findIndex((l) => l.trim().length > 0);
@@ -2174,6 +2180,32 @@ export default function StudioPanel({
             changeContent(lines.join("\n"));
           }}
         />
+      )}
+      {askRefine && (
+        <div
+          style={{
+            marginTop: 10, background: "var(--surface-subtle)",
+            border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
+          }}
+        >
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
+            {T.refineReplaceHead[lang]}
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <ButtonPrimary
+              onClick={() => {
+                void generate(undefined, undefined, askRefine);
+                setAskRefine(null);
+              }}
+              style={{ minHeight: 44 }}
+            >
+              {T.refineReplaceYes[lang]}
+            </ButtonPrimary>
+            <ButtonGhost onClick={() => setAskRefine(null)} style={{ minHeight: 44 }}>
+              {T.refineReplaceNo[lang]}
+            </ButtonGhost>
+          </div>
+        </div>
       )}
     </>
   );
