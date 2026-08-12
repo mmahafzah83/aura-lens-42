@@ -2265,7 +2265,7 @@ export default function StudioPanel({
     (step === 3 && format === "slides" && !deck) ||
     (step === 2 && !wordsReady);
 
-  const onContinue = () => {
+  const onContinue = async () => {
     if (step === 1) {
       if (pasted.trim()) {
         // Words already written are never replaced without being asked.
@@ -2285,8 +2285,17 @@ export default function StudioPanel({
     }
     // Moving on is a save. An edit the member made on step 2 is on the row
     // before the next screen renders, never held only in the browser.
-    if (step === 2) { void saveDraft(); setStep(3); return; }
-    if (step === 3) { void saveDraft(); setStep(4); }
+    if (step === 2) {
+      const id = await saveDraft();
+      if (!id && content.trim()) return; // the banner is already on screen, stay put
+      setStep(3);
+      return;
+    }
+    if (step === 3) {
+      const id = await saveDraft();
+      if (!id && content.trim()) return;
+      setStep(4);
+    }
   };
 
   return shell(
