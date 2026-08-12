@@ -431,11 +431,13 @@ const Dashboard = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const checkStrategicNudge = useCallback(async (_accessToken: string) => {
+  const checkStrategicNudge = useCallback(async () => {
     try {
-      // Get fresh session to avoid expired JWT
+      // A nudge is a courtesy, never a reason to call with a dead token.
+      // If the session has expired or been signed out, stay quiet.
       const { data: { session: freshSession } } = await supabase.auth.getSession();
-      const token = freshSession?.access_token || _accessToken;
+      const token = freshSession?.access_token;
+      if (!token) return;
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-nudge`, {
         method: "POST",
         headers: {
@@ -552,7 +554,7 @@ const Dashboard = () => {
           return;
         }
 
-        checkStrategicNudge(session.access_token);
+        checkStrategicNudge();
       }
     });
 
