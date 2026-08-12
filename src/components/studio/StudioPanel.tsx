@@ -1847,9 +1847,10 @@ export default function StudioPanel({
     setBusy("save");
     setProblem(null);
     setBusyMessage(T.savingPiece[lang]);
-    const { id, failed } = await saveDraft();
+    const { id, failed, skipped } = await saveDraft();
     setBusy(null);
     setBusyMessage(null);
+    if (skipped) return; // a save is already running; saying anything would be a lie
     if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
     /**
      * Y5 — A CONTROL CALLED "COME BACK LATER" HAS TO TAKE YOU SOMEWHERE.
@@ -2337,7 +2338,8 @@ export default function StudioPanel({
             <ButtonPrimary
               onClick={async () => {
                 if (canSave) {
-                  const { id, failed } = await saveDraft();
+                  const { id, failed, skipped } = await saveDraft();
+                  if (skipped) return; // a save is already running
                   if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
                 }
                 startNewPiece();
