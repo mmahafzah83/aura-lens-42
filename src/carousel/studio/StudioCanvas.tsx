@@ -58,7 +58,7 @@ function StudioCanvasImpl({
         gap: 16,
         overflowX: "auto",
         scrollSnapType: "x mandatory",
-        borderRadius: 16,
+        borderRadius: 20,
         scrollbarWidth: "none",
       }}
     >
@@ -70,7 +70,7 @@ function StudioCanvasImpl({
             width,
             height: CANVAS_H * scale,
             overflow: "hidden",
-            borderRadius: 16,
+            borderRadius: 20,
             flex: "0 0 auto",
             scrollSnapAlign: "center",
             boxShadow: slide.index === current ? "var(--shadow-lift)" : "none",
