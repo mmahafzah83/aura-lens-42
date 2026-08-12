@@ -248,15 +248,13 @@ export default function AuraRail({
     </button>
   );
 
-  const itemByValue = (v: RailTab) => ITEMS.find((i) => i.value === v);
-
-  const groupHeader = (text: string) => (
-    <div key={`h-${text}`} aria-hidden style={{
-      fontFamily: "var(--ff-mono)", fontSize: 8, letterSpacing: ".22em",
-      textTransform: "uppercase", color: "#77828C",
-      padding: "14px 18px 6px",
-    }}>{text}</div>
-  );
+  /* Clicking a door opens its primary member — never yanks you off a
+     sub-view that already lives behind that door. */
+  const open = (g: NavGroup) => {
+    setFlyout(null);
+    if (isGroupActive(g, activeTab)) return;
+    onSelect(g.primary as RailTab);
+  };
 
   const rowStyle = (active: boolean): React.CSSProperties => ({
     display: "flex", alignItems: "center", gap: 10, width: "100%",
@@ -282,19 +280,19 @@ export default function AuraRail({
     }}>{text}</span>
   );
 
-  const expandedRow = (key: RailTab) => {
-    if (key === "identity") {
-      const active = activeTab === "identity";
+  const expandedRow = (g: NavGroup) => {
+    const active = isGroupActive(g, activeTab);
+    if (g.key === "you") {
       return (
         <button
-          key="identity"
+          key={g.key}
           type="button"
-          aria-label="My Story"
+          aria-label={g.label}
           aria-current={active ? "page" : undefined}
-          data-testid="nav-mystory"
+          data-testid={g.testId}
           data-active={active ? "true" : "false"}
           className="cursor-pointer v23-focus"
-          onClick={() => { setFlyout(null); onSelect("identity"); }}
+          onClick={() => open(g)}
           onMouseEnter={hoverOn}
           onMouseLeave={hoverOff}
           style={rowStyle(active)}
@@ -303,48 +301,43 @@ export default function AuraRail({
           <AuraRing userId={uid} size={28} gap="var(--v23-night)">
             <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
           </AuraRing>
-          <span>My Story</span>
+          <span>{g.label}</span>
         </button>
       );
     }
-    const item = itemByValue(key);
-    if (!item) return null;
-    const active = activeTab === item.value;
     return (
       <button
-        key={item.value}
+        key={g.key}
         type="button"
-        aria-label={item.name}
+        aria-label={g.label}
         aria-current={active ? "page" : undefined}
-        aria-haspopup={item.hasFlyout ? "true" : undefined}
-        aria-expanded={item.hasFlyout ? (flyout === item.value) : undefined}
-        data-testid={item.testId}
+        aria-haspopup={hasFlyout(g) ? "true" : undefined}
+        aria-expanded={hasFlyout(g) ? (flyout === "intelligence") : undefined}
+        data-testid={g.testId}
         data-active={active ? "true" : "false"}
         className="cursor-pointer v23-focus"
         onClick={() => {
-          if (item.hasFlyout && active) {
-            setFlyout(flyout === item.value ? null : item.value);
-            if (flyout !== item.value) void loadCounts();
+          if (hasFlyout(g) && active) {
+            setFlyout(flyout === "intelligence" ? null : "intelligence");
+            if (flyout !== "intelligence") void loadCounts();
             return;
           }
-          setFlyout(null);
-          onSelect(item.value);
+          open(g);
         }}
         onMouseEnter={hoverOn}
         onMouseLeave={hoverOff}
         style={rowStyle(active)}
       >
         {active && <ActiveBarWide />}
-        <item.icon size={15} strokeWidth={1.75} />
-        <span>{item.name}</span>
-        {item.value === "intelligence" && newSignalCount > 0 && !active && (
+        <g.icon size={15} strokeWidth={1.75} />
+        <span>{g.label}</span>
+        {g.key === "signals" && newSignalCount > 0 && !active && (
           <span aria-label={`${newSignalCount} new signals`} style={{
             marginLeft: "auto", width: 6, height: 6, borderRadius: 999,
             background: "var(--machine)",
           }} />
         )}
-        {item.value === "library" && libraryCount !== null && countPill(String(libraryCount))}
-        {item.value === "authority" && draftCount !== null && draftCount > 0
+        {g.key === "write" && draftCount !== null && draftCount > 0
           && countPill(`${draftCount} draft${draftCount === 1 ? "" : "s"}`)}
       </button>
     );
