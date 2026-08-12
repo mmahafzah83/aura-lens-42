@@ -1278,6 +1278,14 @@ export default function StudioPanel({
     chosenDirectionRef.current = d.angle;
   }, []);
 
+  /**
+   * Once there are words on screen the forward action is "Use these words".
+   * The angles panel must not linger beside it with a second primary.
+   */
+  useEffect(() => {
+    if (Boolean(pasted.trim()) || Boolean(content.trim())) setAnglesOpen(false);
+  }, [pasted, content]);
+
   /* ---------- the draft row --------------------------------------- */
   /** The subject, written as a title so the Library never shows a raw line. */
   const pieceTitle = useCallback((): string => {
