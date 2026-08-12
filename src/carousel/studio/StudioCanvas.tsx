@@ -18,6 +18,11 @@ import type { ThemeName } from "../render/themes";
  * template re-measure path — a `key` change always remounts regardless of
  * React.memo, so every slide still re-reports its fit. Do not "optimise" the
  * key away on the assumption memo covers it.
+ *
+ * The memo itself is a CORRECTNESS dependency, not a performance nicety: the
+ * fits-clearing layout effect re-renders StudioPanel, and without this memo
+ * every Slide body would re-run and re-report a fit into the map that was
+ * just cleared. Do not remove it on the assumption it is only an optimisation.
  */
 function StudioCanvasImpl({
   deck, theme, template, width, current, onFit, mountRef,
