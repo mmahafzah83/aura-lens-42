@@ -405,7 +405,7 @@ export const ZoneInspector: React.FC<{
         {layoutOpen && (
           <div style={{ display: "grid", gap: 8 }}>
             {locked && (
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: 0 }}>
                 {T.lockedLayout[lang]}
               </p>
             )}
