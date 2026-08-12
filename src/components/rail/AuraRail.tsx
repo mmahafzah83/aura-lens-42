@@ -395,13 +395,8 @@ export default function AuraRail({
             {collapseToggle}
           </div>
 
-          <nav className="flex flex-col" style={{ flex: 1, paddingBottom: 8 }}>
-            {GROUPS.map((g) => (
-              <div key={g.header}>
-                {groupHeader(g.header)}
-                {g.items.map((v) => expandedRow(v))}
-              </div>
-            ))}
+          <nav className="flex flex-col" style={{ flex: 1, paddingBottom: 8, paddingTop: 10 }}>
+            {DOORS.map((g) => expandedRow(g))}
           </nav>
 
           <div style={{ borderTop: "1px solid var(--v23-night-line)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 8, padding: "10px 14px 0" }}>
@@ -478,38 +473,37 @@ export default function AuraRail({
         </div>
 
         <nav className="flex flex-col items-center" style={{ gap: 6, flex: 1 }}>
-          {ITEMS.map((item) => {
-            const active = activeTab === item.value;
+          {DOORS.filter((g) => g.key !== "you").map((g) => {
+            const active = isGroupActive(g, activeTab);
             return (
               <button
-                key={item.value}
+                key={g.key}
                 type="button"
-                aria-label={item.name}
+                aria-label={g.label}
                 aria-current={active ? "page" : undefined}
-                aria-haspopup={item.hasFlyout ? "true" : undefined}
-                aria-expanded={item.hasFlyout ? (flyout === item.value) : undefined}
-                data-testid={item.testId}
+                aria-haspopup={hasFlyout(g) ? "true" : undefined}
+                aria-expanded={hasFlyout(g) ? (flyout === "intelligence") : undefined}
+                data-testid={g.testId}
                 data-active={active ? "true" : "false"}
                 className="cursor-pointer"
                 onClick={() => {
-                  if (item.hasFlyout && active) {
-                    setFlyout(flyout === item.value ? null : item.value);
-                    if (flyout !== item.value) void loadCounts();
+                  if (hasFlyout(g) && active) {
+                    setFlyout(flyout === "intelligence" ? null : "intelligence");
+                    if (flyout !== "intelligence") void loadCounts();
                     return;
                   }
-                  setFlyout(null);
-                  onSelect(item.value);
+                  open(g);
                 }}
-                onMouseEnter={(e) => { hoverOn(e); showTip(item.name, item.blurb)(e); }}
+                onMouseEnter={(e) => { hoverOn(e); showTip(g.label, g.blurb)(e); }}
                 onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
-                onFocus={showTip(item.name, item.blurb)}
+                onFocus={showTip(g.label, g.blurb)}
                 onBlur={hideTip}
                 style={railBtn(active)}
               >
                 {active && <ActiveBar />}
-                <item.icon size={18} strokeWidth={1.75} />
-                <span style={labelStyle(active)}>{item.label}</span>
-                {item.value === "intelligence" && newSignalCount > 0 && !active && (
+                <g.icon size={18} strokeWidth={1.75} />
+                <span style={labelStyle(active)}>{g.label}</span>
+                {g.key === "signals" && newSignalCount > 0 && !active && (
                   <span
                     aria-label={`${newSignalCount} new signals`}
                     style={{
@@ -542,25 +536,31 @@ export default function AuraRail({
         </nav>
 
         <div className="flex flex-col items-center" style={{ gap: 6, paddingTop: 10, borderTop: "1px solid var(--v23-night-line)", width: 62 }}>
+          {(() => {
+            const you = DOORS.find((g) => g.key === "you")!;
+            const active = isGroupActive(you, activeTab);
+            return (
           <button
             type="button"
-            aria-label="My Story"
-            data-testid="nav-mystory"
-            data-active={activeTab === "identity" ? "true" : "false"}
+            aria-label={you.label}
+            data-testid={you.testId}
+            data-active={active ? "true" : "false"}
             className="cursor-pointer"
-            onClick={() => { onSelect("identity"); setFlyout(null); }}
-            onMouseEnter={(e) => { hoverOn(e); showTip("My Story", "Your story, positioning and reports.")(e); }}
+            onClick={() => open(you)}
+            onMouseEnter={(e) => { hoverOn(e); showTip(you.label, you.blurb)(e); }}
             onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
-            onFocus={showTip("My Story", "Your story, positioning and reports.")}
+            onFocus={showTip(you.label, you.blurb)}
             onBlur={hideTip}
-            style={railBtn(activeTab === "identity")}
+            style={railBtn(active)}
           >
-            {activeTab === "identity" && <ActiveBar />}
+            {active && <ActiveBar />}
             <AuraRing userId={uid} size={28} gap="var(--v23-night)">
               <Avatar src={avatarUrl} name={profileName} size="sm" ring="var(--v23-night-line)" />
             </AuraRing>
-            <span style={labelStyle(activeTab === "identity")}>My Story</span>
+            <span style={labelStyle(active)}>{you.label}</span>
           </button>
+            );
+          })()}
         </div>
       </aside>
       )}
