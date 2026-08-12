@@ -3634,7 +3634,7 @@ export default function StudioPanel({
           no ancestor can clip it. */}
       {/* `busy === "export"` is what keeps this portal alive through a cold
           export started from another tab — do not remove that term. */}
-      {deck && (active || busy === "export") &&
+      {portalMounted &&
         createPortal(
           <div
             aria-hidden="true"
