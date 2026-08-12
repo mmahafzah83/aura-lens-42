@@ -370,6 +370,9 @@ export default function StudioPanel({
   const fitsRef = useRef<Record<number, FitState>>({});
   fitsRef.current = fits;
   const [changingLine, setChangingLine] = useState(false);
+  /** Bumped whenever the export portal mounts or unmounts, so the fit map is
+   *  invalidated on a remount exactly as it is on a look change. */
+  const [portalGen, setPortalGen] = useState(0);
   const [pictureNotice, setPictureNotice] = useState<string | null>(null);
 
   const [draftId, setDraftId] = useState<string | null>(null);
