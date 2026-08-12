@@ -342,6 +342,35 @@ serve(async (req) => {
           },
         });
         sent++;
+        // The send ledger every dashboard reads. Bookkeeping must never be able
+        // to break a delivery: if this write fails we log it and carry on.
+        try {
+          const { error: ledgerError } = await admin.from("notification_events").insert({
+            user_id: uid,
+            type: "morning_signal",
+            channel: "email",
+            title: "Morning signal sent",
+            body: subject,
+            read: true,
+            read_at: new Date().toISOString(),
+            metadata: {
+              message_key: userKey,
+              lead_finding_id: lead.id,
+              finding_ids: [lead.id, ...others.slice(0, 3).map((o) => o.id)],
+              resend_id: resendId,
+            },
+          });
+          if (ledgerError) throw new Error(ledgerError.message);
+        } catch (ledgerErr) {
+          console.error("MORNING_SIGNAL ledger_write_failed", ledgerErr);
+          await admin.from("ef_error_log").insert({
+            function_name: "send-morning-signal",
+            severity: "low",
+            error_message: `MORNING_SIGNAL ledger_write_failed: ${(ledgerErr as Error)?.message ?? String(ledgerErr)}`.slice(0, 1000),
+            user_id: uid,
+            context: { message_key: userKey },
+          });
+        }
         results.push({ user_id: uid, outcome: "sent", resend_status: status, subject });
       } catch (e) {
         failed++;
