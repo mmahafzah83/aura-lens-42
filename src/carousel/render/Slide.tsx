@@ -904,7 +904,8 @@ function InstrumentSlide({ deck, slide, theme: themeName, template, onFit }: Sli
   const baseSignature =
     `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}` +
     `:${tpl.id}` +
-    `:${plainText(slide.slots.headline)}:t${slotsTextDigest(slide.slots)}` +
+    `:t${slotsTextDigest(slide.slots)}` +
+    `:p${plainText(deck.profile.name)}|${plainText(deck.profile.title)}|${deck.profile.handle ?? ""}|${deck.slides.length}` +
     `:${variant}:${photo ?? "no-photo"}`;
   const [drops, setDrops] = useState(0);
   const lastBase = useRef(baseSignature);
