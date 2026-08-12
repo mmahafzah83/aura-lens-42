@@ -1825,7 +1825,8 @@ export default function StudioPanel({
     // Never fails silently: if it cannot run, the member is told why.
     if (!deck) { setProblem(T.exportNoDeck[lang]); return; }
     // Always the fixed-width export mount, never the on-screen preview.
-    if (!exportMountRef.current) { setProblem(T.exportNotReady[lang]); return; }
+    const mount = exportMountRef.current;
+    if (!mount) { setProblem(T.exportNotReady[lang]); return; }
     setBusy("export");
     setProblem(null);
     setStatus(null);
@@ -1837,8 +1838,9 @@ export default function StudioPanel({
     try {
       const settled = await waitForSlidesSettled(deck.slides.length);
       if (!settled) { setProblem(T.exportNotReady[lang]); return; }
+      if (!mount.isConnected) { setProblem(T.exportNotReady[lang]); return; }
       setBusyMessage(T.exporting[lang]);
-      const nodes = collectSlideNodes(exportMountRef.current);
+      const nodes = collectSlideNodes(mount);
       if (nodes.length === 0) { setProblem(T.exportNotReady[lang]); return; }
       await exportDeckPdf(nodes, `aura-${deck.deck_id.slice(0, 8)}.pdf`);
       setExported(true);
@@ -1903,7 +1905,7 @@ export default function StudioPanel({
 
   /** A theme or template change changes the physical slide layout; any
    *  previous fit measurements are from the previous look and must reset. */
-  useEffect(() => {
+  useLayoutEffect(() => {
     setFits({});
   }, [theme, template]);
 
