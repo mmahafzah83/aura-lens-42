@@ -25,7 +25,9 @@ export const ZonePiece: React.FC<{
    * This panel then shows the subject and what is still to do, nothing else.
    */
   showWords?: boolean;
-}> = ({ lang, writeLang, subject, content, onContentChange, todo, showWords = true }) => {
+  /** Arabic shell — Cairo needs 1.9 on shell text. */
+  rtlShell?: boolean;
+}> = ({ lang, writeLang, subject, content, onContentChange, todo, showWords = true, rtlShell = false }) => {
   const [editing, setEditing] = useState(false);
   const rtl = writeLang === "ar";
   // M4 — never below 16px on a phone, or iOS zooms the page on focus.
@@ -42,7 +44,7 @@ export const ZonePiece: React.FC<{
       style={{
         background: isPhone ? "transparent" : "var(--surface-card)",
         border: isPhone ? "0" : "1px solid var(--border-default)",
-        borderRadius: 14,
+        borderRadius: 20,
         padding: isPhone ? 0 : 14,
         display: "grid",
         gap: 16,
@@ -79,7 +81,7 @@ export const ZonePiece: React.FC<{
               marginTop: 6,
               background: "var(--surface-subtle)",
               border: "1px solid var(--border-default)",
-              borderRadius: 10,
+              borderRadius: 8,
               padding: 10,
               fontFamily: "var(--ff-ui)",
               fontSize: isPhone ? 16 : 13,
@@ -124,7 +126,7 @@ export const ZonePiece: React.FC<{
           {editing ? T.hideWords[lang] : T.editWords[lang]}
         </button>
         {editing && (
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", margin: 0 }}>
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: 0 }}>
             {T.editHint[lang]}
           </p>
         )}
@@ -150,7 +152,7 @@ export const ZonePiece: React.FC<{
             </li>
           ))}
         </ul>
-        <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0 0" }}>
+        <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "8px 0 0" }}>
           {T.todoNote[lang]}
         </p>
       </div>

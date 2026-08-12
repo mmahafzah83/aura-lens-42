@@ -14,8 +14,10 @@ export const StageCard: React.FC<
     collapsible?: boolean;
     align?: "left" | "right";
     lang?: Lang;
+    /** Arabic shell — Cairo needs 1.9. */
+    rtlShell?: boolean;
   }>
-> = ({ title, subtitle, defaultOpen = true, collapsible = false, align = "left", lang = "en", children }) => {
+> = ({ title, subtitle, defaultOpen = true, collapsible = false, align = "left", lang = "en", rtlShell = false, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   // `useState` snapshots at mount. When the caller's answer changes later the
   // card must follow it, never keep a stale first answer.
@@ -25,7 +27,7 @@ export const StageCard: React.FC<
       style={{
         background: "var(--surface-card)",
         border: "1px solid var(--border-default)",
-        borderRadius: 14,
+        borderRadius: 20,
         padding: 18,
         textAlign: align,
       }}
@@ -68,7 +70,7 @@ export const StageCard: React.FC<
           style={{
             fontFamily: "var(--ff-ui)",
             fontSize: 14,
-            lineHeight: 1.7,
+            lineHeight: rtlShell ? 1.9 : 1.7,
             color: "var(--text-secondary)",
             margin: "8px 0 0",
           }}

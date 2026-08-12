@@ -19,7 +19,7 @@ export const PostureQuestion: React.FC<{
       style={{
         background: "var(--surface-card)",
         border: "1px solid var(--border-default)",
-        borderRadius: 16,
+        borderRadius: 28,
         padding: 24,
       }}
     >
@@ -38,7 +38,7 @@ export const PostureQuestion: React.FC<{
         style={{
           fontFamily: "var(--ff-ui)",
           fontSize: 14,
-          lineHeight: 1.7,
+          lineHeight: lang === "ar" ? 1.9 : 1.7,
           color: "var(--text-secondary)",
           margin: "8px 0 18px",
         }}
@@ -88,7 +88,7 @@ export const PostureQuestion: React.FC<{
                     display: "block",
                     fontFamily: "var(--ff-ui)",
                     fontSize: 13.5,
-                    lineHeight: 1.7,
+                    lineHeight: lang === "ar" ? 1.9 : 1.7,
                     color: "var(--text-muted)",
                     marginTop: 2,
                   }}

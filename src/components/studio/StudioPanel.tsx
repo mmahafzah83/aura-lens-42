@@ -2209,7 +2209,7 @@ export default function StudioPanel({
         gap: 10,
       }}
     >
-      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
+      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: 0 }}>
         {T.confirmPostHead[lang]}
       </p>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -2235,7 +2235,7 @@ export default function StudioPanel({
         </p>
       )}
       {genWarnings.length > 0 && (
-        <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--ink-3)", margin: "0 0 10px" }}>
+        <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 10px" }}>
           {lang === "ar"
             ? `مسودة جاهزة، مع ملاحظات: ${genWarnings.join("، ")}`
             : `Draft ready, with notes: ${genWarnings.join(", ")}`}
@@ -2304,7 +2304,7 @@ export default function StudioPanel({
             border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
           }}
         >
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
             {T.refineReplaceHead[lang]}
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -2458,7 +2458,7 @@ export default function StudioPanel({
         <div
           style={{
             background: "var(--surface-card)", border: "1px solid var(--border-default)",
-            borderRadius: 14, padding: 14, margin: "0 0 12px", display: "grid", gap: 12,
+            borderRadius: 20, padding: 14, margin: "0 0 12px", display: "grid", gap: 12,
           }}
         >
           {([
@@ -2471,7 +2471,7 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
                 {head}
               </p>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.75, color: "var(--text-secondary)", margin: "4px 0 0" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.75, color: "var(--text-secondary)", margin: "4px 0 0" }}>
                 {body}
               </p>
             </div>
@@ -2498,7 +2498,7 @@ export default function StudioPanel({
             {L.preparedLine[lang].replace("{subject}", preparedDraft.title || preparedDraft.topic || "")}
           </span>
           <span style={{ flex: 1 }} />
-          <ButtonPrimary
+          <ButtonGhost
             onClick={() => {
               const d = preparedDraft;
               setPreparedDraft(null);
@@ -2507,7 +2507,7 @@ export default function StudioPanel({
             style={{ minHeight: 44 }}
           >
             {T.openDraft[lang]}
-          </ButtonPrimary>
+          </ButtonGhost>
           <button
             type="button"
             onClick={() => setPreparedDraft(null)}
@@ -2552,9 +2552,9 @@ export default function StudioPanel({
               )}
           </span>
           <span style={{ flex: 1 }} />
-          <ButtonPrimary onClick={carryOnRestore} style={{ minHeight: 44 }}>
+          <ButtonGhost onClick={carryOnRestore} style={{ minHeight: 44 }}>
             {T.openDraft[lang]}
-          </ButtonPrimary>
+          </ButtonGhost>
           <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
             {T.newPost[lang]}
           </ButtonGhost>
@@ -2828,7 +2828,7 @@ export default function StudioPanel({
                 }}
                 placeholder={T.chooseOwnPlaceholder[lang]}
                 style={{
-                  flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 10,
+                  flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 8,
                   background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
                   fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14, color: "var(--text-primary)",
                   textAlign: rtlShell ? "right" : "left",
@@ -2851,7 +2851,7 @@ export default function StudioPanel({
                     aria-pressed={on}
                     onClick={() => { langChosenRef.current = true; setWriteLang(key); }}
                     style={{
-                      minHeight: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer",
+                      minHeight: 44, padding: "0 16px", borderRadius: 8, cursor: "pointer",
                       fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
                       background: on ? "var(--act-tint)" : "var(--surface-subtle)",
                       color: on ? "var(--act)" : "var(--text-secondary)",
@@ -2870,13 +2870,23 @@ export default function StudioPanel({
           {(() => {
             const advances = Boolean(pasted.trim()) || Boolean(content.trim());
             const blocked = !doneMap[1] || generating;
+            /* Exactly one primary. A pending subject change owns it (its
+               confirm is the primary), so the forward action stands down. */
+            const forwardIsGhost =
+              Boolean(pendingSubject) || (anglesOpen && Boolean(pickedAngleId) && !anglesBusy && !anglesError);
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
                 {advances ? (
-                  <ButtonPrimary onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
-                    {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
-                  </ButtonPrimary>
-                ) : (anglesOpen && pickedAngleId && !anglesBusy && !anglesError) ? (
+                  pendingSubject ? (
+                    <ButtonGhost onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
+                      {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
+                    </ButtonGhost>
+                  ) : (
+                    <ButtonPrimary onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
+                      {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
+                    </ButtonPrimary>
+                  )
+                ) : forwardIsGhost ? (
                   <ButtonGhost
                     onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
                     disabled={blocked}
@@ -2950,6 +2960,15 @@ export default function StudioPanel({
                           })}
                         </div>
                         {pickedAngleId && (
+                          pendingSubject ? (
+                          <ButtonGhost
+                            onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
+                            disabled={blocked}
+                            style={{ minHeight: 44, marginTop: 10 }}
+                          >
+                            {T.writeWithAngle[lang]} {rtlShell ? "←" : "→"}
+                          </ButtonGhost>
+                          ) : (
                           <ButtonPrimary
                             onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
                             disabled={blocked}
@@ -2957,6 +2976,7 @@ export default function StudioPanel({
                           >
                             {T.writeWithAngle[lang]} {rtlShell ? "←" : "→"}
                           </ButtonPrimary>
+                          )
                         )}
                         {!pickedAngleId && (
                           <button
@@ -3050,7 +3070,9 @@ export default function StudioPanel({
                   fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
                 }}
               >
-                {T.openDraft[lang]}{" ("}{drafts.length}{")"}
+                {T.openDraft[lang]}{" ("}
+                <span style={{ fontFamily: "var(--ff-mono)" }}>{drafts.length}</span>
+                {")"}
               </button>
               {showDrafts && (
                 <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
@@ -3121,7 +3143,7 @@ export default function StudioPanel({
                 {T.editAfterPublishHead[lang]}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <ButtonPrimary
+                <ButtonGhost
                   onClick={() => {
                     const carried = content;
                     const keep = choice;
@@ -3132,7 +3154,7 @@ export default function StudioPanel({
                   style={{ minHeight: 44 }}
                 >
                   {T.editAfterPublishYes[lang]}
-                </ButtonPrimary>
+                </ButtonGhost>
                 <ButtonGhost onClick={() => setStep(4)} style={{ minHeight: 44 }}>
                   {T.keepAsIs[lang]}
                 </ButtonGhost>
@@ -3284,7 +3306,7 @@ export default function StudioPanel({
                   {T.confirmDiscardSlidesHead[lang]}
                 </p>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <ButtonPrimary
+                  <ButtonGhost
                     onClick={() => {
                       setDeck(null);
                       setDeckSource(null);
@@ -3299,7 +3321,7 @@ export default function StudioPanel({
                     style={{ minHeight: 44 }}
                   >
                     {T.confirmDiscardSlidesYes[lang]}
-                  </ButtonPrimary>
+                  </ButtonGhost>
                   <ButtonGhost onClick={() => setPendingFormat(null)} style={{ minHeight: 44 }}>
                     {T.replaceNo[lang]}
                   </ButtonGhost>
@@ -3354,6 +3376,7 @@ export default function StudioPanel({
                 published,
               }}
               showWords={false}
+              rtlShell={rtlShell}
             />
             <ZoneStage
               lang={lang}
@@ -3412,6 +3435,7 @@ export default function StudioPanel({
                 onLength={(n) => { if (deckBusy) return; setDeckLength(n); if (deck) void makeSlides(n); }}
                 hasDeck={Boolean(deck)}
                 disabled={busy === "export" || deckBusy}
+                rtlShell={rtlShell}
               />
             ) : (
               <ZoneInspector
@@ -3427,6 +3451,7 @@ export default function StudioPanel({
                 pictureNotice={pictureNotice}
                 onMove={move}
                 portraitState={portrait.state}
+                rtlShell={rtlShell}
               />
             )}
           </div>
@@ -3461,9 +3486,15 @@ export default function StudioPanel({
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {/* Every label states exactly what survives it. */}
-                <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
-                  {T.newPost[lang]}
-                </ButtonPrimary>
+                {format === "slides" && exported ? (
+                  <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
+                    {T.newPost[lang]}
+                  </ButtonGhost>
+                ) : (
+                  <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
+                    {T.newPost[lang]}
+                  </ButtonPrimary>
+                )}
                 {subjectHasMore && (
                   <ButtonGhost onClick={() => startNewPiece({ choice })} style={{ minHeight: 44 }}>
                     {T.newPostSameSubject[lang]}
@@ -3490,7 +3521,9 @@ export default function StudioPanel({
               </p>
               {content.length > POST_MAX_CHARS && (
                 <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: "0 0 10px" }}>
-                  {T.overLimitHead[lang]} {content.length - POST_MAX_CHARS} {T.overLimitTail[lang]}
+                  {T.overLimitHead[lang]}{" "}
+                  <span style={{ fontFamily: "var(--ff-mono)" }}>{content.length - POST_MAX_CHARS}</span>{" "}
+                  {T.overLimitTail[lang]}
                 </p>
               )}
               {!published && (
@@ -3555,12 +3588,12 @@ export default function StudioPanel({
                 </ButtonGhost>
               </div>
 
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "0 0 14px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "0 0 14px" }}>
                 {T.whySlidesManual[lang]}
               </p>
 
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
-                1 · {T.s4Get[lang]}
+                <span style={{ fontFamily: "var(--ff-mono)" }}>1</span> · {T.s4Get[lang]}
               </p>
               {exported ? (
                 <ButtonGhost onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
@@ -3573,14 +3606,14 @@ export default function StudioPanel({
               )}
 
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 8px" }}>
-                2 · {T.s4Open[lang]}
+                <span style={{ fontFamily: "var(--ff-mono)" }}>2</span> · {T.s4Open[lang]}
               </p>
               <ButtonGhost onClick={() => void openLinkedIn()} style={{ minHeight: 44 }}>
                 {T.openLinkedIn[lang]}
               </ButtonGhost>
 
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "18px 0 6px" }}>
-                3 · {T.s4Link[lang]}
+                <span style={{ fontFamily: "var(--ff-mono)" }}>3</span> · {T.s4Link[lang]}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <label htmlFor="studio-link" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
@@ -3593,7 +3626,7 @@ export default function StudioPanel({
                   placeholder={T.linkPlaceholder[lang]}
                   disabled={linkSaved || published}
                   style={{
-                    flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 10,
+                    flex: "1 1 280px", minHeight: 44, padding: "0 12px", borderRadius: 8,
                     background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
                     fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14, color: "var(--text-primary)",
                     textAlign: rtlShell ? "right" : "left",
@@ -3620,7 +3653,7 @@ export default function StudioPanel({
                 </p>
               )}
               {/* One sentence on why the link matters, as the member's benefit. */}
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: "10px 0 0" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "10px 0 0" }}>
                 {T.whyLink[lang]}
               </p>
             </>
@@ -3634,7 +3667,7 @@ export default function StudioPanel({
           no ancestor can clip it. */}
       {/* `busy === "export"` is what keeps this portal alive through a cold
           export started from another tab — do not remove that term. */}
-      {portalMounted &&
+      {portalMounted && deck &&
         createPortal(
           <div
             aria-hidden="true"

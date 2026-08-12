@@ -93,8 +93,14 @@ const SENTENCE: Record<string, { hi: Record<Lang, string>; mid: Record<Lang, str
 function band(v: number): "hi" | "mid" | "low" {
   return v >= 75 ? "hi" : v >= 50 ? "mid" : "low";
 }
+/** TEXT colour. Amber is reserved for "a clock is running" and fails AA as
+ *  text, so the mid band reads as neutral secondary ink. */
 function colourOf(v: number): string {
-  return v >= 75 ? "#12805C" : v >= 50 ? "#E0A82E" : "#C0392B";
+  return v >= 75 ? "var(--pos)" : v >= 50 ? "var(--text-secondary)" : "var(--error)";
+}
+/** BAR FILL colour. A bar can carry the amber mid band safely. */
+function barColourOf(v: number): string {
+  return v >= 75 ? "var(--pos)" : v >= 50 ? "var(--deadline)" : "var(--error)";
 }
 
 type Row = {
@@ -226,7 +232,7 @@ const AdvisorCard: React.FC<Props> = ({ lang, text, initial, subject, signalId, 
         boxShadow: "var(--v23-card-rest)",
         padding: 16,
         marginTop: 16,
-        fontFamily: rtl ? "Cairo, var(--ff-ui)" : "var(--ff-ui)",
+        fontFamily: "var(--ff-ui)",
         textAlign: rtl ? "right" : "left",
       }}
     >
@@ -256,15 +262,16 @@ const AdvisorCard: React.FC<Props> = ({ lang, text, initial, subject, signalId, 
         <div style={{ display: "grid", gap: 14 }}>
           {rows.map((r) => {
             const colour = colourOf(r.value);
+            const barColour = barColourOf(r.value);
             return (
               <div key={r.key}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
                   <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>{r.label}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', var(--ff-mono)", fontVariantNumeric: "tabular-nums", fontSize: 15, fontWeight: 600, color: colour }}>
+                  <span style={{ fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums", fontSize: 15, fontWeight: 600, color: colour }}>
                     {r.value}
                   </span>
                 </div>
-                <Bar value={r.value} colour={colour} />
+                <Bar value={r.value} colour={barColour} />
                 <p style={{ fontSize: 12.5, lineHeight: rtl ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "8px 0 0" }}>{r.sentence}</p>
                 {r.fix && (
                   <button
@@ -288,7 +295,7 @@ const AdvisorCard: React.FC<Props> = ({ lang, text, initial, subject, signalId, 
           <div style={{ opacity: 0.55 }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
               <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>{C.fresh[lang]}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', var(--ff-mono)", fontSize: 15, color: "var(--text-muted)" }}>—</span>
+              <span style={{ fontFamily: "var(--ff-mono)", fontSize: 15, color: "var(--text-muted)" }}>—</span>
             </div>
             <Bar value={0} colour="var(--border-strong)" />
             <p style={{ fontSize: 12.5, lineHeight: rtl ? 1.9 : 1.7, color: "var(--text-muted)", margin: "8px 0 0" }}>{C.freshSoon[lang]}</p>

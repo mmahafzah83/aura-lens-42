@@ -8,7 +8,7 @@ import { T, type Lang } from "./strings";
 const navBtn: React.CSSProperties = {
   minWidth: 44,
   minHeight: 44,
-  borderRadius: 10,
+  borderRadius: 8,
   border: "1px solid var(--border-default)",
   background: "var(--surface-card)",
   color: "var(--text-primary)",
@@ -50,7 +50,7 @@ export const ZoneStage: React.FC<{
       style={{
         background: "var(--surface-card)",
         border: "1px solid var(--border-default)",
-        borderRadius: 14,
+        borderRadius: 20,
         padding: 14,
         minWidth: 0,
       }}
@@ -104,7 +104,7 @@ export const ZoneStage: React.FC<{
             >
               ‹
             </button>
-            <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)" }}>
+            <span style={{ fontFamily: "var(--ff-mono)", fontSize: 13, color: "var(--text-secondary)" }}>
               {T.slideOf[lang]} {current + 1} {T.of[lang]} {count}
             </span>
             <button

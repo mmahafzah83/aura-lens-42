@@ -15,7 +15,7 @@ const heading: React.CSSProperties = {
 const pill = (on: boolean): React.CSSProperties => ({
   minHeight: 44,
   padding: "0 14px",
-  borderRadius: 10,
+  borderRadius: 999,
   cursor: "pointer",
   fontFamily: "var(--ff-ui)",
   fontSize: 13,
@@ -37,12 +37,14 @@ export const ZoneLook: React.FC<{
   hasDeck: boolean;
   /** True while an export is running: the look must not change under it. */
   disabled?: boolean;
-}> = ({ lang, theme, onTheme, template, onTemplate, length, onLength, hasDeck, disabled }) => (
+  /** Arabic shell — Cairo needs 1.9. */
+  rtlShell?: boolean;
+}> = ({ lang, theme, onTheme, template, onTemplate, length, onLength, hasDeck, disabled, rtlShell = false }) => (
   <div
     style={{
       background: "var(--surface-card)",
       border: "1px solid var(--border-default)",
-      borderRadius: 14,
+      borderRadius: 20,
       padding: 14,
       display: "grid",
       gap: 16,
@@ -56,7 +58,7 @@ export const ZoneLook: React.FC<{
       <TemplatePicker lang={lang} value={template} onChange={onTemplate} disabled={disabled} />
       {/* Free, and instant: switching the family re-draws the slides that
           already exist. Nothing is sent anywhere and nothing is re-written. */}
-      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: rtlShell ? 1.9 : 1.6, color: "var(--text-muted)", margin: 0 }}>
         {T.lookTemplateNote[lang]}
       </p>
     </div>
@@ -76,13 +78,18 @@ export const ZoneLook: React.FC<{
             aria-pressed={n === length}
             disabled={disabled}
             onClick={() => onLength(n)}
-            style={{ ...pill(n === length), opacity: disabled ? 0.45 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
+            style={{
+              ...pill(n === length),
+              fontFamily: "var(--ff-mono)",
+              opacity: disabled ? 0.45 : 1,
+              cursor: disabled ? "not-allowed" : "pointer",
+            }}
           >
             {n}
           </button>
         ))}
       </div>
-      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: rtlShell ? 1.9 : 1.6, color: "var(--text-muted)", margin: 0 }}>
         {hasDeck ? T.lookLengthNote[lang] : T.lookNeedsDeck[lang]}
       </p>
     </div>
