@@ -489,6 +489,9 @@ export const T = {
   seeAllSubjects: { en: "See all your subjects", ar: "اعرض كل مواضيعك" },
   hideAllSubjects: { en: "Show fewer subjects", ar: "اعرض عدداً أقل" },
   allSubjectsEmpty: { en: "You have no saved subjects yet.", ar: "لا توجد مواضيع محفوظة بعد." },
+  subjectsUnreadable: { en: "We could not read your subjects just now.", ar: "لم نتمكن من قراءة مواضيعك الآن." },
+  subjectsRetry: { en: "Try again", ar: "حاول مرة أخرى" },
+  nothingNewToRank: { en: "Nothing new to rank right now — here is everything you have.", ar: "لا جديد لترتيبه الآن — هذه كل مواضيعك." },
 
   // Writing language, changed after the first draft
   writeAgainEn: { en: "Write this in English instead", ar: "اكتبه بالإنجليزية بدلاً من ذلك" },

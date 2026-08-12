@@ -33,7 +33,6 @@ import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEd
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
 import JourneyMap from "@/components/studio/JourneyMap";
 import BusyBar from "@/components/studio/BusyBar";
-import PostureQuestion from "@/components/studio/PostureQuestion";
 import StageCard from "@/components/studio/StageCard";
 import AdvisorCard, { type GatePayload } from "@/components/studio/AdvisorCard";
 import ZonePiece from "@/components/studio/ZonePiece";
@@ -209,7 +208,6 @@ export default function StudioPanel({
   const [writeLang, setWriteLang] = useState<Lang>("en");
 
   const [posture, setPosture] = useState<Posture>(() => readStoredPosture() ?? "editor");
-  const [askingPosture, setAskingPosture] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
   /* ---------- the piece ------------------------------------------ */
@@ -218,7 +216,7 @@ export default function StudioPanel({
    * stored posture is read synchronously so the very first paint is already
    * the right room: delegator and author open at step 2, editor at step 1.
    */
-  const [step, setStep] = useState<number>(() => (readStoredPosture() === "editor" || !readStoredPosture() ? 1 : 2));
+  const [step, setStep] = useState<number>(1);
   const [sub, setSub] = useState<SubNav>("build");
   const [format, setFormat] = useState<Format | null>(null);
   /**
@@ -230,6 +228,13 @@ export default function StudioPanel({
 
   const [cards, setCards] = useState<StartCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
+  /**
+   * How many active subjects the member owns. -1 means the look itself failed —
+   * that is a different sentence from "you have nothing".
+   */
+  const [totalSignals, setTotalSignals] = useState(0);
+  /** Bumped by "Try again" to re-run the subjects loader. */
+  const [cardsNonce, setCardsNonce] = useState(0);
   const [choice, setChoice] = useState<Choice | null>(null);
   const [typedTopic, setTypedTopic] = useState("");
   const [pasted, setPasted] = useState("");
@@ -418,8 +423,6 @@ export default function StudioPanel({
    * WHERE A POSTURE OPENS. A posture changes who writes, where the journey
    * starts and what Aura does unasked — never what exists on the screen.
    */
-  // Everyone starts in the same place. Posture never moves the entry point.
-  const entryStep = (_p: Posture): number => 1;
   const postureRef = useRef<Posture>("editor");
   postureRef.current = posture;
 
@@ -499,8 +502,12 @@ export default function StudioPanel({
     try {
       const saved = localStorage.getItem(POSTURE_KEY) as Posture | null;
       if (saved === "delegator" || saved === "editor" || saved === "author") setPosture(saved);
-      else setAskingPosture(true);
-    } catch { setAskingPosture(true); }
+      else {
+        // Posture is a SILENT default. It is never asked for here.
+        try { localStorage.setItem(POSTURE_KEY, "editor"); } catch { /* a lost preference is not an error */ }
+        setPosture("editor");
+      }
+    } catch { setPosture("editor"); }
   }, []);
 
   /**
@@ -508,12 +515,12 @@ export default function StudioPanel({
    * A posture never moves a member off work they already have.
    */
   useEffect(() => {
-    if (!ready || askingPosture) return;
+    if (!ready) return;
     // W1 — changing posture mid-piece never moves a member off work they have,
     // but over an EMPTY piece it re-opens the journey where that posture opens.
-    if (!content.trim() && !deck && !pendingRestore) setStep(entryStep(posture));
+    if (!content.trim() && !deck && !pendingRestore) setStep(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, askingPosture, posture]);
+  }, [ready, posture]);
 
   /* ---------- responsive ------------------------------------------ */
   useEffect(() => {
@@ -824,7 +831,7 @@ export default function StudioPanel({
     setPasted("");
     setFormat(next?.format ?? null);
     setFormatDecided(Boolean(next?.format));
-    setStep(entryStep(postureRef.current));
+    setStep(1);
     setSub("build");
     setDraftId(null);
     setDraftSource(null);
@@ -860,7 +867,7 @@ export default function StudioPanel({
     draftPrefillRef.current = null;
     liveRef.current = {
       content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
-      step: entryStep(postureRef.current), format: next?.format ?? null,
+      step: 1, format: next?.format ?? null,
       formatDecided: Boolean(next?.format), draftId: null, draftSource: null,
       current: 0, scrollY: 0,
     };
@@ -877,10 +884,14 @@ export default function StudioPanel({
     let dead = false;
     setCardsLoading(true);
     (async () => {
-      const { cards: rows } = await loadStartCards(userId);
+      const { cards: rows, totalSignals: total } = await loadStartCards(userId);
       if (dead) return;
       setCards(rows);
+      setTotalSignals(total);
       setCardsLoading(false);
+      // Ranked nothing, but the shelf is not empty: open the shelf so the
+      // member sees the subjects they actually have.
+      if (rows.length === 0 && total > 0) setShowAllSubjects(true);
       // First entry only. Changing posture later never overwrites a subject
       // the member has already chosen.
       if (!preselectedRef.current && posture === "delegator" && rows[0]) {
@@ -889,7 +900,7 @@ export default function StudioPanel({
       }
     })();
     return () => { dead = true; };
-  }, [userId, posture]);
+  }, [userId, posture, cardsNonce]);
 
   /* ---------- step 1: the drafts already waiting ------------------ */
   const openDraft = useCallback(
@@ -1246,12 +1257,14 @@ export default function StudioPanel({
     }
   }, [choice, writeLang]);
 
+  /**
+   * Picking an angle SELECTS. It never writes: the step-1 primary is the only
+   * control on this screen that starts a generation.
+   */
   const pickAngle = useCallback((d: { id: string; angle: string }) => {
     setPickedAngleId(d.id);
     chosenDirectionRef.current = d.angle;
-    setAnglesOpen(false);
-    void generate(undefined, undefined, d.angle);
-  }, [generate]);
+  }, []);
 
   /* ---------- the draft row --------------------------------------- */
   /** The subject, written as a title so the Library never shows a raw line. */
@@ -1275,8 +1288,9 @@ export default function StudioPanel({
   );
 
   const savingRef = useRef(false);
-  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<{ id: string | null; failed: boolean }> => {
-    if (savingRef.current) return { id: null, failed: false };
+  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<{ id: string | null; failed: boolean; skipped?: boolean }> => {
+    // A save is already in flight. That is not a failure and not a refusal.
+    if (savingRef.current) return { id: null, failed: false, skipped: true };
     if (!userId || !content.trim()) return { id: null, failed: false };
     savingRef.current = true;
     try {
@@ -1844,9 +1858,10 @@ export default function StudioPanel({
     setBusy("save");
     setProblem(null);
     setBusyMessage(T.savingPiece[lang]);
-    const { id, failed } = await saveDraft();
+    const { id, failed, skipped } = await saveDraft();
     setBusy(null);
     setBusyMessage(null);
+    if (skipped) return; // a save is already running; saying anything would be a lie
     if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
     /**
      * Y5 — A CONTROL CALLED "COME BACK LATER" HAS TO TAKE YOU SOMEWHERE.
@@ -2074,20 +2089,6 @@ export default function StudioPanel({
           </Link>
         </p>
       </div>,
-    );
-  }
-
-  if (askingPosture) {
-    return shell(
-      <PostureQuestion
-        lang={lang}
-        value={posture}
-        onChange={setPosture}
-        onContinue={() => {
-          try { localStorage.setItem(POSTURE_KEY, posture); } catch { /* a lost preference is not an error */ }
-          setAskingPosture(false);
-        }}
-      />,
     );
   }
 
@@ -2348,7 +2349,8 @@ export default function StudioPanel({
             <ButtonPrimary
               onClick={async () => {
                 if (canSave) {
-                  const { id, failed } = await saveDraft();
+                  const { id, failed, skipped } = await saveDraft();
+                  if (skipped) return; // a save is already running
                   if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
                 }
                 startNewPiece();
@@ -2585,7 +2587,22 @@ export default function StudioPanel({
               {T.loading[lang]}
             </p>
           )}
-          {!cardsLoading && cards.length === 0 && (
+          {!cardsLoading && cards.length === 0 && totalSignals === -1 && (
+            <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+                {T.subjectsUnreadable[lang]}
+              </p>
+              <ButtonGhost onClick={() => setCardsNonce((n) => n + 1)} style={{ minHeight: 44 }}>
+                {T.subjectsRetry[lang]}
+              </ButtonGhost>
+            </div>
+          )}
+          {!cardsLoading && cards.length === 0 && totalSignals > 0 && (
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+              {T.nothingNewToRank[lang]}
+            </p>
+          )}
+          {!cardsLoading && cards.length === 0 && totalSignals === 0 && (
             <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
                 {T.chooseEmpty[lang]}
@@ -2761,7 +2778,10 @@ export default function StudioPanel({
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
                 <ButtonPrimary
-                  onClick={() => { if (advances) { void onContinue(); return; } void generate(); }}
+                  onClick={() => {
+                    if (advances) { void onContinue(); return; }
+                    void generate(undefined, undefined, chosenDirectionRef.current ?? undefined);
+                  }}
                   disabled={blocked}
                   style={{ minHeight: 44 }}
                 >
