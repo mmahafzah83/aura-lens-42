@@ -3242,9 +3242,9 @@ export default function StudioPanel({
                   setDeck((d) => (d ? { ...d, template: id, theme: next } : d));
                 }}
                 length={deckLength}
-                onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
+                onLength={(n) => { if (deckBusy) return; setDeckLength(n); if (deck) void makeSlides(n); }}
                 hasDeck={Boolean(deck)}
-                disabled={busy === "export"}
+                disabled={busy === "export" || deckBusy}
               />
             ) : (
               <ZoneInspector
