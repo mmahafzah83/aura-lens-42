@@ -19,7 +19,9 @@ export const BusyBar: React.FC<{
    * claiming a percentage or a countdown — one source of truth, no fiction.
    */
   indeterminate?: boolean;
-}> = ({ message, etaSeconds = 20, remainingLabel, indeterminate = false }) => {
+  /** Arabic shell — Cairo needs 1.9. */
+  rtlShell?: boolean;
+}> = ({ message, etaSeconds = 20, remainingLabel, indeterminate = false, rtlShell = false }) => {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -42,12 +44,12 @@ export const BusyBar: React.FC<{
         display: "grid",
         gap: 8,
         background: "var(--machine-tint)",
-        borderRadius: 10,
+        borderRadius: 12,
         padding: "10px 12px",
         margin: "0 0 12px",
       }}
     >
-      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--machine-text)", margin: 0 }}>
+      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--machine-text)", margin: 0 }}>
         {message}
       </p>
       <div
@@ -75,7 +77,7 @@ export const BusyBar: React.FC<{
                 bottom: 0,
                 width: "40%",
                 borderRadius: 999,
-                background: "var(--machine-text)",
+                background: "var(--machine)",
                 animation: "busybar-sweep 1.4s linear infinite",
               }}
             />
@@ -89,7 +91,7 @@ export const BusyBar: React.FC<{
             bottom: 0,
             width: `${percent}%`,
             borderRadius: 999,
-            background: "var(--machine-text)",
+            background: "var(--machine)",
             transition: "width .25s linear",
           }}
         />
