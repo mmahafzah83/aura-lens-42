@@ -2911,11 +2911,13 @@ export default function StudioPanel({
             /* Exactly one primary. A pending subject change owns it (its
                confirm is the primary), so the forward action stands down. */
             const forwardIsGhost =
-              confirmOwnsPrimary || (anglesOpen && Boolean(pickedAngleId) && !anglesBusy && !anglesError);
+              confirmOwnsPrimary ||
+              captureEmpty ||
+              (anglesOpen && Boolean(pickedAngleId) && !anglesBusy && !anglesError);
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
                 {advances ? (
-                  confirmOwnsPrimary ? (
+                  confirmOwnsPrimary || captureEmpty ? (
                     <ButtonGhost onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
                       {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
                     </ButtonGhost>
