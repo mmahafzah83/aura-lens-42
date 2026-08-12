@@ -3352,7 +3352,7 @@ export default function StudioPanel({
                   {T.confirmDiscardSlidesHead[lang]}
                 </p>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <ButtonGhost
+                  <ButtonPrimary
                     onClick={() => {
                       setDeck(null);
                       setDeckSource(null);
@@ -3367,7 +3367,7 @@ export default function StudioPanel({
                     style={{ minHeight: 44 }}
                   >
                     {T.confirmDiscardSlidesYes[lang]}
-                  </ButtonGhost>
+                  </ButtonPrimary>
                   <ButtonGhost onClick={() => setPendingFormat(null)} style={{ minHeight: 44 }}>
                     {T.replaceNo[lang]}
                   </ButtonGhost>
