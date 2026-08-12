@@ -2359,16 +2359,26 @@ export default function StudioPanel({
      member with a QUESTION — a confirmation, a restore offer, a pending
      change — that question owns the single primary. Every FORWARD action on
      the screen steps down to a ghost until the question is answered. */
+  /* Each term below MIRRORS ITS BANNER'S OWN RENDER GUARD exactly. A question
+     may only take the primary on a screen where it is actually ON SCREEN —
+     otherwise the member is left with no primary at all. If you change a
+     banner's render condition, change its term here in the same edit. */
   const confirmOwnsPrimary =
-    Boolean(confirmNewPiece) ||
-    Boolean(pendingSubject) ||
-    Boolean(askReplace) ||
-    Boolean(askRefine) ||
-    Boolean(askLangSwitch) ||
-    Boolean(pendingFormat) ||
-    Boolean(pendingRestore) ||
-    Boolean(preparedDraft) ||
-    confirmingPost;
+    Boolean(confirmNewPiece) ||                                   // top-level, every step
+    (Boolean(pendingSubject) && step === 1) ||
+    (Boolean(askReplace) && step === 1 && showPaste) ||
+    (Boolean(askRefine) && step === 2) ||                          // writeArea renders on step 2 only
+    (Boolean(askLangSwitch) && step === 2) ||
+    (pendingFormat === "post" && step === 3) ||
+    (Boolean(pendingRestore) && !content && !deck) ||
+    (Boolean(preparedDraft) && !content && !deck && !pendingRestore) ||
+    (confirmingPost && step === 4 && format !== "slides" && !published && busy !== "post");
+
+  /* Step 1 with nothing captured yet: the ONLY move that goes forward is
+     capture, so it owns the primary and "Write it" (disabled anyway) is a
+     ghost. Mirrors the empty-state banner's own guard. */
+  const captureEmpty =
+    !cardsLoading && cards.length === 0 && totalSignals === 0 && Boolean(onOpenCapture);
 
   const onContinue = async () => {
     if (step === 1) {
