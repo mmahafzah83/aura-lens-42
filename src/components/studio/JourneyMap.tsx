@@ -10,7 +10,9 @@ export const JourneyMap: React.FC<{
   step: number;
   done: Record<number, boolean>;
   onStep: (n: number) => void;
-}> = ({ lang, step, done, onStep }) => {
+  /** Arabic shell — Cairo needs 1.9. */
+  rtlShell?: boolean;
+}> = ({ lang, step, done, onStep, rtlShell = false }) => {
   const labels = [T.step1[lang], T.step2[lang], T.step3[lang], T.step4[lang]];
   return (
     <div style={{ padding: "14px 0 6px" }}>
@@ -40,19 +42,21 @@ export const JourneyMap: React.FC<{
                   alignItems: "center",
                   gap: 8,
                   padding: "0 14px",
-                  borderRadius: 10,
+                  borderRadius: 8,
                   cursor: "pointer",
                   fontFamily: "var(--ff-ui)",
                   fontSize: 13.5,
                   fontWeight: isCurrent ? 700 : 500,
-                  background: isCurrent || isDone ? "var(--act-tint)" : "var(--surface-card)",
-                  color: isCurrent || isDone ? "var(--act)" : "var(--text-secondary)",
-                  border: `${isCurrent ? 2 : 1}px solid ${isCurrent || isDone ? "var(--act)" : "var(--border-default)"}`,
+                  /* Blue is "your turn" — only the CURRENT step wears it. A
+                     finished step is status, so it reads neutral/machine. */
+                  background: isCurrent ? "var(--act-tint)" : isDone ? "var(--machine-tint)" : "var(--surface-card)",
+                  color: isCurrent ? "var(--act)" : isDone ? "var(--machine-text)" : "var(--text-secondary)",
+                  border: `${isCurrent ? 2 : 1}px solid ${isCurrent ? "var(--act)" : isDone ? "var(--machine-text)" : "var(--border-default)"}`,
                 }}
               >
                 {/* W10 — being here does not un-finish the work: the current
                     step still shows its tick. */}
-                <span aria-hidden="true">{isDone ? `✓ ${n}` : n}</span>
+                <span aria-hidden="true" style={{ fontFamily: "var(--ff-mono)" }}>{isDone ? `✓ ${n}` : n}</span>
                 <span>{label}</span>
               </button>
             </li>
@@ -63,6 +67,7 @@ export const JourneyMap: React.FC<{
         style={{
           fontFamily: "var(--ff-ui)",
           fontSize: 12.5,
+          lineHeight: rtlShell ? 1.9 : 1.7,
           color: "var(--text-muted)",
           margin: "8px 0 0",
         }}
