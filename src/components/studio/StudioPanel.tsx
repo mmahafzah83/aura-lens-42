@@ -3519,7 +3519,7 @@ export default function StudioPanel({
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {/* Every label states exactly what survives it. */}
-                {format === "slides" && exported ? (
+                {(format === "slides" && exported) || confirmOwnsPrimary ? (
                   <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
                     {T.newPost[lang]}
                   </ButtonGhost>
@@ -3585,6 +3585,16 @@ export default function StudioPanel({
                     />
                   ) : confirmingPost ? (
                     confirmPanel
+                  ) : confirmOwnsPrimary ? (
+                    <ButtonGhost
+                      onClick={requestPost}
+                      disabled={
+                        !content.trim() || content.length > POST_MAX_CHARS || Boolean(notReady)
+                      }
+                      style={{ minHeight: 44 }}
+                    >
+                      {T.postItNow[lang]}
+                    </ButtonGhost>
                   ) : (
                     <ButtonPrimary
                       onClick={requestPost}
@@ -3628,7 +3638,7 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: "0 0 8px" }}>
                 <span style={{ fontFamily: "var(--ff-mono)" }}>1</span> · {T.s4Get[lang]}
               </p>
-              {exported ? (
+              {exported || confirmOwnsPrimary ? (
                 <ButtonGhost onClick={() => void exportFile()} disabled={busy === "export"} style={{ minHeight: 44 }}>
                   {busy === "export" ? T.exporting[lang] : T.exportFile[lang]}
                 </ButtonGhost>
@@ -3665,7 +3675,7 @@ export default function StudioPanel({
                     textAlign: rtlShell ? "right" : "left",
                   }}
                 />
-                {exported ? (
+                {exported && !confirmOwnsPrimary ? (
                   <ButtonPrimary onClick={() => void saveLink()} disabled={!canSaveLink || published || busy === "link"} style={{ minHeight: 44 }}>
                     {busy === "link" ? T.savingLink[lang] : T.linkSave[lang]}
                   </ButtonPrimary>
