@@ -896,6 +896,12 @@ export default function StudioPanel({
       postRowRef.current = d._source === "linkedin_posts" ? d.id : null;
       originDraftRef.current = null;
       generatedTextRef.current = null;
+      setGatePayload(null);
+      chosenDirectionRef.current = null;
+      fingerprintRef.current = {};
+      unsourcedRemovedRef.current = 0;
+      unsourcedEntitiesRemovedRef.current = 0;
+      setAskRefine(null);
       persistNow({
         content: d.body,
         deck: null,
