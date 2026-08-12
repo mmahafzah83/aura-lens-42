@@ -102,7 +102,7 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
   // The token confirmed who the member is, but LinkedIn gave no public
   // address for them. That is a different sentence from "we have nothing".
   const idOnly = state.sourceStatus === "confirmed_by_identity" && !state.address;
-  const needsReconnect = state.sourceStatus === "needs_reconnect";
+  const needsReconnect = state.needsReconnect;
 
   const shell: React.CSSProperties = {
     background: CARD,
