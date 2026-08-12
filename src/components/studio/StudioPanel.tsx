@@ -1168,6 +1168,9 @@ export default function StudioPanel({
     setGenErrorDetail(null);
     setGenWarnings([]);
     setNotReady(null);
+    // Writing instead of answering IS an answer: clear the standing offers.
+    setPreparedDraft(null);
+    setPendingRestore(null);
     setGenerating(true);
     setBusyMessage(T.writing[lang]);
     setStep(2);
