@@ -22,6 +22,10 @@ export interface LinkedInState {
   addressConfirmed: boolean;
   /** Raw provenance of the stored address, as the row records it. */
   sourceStatus: string | null;
+  /** The connection's own state. 'needs_reconnect' means the sign-in expired. */
+  connectionStatus: string | null;
+  /** LinkedIn refused the stored sign-in — the member must connect again. */
+  needsReconnect: boolean;
   /** Whether Aura may publish for the member (still only on approval). */
   canPost: boolean;
   lastSyncedAt: string | null;
@@ -30,6 +34,7 @@ export interface LinkedInState {
 export const EMPTY_LINKEDIN_STATE: LinkedInState = {
   connected: false, handle: null, address: null,
   confirmedByRead: false, addressConfirmed: false, sourceStatus: null,
+  connectionStatus: null, needsReconnect: false,
   canPost: false, lastSyncedAt: null,
 };
 
@@ -44,6 +49,8 @@ export async function loadLinkedInState(userId: string): Promise<LinkedInState> 
   if (error || !data) return EMPTY_LINKEDIN_STATE;
   const row = data as any;
   const handle = canonicalHandle(row.handle) ?? canonicalHandle(row.profile_url);
+  const addressConfirmed =
+    row.source_status === "verified_by_read" || row.source_status === "confirmed_by_identity";
   // An address-only row defaults to status 'active' AND connected_at now(), so
   // neither proves anything. Only OAuth can produce a linkedin_id and granted
   // scopes, and only the posting scope means Aura may publish for the member.
@@ -54,8 +61,10 @@ export async function loadLinkedInState(userId: string): Promise<LinkedInState> 
     handle,
     address: (row.profile_url as string | null) || profileUrlFor(handle),
     confirmedByRead: row.source_status === "verified_by_read",
-    addressConfirmed: row.source_status === "verified_by_read",
+    addressConfirmed,
     sourceStatus: (row.source_status as string | null) ?? null,
+    connectionStatus: (row.status as string | null) ?? null,
+    needsReconnect: row.status === "needs_reconnect",
     canPost: connected && scopes.includes("w_member_social"),
     lastSyncedAt: (row.last_synced_at as string | null) ?? null,
   };

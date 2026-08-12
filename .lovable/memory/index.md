@@ -30,3 +30,4 @@ C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Ste
 - [Voice Profile Hygiene](mem://features/voice/profile-hygiene) — avoid/use caps, example_posts normalization, required generated-post metadata
 - [Voice Learning Loop](mem://features/voice/learning-loop) — Edit persistence + edit_distance, entity provenance guard, evidence-backed voice rules
 - [Voice OS Data Foundation](mem://features/voice/voice-os-data) — voice_traits registry/values/feedback, computable traits, hook+ending vocabulary, readiness
+- [LinkedIn Address Authority](mem://features/linkedin/address-authority) — Address established from the member's own OAuth token; guessed handles retired

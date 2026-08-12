@@ -1,16 +1,17 @@
 /**
  * Settings → "Your LinkedIn". The one place a member types their own address.
  *
- * Every address in the database today was guessed from a display name; only a
- * real profile read confirms one. So this card only writes
- * `source_status = 'verified_by_read'` after `linkedin-fetch-profile` actually
- * returns a profile — never on save alone.
+ * An address is only ever established two ways: the member's own LinkedIn
+ * sign-in hands it back with their token, or the member types it here and a
+ * real profile read confirms it. Nothing derives an address from a name. This
+ * card writes `source_status = 'verified_by_read'` only after
+ * `linkedin-fetch-profile` actually returns a profile — never on save alone.
  */
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { canonicalHandle, profileUrlFor, saveLinkedInAddress } from "@/lib/linkedinAddress";
-import { loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
+import { EMPTY_LINKEDIN_STATE, loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
 
 /* System-B tokens */
 const ACTION = "#0670C4";
@@ -85,7 +86,7 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
         posts,
       });
       setState((s) => ({
-        ...(s ?? { connected: false, handle: null, address: null, canPost: false, lastSyncedAt: null, addressConfirmed: false, sourceStatus: null }),
+        ...(s ?? EMPTY_LINKEDIN_STATE),
         handle, address: profile_url, confirmedByRead: true, addressConfirmed: true, sourceStatus: "verified_by_read",
       }));
       setExpanded(false);
@@ -98,8 +99,10 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
 
   if (!userId || state === null) return null;
   const confirmed = state.confirmedByRead;
-  // A guess was never an address — say so rather than presenting it as one.
-  const guessed = state.sourceStatus === "guessed_from_name" && Boolean(state.address);
+  // The token confirmed who the member is, but LinkedIn gave no public
+  // address for them. That is a different sentence from "we have nothing".
+  const idOnly = state.sourceStatus === "confirmed_by_identity" && !state.address;
+  const needsReconnect = state.needsReconnect;
 
   const shell: React.CSSProperties = {
     background: CARD,
@@ -165,11 +168,13 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
       <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, marginTop: 8, marginBottom: 14 }}>
         Aura reads what's already public on your profile — your headline and your recent posts —
         so that what it writes sounds like you and not like anyone else.
-        {!confirmed && (guessed
-          ? " We guessed this from your name — check it's right and we'll read it."
-          : state.address
-            ? ` We have ${state.address.replace(/^https?:\/\/(www\.)?/, "")} on file, but Aura hasn't read it yet.`
-            : " We don't have an address for you yet.")}
+        {!confirmed && (idOnly
+          ? " LinkedIn confirmed your account but didn't hand back a public address. Type it here and Aura will read it."
+          : needsReconnect
+            ? " Your LinkedIn sign-in has run out. Connect LinkedIn again and Aura can read it."
+            : state.address
+              ? ` We have ${state.address.replace(/^https?:\/\/(www\.)?/, "")} on file, but Aura hasn't read it yet.`
+              : " We don't have an address for you yet.")}
       </p>
 
       <label htmlFor="linkedin-address" style={{ display: "block", fontSize: 12.5, color: MUTED, marginBottom: 6 }}>

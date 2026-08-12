@@ -30,11 +30,13 @@ export function canonicalHandle(input: unknown): string | null {
   // always meant to pass.
   try { raw = decodeURIComponent(raw); } catch { /* keep the raw string */ }
   raw = raw.replace(/^[.\-_]+/, "").replace(/[.\-_]+$/, "").trim();
-  // Reject, never launder. A display-name guess full of commas, spaces or ®
-  // cleans up into a plausible-looking slug that can never resolve on
-  // LinkedIn — and then reads as a real address to every surface downstream.
+  // Reject, never launder (Law #97). A display-name guess full of commas,
+  // spaces or ® cleans up into a plausible-looking slug that can never resolve
+  // on LinkedIn — and then reads as a real address to every surface
+  // downstream. A LinkedIn vanity name is ASCII letters, digits and hyphens;
+  // the database refuses anything else, so this refuses it first.
   if (!raw) return null;
-  if (/[^A-Za-z0-9\u0600-\u06FF._-]/.test(raw)) return null;
+  if (!/^[A-Za-z0-9][A-Za-z0-9-]{1,99}$/.test(raw)) return null;
   return raw.length >= 3 ? raw : null;
 }
 
@@ -62,7 +64,14 @@ export async function saveLinkedInAddress(userId: string, input: string): Promis
   const handle = canonicalHandle(input);
   if (!handle) throw new Error("That doesn't look like a LinkedIn address.");
   const profile_url = profileUrlFor(handle) as string;
-  const patch = { handle, profile_url, updated_at: new Date().toISOString() };
+  // The member typed it themselves. That is not a read, so it is not
+  // `verified_by_read` — but it is not a guess either.
+  const patch = {
+    handle,
+    profile_url,
+    source_status: "member_entered",
+    updated_at: new Date().toISOString(),
+  };
 
   // Update first: the row usually exists, and `access_token` is required on
   // insert, so an address-only row starts with an empty token until the member

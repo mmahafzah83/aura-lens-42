@@ -142,7 +142,10 @@ Deno.serve(async (req) => {
         .select("handle, profile_url, source_status")
         .eq("user_id", targetUserId)
         .maybeSingle();
-      if (conn?.source_status === "guessed_from_name") {
+      // Only an address established by a read, or by the member's own OAuth
+      // identity, may be handed to Apify. Anything else was never an address.
+      const trusted = ["verified_by_read", "confirmed_by_identity", "member_entered"];
+      if (conn && !trusted.includes(conn.source_status ?? "")) {
         return json({ error: "address_not_confirmed" }, 400);
       }
       handle = parseHandle(conn?.profile_url) ??
