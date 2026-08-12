@@ -289,6 +289,10 @@ export const T = {
     en: "We could not post it just now. Your words are kept — edit anything and try again.",
     ar: "لم نتمكن من نشره الآن. كلماتك محفوظة — عدّل ما تشاء وحاول مرة أخرى.",
   },
+  saveFailed: {
+    en: "We could not save that just now. Your words are still here — try again.",
+    ar: "لم نتمكن من الحفظ الآن. نصك ما زال موجوداً — حاول مرة أخرى.",
+  },
   savingPiece: { en: "Saving your post…", ar: "نحفظ منشورك…" },
 
   // Publish — slides
