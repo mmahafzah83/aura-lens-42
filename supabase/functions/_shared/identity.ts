@@ -129,7 +129,12 @@ export async function writeLinkedInIdentity(
 
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (display_name) { patch.display_name = display_name; patch.profile_name = display_name; }
-  if (handle) patch.handle = handle;
+  if (handle) {
+    patch.handle = handle;
+    // The address came back from LinkedIn itself on this read, so it is
+    // established — never derived from the member's display name.
+    patch.source_status = "verified_by_read";
+  }
   if (profile_url) patch.profile_url = profile_url;
 
   if (Object.keys(patch).length > 1) {
