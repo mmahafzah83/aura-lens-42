@@ -1552,9 +1552,21 @@ export default function StudioPanel({
     const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
     await supabase
       .from("linkedin_posts")
-      .update({ source_metadata: { ...prev, deck: { ...d, theme: th, template: tpl } } } as any)
+    .update({ source_metadata: { ...prev, deck: { ...d, theme: th, template: tpl } } } as any)
       .eq("id", rowId);
   }, []);
+
+  /** Every deck edit is a first-class save, not a memory-only tweak. */
+  useEffect(() => {
+    if (!deck) return;
+    const rowId = postRowRef.current ?? draftId;
+    if (!rowId) return;
+    const t = window.setTimeout(() => {
+      void persistDeck(rowId, deck, theme, template).catch((e) =>
+        console.warn("deck not persisted", e));
+    }, 800);
+    return () => window.clearTimeout(t);
+  }, [deck, theme, template, draftId, persistDeck]);
 
   const makeSlides = useCallback(async (lengthOverride?: 5 | 7 | 10) => {
     // Never silent: every refusal says why.
@@ -1887,8 +1899,6 @@ export default function StudioPanel({
   useEffect(() => {
     if (sub !== "look") return;
     setDeckFailures([]);
-    setFits({});
-    fitsRef.current = {};
   }, [sub]);
 
   /* THE PIECE STATE. Derived, never stored twice, never inferred from the
@@ -2224,7 +2234,10 @@ export default function StudioPanel({
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <ButtonPrimary
               onClick={async () => {
-                if (canSave) await saveAndComeBack();
+                if (canSave) {
+                  const id = await saveDraft();
+                  if (!id) { setProblem(T.postFailed[lang]); return; }
+                }
                 startNewPiece();
                 setConfirmNewPiece(false);
               }}

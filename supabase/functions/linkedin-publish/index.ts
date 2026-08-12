@@ -96,7 +96,7 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
 
   let postId: string | undefined;
   let advisory: unknown = false;
-  let quality_note: { overall_score: number; gate_category: string; blocked_would_have: boolean } | null = null;
+  let quality_note: { overall_score: number; gate_category: string; blocked_would_have: boolean; gate_unavailable?: boolean } | null = null;
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Unauthorized" }, 401);
