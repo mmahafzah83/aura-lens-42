@@ -2209,7 +2209,7 @@ export default function StudioPanel({
         gap: 10,
       }}
     >
-      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: 1.7, color: "var(--text-primary)", margin: 0 }}>
+      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: 0 }}>
         {T.confirmPostHead[lang]}
       </p>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -2235,7 +2235,7 @@ export default function StudioPanel({
         </p>
       )}
       {genWarnings.length > 0 && (
-        <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--ink-3)", margin: "0 0 10px" }}>
+        <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "0 0 10px" }}>
           {lang === "ar"
             ? `مسودة جاهزة، مع ملاحظات: ${genWarnings.join("، ")}`
             : `Draft ready, with notes: ${genWarnings.join(", ")}`}
@@ -2304,7 +2304,7 @@ export default function StudioPanel({
             border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
           }}
         >
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
             {T.refineReplaceHead[lang]}
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -2458,7 +2458,7 @@ export default function StudioPanel({
         <div
           style={{
             background: "var(--surface-card)", border: "1px solid var(--border-default)",
-            borderRadius: 14, padding: 14, margin: "0 0 12px", display: "grid", gap: 12,
+            borderRadius: 20, padding: 14, margin: "0 0 12px", display: "grid", gap: 12,
           }}
         >
           {([
@@ -2471,7 +2471,7 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
                 {head}
               </p>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.75, color: "var(--text-secondary)", margin: "4px 0 0" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.75, color: "var(--text-secondary)", margin: "4px 0 0" }}>
                 {body}
               </p>
             </div>
@@ -2498,7 +2498,7 @@ export default function StudioPanel({
             {L.preparedLine[lang].replace("{subject}", preparedDraft.title || preparedDraft.topic || "")}
           </span>
           <span style={{ flex: 1 }} />
-          <ButtonPrimary
+          <ButtonGhost
             onClick={() => {
               const d = preparedDraft;
               setPreparedDraft(null);
@@ -2507,7 +2507,7 @@ export default function StudioPanel({
             style={{ minHeight: 44 }}
           >
             {T.openDraft[lang]}
-          </ButtonPrimary>
+          </ButtonGhost>
           <button
             type="button"
             onClick={() => setPreparedDraft(null)}
@@ -2552,9 +2552,9 @@ export default function StudioPanel({
               )}
           </span>
           <span style={{ flex: 1 }} />
-          <ButtonPrimary onClick={carryOnRestore} style={{ minHeight: 44 }}>
+          <ButtonGhost onClick={carryOnRestore} style={{ minHeight: 44 }}>
             {T.openDraft[lang]}
-          </ButtonPrimary>
+          </ButtonGhost>
           <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
             {T.newPost[lang]}
           </ButtonGhost>
