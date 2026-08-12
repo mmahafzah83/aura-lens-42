@@ -2677,7 +2677,7 @@ export default function StudioPanel({
       )}
 
       {step === 1 && (
-        <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+        <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} lang={lang} rtlShell={rtlShell} defaultOpen>
           {/* W9 — a tick nobody earned must name who earned it. */}
           {posture === "delegator" && choice?.id && !wordsReady && (
             <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "0 0 14px" }}>
@@ -3154,6 +3154,7 @@ export default function StudioPanel({
           subtitle={wordsReady ? T.writeHelp[lang] : undefined}
           align={rtlShell ? "right" : "left"}
           lang={lang}
+          rtlShell={rtlShell}
         >
           {/* One fallback only, identical for everyone: if there are no words
               yet, offer the same "Write it" that step 1 offers. */}
@@ -3303,7 +3304,7 @@ export default function StudioPanel({
       {step === 3 && (
         <>
           {/* The job first: what shape should this take? */}
-          <StageCard title={T.formatHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+          <StageCard title={T.formatHead[lang]} align={rtlShell ? "right" : "left"} lang={lang} rtlShell={rtlShell} defaultOpen>
             <div style={{ display: "grid", gap: 10 }}>
               {([
                 ["post", T.formatWords[lang], T.formatWordsHelp[lang]],
@@ -3519,7 +3520,7 @@ export default function StudioPanel({
       )}
 
       {step === 4 && (
-        <StageCard title={T.publishHead[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
+        <StageCard title={T.publishHead[lang]} align={rtlShell ? "right" : "left"} lang={lang} rtlShell={rtlShell} defaultOpen>
           {/* P9 — THE ENDING. Whichever route the member took, the cycle closes
               here, in the main column, with three ways onward. Nothing on this
               panel can be pressed twice into a second post. */}
