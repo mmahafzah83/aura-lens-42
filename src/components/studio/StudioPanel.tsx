@@ -2656,6 +2656,7 @@ export default function StudioPanel({
           message={busyMessage}
           etaSeconds={etaFor(busyMessage, lang)}
           remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
+        rtlShell={rtlShell}
         />
       )}
 
@@ -3563,7 +3564,7 @@ export default function StudioPanel({
                 <>
                   {notReady && (
                     <div style={{ display: "grid", gap: 10, margin: "0 0 12px" }}>
-                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: 0, lineHeight: 1.75 }}>
+                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--error)", margin: 0, lineHeight: rtlShell ? 1.9 : 1.75 }}>
                         {notReady}
                       </p>
                       {/* P1b — Aura advises, the member decides. Always a way out. */}
