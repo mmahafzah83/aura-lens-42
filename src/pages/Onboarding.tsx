@@ -460,6 +460,7 @@ const Onboarding = () => {
       const uid = session.user.id;
       setUserId(uid);
       setUserEmail(session.user.email ?? null);
+      void ensureTimezone(uid);
 
       const passwordSet = Boolean((session.user.user_metadata as any)?.password_set);
       let confirmed = false;
