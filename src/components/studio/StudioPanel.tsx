@@ -1285,7 +1285,7 @@ export default function StudioPanel({
           .from("content_items")
           .update({ body: content, language: writeLang, ...(title ? { title } : {}) } as any)
           .eq("id", draftId);
-        if (ciErr) { console.error("draft not saved", ciErr); return null; }
+        if (ciErr) { console.error("draft not saved", ciErr); setProblem(T.saveFailed[lang]); return null; }
         return draftId;
       }
       // Never overwrite what the edge functions wrote into source_metadata.
@@ -1315,7 +1315,7 @@ export default function StudioPanel({
           ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", draftId);
-      if (lpErr) { console.error("draft not saved", lpErr); return null; }
+      if (lpErr) { console.error("draft not saved", lpErr); setProblem(T.saveFailed[lang]); return null; }
       return draftId;
     }
     // The original is the text as GENERATED, never the text on screen: a member
@@ -1343,7 +1343,7 @@ export default function StudioPanel({
       } as any)
       .select("id")
       .single();
-    if (error) return null;
+    if (error) { console.error("draft not saved", error); setProblem(T.saveFailed[lang]); return null; }
     const id = (ins as any)?.id as string;
     setDraftId(id);
     setDraftSource("linkedin_posts");
@@ -1351,7 +1351,7 @@ export default function StudioPanel({
     // An identifier that must survive a reload is written the moment it exists.
     persistNow();
     return id;
-  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow]);
+  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow, lang]);
 
   /**
    * Publishing to LinkedIn from a content_items draft needs a linkedin_posts
@@ -1464,7 +1464,7 @@ export default function StudioPanel({
    * publishing paths, and the existing source_metadata is merged, never lost.
    */
   const finalisePublished = useCallback(
-    async (id: string, url: string | null, alreadyPublished = false) => {
+    async (id: string, url: string | null, alreadyPublished = false): Promise<boolean> => {
       const now = new Date().toISOString();
       const { data: existing } = await supabase
         .from("linkedin_posts")
@@ -1496,7 +1496,8 @@ export default function StudioPanel({
           source_metadata: { ...prev, ...pieceMeta(), ...(url ? { external_url: url } : {}) },
         } as any)
         .eq("id", id);
-      if (pubErr) { console.error("publish not recorded", pubErr); setProblem(T.saveFailed[lang]); }
+      let recorded = true;
+      if (pubErr) { console.error("publish not recorded", pubErr); setProblem(T.saveFailed[lang]); recorded = false; }
 
       // The content_items twin is retired, or the invariant grows a duplicate.
       const origin = originDraftRef.current;
@@ -1546,6 +1547,7 @@ export default function StudioPanel({
           .invoke("calculate-aura-score", { body: { user_id: userId } })
           .catch(() => { /* never surfaced */ });
       }
+      return recorded;
     },
     [pieceMeta, userId, content, writeLang, lang],
   );
@@ -1663,9 +1665,15 @@ export default function StudioPanel({
       setCurrent(0);
       setFits({});
       // Fire and forget: a save failure never withholds the slides.
-      void persistDeck(rowId ?? draftId, parsed.data, theme, template).catch((e) =>
-        console.warn("deck not persisted", e),
-      );
+      const deckRow = rowId ?? draftId;
+      if (!deckRow) {
+        // The slides are here, but there is nowhere to keep them yet.
+        setStatus(T.saveFailed[lang]);
+      } else {
+        void persistDeck(deckRow, parsed.data, theme, template).catch((e) =>
+          console.warn("deck not persisted", e),
+        );
+      }
     } catch (err) {
       const sentence = await slidesFailureSentence(err);
       if (runId === deckRunId.current) setDeckFailures([sentence]);
@@ -1764,7 +1772,7 @@ export default function StudioPanel({
     setNotReady(null);
     setBusyMessage(T.posting[lang]);
     const id = await ensurePostRow();
-    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
+    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.saveFailed[lang]); return; }
     // What is on screen is what publishes. If it did not land, nothing goes out.
     const synced = await syncRowToScreen(id);
     if (!synced) {
@@ -1788,8 +1796,9 @@ export default function StudioPanel({
       const url = (payload?.postUrl as string) || null;
       setPostUrl(url);
       setPublished(true);
-      setStatus(T.postedHelp[lang]);
-      await finalisePublished(id, url, payload?.already_published === true);
+      // The success line is only claimed once the bookkeeping has landed.
+      const recorded = await finalisePublished(id, url, payload?.already_published === true);
+      if (recorded) setStatus(T.postedHelp[lang]);
       void track("post_published", { signal_id: choice?.id || null, route: "linkedin" });
       return;
     }
@@ -1912,8 +1921,9 @@ export default function StudioPanel({
     setProblem(null);
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
-    // What is on screen is what publishes.
-    await syncRowToScreen(id);
+    // What is on screen is what publishes. If it did not land, nothing is marked.
+    const synced = await syncRowToScreen(id);
+    if (!synced) { setBusy(null); setBusyMessage(null); setProblem(T.saveFailed[lang]); return; }
     await finalisePublished(id, url);
     void track("post_published", { signal_id: choice?.id || null, route: "manual" });
     setBusy(null);
@@ -2319,7 +2329,7 @@ export default function StudioPanel({
               onClick={async () => {
                 if (canSave) {
                   const id = await saveDraft();
-                  if (!id) { setProblem(T.postFailed[lang]); return; }
+                  if (!id) { setProblem(T.saveFailed[lang]); return; }
                 }
                 startNewPiece();
                 setConfirmNewPiece(false);
