@@ -2373,12 +2373,18 @@ export default function StudioPanel({
             <ButtonPrimary
               onClick={async () => {
                 if (canSave) {
+                  setBusy("save");
+                  setProblem(null);
+                  setBusyMessage(T.savingPiece[lang]);
                   const { id, failed } = await saveDraft();
+                  setBusy(null);
+                  setBusyMessage(null);
                   if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
                 }
                 startNewPiece();
                 setConfirmNewPiece(false);
               }}
+              disabled={busy === "save"}
               style={{ minHeight: 44 }}
             >
               {L.newPieceYes[lang]}
@@ -2845,7 +2851,7 @@ export default function StudioPanel({
                     {anglesBusy ? T.anglesLoading[lang] : (anglesOpen ? T.hideAngles[lang] : T.seeAngles[lang])}
                   </ButtonGhost>
                 )}
-                {anglesOpen && !anglesBusy && (
+                {!advances && anglesOpen && !anglesBusy && (
                   <div style={{ marginTop: 6, width: "100%" }}>
                     {anglesError ? (
                       <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: 0 }}>
