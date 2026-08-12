@@ -219,7 +219,8 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
       const rawOverall = Number(gate?.overall ?? 0);
       const overallScore = Math.min(100, Math.max(0, rawOverall <= 10 ? Math.round(rawOverall * 10) : Math.round(rawOverall)));
       const weaknesses = Array.isArray(gate?.weaknesses) ? gate.weaknesses : [];
-      const passed = !gateError && gate
+      const gateUnavailable = Boolean(gateError) || !gate || gate.skipped === true;
+      const passed = !gateUnavailable
         ? (gate.pass === true || (gate.pass === undefined && overallScore >= 70))
         : false;
 
@@ -242,12 +243,13 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         console.error("[linkedin-publish] gate log failed:", (e as Error).message);
       }
 
-      if (gateError || !gate) {
+      if (gateUnavailable) {
         // An infrastructure timeout is not a failing verdict. Fail open.
-        console.warn("[linkedin-publish] gate unavailable, publishing anyway:", gateError);
+        const unavailableReason = gateError ?? gate?.skip_reason ?? "skipped";
+        console.warn("[linkedin-publish] gate unavailable, publishing anyway:", unavailableReason);
         quality_note = {
           overall_score: overallScore,
-          gate_category: "other",
+          gate_category: typeof gate?.category === "string" ? gate.category : "other",
           blocked_would_have: true,
           gate_unavailable: true,
         };

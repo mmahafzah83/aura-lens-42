@@ -1552,7 +1552,7 @@ export default function StudioPanel({
     const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
     await supabase
       .from("linkedin_posts")
-    .update({ source_metadata: { ...prev, deck: { ...d, theme: th, template: tpl } } } as any)
+      .update({ source_metadata: { ...prev, deck: { ...d, theme: th, template: tpl } } } as any)
       .eq("id", rowId);
   }, []);
 
@@ -1900,6 +1900,12 @@ export default function StudioPanel({
     if (sub !== "look") return;
     setDeckFailures([]);
   }, [sub]);
+
+  /** A theme or template change changes the physical slide layout; any
+   *  previous fit measurements are from the previous look and must reset. */
+  useEffect(() => {
+    setFits({});
+  }, [theme, template]);
 
   /* THE PIECE STATE. Derived, never stored twice, never inferred from the
      highest step visited. `deriveDone` owns every tick and clamps the
