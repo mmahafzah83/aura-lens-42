@@ -4015,6 +4015,105 @@ export type Database = {
         }
         Relationships: []
       }
+      strategic_signals_orphans_20260811: {
+        Row: {
+          base_confidence: number | null
+          commercial_validation_score: number | null
+          confidence: number | null
+          confidence_explanation: string | null
+          consulting_opportunity: Json | null
+          content_opportunity: Json | null
+          created_at: string | null
+          explanation: string | null
+          fragment_count: number | null
+          framework_opportunity: Json | null
+          id: string | null
+          last_decay_at: string | null
+          last_evidence_at: string | null
+          lifecycle_tier: string | null
+          momentum: number | null
+          priority_score: number | null
+          signal_title: string | null
+          signal_velocity: number | null
+          skill_pillars: string[] | null
+          status: string | null
+          strategic_implications: string | null
+          strength_score: number | null
+          supporting_evidence_ids: string[] | null
+          theme_tags: string[] | null
+          unique_orgs: number | null
+          updated_at: string | null
+          user_id: string | null
+          user_signal_feedback: string | null
+          velocity_status: string | null
+          what_it_means_for_you: string | null
+        }
+        Insert: {
+          base_confidence?: number | null
+          commercial_validation_score?: number | null
+          confidence?: number | null
+          confidence_explanation?: string | null
+          consulting_opportunity?: Json | null
+          content_opportunity?: Json | null
+          created_at?: string | null
+          explanation?: string | null
+          fragment_count?: number | null
+          framework_opportunity?: Json | null
+          id?: string | null
+          last_decay_at?: string | null
+          last_evidence_at?: string | null
+          lifecycle_tier?: string | null
+          momentum?: number | null
+          priority_score?: number | null
+          signal_title?: string | null
+          signal_velocity?: number | null
+          skill_pillars?: string[] | null
+          status?: string | null
+          strategic_implications?: string | null
+          strength_score?: number | null
+          supporting_evidence_ids?: string[] | null
+          theme_tags?: string[] | null
+          unique_orgs?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          user_signal_feedback?: string | null
+          velocity_status?: string | null
+          what_it_means_for_you?: string | null
+        }
+        Update: {
+          base_confidence?: number | null
+          commercial_validation_score?: number | null
+          confidence?: number | null
+          confidence_explanation?: string | null
+          consulting_opportunity?: Json | null
+          content_opportunity?: Json | null
+          created_at?: string | null
+          explanation?: string | null
+          fragment_count?: number | null
+          framework_opportunity?: Json | null
+          id?: string | null
+          last_decay_at?: string | null
+          last_evidence_at?: string | null
+          lifecycle_tier?: string | null
+          momentum?: number | null
+          priority_score?: number | null
+          signal_title?: string | null
+          signal_velocity?: number | null
+          skill_pillars?: string[] | null
+          status?: string | null
+          strategic_implications?: string | null
+          strength_score?: number | null
+          supporting_evidence_ids?: string[] | null
+          theme_tags?: string[] | null
+          unique_orgs?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          user_signal_feedback?: string | null
+          velocity_status?: string | null
+          what_it_means_for_you?: string | null
+        }
+        Relationships: []
+      }
       sync_errors: {
         Row: {
           context: Json | null

@@ -46,6 +46,7 @@ import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import usePageMeta from "@/hooks/usePageMeta";
 import { track, getTrackSessionId } from "@/lib/track";
 import { isProfileComplete } from "@/lib/onboarding";
+import { ensureTimezone } from "@/lib/ensureTimezone";
 
 import AnalyticsV2 from "@/components/analytics/AnalyticsV2";
 import LibraryPage from "@/components/library/LibraryPage";
@@ -470,6 +471,9 @@ const Dashboard = () => {
         setUser({ email: session.user.email });
         const uid = session.user.id;
         setUserId(uid);
+        // The member's real zone, so the morning brief can land at the right
+        // hour. Silent, once per session, never blocking.
+        void ensureTimezone(uid);
         // Self-promote beta_allowlist row to 'active' on first sign-in.
         // Fire-and-forget; failures must not block the dashboard.
         try {
