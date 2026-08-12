@@ -1246,12 +1246,14 @@ export default function StudioPanel({
     }
   }, [choice, writeLang]);
 
+  /**
+   * Picking an angle SELECTS. It never writes: the step-1 primary is the only
+   * control on this screen that starts a generation.
+   */
   const pickAngle = useCallback((d: { id: string; angle: string }) => {
     setPickedAngleId(d.id);
     chosenDirectionRef.current = d.angle;
-    setAnglesOpen(false);
-    void generate(undefined, undefined, d.angle);
-  }, [generate]);
+  }, []);
 
   /* ---------- the draft row --------------------------------------- */
   /** The subject, written as a title so the Library never shows a raw line. */
@@ -1275,8 +1277,9 @@ export default function StudioPanel({
   );
 
   const savingRef = useRef(false);
-  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<{ id: string | null; failed: boolean }> => {
-    if (savingRef.current) return { id: null, failed: false };
+  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<{ id: string | null; failed: boolean; skipped?: boolean }> => {
+    // A save is already in flight. That is not a failure and not a refusal.
+    if (savingRef.current) return { id: null, failed: false, skipped: true };
     if (!userId || !content.trim()) return { id: null, failed: false };
     savingRef.current = true;
     try {
