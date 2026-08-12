@@ -742,7 +742,7 @@ export function HighlighterSlide({ deck, slide, theme: themeName, template, onFi
 
   const signature =
     `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}:${tpl.id}` +
-    `:${plainText(slide.slots.headline)}`;
+    `:${plainText(slide.slots.headline)}:t${slotsTextDigest(slide.slots)}`;
   const fit = useFitLadder(ref, signature, MAX_FIT_STEP);
   const s = sizesFor(fit.scale, tpl, p);
   const hideTails = fit.step >= 2;
