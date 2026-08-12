@@ -2631,9 +2631,15 @@ export default function StudioPanel({
         </span>
         {step > 1 && step < 4 && !stageOwnsPrimary && (
           <span style={{ display: "grid", gap: 2 }}>
-            <ButtonPrimary onClick={() => void onContinue()} disabled={!canContinue || generating || busy === "save"} style={{ minHeight: 44 }}>
-              {T.continue[lang]} {rtlShell ? "←" : "→"}
-            </ButtonPrimary>
+            {confirmOwnsPrimary ? (
+              <ButtonGhost onClick={() => void onContinue()} disabled={!canContinue || generating || busy === "save"} style={{ minHeight: 44 }}>
+                {T.continue[lang]} {rtlShell ? "←" : "→"}
+              </ButtonGhost>
+            ) : (
+              <ButtonPrimary onClick={() => void onContinue()} disabled={!canContinue || generating || busy === "save"} style={{ minHeight: 44 }}>
+                {T.continue[lang]} {rtlShell ? "←" : "→"}
+              </ButtonPrimary>
+            )}
             {!canContinue && continueReason && (
               <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
                 {continueReason}
