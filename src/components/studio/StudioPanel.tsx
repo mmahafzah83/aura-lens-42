@@ -1274,7 +1274,7 @@ export default function StudioPanel({
     [choice, typedTopic, writeLang],
   );
 
-  const saveDraft = useCallback(async (): Promise<string | null> => {
+  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<string | null> => {
     if (!userId || !content.trim()) return null;
     const title = pieceTitle();
     if (draftId) {
@@ -1285,7 +1285,7 @@ export default function StudioPanel({
           .from("content_items")
           .update({ body: content, language: writeLang, ...(title ? { title } : {}) } as any)
           .eq("id", draftId);
-        if (ciErr) { console.error("draft not saved", ciErr); setProblem(T.saveFailed[lang]); return null; }
+        if (ciErr) { console.error("draft not saved", ciErr); if (!opts?.silent) setProblem(T.saveFailed[lang]); return null; }
         return draftId;
       }
       // Never overwrite what the edge functions wrote into source_metadata.
@@ -1315,7 +1315,7 @@ export default function StudioPanel({
           ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", draftId);
-      if (lpErr) { console.error("draft not saved", lpErr); setProblem(T.saveFailed[lang]); return null; }
+      if (lpErr) { console.error("draft not saved", lpErr); if (!opts?.silent) setProblem(T.saveFailed[lang]); return null; }
       return draftId;
     }
     // The original is the text as GENERATED, never the text on screen: a member
@@ -1343,7 +1343,7 @@ export default function StudioPanel({
       } as any)
       .select("id")
       .single();
-    if (error) { console.error("draft not saved", error); setProblem(T.saveFailed[lang]); return null; }
+    if (error) { console.error("draft not saved", error); if (!opts?.silent) setProblem(T.saveFailed[lang]); return null; }
     const id = (ins as any)?.id as string;
     setDraftId(id);
     setDraftSource("linkedin_posts");
