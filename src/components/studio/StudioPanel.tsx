@@ -3142,9 +3142,15 @@ export default function StudioPanel({
                   {L.auraPickedNamed[lang].replace("{subject}", choice?.title || "")}
                 </p>
               )}
-              <ButtonPrimary onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
-                {T.writeIt[lang]}
-              </ButtonPrimary>
+              {confirmOwnsPrimary ? (
+                <ButtonGhost onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
+                  {T.writeIt[lang]}
+                </ButtonGhost>
+              ) : (
+                <ButtonPrimary onClick={() => void generate()} disabled={!canWriteIt || !choice} style={{ minHeight: 44 }}>
+                  {T.writeIt[lang]}
+                </ButtonPrimary>
+              )}
               {!choice && (
                 <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)" }}>
                   {T.whyNoSubject[lang]}
@@ -3426,9 +3432,15 @@ export default function StudioPanel({
               footer={
                 !deck ? (
                   <span style={{ display: "grid", gap: 4, justifyItems: rtlShell ? "end" : "start" }}>
-                    <ButtonPrimary onClick={() => void makeSlides()} disabled={!canMakeSlides || deckBusy} style={{ minHeight: 44 }}>
-                      {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
-                    </ButtonPrimary>
+                    {confirmOwnsPrimary ? (
+                      <ButtonGhost onClick={() => void makeSlides()} disabled={!canMakeSlides || deckBusy} style={{ minHeight: 44 }}>
+                        {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
+                      </ButtonGhost>
+                    ) : (
+                      <ButtonPrimary onClick={() => void makeSlides()} disabled={!canMakeSlides || deckBusy} style={{ minHeight: 44 }}>
+                        {deckBusy ? T.makingSlides[lang] : T.makeSlides[lang]}
+                      </ButtonPrimary>
+                    )}
                     {!canMakeSlides && !deckBusy && (
                       <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)" }}>
                         {!wordsReady ? T.whyNoWords[lang] : format !== "slides" ? T.whyNoSlidesFormat[lang] : T.whyNoSlides[lang]}
