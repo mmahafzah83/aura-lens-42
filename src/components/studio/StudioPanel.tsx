@@ -2234,7 +2234,10 @@ export default function StudioPanel({
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <ButtonPrimary
               onClick={async () => {
-                if (canSave) await saveAndComeBack();
+                if (canSave) {
+                  const id = await saveDraft();
+                  if (!id) { setProblem(T.postFailed[lang]); return; }
+                }
                 startNewPiece();
                 setConfirmNewPiece(false);
               }}
