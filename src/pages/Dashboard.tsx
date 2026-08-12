@@ -554,7 +554,7 @@ const Dashboard = () => {
           return;
         }
 
-        checkStrategicNudge(session.access_token);
+        checkStrategicNudge();
       }
     });
 
