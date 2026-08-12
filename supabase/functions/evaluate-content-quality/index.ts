@@ -140,8 +140,10 @@ Return JSON:
         metadata: { latency_ms: Date.now() - startedAt, language: language ?? null, content_kind: content_kind ?? null },
       };
       // Never sit on the critical path: both callers race this function.
-      if (typeof (EdgeRuntime as any).waitUntil === "function") {
-        (EdgeRuntime as any).waitUntil(logAIUsage(usagePayload));
+      // @ts-ignore EdgeRuntime is available in Supabase runtime
+      if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+        // @ts-ignore EdgeRuntime is available in Supabase runtime
+        EdgeRuntime.waitUntil(logAIUsage(usagePayload));
       } else {
         void logAIUsage(usagePayload);
       }
