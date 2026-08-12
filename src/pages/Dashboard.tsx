@@ -470,6 +470,9 @@ const Dashboard = () => {
         setUser({ email: session.user.email });
         const uid = session.user.id;
         setUserId(uid);
+        // The member's real zone, so the morning brief can land at the right
+        // hour. Silent, once per session, never blocking.
+        void ensureTimezone(uid);
         // Self-promote beta_allowlist row to 'active' on first sign-in.
         // Fire-and-forget; failures must not block the dashboard.
         try {
