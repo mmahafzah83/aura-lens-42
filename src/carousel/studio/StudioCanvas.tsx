@@ -13,10 +13,11 @@ import type { FitState } from "../render/useFitLadder";
 import type { ThemeName } from "../render/themes";
 
 export function StudioCanvas({
-  deck, theme, width, current, onFit, mountRef,
+  deck, theme, template, width, current, onFit, mountRef,
 }: {
   deck: DeckIR;
   theme: ThemeName;
+  template?: string | null;
   width: number;
   current: number;
   onFit: (index: number, state: FitState) => void;
@@ -66,7 +67,7 @@ export function StudioCanvas({
           }}
         >
           <div data-slide-scaler="" style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
-            <Slide deck={deck} slide={slide} theme={theme} onFit={(f) => onFit(slide.index, f)} />
+            <Slide deck={deck} slide={slide} theme={theme} template={template} onFit={(f) => onFit(slide.index, f)} />
           </div>
         </div>
       ))}
