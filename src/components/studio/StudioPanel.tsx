@@ -1274,8 +1274,12 @@ export default function StudioPanel({
     [choice, typedTopic, writeLang],
   );
 
-  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<string | null> => {
-    if (!userId || !content.trim()) return null;
+  const savingRef = useRef(false);
+  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<{ id: string | null; failed: boolean }> => {
+    if (savingRef.current) return { id: null, failed: false };
+    if (!userId || !content.trim()) return { id: null, failed: false };
+    savingRef.current = true;
+    try {
     const title = pieceTitle();
     if (draftId) {
       if (draftSource === "content_items") {
@@ -1285,8 +1289,8 @@ export default function StudioPanel({
           .from("content_items")
           .update({ body: content, language: writeLang, ...(title ? { title } : {}) } as any)
           .eq("id", draftId);
-        if (ciErr) { console.error("draft not saved", ciErr); if (!opts?.silent) setProblem(T.saveFailed[lang]); return null; }
-        return draftId;
+        if (ciErr) { console.error("draft not saved", ciErr); if (!opts?.silent) setProblem(T.saveFailed[lang]); return { id: null, failed: true }; }
+        return { id: draftId, failed: false };
       }
       // Never overwrite what the edge functions wrote into source_metadata.
       const { data: existing } = await supabase
@@ -1315,8 +1319,8 @@ export default function StudioPanel({
           ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", draftId);
-      if (lpErr) { console.error("draft not saved", lpErr); if (!opts?.silent) setProblem(T.saveFailed[lang]); return null; }
-      return draftId;
+      if (lpErr) { console.error("draft not saved", lpErr); if (!opts?.silent) setProblem(T.saveFailed[lang]); return { id: null, failed: true }; }
+      return { id: draftId, failed: false };
     }
     // The original is the text as GENERATED, never the text on screen: a member
     // who edits before the first save must still leave the original behind.
@@ -1343,14 +1347,17 @@ export default function StudioPanel({
       } as any)
       .select("id")
       .single();
-    if (error) { console.error("draft not saved", error); if (!opts?.silent) setProblem(T.saveFailed[lang]); return null; }
+    if (error) { console.error("draft not saved", error); if (!opts?.silent) setProblem(T.saveFailed[lang]); return { id: null, failed: true }; }
     const id = (ins as any)?.id as string;
     setDraftId(id);
     setDraftSource("linkedin_posts");
     postRowRef.current = id;
     // An identifier that must survive a reload is written the moment it exists.
     persistNow();
-    return id;
+    return { id, failed: false };
+    } finally {
+      savingRef.current = false;
+    }
   }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow, lang]);
 
   /**
@@ -1417,7 +1424,7 @@ export default function StudioPanel({
       persistNow();
       return newId;
     }
-    const id = await saveDraft({ silent: true });
+    const { id } = await saveDraft({ silent: true });
     if (id) { postRowRef.current = id; persistNow(); }
     return id;
   }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft, persistNow]);
@@ -1627,7 +1634,7 @@ export default function StudioPanel({
       }, 90000);
     });
     try {
-      const rowId = await saveDraft({ silent: true });
+      const { id: rowId } = await saveDraft({ silent: true });
       const call = supabase.functions.invoke("generate-deck", {
         body: {
           signal_id: choice.id,
@@ -1837,10 +1844,10 @@ export default function StudioPanel({
     setBusy("save");
     setProblem(null);
     setBusyMessage(T.savingPiece[lang]);
-    const id = await saveDraft();
+    const { id, failed } = await saveDraft();
     setBusy(null);
     setBusyMessage(null);
-    if (!id) { setProblem(T.saveFailed[lang]); return; }
+    if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
     /**
      * Y5 — A CONTROL CALLED "COME BACK LATER" HAS TO TAKE YOU SOMEWHERE.
      *
@@ -2286,14 +2293,18 @@ export default function StudioPanel({
     // Moving on is a save. An edit the member made on step 2 is on the row
     // before the next screen renders, never held only in the browser.
     if (step === 2) {
-      const id = await saveDraft();
-      if (!id && content.trim()) return; // the banner is already on screen, stay put
+      setBusy("save");
+      const { failed } = await saveDraft();
+      setBusy(null);
+      if (failed) return; // the banner is already on screen, stay put
       setStep(3);
       return;
     }
     if (step === 3) {
-      const id = await saveDraft();
-      if (!id && content.trim()) return;
+      setBusy("save");
+      const { failed } = await saveDraft();
+      setBusy(null);
+      if (failed) return;
       setStep(4);
     }
   };
@@ -2337,8 +2348,8 @@ export default function StudioPanel({
             <ButtonPrimary
               onClick={async () => {
                 if (canSave) {
-                  const id = await saveDraft();
-                  if (!id) { setProblem(T.saveFailed[lang]); return; }
+                  const { id, failed } = await saveDraft();
+                  if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
                 }
                 startNewPiece();
                 setConfirmNewPiece(false);
@@ -2516,7 +2527,7 @@ export default function StudioPanel({
         </span>
         {step > 1 && step < 4 && !stageOwnsPrimary && (
           <span style={{ display: "grid", gap: 2 }}>
-            <ButtonPrimary onClick={onContinue} disabled={!canContinue || generating} style={{ minHeight: 44 }}>
+            <ButtonPrimary onClick={() => void onContinue()} disabled={!canContinue || generating || busy === "save"} style={{ minHeight: 44 }}>
               {T.continue[lang]} {rtlShell ? "←" : "→"}
             </ButtonPrimary>
             {!canContinue && continueReason && (
@@ -2750,7 +2761,7 @@ export default function StudioPanel({
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
                 <ButtonPrimary
-                  onClick={() => { if (advances) { onContinue(); return; } void generate(); }}
+                  onClick={() => { if (advances) { void onContinue(); return; } void generate(); }}
                   disabled={blocked}
                   style={{ minHeight: 44 }}
                 >
@@ -2880,7 +2891,7 @@ export default function StudioPanel({
                     {T.replaceHead[lang]}
                   </p>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <ButtonPrimary onClick={onContinue} style={{ minHeight: 44 }}>{T.replaceYes[lang]}</ButtonPrimary>
+                    <ButtonPrimary onClick={() => void onContinue()} style={{ minHeight: 44 }}>{T.replaceYes[lang]}</ButtonPrimary>
                     <ButtonGhost onClick={() => { setAskReplace(false); setPasted(""); }} style={{ minHeight: 44 }}>
                       {T.replaceNo[lang]}
                     </ButtonGhost>
