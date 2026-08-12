@@ -2523,7 +2523,7 @@ export default function StudioPanel({
             {L.preparedLine[lang].replace("{subject}", preparedDraft.title || preparedDraft.topic || "")}
           </span>
           <span style={{ flex: 1 }} />
-          <ButtonGhost
+          <ButtonPrimary
             onClick={() => {
               const d = preparedDraft;
               setPreparedDraft(null);
@@ -2532,7 +2532,7 @@ export default function StudioPanel({
             style={{ minHeight: 44 }}
           >
             {T.openDraft[lang]}
-          </ButtonGhost>
+          </ButtonPrimary>
           <button
             type="button"
             onClick={() => setPreparedDraft(null)}
@@ -2577,9 +2577,9 @@ export default function StudioPanel({
               )}
           </span>
           <span style={{ flex: 1 }} />
-          <ButtonGhost onClick={carryOnRestore} style={{ minHeight: 44 }}>
+          <ButtonPrimary onClick={carryOnRestore} style={{ minHeight: 44 }}>
             {T.openDraft[lang]}
-          </ButtonGhost>
+          </ButtonPrimary>
           <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
             {T.newPost[lang]}
           </ButtonGhost>
@@ -2727,9 +2727,15 @@ export default function StudioPanel({
                 {T.chooseEmpty[lang]}
               </p>
               {onOpenCapture && (
-                <ButtonPrimary onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
-                  {T.captureNow[lang]}
-                </ButtonPrimary>
+                confirmOwnsPrimary ? (
+                  <ButtonGhost onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                    {T.captureNow[lang]}
+                  </ButtonGhost>
+                ) : (
+                  <ButtonPrimary onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                    {T.captureNow[lang]}
+                  </ButtonPrimary>
+                )
               )}
             </div>
           )}
