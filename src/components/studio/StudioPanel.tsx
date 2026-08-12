@@ -33,7 +33,6 @@ import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEd
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
 import JourneyMap from "@/components/studio/JourneyMap";
 import BusyBar from "@/components/studio/BusyBar";
-import PostureQuestion from "@/components/studio/PostureQuestion";
 import StageCard from "@/components/studio/StageCard";
 import AdvisorCard, { type GatePayload } from "@/components/studio/AdvisorCard";
 import ZonePiece from "@/components/studio/ZonePiece";
@@ -209,7 +208,6 @@ export default function StudioPanel({
   const [writeLang, setWriteLang] = useState<Lang>("en");
 
   const [posture, setPosture] = useState<Posture>(() => readStoredPosture() ?? "editor");
-  const [askingPosture, setAskingPosture] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
 
   /* ---------- the piece ------------------------------------------ */
@@ -218,7 +216,7 @@ export default function StudioPanel({
    * stored posture is read synchronously so the very first paint is already
    * the right room: delegator and author open at step 2, editor at step 1.
    */
-  const [step, setStep] = useState<number>(() => (readStoredPosture() === "editor" || !readStoredPosture() ? 1 : 2));
+  const [step, setStep] = useState<number>(1);
   const [sub, setSub] = useState<SubNav>("build");
   const [format, setFormat] = useState<Format | null>(null);
   /**
@@ -418,8 +416,6 @@ export default function StudioPanel({
    * WHERE A POSTURE OPENS. A posture changes who writes, where the journey
    * starts and what Aura does unasked — never what exists on the screen.
    */
-  // Everyone starts in the same place. Posture never moves the entry point.
-  const entryStep = (_p: Posture): number => 1;
   const postureRef = useRef<Posture>("editor");
   postureRef.current = posture;
 
@@ -499,8 +495,12 @@ export default function StudioPanel({
     try {
       const saved = localStorage.getItem(POSTURE_KEY) as Posture | null;
       if (saved === "delegator" || saved === "editor" || saved === "author") setPosture(saved);
-      else setAskingPosture(true);
-    } catch { setAskingPosture(true); }
+      else {
+        // Posture is a SILENT default. It is never asked for here.
+        try { localStorage.setItem(POSTURE_KEY, "editor"); } catch { /* a lost preference is not an error */ }
+        setPosture("editor");
+      }
+    } catch { setPosture("editor"); }
   }, []);
 
   /**
@@ -508,12 +508,12 @@ export default function StudioPanel({
    * A posture never moves a member off work they already have.
    */
   useEffect(() => {
-    if (!ready || askingPosture) return;
+    if (!ready) return;
     // W1 — changing posture mid-piece never moves a member off work they have,
     // but over an EMPTY piece it re-opens the journey where that posture opens.
-    if (!content.trim() && !deck && !pendingRestore) setStep(entryStep(posture));
+    if (!content.trim() && !deck && !pendingRestore) setStep(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, askingPosture, posture]);
+  }, [ready, posture]);
 
   /* ---------- responsive ------------------------------------------ */
   useEffect(() => {
@@ -824,7 +824,7 @@ export default function StudioPanel({
     setPasted("");
     setFormat(next?.format ?? null);
     setFormatDecided(Boolean(next?.format));
-    setStep(entryStep(postureRef.current));
+    setStep(1);
     setSub("build");
     setDraftId(null);
     setDraftSource(null);
@@ -860,7 +860,7 @@ export default function StudioPanel({
     draftPrefillRef.current = null;
     liveRef.current = {
       content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
-      step: entryStep(postureRef.current), format: next?.format ?? null,
+      step: 1, format: next?.format ?? null,
       formatDecided: Boolean(next?.format), draftId: null, draftSource: null,
       current: 0, scrollY: 0,
     };
