@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import {
-  Compass, Radar, Moon, PenLine, BarChart3, Paperclip, X, Library, Flame, LayoutGrid,
-  ChevronLeft, ChevronRight, Sparkles,
-} from "lucide-react";
+import { Compass, Paperclip, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { NAV_GROUPS, isGroupActive, type NavGroup } from "@/components/nav/navGroups";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { TooltipPanel } from "@/components/systemb/Tooltip";
 import Avatar from "@/components/systemb/Avatar";
@@ -34,43 +32,15 @@ interface AuraRailProps {
   newSignalCount?: number;
 }
 
-const ITEMS: Array<{
-  value: RailTab; label: string; icon: typeof Compass; testId: string;
-  name: string; blurb: string; hasFlyout?: boolean;
-}> = [
-  { value: "home",         label: "Home",     icon: Compass,   testId: "nav-home",
-    name: "Home", blurb: "Your brief: what moved and what to do next." },
-  { value: "intelligence", label: "Signals",  icon: Radar,     testId: "nav-intelligence",
-    name: "Signals", blurb: "Patterns Aura found across everything you captured.", hasFlyout: true },
-  { value: "library",      label: "Library",  icon: Library,   testId: "nav-library",
-    name: "Library", blurb: "Everything you've captured, and what Aura made of it." },
-  { value: "overnight",    label: "Night",    icon: Moon,      testId: "nav-overnight",
-    name: "The Overnight", blurb: "What Aura read and drafted while you slept." },
-  { value: "authority",    label: "Compose",  icon: PenLine,   testId: "nav-publish",
-    name: "Composer", blurb: "Draft, refine and publish in your own voice." },
-  { value: "influence",    label: "Data",     icon: BarChart3, testId: "nav-impact",
-    name: "Analytics", blurb: "What your published work actually did." },
-  { value: "momentum",     label: "Momentum", icon: Flame,     testId: "nav-momentum",
-    name: "Momentum", blurb: "What you've built, how often you show up, and what's next." },
-  { value: "widgets",      label: "Widgets",  icon: LayoutGrid, testId: "nav-widgets",
-    name: "Widgets", blurb: "Choose what shows on Home, and vote for what comes next." },
-];
+/** Five doors. The tab values behind each one are unchanged — see navGroups. */
+const DOORS: NavGroup[] = NAV_GROUPS;
+const hasFlyout = (g: NavGroup) => g.key === "signals";
 
 interface SignalCounts { all: number; accelerating: number; stable: number }
 
 const RAIL_W_COLLAPSED = "78px";
 const RAIL_W_EXPANDED = "236px";
 const NAV_KEY = "aura_nav_expanded";
-
-/** Grouped order for the expanded sidebar. Values map 1:1 to ITEMS + the
- *  bottom-block destinations; no new destinations are introduced. */
-const GROUPS: Array<{ header: string; items: RailTab[] }> = [
-  { header: "Every day", items: ["home"] },
-  { header: "Your intelligence", items: ["intelligence", "library", "overnight"] },
-  { header: "Your voice", items: ["authority"] },
-  { header: "Your proof", items: ["momentum", "influence"] },
-  { header: "Yours", items: ["identity", "widgets"] },
-];
 
 export default function AuraRail({
   activeTab, onSelect, onOpenAsk, onOpenCapture, newSignalCount = 0,
