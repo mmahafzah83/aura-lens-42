@@ -2051,11 +2051,19 @@ export default function StudioPanel({
     setDeckFailures([]);
   }, [sub]);
 
-  /** A theme or template change changes the physical slide layout; any
-   *  previous fit measurements are from the previous look and must reset. */
+  /** The portal's mounted-ness. Its change is what invalidates the fit map on
+   *  a tab leave-and-return; without it stale reports satisfy the settle check. */
+  const portalMounted = (active || busy === "export") && Boolean(deck);
+  useEffect(() => {
+    setPortalGen((g) => g + 1);
+  }, [portalMounted]);
+
+  /** A theme or template change changes the physical slide layout; a portal
+   *  remount replaces the writers entirely. Either way any previous fit
+   *  measurements are stale and must reset BEFORE the new slides report. */
   useLayoutEffect(() => {
     setFits({});
-  }, [theme, template]);
+  }, [theme, template, portalGen]);
 
   /* THE PIECE STATE. Derived, never stored twice, never inferred from the
      highest step visited. `deriveDone` owns every tick and clamps the
