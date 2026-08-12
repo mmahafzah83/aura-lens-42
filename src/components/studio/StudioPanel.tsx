@@ -2439,7 +2439,7 @@ export default function StudioPanel({
 
       {confirmNewPiece && (
         <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
             {L.newPieceHead[lang]}
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -2509,7 +2509,7 @@ export default function StudioPanel({
             display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
           }}
         >
-          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)" }}>
+          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)" }}>
             {L.preparedLine[lang].replace("{subject}", preparedDraft.title || preparedDraft.topic || "")}
           </span>
           <span style={{ flex: 1 }} />
@@ -2551,7 +2551,7 @@ export default function StudioPanel({
             display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
           }}
         >
-          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)" }}>
+          <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)" }}>
             {T.restoreLine[lang]
               .replace(
                 "{subject}",
@@ -2577,7 +2577,7 @@ export default function StudioPanel({
       )}
 
       {/* One journey map, at every width. */}
-      <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} />
+      <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtlShell={rtlShell} />
 
       {/* One status strip, at every width: what Aura is doing, what it has
           done, and what is in the way. */}
@@ -2663,14 +2663,14 @@ export default function StudioPanel({
         <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} defaultOpen>
           {/* W9 — a tick nobody earned must name who earned it. */}
           {posture === "delegator" && choice?.id && !wordsReady && (
-            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", margin: "0 0 14px" }}>
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "0 0 14px" }}>
               {T.auraPicked[lang]}
             </p>
           )}
           {/* A subject change over written words is asked for, never assumed. */}
           {pendingSubject && (
             <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--act)", borderRadius: 12, padding: 12, marginBottom: 16 }}>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
                 {T.confirmSubjectHead[lang]}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -2697,7 +2697,7 @@ export default function StudioPanel({
           )}
           {!cardsLoading && cards.length === 0 && totalSignals === -1 && (
             <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: rtlShell ? 1.9 : 1.7, margin: 0 }}>
                 {T.subjectsUnreadable[lang]}
               </p>
               <ButtonGhost onClick={() => setCardsNonce((n) => n + 1)} style={{ minHeight: 44 }}>
@@ -2706,13 +2706,13 @@ export default function StudioPanel({
             </div>
           )}
           {!cardsLoading && cards.length === 0 && totalSignals > 0 && (
-            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: rtlShell ? 1.9 : 1.7, margin: 0 }}>
               {T.nothingNewToRank[lang]}
             </p>
           )}
           {!cardsLoading && cards.length === 0 && totalSignals === 0 && (
             <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.7, margin: 0 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: rtlShell ? 1.9 : 1.7, margin: 0 }}>
                 {T.chooseEmpty[lang]}
               </p>
               {onOpenCapture && (
@@ -2755,11 +2755,11 @@ export default function StudioPanel({
                   <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
                     {c.title}
                   </p>
-                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", margin: "6px 0 0" }}>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "6px 0 0" }}>
                     {startReason(c.kind, c.fragmentCount, c.reason, lang)}
                   </p>
                   {c.insight && (
-                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-muted)", margin: "6px 0 0" }}>
+                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "6px 0 0" }}>
                       {c.insight}
                     </p>
                   )}
@@ -3065,7 +3065,7 @@ export default function StudioPanel({
               />
               {askReplace && (
                 <div style={{ marginTop: 10, background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12 }}>
-                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
                     {T.replaceHead[lang]}
                   </p>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -3134,11 +3134,11 @@ export default function StudioPanel({
               yet, offer the same "Write it" that step 1 offers. */}
           {!wordsReady && (
             <div style={{ display: "grid", gap: 8, justifyItems: rtlShell ? "end" : "start", margin: "0 0 14px" }}>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
                 {T.delegatorWaiting[lang]}
               </p>
               {choice?.id && (
-                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, color: "var(--text-muted)", margin: 0 }}>
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: 0 }}>
                   {L.auraPickedNamed[lang].replace("{subject}", choice?.title || "")}
                 </p>
               )}
@@ -3166,7 +3166,7 @@ export default function StudioPanel({
               for first. Nothing published is ever quietly rewritten. */}
           {published && (
             <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
                 {T.editAfterPublishHead[lang]}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -3194,7 +3194,7 @@ export default function StudioPanel({
               role="status"
               aria-live="polite"
               style={{
-                fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.75, fontWeight: 600,
+                fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.75, fontWeight: 600,
                 color: "var(--error)", background: "var(--error-tint)", borderRadius: 12,
                 padding: 12, margin: "0 0 12px",
               }}
@@ -3247,7 +3247,7 @@ export default function StudioPanel({
                   border: "1px solid var(--border-default)", borderRadius: 12, padding: 12,
                 }}
               >
-                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.75, color: "var(--text-primary)", margin: "0 0 10px" }}>
                   {askLangSwitch === "ar" ? T.langSwitchHeadAr[lang] : T.langSwitchHeadEn[lang]}
                 </p>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -3315,11 +3315,11 @@ export default function StudioPanel({
                     <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
                       {label}
                     </span>
-                    <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: 1.7, color: "var(--text-secondary)", marginTop: 4 }}>
+                    <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", marginTop: 4 }}>
                       {help}
                     </span>
                     {refused && (
-                      <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.7, fontWeight: 600, color: "var(--error)", marginTop: 6 }}>
+                      <span style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: rtlShell ? 1.9 : 1.7, fontWeight: 600, color: "var(--error)", marginTop: 6 }}>
                         {why}
                       </span>
                     )}
@@ -3329,7 +3329,7 @@ export default function StudioPanel({
             </div>
             {pendingFormat === "post" && (
               <div style={{ marginTop: 12, background: "var(--surface-subtle)", border: "1px solid var(--act)", borderRadius: 12, padding: 12 }}>
-                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
                   {T.confirmDiscardSlidesHead[lang]}
                 </p>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -3362,7 +3362,7 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: 700, color: "var(--error)", margin: 0 }}>
                 {T.slidesFailedHead[lang]}
               </p>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--error)", margin: "4px 0 8px", lineHeight: 1.7 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--error)", margin: "4px 0 8px", lineHeight: rtlShell ? 1.9 : 1.7 }}>
                 {attentionText(deckFailures[0], lang)}
               </p>
               <ButtonGhost onClick={() => void makeSlides()} style={{ minHeight: 44 }}>{T.tryAgain[lang]}</ButtonGhost>
@@ -3371,7 +3371,7 @@ export default function StudioPanel({
 
           {format === "slides" && deck && deckSource !== null && sourceStamp(deckSource) !== sourceStamp(content) && (
             <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--deadline)", borderRadius: 12, padding: 12, margin: "0 0 12px" }}>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
                 {T.slidesStale[lang]}
               </p>
               <ButtonGhost onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>
@@ -3509,7 +3509,7 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
                 {T.endHead[lang]}
               </p>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: 1.7, color: "var(--text-secondary)", margin: 0 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
                 {T.endBody[lang]}{" "}
                 {postUrl && (
                   <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
