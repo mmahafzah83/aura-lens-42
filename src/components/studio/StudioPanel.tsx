@@ -2752,7 +2752,10 @@ export default function StudioPanel({
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
                 <ButtonPrimary
-                  onClick={() => { if (advances) { void onContinue(); return; } void generate(); }}
+                  onClick={() => {
+                    if (advances) { void onContinue(); return; }
+                    void generate(undefined, undefined, chosenDirectionRef.current ?? undefined);
+                  }}
                   disabled={blocked}
                   style={{ minHeight: 44 }}
                 >
