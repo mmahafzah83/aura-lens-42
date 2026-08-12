@@ -29,9 +29,11 @@ import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
  * only the headline was, which meant shortening body copy never cleared a
  * "does not fit" notice — the repair loop the inspector offers was dead.
  */
-export function slotsTextDigest(slots: unknown): number {
+export function slotsTextDigest(slots: unknown): string {
   let h = 5381;
+  let len = 0;
   const feed = (s: string) => {
+    len += s.length;
     for (let i = 0; i < s.length; i += 1) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
   };
   const walk = (v: unknown) => {
@@ -39,8 +41,14 @@ export function slotsTextDigest(slots: unknown): number {
     if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") { feed(String(v)); return; }
     if (Array.isArray(v)) { v.forEach(walk); return; }
     if (typeof v === "object") {
-      const node = v as { runs?: Run[] };
-      if (Array.isArray(node.runs)) { feed(plainText(node as { runs: Run[] })); return; }
+      const node = v as { runs?: Run[]; optional_tail?: boolean };
+      if (Array.isArray(node.runs)) {
+        // run.lang matters: an English-to-Arabic flip changes the font face
+        // and therefore the height with identical characters.
+        for (const r of node.runs) { feed(r.t); feed(r.lang); }
+        if (node.optional_tail !== undefined) feed(`tail${node.optional_tail}`);
+        return;
+      }
       for (const key of Object.keys(v as Record<string, unknown>).sort()) {
         feed(key);
         walk((v as Record<string, unknown>)[key]);
@@ -48,7 +56,8 @@ export function slotsTextDigest(slots: unknown): number {
     }
   };
   walk(slots);
-  return h;
+  // Length term alongside the hash: a collision now needs both to match.
+  return `${h}_${len}`;
 }
 import { INV_16_MEDIA_IN_DOM } from "../invariants";
 import {
@@ -895,7 +904,8 @@ function InstrumentSlide({ deck, slide, theme: themeName, template, onFit }: Sli
   const baseSignature =
     `${deck.deck_id}:${slide.index}:${themeName ?? deck.theme}` +
     `:${tpl.id}` +
-    `:${plainText(slide.slots.headline)}:t${slotsTextDigest(slide.slots)}` +
+    `:t${slotsTextDigest(slide.slots)}` +
+    `:p${plainText(deck.profile.name)}|${plainText(deck.profile.title)}|${deck.profile.handle ?? ""}|${deck.slides.length}` +
     `:${variant}:${photo ?? "no-photo"}`;
   const [drops, setDrops] = useState(0);
   const lastBase = useRef(baseSignature);
