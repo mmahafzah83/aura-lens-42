@@ -260,7 +260,7 @@ export const ZoneInspector: React.FC<{
         )}
         {/* Z1 — the closing slide reports the real state of the portrait. */}
         {slide.archetype === "close" && portraitState !== "none" && (
-          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, margin: 0, color: portraitState === "failed" ? "var(--error)" : "var(--text-muted)" }}>
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: rtlShell ? 1.9 : 1.6, margin: 0, color: portraitState === "failed" ? "var(--error)" : "var(--text-muted)" }}>
             {portraitState === "ready" ? T.portraitShown[lang]
               : portraitState === "preparing" ? T.portraitPreparing[lang]
               : T.portraitFailed[lang]}
@@ -275,7 +275,7 @@ export const ZoneInspector: React.FC<{
           <div style={{ display: "grid", gap: 8 }}>
             {dropped.map((slot) => (
               <div key={slot} style={{ display: "grid", gap: 6 }}>
-                <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-primary)", margin: 0 }}>
+                <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: rtlShell ? 1.9 : 1.6, color: "var(--text-primary)", margin: 0 }}>
                   {slotWontFit(slotLabel(slot), lang)}
                 </p>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -302,18 +302,18 @@ export const ZoneInspector: React.FC<{
               </div>
             ))}
             {shortenNote && (
-              <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--error)", margin: 0 }}>
+              <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: rtlShell ? 1.9 : 1.6, color: "var(--error)", margin: 0 }}>
                 {shortenNote}
               </p>
             )}
-            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: rtlShell ? 1.9 : 1.6, color: "var(--text-muted)", margin: 0 }}>
               {T.keepAllWords[lang]}
             </p>
           </div>
         )}
         {canHoldPicture && tooLong && dropped.length === 0 && (
           <div style={{ display: "grid", gap: 6 }}>
-            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: 1.6, color: "var(--text-primary)", margin: 0 }}>
+            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, lineHeight: rtlShell ? 1.9 : 1.6, color: "var(--text-primary)", margin: 0 }}>
               {T.tooLongForPicture[lang]}
             </p>
             <div>
@@ -321,7 +321,7 @@ export const ZoneInspector: React.FC<{
                 {T.shortenForPicture[lang]}
               </button>
             </div>
-            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: rtlShell ? 1.9 : 1.6, color: "var(--text-muted)", margin: 0 }}>
               {T.keepAllWords[lang]}
             </p>
           </div>
@@ -376,12 +376,12 @@ export const ZoneInspector: React.FC<{
               </button>
             </div>
             {!canMoveEarlier && (
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: rtlShell ? 1.9 : 1.6, color: "var(--text-muted)", margin: 0 }}>
                 {T.cannotMoveEarlier[lang]}
               </p>
             )}
             {!canMoveLater && (
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: rtlShell ? 1.9 : 1.6, color: "var(--text-muted)", margin: 0 }}>
                 {T.cannotMoveLater[lang]}
               </p>
             )}
@@ -432,7 +432,7 @@ export const ZoneInspector: React.FC<{
                     {archetypeLabel(a)}
                   </button>
                   {!ok && (
-                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: 1.6, color: "var(--text-muted)", margin: 0 }}>
+                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12, lineHeight: rtlShell ? 1.9 : 1.6, color: "var(--text-muted)", margin: 0 }}>
                       {T.cannotUse[lang]} — {reason}
                     </p>
                   )}

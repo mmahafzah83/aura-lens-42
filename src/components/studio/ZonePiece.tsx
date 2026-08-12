@@ -97,7 +97,7 @@ export const ZonePiece: React.FC<{
             style={{
               fontFamily: "var(--ff-ui)",
               fontSize: 13,
-              lineHeight: 1.75,
+              lineHeight: rtl ? 1.9 : 1.75,
               whiteSpace: "pre-wrap",
               textAlign: rtl ? "right" : "left",
               color: "var(--text-secondary)",

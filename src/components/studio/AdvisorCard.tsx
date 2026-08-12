@@ -98,7 +98,7 @@ function band(v: number): "hi" | "mid" | "low" {
 function colourOf(v: number): string {
   return v >= 75 ? "var(--pos)" : v >= 50 ? "var(--text-secondary)" : "var(--error)";
 }
-/** BAR FILL colour. A bar can carry the amber mid band safely. */
+/** BAR FILL colour. */
 function barColourOf(v: number): string {
   return v >= 75 ? "var(--pos)" : v >= 50 ? "var(--deadline)" : "var(--error)";
 }
