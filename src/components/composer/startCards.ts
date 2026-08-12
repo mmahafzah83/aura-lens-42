@@ -44,12 +44,15 @@ function insightOf(s: SignalRow) {
 
 export interface StartZoneData {
   cards: StartCard[];
-  /** Total active signals the user owns — 0 means "go capture something". */
+  /**
+   * Total active signals the user owns — 0 means "go capture something",
+   * -1 means "we could not look" (the query itself failed).
+   */
   totalSignals: number;
 }
 
 export async function loadStartCards(userId: string): Promise<StartZoneData> {
-  const [{ data: sigData }, { data: postData }] = await Promise.all([
+  const [{ data: sigData, error: sigError }, { data: postData, error: postError }] = await Promise.all([
     supabase
       .from("strategic_signals")
       .select(
@@ -62,6 +65,13 @@ export async function loadStartCards(userId: string): Promise<StartZoneData> {
       .select("created_at, source_metadata")
       .eq("user_id", userId),
   ]);
+
+  // A failed look is not an empty shelf. Say so, so the screen can tell them apart.
+  if (sigError) {
+    console.error("start cards: signals unreadable", sigError);
+    return { cards: [], totalSignals: -1 };
+  }
+  if (postError) console.error("start cards: posts unreadable", postError);
 
   const signals = ((sigData as SignalRow[] | null) ?? []).filter((s) => !!s.signal_title);
   if (signals.length === 0) return { cards: [], totalSignals: 0 };
