@@ -195,7 +195,6 @@ export interface StudioPanelProps {
   active?: boolean;
 }
 
-
 export default function StudioPanel({
   signalPrefill,
   onSignalPrefillConsumed,

@@ -25,6 +25,7 @@ import { getTemplate, type FontSet, type TemplateDescriptor } from "./template";
 import { MAX_FIT_STEP, useFitLadder, type FitState } from "./useFitLadder";
 import { checkEngagementRow, checkTypeFloor } from "../invariants";
 import EngagementRow from "./EngagementRow";
+import { slotsTextDigest } from "./Slide";
 
 type Lang = "en" | "ar";
 
