@@ -1201,14 +1201,17 @@ export default function StudioPanel({
   const loadAngles = useCallback(async () => {
     const target = choice;
     if (!target) return;
+    const runId = ++angleRunId.current;
     setAnglesError(false);
     setAnglesBusy(true);
     setAnglesOpen(true);
     setPickedAngleId(null);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 60000);
     try {
       const { data: sess } = await supabase.auth.getSession();
       const freshToken = sess?.session?.access_token;
-      if (!freshToken) { setAnglesError(true); return; }
+      if (!freshToken) { if (runId === angleRunId.current) setAnglesError(true); return; }
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
         method: "POST",
         headers: {
@@ -1216,6 +1219,7 @@ export default function StudioPanel({
           Authorization: `Bearer ${freshToken}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
+        signal: controller.signal,
         body: JSON.stringify({
           action: "generate_directions",
           topic: target.title,
@@ -1225,6 +1229,7 @@ export default function StudioPanel({
         }),
       });
       const json = await res.json().catch(() => null);
+      if (runId !== angleRunId.current) return;
       const list = Array.isArray(json?.directions) ? json.directions : [];
       const clean = list
         .map((d: any, i: number) => ({ id: String(d?.id ?? i + 1), angle: String(d?.angle ?? "").trim() }))
@@ -1233,9 +1238,11 @@ export default function StudioPanel({
       if (!res.ok || clean.length === 0) { setAnglesError(true); setAngles([]); return; }
       setAngles(clean);
     } catch {
-      setAnglesError(true);
+      // An abort is a timeout: the member sees the failure line, not a dead button.
+      if (runId === angleRunId.current) setAnglesError(true);
     } finally {
-      setAnglesBusy(false);
+      window.clearTimeout(timer);
+      if (runId === angleRunId.current) setAnglesBusy(false);
     }
   }, [choice, writeLang]);
 
