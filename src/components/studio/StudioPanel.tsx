@@ -2355,6 +2355,21 @@ export default function StudioPanel({
     (step === 3 && format === "slides" && !deck) ||
     (step === 2 && !wordsReady);
 
+  /* Exactly one primary, part two. Whenever Aura is standing in front of the
+     member with a QUESTION — a confirmation, a restore offer, a pending
+     change — that question owns the single primary. Every FORWARD action on
+     the screen steps down to a ghost until the question is answered. */
+  const confirmOwnsPrimary =
+    Boolean(confirmNewPiece) ||
+    Boolean(pendingSubject) ||
+    Boolean(askReplace) ||
+    Boolean(askRefine) ||
+    Boolean(askLangSwitch) ||
+    Boolean(pendingFormat) ||
+    Boolean(pendingRestore) ||
+    Boolean(preparedDraft) ||
+    confirmingPost;
+
   const onContinue = async () => {
     if (step === 1) {
       if (pasted.trim()) {
