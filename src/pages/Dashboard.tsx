@@ -816,35 +816,29 @@ const Dashboard = () => {
               >
                 Your space
               </div>
-              {NAV_ITEMS.map((item) => {
-                const isActive = activeTab === item.value;
-                const navTestId = ({
-                  home: "nav-home",
-                  identity: "nav-mystory",
-                  intelligence: "nav-intelligence",
-                  authority: "nav-publish",
-                  influence: "nav-impact",
-                } as Record<string, string>)[item.value] || `nav-${item.value}`;
+              {NAV_GROUPS.map((item) => {
+                const isActive = isGroupActive(item, activeTab);
+                const dimmed = isDoorDimmed(item);
                 return (
                   <button
-                    key={item.value}
-                    onClick={() => switchTab(item.value)}
-                    data-testid={navTestId}
+                    key={item.key}
+                    onClick={() => { setMobileSidebarOpen(false); openDoor(item); }}
+                    data-testid={item.testId}
                     data-active={isActive ? "true" : "false"}
                     className={`w-full flex items-center gap-3 aura-nav-item ${isActive ? "is-active" : ""}`}
                     style={{
                       padding: "10px 24px",
                       fontWeight: isActive ? 500 : 400,
-                      opacity: isFfDimmed(item.value, isActive) ? 0.45 : 1,
+                      opacity: dimmed ? 0.45 : 1,
                     }}
-                    title={isFfDimmed(item.value, isActive) ? "Your first post comes first" : undefined}
+                    title={dimmed ? "Your first post comes first" : undefined}
                   >
                     <item.icon
                       className="w-4.5 h-4.5"
                       style={{ color: isActive ? "var(--aura-accent)" : "var(--aura-t3)" }}
                     />
                     <span className="text-sm font-medium">{item.label}</span>
-                    {item.value === "intelligence" && newIntelSignalCount > 0 && !isActive && (
+                    {item.key === "signals" && newIntelSignalCount > 0 && !isActive && (
                       <span
                         aria-label={`${newIntelSignalCount} new signals`}
                         className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
