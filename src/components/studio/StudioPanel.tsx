@@ -1665,9 +1665,15 @@ export default function StudioPanel({
       setCurrent(0);
       setFits({});
       // Fire and forget: a save failure never withholds the slides.
-      void persistDeck(rowId ?? draftId, parsed.data, theme, template).catch((e) =>
-        console.warn("deck not persisted", e),
-      );
+      const deckRow = rowId ?? draftId;
+      if (!deckRow) {
+        // The slides are here, but there is nowhere to keep them yet.
+        setStatus(T.saveFailed[lang]);
+      } else {
+        void persistDeck(deckRow, parsed.data, theme, template).catch((e) =>
+          console.warn("deck not persisted", e),
+        );
+      }
     } catch (err) {
       const sentence = await slidesFailureSentence(err);
       if (runId === deckRunId.current) setDeckFailures([sentence]);
