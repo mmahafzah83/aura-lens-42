@@ -1285,7 +1285,7 @@ export default function StudioPanel({
           .from("content_items")
           .update({ body: content, language: writeLang, ...(title ? { title } : {}) } as any)
           .eq("id", draftId);
-        if (ciErr) { console.error("draft not saved", ciErr); return null; }
+        if (ciErr) { console.error("draft not saved", ciErr); setProblem(T.saveFailed[lang]); return null; }
         return draftId;
       }
       // Never overwrite what the edge functions wrote into source_metadata.
@@ -1315,7 +1315,7 @@ export default function StudioPanel({
           ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", draftId);
-      if (lpErr) { console.error("draft not saved", lpErr); return null; }
+      if (lpErr) { console.error("draft not saved", lpErr); setProblem(T.saveFailed[lang]); return null; }
       return draftId;
     }
     // The original is the text as GENERATED, never the text on screen: a member
@@ -1343,7 +1343,7 @@ export default function StudioPanel({
       } as any)
       .select("id")
       .single();
-    if (error) return null;
+    if (error) { console.error("draft not saved", error); setProblem(T.saveFailed[lang]); return null; }
     const id = (ins as any)?.id as string;
     setDraftId(id);
     setDraftSource("linkedin_posts");
@@ -1351,7 +1351,7 @@ export default function StudioPanel({
     // An identifier that must survive a reload is written the moment it exists.
     persistNow();
     return id;
-  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow]);
+  }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow, lang]);
 
   /**
    * Publishing to LinkedIn from a content_items draft needs a linkedin_posts
@@ -1464,7 +1464,7 @@ export default function StudioPanel({
    * publishing paths, and the existing source_metadata is merged, never lost.
    */
   const finalisePublished = useCallback(
-    async (id: string, url: string | null, alreadyPublished = false) => {
+    async (id: string, url: string | null, alreadyPublished = false): Promise<boolean> => {
       const now = new Date().toISOString();
       const { data: existing } = await supabase
         .from("linkedin_posts")
@@ -1496,7 +1496,8 @@ export default function StudioPanel({
           source_metadata: { ...prev, ...pieceMeta(), ...(url ? { external_url: url } : {}) },
         } as any)
         .eq("id", id);
-      if (pubErr) { console.error("publish not recorded", pubErr); setProblem(T.saveFailed[lang]); }
+      let recorded = true;
+      if (pubErr) { console.error("publish not recorded", pubErr); setProblem(T.saveFailed[lang]); recorded = false; }
 
       // The content_items twin is retired, or the invariant grows a duplicate.
       const origin = originDraftRef.current;
