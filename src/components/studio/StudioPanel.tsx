@@ -2785,16 +2785,27 @@ export default function StudioPanel({
             const blocked = !doneMap[1] || generating;
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
-                <ButtonPrimary
-                  onClick={() => {
-                    if (advances) { void onContinue(); return; }
-                    void generate(undefined, undefined, chosenDirectionRef.current ?? undefined);
-                  }}
-                  disabled={blocked}
-                  style={{ minHeight: 44 }}
-                >
-                  {(advances ? T.useTheseWords[lang] : T.writeIt[lang])} {rtlShell ? "←" : "→"}
-                </ButtonPrimary>
+                {advances ? (
+                  <ButtonPrimary onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
+                    {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
+                  </ButtonPrimary>
+                ) : (anglesOpen && pickedAngleId) ? (
+                  <ButtonGhost
+                    onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
+                    disabled={blocked}
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.writeIt[lang]} {rtlShell ? "←" : "→"}
+                  </ButtonGhost>
+                ) : (
+                  <ButtonPrimary
+                    onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
+                    disabled={blocked}
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.writeIt[lang]} {rtlShell ? "←" : "→"}
+                  </ButtonPrimary>
+                )}
                 {blocked && !generating && (
                   <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 320 }}>
                     {T.whyNoSubject[lang]}
@@ -2808,7 +2819,7 @@ export default function StudioPanel({
                     aria-expanded={anglesOpen}
                     style={{ minHeight: 44 }}
                   >
-                    {anglesBusy ? T.anglesLoading[lang] : T.seeAngles[lang]}
+                    {anglesBusy ? T.anglesLoading[lang] : (anglesOpen ? T.hideAngles[lang] : T.seeAngles[lang])}
                   </ButtonGhost>
                 )}
                 {anglesOpen && !anglesBusy && (
@@ -2851,16 +2862,27 @@ export default function StudioPanel({
                             );
                           })}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => { setAnglesOpen(false); chosenDirectionRef.current = null; void generate(); }}
-                          style={{
-                            marginTop: 10, minHeight: 44, padding: 0, background: "transparent", border: 0,
-                            cursor: "pointer", fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)",
-                          }}
-                        >
-                          {T.skipAngles[lang]}
-                        </button>
+                        {pickedAngleId && (
+                          <ButtonPrimary
+                            onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
+                            disabled={blocked}
+                            style={{ minHeight: 44, marginTop: 10 }}
+                          >
+                            {T.writeWithAngle[lang]} {rtlShell ? "←" : "→"}
+                          </ButtonPrimary>
+                        )}
+                        {!pickedAngleId && (
+                          <button
+                            type="button"
+                            onClick={() => { setAnglesOpen(false); chosenDirectionRef.current = null; void generate(); }}
+                            style={{
+                              marginTop: 10, minHeight: 44, padding: 0, background: "transparent", border: 0,
+                              cursor: "pointer", fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)",
+                            }}
+                          >
+                            {T.skipAngles[lang]}
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
