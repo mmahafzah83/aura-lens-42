@@ -191,6 +191,8 @@ export interface StudioPanelProps {
   draftPrefill?: any;
   onDraftPrefillConsumed?: () => void;
   onOpenCapture?: () => void;
+  /** True only while the Write tab is the visible tab. Gates the export portal. */
+  active?: boolean;
 }
 
 
