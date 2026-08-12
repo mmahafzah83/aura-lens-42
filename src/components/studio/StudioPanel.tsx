@@ -1374,6 +1374,16 @@ export default function StudioPanel({
     }
   }, [userId, content, draftId, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow, lang]);
 
+  /** Wait out an in-flight save, then report the settled result. */
+  const saveDraftSettled = useCallback(async (opts?: { silent?: boolean }) => {
+    let r = await saveDraft(opts);
+    for (let i = 0; r.skipped && i < 40; i += 1) {
+      await new Promise((res) => window.setTimeout(res, 100));
+      r = await saveDraft(opts);
+    }
+    return r;
+  }, [saveDraft]);
+
   /**
    * Publishing to LinkedIn from a content_items draft needs a linkedin_posts
    * row. This makes one and remembers where the piece came from, so the
@@ -1858,10 +1868,9 @@ export default function StudioPanel({
     setBusy("save");
     setProblem(null);
     setBusyMessage(T.savingPiece[lang]);
-    const { id, failed, skipped } = await saveDraft();
+    const { id, failed } = await saveDraftSettled();
     setBusy(null);
     setBusyMessage(null);
-    if (skipped) return; // a save is already running; saying anything would be a lie
     if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
     /**
      * Y5 — A CONTROL CALLED "COME BACK LATER" HAS TO TAKE YOU SOMEWHERE.
@@ -1875,7 +1884,7 @@ export default function StudioPanel({
         window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "library" } }));
       } catch { /* navigation is never allowed to throw at a member */ }
     }, 450);
-  }, [saveDraft, lang]);
+  }, [saveDraftSettled, lang]);
 
   /**
    * L3 — "settled" means: every slide has reported a fit AND two consecutive
@@ -2349,8 +2358,7 @@ export default function StudioPanel({
             <ButtonPrimary
               onClick={async () => {
                 if (canSave) {
-                  const { id, failed, skipped } = await saveDraft();
-                  if (skipped) return; // a save is already running
+                  const { id, failed } = await saveDraftSettled();
                   if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
                 }
                 startNewPiece();
@@ -2777,16 +2785,27 @@ export default function StudioPanel({
             const blocked = !doneMap[1] || generating;
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
-                <ButtonPrimary
-                  onClick={() => {
-                    if (advances) { void onContinue(); return; }
-                    void generate(undefined, undefined, chosenDirectionRef.current ?? undefined);
-                  }}
-                  disabled={blocked}
-                  style={{ minHeight: 44 }}
-                >
-                  {(advances ? T.useTheseWords[lang] : T.writeIt[lang])} {rtlShell ? "←" : "→"}
-                </ButtonPrimary>
+                {advances ? (
+                  <ButtonPrimary onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
+                    {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
+                  </ButtonPrimary>
+                ) : (anglesOpen && pickedAngleId) ? (
+                  <ButtonGhost
+                    onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
+                    disabled={blocked}
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.writeIt[lang]} {rtlShell ? "←" : "→"}
+                  </ButtonGhost>
+                ) : (
+                  <ButtonPrimary
+                    onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
+                    disabled={blocked}
+                    style={{ minHeight: 44 }}
+                  >
+                    {T.writeIt[lang]} {rtlShell ? "←" : "→"}
+                  </ButtonPrimary>
+                )}
                 {blocked && !generating && (
                   <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 320 }}>
                     {T.whyNoSubject[lang]}
@@ -2800,7 +2819,7 @@ export default function StudioPanel({
                     aria-expanded={anglesOpen}
                     style={{ minHeight: 44 }}
                   >
-                    {anglesBusy ? T.anglesLoading[lang] : T.seeAngles[lang]}
+                    {anglesBusy ? T.anglesLoading[lang] : (anglesOpen ? T.hideAngles[lang] : T.seeAngles[lang])}
                   </ButtonGhost>
                 )}
                 {anglesOpen && !anglesBusy && (
@@ -2843,16 +2862,27 @@ export default function StudioPanel({
                             );
                           })}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => { setAnglesOpen(false); chosenDirectionRef.current = null; void generate(); }}
-                          style={{
-                            marginTop: 10, minHeight: 44, padding: 0, background: "transparent", border: 0,
-                            cursor: "pointer", fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)",
-                          }}
-                        >
-                          {T.skipAngles[lang]}
-                        </button>
+                        {pickedAngleId && (
+                          <ButtonPrimary
+                            onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
+                            disabled={blocked}
+                            style={{ minHeight: 44, marginTop: 10 }}
+                          >
+                            {T.writeWithAngle[lang]} {rtlShell ? "←" : "→"}
+                          </ButtonPrimary>
+                        )}
+                        {!pickedAngleId && (
+                          <button
+                            type="button"
+                            onClick={() => { setAnglesOpen(false); void generate(); }}
+                            style={{
+                              marginTop: 10, minHeight: 44, padding: 0, background: "transparent", border: 0,
+                              cursor: "pointer", fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)",
+                            }}
+                          >
+                            {T.skipAngles[lang]}
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
