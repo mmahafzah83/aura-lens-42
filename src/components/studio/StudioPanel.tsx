@@ -2358,8 +2358,7 @@ export default function StudioPanel({
             <ButtonPrimary
               onClick={async () => {
                 if (canSave) {
-                  const { id, failed, skipped } = await saveDraft();
-                  if (skipped) return; // a save is already running
+                  const { id, failed } = await saveDraftSettled();
                   if (!id) { if (!failed) setProblem(T.saveFailed[lang]); return; }
                 }
                 startNewPiece();
