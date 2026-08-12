@@ -505,10 +505,16 @@ const handleDeleteAccount = async () => {
                 ) : (
                   <>
                     <div className="text-sm" style={{ color: "var(--ink)" }}>
-                      {liState.address ? `Address on file — ${liState.address.replace(/^https?:\/\/(www\.)?/, "")}` : "Not connected"}
+                      {liState.needsReconnect
+                        ? "Your LinkedIn sign-in has run out"
+                        : liState.address
+                          ? `Address on file — ${liState.address.replace(/^https?:\/\/(www\.)?/, "")}`
+                          : "Not connected"}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
-                      Connect your LinkedIn account to publish and sync analytics.
+                      {liState.needsReconnect
+                        ? "LinkedIn stopped accepting it, so Aura can't read or publish until you sign in again."
+                        : "Connect your LinkedIn account to publish and sync analytics."}
                     </div>
                   </>
                 )}
@@ -520,7 +526,7 @@ const handleDeleteAccount = async () => {
                 disabled={linkedInBusy}
                 onClick={liState.connected ? handleDisconnectLinkedIn : handleConnectLinkedIn}
               >
-                {liState.connected ? "Disconnect" : "Connect LinkedIn"}
+                {liState.connected ? "Disconnect" : liState.needsReconnect ? "Reconnect LinkedIn" : "Connect LinkedIn"}
               </Button>
             </div>
           </AuraCard>
