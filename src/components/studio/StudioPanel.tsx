@@ -1556,10 +1556,11 @@ export default function StudioPanel({
       .eq("id", rowId)
       .maybeSingle();
     const prev = ((existing as any)?.source_metadata as Record<string, unknown>) || {};
-    await supabase
+    const { error } = await supabase
       .from("linkedin_posts")
       .update({ source_metadata: { ...prev, deck: { ...d, theme: th, template: tpl } } } as any)
       .eq("id", rowId);
+    if (error) console.warn("deck not persisted", error);
   }, []);
 
   /** Every deck edit is a first-class save, not a memory-only tweak. */
@@ -1734,8 +1735,14 @@ export default function StudioPanel({
     setBusyMessage(T.posting[lang]);
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
-    // What is on screen is what publishes.
-    await syncRowToScreen(id);
+    // What is on screen is what publishes. If it did not land, nothing goes out.
+    const synced = await syncRowToScreen(id);
+    if (!synced) {
+      setBusy(null);
+      setBusyMessage(null);
+      setProblem(T.saveFailed[lang]);
+      return;
+    }
     const { data, error } = await supabase.functions.invoke("linkedin-publish", {
       // P1b — the member always decides. `advisory` publishes past the gate
       // and the override is recorded as its own event.
@@ -1794,7 +1801,7 @@ export default function StudioPanel({
     const id = await saveDraft();
     setBusy(null);
     setBusyMessage(null);
-    if (!id) { setProblem(T.postFailed[lang]); return; }
+    if (!id) { setProblem(T.saveFailed[lang]); return; }
     /**
      * Y5 — A CONTROL CALLED "COME BACK LATER" HAS TO TAKE YOU SOMEWHERE.
      *
