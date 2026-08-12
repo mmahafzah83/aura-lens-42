@@ -1274,7 +1274,7 @@ export default function StudioPanel({
     [choice, typedTopic, writeLang],
   );
 
-  const saveDraft = useCallback(async (): Promise<string | null> => {
+  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<string | null> => {
     if (!userId || !content.trim()) return null;
     const title = pieceTitle();
     if (draftId) {
@@ -1285,7 +1285,7 @@ export default function StudioPanel({
           .from("content_items")
           .update({ body: content, language: writeLang, ...(title ? { title } : {}) } as any)
           .eq("id", draftId);
-        if (ciErr) { console.error("draft not saved", ciErr); setProblem(T.saveFailed[lang]); return null; }
+        if (ciErr) { console.error("draft not saved", ciErr); if (!opts?.silent) setProblem(T.saveFailed[lang]); return null; }
         return draftId;
       }
       // Never overwrite what the edge functions wrote into source_metadata.
@@ -1315,7 +1315,7 @@ export default function StudioPanel({
           ...(edit.edited_at ? edit : {}),
         } as any)
         .eq("id", draftId);
-      if (lpErr) { console.error("draft not saved", lpErr); setProblem(T.saveFailed[lang]); return null; }
+      if (lpErr) { console.error("draft not saved", lpErr); if (!opts?.silent) setProblem(T.saveFailed[lang]); return null; }
       return draftId;
     }
     // The original is the text as GENERATED, never the text on screen: a member
@@ -1343,7 +1343,7 @@ export default function StudioPanel({
       } as any)
       .select("id")
       .single();
-    if (error) { console.error("draft not saved", error); setProblem(T.saveFailed[lang]); return null; }
+    if (error) { console.error("draft not saved", error); if (!opts?.silent) setProblem(T.saveFailed[lang]); return null; }
     const id = (ins as any)?.id as string;
     setDraftId(id);
     setDraftSource("linkedin_posts");
@@ -1417,7 +1417,7 @@ export default function StudioPanel({
       persistNow();
       return newId;
     }
-    const id = await saveDraft();
+    const id = await saveDraft({ silent: true });
     if (id) { postRowRef.current = id; persistNow(); }
     return id;
   }, [draftId, draftSource, userId, content, choice, pieceTitle, pieceMeta, saveDraft, persistNow]);
@@ -1627,7 +1627,7 @@ export default function StudioPanel({
       }, 90000);
     });
     try {
-      const rowId = await saveDraft();
+      const rowId = await saveDraft({ silent: true });
       const call = supabase.functions.invoke("generate-deck", {
         body: {
           signal_id: choice.id,
@@ -1920,18 +1920,18 @@ export default function StudioPanel({
     setBusyMessage(T.savingLink[lang]);
     setProblem(null);
     const id = await ensurePostRow();
-    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
+    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.saveFailed[lang]); return; }
     // What is on screen is what publishes. If it did not land, nothing is marked.
     const synced = await syncRowToScreen(id);
     if (!synced) { setBusy(null); setBusyMessage(null); setProblem(T.saveFailed[lang]); return; }
-    await finalisePublished(id, url);
+    const recorded = await finalisePublished(id, url);
     void track("post_published", { signal_id: choice?.id || null, route: "manual" });
     setBusy(null);
     setBusyMessage(null);
     setPublished(true);
     setPostUrl(url);
     setLinkSaved(true);
-    setStatus(T.linkSaved[lang]);
+    if (recorded) setStatus(T.linkSaved[lang]);
   }, [linkInput, ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
   /* ---------- derived --------------------------------------------- */
@@ -2265,7 +2265,7 @@ export default function StudioPanel({
     (step === 3 && format === "slides" && !deck) ||
     (step === 2 && !wordsReady);
 
-  const onContinue = () => {
+  const onContinue = async () => {
     if (step === 1) {
       if (pasted.trim()) {
         // Words already written are never replaced without being asked.
@@ -2285,8 +2285,17 @@ export default function StudioPanel({
     }
     // Moving on is a save. An edit the member made on step 2 is on the row
     // before the next screen renders, never held only in the browser.
-    if (step === 2) { void saveDraft(); setStep(3); return; }
-    if (step === 3) { void saveDraft(); setStep(4); }
+    if (step === 2) {
+      const id = await saveDraft();
+      if (!id && content.trim()) return; // the banner is already on screen, stay put
+      setStep(3);
+      return;
+    }
+    if (step === 3) {
+      const id = await saveDraft();
+      if (!id && content.trim()) return;
+      setStep(4);
+    }
   };
 
   return shell(
