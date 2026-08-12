@@ -1547,6 +1547,7 @@ export default function StudioPanel({
           .invoke("calculate-aura-score", { body: { user_id: userId } })
           .catch(() => { /* never surfaced */ });
       }
+      return recorded;
     },
     [pieceMeta, userId, content, writeLang, lang],
   );
@@ -1765,7 +1766,7 @@ export default function StudioPanel({
     setNotReady(null);
     setBusyMessage(T.posting[lang]);
     const id = await ensurePostRow();
-    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
+    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.saveFailed[lang]); return; }
     // What is on screen is what publishes. If it did not land, nothing goes out.
     const synced = await syncRowToScreen(id);
     if (!synced) {
@@ -1789,8 +1790,9 @@ export default function StudioPanel({
       const url = (payload?.postUrl as string) || null;
       setPostUrl(url);
       setPublished(true);
-      setStatus(T.postedHelp[lang]);
-      await finalisePublished(id, url, payload?.already_published === true);
+      // The success line is only claimed once the bookkeeping has landed.
+      const recorded = await finalisePublished(id, url, payload?.already_published === true);
+      if (recorded) setStatus(T.postedHelp[lang]);
       void track("post_published", { signal_id: choice?.id || null, route: "linkedin" });
       return;
     }
@@ -1913,8 +1915,9 @@ export default function StudioPanel({
     setProblem(null);
     const id = await ensurePostRow();
     if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
-    // What is on screen is what publishes.
-    await syncRowToScreen(id);
+    // What is on screen is what publishes. If it did not land, nothing is marked.
+    const synced = await syncRowToScreen(id);
+    if (!synced) { setBusy(null); setBusyMessage(null); setProblem(T.saveFailed[lang]); return; }
     await finalisePublished(id, url);
     void track("post_published", { signal_id: choice?.id || null, route: "manual" });
     setBusy(null);
@@ -2320,7 +2323,7 @@ export default function StudioPanel({
               onClick={async () => {
                 if (canSave) {
                   const id = await saveDraft();
-                  if (!id) { setProblem(T.postFailed[lang]); return; }
+                  if (!id) { setProblem(T.saveFailed[lang]); return; }
                 }
                 startNewPiece();
                 setConfirmNewPiece(false);
