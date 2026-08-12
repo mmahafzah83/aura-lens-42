@@ -979,8 +979,33 @@ const Dashboard = () => {
               : "max-w-[1400px] mx-auto px-5 sm:px-10 lg:px-14 pb-[88px] md:pb-12 overflow-hidden"
           }
         >
+          {/* Inside a door that holds two views, this is how you move between
+              them. The page headers below keep naming the specific view. */}
+          {(() => {
+            const g = groupForTab(activeTab);
+            if (!g || g.members.length < 2) return null;
+            return (
+              <SubTabs
+                ariaLabel={g.label}
+                active={activeTab}
+                onSelect={(v) => switchTab(v as TabValue)}
+                options={g.members.map((m) => ({
+                  value: m,
+                  label: NAV_ITEMS.find((n) => n.value === m)?.pageHeader ?? m,
+                }))}
+              />
+            );
+          })()}
+
           {/* Tab Content */}
-          <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={activeTab === "authority" ? undefined : { minHeight: "60vh" }}>
+          <div
+            className="tab-content-spring aura-page-fade relative"
+            key={activeTab}
+            id={`subpanel-${activeTab}`}
+            role={(groupForTab(activeTab)?.members.length ?? 1) > 1 ? "tabpanel" : undefined}
+            aria-labelledby={(groupForTab(activeTab)?.members.length ?? 1) > 1 ? `subtab-${activeTab}` : undefined}
+            style={activeTab === "authority" ? undefined : { minHeight: "60vh" }}
+          >
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
                 <LinkedInNudge userId={userId} />
