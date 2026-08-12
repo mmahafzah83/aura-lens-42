@@ -2841,7 +2841,7 @@ export default function StudioPanel({
                   <ButtonPrimary onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
                     {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
                   </ButtonPrimary>
-                ) : (anglesOpen && pickedAngleId) ? (
+                ) : (anglesOpen && pickedAngleId && !anglesBusy && !anglesError) ? (
                   <ButtonGhost
                     onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
                     disabled={blocked}
