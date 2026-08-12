@@ -2656,7 +2656,7 @@ export default function StudioPanel({
           message={busyMessage}
           etaSeconds={etaFor(busyMessage, lang)}
           remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
-        rtlShell={rtlShell}
+          rtlShell={rtlShell}
         />
       )}
 
@@ -3424,6 +3424,7 @@ export default function StudioPanel({
                     <BusyBar
                       message={T.makingSlidesHonest[lang]}
                       indeterminate
+                      rtlShell={rtlShell}
                     />
                   </div>
                 ) : (
@@ -3583,6 +3584,7 @@ export default function StudioPanel({
                       message={busyMessage || T.posting[lang]}
                       etaSeconds={etaFor(busyMessage || T.posting[lang], lang)}
                       remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
+                      rtlShell={rtlShell}
                     />
                   ) : confirmingPost ? (
                     confirmPanel
