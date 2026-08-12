@@ -1920,18 +1920,18 @@ export default function StudioPanel({
     setBusyMessage(T.savingLink[lang]);
     setProblem(null);
     const id = await ensurePostRow();
-    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.postFailed[lang]); return; }
+    if (!id) { setBusy(null); setBusyMessage(null); setProblem(T.saveFailed[lang]); return; }
     // What is on screen is what publishes. If it did not land, nothing is marked.
     const synced = await syncRowToScreen(id);
     if (!synced) { setBusy(null); setBusyMessage(null); setProblem(T.saveFailed[lang]); return; }
-    await finalisePublished(id, url);
+    const recorded = await finalisePublished(id, url);
     void track("post_published", { signal_id: choice?.id || null, route: "manual" });
     setBusy(null);
     setBusyMessage(null);
     setPublished(true);
     setPostUrl(url);
     setLinkSaved(true);
-    setStatus(T.linkSaved[lang]);
+    if (recorded) setStatus(T.linkSaved[lang]);
   }, [linkInput, ensurePostRow, syncRowToScreen, finalisePublished, choice, lang]);
 
   /* ---------- derived --------------------------------------------- */
