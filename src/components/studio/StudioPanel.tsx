@@ -3538,8 +3538,10 @@ export default function StudioPanel({
                 )}
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {/* Every label states exactly what survives it. */}
-                {(format === "slides" && exported) || confirmOwnsPrimary ? (
+                {/* Every label states exactly what survives it. On the slides
+                    screen the export and save-link actions are the forward
+                    move, so New post is always the ghost there. */}
+                {format === "slides" || confirmOwnsPrimary ? (
                   <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
                     {T.newPost[lang]}
                   </ButtonGhost>
