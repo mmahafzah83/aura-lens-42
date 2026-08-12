@@ -3117,6 +3117,7 @@ export default function StudioPanel({
               lang={lang}
               deck={deck}
               theme={theme}
+              template={template}
               width={canvasWidth}
               current={current}
               onCurrent={setCurrent}
@@ -3168,6 +3169,7 @@ export default function StudioPanel({
                 length={deckLength}
                 onLength={(n) => { setDeckLength(n); if (deck) void makeSlides(n); }}
                 hasDeck={Boolean(deck)}
+                disabled={busy === "export"}
               />
             ) : (
               <ZoneInspector
