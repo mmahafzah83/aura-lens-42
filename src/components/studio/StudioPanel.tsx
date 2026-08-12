@@ -877,10 +877,14 @@ export default function StudioPanel({
     let dead = false;
     setCardsLoading(true);
     (async () => {
-      const { cards: rows } = await loadStartCards(userId);
+      const { cards: rows, totalSignals: total } = await loadStartCards(userId);
       if (dead) return;
       setCards(rows);
+      setTotalSignals(total);
       setCardsLoading(false);
+      // Ranked nothing, but the shelf is not empty: open the shelf so the
+      // member sees the subjects they actually have.
+      if (rows.length === 0 && total > 0) setShowAllSubjects(true);
       // First entry only. Changing posture later never overwrites a subject
       // the member has already chosen.
       if (!preselectedRef.current && posture === "delegator" && rows[0]) {
@@ -889,7 +893,7 @@ export default function StudioPanel({
       }
     })();
     return () => { dead = true; };
-  }, [userId, posture]);
+  }, [userId, posture, cardsNonce]);
 
   /* ---------- step 1: the drafts already waiting ------------------ */
   const openDraft = useCallback(
