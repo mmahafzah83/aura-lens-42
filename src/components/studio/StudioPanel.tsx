@@ -1315,9 +1315,23 @@ export default function StudioPanel({
    * awaits it and receives the same settled { id, failed }.
    */
   const savingPromiseRef = useRef<Promise<{ id: string | null; failed: boolean }> | null>(null);
-  const saveDraft = useCallback(async (opts?: { silent?: boolean }): Promise<{ id: string | null; failed: boolean }> => {
-    if (savingPromiseRef.current) return savingPromiseRef.current;
+  // What the in-flight save is actually writing, so a joiner can tell whether
+  // the words moved under it while that save was in the air.
+  const savingWroteRef = useRef<string>("");
+  const saveDraft = useCallback(async (opts?: { silent?: boolean }, rejoined?: boolean): Promise<{ id: string | null; failed: boolean }> => {
+    if (savingPromiseRef.current) {
+      const joined = await savingPromiseRef.current;
+      // The banner decision belongs to THIS caller, not to whoever started it.
+      if (joined.failed && !opts?.silent) setProblem(T.saveFailed[lang]);
+      // The member typed while someone else's save was in flight: those newer
+      // words have not been written by anyone. Save once more, never a loop.
+      if (!rejoined && contentRef.current.trim() && contentRef.current !== savingWroteRef.current) {
+        return saveDraft(opts, true);
+      }
+      return joined;
+    }
     if (!userId || !content.trim()) return { id: null, failed: false };
+    const writing = content;
     const run = (async (): Promise<{ id: string | null; failed: boolean }> => {
     const title = pieceTitle();
     // Never the closed-over draftId: an insert that has just happened updates
@@ -1400,10 +1414,11 @@ export default function StudioPanel({
     return { id, failed: false };
     })();
     savingPromiseRef.current = run;
+    savingWroteRef.current = writing;
     try {
       return await run;
     } finally {
-      savingPromiseRef.current = null;
+      if (savingPromiseRef.current === run) savingPromiseRef.current = null;
     }
   }, [userId, content, draftSource, choice, writeLang, pieceTitle, pieceMeta, persistNow, lang]);
 
@@ -2826,7 +2841,7 @@ export default function StudioPanel({
                   <ButtonPrimary onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
                     {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
                   </ButtonPrimary>
-                ) : (anglesOpen && pickedAngleId) ? (
+                ) : (anglesOpen && pickedAngleId && !anglesBusy && !anglesError) ? (
                   <ButtonGhost
                     onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
                     disabled={blocked}
