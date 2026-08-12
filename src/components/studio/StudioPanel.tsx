@@ -2828,7 +2828,7 @@ export default function StudioPanel({
                 }}
                 placeholder={T.chooseOwnPlaceholder[lang]}
                 style={{
-                  flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 10,
+                  flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 8,
                   background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
                   fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14, color: "var(--text-primary)",
                   textAlign: rtlShell ? "right" : "left",
@@ -2851,7 +2851,7 @@ export default function StudioPanel({
                     aria-pressed={on}
                     onClick={() => { langChosenRef.current = true; setWriteLang(key); }}
                     style={{
-                      minHeight: 44, padding: "0 16px", borderRadius: 10, cursor: "pointer",
+                      minHeight: 44, padding: "0 16px", borderRadius: 8, cursor: "pointer",
                       fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
                       background: on ? "var(--act-tint)" : "var(--surface-subtle)",
                       color: on ? "var(--act)" : "var(--text-secondary)",
@@ -2870,13 +2870,23 @@ export default function StudioPanel({
           {(() => {
             const advances = Boolean(pasted.trim()) || Boolean(content.trim());
             const blocked = !doneMap[1] || generating;
+            /* Exactly one primary. A pending subject change owns it (its
+               confirm is the primary), so the forward action stands down. */
+            const forwardIsGhost =
+              Boolean(pendingSubject) || (anglesOpen && Boolean(pickedAngleId) && !anglesBusy && !anglesError);
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
                 {advances ? (
-                  <ButtonPrimary onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
-                    {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
-                  </ButtonPrimary>
-                ) : (anglesOpen && pickedAngleId && !anglesBusy && !anglesError) ? (
+                  pendingSubject ? (
+                    <ButtonGhost onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
+                      {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
+                    </ButtonGhost>
+                  ) : (
+                    <ButtonPrimary onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
+                      {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
+                    </ButtonPrimary>
+                  )
+                ) : forwardIsGhost ? (
                   <ButtonGhost
                     onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
                     disabled={blocked}
@@ -2950,6 +2960,15 @@ export default function StudioPanel({
                           })}
                         </div>
                         {pickedAngleId && (
+                          pendingSubject ? (
+                          <ButtonGhost
+                            onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
+                            disabled={blocked}
+                            style={{ minHeight: 44, marginTop: 10 }}
+                          >
+                            {T.writeWithAngle[lang]} {rtlShell ? "←" : "→"}
+                          </ButtonGhost>
+                          ) : (
                           <ButtonPrimary
                             onClick={() => void generate(undefined, undefined, chosenDirectionRef.current ?? undefined)}
                             disabled={blocked}
@@ -2957,6 +2976,7 @@ export default function StudioPanel({
                           >
                             {T.writeWithAngle[lang]} {rtlShell ? "←" : "→"}
                           </ButtonPrimary>
+                          )
                         )}
                         {!pickedAngleId && (
                           <button
@@ -3050,7 +3070,9 @@ export default function StudioPanel({
                   fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
                 }}
               >
-                {T.openDraft[lang]}{" ("}{drafts.length}{")"}
+                {T.openDraft[lang]}{" ("}
+                <span style={{ fontFamily: "var(--ff-mono)" }}>{drafts.length}</span>
+                {")"}
               </button>
               {showDrafts && (
                 <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
