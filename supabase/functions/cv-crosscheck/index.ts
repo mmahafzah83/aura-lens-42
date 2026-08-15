@@ -186,21 +186,26 @@ Compare the two. Return exactly this JSON object and nothing else:
     return { data, text };
   };
 
-  const hasPlaceholder = (t: string) => /\[[^\]]{2,40}\]/.test(t);
+  /** Placeholders are only meaningful inside the model's own sentences. */
+  function hasPlaceholderInValues(v: unknown): boolean {
+    const re = /\[[^\]]{2,40}\]/;
+    if (typeof v === "string") return re.test(v);
+    if (Array.isArray(v)) return v.some(hasPlaceholderInValues);
+    if (v && typeof v === "object") return Object.values(v as Record<string, unknown>).some(hasPlaceholderInValues);
+    return false;
+  }
 
   let { data, text } = await runOnce(userPrompt);
   let parsed = parseJsonLoose(text);
-  // A bracketed placeholder outside the JSON arrays is a failure; re-check the raw prose.
-  const proseOnly = text.replace(/"[^"]*"/g, "");
 
-  if (!parsed || hasPlaceholder(proseOnly)) {
+  if (!parsed || hasPlaceholderInValues(parsed)) {
     const correction = `${userPrompt}
 
 CORRECTION — your previous attempt was not a single valid JSON object, or contained a bracketed placeholder. Output the JSON object only, with real values drawn from the material above. No code fences, no commentary, no square-bracket placeholders.`;
     const retry = await runOnce(correction);
     if (retry.data) { data = retry.data; text = retry.text; }
     parsed = parseJsonLoose(retry.text);
-    if (!parsed || hasPlaceholder(retry.text.replace(/"[^"]*"/g, ""))) {
+    if (!parsed || hasPlaceholderInValues(parsed)) {
       await logEfError(admin, {
         function_name: "cv-crosscheck",
         error: "Unparseable crosscheck after retry — nothing saved",
@@ -211,6 +216,7 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
       return json({ ok: false, pending: true, reason: "unparseable" });
     }
   }
+
 
   const crosscheck = { ...parsed, cv_count: cvs.length, model: data?.model ?? null };
 

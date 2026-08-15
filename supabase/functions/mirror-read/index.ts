@@ -172,11 +172,15 @@ function parseJsonLoose(raw: string): Record<string, unknown> | null {
   }
 }
 
-/** A bracketed placeholder left outside of the quoted values. */
-function hasPlaceholder(raw: string): boolean {
-  const unquoted = raw.replace(/"(?:[^"\\]|\\.)*"/g, '""');
-  return /\[[^\]]{2,40}\]/.test(unquoted);
+/** Placeholders are only meaningful inside the model's own sentences. */
+function hasPlaceholderInValues(v: unknown): boolean {
+  const re = /\[[^\]]{2,40}\]/;
+  if (typeof v === "string") return re.test(v);
+  if (Array.isArray(v)) return v.some(hasPlaceholderInValues);
+  if (v && typeof v === "object") return Object.values(v as Record<string, unknown>).some(hasPlaceholderInValues);
+  return false;
 }
+
 
 const SYSTEM_PROMPT =
   "You read a senior professional's public LinkedIn profile and recent posts, and tell them how their market currently sees them. You use only what is in the material. You never invent an achievement, a number, a date or an employer. Output plain text only — no markdown, no asterisks, no headers, no bracketed placeholders. The reader is a senior GCC executive: write plainly, in short sentences, as a trusted advisor would over coffee. Never use these words: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate. ARCHETYPE RULE: the name is 'The [Adjective] [Noun]'. 'Strategic' is banned as the adjective and 'Architect' is banned as the noun. Before naming it, ask yourself whether the name would fit half of all senior professionals; if so it is too generic, choose again from what THIS person's material actually shows.";
@@ -323,21 +327,23 @@ Deno.serve(async (req) => {
 
     const messages = [{ role: "user", content: userPrompt }];
     let raw = await callModel(messages);
-    let read = raw && !hasPlaceholder(raw) ? parseJsonLoose(raw) : null;
+    let read = parseJsonLoose(raw);
+    if (read && hasPlaceholderInValues(read)) read = null;
 
     if (!read) {
       // One correction pass: the shape was wrong or a placeholder survived.
-      raw = await callModel([
-        ...messages,
-        { role: "assistant", content: raw || "" },
-        {
-          role: "user",
-          content:
-            "That was not usable. Return ONLY the JSON object with those exact seven keys, filled with real sentences drawn from the material. No markdown fences, no commentary, and no bracketed placeholders anywhere.",
-        },
-      ]);
-      read = raw && !hasPlaceholder(raw) ? parseJsonLoose(raw) : null;
+      const correctionMessages = [...messages];
+      if (raw) correctionMessages.push({ role: "assistant", content: raw });
+      correctionMessages.push({
+        role: "user",
+        content:
+          "That was not usable. Return ONLY the JSON object with those exact seven keys, filled with real sentences drawn from the material. No markdown fences, no commentary, and no bracketed placeholders anywhere.",
+      });
+      raw = await callModel(correctionMessages);
+      read = parseJsonLoose(raw);
+      if (read && hasPlaceholderInValues(read)) read = null;
     }
+
 
     if (!read) {
       await logError("mirror-read", new Error("unreadable model output"), {
