@@ -22,13 +22,16 @@ type Doc = {
   created_at: string;
 };
 
+type Finding = { what?: string; why_it_matters?: string; do_this?: string; weight?: string };
+
 type Crosscheck = {
-  in_cv_not_on_profile?: string[];
-  on_profile_not_in_cv?: string[];
-  inconsistencies?: string[];
-  strongest_unused_proof?: string;
-  direction_signal?: string;
-  headline_suggestion?: string;
+  headline_finding?: string | null;
+  findings?: Finding[];
+  defensibility?: string[];
+  cv_is_behind?: string[];
+  reading_the_shape?: string | null;
+  profile_vs_voice?: string | null;
+  headline_suggestion?: string | null;
   cv_count?: number;
 };
 
@@ -113,15 +116,19 @@ export default function CvCrosscheckPanel() {
     ? REASONS[result.reason ?? ""] || result.reason || result.error
     : "";
 
-  const bullets = (title: string, arr?: string[]) =>
-    arr && arr.length ? (
-      <div style={{ marginTop: 8 }}>
+  const bullets = (title: string, arr?: string[]) => {
+    const items = (arr ?? []).filter((s) => typeof s === "string" && s.trim());
+    return items.length ? (
+      <div style={{ marginTop: 10 }}>
         <div style={{ color: "var(--glass-2, #8a8a95)" }}>{title}</div>
-        {arr.map((s, i) => (
+        {items.map((s, i) => (
           <div key={i}>· {s}</div>
         ))}
       </div>
     ) : null;
+  };
+
+  const findings = (c?.findings ?? []).filter((f) => f && (f.what || f.do_this));
 
   return (
     <section
