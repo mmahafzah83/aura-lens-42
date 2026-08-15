@@ -3104,6 +3104,57 @@ export type Database = {
         }
         Relationships: []
       }
+      mirror_reads: {
+        Row: {
+          canonical_url: string
+          generated_at: string
+          handle: string
+          hit_count: number
+          read: Json
+          sparse: boolean
+        }
+        Insert: {
+          canonical_url: string
+          generated_at?: string
+          handle: string
+          hit_count?: number
+          read: Json
+          sparse?: boolean
+        }
+        Update: {
+          canonical_url?: string
+          generated_at?: string
+          handle?: string
+          hit_count?: number
+          read?: Json
+          sparse?: boolean
+        }
+        Relationships: []
+      }
+      mirror_requests: {
+        Row: {
+          created_at: string
+          email: string | null
+          handle: string | null
+          id: string
+          ip_hash: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          handle?: string | null
+          id?: string
+          ip_hash: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          handle?: string | null
+          id?: string
+          ip_hash?: string
+        }
+        Relationships: []
+      }
       narrative_suggestions: {
         Row: {
           angle: string

@@ -197,3 +197,6 @@ verify_jwt = false
 
 [functions.admin-set-document-type]
 verify_jwt = false
+
+[functions.mirror-read]
+verify_jwt = false
