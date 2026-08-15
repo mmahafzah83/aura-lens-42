@@ -265,6 +265,7 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
     wrote: true,
     result_keys: keyCount,
     snapshot_version,
+    brand_pillars: derivedPillars,
     report: resultsObj,
   });
 }));
