@@ -199,8 +199,15 @@ Deno.serve(async (req) => {
     try { body = await req.json(); } catch { /* empty body */ }
 
     // --- a) Validate ---
-    const email = typeof body?.email === "string" ? body.email.trim() : "";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return json({ error: "invalid_email" }, 400);
+    // Email is optional: the read is a cold read. If given, it is recorded as-is.
+    const rawEmail = typeof body?.email === "string" ? body.email.trim() : "";
+    const email = rawEmail || null;
+
+    // Optional referral tag — narrow charset, capped length.
+    const refClean = (typeof body?.ref === "string" ? body.ref : "")
+      .replace(/[^A-Za-z0-9_-]/g, "")
+      .slice(0, 60);
+    const ref = refClean || null;
 
     const handle = parseHandle(body?.profile_url);
     if (!handle) return json({ error: "invalid_url" }, 400);
@@ -217,7 +224,7 @@ Deno.serve(async (req) => {
       .eq("ip_hash", ip_hash)
       .gte("created_at", since);
     if ((count ?? 0) >= 5) return json({ error: "rate_limited" }, 429);
-    await admin.from("mirror_requests").insert({ ip_hash, handle, email });
+    await admin.from("mirror_requests").insert({ ip_hash, handle, email, ref });
 
     // --- c) Cache ---
     const { data: cached } = await admin
