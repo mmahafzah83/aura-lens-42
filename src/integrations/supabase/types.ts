@@ -3110,6 +3110,8 @@ export type Database = {
           generated_at: string
           handle: string
           hit_count: number
+          name: string | null
+          posts_read: number | null
           read: Json
           sparse: boolean
         }
@@ -3118,6 +3120,8 @@ export type Database = {
           generated_at?: string
           handle: string
           hit_count?: number
+          name?: string | null
+          posts_read?: number | null
           read: Json
           sparse?: boolean
         }
@@ -3126,6 +3130,8 @@ export type Database = {
           generated_at?: string
           handle?: string
           hit_count?: number
+          name?: string | null
+          posts_read?: number | null
           read?: Json
           sparse?: boolean
         }
@@ -5396,6 +5402,15 @@ export type Database = {
           ui_dismissals?: Json | null
           user_id?: string | null
           years_experience?: string | null
+        }
+        Relationships: []
+      }
+      mirror_funnel: {
+        Row: {
+          completions: number | null
+          conversion_pct: number | null
+          requests: number | null
+          waitlist_from_mirror: number | null
         }
         Relationships: []
       }
