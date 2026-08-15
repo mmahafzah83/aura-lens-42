@@ -3113,6 +3113,7 @@ export type Database = {
           name: string | null
           posts_read: number | null
           read: Json
+          read_version: number
           sparse: boolean
         }
         Insert: {
@@ -3123,6 +3124,7 @@ export type Database = {
           name?: string | null
           posts_read?: number | null
           read: Json
+          read_version?: number
           sparse?: boolean
         }
         Update: {
@@ -3133,6 +3135,7 @@ export type Database = {
           name?: string | null
           posts_read?: number | null
           read?: Json
+          read_version?: number
           sparse?: boolean
         }
         Relationships: []

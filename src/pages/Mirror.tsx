@@ -69,6 +69,11 @@ const READING_LINES = [
   "Writing your read…",
 ];
 
+/** Line n appears at this offset, so the four spread across ~60 seconds. */
+const READING_DELAYS = [0, 14_000, 32_000, 50_000];
+
+const ARABIC_RE = /[\u0600-\u06FF]/;
+
 /* ── small primitives ───────────────────────────────────────────── */
 const Card = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) => (
   <section
@@ -167,8 +172,8 @@ export default function Mirror() {
   useEffect(() => {
     if (stage !== "reading") return;
     setLineIndex(0);
-    const timers = READING_LINES.slice(1).map((_, i) =>
-      window.setTimeout(() => setLineIndex(i + 1), (i + 1) * 6000),
+    const timers = READING_DELAYS.slice(1).map((delay, i) =>
+      window.setTimeout(() => setLineIndex(i + 1), delay),
     );
     return () => timers.forEach(window.clearTimeout);
   }, [stage]);
@@ -326,13 +331,6 @@ export default function Mirror() {
             </Card>
           ) : (
             <>
-              {read.market_read ? (
-                <Card>
-                  <Heading>How your field sees you</Heading>
-                  <Body>{read.market_read}</Body>
-                </Card>
-              ) : null}
-
               {read.uncontested_space ? (
                 <Card>
                   <Heading dot={CYAN}>The space nobody has claimed</Heading>
@@ -350,10 +348,26 @@ export default function Mirror() {
               {read.own_words_quote ? (
                 <Card>
                   <Heading>In your own words</Heading>
-                  <Body style={{ fontStyle: "italic" }}>{`“${read.own_words_quote}”`}</Body>
-                  {read.own_words_read ? (
-                    <Body style={{ fontSize: 14, color: INK2 }}>{read.own_words_read}</Body>
-                  ) : null}
+                  {(() => {
+                    const arabic = ARABIC_RE.test(read.own_words_quote ?? "");
+                    const script: React.CSSProperties = arabic
+                      ? { fontFamily: "Cairo, 'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.9, textAlign: "start" }
+                      : {};
+                    return (
+                      <>
+                        <p dir="auto" style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.65,
+                          color: INK, fontStyle: arabic ? "normal" : "italic", ...script }}>
+                          {`“${read.own_words_quote}”`}
+                        </p>
+                        {read.own_words_read ? (
+                          <p dir="auto" style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.65,
+                            color: INK2, ...script }}>
+                            {read.own_words_read}
+                          </p>
+                        ) : null}
+                      </>
+                    );
+                  })()}
                 </Card>
               ) : null}
             </>
@@ -485,7 +499,7 @@ export default function Mirror() {
           <div>
             <PrimaryButton onClick={submit}>Read me</PrimaryButton>
             <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: INK2 }}>
-              We email you the read. Nothing is posted, nothing is shared.
+              Your email is how we reach you if you want a seat. Nothing is posted, nothing is shared.
             </p>
             {formError ? (
               <p style={{ margin: "10px 0 0", fontSize: 13, lineHeight: 1.6, color: "#B3261E" }}>
