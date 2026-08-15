@@ -43,6 +43,7 @@ import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyHeader from "@/components/onboarding/JourneyHeader";
+import DocumentUpload from "@/components/DocumentUpload";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
@@ -1687,6 +1688,41 @@ const Onboarding = () => {
           go(4);
         }}>Save and carry on</OBButton>
         <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
+        </Actions>
+      </PaperShell>
+    );
+  }
+
+  /* 3.5 — WHITE. The member's turn: a CV, if they have one to hand. */
+  if (screen === CV_SCREEN) {
+    const leaveCv = () => {
+      if (cvUploads > 0) {
+        /* Fire and forget: the read must never wait on this, and a failure here
+           costs the member nothing. */
+        try { void supabase.functions.invoke("cv-crosscheck", {}).catch(() => undefined); } catch { /* ignore */ }
+      }
+      go(4);
+    };
+    content = (
+      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
+        <h1 style={h1Light}>Have a CV handy?</h1>
+        <p style={bodyLight}>
+          Your profile says what the world can see. A CV says what you actually did — the numbers, the
+          programmes, the things nobody posted about. Aura reads it against your profile and shows you the
+          difference.
+        </p>
+        <div style={{ marginBlockStart: 20 }}>
+          <DocumentUpload
+            documentType="cv"
+            cvLabel="latest"
+            onUploaded={(id) => { if (id) setCvUploads((n) => n + 1); }}
+          />
+        </div>
+        <Actions style={{ marginBlockStart: 20 }}>
+          <OBButton disabled={cvUploads === 0} onClick={leaveCv}>
+            {cvUploads > 0 ? "Continue" : "Read it"}
+          </OBButton>
+          <OBButton variant="tertiary" onClick={() => go(4)}>I'll do this later</OBButton>
         </Actions>
       </PaperShell>
     );
