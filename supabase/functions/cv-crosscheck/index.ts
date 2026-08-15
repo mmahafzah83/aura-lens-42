@@ -137,6 +137,42 @@ Education: ${cut(snap.education, 1200)}
 Skills: ${cut(snap.skills, 1200)}
 Certifications: ${cut(snap.certifications, 1200)}`;
 
+  // --- extra evidence: fragments, posts, recommendations --------------------
+  const { data: fragments } = await admin
+    .from("evidence_fragments")
+    .select("title, content, confidence")
+    .eq("user_id", targetId)
+    .order("confidence", { ascending: false })
+    .limit(12);
+
+  const { data: posts } = await admin
+    .from("linkedin_posts")
+    .select("post_text, like_count, published_at")
+    .eq("user_id", targetId)
+    .not("post_text", "is", null)
+    .order("like_count", { ascending: false, nullsFirst: false })
+    .limit(15);
+
+  const fragmentsText = (fragments ?? []).length
+    ? (fragments ?? []).map((f: any) =>
+        `· ${f.title ?? "Untitled"} (confidence ${f.confidence ?? "unknown"}): ${String(f.content ?? "").slice(0, 600)}`
+      ).join("\n")
+    : "None on file.";
+
+  const usablePosts = (posts ?? []).filter((p: any) => String(p.post_text ?? "").trim().length > 0);
+  const postsText = usablePosts.length
+    ? usablePosts.map((p: any) =>
+        `· (${String(p.published_at ?? "").slice(0, 10) || "undated"}, ${p.like_count ?? 0} likes) ${String(p.post_text).slice(0, 600)}`
+      ).join("\n")
+    : "None on file.";
+
+  const rawRecs = Array.isArray(snap.raw?.receivedRecommendations) ? snap.raw.receivedRecommendations : [];
+  const recsText = rawRecs.length
+    ? rawRecs.slice(0, 12).map((r: any) =>
+        `· From ${String(r?.givenBy ?? "unknown")}: ${String(r?.description ?? "").slice(0, 500)}`
+      ).join("\n")
+    : "None on file.";
+
   const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   if (!ANTHROPIC_API_KEY) return json({ error: "ANTHROPIC_API_KEY not configured" }, 500);
 
@@ -146,14 +182,24 @@ ${cvText}
 THEIR PUBLIC LINKEDIN PROFILE
 ${profileText}
 
-Compare the two. Return exactly this JSON object and nothing else:
+THEIR CAPTURED EVIDENCE
+${fragmentsText}
+
+WHAT THEY POST PUBLICLY
+${postsText}
+
+WHAT OTHERS SAY ABOUT THEM (LINKEDIN RECOMMENDATIONS)
+${recsText}
+
+Judge this material. Return exactly this JSON object and nothing else:
 {
-  "in_cv_not_on_profile": [up to 5 short strings — concrete achievements, projects or metrics that appear in the CV but not on the public profile],
-  "on_profile_not_in_cv": [up to 5 short strings],
-  "inconsistencies": [up to 3 short strings — differing dates, titles or durations; empty array if none],
-  "strongest_unused_proof": "one sentence naming the single most useful thing in the CV that is invisible publicly",
-  "direction_signal": "one sentence — if more than one CV is supplied, what the difference between them suggests about where this person is heading; if only one CV, say exactly what the single CV emphasises most",
-  "headline_suggestion": "one LinkedIn headline under 220 characters, written in their own register, using only what the material supports"
+  "headline_finding": "one sentence: the single most valuable thing this comparison found, and what to do about it",
+  "findings": [ { "what": "", "why_it_matters": "", "do_this": "", "weight": "high" } ],
+  "defensibility": [ "" ],
+  "cv_is_behind": [ "" ],
+  "reading_the_shape": "",
+  "profile_vs_voice": "",
+  "headline_suggestion": ""
 }`;
 
   const callAnthropic = (prompt: string) => fetch("https://api.anthropic.com/v1/messages", {
@@ -165,7 +211,7 @@ Compare the two. Return exactly this JSON object and nothing else:
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-5-20250929",
-      max_tokens: 2048,
+      max_tokens: 3000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: prompt }],
     }),
