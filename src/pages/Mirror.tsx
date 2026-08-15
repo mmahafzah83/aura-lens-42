@@ -499,7 +499,7 @@ export default function Mirror() {
                     onChange={(e) => setListName(e.target.value)} />
                 </div>
                 <div>
-                  <label style={{ ...label, color: "rgba(255,255,255,0.72)" }} htmlFor="mr-email">Work email</label>
+                  <label style={{ ...label, color: "rgba(255,255,255,0.72)" }} htmlFor="mr-email">Email</label>
                   <input id="mr-email" style={field} value={listEmail} inputMode="email"
                     onChange={(e) => setListEmail(e.target.value)} />
                 </div>
