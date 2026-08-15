@@ -200,3 +200,6 @@ verify_jwt = false
 
 [functions.mirror-read]
 verify_jwt = false
+
+[functions.send-mirror-read]
+verify_jwt = false

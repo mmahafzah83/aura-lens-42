@@ -441,6 +441,7 @@ export type Database = {
           invited_by: string | null
           name: string | null
           personal_note: string | null
+          ref: string | null
           requested_at: string | null
           sector: string | null
           seniority: string | null
@@ -458,6 +459,7 @@ export type Database = {
           invited_by?: string | null
           name?: string | null
           personal_note?: string | null
+          ref?: string | null
           requested_at?: string | null
           sector?: string | null
           seniority?: string | null
@@ -475,6 +477,7 @@ export type Database = {
           invited_by?: string | null
           name?: string | null
           personal_note?: string | null
+          ref?: string | null
           requested_at?: string | null
           sector?: string | null
           seniority?: string | null
@@ -3107,6 +3110,8 @@ export type Database = {
       mirror_reads: {
         Row: {
           canonical_url: string
+          emailed_at: string | null
+          emailed_to: string | null
           generated_at: string
           handle: string
           hit_count: number
@@ -3118,6 +3123,8 @@ export type Database = {
         }
         Insert: {
           canonical_url: string
+          emailed_at?: string | null
+          emailed_to?: string | null
           generated_at?: string
           handle: string
           hit_count?: number
@@ -3129,6 +3136,8 @@ export type Database = {
         }
         Update: {
           canonical_url?: string
+          emailed_at?: string | null
+          emailed_to?: string | null
           generated_at?: string
           handle?: string
           hit_count?: number
@@ -3147,6 +3156,7 @@ export type Database = {
           handle: string | null
           id: string
           ip_hash: string
+          ref: string | null
         }
         Insert: {
           created_at?: string
@@ -3154,6 +3164,7 @@ export type Database = {
           handle?: string | null
           id?: string
           ip_hash: string
+          ref?: string | null
         }
         Update: {
           created_at?: string
@@ -3161,6 +3172,7 @@ export type Database = {
           handle?: string | null
           id?: string
           ip_hash?: string
+          ref?: string | null
         }
         Relationships: []
       }

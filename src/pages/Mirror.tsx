@@ -143,11 +143,16 @@ const fieldError = (msg?: string) =>
 export default function Mirror() {
   const [stage, setStage] = useState<"ask" | "reading" | "read">("ask");
   const [profileUrl, setProfileUrl] = useState("");
-  const [email, setEmail] = useState("");
   const [urlError, setUrlError] = useState<string>();
-  const [emailError, setEmailError] = useState<string>();
   const [formError, setFormError] = useState<string>();
   const [showRateHelp, setShowRateHelp] = useState(false);
+  const [ref, setRef] = useState("");
+
+  // Keep-this panel — the only place an email is asked for before the seat panel.
+  const [sendEmail, setSendEmail] = useState("");
+  const [sendBusy, setSendBusy] = useState(false);
+  const [sendError, setSendError] = useState<string>();
+  const [sentOk, setSentOk] = useState(false);
 
   const [result, setResult] = useState<MirrorResponse | null>(null);
   const [lineIndex, setLineIndex] = useState(0);
@@ -166,6 +171,8 @@ export default function Mirror() {
 
   useEffect(() => {
     document.title = "Read me — Aura";
+    const q = new URLSearchParams(window.location.search).get("ref") ?? "";
+    setRef(q.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60));
   }, []);
 
   // The reading copy advances on its own and holds on the last line.
@@ -191,9 +198,6 @@ export default function Mirror() {
     if (!profileUrl.toLowerCase().includes("linkedin.com/in/")) {
       setUrlError(ERROR_COPY.invalid_url); bad = true;
     } else setUrlError(undefined);
-    if (!EMAIL_RE.test(email.trim())) {
-      setEmailError(ERROR_COPY.invalid_email); bad = true;
-    } else setEmailError(undefined);
     if (bad) return;
 
     setStage("reading");
@@ -203,7 +207,7 @@ export default function Mirror() {
       const res = await fetch(`${base}/functions/v1/mirror-read`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ email: email.trim(), profile_url: profileUrl.trim() }),
+        body: JSON.stringify({ profile_url: profileUrl.trim(), ref: ref || undefined }),
       });
       const data: MirrorResponse = await res.json().catch(() => ({} as MirrorResponse));
       if (!res.ok || !data.ok || !data.read) {
@@ -212,10 +216,43 @@ export default function Mirror() {
       }
       setResult(data);
       setListName(data.name ?? "");
-      setListEmail(email.trim());
       setStage("read");
     } catch {
       failBack("network");
+    }
+  };
+
+  const SEND_ERROR: Record<string, string> = {
+    invalid_email: ERROR_COPY.invalid_email,
+    not_found: "We can't find that read any more. Run it once more and we'll send it.",
+    rate_limited: "That's five from this connection in an hour. Try again shortly.",
+    send_failed: "The email didn't leave our side. Nothing was sent — try once more.",
+    network: "Something failed on our side. Nothing was sent.",
+  };
+
+  const sendRead = async () => {
+    setSendError(undefined);
+    if (!EMAIL_RE.test(sendEmail.trim())) { setSendError(SEND_ERROR.invalid_email); return; }
+    setSendBusy(true);
+    try {
+      const base = import.meta.env.VITE_SUPABASE_URL;
+      const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`${base}/functions/v1/send-mirror-read`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ handle: result?.handle, email: sendEmail.trim() }),
+      });
+      const data = await res.json().catch(() => ({} as { ok?: boolean; error?: string }));
+      if (!res.ok || !data?.ok) {
+        setSendError(SEND_ERROR[data?.error as string] ?? SEND_ERROR.network);
+        return;
+      }
+      setSentOk(true);
+      setListEmail(sendEmail.trim());
+    } catch {
+      setSendError(SEND_ERROR.network);
+    } finally {
+      setSendBusy(false);
     }
   };
 
@@ -233,6 +270,7 @@ export default function Mirror() {
           email: listEmail.trim(),
           seniority: listSeniority || undefined,
           source: "mirror",
+          ref: ref || undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -386,6 +424,33 @@ export default function Mirror() {
               <p style={{ margin: "8px 0 0", fontSize: 12.5, color: INK2 }}>{shareNote}</p>
             ) : null}
           </div>
+
+          {/* Keep this — the promise the old gate never kept */}
+          <Card>
+            {sentOk ? (
+              <>
+                <Heading>Keep this</Heading>
+                <Body>Sent. Check your inbox.</Body>
+              </>
+            ) : (
+              <>
+                <Heading>Keep this</Heading>
+                <Body style={{ marginBlockEnd: 14 }}>Where should we send it?</Body>
+                <label style={label} htmlFor="mr-send-email">Email</label>
+                <input
+                  id="mr-send-email" style={field} value={sendEmail} inputMode="email"
+                  placeholder="you@company.com"
+                  onChange={(e) => { setSendEmail(e.target.value); setSendError(undefined); }}
+                />
+                {fieldError(sendError)}
+                <div style={{ marginBlockStart: 14 }}>
+                  <PrimaryButton onClick={sendRead} disabled={sendBusy}>
+                    {sendBusy ? "Sending…" : "Send it to me"}
+                  </PrimaryButton>
+                </div>
+              </>
+            )}
+          </Card>
         </div>
 
         {/* closing CTA — the second and last night surface */}
@@ -434,7 +499,7 @@ export default function Mirror() {
                     onChange={(e) => setListName(e.target.value)} />
                 </div>
                 <div>
-                  <label style={{ ...label, color: "rgba(255,255,255,0.72)" }} htmlFor="mr-email">Work email</label>
+                  <label style={{ ...label, color: "rgba(255,255,255,0.72)" }} htmlFor="mr-email">Email</label>
                   <input id="mr-email" style={field} value={listEmail} inputMode="email"
                     onChange={(e) => setListEmail(e.target.value)} />
                 </div>
@@ -489,17 +554,9 @@ export default function Mirror() {
             {fieldError(urlError)}
           </div>
           <div>
-            <label style={label} htmlFor="mr-work-email">Work email</label>
-            <input
-              id="mr-work-email" style={field} value={email} inputMode="email" placeholder="you@company.com"
-              onChange={(e) => { setEmail(e.target.value); setEmailError(undefined); }}
-            />
-            {fieldError(emailError)}
-          </div>
-          <div>
             <PrimaryButton onClick={submit}>Read me</PrimaryButton>
             <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: INK2 }}>
-              Your email is how we reach you if you want a seat. Nothing is posted, nothing is shared.
+              No account, no sign-up. Ninety seconds.
             </p>
             {formError ? (
               <p style={{ margin: "10px 0 0", fontSize: 13, lineHeight: 1.6, color: "#B3261E" }}>

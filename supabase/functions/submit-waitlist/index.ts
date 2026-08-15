@@ -97,6 +97,11 @@ serve(withObserve("submit-waitlist", async (req) => {
     const sector = typeof body.sector === "string" && body.sector.trim() ? body.sector.trim() : null;
     const rawSource = typeof body.source === "string" ? body.source.trim() : "";
     const source = ALLOWED_SOURCE.includes(rawSource) ? rawSource : "waitlist";
+    // Optional referral tag, so the source of a name stays recoverable.
+    const refClean = (typeof body.ref === "string" ? body.ref : "")
+      .replace(/[^A-Za-z0-9_-]/g, "")
+      .slice(0, 60);
+    const ref = refClean || null;
     // The Mirror already knows who the person is; level is a nicety there, not a gate.
     const seniorityOptional = source === "mirror";
 
@@ -161,6 +166,7 @@ serve(withObserve("submit-waitlist", async (req) => {
       sector,
       status: "pending",
       source,
+      ref,
     });
 
     if (insertErr) {
