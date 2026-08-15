@@ -206,11 +206,22 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
     return json({ error: "empty report from model", anthropic_status, result_keys: keyCount }, 502);
   }
 
+  // Mirrors derivePillars() in src/lib/brandPillars.ts — primary branch only.
+  // Every read produced by the current system prompt emits content_pillars,
+  // so the legacy prose-parsing fallback is not needed here.
+  const derivedPillars: string[] = Array.isArray((resultsObj as any).content_pillars)
+    ? (resultsObj as any).content_pillars
+        .map((v: any) => (typeof v === "string" ? v.trim() : ""))
+        .filter((s: string) => s.length > 0)
+        .slice(0, 5)
+    : [];
+
   const { error: writeErr } = await admin
     .from("diagnostic_profiles")
     .update({
       brand_assessment_results: resultsObj,
       brand_assessment_completed_at: new Date().toISOString(),
+      ...(derivedPillars.length ? { brand_pillars: derivedPillars } : {}),
     })
     .eq("user_id", targetId);
   if (writeErr) return json({ error: writeErr.message, anthropic_status }, 500);
@@ -254,6 +265,7 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
     wrote: true,
     result_keys: keyCount,
     snapshot_version,
+    brand_pillars: derivedPillars,
     report: resultsObj,
   });
 }));
