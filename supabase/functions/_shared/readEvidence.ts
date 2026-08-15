@@ -250,7 +250,10 @@ ${writingBlock}
 
 ${namedScoresBlock}
 
+${takenNounsBlock}
+
 ${auditContext}
+
 
 Here are the user's Brand Assessment answers:
 ${JSON.stringify(answers, null, 2)}
