@@ -327,21 +327,23 @@ Deno.serve(async (req) => {
 
     const messages = [{ role: "user", content: userPrompt }];
     let raw = await callModel(messages);
-    let read = raw && !hasPlaceholder(raw) ? parseJsonLoose(raw) : null;
+    let read = parseJsonLoose(raw);
+    if (read && hasPlaceholderInValues(read)) read = null;
 
     if (!read) {
       // One correction pass: the shape was wrong or a placeholder survived.
-      raw = await callModel([
-        ...messages,
-        { role: "assistant", content: raw || "" },
-        {
-          role: "user",
-          content:
-            "That was not usable. Return ONLY the JSON object with those exact seven keys, filled with real sentences drawn from the material. No markdown fences, no commentary, and no bracketed placeholders anywhere.",
-        },
-      ]);
-      read = raw && !hasPlaceholder(raw) ? parseJsonLoose(raw) : null;
+      const correctionMessages = [...messages];
+      if (raw) correctionMessages.push({ role: "assistant", content: raw });
+      correctionMessages.push({
+        role: "user",
+        content:
+          "That was not usable. Return ONLY the JSON object with those exact seven keys, filled with real sentences drawn from the material. No markdown fences, no commentary, and no bracketed placeholders anywhere.",
+      });
+      raw = await callModel(correctionMessages);
+      read = parseJsonLoose(raw);
+      if (read && hasPlaceholderInValues(read)) read = null;
     }
+
 
     if (!read) {
       await logError("mirror-read", new Error("unreadable model output"), {
