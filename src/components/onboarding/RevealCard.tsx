@@ -355,7 +355,7 @@ const RevealCard = forwardRef<
         ))}
       </div>
     ) : (
-      <p style={{ margin: "24px 0 0", fontSize: 13.5, lineHeight: 1.6, opacity: 0.92 }}>{EMPTY_POSTS_LINE}</p>
+      <p style={{ margin: "24px 0 0", fontSize: 13.5, lineHeight: 1.6, opacity: 0.92 }}>{emptyFiguresLine}</p>
     )}
 
     <p style={{
