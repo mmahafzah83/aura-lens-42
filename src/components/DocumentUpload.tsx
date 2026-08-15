@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-const DOCUMENT_STATUS_EVENT = "aura:document-status-changed";
+export const DOCUMENT_STATUS_EVENT = "aura:document-status-changed";
 const TERMINAL_DOCUMENT_STATUSES = new Set(["completed", "ready", "error"]);
 const activeDocumentWatchers = new Map<string, { intervalId: number; timeoutId: number; toastId: string | number | null }>();
 
@@ -135,6 +135,17 @@ const DocumentUpload = ({ onUploaded, documentType, cvLabel }: DocumentUploadPro
   useEffect(() => () => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+  }, []);
+
+  useEffect(() => {
+    const onStatus = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { documentId: string; status: string };
+      if (!detail?.status) return;
+      if (detail.status === "completed" || detail.status === "ready") setStatus("done");
+      else if (detail.status === "error" || detail.status === "timeout") setStatus("error");
+    };
+    window.addEventListener(DOCUMENT_STATUS_EVENT, onStatus);
+    return () => window.removeEventListener(DOCUMENT_STATUS_EVENT, onStatus);
   }, []);
 
   const stopPolling = () => {
@@ -323,7 +334,7 @@ const DocumentUpload = ({ onUploaded, documentType, cvLabel }: DocumentUploadPro
   const statusText = {
     idle: "Upload PDF, DOCX, or high-res image",
     uploading: "Uploading…",
-    processing: "AI is reading & chunking…",
+    processing: "Reading it — this can take a minute",
     done: `${fileName} indexed successfully`,
     error: "Didn't connect. Try once more.",
   };
