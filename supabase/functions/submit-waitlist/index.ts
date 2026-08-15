@@ -30,6 +30,8 @@ function checkRateLimit(ip: string): boolean {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Where the signup came from. Nothing wider than these two is accepted.
+const ALLOWED_SOURCE = ["waitlist", "mirror"];
 // MUST mirror src/constants/seniority.ts (SENIORITY_LEVELS) — keep byte-identical.
 const ALLOWED_SENIORITY = [
   "C-Suite",
@@ -93,6 +95,10 @@ serve(withObserve("submit-waitlist", async (req) => {
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const seniority = typeof body.seniority === "string" ? body.seniority.trim() : "";
     const sector = typeof body.sector === "string" && body.sector.trim() ? body.sector.trim() : null;
+    const rawSource = typeof body.source === "string" ? body.source.trim() : "";
+    const source = ALLOWED_SOURCE.includes(rawSource) ? rawSource : "waitlist";
+    // The Mirror already knows who the person is; level is a nicety there, not a gate.
+    const seniorityOptional = source === "mirror";
 
     if (!name || name.length > 200) {
       return new Response(JSON.stringify({ error: "Name is required" }), {
@@ -106,7 +112,8 @@ serve(withObserve("submit-waitlist", async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!seniority || !ALLOWED_SENIORITY.includes(seniority)) {
+    if (seniorityOptional ? (seniority && !ALLOWED_SENIORITY.includes(seniority))
+                          : (!seniority || !ALLOWED_SENIORITY.includes(seniority))) {
       return new Response(JSON.stringify({ error: "Valid seniority is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -150,10 +157,10 @@ serve(withObserve("submit-waitlist", async (req) => {
     const { error: insertErr } = await supabase.from("beta_allowlist").insert({
       name,
       email,
-      seniority,
+      seniority: seniority || null,
       sector,
       status: "pending",
-      source: "waitlist",
+      source,
     });
 
     if (insertErr) {
