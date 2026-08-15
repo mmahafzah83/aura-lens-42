@@ -229,7 +229,6 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
         .slice(0, 5)
     : [];
 
-  const { error: writeErr } = await admin
   // Never downgrade a richer stored read with a prose-only blob.
   const { data: existing } = await admin
     .from("diagnostic_profiles")
