@@ -43,6 +43,7 @@ import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyHeader from "@/components/onboarding/JourneyHeader";
+import DocumentUpload from "@/components/DocumentUpload";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
@@ -113,6 +114,8 @@ const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will bui
 const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you capture.";
 /** A short dark panel that sits between screen 8 and the sliders. */
 const TRUST_SLIDERS_SCREEN = 8.5;
+/** A white CV step between screen 3 and screen 4 — fractional so nothing renumbers. */
+const CV_SCREEN = 3.5;
 
 /** Plain text buttons inside the screen-13 "Save it" row. */
 const quietLink: React.CSSProperties = {
@@ -291,6 +294,7 @@ const Onboarding = () => {
   const [readDone, setReadDone] = useState(false);
   const [sectorKnown, setSectorKnown] = useState(false);
   const [bandPicker, setBandPicker] = useState(false);
+  const [cvUploads, setCvUploads] = useState(0);
 
   /* screen 5–7 */
   const [linkInput, setLinkInput] = useState("");
@@ -502,7 +506,7 @@ const Onboarding = () => {
       } catch { /* ignore */ }
       /* screens 2 and 3 folded into step 1 — a resume there lands on the address
          card with the address already filled, so nothing Aura read is lost. */
-      if (resume === 2 || resume === 3) resume = 1;
+      if (resume === 2 || resume === 3 || resume === CV_SCREEN) resume = 1;
       if (resume <= 3) {
         try {
           const addr = await loadLinkedInAddress(uid);
@@ -1644,7 +1648,7 @@ const Onboarding = () => {
             </div>
 
             <Actions style={{ marginBlockStart: 18 }}>
-              <OBButton onClick={() => { void confirmBandIfDetected(); go(4); }}>Continue</OBButton>
+              <OBButton onClick={() => { void confirmBandIfDetected(); go(CV_SCREEN); }}>Continue</OBButton>
               <OBButton variant="tertiary" onClick={() => go(4)}>I'll do that later</OBButton>
             </Actions>
           </>
@@ -1684,6 +1688,41 @@ const Onboarding = () => {
           go(4);
         }}>Save and carry on</OBButton>
         <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
+        </Actions>
+      </PaperShell>
+    );
+  }
+
+  /* 3.5 — WHITE. The member's turn: a CV, if they have one to hand. */
+  if (screen === CV_SCREEN) {
+    const leaveCv = () => {
+      if (cvUploads > 0) {
+        /* Fire and forget: the read must never wait on this, and a failure here
+           costs the member nothing. */
+        try { void supabase.functions.invoke("cv-crosscheck", {}).catch(() => undefined); } catch { /* ignore */ }
+      }
+      go(4);
+    };
+    content = (
+      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
+        <h1 style={h1Light}>Have a CV handy?</h1>
+        <p style={bodyLight}>
+          Your profile says what the world can see. A CV says what you actually did — the numbers, the
+          programmes, the things nobody posted about. Aura reads it against your profile and shows you the
+          difference.
+        </p>
+        <div style={{ marginBlockStart: 20 }}>
+          <DocumentUpload
+            documentType="cv"
+            cvLabel="latest"
+            onUploaded={(id) => { if (id) setCvUploads((n) => n + 1); }}
+          />
+        </div>
+        <Actions style={{ marginBlockStart: 20 }}>
+          <OBButton disabled={cvUploads === 0} onClick={leaveCv}>
+            {cvUploads > 0 ? "Continue" : "Read it"}
+          </OBButton>
+          <OBButton variant="tertiary" onClick={() => go(4)}>I'll do this later</OBButton>
         </Actions>
       </PaperShell>
     );

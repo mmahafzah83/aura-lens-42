@@ -23,7 +23,7 @@ export async function buildReadEvidence(
       .order("confidence", { ascending: false })
       .limit(12),
     admin.from("diagnostic_profiles")
-      .select("seniority_band, sector_focus")
+      .select("seniority_band, sector_focus, cv_crosscheck")
       .eq("user_id", uid)
       .maybeSingle(),
     admin.from("linkedin_posts")
@@ -257,6 +257,18 @@ Compare that claim against their actual posts above and their captured claims. I
     ? auditScores
     : `The user's Objective Evidence Audit scores are: ${JSON.stringify(auditScores, null, 2)}`;
 
+  // Documented evidence from their CV that their public profile does not show.
+  const cc: any = (prof?.cv_crosscheck && typeof prof.cv_crosscheck === "object") ? prof.cv_crosscheck : null;
+  const cvBlock = cc
+    ? `WHAT THEIR CV SHOWS THAT THEIR PUBLIC PROFILE DOES NOT
+In their CV, absent from their profile: ${JSON.stringify(cc.in_cv_not_on_profile ?? [])}
+On their profile, absent from the CV: ${JSON.stringify(cc.on_profile_not_in_cv ?? [])}
+Strongest proof invisible publicly: ${cc.strongest_unused_proof ?? "none stated"}
+What their CV emphasises: ${cc.direction_signal ?? "none stated"}
+
+This is documented evidence they have not made public. Treat it as fact. Where it supports a claim they make, say so and name it. Where it contradicts how they present publicly, name that gap plainly — it is one of the most useful things in the read.`
+    : "WHAT THEIR CV SHOWS\nNo CV on file.";
+
   const userPrompt = `User's sector: ${resolvedSector || "Not stated — infer it from the headline and captured claims and name it explicitly."}
 Their seniority: ${resolvedBand || "Not stated"}. ${bandLine}
 
@@ -265,6 +277,8 @@ ${profileBlock}
 ${recsBlock}
 
 ${claimsBlock}
+
+${cvBlock}
 
 ${postsBlock}
 
