@@ -188,3 +188,6 @@ verify_jwt = false
 
 [functions.linkedin-fetch-profile]
 verify_jwt = false
+
+[functions.cv-crosscheck]
+verify_jwt = false
