@@ -69,6 +69,11 @@ const READING_LINES = [
   "Writing your read…",
 ];
 
+/** Line n appears at this offset, so the four spread across ~60 seconds. */
+const READING_DELAYS = [0, 14_000, 32_000, 50_000];
+
+const ARABIC_RE = /[\u0600-\u06FF]/;
+
 /* ── small primitives ───────────────────────────────────────────── */
 const Card = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) => (
   <section
@@ -167,8 +172,8 @@ export default function Mirror() {
   useEffect(() => {
     if (stage !== "reading") return;
     setLineIndex(0);
-    const timers = READING_LINES.slice(1).map((_, i) =>
-      window.setTimeout(() => setLineIndex(i + 1), (i + 1) * 6000),
+    const timers = READING_DELAYS.slice(1).map((delay, i) =>
+      window.setTimeout(() => setLineIndex(i + 1), delay),
     );
     return () => timers.forEach(window.clearTimeout);
   }, [stage]);
