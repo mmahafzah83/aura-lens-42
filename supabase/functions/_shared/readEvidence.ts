@@ -51,6 +51,25 @@ export async function buildReadEvidence(
   const resolvedSector = sector || prof.sector_focus || null;
   const resolvedBand = band || prof.seniority_band || null;
 
+  // COHORT AWARENESS — avoid giving the same archetype name to members who
+  // share band and sector, since they read the same news and face the same market.
+  let takenNames: string[] = [];
+  if (resolvedBand) {
+    let q = admin.from("diagnostic_profiles")
+      .select("user_id, brand_assessment_results, sector_focus")
+      .eq("seniority_band", resolvedBand)
+      .limit(200);
+    if (resolvedSector) q = q.eq("sector_focus", resolvedSector);
+    const { data: peers } = await q;
+    takenNames = (peers ?? [])
+      .filter((p: any) => p.user_id !== uid)
+      .map((p: any) => String(p?.brand_assessment_results?.primary_archetype ?? "").trim())
+      .filter((s: string) => s.length > 0);
+    // de-duplicate, cap at 40
+    takenNames = Array.from(new Set(takenNames)).slice(0, 40);
+  }
+
+
   // The member's slider results, named — so the model can say what they rated
   // themselves highest on rather than quoting a number.
   const dimRes = resolvedBand
@@ -75,6 +94,19 @@ export async function buildReadEvidence(
 ${namedScores.map((s) => `- ${s.name}: ${s.value}${s.why ? ` — ${s.why}` : ""}`).join("\n")}
 Always refer to these by name, never as "dimension 5" or a bare number.`
     : "THEIR OWN RATINGS\nNone on file.";
+
+  const takenNounsBlock = takenNames.length
+    ? `ARCHETYPE NAMES ALREADY GIVEN TO OTHER MEMBERS AT THIS LEVEL IN THIS SECTOR
+${takenNames.map((n) => `- ${n}`).join("\n")}
+
+Do not reuse any name above, and do not reuse the ROLE-NOUN of any name above even with a different adjective.
+If your first instinct is one of these nouns, that instinct is describing the COHORT, not this person — the people
+above read the same news and work in the same market, so the obvious word will always be the shared one. Choose
+again, and take the noun from something in THIS member's own evidence that does not appear in the others': a
+specific problem they keep returning to, a kind of work only they describe, a claim only they have captured.`
+    : `ARCHETYPE NAMES ALREADY GIVEN TO OTHER MEMBERS AT THIS LEVEL IN THIS SECTOR
+None yet — this member is the first read at this level in this sector.`;
+
 
   // ── WHAT THEIR OWN WRITING SHOWS — computed, never estimated ──
   let writingBlock: string;
@@ -218,7 +250,10 @@ ${writingBlock}
 
 ${namedScoresBlock}
 
+${takenNounsBlock}
+
 ${auditContext}
+
 
 Here are the user's Brand Assessment answers:
 ${JSON.stringify(answers, null, 2)}
