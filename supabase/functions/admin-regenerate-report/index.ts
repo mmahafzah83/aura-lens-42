@@ -230,6 +230,28 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
     : [];
 
   const { error: writeErr } = await admin
+  // Never downgrade a richer stored read with a prose-only blob.
+  const { data: existing } = await admin
+    .from("diagnostic_profiles")
+    .select("brand_assessment_results")
+    .eq("user_id", targetId)
+    .maybeSingle();
+  const existingKeys = existing?.brand_assessment_results && typeof existing.brand_assessment_results === "object"
+    ? Object.keys(existing.brand_assessment_results).length
+    : 0;
+
+  if (keyCount <= 1 && existingKeys > keyCount) {
+    await logEfError(admin, {
+      function_name: "admin-regenerate-report",
+      error: `Prose-only read would overwrite a richer stored read (new=${keyCount}, stored=${existingKeys}) — nothing saved`,
+      severity: "high",
+      user_id: targetId,
+      context: { path: "downgrade_guard", new_keys: keyCount, stored_keys: existingKeys },
+    });
+    return json({ ok: false, pending: true, reason: "would_downgrade", result_keys: keyCount, stored_keys: existingKeys });
+  }
+
+  const { error: writeErr } = await admin
     .from("diagnostic_profiles")
     .update({
       brand_assessment_results: resultsObj,

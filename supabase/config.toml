@@ -191,3 +191,9 @@ verify_jwt = false
 
 [functions.cv-crosscheck]
 verify_jwt = false
+
+[functions.admin-list-documents]
+verify_jwt = false
+
+[functions.admin-set-document-type]
+verify_jwt = false
