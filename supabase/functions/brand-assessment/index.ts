@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
+import { buildReadEvidence } from "../_shared/readEvidence.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,213 +37,25 @@ serve(withObserve("brand-assessment", async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const uid = userData.user.id;
 
-    const [snapRes, fragRes, profRes, postRes, allPostsRes] = await Promise.all([
-      admin.from("linkedin_profile_snapshots")
-        .select("headline, about, experience, skills, followers, connections, location, education, certifications, languages, raw")
-        .eq("user_id", uid)
-        .order("created_at", { ascending: false })
-        .limit(1),
-      admin.from("evidence_fragments")
-        .select("title, content, confidence")
-        .eq("user_id", uid)
-        .order("confidence", { ascending: false })
-        .limit(12),
-      admin.from("diagnostic_profiles")
-        .select("seniority_band, sector_focus")
-        .eq("user_id", uid)
-        .maybeSingle(),
-      admin.from("linkedin_posts")
-        .select("post_text, like_count, published_at")
-        .eq("user_id", uid)
-        .order("like_count", { ascending: false, nullsFirst: false })
-        .limit(15),
-      admin.from("linkedin_posts")
-        .select("post_text, like_count, published_at, acquisition")
-        .eq("user_id", uid)
-        .limit(500),
-    ]);
+    const { floorMet, userPrompt } = await buildReadEvidence(admin, uid, { answers, auditScores, sector, band });
 
-    const snap: any = snapRes.data?.[0] ?? null;
-    const frags: any[] = fragRes.data ?? [];
-    const prof: any = profRes.data ?? {};
-    const posts: any[] = (postRes.data ?? []).filter((p: any) => String(p?.post_text || "").trim());
-    const resolvedSector = sector || prof.sector_focus || null;
-    const resolvedBand = band || prof.seniority_band || null;
-
-    // The member's slider results, named — so the model can say what they rated
-    // themselves highest on rather than quoting a number.
-    const dimRes = resolvedBand
-      ? await admin.from("capability_dimensions")
-          .select("name, why_line, sector, position")
-          .eq("band", resolvedBand)
-          .eq("active", true)
-      : { data: [] as any[] };
-    const dims: any[] = (dimRes as any).data ?? [];
-    const scoreMap: Record<string, number> = (auditScores && typeof auditScores === "object")
-      ? auditScores as Record<string, number>
-      : {};
-    const namedScores = Object.entries(scoreMap)
-      .filter(([, v]) => typeof v === "number")
-      .map(([k, v]) => {
-        const d = dims.find((x) => String(x.name).toLowerCase() === k.toLowerCase());
-        return { name: d?.name ?? k, why: d?.why_line ?? null, value: v as number };
-      })
-      .sort((a, b) => b.value - a.value);
-    const namedScoresBlock = namedScores.length
-      ? `THEIR OWN RATINGS, WITH THE NAME OF WHAT THEY RATED (highest first)
-${namedScores.map((s) => `- ${s.name}: ${s.value}${s.why ? ` — ${s.why}` : ""}`).join("\n")}
-Always refer to these by name, never as "dimension 5" or a bare number.`
-      : "THEIR OWN RATINGS\nNone on file.";
-
-    // ── WHAT THEIR OWN WRITING SHOWS — computed, never estimated ──
-    const allPosts: any[] = ((allPostsRes as any).data ?? []).filter((p: any) => String(p?.post_text || "").trim());
-    let writingBlock: string;
-    if (allPosts.length < 5) {
-      writingBlock = `WHAT THEIR OWN WRITING SHOWS
-NOT ENOUGH PUBLIC WRITING TO MEASURE`;
-    } else {
-      const lines: string[] = [];
-      const words = allPosts.reduce((n, p) => n + String(p.post_text).trim().split(/\s+/).length, 0);
-      lines.push(`- Posts with text: ${allPosts.length}; total words written: ${words}`);
-      const withDigit = allPosts.filter((p) => /\d/.test(String(p.post_text))).length;
-      lines.push(`- Posts containing a digit: ${Math.round((withDigit / allPosts.length) * 100)}%`);
-
-      const likes = allPosts.map((p) => Number(p.like_count) || 0);
-      const avg = likes.reduce((a, b) => a + b, 0) / likes.length;
-      const best = Math.max(...likes);
-      if (avg > 0 && best / avg >= 1.5) {
-        lines.push(`- Their best post drew ${(best / avg).toFixed(1)}× the reactions of their average post (${best} vs an average of ${avg.toFixed(1)})`);
-      }
-
-      const own = allPosts.filter((p) => String(p.acquisition ?? "") !== "reshare").length;
-      lines.push(`- Their own words: ${own} posts; reshares: ${allPosts.length - own} posts`);
-
-      const months: Record<string, number> = {};
-      for (const p of allPosts) {
-        const d = p.published_at ? String(p.published_at).slice(0, 7) : null;
-        if (d) months[d] = (months[d] ?? 0) + 1;
-      }
-      const peak = Object.entries(months).sort((a, b) => b[1] - a[1])[0];
-      if (peak) {
-        const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
-        const recent = allPosts.filter((p) => p.published_at && new Date(p.published_at).getTime() >= cutoff).length;
-        lines.push(`- Busiest month: ${peak[0]} with ${peak[1]} posts. In the last 90 days: ${recent} posts.`);
-      }
-
-      const top3 = [...allPosts].sort((a, b) => (Number(b.like_count) || 0) - (Number(a.like_count) || 0)).slice(0, 3);
-      const top3Block = top3.map((p, i) =>
-        `${i + 1}. [${Number(p.like_count) || 0} reactions] ${String(p.post_text).replace(/\s+/g, " ").slice(0, 600)}`).join("\n");
-
-      writingBlock = `WHAT THEIR OWN WRITING SHOWS
-These figures are computed from their real posts. Treat them as fact. If a figure is absent, it could not be computed — do not invent it.
-${lines.join("\n")}
-
-Their three highest-liked posts, in full (truncated at 600 characters):
-${top3Block}`;
+    if (!floorMet) {
+      console.error("brand-assessment: evidence floor not met — nothing written");
+      EdgeRuntime.waitUntil(logError("brand-assessment", "Evidence floor not met — no read written", {
+        user_id: uid,
+        severity: "high",
+        context: { path: "evidence_floor" },
+      }));
+      return new Response(
+        JSON.stringify({
+          interpretation: "",
+          pending: true,
+          message: "Saved. Your write-up will be ready shortly — you can ask for it again from My Story.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const bandLine = resolvedBand === "room"
-      ? "They operate at board and owner level — write for someone who sets the agenda in the room."
-      : resolvedBand === "table"
-      ? "They sit at the executive table — write for someone who shapes decisions alongside peers."
-      : resolvedBand === "work"
-      ? "They lead the work itself — write for someone whose credibility comes from delivery."
-      : "";
-
-    const raw: any = (snap?.raw && typeof snap.raw === "object") ? snap.raw : {};
-    const rawArr = (k: string): any[] => (Array.isArray(raw[k]) ? raw[k] : []);
-    const cut = (v: unknown, n: number) => JSON.stringify(v ?? []).slice(0, n);
-
-    const profileBlock = snap
-      ? `THEIR LINKEDIN PROFILE — read all of it, this is evidence of standing that answers cannot provide
-Headline: ${snap.headline ?? "Not on file"}
-Location: ${raw?.location?.linkedinText ?? snap.location ?? "Not on file"}
-On LinkedIn since: ${raw?.registeredAt ?? "Not on file"}
-Followers: ${snap.followers ?? "Not on file"} · Connections: ${snap.connections ?? raw?.connectionsCount ?? "Not on file"}
-Creator mode: ${raw?.creator ?? "Not on file"} · Verified: ${raw?.verified ?? "Not on file"}
-About: ${typeof snap.about === "string" ? snap.about.slice(0, 2000) : "Not on file"}
-Experience (every role, with dates and duration): ${cut(snap.experience ?? rawArr("experience"), 6000)}
-Education: ${cut(snap.education ?? rawArr("education"), 1200)}
-Top skills: ${cut(rawArr("topSkills"), 600)}
-Skills: ${cut(snap.skills ?? rawArr("skills"), 1500)}
-Certifications: ${cut(snap.certifications ?? rawArr("certifications"), 1500)}
-Languages: ${cut(snap.languages ?? rawArr("languages"), 400)}
-Projects: ${cut(rawArr("projects"), 1200)}
-Courses: ${cut(rawArr("courses"), 600)}
-Honours and awards: ${cut(rawArr("honorsAndAwards"), 600)}
-Volunteering: ${cut(rawArr("volunteering"), 600)}
-Interests: ${cut(rawArr("interests"), 600)}
-
-Use the CAREER SHAPE as evidence: how long they stayed in each role, the moves between companies and sectors,
-where they have stayed put, what they stopped doing. That shape is standing, and their answers cannot show it.`
-      : "THEIR LINKEDIN PROFILE\nNothing on file.";
-
-    // Other people describing this member in their own words — the only external
-    // evidence of market perception the product ever gets.
-    const recs = rawArr("receivedRecommendations");
-    const recsBlock = recs.length
-      ? `RECOMMENDATIONS WRITTEN ABOUT THEM BY OTHER PEOPLE (${recs.length})
-${recs.slice(0, 18).map((r: any, i: number) =>
-  `${i + 1}. ${String(r?.givenBy ?? "Someone")}${r?.givenByHeadline ? ` (${String(r.givenByHeadline).split("|")[0].trim()})` : ""}: ${String(r?.description ?? "").replace(/\s+/g, " ").slice(0, 700)}`
-).join("\n")}
-
-These are recommendations written about the member by other people. This is the only external evidence of how the
-market actually sees them. Use it as the primary source for HOW THE MARKET SEES YOU, and quote or paraphrase at
-least one specific thing a recommender said. Where the recommendations agree
-with the member's own answers, say so. Where they disagree, name the disagreement plainly — that gap is the most
-useful thing in the report. Never invent a recommendation and never quote one that is not above.`
-      : "RECOMMENDATIONS WRITTEN ABOUT THEM\nNone on file — say the market evidence is thin rather than inventing perception.";
-
-    const claimsBlock = frags.length
-      ? `WHAT THEY HAVE CAPTURED (their own claims, strongest first)
-${frags.map((f, i) => `${i + 1}. ${f.title}${f.content ? ` — ${String(f.content).slice(0, 400)}` : ""}`).join("\n")}`
-      : "WHAT THEY HAVE CAPTURED\nNothing captured yet.";
-
-    // Their actual published writing — the evidence any claim is tested against.
-    const postsBlock = posts.length
-      ? `THEIR OWN POSTS (${posts.length} read, most-engaged first)
-${posts.map((p, i) => `${i + 1}. [${p.like_count ?? 0} reactions${p.published_at ? `, ${String(p.published_at).slice(0, 10)}` : ""}] ${String(p.post_text).replace(/\s+/g, " ").slice(0, 600)}`).join("\n")}`
-      : "THEIR OWN POSTS\nNothing on file — say so rather than inferring from the profile alone.";
-
-    // The one question where they bet on their own strength. Everything in
-    // THE HONEST TRUTH turns on whether their posts back this up.
-    const selfClaimKey = Object.keys(answers ?? {}).find((k) => /strongest at/i.test(k));
-    const selfClaim = selfClaimKey ? String((answers as any)[selfClaimKey] ?? "").trim() : "";
-    const selfClaimBlock = selfClaim
-      ? `WHERE THEY BET THEY ARE STRONGEST
-The member claims they are strongest at: "${selfClaim}".
-
-Compare that claim against their actual posts above and their captured claims. If the evidence supports it, say so and cite what supports it — quote or name the specific post or claim. If the evidence does NOT support it, say that plainly and specifically in THE HONEST TRUTH — name the number (how many of their ${posts.length} posts actually touch it, how many of their ${frags.length} captured claims do). Do not soften it into an opportunity, a "next step", or a "chance to". If there is not enough evidence either way, say that instead of guessing.`
-      : "WHERE THEY BET THEY ARE STRONGEST\nNot answered — do not invent a claim to test.";
-
-    // Build audit scores context for the AI
-    const auditContext = typeof auditScores === "string"
-      ? auditScores
-      : `The user's Objective Evidence Audit scores are: ${JSON.stringify(auditScores, null, 2)}`;
-
-    const userPrompt = `User's sector: ${resolvedSector || "Not stated — infer it from the headline and captured claims and name it explicitly."}
-Their seniority: ${resolvedBand || "Not stated"}. ${bandLine}
-
-${profileBlock}
-
-${recsBlock}
-
-${claimsBlock}
-
-${postsBlock}
-
-${selfClaimBlock}
-
-${writingBlock}
-
-${namedScoresBlock}
-
-${auditContext}
-
-Here are the user's Brand Assessment answers:
-${JSON.stringify(answers, null, 2)}
-
-Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the audit scores as factual evidence — do not ask the user for them. Reference at least one of their own captured claims, by its substance, inside THE HONEST TRUTH section. THE HONEST TRUTH must also settle the claim-versus-evidence test set out above, with the number named, and it is allowed to be unwelcome — never trade accuracy for comfort. Write for their seniority band. Never write a bracketed placeholder and never write the words "sector name".`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");

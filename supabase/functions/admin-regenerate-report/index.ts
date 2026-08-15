@@ -4,6 +4,7 @@ import { withObserve, logEfError } from "../_shared/observe.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
+import { buildReadEvidence } from "../_shared/readEvidence.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,23 +90,29 @@ serve(withObserve("admin-regenerate-report", async (req) => {
       ? profile.audit_results
       : "No audit scores available yet";
 
-  const auditContext = typeof auditScores === "string"
-    ? auditScores
-    : `The user's Objective Evidence Audit scores are: ${JSON.stringify(auditScores, null, 2)}`;
+  // Same evidence and same prompt as brand-assessment — one artifact, one builder.
+  const { floorMet, userPrompt } = await buildReadEvidence(admin, targetId, {
+    answers,
+    auditScores,
+    sector: profile?.sector_focus ?? null,
+    band: null,
+  });
 
-  const userPrompt = `User's sector: ${profile?.sector_focus || "Not specified"}
-
-${auditContext}
-
-Here are the user's Brand Assessment answers:
-${JSON.stringify(answers, null, 2)}
-
-Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the audit scores as factual evidence — do not ask the user for them.`;
+  if (!floorMet) {
+    await logEfError(admin, {
+      function_name: "admin-regenerate-report",
+      error: "Evidence floor not met — no read written",
+      severity: "high",
+      user_id: targetId,
+      context: { path: "evidence_floor" },
+    });
+    return json({ ok: false, pending: true });
+  }
 
   const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   if (!ANTHROPIC_API_KEY) return json({ error: "ANTHROPIC_API_KEY not configured" }, 500);
 
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+  const callAnthropic = (prompt: string) => fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": ANTHROPIC_API_KEY,
@@ -116,9 +123,11 @@ Analyse this professional using all six frameworks and provide the complete bran
       model: "claude-sonnet-4-5-20250929",
       max_tokens: 4096,
       system: BRAND_ASSESSMENT_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userPrompt }],
+      messages: [{ role: "user", content: prompt }],
     }),
   });
+
+  const resp = await callAnthropic(userPrompt);
 
   const anthropic_status = resp.status;
   const rawBody = await resp.text();
@@ -146,7 +155,37 @@ Analyse this professional using all six frameworks and provide the complete bran
     }));
   } catch (_) { /* non-blocking */ }
 
-  const interpretation = (data.content || []).map((c: any) => c.text || "").join("") || "";
+  let interpretation = (data.content || []).map((c: any) => c.text || "").join("") || "";
+
+  // OUTPUT GUARD — mirrors brand-assessment exactly.
+  const isBad = (t: string) => /\[[^\]]{2,40}\]/.test(t) || /sector name/i.test(t) || /zone of genius/i.test(t);
+
+  if (interpretation && isBad(interpretation)) {
+    console.error("admin-regenerate-report: placeholder detected, retrying once");
+    const correction = `${userPrompt}
+
+CORRECTION — your previous attempt contained a bracketed placeholder, the words "sector name", or the phrase "zone of genius". Rewrite the whole output. Every sentence must be finished prose about this specific person. Do not output a square bracket anywhere. Name the sector explicitly, inferring it from the headline and captured claims if it is not stated.`;
+    try {
+      const retry = await callAnthropic(correction);
+      if (retry.ok) {
+        const retryData = await retry.json();
+        interpretation = (retryData.content || []).map((c: any) => c.text || "").join("") || "";
+      }
+    } catch (e) {
+      console.error("admin-regenerate-report: retry failed", e);
+    }
+    if (!interpretation || isBad(interpretation)) {
+      await logEfError(admin, {
+        function_name: "admin-regenerate-report",
+        error: "Placeholder output after retry — nothing saved",
+        severity: "high",
+        user_id: targetId,
+        context: { path: "placeholder_guard" },
+      });
+      return json({ ok: false, pending: true });
+    }
+  }
+
   const { prose, json: parsed } = splitInterpretation(interpretation);
 
   // Same shape the frontend persists.
