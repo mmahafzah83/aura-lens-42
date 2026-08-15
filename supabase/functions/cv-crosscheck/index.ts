@@ -16,8 +16,21 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const SYSTEM_PROMPT =
-  "You compare a senior professional's CV against their public LinkedIn profile. You report only what the two documents actually show. You never invent an achievement, a number, a date or a role. If something cannot be determined from the material, you say so. Output plain text only — no markdown, no asterisks, no hash headers, no bracketed placeholders. Never use the words: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless.";
+const SYSTEM_PROMPT = `You are a senior career and profile reviewer for GCC executives. You do not merely list differences between documents — you judge what they mean and what the person should do. You use only what the supplied material shows and never invent an achievement, number, date or employer.
+
+OWNERSHIP RULE — this matters more than any other. When a figure describes organisational, portfolio or firm-level scale, do not treat it as the person's personal result unless the material shows they owned it. Put every such claim in \`defensibility\` with the qualifier they should add before using it publicly. Never place an unqualified firm-level figure in headline_suggestion. A claim a reader would challenge in a meeting is worse than no claim.
+
+RANKING — at most three entries in \`findings\`, ordered by how much the gap actually costs this person. Omit trivia: a course certificate is not a finding. Every finding's \`do_this\` begins with a verb and names where it goes (headline, About section, a post, the CV itself). \`weight\` is 'high' or 'medium' only.
+
+READING THE SHAPE — in \`reading_the_shape\`, name what a recruiter or board member will notice first about the career's shape: a short tenure, a gap, a title that moved sideways, work concentrated long ago. One sentence, or null if nothing stands out. Say it plainly and without alarm.
+
+VOICE — in \`profile_vs_voice\`, compare what they actually write publicly (their posts) and what others say about them (recommendations) against what the CV claims. Name the disagreement where there is one; that gap is often the most useful line in the review. Null if there are no posts and no recommendations.
+
+BEHIND — \`cv_is_behind\` lists where the CV is out of date, written as to-dos, not as contradictions. An out-of-date CV is a task, never an inconsistency.
+
+HEADLINE — \`headline_suggestion\` is under 200 characters, at most three segments, and leads with what is distinctive about this person rather than a category label. Do not stack keywords. Do not open with a phrase that would fit half the senior professionals in this market.
+
+LANGUAGE — plain English, short sentences, as a trusted advisor would speak over coffee. Gloss every acronym in four words or fewer on first use. No markdown, no asterisks, no headers, no bracketed placeholders. Never use: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate.`;
 
 function parseJsonLoose(raw: string): any | null {
   if (!raw) return null;
@@ -124,6 +137,42 @@ Education: ${cut(snap.education, 1200)}
 Skills: ${cut(snap.skills, 1200)}
 Certifications: ${cut(snap.certifications, 1200)}`;
 
+  // --- extra evidence: fragments, posts, recommendations --------------------
+  const { data: fragments } = await admin
+    .from("evidence_fragments")
+    .select("title, content, confidence")
+    .eq("user_id", targetId)
+    .order("confidence", { ascending: false })
+    .limit(12);
+
+  const { data: posts } = await admin
+    .from("linkedin_posts")
+    .select("post_text, like_count, published_at")
+    .eq("user_id", targetId)
+    .not("post_text", "is", null)
+    .order("like_count", { ascending: false, nullsFirst: false })
+    .limit(15);
+
+  const fragmentsText = (fragments ?? []).length
+    ? (fragments ?? []).map((f: any) =>
+        `· ${f.title ?? "Untitled"} (confidence ${f.confidence ?? "unknown"}): ${String(f.content ?? "").slice(0, 600)}`
+      ).join("\n")
+    : "None on file.";
+
+  const usablePosts = (posts ?? []).filter((p: any) => String(p.post_text ?? "").trim().length > 0);
+  const postsText = usablePosts.length
+    ? usablePosts.map((p: any) =>
+        `· (${String(p.published_at ?? "").slice(0, 10) || "undated"}, ${p.like_count ?? 0} likes) ${String(p.post_text).slice(0, 600)}`
+      ).join("\n")
+    : "None on file.";
+
+  const rawRecs = Array.isArray(snap.raw?.receivedRecommendations) ? snap.raw.receivedRecommendations : [];
+  const recsText = rawRecs.length
+    ? rawRecs.slice(0, 12).map((r: any) =>
+        `· From ${String(r?.givenBy ?? "unknown")}: ${String(r?.description ?? "").slice(0, 500)}`
+      ).join("\n")
+    : "None on file.";
+
   const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   if (!ANTHROPIC_API_KEY) return json({ error: "ANTHROPIC_API_KEY not configured" }, 500);
 
@@ -133,14 +182,24 @@ ${cvText}
 THEIR PUBLIC LINKEDIN PROFILE
 ${profileText}
 
-Compare the two. Return exactly this JSON object and nothing else:
+THEIR CAPTURED EVIDENCE
+${fragmentsText}
+
+WHAT THEY POST PUBLICLY
+${postsText}
+
+WHAT OTHERS SAY ABOUT THEM (LINKEDIN RECOMMENDATIONS)
+${recsText}
+
+Judge this material. Return exactly this JSON object and nothing else:
 {
-  "in_cv_not_on_profile": [up to 5 short strings — concrete achievements, projects or metrics that appear in the CV but not on the public profile],
-  "on_profile_not_in_cv": [up to 5 short strings],
-  "inconsistencies": [up to 3 short strings — differing dates, titles or durations; empty array if none],
-  "strongest_unused_proof": "one sentence naming the single most useful thing in the CV that is invisible publicly",
-  "direction_signal": "one sentence — if more than one CV is supplied, what the difference between them suggests about where this person is heading; if only one CV, say exactly what the single CV emphasises most",
-  "headline_suggestion": "one LinkedIn headline under 220 characters, written in their own register, using only what the material supports"
+  "headline_finding": "one sentence: the single most valuable thing this comparison found, and what to do about it",
+  "findings": [ { "what": "", "why_it_matters": "", "do_this": "", "weight": "high" } ],
+  "defensibility": [ "" ],
+  "cv_is_behind": [ "" ],
+  "reading_the_shape": "",
+  "profile_vs_voice": "",
+  "headline_suggestion": ""
 }`;
 
   const callAnthropic = (prompt: string) => fetch("https://api.anthropic.com/v1/messages", {
@@ -152,7 +211,7 @@ Compare the two. Return exactly this JSON object and nothing else:
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-5-20250929",
-      max_tokens: 2048,
+      max_tokens: 3000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: prompt }],
     }),

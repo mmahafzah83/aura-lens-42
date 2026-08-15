@@ -22,13 +22,16 @@ type Doc = {
   created_at: string;
 };
 
+type Finding = { what?: string; why_it_matters?: string; do_this?: string; weight?: string };
+
 type Crosscheck = {
-  in_cv_not_on_profile?: string[];
-  on_profile_not_in_cv?: string[];
-  inconsistencies?: string[];
-  strongest_unused_proof?: string;
-  direction_signal?: string;
-  headline_suggestion?: string;
+  headline_finding?: string | null;
+  findings?: Finding[];
+  defensibility?: string[];
+  cv_is_behind?: string[];
+  reading_the_shape?: string | null;
+  profile_vs_voice?: string | null;
+  headline_suggestion?: string | null;
   cv_count?: number;
 };
 
@@ -113,15 +116,19 @@ export default function CvCrosscheckPanel() {
     ? REASONS[result.reason ?? ""] || result.reason || result.error
     : "";
 
-  const bullets = (title: string, arr?: string[]) =>
-    arr && arr.length ? (
-      <div style={{ marginTop: 8 }}>
+  const bullets = (title: string, arr?: string[]) => {
+    const items = (arr ?? []).filter((s) => typeof s === "string" && s.trim());
+    return items.length ? (
+      <div style={{ marginTop: 10 }}>
         <div style={{ color: "var(--glass-2, #8a8a95)" }}>{title}</div>
-        {arr.map((s, i) => (
+        {items.map((s, i) => (
           <div key={i}>· {s}</div>
         ))}
       </div>
     ) : null;
+  };
+
+  const findings = (c?.findings ?? []).filter((f) => f && (f.what || f.do_this));
 
   return (
     <section
@@ -243,12 +250,55 @@ export default function CvCrosscheckPanel() {
           </div>
           {result.ok ? (
             <div>
-              {c?.strongest_unused_proof && <div>{c.strongest_unused_proof}</div>}
-              {c?.direction_signal && <div style={{ marginTop: 6 }}>{c.direction_signal}</div>}
-              {c?.headline_suggestion && <div style={{ marginTop: 6 }}>{c.headline_suggestion}</div>}
-              {bullets("In CV, not on profile", c?.in_cv_not_on_profile)}
-              {bullets("On profile, not in CV", c?.on_profile_not_in_cv)}
-              {bullets("Inconsistencies", c?.inconsistencies)}
+              {c?.headline_finding && (
+                <div style={{ fontSize: 14, lineHeight: 1.5, fontWeight: 600, marginBottom: 10 }}>
+                  {c.headline_finding}
+                </div>
+              )}
+
+              {findings.length > 0 && (
+                <div style={{ display: "grid", gap: 10 }}>
+                  {findings.map((f, i) => (
+                    <div key={i}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span>{f.what}</span>
+                        {f.weight && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              padding: "1px 6px",
+                              borderRadius: 4,
+                              textTransform: "uppercase",
+                              letterSpacing: ".08em",
+                              color: f.weight === "high" ? "#f59e0b" : "var(--glass-2, #8a8a95)",
+                              border: `0.5px solid ${f.weight === "high" ? "rgba(245,158,11,0.4)" : "var(--hair, rgba(255,255,255,0.15))"}`,
+                            }}
+                          >
+                            {f.weight}
+                          </span>
+                        )}
+                      </div>
+                      {f.why_it_matters && (
+                        <div style={{ color: "var(--glass-2, #8a8a95)" }}>{f.why_it_matters}</div>
+                      )}
+                      {f.do_this && <div style={{ marginTop: 2 }}>→ {f.do_this}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {bullets("Check before you claim this", c?.defensibility)}
+              {bullets("Your CV is behind here", c?.cv_is_behind)}
+
+              {c?.reading_the_shape && <div style={{ marginTop: 10 }}>{c.reading_the_shape}</div>}
+              {c?.profile_vs_voice && <div style={{ marginTop: 6 }}>{c.profile_vs_voice}</div>}
+
+              {c?.headline_suggestion && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ color: "var(--glass-2, #8a8a95)" }}>A headline you could use</div>
+                  <div>{c.headline_suggestion}</div>
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ color: "var(--glass-2, #8a8a95)" }}>{failText}</div>
