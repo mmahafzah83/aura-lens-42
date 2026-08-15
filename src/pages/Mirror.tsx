@@ -527,17 +527,9 @@ export default function Mirror() {
             {fieldError(urlError)}
           </div>
           <div>
-            <label style={label} htmlFor="mr-work-email">Work email</label>
-            <input
-              id="mr-work-email" style={field} value={email} inputMode="email" placeholder="you@company.com"
-              onChange={(e) => { setEmail(e.target.value); setEmailError(undefined); }}
-            />
-            {fieldError(emailError)}
-          </div>
-          <div>
             <PrimaryButton onClick={submit}>Read me</PrimaryButton>
             <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: INK2 }}>
-              Your email is how we reach you if you want a seat. Nothing is posted, nothing is shared.
+              No account, no sign-up. Ninety seconds.
             </p>
             {formError ? (
               <p style={{ margin: "10px 0 0", fontSize: 13, lineHeight: 1.6, color: "#B3261E" }}>
