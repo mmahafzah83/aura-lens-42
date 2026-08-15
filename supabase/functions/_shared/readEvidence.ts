@@ -51,6 +51,25 @@ export async function buildReadEvidence(
   const resolvedSector = sector || prof.sector_focus || null;
   const resolvedBand = band || prof.seniority_band || null;
 
+  // COHORT AWARENESS — avoid giving the same archetype name to members who
+  // share band and sector, since they read the same news and face the same market.
+  let takenNames: string[] = [];
+  if (resolvedBand) {
+    let q = admin.from("diagnostic_profiles")
+      .select("user_id, brand_assessment_results, sector_focus")
+      .eq("seniority_band", resolvedBand)
+      .limit(200);
+    if (resolvedSector) q = q.eq("sector_focus", resolvedSector);
+    const { data: peers } = await q;
+    takenNames = (peers ?? [])
+      .filter((p: any) => p.user_id !== uid)
+      .map((p: any) => String(p?.brand_assessment_results?.primary_archetype ?? "").trim())
+      .filter((s: string) => s.length > 0);
+    // de-duplicate, cap at 40
+    takenNames = Array.from(new Set(takenNames)).slice(0, 40);
+  }
+
+
   // The member's slider results, named — so the model can say what they rated
   // themselves highest on rather than quoting a number.
   const dimRes = resolvedBand
