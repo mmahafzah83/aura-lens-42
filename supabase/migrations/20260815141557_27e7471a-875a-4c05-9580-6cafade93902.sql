@@ -1,0 +1,1 @@
+ALTER TABLE public.mirror_reads ADD COLUMN IF NOT EXISTS read_version smallint NOT NULL DEFAULT 1;
