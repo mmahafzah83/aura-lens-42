@@ -95,6 +95,19 @@ ${namedScores.map((s) => `- ${s.name}: ${s.value}${s.why ? ` — ${s.why}` : ""}
 Always refer to these by name, never as "dimension 5" or a bare number.`
     : "THEIR OWN RATINGS\nNone on file.";
 
+  const takenNounsBlock = takenNames.length
+    ? `ARCHETYPE NAMES ALREADY GIVEN TO OTHER MEMBERS AT THIS LEVEL IN THIS SECTOR
+${takenNames.map((n) => `- ${n}`).join("\n")}
+
+Do not reuse any name above, and do not reuse the ROLE-NOUN of any name above even with a different adjective.
+If your first instinct is one of these nouns, that instinct is describing the COHORT, not this person — the people
+above read the same news and work in the same market, so the obvious word will always be the shared one. Choose
+again, and take the noun from something in THIS member's own evidence that does not appear in the others': a
+specific problem they keep returning to, a kind of work only they describe, a claim only they have captured.`
+    : `ARCHETYPE NAMES ALREADY GIVEN TO OTHER MEMBERS AT THIS LEVEL IN THIS SECTOR
+None yet — this member is the first read at this level in this sector.`;
+
+
   // ── WHAT THEIR OWN WRITING SHOWS — computed, never estimated ──
   let writingBlock: string;
   if (allPosts.length < 5) {
