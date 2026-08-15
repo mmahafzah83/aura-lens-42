@@ -195,15 +195,28 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
   }
 
   const keyCount = Object.keys(resultsObj).length;
-  if (!interpretation || keyCount <= 1) {
+  // Only a genuinely empty read is a failure. A prose-only read (model omitted the
+  // ---JSON--- block, usually via truncation) is still a valid artifact and is saved,
+  // exactly as the member-facing path does.
+  if (!interpretation.trim()) {
     await logEfError(admin, {
       function_name: "admin-regenerate-report",
-      error: `Empty or unparseable report (keys=${keyCount})`,
+      error: `Empty report (keys=${keyCount}, stop_reason=${data.stop_reason})`,
       severity: "high",
       user_id: targetId,
       context: { anthropic_status, body: rawBody.slice(0, 2000) },
     });
     return json({ error: "empty report from model", anthropic_status, result_keys: keyCount }, 502);
+  }
+
+  if (keyCount <= 1) {
+    await logEfError(admin, {
+      function_name: "admin-regenerate-report",
+      error: `Prose-only report, no JSON block (stop_reason=${data.stop_reason})`,
+      severity: "medium",
+      user_id: targetId,
+      context: { stop_reason: data.stop_reason, chars: interpretation.length },
+    });
   }
 
   // Mirrors derivePillars() in src/lib/brandPillars.ts — primary branch only.
