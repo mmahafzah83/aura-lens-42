@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve } from "../_shared/observe.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
+import { findUserIdByEmail } from "../_shared/findUserByEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,15 +36,8 @@ serve(withObserve("admin-list-documents", async (req) => {
   let targetId: string | undefined = typeof body?.user_id === "string" ? body.user_id.trim() : undefined;
 
   if (!targetId && email) {
-    const needle = email.toLowerCase();
-    for (let page = 1; page <= 20 && !targetId; page++) {
-      const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-      if (listErr) return json({ error: listErr.message }, 500);
-      const hit = list.users.find((u) => (u.email || "").toLowerCase() === needle);
-      if (hit) targetId = hit.id;
-      if (!list.users.length || list.users.length < 200) break;
-    }
-    if (!targetId) return json({ error: "user not found" }, 404);
+    targetId = (await findUserIdByEmail(admin, email)) ?? undefined;
+    if (!targetId) return json({ error: `No account found for ${email.trim()}` }, 404);
   }
   if (!targetId) return json({ error: "email or user_id required" }, 400);
 
