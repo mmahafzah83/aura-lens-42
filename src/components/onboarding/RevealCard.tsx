@@ -145,8 +145,8 @@ const RVC_CSS = `
 
 const RevealCard = forwardRef<
   HTMLDivElement,
-  { data: RevealData; footer?: RevealFooter; forExport?: boolean }
->(({ data, footer, forExport = false }, ref) => forExport ? (
+  { data: RevealData; footer?: RevealFooter; forExport?: boolean; emptyFiguresLine?: string }
+>(({ data, footer, forExport = false, emptyFiguresLine = EMPTY_POSTS_LINE }, ref) => forExport ? (
   /* ── the shareable frame: one fixed 1080 × 1350 image, nothing that scrolls ── */
   <div
     ref={ref}
@@ -240,7 +240,7 @@ const RevealCard = forwardRef<
           ))}
         </div>
       ) : (
-        <p style={{ margin: 0, fontSize: 21, lineHeight: 1.6, opacity: 0.92 }}>{EMPTY_POSTS_LINE}</p>
+        <p style={{ margin: 0, fontSize: 21, lineHeight: 1.6, opacity: 0.92 }}>{emptyFiguresLine}</p>
       )}
 
     <div style={{
