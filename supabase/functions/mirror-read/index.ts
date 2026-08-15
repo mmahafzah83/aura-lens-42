@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
     // --- c) Cache ---
     const { data: cached } = await admin
       .from("mirror_reads")
-      .select("handle, read, sparse, generated_at, hit_count")
+      .select("handle, read, sparse, generated_at, hit_count, name, posts_read")
       .eq("handle", handle)
       .maybeSingle();
     if (cached && Date.now() - new Date(cached.generated_at).getTime() < 14 * 24 * 60 * 60 * 1000) {
@@ -228,7 +228,10 @@ Deno.serve(async (req) => {
         .from("mirror_reads")
         .update({ hit_count: (cached.hit_count ?? 1) + 1 })
         .eq("handle", handle);
-      return json({ ok: true, cached: true, sparse: cached.sparse, handle, read: cached.read });
+      return json({
+        ok: true, cached: true, sparse: cached.sparse, handle, read: cached.read,
+        name: cached.name ?? null, posts_read: cached.posts_read ?? 0,
+      });
     }
 
     const APIFY_TOKEN = Deno.env.get("APIFY_TOKEN");
@@ -363,6 +366,8 @@ Deno.serve(async (req) => {
           canonical_url,
           read,
           sparse,
+          name: full_name ?? null,
+          posts_read: postTexts.length,
           generated_at: new Date().toISOString(),
           hit_count: (cached?.hit_count ?? 0) + 1,
         },
@@ -370,7 +375,10 @@ Deno.serve(async (req) => {
       );
     if (upErr) console.error("[mirror-read] cache write failed:", upErr.message);
 
-    return json({ ok: true, cached: false, sparse, handle, read });
+    return json({
+      ok: true, cached: false, sparse, handle, read,
+      name: full_name ?? null, posts_read: postTexts.length,
+    });
   } catch (e) {
     await logError("mirror-read", e, { user_id: null, severity: "high" });
     return json({ error: "unreadable" }, 502);
