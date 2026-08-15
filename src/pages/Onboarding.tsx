@@ -43,7 +43,7 @@ import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyHeader from "@/components/onboarding/JourneyHeader";
-import DocumentUpload from "@/components/DocumentUpload";
+import DocumentUpload, { DOCUMENT_STATUS_EVENT } from "@/components/DocumentUpload";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
@@ -389,6 +389,23 @@ const Onboarding = () => {
     if (screen !== 13) return;
     setCaptionDraft((c) => c || suggestedCaption(postsRead ?? 0));
   }, [screen, postsRead]);
+
+  /* 3.5 — if a CV finishes while they are still on this screen, queue the
+     cross-check so a quick "Continue" doesn't silently lose the comparison. */
+  useEffect(() => {
+    if (screen !== CV_SCREEN) return;
+    let fired = false;
+    const onStatus = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { documentId: string; status: string };
+      if (!detail?.status) return;
+      if ((detail.status === "completed" || detail.status === "ready") && !fired) {
+        fired = true;
+        try { void supabase.functions.invoke("cv-crosscheck", {}).catch(() => undefined); } catch { /* ignore */ }
+      }
+    };
+    window.addEventListener(DOCUMENT_STATUS_EVENT, onStatus);
+    return () => window.removeEventListener(DOCUMENT_STATUS_EVENT, onStatus);
+  }, [screen]);
 
   /* loop safety valve — kept from the previous journey */
   const [visits, setVisits] = useState(0);
@@ -1719,10 +1736,9 @@ const Onboarding = () => {
           />
         </div>
         <Actions style={{ marginBlockStart: 20 }}>
-          <OBButton disabled={cvUploads === 0} onClick={leaveCv}>
-            {cvUploads > 0 ? "Continue" : "Read it"}
+          <OBButton onClick={leaveCv}>
+            {cvUploads > 0 ? "Read it" : "Continue"}
           </OBButton>
-          <OBButton variant="tertiary" onClick={() => go(4)}>I'll do this later</OBButton>
         </Actions>
       </PaperShell>
     );
