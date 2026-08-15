@@ -17,6 +17,8 @@ const corsHeaders = {
 const PROFILE_ACTOR = "harvestapi~linkedin-profile-scraper";
 const POSTS_ACTOR = "harvestapi~linkedin-profile-posts";
 const MAX_POSTS = 20;
+/** Bumped whenever the read prompt changes; older cached rows regenerate. */
+const READ_VERSION = 2;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -183,7 +185,7 @@ function hasPlaceholderInValues(v: unknown): boolean {
 
 
 const SYSTEM_PROMPT =
-  "You read a senior professional's public LinkedIn profile and recent posts, and tell them how their market currently sees them. You use only what is in the material. You never invent an achievement, a number, a date or an employer. Output plain text only — no markdown, no asterisks, no headers, no bracketed placeholders. The reader is a senior GCC executive: write plainly, in short sentences, as a trusted advisor would over coffee. Never use these words: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate. ARCHETYPE RULE: the name is 'The [Adjective] [Noun]'. 'Strategic' is banned as the adjective and 'Architect' is banned as the noun. Before naming it, ask yourself whether the name would fit half of all senior professionals; if so it is too generic, choose again from what THIS person's material actually shows.";
+  "You read a senior professional's public LinkedIn profile and recent posts, and tell them how their market currently sees them. Address the reader directly as 'you' in every sentence. Never refer to them by name or in the third person — this is their mirror, not a report about them. You use only what is in the material. You never invent an achievement, a number, a date or an employer. Output plain text only — no markdown, no asterisks, no headers, no bracketed placeholders. The reader is a senior GCC executive: write plainly, in short sentences, as a trusted advisor would over coffee. Never use these words: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate. ARCHETYPE RULE: the name is 'The [Adjective] [Noun]'. 'Strategic' is banned as the adjective and 'Architect' is banned as the noun. Before naming it, ask yourself whether the name would fit half of all senior professionals; if so it is too generic, choose again from what THIS person's material actually shows.";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -220,10 +222,14 @@ Deno.serve(async (req) => {
     // --- c) Cache ---
     const { data: cached } = await admin
       .from("mirror_reads")
-      .select("handle, read, sparse, generated_at, hit_count, name, posts_read")
+      .select("handle, read, sparse, generated_at, hit_count, name, posts_read, read_version")
       .eq("handle", handle)
       .maybeSingle();
-    if (cached && Date.now() - new Date(cached.generated_at).getTime() < 14 * 24 * 60 * 60 * 1000) {
+    if (
+      cached &&
+      (cached.read_version ?? 1) >= READ_VERSION &&
+      Date.now() - new Date(cached.generated_at).getTime() < 14 * 24 * 60 * 60 * 1000
+    ) {
       await admin
         .from("mirror_reads")
         .update({ hit_count: (cached.hit_count ?? 1) + 1 })
@@ -277,18 +283,18 @@ Deno.serve(async (req) => {
         : "RECENT POSTS: none were available.",
       "",
       sparse
-        ? "Their public material is thin. Say so directly in market_read and honest_gap — name what is missing and what would change it. Do not compensate by guessing."
+        ? "Your public material is thin. Say so directly, speaking to the reader as 'you' in market_read and honest_gap — name what is missing and what would change it. Do not compensate by guessing."
         : "",
       "",
-      "Return exactly this JSON and nothing else:",
+      "Every sentence you write must address the reader as 'you'. Return exactly this JSON and nothing else:",
       `{
   "archetype": "The [Adjective] [Noun]",
-  "market_read": "two sentences on how their field currently sees them, from the evidence",
-  "themes": ["three short career themes read from their trajectory"],
-  "uncontested_space": "one sentence naming a space their material suggests they could own",
-  "honest_gap": "one sentence naming something their public presence does not show, that their own material implies they have",
-  "own_words_quote": "one verbatim sentence from one of their own posts, or null if no posts were supplied",
-  "own_words_read": "one sentence on what that quote shows about how they think, or null"
+  "market_read": "two sentences on how your field currently sees you, from the evidence",
+  "themes": ["three short career themes read from your own material"],
+  "uncontested_space": "one sentence naming a space your material suggests you could own",
+  "honest_gap": "one sentence naming something your public presence does not show, that your own material implies you have",
+  "own_words_quote": "one verbatim sentence from one of your own posts, or null if no posts were supplied",
+  "own_words_read": "one sentence on what that quote shows about how you think, or null"
 }`,
     ].join("\n");
 
@@ -368,6 +374,7 @@ Deno.serve(async (req) => {
           sparse,
           name: full_name ?? null,
           posts_read: postTexts.length,
+          read_version: READ_VERSION,
           generated_at: new Date().toISOString(),
           hit_count: (cached?.hit_count ?? 0) + 1,
         },
