@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
+import { findUserIdByEmail } from "../_shared/findUserByEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,15 +65,8 @@ serve(withObserve("cv-crosscheck", async (req) => {
 
   if (!targetId && email) {
     if (!callerIsAdmin) return json({ error: "Forbidden" }, 403);
-    const needle = email.toLowerCase();
-    for (let page = 1; page <= 20 && !targetId; page++) {
-      const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-      if (listErr) return json({ error: listErr.message }, 500);
-      const hit = list.users.find((u) => (u.email || "").toLowerCase() === needle);
-      if (hit) targetId = hit.id;
-      if (!list.users.length || list.users.length < 200) break;
-    }
-    if (!targetId) return json({ error: "user not found" }, 404);
+    targetId = (await findUserIdByEmail(admin, email)) ?? undefined;
+    if (!targetId) return json({ error: `No account found for ${email.trim()}` }, 404);
   }
   if (!targetId) targetId = callerId;
   if (targetId !== callerId && !callerIsAdmin) return json({ error: "Forbidden" }, 403);
