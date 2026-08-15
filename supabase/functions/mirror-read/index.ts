@@ -172,11 +172,15 @@ function parseJsonLoose(raw: string): Record<string, unknown> | null {
   }
 }
 
-/** A bracketed placeholder left outside of the quoted values. */
-function hasPlaceholder(raw: string): boolean {
-  const unquoted = raw.replace(/"(?:[^"\\]|\\.)*"/g, '""');
-  return /\[[^\]]{2,40}\]/.test(unquoted);
+/** Placeholders are only meaningful inside the model's own sentences. */
+function hasPlaceholderInValues(v: unknown): boolean {
+  const re = /\[[^\]]{2,40}\]/;
+  if (typeof v === "string") return re.test(v);
+  if (Array.isArray(v)) return v.some(hasPlaceholderInValues);
+  if (v && typeof v === "object") return Object.values(v as Record<string, unknown>).some(hasPlaceholderInValues);
+  return false;
 }
+
 
 const SYSTEM_PROMPT =
   "You read a senior professional's public LinkedIn profile and recent posts, and tell them how their market currently sees them. You use only what is in the material. You never invent an achievement, a number, a date or an employer. Output plain text only — no markdown, no asterisks, no headers, no bracketed placeholders. The reader is a senior GCC executive: write plainly, in short sentences, as a trusted advisor would over coffee. Never use these words: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate. ARCHETYPE RULE: the name is 'The [Adjective] [Noun]'. 'Strategic' is banned as the adjective and 'Architect' is banned as the noun. Before naming it, ask yourself whether the name would fit half of all senior professionals; if so it is too generic, choose again from what THIS person's material actually shows.";
