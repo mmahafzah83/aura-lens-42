@@ -424,6 +424,33 @@ export default function Mirror() {
               <p style={{ margin: "8px 0 0", fontSize: 12.5, color: INK2 }}>{shareNote}</p>
             ) : null}
           </div>
+
+          {/* Keep this — the promise the old gate never kept */}
+          <Card>
+            {sentOk ? (
+              <>
+                <Heading>Keep this</Heading>
+                <Body>Sent. Check your inbox.</Body>
+              </>
+            ) : (
+              <>
+                <Heading>Keep this</Heading>
+                <Body style={{ marginBlockEnd: 14 }}>Where should we send it?</Body>
+                <label style={label} htmlFor="mr-send-email">Email</label>
+                <input
+                  id="mr-send-email" style={field} value={sendEmail} inputMode="email"
+                  placeholder="you@company.com"
+                  onChange={(e) => { setSendEmail(e.target.value); setSendError(undefined); }}
+                />
+                {fieldError(sendError)}
+                <div style={{ marginBlockStart: 14 }}>
+                  <PrimaryButton onClick={sendRead} disabled={sendBusy}>
+                    {sendBusy ? "Sending…" : "Send it to me"}
+                  </PrimaryButton>
+                </div>
+              </>
+            )}
+          </Card>
         </div>
 
         {/* closing CTA — the second and last night surface */}
