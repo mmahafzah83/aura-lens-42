@@ -7,6 +7,7 @@ import SystemHealthPanel from "@/components/admin/SystemHealthPanel";
 import SendTestEmailPanel from "@/components/admin/SendTestEmailPanel";
 import PlatformRulesPanel from "@/components/admin/PlatformRulesPanel";
 import RegenerateReportPanel from "@/components/admin/RegenerateReportPanel";
+import CvCrosscheckPanel from "@/components/admin/CvCrosscheckPanel";
 import ReportHealthPanel from "@/components/admin/ReportHealthPanel";
 import IsItWorkingZone, { useIsItWorking } from "@/components/admin/cockpit/IsItWorking";
 import { DecisionsDue, DecisionsZone, useDecisions } from "@/components/admin/cockpit/Decisions";
@@ -1142,6 +1143,7 @@ export default function Admin() {
         <HealthFindingsPanel />
         <ReportHealthPanel />
         <RegenerateReportPanel />
+        <CvCrosscheckPanel />
         <SendTestEmailPanel />
         <PlatformRulesPanel />
       </div>
