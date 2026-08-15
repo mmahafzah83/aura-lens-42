@@ -1003,6 +1003,8 @@ export type Database = {
           country: string | null
           country_code: string | null
           created_at: string
+          cv_crosscheck: Json | null
+          cv_crosscheck_at: string | null
           default_template: string | null
           default_theme: string | null
           display_name_override: string | null
@@ -1062,6 +1064,8 @@ export type Database = {
           country?: string | null
           country_code?: string | null
           created_at?: string
+          cv_crosscheck?: Json | null
+          cv_crosscheck_at?: string | null
           default_template?: string | null
           default_theme?: string | null
           display_name_override?: string | null
@@ -1121,6 +1125,8 @@ export type Database = {
           country?: string | null
           country_code?: string | null
           created_at?: string
+          cv_crosscheck?: Json | null
+          cv_crosscheck_at?: string | null
           default_template?: string | null
           default_theme?: string | null
           display_name_override?: string | null
@@ -1301,7 +1307,9 @@ export type Database = {
         Row: {
           attempt_count: number
           created_at: string
+          cv_label: string | null
           display_title: string | null
+          document_type: string | null
           error_message: string | null
           extraction_method: string | null
           file_size: number | null
@@ -1320,7 +1328,9 @@ export type Database = {
         Insert: {
           attempt_count?: number
           created_at?: string
+          cv_label?: string | null
           display_title?: string | null
+          document_type?: string | null
           error_message?: string | null
           extraction_method?: string | null
           file_size?: number | null
@@ -1339,7 +1349,9 @@ export type Database = {
         Update: {
           attempt_count?: number
           created_at?: string
+          cv_label?: string | null
           display_title?: string | null
+          document_type?: string | null
           error_message?: string | null
           extraction_method?: string | null
           file_size?: number | null
