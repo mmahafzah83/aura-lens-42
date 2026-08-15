@@ -103,7 +103,9 @@ const startDocumentWatcher = ({
 };
 
 interface DocumentUploadProps {
-  onUploaded?: () => void;
+  onUploaded?: (documentId?: string) => void;
+  documentType?: "cv" | "portfolio" | "project" | "testimonial" | "talk" | "other";
+  cvLabel?: "latest" | "best" | "target";
 }
 
 const ACCEPTED_TYPES: Record<string, string> = {
@@ -117,7 +119,7 @@ const ACCEPTED_TYPES: Record<string, string> = {
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
-const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
+const DocumentUpload = ({ onUploaded, documentType, cvLabel }: DocumentUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<"idle" | "uploading" | "processing" | "done" | "error">("idle");
   const [fileName, setFileName] = useState("");
@@ -243,6 +245,8 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
         file_type: fileType,
         file_size: file.size,
         status: "processing",
+        ...(documentType ? { document_type: documentType } : {}),
+        ...(documentType === "cv" && cvLabel ? { cv_label: cvLabel } : {}),
       } as any)
       .select()
       .single();
@@ -291,13 +295,13 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
       dispatchDocumentStatusEvent((doc as any).id, "error");
       setStatus("error");
       setUploading(false);
-      onUploaded?.();
+      onUploaded?.((doc as any).id);
       return;
     }
     console.log("[DocumentUpload] ingest-document invoke ok:", invokeData);
 
     setUploading(false);
-    onUploaded?.();
+    onUploaded?.((doc as any).id);
   };
 
   const reset = () => {
