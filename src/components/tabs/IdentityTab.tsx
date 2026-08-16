@@ -1393,6 +1393,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           data={marketShareData}
         />
       )}
+
+      <ErrorBoundary>
+        <ReadShape />
+      </ErrorBoundary>
     </div>
   );
 };
