@@ -178,10 +178,10 @@ const LANDING_V2_CSS = `
 .aura-v2 .dark .jf{display:block;width:100%;max-width:none;margin-left:auto;margin-right:auto;text-align:center}
 .aura-v2 .jf{font-family:var(--mono);font-size:10px;color:#65707E;letter-spacing:.09em;margin-top:16px;line-height:1.8}
 .aura-v2 .founder{display:flex;gap:15px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:19px;margin:18px auto 0;max-width:640px}
-.aura-v2 .fastlane{margin-top:22px;border:1px dashed var(--line2);border-radius:12px;background:#FAFCFE;padding:16px 18px;max-width:58ch}
-.aura-v2 .fastlane .fl{font-size:13.5px;color:var(--ink2);line-height:1.6;margin-bottom:12px}
-.aura-v2 .fastlane .fl b{color:var(--ink);font-weight:650}
 .aura-v2 .support{font-size:13px;color:var(--ink3);line-height:1.6;margin-top:14px;max-width:52ch}
+.aura-v2 .fastline{font-size:13px;color:var(--ink3);line-height:1.6;margin-top:12px;max-width:52ch}
+.aura-v2 .fastline a{color:var(--blue);font-weight:600;text-decoration:none}
+.aura-v2 .fastline a:hover{text-decoration:underline}
 .aura-v2 .subxs{font-size:14px;color:var(--ink3);line-height:1.6;margin-top:12px;max-width:540px}
 .aura-v2 .rungs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
 .aura-v2 .rung{position:relative;background:var(--white);border:1px solid var(--line);border-radius:20px;padding:26px 22px;display:flex;flex-direction:column}
