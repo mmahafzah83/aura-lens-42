@@ -1086,7 +1086,7 @@ const Dashboard = () => {
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <LockedWhenRead
+                  <LockedPanel
                     locked={!isLoop}
                     title="Your radar, every morning"
                     line="Aura reads your field overnight and matches what moved against your read."
@@ -1102,7 +1102,7 @@ const Dashboard = () => {
                         window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
                     />
-                  </LockedWhenRead>
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1110,7 +1110,7 @@ const Dashboard = () => {
             {activeTab === "overnight" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <LockedWhenRead
+                  <LockedPanel
                     locked={!isLoop}
                     title="The night shift"
                     line="Aura works while you sleep and tells you what it found."
@@ -1119,7 +1119,7 @@ const Dashboard = () => {
                       onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                       onOpenSettings={() => navigate("/settings?tab=preferences")}
                     />
-                  </LockedWhenRead>
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1127,13 +1127,13 @@ const Dashboard = () => {
             {activeTab === "library" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <LockedWhenRead
+                  <LockedPanel
                     locked={!isLoop}
                     title="Everything you save, kept"
                     line="Captures become fragments. Fragments become the evidence behind your next post."
                   >
                     <LibraryPage onOpenCapture={handleOpenCapture} />
-                  </LockedWhenRead>
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1149,13 +1149,13 @@ const Dashboard = () => {
             {activeTab === "influence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <LockedWhenRead
+                  <LockedPanel
                     locked={!isLoop}
                     title="Your presence, measured"
                     line="One honest number, built from what you actually published."
                   >
                     <AnalyticsV2 onOpenChat={openChat} />
-                  </LockedWhenRead>
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1163,13 +1163,13 @@ const Dashboard = () => {
             {activeTab === "momentum" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <LockedWhenRead
+                  <LockedPanel
                     locked={!isLoop}
                     title="Your rhythm"
                     line="Weekly consistency, not volume. Aura scores the habit, not the output."
                   >
                     <MomentumPage />
-                  </LockedWhenRead>
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1177,13 +1177,13 @@ const Dashboard = () => {
             {activeTab === "widgets" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <LockedWhenRead
+                  <LockedPanel
                     locked={!isLoop}
                     title="Your instrument panel"
                     line="The surfaces you choose, on the home you use."
                   >
                     <WidgetsPage />
-                  </LockedWhenRead>
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
