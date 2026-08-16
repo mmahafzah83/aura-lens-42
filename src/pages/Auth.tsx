@@ -335,7 +335,10 @@ const Auth = () => {
             <Link className="au-brandrow" to="/">
               <AuraLogo size={30} variant="auto" />
               <span className="au-bn">Aura</span>
-              <span className="au-bsub">{PRODUCT_DESCRIPTOR}</span>
+              <span className="au-bsub">
+                <span className="au-bsub-l">{PRODUCT_DESCRIPTOR.split(" ").slice(0, 2).join(" ")}</span>
+                <span className="au-bsub-l">{PRODUCT_DESCRIPTOR.split(" ").slice(2).join(" ")}</span>
+              </span>
             </Link>
 
             <h1 className="au-h1">{headline}</h1>

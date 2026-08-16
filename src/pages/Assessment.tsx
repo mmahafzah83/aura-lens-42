@@ -19,7 +19,8 @@ const Assessment = () => {
   return (
     <div className="asg">
       <style>{ASG_CSS}</style>
-      <PublicMasthead />
+      {/* The Gate has one job; no competing action in its own header. */}
+      <PublicMasthead cta={null} />
 
       <main className="asg-wrap">
         <section className="asg-cols">
@@ -210,7 +211,7 @@ const ASG_CSS = `
 .asg-bp:hover{transform:translateY(-2px);}
 .asg-bg{background:transparent;color:var(--ink2);border:1px solid var(--line);}
 .asg-bg:hover{background:var(--white);}
-.asg-trust{font-size:12px;color:var(--ink4);line-height:1.55;margin:18px 0 0;max-width:50ch;}
+.asg-trust{font-size:12px;color:var(--ink3);line-height:1.55;margin:18px 0 0;max-width:50ch;}
 .asg-art svg{width:100%;height:auto;display:block;}
 .asg-three{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:64px;}
 .asg-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:22px;}
