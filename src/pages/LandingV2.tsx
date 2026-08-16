@@ -852,7 +852,7 @@ const LANDING_V2_HTML = `
     </div>
 
     <div class="rung night">
-      <span class="chip wavechip-live" data-wave="chip"></span>
+      <span class="chip" data-wave="chip" style="display:none"></span>
       <span class="kick"><span class="cdot"></span>03 · THE LOOP</span>
       <h3>Be seen every week, without writing</h3>
       <p class="one">Your identity stops being a document and starts being a weekly presence.</p>
@@ -939,9 +939,9 @@ const LandingV2 = () => {
   const [mounted, setMounted] = useState(false);
 
   usePageMeta({
-    title: "Aura — You know a lot. Not enough people know it.",
+    title: "Aura — Your experience is worth more than your profile shows",
     description:
-      "Aura tells you what you are truly good at, then turns what you read into LinkedIn posts and carousels in your own style. Free for the first founding members.",
+      "Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof. The assessment is free and yours to keep.",
     path: "/",
   });
 
@@ -1200,6 +1200,7 @@ const LandingV2 = () => {
         root.querySelectorAll<HTMLElement>(".seatline").forEach((el) => { el.textContent = line; });
         root.querySelectorAll<HTMLElement>('[data-wave="chip"],[data-wave="chip2"]').forEach((el) => {
           el.textContent = `WAVE ${wave} · ${leftWave} LEFT`;
+          el.style.display = "";
         });
         const card = root.querySelector<HTMLElement>('[data-wave="card"]');
         if (card) card.style.display = "";
