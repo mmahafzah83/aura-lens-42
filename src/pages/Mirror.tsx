@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import RevealCard, { shareRevealCard, type RevealData } from "@/components/onboarding/RevealCard";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
-import { SEAT_CTA } from "@/lib/seatCopy";
+import { SEAT_CTA, SEAT_PATH } from "@/lib/seatCopy";
 
 /* ── System-B surface ───────────────────────────────────────────── */
 const CANVAS = "#F2F5F9";
@@ -157,6 +157,9 @@ export default function Mirror() {
 
   const [result, setResult] = useState<MirrorResponse | null>(null);
   const [lineIndex, setLineIndex] = useState(0);
+  const [showCancel, setShowCancel] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const autoRan = useRef(false);
 
   const exportRef = useRef<HTMLDivElement>(null);
   const [shareNote, setShareNote] = useState<string>();
@@ -172,20 +175,31 @@ export default function Mirror() {
 
   useEffect(() => {
     document.title = "Read me — Aura";
-    const q = new URLSearchParams(window.location.search).get("ref") ?? "";
-    setRef(q.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60));
-    // Prefill only — the person still presses the button.
-    const prefill = new URLSearchParams(window.location.search).get("url");
-    if (prefill) setProfileUrl(prefill.trim().slice(0, 300));
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("ref") ?? "";
+    const cleanRef = q.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60);
+    setRef(cleanRef);
+    // One URL, one place: a valid address in the link starts the read at once.
+    const prefill = params.get("url")?.trim().slice(0, 300);
+    if (prefill) {
+      setProfileUrl(prefill);
+      if (!autoRan.current && prefill.toLowerCase().includes("linkedin.com/in/")) {
+        autoRan.current = true;
+        void submit(prefill, cleanRef);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // The reading copy advances on its own and holds on the last line.
   useEffect(() => {
     if (stage !== "reading") return;
     setLineIndex(0);
+    setShowCancel(false);
     const timers = READING_DELAYS.slice(1).map((delay, i) =>
       window.setTimeout(() => setLineIndex(i + 1), delay),
     );
+    timers.push(window.setTimeout(() => setShowCancel(true), 10_000));
     return () => timers.forEach(window.clearTimeout);
   }, [stage]);
 
@@ -195,23 +209,27 @@ export default function Mirror() {
     setStage("ask");
   };
 
-  const submit = async () => {
+  const submit = async (urlArg?: string, refArg?: string) => {
+    const target = (urlArg ?? profileUrl).trim();
     setFormError(undefined);
     setShowRateHelp(false);
     let bad = false;
-    if (!profileUrl.toLowerCase().includes("linkedin.com/in/")) {
+    if (!target.toLowerCase().includes("linkedin.com/in/")) {
       setUrlError(ERROR_COPY.invalid_url); bad = true;
     } else setUrlError(undefined);
     if (bad) return;
 
     setStage("reading");
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       const base = import.meta.env.VITE_SUPABASE_URL;
       const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const res = await fetch(`${base}/functions/v1/mirror-read`, {
         method: "POST",
+        signal: controller.signal,
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ profile_url: profileUrl.trim(), ref: ref || undefined }),
+        body: JSON.stringify({ profile_url: target, ref: (refArg ?? ref) || undefined }),
       });
       const data: MirrorResponse = await res.json().catch(() => ({} as MirrorResponse));
       if (!res.ok || !data.ok || !data.read) {
@@ -221,9 +239,27 @@ export default function Mirror() {
       setResult(data);
       setListName(data.name ?? "");
       setStage("read");
-    } catch {
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") return;
       failBack("network");
     }
+  };
+
+  const cancelRead = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setStage("ask");
+  };
+
+  const startOver = () => {
+    setResult(null);
+    setProfileUrl("");
+    setSentOk(false);
+    setSendEmail("");
+    setShareNote(undefined);
+    setListOpen(false);
+    setListDone(null);
+    setStage("ask");
   };
 
   const SEND_ERROR: Record<string, string> = {
