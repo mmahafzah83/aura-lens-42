@@ -714,7 +714,7 @@ const LANDING_V2_HTML = `
     <div>
       <h3 style="max-width:none;margin:0 auto">Still deciding?<br><em>It costs nothing to look and try.</em></h3>
       <p style="max-width:460px;margin:12px auto 0">The founder seats close soon — and members keep the terms they joined on.</p>
-      <div style="margin-top:22px"><button class="btn bp" data-p="join">Join free</button></div>
+      <div style="margin-top:22px"><button class="btn bp" data-p="join">Request a founder seat</button></div>
       <p class="jf"><span class="seatline"></span></p>
     </div>
   </div></div>
@@ -722,16 +722,21 @@ const LANDING_V2_HTML = `
 
 <section class="pg" id="join">
   <div class="join"><div class="join-in">
-    <span class="tag" style="background:rgba(0,206,201,.14);color:#00CEC9">Founding circle · free</span>
+    <span class="tag" style="background:rgba(0,206,201,.14);color:#00CEC9">Founding circle · 50 seats</span>
     <h2>Show the market<br>what you already know.</h2>
     <p>Your report first — what you are good at and the space that is yours. Then your posts and carousels, from what you read.</p>
-    <div style="margin-top:26px"><a class="btn bp" href="/request-access">Request my founder seat</a></div>
+    <div style="margin-top:26px">
+      <div style="font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.02em;color:#fff">$29 a month</div>
+      <div class="jf" style="margin-top:6px">For as long as you stay. It will be $69.</div>
+    </div>
+    <div style="margin-top:20px"><a class="btn bp" href="/request-access">Request my founder seat</a></div>
     <div class="jf">30 SECONDS · WE ANSWER WITHIN 24 HOURS · <span class="seatline"></span></div>
   </div></div>
   <div class="founder">
     <img src="/aura-founder.jpg" alt="Mohammad Mahafdhah">
     <div class="t"><b>Mohammad Mahafdhah</b> — I built Aura from my own reading, because I had the same problem. Write to me directly and I will answer.</div>
   </div>
+  <p style="max-width:640px;margin:14px auto 0;text-align:center;font-size:13px;color:var(--ink3);line-height:1.6">Not ready for a seat? <a href="/read" style="color:var(--blue);font-weight:600">Read yourself free</a> — no account, ninety seconds.</p>
 </section>
 
 <div class="foot">
