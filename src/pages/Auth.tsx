@@ -238,6 +238,10 @@ const Auth = () => {
         );
         return;
       }
+      // The sign-up itself is a send: start the same sixty seconds, or the
+      // provider's own window rejects an immediate resend.
+      setConfirmResendNote(null);
+      setConfirmCooldown(60);
       setView("verify");
     } catch {
       setSignUpError("Couldn't open the account just now. Try again in a moment.");
