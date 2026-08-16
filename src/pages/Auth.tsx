@@ -56,6 +56,13 @@ const Auth = () => {
   const [showLoginPwd, setShowLoginPwd] = useState(false);
   const [resetSentEmail, setResetSentEmail] = useState("");
   const [linkExpired, setLinkExpired] = useState(false);
+  // Confirmation resend — honest state only. `confirmResendState` is never
+  // "sent" unless the provider accepted the send.
+  const [confirmCooldown, setConfirmCooldown] = useState(0);
+  const [confirmResending, setConfirmResending] = useState(false);
+  const [confirmResendNote, setConfirmResendNote] = useState<
+    { kind: "sent" | "error"; text: string } | null
+  >(null);
 
   // password recovery
   const [view, setView] = useState<View>(() =>
@@ -74,6 +81,13 @@ const Auth = () => {
 
   const emailRef = useRef<HTMLInputElement>(null);
   const pwdRef = useRef<HTMLInputElement>(null);
+
+  /* ── the sixty seconds between confirmation sends ── */
+  useEffect(() => {
+    if (confirmCooldown <= 0) return;
+    const t = window.setInterval(() => setConfirmCooldown((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => window.clearInterval(t);
+  }, [confirmCooldown > 0]);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -271,6 +285,36 @@ const Auth = () => {
       toast({ title: "Couldn't resend", description: "Please try again.", variant: "destructive" });
     } finally {
       setResending(false);
+    }
+  };
+
+  /** Resend the sign-up confirmation link. Reports exactly what happened. */
+  const handleResendConfirmation = async () => {
+    const target = email.trim().toLowerCase();
+    if (!target || confirmCooldown > 0 || confirmResending) return;
+    setConfirmResending(true);
+    setConfirmResendNote(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("auth-resend-confirmation", {
+        body: { email: target, origin: window.location.origin },
+      });
+      const result = data as { ok?: boolean; error?: string } | null;
+      if (error || !result?.ok) {
+        setConfirmResendNote({
+          kind: "error",
+          text: result?.error || "The link could not be sent just now. Try again in a moment.",
+        });
+        return;
+      }
+      setConfirmResendNote({ kind: "sent", text: `Another link is on its way to ${target}.` });
+      setConfirmCooldown(60);
+    } catch {
+      setConfirmResendNote({
+        kind: "error",
+        text: "The link could not be sent just now. Try again in a moment.",
+      });
+    } finally {
+      setConfirmResending(false);
     }
   };
 
