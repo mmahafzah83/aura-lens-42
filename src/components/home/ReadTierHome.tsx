@@ -187,24 +187,20 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
           margin: 0, fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 18,
           color: "var(--text-inverse)",
         }}>
-          What a founding seat opens
+          {SEAT_HEADING}
         </h2>
         <div style={{ display: "grid", gap: 6, margin: "14px 0 16px" }}>
-          {[
-            "Capture — everything you read, kept as evidence",
-            "Signals — your field, read overnight, matched to your read",
-            "Drafts — written from what you saved, never from a prompt",
-          ].map((row) => (
+          {SEAT_ROWS.map((row) => (
             <p key={row} style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--v23-on-night, rgba(255,255,255,.78))" }}>
               {row}
             </p>
           ))}
         </div>
-        <div style={{ ...MONO, fontSize: 24, color: "var(--text-inverse)" }}>$29 a month</div>
+        <div style={{ ...MONO, fontSize: 24, color: "var(--text-inverse)" }}>{SEAT_PRICE}</div>
         <p style={{ margin: "6px 0 16px", fontSize: 12.5, lineHeight: 1.55, color: "var(--v23-on-night, rgba(255,255,255,.72))" }}>
-          For as long as you stay. It will be $69. Fifty seats.
+          {SEAT_PRICE_SUBLINE}
         </p>
-        <ButtonPrimary onClick={() => navigate("/request-access")}>Ask for a founding seat</ButtonPrimary>
+        <ButtonPrimary onClick={() => navigate(SEAT_PATH)}>{SEAT_CTA}</ButtonPrimary>
       </section>
 
       {/* offscreen mounts — the same documents the identity surfaces export */}
