@@ -10,7 +10,7 @@
 // Idempotent per (user_id, address_date) unless { force: true }.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logEfError } from "../_shared/observe.ts";
 
 const corsHeaders = {
@@ -1051,10 +1051,13 @@ serve(async (req) => {
     // User-invoked path — requires the caller's JWT.
     const authHeader = req.headers.get("Authorization") || "";
     if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
-    const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: authData, error: authErr } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authErr || !authData?.user?.id) return json({ error: "Unauthorized" }, 401);
-    const userId = authData.user.id;
+    const bearer = authHeader.replace("Bearer ", "");
+    const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: claimsData, error: claimsErr } = await anon.auth.getClaims(bearer);
+    if (claimsErr || !claimsData?.claims?.sub) return json({ error: "Unauthorized" }, 401);
+    const userId = claimsData.claims.sub as string;
 
     const { row, cached, rejected } = await generateFor(admin, apiKey, userId, force);
     await logEfError(admin, {
