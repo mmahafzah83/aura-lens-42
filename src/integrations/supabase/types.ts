@@ -1022,6 +1022,8 @@ export type Database = {
           brand_assessment_results: Json | null
           brand_pillars: string[]
           completed: boolean
+          consent_version: string | null
+          consented_at: string | null
           content_language: string
           core_practice: string | null
           country: string | null
@@ -1084,6 +1086,8 @@ export type Database = {
           brand_assessment_results?: Json | null
           brand_pillars?: string[]
           completed?: boolean
+          consent_version?: string | null
+          consented_at?: string | null
           content_language?: string
           core_practice?: string | null
           country?: string | null
@@ -1146,6 +1150,8 @@ export type Database = {
           brand_assessment_results?: Json | null
           brand_pillars?: string[]
           completed?: boolean
+          consent_version?: string | null
+          consented_at?: string | null
           content_language?: string
           core_practice?: string | null
           country?: string | null
