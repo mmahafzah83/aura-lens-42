@@ -353,7 +353,7 @@ const Auth = () => {
                     placeholder="you@email.com" className="au-field"
                     aria-invalid={!!emailError}
                     aria-describedby={emailError ? "au-suemail-err" : undefined}
-                    onChange={(e) => { setEmail(e.target.value); setSignUpError(null); }}
+                    onChange={(e) => { setEmail(e.target.value); setSignUpError(null); setEmailError(null); }}
                   />
                   <p className="au-err" id="au-suemail-err" aria-live="polite">{emailError || ""}</p>
                 </div>
