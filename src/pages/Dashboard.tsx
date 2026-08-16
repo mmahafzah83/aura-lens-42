@@ -57,6 +57,9 @@ import StudioPanel from "@/components/studio/StudioPanel";
 import { NAV_GROUPS, groupForTab, isGroupActive, isGroupDimmed } from "@/components/nav/navGroups";
 import SubTabs from "@/components/nav/SubTabs";
 import type { Database } from "@/integrations/supabase/types";
+import LockedPanel from "@/components/LockedPanel";
+import { useTier } from "@/hooks/useTier";
+import { useQuery } from "@tanstack/react-query";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
