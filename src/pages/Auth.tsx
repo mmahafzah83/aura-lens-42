@@ -705,6 +705,26 @@ const AU_CSS = `
   border:0;cursor:pointer;color:var(--n400);padding:10px;display:flex;align-items:center;}
 .au-peek:hover{color:var(--n700);}
 .au-err{margin-top:7px;font-size:12.5px;color:var(--err);}
+.au-err:empty{display:none;}
+.au-help{margin-top:7px;font-size:12.5px;color:var(--n500);}
+.au-trust{margin-top:2px;font-size:12.5px;line-height:1.5;color:var(--n500);text-align:center;}
+.au-consent{display:flex !important;align-items:flex-start;gap:10px;font-family:var(--ui) !important;
+  font-size:13px !important;line-height:1.55;letter-spacing:normal !important;text-transform:none !important;
+  color:var(--n700) !important;margin-bottom:0 !important;cursor:pointer;}
+.au-consent input{width:18px;height:18px;flex:0 0 18px;margin-top:2px;accent-color:var(--act);cursor:pointer;}
+.au-consent a{color:var(--act);font-weight:600;text-decoration:underline;}
+.au-arch{font-size:17px;font-weight:600;color:#fff;margin:10px 0 16px !important;}
+.au-bars{display:grid;gap:12px;margin-bottom:20px;}
+.au-bars li{display:grid;gap:6px;}
+.au-blab{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(255,255,255,.55);}
+.au-btrack{display:block;height:6px;border-radius:999px;background:rgba(255,255,255,.09);overflow:hidden;}
+.au-bfill{display:block;height:100%;border-radius:999px;}
+.au-bfill.cy{background:var(--cy);}
+.au-bfill.bl{background:var(--act);}
+.au-bfill.gy{background:rgba(255,255,255,.28);}
+.au-cmid{padding-top:16px;border-top:1px solid var(--nline);}
+.au-claim{font-size:13.5px;line-height:1.55;color:rgba(255,255,255,.5);margin-top:9px !important;}
 .au-note{padding:13px 15px;border-radius:12px;font-size:13.5px;line-height:1.6;color:var(--n700);
   background:var(--n100);border:1px solid var(--n200);}
 .au-note b{color:var(--n900);font-weight:600;}
@@ -740,11 +760,9 @@ const AU_CSS = `
 .au-linkbtn:disabled{opacity:.6;cursor:default;}
 .au-linkbtn.quiet{color:var(--n500);font-weight:400;}
 
-.au-foot{margin-top:30px;padding-top:22px;border-top:1px solid var(--n200);
-  font-size:14.5px;color:var(--n500);}
-.au-foot a{color:var(--act);font-weight:600;}
 .au-legal{margin-top:14px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--n400);}
+.au-legal-top{margin-top:30px;padding-top:22px;border-top:1px solid var(--n200);}
 .au-legal a:hover{color:var(--n700);}
 
 .au-night{background:var(--night);position:relative;overflow:hidden;display:flex;
