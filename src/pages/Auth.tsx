@@ -6,6 +6,7 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 import usePageMeta from "@/hooks/usePageMeta";
 import { isProfileComplete } from "@/lib/onboarding";
+import { SEAT_CTA } from "@/lib/seatCopy";
 
 /* ────────────────────────────────────────────────────────────────
    /auth — "The Return".
@@ -21,7 +22,7 @@ import { isProfileComplete } from "@/lib/onboarding";
    gate, forced sign-out after a password change.
    ──────────────────────────────────────────────────────────────── */
 
-type View = "signin" | "sent" | "newPassword";
+type View = "signin" | "signup" | "verify" | "sent" | "newPassword";
 
 const Auth = () => {
   usePageMeta({
@@ -38,6 +39,7 @@ const Auth = () => {
 
   const [email, setEmail] = useState(() => readParam("email"));
   const [hasEmailParam] = useState(() => !!readParam("email"));
+  const [isAssessment] = useState(() => readParam("intent") === "assessment");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -49,7 +51,14 @@ const Auth = () => {
   const [linkExpired, setLinkExpired] = useState(false);
 
   // password recovery
-  const [view, setView] = useState<View>("signin");
+  const [view, setView] = useState<View>(() =>
+    (typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("intent") === "assessment")
+      ? "signup"
+      : "signin",
+  );
+  const [signUpError, setSignUpError] = useState<string | null>(null);
+  const [signingUp, setSigningUp] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -67,7 +76,7 @@ const Auth = () => {
 
   /* ── land the cursor where the work is ── */
   useEffect(() => {
-    if (view !== "signin") return;
+    if (view !== "signin" && view !== "signup") return;
     const t = window.setTimeout(() => {
       (hasEmailParam ? pwdRef.current : emailRef.current)?.focus();
     }, 60);
@@ -97,6 +106,12 @@ const Auth = () => {
     // Field-based gate — a row alone is not "onboarded". Anyone missing
     // first_name / firm / level / sector_focus goes to /onboarding.
     if (!isProfileComplete(profile)) {
+      navigate("/onboarding", { replace: true });
+      return;
+    }
+    // The assessment lives at /onboarding — a member arriving with
+    // intent=assessment is sent there rather than to the generic dashboard.
+    if (!returnTo && isAssessment) {
       navigate("/onboarding", { replace: true });
       return;
     }
@@ -161,6 +176,33 @@ const Auth = () => {
       return;
     }
     // Leave the button in its loading state — onAuthStateChange navigates.
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSignUpError(null);
+    if (!email.includes("@")) { setSignUpError("Enter a valid email address."); return; }
+    if (password.length < 8) { setSignUpError("Use eight characters or more."); return; }
+    setSigningUp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("auth-signup", {
+        body: { email: email.trim().toLowerCase(), password, origin: window.location.origin },
+      });
+      const msg = (data as any)?.error || (error as any)?.message;
+      if (msg) {
+        setSignUpError(
+          /already/i.test(String(msg))
+            ? "There is already an account on that email. Sign in below."
+            : String(msg),
+        );
+        return;
+      }
+      setView("verify");
+    } catch {
+      setSignUpError("Couldn't open the account just now. Try again in a moment.");
+    } finally {
+      setSigningUp(false);
+    }
   };
 
   const sendReset = async (target: string) => {
@@ -243,12 +285,16 @@ const Auth = () => {
 
   const headline =
     view === "newPassword" ? <>Set your <em>password.</em></>
+    : view === "signup" ? <>Start your professional <em>assessment.</em></>
+    : view === "verify" ? <>Confirm your <em>email.</em></>
     : view === "sent" ? <>Check your <em>email.</em></>
     : linkExpired ? <>That link <em>has expired.</em></>
     : <>Welcome <em>back.</em></>;
 
   const sub =
     view === "newPassword" ? "Eight characters or more. You'll sign in with it straight after."
+    : view === "signup" ? "Free, yours to keep. About nine minutes, and you can stop and come back."
+    : view === "verify" ? <>A confirmation link is on its way to <b>{email}</b>. Open it and the assessment begins.</>
     : view === "sent" ? <>A link is on its way to <b>{resetSentEmail}</b>. It opens once and expires in twenty-four hours.</>
     : linkExpired ? "They last twenty-four hours. Enter your email and a fresh one is on its way."
     : hasEmailParam ? "Sign in to pick up where the night left off."
@@ -268,12 +314,73 @@ const Auth = () => {
               <span className="au-bsub">Personal professional intelligence</span>
             </Link>
 
-            {view === "signin" && (
+            {view === "signin" && !isAssessment && (
               <span className="au-pill"><i className="au-dot" /> Closed beta</span>
             )}
 
             <h1 className="au-h1">{headline}</h1>
             <p className="au-sub">{sub}</p>
+
+            {/* ── sign up · the free assessment door ── */}
+            {view === "signup" && (
+              <form onSubmit={handleSignUp} className="au-fields" noValidate>
+                <div>
+                  <label htmlFor="au-suemail">Your email</label>
+                  <input
+                    id="au-suemail" ref={emailRef} type="email" value={email} required
+                    autoComplete="email" placeholder="you@email.com" className="au-field"
+                    onChange={(e) => { setEmail(e.target.value); setSignUpError(null); }}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="au-supwd">Choose a password</label>
+                  <div className="au-pwwrap">
+                    <input
+                      id="au-supwd" type={showLoginPwd ? "text" : "password"} value={password}
+                      required minLength={8} autoComplete="new-password"
+                      placeholder="Eight characters or more" className="au-field au-haspeek"
+                      onChange={(e) => { setPassword(e.target.value); setSignUpError(null); }}
+                    />
+                    <button
+                      type="button" className="au-peek"
+                      aria-label={showLoginPwd ? "Hide password" : "Show password"}
+                      onClick={() => setShowLoginPwd((s) => !s)}
+                    >
+                      {showLoginPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                {signUpError && <div className="au-note warn" role="alert">{signUpError}</div>}
+
+                <button type="submit" disabled={signingUp} className="au-btn">
+                  {signingUp
+                    ? (<><Loader2 className="au-spin" size={16} /> Opening your account…</>)
+                    : (<>Start the assessment <span className="au-a">↗</span></>)}
+                </button>
+
+                <div className="au-center">
+                  <button type="button" className="au-linkbtn quiet" onClick={() => setView("signin")}>
+                    Already have an account? Sign in →
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ── waiting on the confirmation link ── */}
+            {view === "verify" && (
+              <div className="au-fields">
+                <div className="au-note">
+                  Nothing after a minute or two? Check spam. The assessment opens the moment
+                  you confirm.
+                </div>
+                <div className="au-center">
+                  <button type="button" className="au-linkbtn" onClick={() => setView("signup")}>
+                    Use a different email →
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── sign in ── */}
             {view === "signin" && (
@@ -419,7 +526,7 @@ const Auth = () => {
             )}
 
             <p className="au-foot">
-              No seat yet? <Link to="/request-access">Request a founder seat →</Link>
+              No seat yet? <Link to="/request-access">{SEAT_CTA} →</Link>
             </p>
             <p className="au-legal">
               <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> ·{" "}
