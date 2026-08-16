@@ -290,6 +290,27 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_interpretation_backup_20260816: {
+        Row: {
+          audit_interpretation: string | null
+          backed_up_at: string | null
+          first_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          audit_interpretation?: string | null
+          backed_up_at?: string | null
+          first_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          audit_interpretation?: string | null
+          backed_up_at?: string | null
+          first_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       aura_conversation_memory: {
         Row: {
           actions_committed: string[] | null
@@ -1041,6 +1062,7 @@ export type Database = {
           skill_ratings: Json
           target_register: string | null
           theme_preference: string | null
+          tier: string
           timezone: string | null
           ui_dismissals: Json
           user_id: string
@@ -1102,6 +1124,7 @@ export type Database = {
           skill_ratings?: Json
           target_register?: string | null
           theme_preference?: string | null
+          tier?: string
           timezone?: string | null
           ui_dismissals?: Json
           user_id: string
@@ -1163,6 +1186,7 @@ export type Database = {
           skill_ratings?: Json
           target_register?: string | null
           theme_preference?: string | null
+          tier?: string
           timezone?: string | null
           ui_dismissals?: Json
           user_id?: string
