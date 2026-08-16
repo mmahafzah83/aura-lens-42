@@ -314,10 +314,6 @@ const Auth = () => {
               <span className="au-bsub">Personal professional intelligence</span>
             </Link>
 
-            {view === "signin" && !isAssessment && (
-              <span className="au-pill"><i className="au-dot" /> Closed beta</span>
-            )}
-
             <h1 className="au-h1">{headline}</h1>
             <p className="au-sub">{sub}</p>
 
