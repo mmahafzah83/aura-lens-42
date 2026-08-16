@@ -437,8 +437,8 @@ const Auth = () => {
                   </div>
                 ) : (
                   <div className="au-note">
-                    First time here? Use <b>Set or reset your password</b> below — enter the
-                    email your invitation was sent to.
+                    First time here? <a href="/auth?intent=assessment"><b>Create your account</b></a> —
+                    it takes about thirty seconds.
                   </div>
                 )}
 
@@ -446,11 +446,14 @@ const Auth = () => {
                   <label htmlFor="au-email">Email</label>
                   <input
                     id="au-email" ref={emailRef} type="email" value={email} required
-                    autoComplete="username" placeholder="you@email.com" className="au-field"
+                    autoComplete="email" inputMode="email" autoCapitalize="off"
+                    autoCorrect="off" spellCheck={false}
+                    placeholder="you@email.com" className="au-field"
                     aria-invalid={!!emailError}
+                    aria-describedby="au-email-err"
                     onChange={(e) => { setEmail(e.target.value); setEmailError(null); setSignInError(null); }}
                   />
-                  {emailError && <p className="au-err" role="alert">{emailError}</p>}
+                  <p className="au-err" id="au-email-err" aria-live="polite">{emailError || ""}</p>
                 </div>
 
                 <div>
@@ -461,19 +464,22 @@ const Auth = () => {
                       value={password} required minLength={6} autoComplete="current-password"
                       placeholder="••••••••" className="au-field au-haspeek"
                       aria-invalid={!!signInError}
+                      aria-describedby="au-password-err"
                       onChange={(e) => { setPassword(e.target.value); setSignInError(null); }}
                     />
                     <button
                       type="button" className="au-peek"
                       aria-label={showLoginPwd ? "Hide password" : "Show password"}
+                      aria-pressed={showLoginPwd}
                       onClick={() => setShowLoginPwd((s) => !s)}
                     >
                       {showLoginPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
+                  <div id="au-password-err" aria-live="polite">
+                    {signInError && <p className="au-err">{signInError}</p>}
+                  </div>
                 </div>
-
-                {signInError && <div className="au-note warn" role="alert">{signInError}</div>}
 
                 <button type="submit" disabled={loading} className="au-btn">
                   {loading ? (
