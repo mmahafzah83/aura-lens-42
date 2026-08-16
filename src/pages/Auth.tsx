@@ -335,7 +335,7 @@ const Auth = () => {
             <Link className="au-brandrow" to="/">
               <AuraLogo size={30} variant="auto" />
               <span className="au-bn">Aura</span>
-              <span className="au-bsub">Personal professional intelligence</span>
+              <span className="au-bsub">{PRODUCT_DESCRIPTOR}</span>
             </Link>
 
             <h1 className="au-h1">{headline}</h1>
@@ -348,36 +348,62 @@ const Auth = () => {
                   <label htmlFor="au-suemail">Your email</label>
                   <input
                     id="au-suemail" ref={emailRef} type="email" value={email} required
-                    autoComplete="email" placeholder="you@email.com" className="au-field"
+                    autoComplete="email" inputMode="email" autoCapitalize="off"
+                    autoCorrect="off" spellCheck={false}
+                    placeholder="you@email.com" className="au-field"
+                    aria-invalid={!!emailError}
+                    aria-describedby={emailError ? "au-suemail-err" : undefined}
                     onChange={(e) => { setEmail(e.target.value); setSignUpError(null); }}
                   />
+                  <p className="au-err" id="au-suemail-err" aria-live="polite">{emailError || ""}</p>
                 </div>
                 <div>
                   <label htmlFor="au-supwd">Choose a password</label>
                   <div className="au-pwwrap">
                     <input
-                      id="au-supwd" type={showLoginPwd ? "text" : "password"} value={password}
+                      id="au-supwd" ref={pwdRef} type={showLoginPwd ? "text" : "password"} value={password}
                       required minLength={8} autoComplete="new-password"
-                      placeholder="Eight characters or more" className="au-field au-haspeek"
+                      className="au-field au-haspeek"
+                      aria-describedby="au-supwd-help"
+                      aria-invalid={!!signUpError}
                       onChange={(e) => { setPassword(e.target.value); setSignUpError(null); }}
                     />
                     <button
                       type="button" className="au-peek"
                       aria-label={showLoginPwd ? "Hide password" : "Show password"}
+                      aria-pressed={showLoginPwd}
                       onClick={() => setShowLoginPwd((s) => !s)}
                     >
                       {showLoginPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
+                  <p className="au-help" id="au-supwd-help">Eight characters or more.</p>
                 </div>
 
-                {signUpError && <div className="au-note warn" role="alert">{signUpError}</div>}
+                <div aria-live="polite">
+                  {signUpError && <div className="au-note warn">{signUpError}</div>}
+                </div>
 
-                <button type="submit" disabled={signingUp} className="au-btn">
+                <label className="au-consent" htmlFor="au-consent">
+                  <input
+                    id="au-consent" type="checkbox" checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                  />
+                  <span>
+                    I agree to the <Link to="/terms">Terms</Link> and{" "}
+                    <Link to="/privacy">Privacy Policy</Link>. My data is processed under Saudi
+                    PDPL, and I can delete everything in one click.
+                  </span>
+                </label>
+
+                <button type="submit" disabled={signingUp || !consent} className="au-btn">
                   {signingUp
                     ? (<><Loader2 className="au-spin" size={16} /> Opening your account…</>)
-                    : (<>Start the assessment <span className="au-a">↗</span></>)}
+                    : (<>Start my assessment <span className="au-a">↗</span></>)}
                 </button>
+                <p className="au-trust">
+                  Nothing is posted, shared or shown to anyone — ever, without you clicking.
+                </p>
 
                 <div className="au-center">
                   <button type="button" className="au-linkbtn quiet" onClick={() => setView("signin")}>
