@@ -339,7 +339,7 @@ const LANDING_V2_HTML = `
       <p class="sub">Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof you can put in front of anyone.</p>
       <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
       <div class="acts">
-        <a class="btn bp" id="heropri" href="/auth?intent=assessment">Discover my professional position</a>
+        <a class="btn bp" id="heropri" href="/assessment">Discover my professional position</a>
         <button class="btn bg2" data-p="how">See how it works</button>
       </div>
       <p class="support">Starts with a guided professional assessment. Free, yours to keep, no publishing required.</p>
@@ -886,7 +886,7 @@ const LANDING_V2_HTML = `
       <h3 style="max-width:none;margin:0 auto">Still deciding?<br><em style="font-style:italic;color:var(--ink4)">Then just take the free report.</em></h3>
       <p style="max-width:460px;margin:12px auto 0">It is yours whether you ever pay us or not. If it shows you something you did not know about yourself, the seat will still be here.</p>
       <div style="margin-top:22px;display:flex;gap:11px;justify-content:center;flex-wrap:wrap">
-        <a class="btn bp" href="/auth?intent=assessment">Get my report — free</a>
+        <a class="btn bp" href="/assessment">Get my report — free</a>
         <a class="btn bg2" href="#price" data-p="price">See the founding seat</a>
       </div>
     </div>
@@ -941,7 +941,7 @@ const LANDING_V2_HTML = `
           <li><b>The full report as a PDF</b>, and a card to share</li>
         </ul>
       </div>
-      <div class="cta"><a class="btn bp" href="/auth?intent=assessment">Discover my professional position</a><p class="time">ABOUT 9 MINUTES · SAVE AND RETURN</p></div>
+      <div class="cta"><a class="btn bp" href="/assessment">Discover my professional position</a><p class="time">ABOUT 9 MINUTES · SAVE AND RETURN</p></div>
     </div>
 
     <div class="rung night">
@@ -1073,7 +1073,7 @@ const LandingV2 = () => {
     }
     if (hero) {
       hero.textContent = signedIn ? "Open Aura" : "Discover my professional position";
-      hero.setAttribute("href", signedIn ? "/home" : "/auth?intent=assessment");
+      hero.setAttribute("href", signedIn ? "/home" : "/assessment");
     }
     if (fastLink) {
       const landingRef = new URLSearchParams(window.location.search).get("ref");
