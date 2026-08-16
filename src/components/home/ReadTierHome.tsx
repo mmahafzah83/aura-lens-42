@@ -15,6 +15,14 @@ import { exportReportPdf } from "@/lib/exportReportPdf";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
 import RevealCard, { shareRevealCard, type RevealData } from "@/components/onboarding/RevealCard";
 import { toRevealData } from "@/lib/marketRead";
+import {
+  SEAT_HEADING,
+  SEAT_ROWS,
+  SEAT_PRICE,
+  SEAT_PRICE_SUBLINE,
+  SEAT_CTA,
+  SEAT_PATH,
+} from "@/lib/seatCopy";
 
 interface Props {
   onSwitchTab?: (tab: string) => void;
