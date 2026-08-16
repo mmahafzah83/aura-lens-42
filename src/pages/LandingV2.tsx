@@ -919,7 +919,7 @@ const LANDING_V2_HTML = `
           <li><b>The full report as a PDF</b>, and a card to share</li>
         </ul>
       </div>
-      <div class="cta"><a class="btn bp" href="/auth?intent=assessment">Discover My Professional Position</a><p class="time">ABOUT 9 MINUTES · SAVE AND RETURN</p></div>
+      <div class="cta"><a class="btn bp" href="/auth?intent=assessment">Discover my professional position</a><p class="time">ABOUT 9 MINUTES · SAVE AND RETURN</p></div>
     </div>
 
     <div class="rung night">
