@@ -57,6 +57,9 @@ import StudioPanel from "@/components/studio/StudioPanel";
 import { NAV_GROUPS, groupForTab, isGroupActive, isGroupDimmed } from "@/components/nav/navGroups";
 import SubTabs from "@/components/nav/SubTabs";
 import type { Database } from "@/integrations/supabase/types";
+import LockedPanel from "@/components/LockedPanel";
+import { useTier } from "@/hooks/useTier";
+import { useQuery } from "@tanstack/react-query";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
@@ -226,6 +229,23 @@ const Dashboard = () => {
   // tier_name / newly_earned payload). A band crossing fires the ceremony
   // and the milestone toast at Dashboard level so both surface from any tab.
   const tierImprint = useTierFromImprint(userId);
+
+  // ── Plan level. The Read is free; the Loop is paid. Loading and errors both
+  // resolve to `loop`, so nobody is ever locked out by a slow query.
+  const { isLoop } = useTier();
+  const { data: signalsToday } = useQuery({
+    queryKey: ["signals-moved-today"],
+    enabled: !isLoop,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 86400000).toISOString();
+      const { count, error } = await supabase
+        .from("industry_trends")
+        .select("id", { count: "exact", head: true })
+        .gte("fetched_at", since);
+      if (error) return null;
+      return count ?? null;
+    },
+  });
   const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const [tierCeremonyOpen, setTierCeremonyOpen] = useState(false);
   useEffect(() => {
@@ -1066,15 +1086,23 @@ const Dashboard = () => {
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <SignalsBoardV2
-                    onOpenCapture={handleOpenCapture}
-                    onOpenChat={openChat}
-                    onDraftToStudio={(prefill) => {
-                      setSignalDraftPrefill(prefill);
-                      setActiveTab("authority");
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                  />
+                  <LockedPanel
+                    locked={!isLoop}
+                    title="Your radar, every morning"
+                    line="Aura reads your field overnight and matches what moved against your read."
+                    count={signalsToday ?? undefined}
+                    countLabel="signals moved in your field today"
+                  >
+                    <SignalsBoardV2
+                      onOpenCapture={handleOpenCapture}
+                      onOpenChat={openChat}
+                      onDraftToStudio={(prefill) => {
+                        setSignalDraftPrefill(prefill);
+                        setActiveTab("authority");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                    />
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1082,10 +1110,16 @@ const Dashboard = () => {
             {activeTab === "overnight" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <OvernightPage
-                    onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    onOpenSettings={() => navigate("/settings?tab=preferences")}
-                  />
+                  <LockedPanel
+                    locked={!isLoop}
+                    title="The night shift"
+                    line="Aura works while you sleep and tells you what it found."
+                  >
+                    <OvernightPage
+                      onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                      onOpenSettings={() => navigate("/settings?tab=preferences")}
+                    />
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1093,7 +1127,13 @@ const Dashboard = () => {
             {activeTab === "library" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <LibraryPage onOpenCapture={handleOpenCapture} />
+                  <LockedPanel
+                    locked={!isLoop}
+                    title="Everything you save, kept"
+                    line="Captures become fragments. Fragments become the evidence behind your next post."
+                  >
+                    <LibraryPage onOpenCapture={handleOpenCapture} />
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1109,7 +1149,13 @@ const Dashboard = () => {
             {activeTab === "influence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <AnalyticsV2 onOpenChat={openChat} />
+                  <LockedPanel
+                    locked={!isLoop}
+                    title="Your presence, measured"
+                    line="One honest number, built from what you actually published."
+                  >
+                    <AnalyticsV2 onOpenChat={openChat} />
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1117,7 +1163,13 @@ const Dashboard = () => {
             {activeTab === "momentum" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <MomentumPage />
+                  <LockedPanel
+                    locked={!isLoop}
+                    title="Your rhythm"
+                    line="Weekly consistency, not volume. Aura scores the habit, not the output."
+                  >
+                    <MomentumPage />
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1125,7 +1177,13 @@ const Dashboard = () => {
             {activeTab === "widgets" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <WidgetsPage />
+                  <LockedPanel
+                    locked={!isLoop}
+                    title="Your instrument panel"
+                    line="The surfaces you choose, on the home you use."
+                  >
+                    <WidgetsPage />
+                  </LockedPanel>
                 </ErrorBoundary>
               </div>
             )}
@@ -1140,14 +1198,20 @@ const Dashboard = () => {
           {authorityMounted && (
             <div hidden={activeTab !== "authority"} className={activeTab === "authority" ? "aura-page" : undefined}>
               <ErrorBoundary>
-                <StudioPanel
-                  active={activeTab === "authority"}
-                  signalPrefill={signalDraftPrefill}
-                  onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
-                  draftPrefill={draftPrefill}
-                  onDraftPrefillConsumed={() => setDraftPrefill(null)}
-                  onOpenCapture={() => handleOpenCapture()}
-                />
+                <LockedPanel
+                  locked={!isLoop}
+                  title="Written from what you saved"
+                  line="Never from a prompt. Aura writes only what your own evidence can carry."
+                >
+                  <StudioPanel
+                    active={activeTab === "authority" && isLoop}
+                    signalPrefill={signalDraftPrefill}
+                    onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
+                    draftPrefill={draftPrefill}
+                    onDraftPrefillConsumed={() => setDraftPrefill(null)}
+                    onOpenCapture={() => handleOpenCapture()}
+                  />
+                </LockedPanel>
               </ErrorBoundary>
             </div>
           )}
