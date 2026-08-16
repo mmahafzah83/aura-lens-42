@@ -793,7 +793,8 @@ const LandingV2 = () => {
     if (!root || signedIn === null) return;
     const alt = root.querySelector<HTMLAnchorElement>("#navalt");
     const cta = root.querySelector<HTMLAnchorElement>("#navcta");
-    const hero = root.querySelector<HTMLAnchorElement>("#heropri");
+    const hero = root.querySelector<HTMLButtonElement>("#heropri");
+    const heroIn = root.querySelector<HTMLInputElement>("#heroin");
     if (alt) {
       alt.textContent = signedIn ? "Sign out" : "Sign in";
       alt.setAttribute("href", signedIn ? "#" : "/auth");
@@ -801,14 +802,36 @@ const LandingV2 = () => {
       else delete alt.dataset.signout;
     }
     if (cta) {
-      cta.innerHTML = `${signedIn ? "Open Aura" : "Request a founder seat"} <span class="a">↗</span>`;
-      cta.setAttribute("href", signedIn ? "/home" : "/request-access");
+      cta.innerHTML = `${signedIn ? "Open Aura" : "Read me free"} <span class="a">↗</span>`;
+      cta.setAttribute("href", signedIn ? "/home" : "/read");
     }
     if (hero) {
-      hero.textContent = signedIn ? "Open Aura" : "Join free";
-      hero.setAttribute("href", signedIn ? "/home" : "/request-access");
+      hero.textContent = signedIn ? "Open Aura" : "Read me";
     }
+    if (heroIn) heroIn.style.display = signedIn ? "none" : "";
   }, [signedIn, mounted]);
+
+  /* ── the hero form: never blocks, /read does the validating ── */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const form = root.querySelector<HTMLFormElement>("#heroform");
+    if (!form) return;
+    const onSubmit = (e: Event) => {
+      e.preventDefault();
+      if (signedIn) { navigate("/home"); return; }
+      const input = root.querySelector<HTMLInputElement>("#heroin");
+      const value = (input?.value || "").trim();
+      const params = new URLSearchParams();
+      if (value.toLowerCase().includes("linkedin.com/in/")) params.set("url", value);
+      const landingRef = new URLSearchParams(window.location.search).get("ref");
+      if (landingRef) params.set("ref", landingRef);
+      const qs = params.toString();
+      navigate(qs ? `/read?${qs}` : "/read");
+    };
+    form.addEventListener("submit", onSubmit);
+    return () => form.removeEventListener("submit", onSubmit);
+  }, [mounted, navigate, signedIn]);
 
   /* ── calculator + in-app link interception ── */
   useEffect(() => {
