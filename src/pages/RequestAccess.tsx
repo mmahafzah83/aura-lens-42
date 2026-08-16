@@ -5,7 +5,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import AuraLogo from "@/components/brand/AuraLogo";
-import { SEAT_PRICE, SEAT_PRICE_SUBLINE } from "@/lib/seatCopy";
+import { SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA } from "@/lib/seatCopy";
 
 /* ────────────────────────────────────────────────────────────────
    /request-access — "The Door".
@@ -49,7 +49,7 @@ export default function RequestAccess() {
   usePageMeta({
     title: "Aura — Request a founder seat",
     description:
-      "Invitation-only while the founding fifty are chosen. Thirty seconds to ask. Read personally, answered within 24 hours.",
+      "The founding fifty is for the weekly loop. Thirty seconds to ask. Read personally, answered within 24 hours.",
     path: "/request-access",
   });
 
@@ -159,15 +159,17 @@ export default function RequestAccess() {
             One seat.<br /><em>Then the assessment.</em>
           </h1>
           <p className="ra-lede">
-            Aura is invitation-only while the founding fifty are being chosen. Tell me who you
-            are — it takes thirty seconds, and I read every one myself.
+            The report is open to anyone. The founding fifty is for the weekly loop — the part
+            that writes while you sleep. Tell me who you are — it takes thirty seconds, and I
+            read every one myself.
           </p>
 
           {seats && (
             <div className="ra-rack">
               <div className="ra-rackhead">
                 <span className="ra-n">
-                  <b>{seats.claimed}</b> of <b>{seats.cap}</b> founding seats taken
+                  Wave <b>{Math.floor(seats.claimed / 10) + 1}</b> ·{" "}
+                  <b>{10 - (seats.claimed % 10)}</b> left at {SEAT_PRICE.split(" ")[0]}
                 </span>
                 <span className="ra-lb">Founding circle</span>
               </div>
@@ -263,7 +265,7 @@ export default function RequestAccess() {
                   {status === "loading" ? (
                     <span className="ra-pulse">Sending…</span>
                   ) : (
-                    <>Request my founder seat <span className="ra-a">↗</span></>
+                    <>{SEAT_CTA} <span className="ra-a">↗</span></>
                   )}
                 </button>
               </form>
@@ -393,7 +395,7 @@ const RA_CSS = `
   --act:#0670C4; --act-50:#E6F2FD; --cy:#00CEC9; --cy-t:#00807B;
   --err:#C0392B; --err-50:#FCEAE6;
   --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
-  --ser:'Instrument Serif',Georgia,serif;
+  --ser:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   --ar:'Cairo','CairoAR',sans-serif;
   --gut:clamp(20px,4.5vw,56px);
@@ -407,15 +409,15 @@ const RA_CSS = `
 .ra a{color:inherit;text-decoration:none;}
 .ra :focus-visible{outline:2px solid var(--act);outline-offset:3px;border-radius:6px;}
 
-.ra-h1{font-family:var(--ser);font-weight:400;font-size:clamp(34px,4.4vw,52px);line-height:1;letter-spacing:-.028em;}
-.ra-h1 em{font-style:italic;color:var(--n400);}
-.ra-h2{font-family:var(--ser);font-weight:400;font-size:clamp(24px,2.8vw,32px);line-height:1.08;letter-spacing:-.02em;margin-bottom:8px;}
+.ra-h1{font-family:var(--ser);font-weight:700;font-size:clamp(34px,4.4vw,52px);line-height:1;letter-spacing:-.028em;}
+.ra-h1 em{font-style:normal;color:var(--n400);}
+.ra-h2{font-family:var(--ser);font-weight:700;font-size:clamp(24px,2.8vw,32px);line-height:1.08;letter-spacing:-.02em;margin-bottom:8px;}
 .ra-lede{font-size:16.5px;line-height:1.6;color:var(--n700);max-width:44ch;margin-top:22px;}
 
 .ra-mast{display:flex;align-items:center;justify-content:space-between;gap:16px;
   padding:18px var(--gut);border-bottom:1px solid var(--n200);}
 .ra-brand{display:flex;align-items:center;gap:9px;}
-.ra-bn{font-family:var(--ser);font-size:21px;line-height:1;}
+.ra-bn{font-family:var(--ser);font-weight:700;font-size:20px;letter-spacing:-.02em;line-height:1;}
 .ra-mr{display:flex;align-items:center;gap:6px;}
 .ra-mlink{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--n500);padding:11px 13px;border-radius:999px;transition:color .2s ease,background .2s ease;
@@ -452,7 +454,7 @@ const RA_CSS = `
 .ra-ledger{margin-top:clamp(30px,4vw,44px);border-top:2px solid var(--n900);}
 .ra-lrow{display:flex;align-items:baseline;gap:12px;padding:15px 0;border-bottom:1px solid var(--n200);}
 .ra-lrow:last-child{border-bottom:0;}
-.ra-k{font-family:var(--ser);font-size:20px;line-height:1.15;letter-spacing:-.015em;white-space:nowrap;}
+.ra-k{font-family:var(--ser);font-weight:700;font-size:17px;line-height:1.15;letter-spacing:-.015em;white-space:nowrap;}
 .ra-lead{flex:1;height:1px;align-self:flex-end;margin-bottom:6px;min-width:16px;
   background-image:radial-gradient(circle,var(--n300) .9px,transparent .9px);
   background-size:6px 1px;background-repeat:repeat-x;}
@@ -511,7 +513,7 @@ const RA_CSS = `
   margin:18px auto 0;font-style:italic;}
 .ra-inbox{font-size:13px;color:var(--n400);line-height:1.6;max-width:42ch;margin:16px auto 0;}
 .ra-sig{margin-top:32px;padding-top:22px;border-top:1px solid var(--n200);}
-.ra-nm{font-family:var(--ser);font-size:22px;}
+.ra-nm{font-family:var(--ser);font-weight:700;font-size:20px;letter-spacing:-.02em;}
 .ra-rl{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
   color:var(--n500);margin-top:5px;}
 
