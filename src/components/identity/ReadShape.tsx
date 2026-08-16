@@ -2,7 +2,7 @@
  * ReadShape — the visual summary of a member's Read.
  *
  * Mounted at the end of the Identity tab. Renders only what is genuinely
- * present in the data; no placeholders, no empty states.
+ * present in the data.
  */
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
