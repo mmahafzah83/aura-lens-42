@@ -63,7 +63,14 @@ const Assessment = () => {
               <Link className="asg-btn asg-bp" to="/auth?intent=assessment">
                 Start with my LinkedIn <span className="asg-a">↗</span>
               </Link>
-              <a className="asg-btn asg-bg" href="#inside">
+              <a
+                className="asg-btn asg-bg"
+                href="#inside"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("inside")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
                 What&rsquo;s inside the report
               </a>
             </div>
@@ -164,7 +171,7 @@ const Assessment = () => {
         </section>
 
         {/* ── below · the shape of the nine minutes ── */}
-        <section className="asg-three" id="inside">
+        <section className="asg-three">
           <article className="asg-card">
             <span className="asg-k">FIRST · 90 SECONDS</span>
             <h2>Your LinkedIn, read</h2>
@@ -181,12 +188,42 @@ const Assessment = () => {
             <p>What you are provably good at, what is real but invisible, and the position open to you.</p>
           </article>
         </section>
+
+        {/* ── what the report actually contains ── */}
+        <section className="asg-inside" id="inside">
+          <span className="asg-k">WHAT&rsquo;S INSIDE</span>
+          <h2 className="asg-ih">Six things you will know that you did not know this morning.</h2>
+
+          <div className="asg-grid">
+            {INSIDE_ITEMS.map((item) => (
+              <div className="asg-item" key={item.title}>
+                <h3>{item.title}</h3>
+                <p>{item.line}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="asg-acts asg-acts-c">
+            <Link className="asg-btn asg-bp" to="/auth?intent=assessment">
+              Start with my LinkedIn <span className="asg-a">↗</span>
+            </Link>
+          </div>
+        </section>
       </main>
 
       <PublicFooter />
     </div>
   );
 };
+
+const INSIDE_ITEMS = [
+  { title: "Your capability map", line: "What is proven, what is real but invisible, what is not there yet." },
+  { title: "CV against LinkedIn", line: "Where the two disagree, and what each one is hiding." },
+  { title: "The space nobody has claimed", line: "The position that is open to you." },
+  { title: "Your three subjects", line: "Instead of writing about ten." },
+  { title: "How three people read you", line: "A headhunter, a client, a peer." },
+  { title: "The report itself", line: "A PDF and a card, yours to keep." },
+];
 
 const ASG_CSS = `
 .asg{--ink:#0F1519;--ink2:#37424F;--ink3:#66707D;--ink4:#9AA4B0;--line:#E2E7EE;--white:#FFF;
@@ -218,11 +255,22 @@ const ASG_CSS = `
 .asg-k{font-family:var(--mono);font-size:9px;letter-spacing:.17em;color:var(--blue);}
 .asg-card h2{font-size:17px;font-weight:700;margin:10px 0 8px;letter-spacing:-.01em;}
 .asg-card p{font-size:13px;line-height:1.55;color:var(--ink3);}
+.asg-inside{margin-top:64px;scroll-margin-top:24px;}
+.asg-ih{font-size:25px;font-weight:700;line-height:1.2;letter-spacing:-.018em;margin:10px 0 0;max-width:22ch;}
+.asg-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px;}
+.asg-item{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:20px;}
+.asg-item h3{font-size:15.5px;font-weight:700;letter-spacing:-.01em;margin:0 0 6px;}
+.asg-item p{font-size:13px;line-height:1.55;color:var(--ink3);margin:0;}
+.asg-acts-c{margin-top:26px;}
 @media(max-width:900px){
   .asg-cols{grid-template-columns:1fr;gap:34px;}
   .asg-three{grid-template-columns:1fr;}
   .asg-h1{font-size:27px;}
   .asg-acts .asg-btn{flex:1 1 100%;justify-content:center;}
+}
+@media(max-width:700px){
+  .asg-grid{grid-template-columns:1fr;}
+  .asg-ih{font-size:21px;}
 }
 `;
 
