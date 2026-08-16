@@ -126,7 +126,7 @@ const LOOP_STEPS: { n: string; text: string }[] = [
   { n: "02", text: "Aura reads it with you. Overnight it pulls the evidence out of what you captured and files it by signal." },
   { n: "03", text: "Patterns become signals. When several independent sources point the same way, that becomes a signal, with its sources attached." },
   { n: "04", text: "Drafts arrive in your voice. Aura writes from your own signals, in your register, English or Arabic. Nothing publishes itself." },
-  { n: "05", text: "Your Imprint compounds. You approve, you publish, and the record builds week over week." },
+  { n: "05", text: "Your standing compounds. You approve, you publish, and the record builds week over week." },
 ];
 
 const Guide = () => {
@@ -181,7 +181,7 @@ const Guide = () => {
 
   usePageMeta({
     title: "Aura — How It Works",
-    description: "How Aura turns your daily reading into market presence: capture, detect signals, generate content, and track your Imprint.",
+    description: "How Aura turns your daily reading into market presence: capture, detect signals, generate content, and track your standing.",
     path: "/guide",
     jsonLd,
   });

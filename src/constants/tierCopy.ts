@@ -1,10 +1,10 @@
 import type { TierKey } from "@/hooks/useTierFromImprint";
 
 export const TIER_LADDER_INTRO =
-  "Your Imprint carries you through five stages. Each one reflects how much of your expertise the market can actually see — and each is earned, never given.";
+  "Your standing carries you through five stages. Each one reflects how much of your expertise the market can actually see — and each is earned, never given.";
 
 export const TIER_DIP_NOTE =
-  "Your stage can move down as well as up — but never suddenly. If your Imprint slips below a stage, Aura holds your stage through a short grace period first, so one quiet week never costs you what you've built. Pick the rhythm back up and you stay right where you are.";
+  "Your stage can move down as well as up — but never suddenly. If your standing slips below a stage, Aura holds your stage through a short grace period first, so one quiet week never costs you what you've built. Pick the rhythm back up and you stay right where you are.";
 
 export interface TierCopy {
   meaning: string;

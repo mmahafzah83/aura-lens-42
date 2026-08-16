@@ -134,7 +134,7 @@ function ImprintFigure({ score, userId, generatedAt }: {
       index={1}
       label="The Imprint Instrument"
       meta={new Date(score.snapshot_at || generatedAt).toLocaleDateString("en-GB")}
-      findingBold={`Your imprint stands at ${score.score} of 100${score.tier ? " · " + score.tier + " tier" : ""}.`}
+      findingBold={`Your standing is at ${score.score} of 100${score.tier ? " · " + score.tier + " tier" : ""}.`}
       findingRest="Weighting: Signal 40 · Content 40 · Consistency 20."
     >
       <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 30, alignItems: "start" }}>

@@ -341,7 +341,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
       {/* IMPRINT */}
       {imprint && (
         <Card index={card++} reduced={reduced}>
-          <CardHead kicker="Am I visible" title="Your Imprint" />
+          <CardHead kicker="Am I visible" title="Your standing" />
           <div style={{ display: "flex", gap: 22, alignItems: "center", flexWrap: "wrap" }}>
             <Tooltip title="How it's made" body="Signal 40 · Content 40 · Rhythm 20, scored against your own history.">
               <div tabIndex={0} style={{ borderRadius: "50%", outline: "none" }}>
