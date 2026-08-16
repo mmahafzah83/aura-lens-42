@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
-import { SEAT_PRICE, SEAT_CTA, SEAT_PATH } from "@/lib/seatCopy";
+import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_LIST_PRICE } from "@/lib/seatCopy";
 
 /* ────────────────────────────────────────────────────────────────
    LandingV2 — six tabbed pages, one at a time.
@@ -857,7 +857,7 @@ const LANDING_V2_HTML = `
       <h3>Be seen every week, without writing</h3>
       <p class="one">Your identity stops being a document and starts being a weekly presence.</p>
       <div class="prc"><span class="p" style="color:#fff">${SEAT_PRICE}</span><span class="u">/MONTH · LOCKED FOR LIFE</span></div>
-      <p class="pn">Becomes ${"$69"} when the fifty seats are gone. You keep ${SEAT_PRICE.split(" ")[0]}.</p>
+      <p class="pn">Becomes ${SEAT_LIST_PRICE} when the fifty seats are gone. You keep ${SEAT_PRICE.split(" ")[0]}.</p>
       <div class="blk">
         <span class="bl do">WHAT YOU DO</span>
         <ul><li>One tap on anything worth keeping</li><li>Two minutes to read and approve</li></ul>
@@ -883,7 +883,7 @@ const LANDING_V2_HTML = `
       <span class="cypill">YOURS FOR AS LONG AS YOU STAY</span>
       <div class="tl">
         <div class="tli"><span class="bead"></span><div><div class="tt">Now — seats 1 to 50</div><div class="tb">${SEAT_PRICE}. The rate is attached to you, not to the date you joined.</div></div></div>
-        <div class="tli"><span class="bead hollow"></span><div><div class="tt">From seat 51</div><div class="tb">${"$69"} a month for everyone who comes after. The founding fifty are not moved.</div></div></div>
+        <div class="tli"><span class="bead hollow"></span><div><div class="tt">From seat 51</div><div class="tb">${SEAT_LIST_PRICE} a month for everyone who comes after. The founding fifty are not moved.</div></div></div>
         <div class="tli"><span class="bead hollow"></span><div><div class="tt">Every year after that</div><div class="tb">You are still paying ${SEAT_PRICE.split(" ")[0]}. That is the entire promise, and it is in writing.</div></div></div>
       </div>
     </div>
