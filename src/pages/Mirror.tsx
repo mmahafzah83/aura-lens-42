@@ -173,6 +173,9 @@ export default function Mirror() {
     document.title = "Read me — Aura";
     const q = new URLSearchParams(window.location.search).get("ref") ?? "";
     setRef(q.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60));
+    // Prefill only — the person still presses the button.
+    const prefill = new URLSearchParams(window.location.search).get("url");
+    if (prefill) setProfileUrl(prefill.trim().slice(0, 300));
   }, []);
 
   // The reading copy advances on its own and holds on the last line.

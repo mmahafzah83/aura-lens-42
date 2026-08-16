@@ -5,6 +5,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import AuraLogo from "@/components/brand/AuraLogo";
+import { SEAT_PRICE, SEAT_PRICE_SUBLINE } from "@/lib/seatCopy";
 
 /* ────────────────────────────────────────────────────────────────
    /request-access — "The Door".
@@ -253,6 +254,11 @@ export default function RequestAccess() {
                   </div>
                 )}
 
+                <div className="ra-price">
+                  <span className="ra-price-n">{SEAT_PRICE}</span>
+                  <span className="ra-price-s">{SEAT_PRICE_SUBLINE}</span>
+                </div>
+
                 <button type="submit" disabled={status === "loading"} className="ra-btn">
                   {status === "loading" ? (
                     <span className="ra-pulse">Sending…</span>
@@ -265,6 +271,10 @@ export default function RequestAccess() {
               <p className="ra-legal">
                 Your data is protected under Saudi PDPL. See our{" "}
                 <Link to="/privacy">Privacy Policy</Link>.
+              </p>
+              <p className="ra-legal">
+                Not ready for a seat? <Link to="/read">Read yourself free</Link> — no account,
+                ninety seconds.
               </p>
               <p className="ra-signin">
                 Already have a seat? <Link to="/auth">Sign in →</Link>
@@ -483,6 +493,9 @@ const RA_CSS = `
 @keyframes ra-pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
 .ra-legal{font-size:11.5px;color:var(--n400);text-align:center;margin-top:14px;line-height:1.6;}
 .ra-legal a{color:var(--act);}
+.ra-price{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;margin-top:4px;}
+.ra-price-n{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--n900);}
+.ra-price-s{font-size:12.5px;color:var(--n500);line-height:1.5;}
 .ra-signin{text-align:center;margin-top:22px;padding-top:20px;border-top:1px solid var(--n200);
   font-size:14.5px;color:var(--n500);}
 .ra-signin a{color:var(--act);font-weight:600;}
