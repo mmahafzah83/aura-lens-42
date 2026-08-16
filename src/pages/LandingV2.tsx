@@ -965,7 +965,9 @@ const LandingV2 = () => {
     if (!root || signedIn === null) return;
     const alt = root.querySelector<HTMLAnchorElement>("#navalt");
     const cta = root.querySelector<HTMLAnchorElement>("#navcta");
-    const hero = root.querySelector<HTMLButtonElement>("#heropri");
+    const hero = root.querySelector<HTMLAnchorElement>("#heropri");
+    const fast = root.querySelector<HTMLButtonElement>("#herofast");
+    const lane = root.querySelector<HTMLElement>(".fastlane");
     const heroIn = root.querySelector<HTMLInputElement>("#heroin");
     if (alt) {
       alt.textContent = signedIn ? "Sign out" : "Sign in";
@@ -978,9 +980,12 @@ const LandingV2 = () => {
       cta.setAttribute("href", signedIn ? "/home" : "/read");
     }
     if (hero) {
-      hero.textContent = signedIn ? "Open Aura" : "Read me";
+      hero.textContent = signedIn ? "Open Aura" : "Discover My Professional Position";
+      hero.setAttribute("href", signedIn ? "/home" : "/auth?intent=assessment");
     }
+    if (fast) fast.textContent = "Show me";
     if (heroIn) heroIn.style.display = signedIn ? "none" : "";
+    if (lane) lane.style.display = signedIn ? "none" : "";
   }, [signedIn, mounted]);
 
   /* ── the hero form: never blocks, /read does the validating ── */
@@ -1186,9 +1191,28 @@ const LandingV2 = () => {
         const claimed = Number(row?.claimed);
         const cap = Number(row?.cap);
         if (!Number.isFinite(claimed) || !Number.isFinite(cap) || cap <= 0) return;
-        rootRef.current?.querySelectorAll(".seatline").forEach((el) => {
-          el.textContent = `${claimed} of ${cap} founding seats taken`;
+        const root = rootRef.current;
+        if (!root) return;
+        const wave = Math.floor(claimed / 10) + 1;
+        const inWave = claimed % 10;
+        const leftWave = 10 - inWave;
+        const line = `Wave ${wave} · ${leftWave} left`;
+        root.querySelectorAll<HTMLElement>(".seatline").forEach((el) => { el.textContent = line; });
+        root.querySelectorAll<HTMLElement>('[data-wave="chip"],[data-wave="chip2"]').forEach((el) => {
+          el.textContent = `WAVE ${wave} · ${leftWave} LEFT`;
         });
+        const card = root.querySelector<HTMLElement>('[data-wave="card"]');
+        if (card) card.style.display = "";
+        const pips = root.querySelector<HTMLElement>('[data-wave="pips"]');
+        if (pips) {
+          pips.innerHTML = Array.from({ length: 10 }, (_, i) =>
+            `<i class="${i < inWave ? "taken" : i === inWave ? "next" : ""}"></i>`,
+          ).join("");
+        }
+        const note = root.querySelector<HTMLElement>('[data-wave="note"]');
+        if (note) {
+          note.textContent = `${inWave} of the first ten are taken. When wave one closes, wave two opens — same rate, until the fiftieth seat.`;
+        }
       } catch {
         /* silent — the seat line simply stays empty */
       }
