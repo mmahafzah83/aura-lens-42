@@ -56,6 +56,13 @@ const Auth = () => {
   const [showLoginPwd, setShowLoginPwd] = useState(false);
   const [resetSentEmail, setResetSentEmail] = useState("");
   const [linkExpired, setLinkExpired] = useState(false);
+  // Confirmation resend — honest state only. `confirmResendState` is never
+  // "sent" unless the provider accepted the send.
+  const [confirmCooldown, setConfirmCooldown] = useState(0);
+  const [confirmResending, setConfirmResending] = useState(false);
+  const [confirmResendNote, setConfirmResendNote] = useState<
+    { kind: "sent" | "error"; text: string } | null
+  >(null);
 
   // password recovery
   const [view, setView] = useState<View>(() =>
@@ -74,6 +81,13 @@ const Auth = () => {
 
   const emailRef = useRef<HTMLInputElement>(null);
   const pwdRef = useRef<HTMLInputElement>(null);
+
+  /* ── the sixty seconds between confirmation sends ── */
+  useEffect(() => {
+    if (confirmCooldown <= 0) return;
+    const t = window.setInterval(() => setConfirmCooldown((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => window.clearInterval(t);
+  }, [confirmCooldown > 0]);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -224,6 +238,10 @@ const Auth = () => {
         );
         return;
       }
+      // The sign-up itself is a send: start the same sixty seconds, or the
+      // provider's own window rejects an immediate resend.
+      setConfirmResendNote(null);
+      setConfirmCooldown(60);
       setView("verify");
     } catch {
       setSignUpError("Couldn't open the account just now. Try again in a moment.");
@@ -274,6 +292,36 @@ const Auth = () => {
     }
   };
 
+  /** Resend the sign-up confirmation link. Reports exactly what happened. */
+  const handleResendConfirmation = async () => {
+    const target = email.trim().toLowerCase();
+    if (!target || confirmCooldown > 0 || confirmResending) return;
+    setConfirmResending(true);
+    setConfirmResendNote(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("auth-resend-confirmation", {
+        body: { email: target, origin: window.location.origin },
+      });
+      const result = data as { ok?: boolean; error?: string } | null;
+      if (error || !result?.ok) {
+        setConfirmResendNote({
+          kind: "error",
+          text: result?.error || "The link could not be sent just now. Try again in a moment.",
+        });
+        return;
+      }
+      setConfirmResendNote({ kind: "sent", text: `Another link is on its way to ${target}.` });
+      setConfirmCooldown(60);
+    } catch {
+      setConfirmResendNote({
+        kind: "error",
+        text: "The link could not be sent just now. Try again in a moment.",
+      });
+    } finally {
+      setConfirmResending(false);
+    }
+  };
+
   const handleResetPassword = async () => {
     if (!longEnough || !matches) return;
     setUpdatingPwd(true);
@@ -313,7 +361,7 @@ const Auth = () => {
   const headline =
     view === "newPassword" ? <>Set your <em>password.</em></>
     : view === "signup" ? <>Start your professional <em>assessment.</em></>
-    : view === "existing" ? <>You already have an <em>account.</em></>
+    : view === "existing" ? <>You already have an account.</>
     : view === "verify" ? <>Confirm your <em>email.</em></>
     : view === "sent" ? <>Check your <em>email.</em></>
     : linkExpired ? <>That link <em>has expired.</em></>
@@ -322,7 +370,7 @@ const Auth = () => {
   const sub =
     view === "newPassword" ? "Eight characters or more. You'll sign in with it straight after."
     : view === "signup" ? "Free, yours to keep. About nine minutes, and you can stop and come back."
-    : view === "existing" ? <>Sign in with <b>{email}</b> to continue where you left off.</>
+    : view === "existing" ? "That address is already registered. Sign in and your assessment picks up where it left off."
     : view === "verify" ? <>A confirmation link is on its way to <b>{email}</b>. Open it and the assessment begins.</>
     : view === "sent" ? <>A link is on its way to <b>{resetSentEmail}</b>. It opens once and expires in twenty-four hours.</>
     : linkExpired ? "They last twenty-four hours. Enter your email and a fresh one is on its way."
@@ -428,8 +476,32 @@ const Auth = () => {
                   Nothing after a minute or two? Check spam. The assessment opens the moment
                   you confirm.
                 </div>
+                <div className="au-note">
+                  It comes from <b>invites@aura-intel.org</b>.
+                </div>
+                <button
+                  type="button" className="au-btn"
+                  onClick={handleResendConfirmation}
+                  disabled={confirmResending || confirmCooldown > 0}
+                >
+                  {confirmResending
+                    ? (<><Loader2 className="au-spin" size={16} /> Sending…</>)
+                    : confirmCooldown > 0
+                      ? `Resend the link in ${confirmCooldown}s`
+                      : (<>Resend the link <span className="au-a">↗</span></>)}
+                </button>
+                <div aria-live="polite">
+                  {confirmResendNote && (
+                    <div className={confirmResendNote.kind === "error" ? "au-note warn" : "au-note"}>
+                      {confirmResendNote.text}
+                    </div>
+                  )}
+                </div>
                 <div className="au-center">
-                  <button type="button" className="au-linkbtn" onClick={() => setView("signup")}>
+                  <button
+                    type="button" className="au-linkbtn"
+                    onClick={() => { setConfirmResendNote(null); setView("signup"); }}
+                  >
                     Use a different email →
                   </button>
                 </div>
@@ -444,6 +516,14 @@ const Auth = () => {
                 <button type="button" className="au-btn" onClick={() => setView("signin")}>
                   Sign in <span className="au-a">↗</span>
                 </button>
+                <div className="au-center">
+                  <button
+                    type="button" className="au-linkbtn"
+                    onClick={() => { setPassword(""); setEmail(""); setView("signup"); }}
+                  >
+                    Use a different email →
+                  </button>
+                </div>
                 <div className="au-center">
                   <button type="button" className="au-linkbtn quiet" onClick={handleForgotPassword} disabled={resetting}>
                     {resetting ? "Sending…" : "Set or reset your password →"}

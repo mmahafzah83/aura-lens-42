@@ -206,3 +206,6 @@ verify_jwt = false
 
 [functions.auth-signup]
 verify_jwt = false
+
+[functions.auth-resend-confirmation]
+verify_jwt = false
