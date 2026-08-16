@@ -174,7 +174,7 @@ export default function Mirror() {
   const [listDone, setListDone] = useState<{ position?: number; duplicate?: boolean } | null>(null);
 
   useEffect(() => {
-    document.title = "Read me — Aura";
+    document.title = "Show me — Aura";
     const params = new URLSearchParams(window.location.search);
     const q = params.get("ref") ?? "";
     const cleanRef = q.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60);
