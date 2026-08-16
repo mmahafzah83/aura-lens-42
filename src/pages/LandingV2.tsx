@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
 import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_LIST_PRICE, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_PROMISE, SEAT_SOLD_OUT_NOTE, waveFrom } from "@/lib/seatCopy";
+import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
 
 /* ────────────────────────────────────────────────────────────────
    LandingV2 — six tabbed pages, one at a time.
@@ -321,7 +322,7 @@ const LANDING_V2_HTML = `
 <section class="pg on" id="home">
   <div class="hero">
     <div>
-      <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> AI professional identity platform</span>
+      <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> ${PRODUCT_DESCRIPTOR}</span>
       <h1>Your experience is worth more<br><span class="grad">than your profile shows.</span></h1>
       <p class="sub">Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof you can put in front of anyone.</p>
       <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
