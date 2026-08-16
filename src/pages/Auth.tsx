@@ -6,7 +6,16 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 import usePageMeta from "@/hooks/usePageMeta";
 import { isProfileComplete } from "@/lib/onboarding";
-import { SEAT_CTA } from "@/lib/seatCopy";
+import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
+
+/** The consent text version recorded against every new account. */
+export const CONSENT_VERSION = "2026-08-16";
+
+const readParam = (key: string) => {
+  if (typeof window === "undefined") return "";
+  try { return new URLSearchParams(window.location.search).get(key) ?? ""; }
+  catch { return ""; }
+};
 
 /* ────────────────────────────────────────────────────────────────
    /auth — "The Return".
@@ -25,22 +34,20 @@ import { SEAT_CTA } from "@/lib/seatCopy";
 type View = "signin" | "signup" | "verify" | "sent" | "newPassword";
 
 const Auth = () => {
-  usePageMeta({
-    title: "Aura — Sign in",
-    description: "Sign in to Aura — your signals, your drafts, and the work that ran overnight.",
-    path: "/auth",
-  });
-
-  const readParam = (key: string) => {
-    if (typeof window === "undefined") return "";
-    try { return new URLSearchParams(window.location.search).get(key) ?? ""; }
-    catch { return ""; }
-  };
-
   const [email, setEmail] = useState(() => readParam("email"));
   const [hasEmailParam] = useState(() => !!readParam("email"));
   const [isAssessment] = useState(() => readParam("intent") === "assessment");
+
+  usePageMeta({
+    title: isAssessment ? "Aura — Start your professional assessment" : "Aura — Sign in",
+    description: isAssessment
+      ? "Create your Aura account and start your professional assessment — free, and yours to keep."
+      : "Sign in to Aura — your signals, your drafts, and the work that ran overnight.",
+    path: "/auth",
+  });
+
   const [password, setPassword] = useState("");
+  const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resending, setResending] = useState(false);
