@@ -1198,14 +1198,20 @@ const Dashboard = () => {
           {authorityMounted && (
             <div hidden={activeTab !== "authority"} className={activeTab === "authority" ? "aura-page" : undefined}>
               <ErrorBoundary>
-                <StudioPanel
-                  active={activeTab === "authority"}
-                  signalPrefill={signalDraftPrefill}
-                  onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
-                  draftPrefill={draftPrefill}
-                  onDraftPrefillConsumed={() => setDraftPrefill(null)}
-                  onOpenCapture={() => handleOpenCapture()}
-                />
+                <LockedPanel
+                  locked={!isLoop}
+                  title="Written from what you saved"
+                  line="Never from a prompt. Aura writes only what your own evidence can carry."
+                >
+                  <StudioPanel
+                    active={activeTab === "authority" && isLoop}
+                    signalPrefill={signalDraftPrefill}
+                    onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
+                    draftPrefill={draftPrefill}
+                    onDraftPrefillConsumed={() => setDraftPrefill(null)}
+                    onOpenCapture={() => handleOpenCapture()}
+                  />
+                </LockedPanel>
               </ErrorBoundary>
             </div>
           )}
