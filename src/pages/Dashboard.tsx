@@ -846,12 +846,14 @@ const Dashboard = () => {
               {NAV_GROUPS.map((item) => {
                 const isActive = isGroupActive(item, activeTab);
                 const dimmed = isDoorDimmed(item);
+                const groupLocked = !isLoop && item.members.every((m) => LOOP_TABS.has(m));
                 return (
                   <button
                     key={item.key}
                     onClick={() => { setMobileSidebarOpen(false); openDoor(item); }}
                     data-testid={item.testId}
                     data-active={isActive ? "true" : "false"}
+                    aria-label={groupLocked ? `${item.label}, locked` : item.label}
                     className={`w-full flex items-center gap-3 aura-nav-item ${isActive ? "is-active" : ""}`}
                     style={{
                       padding: "10px 24px",
@@ -865,6 +867,10 @@ const Dashboard = () => {
                       style={{ color: isActive ? "var(--aura-accent)" : "var(--aura-t3)" }}
                     />
                     <span className="text-sm font-medium">{item.label}</span>
+                    {groupLocked && (
+                      <span aria-hidden className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ background: "#E0A82E" }} />
+                    )}
                     {item.key === "signals" && newIntelSignalCount > 0 && !isActive && (
                       <span
                         aria-label={`${newIntelSignalCount} new signals`}
