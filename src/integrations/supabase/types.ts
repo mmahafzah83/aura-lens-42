@@ -2315,6 +2315,27 @@ export type Database = {
         }
         Relationships: []
       }
+      instrument_runs: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       job_queue: {
         Row: {
           attempts: number
@@ -3991,6 +4012,27 @@ export type Database = {
           lang?: string | null
           payload?: Json | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      signup_attempts: {
+        Row: {
+          created_at: string
+          email_hash: string | null
+          id: string
+          ip_hash: string
+        }
+        Insert: {
+          created_at?: string
+          email_hash?: string | null
+          id?: string
+          ip_hash: string
+        }
+        Update: {
+          created_at?: string
+          email_hash?: string | null
+          id?: string
+          ip_hash?: string
         }
         Relationships: []
       }
