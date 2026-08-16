@@ -4,7 +4,7 @@
  * the active one carries the action colour.
  */
 interface SubTabsProps {
-  options: Array<{ value: string; label: string }>;
+  options: Array<{ value: string; label: string; dot?: string }>;
   active: string;
   onSelect: (value: string) => void;
   ariaLabel: string;
@@ -36,6 +36,7 @@ export default function SubTabs({ options, active, onSelect, ariaLabel }: SubTab
             id={`subtab-${o.value}`}
             aria-selected={isActive}
             aria-controls={`subpanel-${o.value}`}
+            aria-label={o.dot ? `${o.label}, locked` : undefined}
             data-testid={`subtab-${o.value}`}
             className="cursor-pointer v23-focus"
             onClick={() => { if (!isActive) onSelect(o.value); }}
@@ -52,9 +53,17 @@ export default function SubTabs({ options, active, onSelect, ariaLabel }: SubTab
               background: isActive ? "var(--act)" : "transparent",
               color: isActive ? "var(--text-inverse)" : "var(--text-secondary)",
               transition: "background 160ms ease, color 160ms ease",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
             }}
           >
             {o.label}
+            {o.dot && (
+              <span aria-hidden style={{
+                width: 6, height: 6, borderRadius: 999, background: o.dot, display: "inline-block",
+              }} />
+            )}
           </button>
         );
       })}
