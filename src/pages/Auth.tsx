@@ -357,7 +357,7 @@ const Auth = () => {
   const headline =
     view === "newPassword" ? <>Set your <em>password.</em></>
     : view === "signup" ? <>Start your professional <em>assessment.</em></>
-    : view === "existing" ? <>You already have an <em>account.</em></>
+    : view === "existing" ? <>You already have an account.</>
     : view === "verify" ? <>Confirm your <em>email.</em></>
     : view === "sent" ? <>Check your <em>email.</em></>
     : linkExpired ? <>That link <em>has expired.</em></>
@@ -366,7 +366,7 @@ const Auth = () => {
   const sub =
     view === "newPassword" ? "Eight characters or more. You'll sign in with it straight after."
     : view === "signup" ? "Free, yours to keep. About nine minutes, and you can stop and come back."
-    : view === "existing" ? <>Sign in with <b>{email}</b> to continue where you left off.</>
+    : view === "existing" ? "That address is already registered. Sign in and your assessment picks up where it left off."
     : view === "verify" ? <>A confirmation link is on its way to <b>{email}</b>. Open it and the assessment begins.</>
     : view === "sent" ? <>A link is on its way to <b>{resetSentEmail}</b>. It opens once and expires in twenty-four hours.</>
     : linkExpired ? "They last twenty-four hours. Enter your email and a fresh one is on its way."
@@ -472,8 +472,32 @@ const Auth = () => {
                   Nothing after a minute or two? Check spam. The assessment opens the moment
                   you confirm.
                 </div>
+                <div className="au-note">
+                  It comes from <b>invites@aura-intel.org</b>.
+                </div>
+                <button
+                  type="button" className="au-btn"
+                  onClick={handleResendConfirmation}
+                  disabled={confirmResending || confirmCooldown > 0}
+                >
+                  {confirmResending
+                    ? (<><Loader2 className="au-spin" size={16} /> Sending…</>)
+                    : confirmCooldown > 0
+                      ? `Resend the link in ${confirmCooldown}s`
+                      : (<>Resend the link <span className="au-a">↗</span></>)}
+                </button>
+                <div aria-live="polite">
+                  {confirmResendNote && (
+                    <div className={confirmResendNote.kind === "error" ? "au-note warn" : "au-note"}>
+                      {confirmResendNote.text}
+                    </div>
+                  )}
+                </div>
                 <div className="au-center">
-                  <button type="button" className="au-linkbtn" onClick={() => setView("signup")}>
+                  <button
+                    type="button" className="au-linkbtn"
+                    onClick={() => { setConfirmResendNote(null); setView("signup"); }}
+                  >
                     Use a different email →
                   </button>
                 </div>
@@ -488,6 +512,14 @@ const Auth = () => {
                 <button type="button" className="au-btn" onClick={() => setView("signin")}>
                   Sign in <span className="au-a">↗</span>
                 </button>
+                <div className="au-center">
+                  <button
+                    type="button" className="au-linkbtn"
+                    onClick={() => { setPassword(""); setEmail(""); setView("signup"); }}
+                  >
+                    Use a different email →
+                  </button>
+                </div>
                 <div className="au-center">
                   <button type="button" className="au-linkbtn quiet" onClick={handleForgotPassword} disabled={resetting}>
                     {resetting ? "Sending…" : "Set or reset your password →"}
