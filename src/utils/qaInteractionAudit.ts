@@ -1614,14 +1614,14 @@ async function auditHomePage(results: QaResult[], doc: Document) {
       "No .brief-ledger imprint dial found on Brief", "Imprint dial with score + tier", "missing");
   } else {
     const ledgerText = txt(ledger);
-    const hasHeading = /YOUR IMPRINT/i.test(ledgerText);
+    const hasHeading = /YOUR STANDING/i.test(ledgerText);
     const hasScore = /\b\d{1,3}\b/.test(ledgerText);
     const hasTier = /Observer|Explorer|Strategist|Voice|Presence/i.test(ledgerText);
     const ok = hasHeading && hasScore && hasTier;
     pushPage(results, "home", "h3", "Imprint dial", ok ? "pass" : "warn",
       ok ? "Imprint ledger renders heading + score + tier"
          : `Imprint ledger present but heading=${hasHeading}, score=${hasScore}, tier=${hasTier}`,
-      "YOUR IMPRINT heading + numeric score + tier label",
+      "YOUR STANDING heading + numeric score + tier label",
       `heading=${hasHeading}, score=${hasScore}, tier=${hasTier}`);
   }
 
