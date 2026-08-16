@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import AuraLogo from "@/components/brand/AuraLogo";
 import usePageMeta from "@/hooks/usePageMeta";
 import { supabase } from "@/integrations/supabase/client";
+import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
 
 /**
  * Acceptance page — the ceremonial intermediate screen between the invite
@@ -13,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 export default function AcceptInvitation() {
   usePageMeta({
     title: "Aura — Accept your invitation",
-    description: "You've been invited to join Aura — a personal intelligence system. Your expertise is invisible; Aura fixes that. Accept your invitation to set up your account.",
+    description: "You've been invited to join Aura — an AI professional identity platform. Your expertise is invisible; Aura fixes that. Accept your invitation to set up your account.",
     path: "/accept-invitation",
   });
   const [params] = useSearchParams();
@@ -123,7 +124,7 @@ export default function AcceptInvitation() {
           <p className="ai-subline">
             {isExpired
               ? "Invite links last 24 hours. You can request a fresh one — it only takes a moment."
-              : "Aura is a personal intelligence system that converts what you already know into the digital presence your career demands."}
+              : `Aura is an ${PRODUCT_DESCRIPTOR} that converts what you already know into the digital presence your career demands.`}
           </p>
 
           {isExpired ? (

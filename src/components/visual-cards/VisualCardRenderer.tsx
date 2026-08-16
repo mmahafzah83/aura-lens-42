@@ -8,6 +8,7 @@ import QuestionLayout from "./layouts/QuestionLayout";
 import PrinciplesLayout from "./layouts/PrinciplesLayout";
 import CycleLayout from "./layouts/CycleLayout";
 import EquationLayout from "./layouts/EquationLayout";
+import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
 
 export type { VisualCardProps, CardType } from "./types";
 export type { CardStyleName } from "./styles/cardStyles";
@@ -227,7 +228,7 @@ export default function VisualCardRenderer(props: VisualCardProps) {
                     fontFamily: isAr ? "'Cairo','DM Sans',sans-serif" : style.bodyFont,
                     fontSize: 11, color: style.footerColor,
                   }}>
-                    {isAr ? "نظام ذكاء شخصي" : "Personal Intelligence System"}
+                    {isAr ? "نظام ذكاء شخصي" : PRODUCT_DESCRIPTOR}
                   </div>
                 </div>
               </div>
