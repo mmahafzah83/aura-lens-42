@@ -1086,15 +1086,23 @@ const Dashboard = () => {
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <SignalsBoardV2
-                    onOpenCapture={handleOpenCapture}
-                    onOpenChat={openChat}
-                    onDraftToStudio={(prefill) => {
-                      setSignalDraftPrefill(prefill);
-                      setActiveTab("authority");
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                  />
+                  <LockedWhenRead
+                    locked={!isLoop}
+                    title="Your radar, every morning"
+                    line="Aura reads your field overnight and matches what moved against your read."
+                    count={signalsToday ?? undefined}
+                    countLabel="signals moved in your field today"
+                  >
+                    <SignalsBoardV2
+                      onOpenCapture={handleOpenCapture}
+                      onOpenChat={openChat}
+                      onDraftToStudio={(prefill) => {
+                        setSignalDraftPrefill(prefill);
+                        setActiveTab("authority");
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                    />
+                  </LockedWhenRead>
                 </ErrorBoundary>
               </div>
             )}
@@ -1102,10 +1110,16 @@ const Dashboard = () => {
             {activeTab === "overnight" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <OvernightPage
-                    onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                    onOpenSettings={() => navigate("/settings?tab=preferences")}
-                  />
+                  <LockedWhenRead
+                    locked={!isLoop}
+                    title="The night shift"
+                    line="Aura works while you sleep and tells you what it found."
+                  >
+                    <OvernightPage
+                      onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                      onOpenSettings={() => navigate("/settings?tab=preferences")}
+                    />
+                  </LockedWhenRead>
                 </ErrorBoundary>
               </div>
             )}
@@ -1113,7 +1127,13 @@ const Dashboard = () => {
             {activeTab === "library" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <LibraryPage onOpenCapture={handleOpenCapture} />
+                  <LockedWhenRead
+                    locked={!isLoop}
+                    title="Everything you save, kept"
+                    line="Captures become fragments. Fragments become the evidence behind your next post."
+                  >
+                    <LibraryPage onOpenCapture={handleOpenCapture} />
+                  </LockedWhenRead>
                 </ErrorBoundary>
               </div>
             )}
@@ -1129,7 +1149,13 @@ const Dashboard = () => {
             {activeTab === "influence" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <AnalyticsV2 onOpenChat={openChat} />
+                  <LockedWhenRead
+                    locked={!isLoop}
+                    title="Your presence, measured"
+                    line="One honest number, built from what you actually published."
+                  >
+                    <AnalyticsV2 onOpenChat={openChat} />
+                  </LockedWhenRead>
                 </ErrorBoundary>
               </div>
             )}
@@ -1137,7 +1163,13 @@ const Dashboard = () => {
             {activeTab === "momentum" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <MomentumPage />
+                  <LockedWhenRead
+                    locked={!isLoop}
+                    title="Your rhythm"
+                    line="Weekly consistency, not volume. Aura scores the habit, not the output."
+                  >
+                    <MomentumPage />
+                  </LockedWhenRead>
                 </ErrorBoundary>
               </div>
             )}
@@ -1145,7 +1177,13 @@ const Dashboard = () => {
             {activeTab === "widgets" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
-                  <WidgetsPage />
+                  <LockedWhenRead
+                    locked={!isLoop}
+                    title="Your instrument panel"
+                    line="The surfaces you choose, on the home you use."
+                  >
+                    <WidgetsPage />
+                  </LockedWhenRead>
                 </ErrorBoundary>
               </div>
             )}
