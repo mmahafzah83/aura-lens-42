@@ -676,8 +676,10 @@ const AU_CSS = `
 
 .au-brandrow{display:flex;align-items:center;gap:10px;margin-bottom:26px;}
 .au-bn{font-family:var(--ser);font-weight:700;font-size:26px;line-height:1;}
+/* Two lines, never four: "AI PROFESSIONAL" / "IDENTITY PLATFORM", centred on the wordmark. */
 .au-bsub{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--n400);padding-left:11px;border-left:1px solid var(--n200);line-height:1.5;max-width:14ch;}
+  color:var(--n400);padding-left:11px;border-left:1px solid var(--n200);line-height:1.25;
+  width:124px;max-width:124px;align-self:center;}
 .au-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(0,128,123,.28);
   background:rgba(0,206,201,.07);border-radius:999px;padding:7px 13px;margin-bottom:22px;
   font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--cy-t);}
@@ -687,8 +689,10 @@ const AU_CSS = `
 .au-h1{font-family:var(--ser);font-weight:700;font-size:clamp(34px,3.6vw,46px);
   line-height:1;letter-spacing:-.028em;}
 .au-h1 em{font-style:italic;color:var(--n400);}
-.au-sub{font-size:15px;color:var(--n500);margin:14px 0 28px;line-height:1.55;max-width:38ch;}
+.au-sub{font-size:15px;color:var(--n500);margin:14px 0 0;line-height:1.55;max-width:38ch;}
 .au-sub b{color:var(--n900);font-weight:600;}
+/* Breathing room so the intro never butts into the first field label. */
+.au-sub + form,.au-sub + .au-fields,.au-sub + div{margin-top:26px;}
 
 .au-fields{display:flex;flex-direction:column;gap:16px;}
 .au label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
@@ -746,7 +750,10 @@ const AU_CSS = `
   border:1px solid transparent;background:var(--n900);color:#fff;cursor:pointer;margin-top:4px;
   transition:transform .2s ease,box-shadow .25s ease,opacity .2s ease;}
 .au-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 16px 34px -16px rgba(15,21,25,.7);}
-.au-btn:disabled{cursor:not-allowed;opacity:.5;}
+/* A disabled control still has to be readable: dark ink on a light neutral. */
+.au-btn:disabled{cursor:not-allowed;opacity:1;background:var(--n100,#EDEFF2);color:#4A5563;
+  box-shadow:none;transform:none;border:1px solid var(--n200);}
+.au-btn:disabled .au-a{color:#4A5563;}
 .au-a{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.15);display:grid;
   place-items:center;font-size:11px;transition:transform .22s cubic-bezier(.2,.7,.3,1);}
 .au-btn:hover:not(:disabled) .au-a{transform:translate(2px,-2px);}
