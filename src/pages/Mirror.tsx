@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import RevealCard, { shareRevealCard, type RevealData } from "@/components/onboarding/RevealCard";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
+import { SEAT_CTA } from "@/lib/seatCopy";
 
 /* ── System-B surface ───────────────────────────────────────────── */
 const CANVAS = "#F2F5F9";
@@ -465,7 +466,7 @@ export default function Mirror() {
 
             {!listOpen ? (
               <div style={{ marginBlockStart: 20 }}>
-                <PrimaryButton onClick={() => setListOpen(true)}>Ask for a founding seat</PrimaryButton>
+                <PrimaryButton onClick={() => setListOpen(true)}>{SEAT_CTA}</PrimaryButton>
               </div>
             ) : listDone ? (
               <div style={{
@@ -565,7 +566,7 @@ export default function Mirror() {
               <p style={{ margin: "10px 0 0", fontSize: 13, lineHeight: 1.6, color: "#B3261E" }}>
                 {formError}
                 {showRateHelp ? (
-                  <> <a href="/request-access" style={{ color: BLUE }}>Ask for a founding seat instead.</a></>
+                  <> <a href="/request-access" style={{ color: BLUE }}>{SEAT_CTA} instead.</a></>
                 ) : null}
               </p>
             ) : null}

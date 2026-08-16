@@ -595,7 +595,7 @@ const AU_CSS = `
 .au-form{width:100%;max-width:400px;}
 
 .au-brandrow{display:flex;align-items:center;gap:10px;margin-bottom:26px;}
-.au-bn{font-family:var(--ser);font-size:26px;line-height:1;}
+.au-bn{font-family:var(--ser);font-weight:700;font-size:26px;line-height:1;}
 .au-bsub{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
   color:var(--n400);padding-left:11px;border-left:1px solid var(--n200);line-height:1.4;max-width:11ch;}
 .au-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(0,128,123,.28);
@@ -604,7 +604,7 @@ const AU_CSS = `
 .au-dot{width:6px;height:6px;border-radius:50%;background:var(--cy);animation:au-pulse 2.2s ease-in-out infinite;}
 @keyframes au-pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 
-.au-h1{font-family:var(--ser);font-weight:400;font-size:clamp(34px,3.6vw,46px);
+.au-h1{font-family:var(--ser);font-weight:700;font-size:clamp(34px,3.6vw,46px);
   line-height:1;letter-spacing:-.028em;}
 .au-h1 em{font-style:italic;color:var(--n400);}
 .au-sub{font-size:15px;color:var(--n500);margin:14px 0 28px;line-height:1.55;max-width:38ch;}
@@ -687,7 +687,7 @@ const AU_CSS = `
 .au-nwrap{position:relative;z-index:1;max-width:400px;width:100%;}
 .au-neyebrow{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
   color:rgba(255,255,255,.42);margin-bottom:16px;}
-.au-nh{font-family:var(--ser);font-weight:400;font-size:clamp(26px,2.6vw,34px);line-height:1.06;
+.au-nh{font-family:var(--ser);font-weight:700;font-size:clamp(26px,2.6vw,34px);line-height:1.06;
   letter-spacing:-.022em;color:#fff;}
 .au-nh em{font-style:italic;color:rgba(255,255,255,.42);}
 .au-card{background:var(--ncard);border:1px solid var(--nline);border-radius:18px;padding:22px;margin-top:26px;}

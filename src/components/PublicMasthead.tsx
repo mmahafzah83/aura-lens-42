@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import AuraLogo from "@/components/brand/AuraLogo";
+import { SEAT_CTA } from "@/lib/seatCopy";
 
 /**
  * Canonical masthead for every public page (legal, story, guide).
@@ -23,7 +24,7 @@ const PublicMasthead = ({ authed = false }: { authed?: boolean }) => (
           <>
             <Link className="pm-link" to="/auth">Sign in</Link>
             <Link className="pm-cta" to="/request-access">
-              Request a founder seat <span className="pm-a">↗</span>
+              {SEAT_CTA} <span className="pm-a">↗</span>
             </Link>
           </>
         )}

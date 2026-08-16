@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import PublicFooter from "@/components/PublicFooter";
 import PublicMasthead from "@/components/PublicMasthead";
+import { SEAT_CTA } from "@/lib/seatCopy";
 
 const label: React.CSSProperties = {
   fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace",
@@ -290,7 +291,7 @@ const OurStory = () => {
               e.currentTarget.style.color = "#FFFFFF";
             }}
           >
-            Request a founder seat →
+            {SEAT_CTA} →
           </Link>
 
           <Link

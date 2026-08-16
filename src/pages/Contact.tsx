@@ -197,7 +197,7 @@ const CT_CSS = `
 .ct-wrap{max-width:620px;margin:0 auto;}
 .ct-eyebrow{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--faint);margin-bottom:16px;}
-.ct-h1{font-family:var(--disp);font-weight:400;font-size:clamp(34px,6vw,50px);
+.ct-h1{font-family:var(--disp);font-weight:700;font-size:clamp(34px,6vw,50px);
   line-height:1.08;letter-spacing:-0.02em;color:var(--ink);margin:0 0 16px;}
 .ct-intro{font-size:17px;line-height:1.7;color:var(--soft);margin:0 0 32px;}
 .ct-card{background:var(--card);border:1px solid var(--rule);border-radius:16px;
@@ -221,7 +221,7 @@ const CT_CSS = `
 .ct-pill:hover{opacity:.88;}
 .ct-pill:disabled{opacity:.5;cursor:default;}
 .ct-done{padding:8px 0;}
-.ct-done-t{font-family:var(--disp);font-size:26px;line-height:1.25;color:var(--ink);margin:0 0 16px;}
+.ct-done-t{font-family:var(--disp);font-weight:700;font-size:26px;line-height:1.25;color:var(--ink);margin:0 0 16px;}
 .ct-back{font-size:14px;color:var(--act);text-decoration:none;}
 .ct-back:hover{text-decoration:underline;}
 .ct-alt{font-size:12px;line-height:1.6;color:var(--faint);margin:16px 0 0;word-break:break-word;}
