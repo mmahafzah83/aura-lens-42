@@ -5,6 +5,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import AuraLogo from "@/components/brand/AuraLogo";
+import { SEAT_PRICE, SEAT_PRICE_SUBLINE } from "@/lib/seatCopy";
 
 /* ────────────────────────────────────────────────────────────────
    /request-access — "The Door".
@@ -254,6 +255,11 @@ export default function RequestAccess() {
                 )}
 
                 <button type="submit" disabled={status === "loading"} className="ra-btn">
+                </button>
+              </form>
+            </>
+          )}
+        </div>
                   {status === "loading" ? (
                     <span className="ra-pulse">Sending…</span>
                   ) : (
