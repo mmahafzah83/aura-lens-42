@@ -209,7 +209,7 @@ const ACCEPT_CSS = `
   --n400:#98A2AE; --n500:#5B6673; --n900:#0F1519;
   --act:#0670C4; --cy-t:#00807B;
   --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
-  --ser:'Instrument Serif',Georgia,serif;
+  --ser:'Inter',ui-sans-serif,system-ui,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   min-height:100vh; background:var(--page); color:var(--n900);
   font-family:var(--ui); font-size:16px; line-height:1.6;

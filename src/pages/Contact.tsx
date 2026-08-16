@@ -185,7 +185,7 @@ const CT_CSS = `
 .ct{
   --page:#F2F5F9; --card:#FFFFFF; --rule:#E2E7EE;
   --ink:#0F1519; --soft:#5B6673; --faint:#98A2AE; --act:#0670C4; --bad:#C0392B;
-  --disp:'Instrument Serif',Georgia,serif;
+  --disp:'Inter',ui-sans-serif,system-ui,sans-serif;
   --body:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   min-height:100vh; display:flex; flex-direction:column;

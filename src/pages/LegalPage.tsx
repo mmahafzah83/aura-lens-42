@@ -71,7 +71,7 @@ const LG_CSS = `
   --n400:#98A2AE; --n500:#5B6673; --n700:#3A434E; --n900:#0F1519;
   --act:#0670C4; --cy:#00CEC9; --cy-t:#00807B;
   --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
-  --ser:'Instrument Serif',Georgia,serif;
+  --ser:'Inter',ui-sans-serif,system-ui,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   min-height:100vh; display:flex; flex-direction:column;
   background:var(--page); color:var(--n900);

@@ -400,7 +400,7 @@ const Auth = () => {
                   <label htmlFor="au-email">Email</label>
                   <input
                     id="au-email" ref={emailRef} type="email" value={email} required
-                    autoComplete="username" placeholder="you@company.com" className="au-field"
+                    autoComplete="username" placeholder="you@email.com" className="au-field"
                     aria-invalid={!!emailError}
                     onChange={(e) => { setEmail(e.target.value); setEmailError(null); setSignInError(null); }}
                   />
@@ -578,7 +578,7 @@ const AU_CSS = `
   --act:#0670C4; --act-50:#E6F2FD; --cy:#00CEC9; --cy-b:#5EE3DC; --cy-t:#00807B;
   --err:#C0392B; --err-50:#FCEAE6;
   --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
-  --ser:'Instrument Serif',Georgia,serif;
+  --ser:'Inter',ui-sans-serif,system-ui,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   --ar:'Cairo','CairoAR',sans-serif;
   background:var(--page); color:var(--n900);

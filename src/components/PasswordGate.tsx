@@ -58,7 +58,7 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
 }
 
 const FF_UI = "'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif";
-const FF_SER = "'Instrument Serif',Georgia,serif";
+const FF_SER = "'Inter',ui-sans-serif,system-ui,sans-serif";
 const FF_MONO = "'IBM Plex Mono',ui-monospace,Menlo,monospace";
 
 function SetPasswordScreen({ email, onComplete }: { email: string | null; onComplete: () => void }) {

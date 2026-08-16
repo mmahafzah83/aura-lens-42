@@ -39,7 +39,7 @@ const PM_CSS = `
   --page:#F2F5F9; --n0:#FFFFFF; --n100:#EEF2F7; --n200:#E2E7EE;
   --n400:#98A2AE; --n500:#5B6673; --n900:#0F1519; --act:#0670C4;
   --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
-  --ser:'Instrument Serif',Georgia,serif;
+  --ser:'Inter',ui-sans-serif,system-ui,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   position:sticky; top:0; z-index:40;
   display:flex; align-items:center; justify-content:space-between; gap:16px;

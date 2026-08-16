@@ -442,7 +442,7 @@ export default function Mirror() {
                 <label style={label} htmlFor="mr-send-email">Email</label>
                 <input
                   id="mr-send-email" style={field} value={sendEmail} inputMode="email"
-                  placeholder="you@company.com"
+                  placeholder="you@email.com"
                   onChange={(e) => { setSendEmail(e.target.value); setSendError(undefined); }}
                 />
                 {fieldError(sendError)}

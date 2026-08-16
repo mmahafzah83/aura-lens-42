@@ -24,7 +24,7 @@ const body: React.CSSProperties = {
 };
 
 const pull: React.CSSProperties = {
-  fontFamily: "'Instrument Serif', Georgia, serif",
+  fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
   fontStyle: "italic",
   fontSize: "clamp(24px, 3.2vw, 33px)",
   lineHeight: 1.28,
@@ -103,7 +103,7 @@ const OurStory = () => {
 
         <h1
           className="text-3xl sm:text-4xl mb-2"
-          style={{ fontFamily: "'Instrument Serif', Georgia, serif", color: "#0F1519", letterSpacing: "-0.028em", lineHeight: 1.02 }}
+          style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", color: "#0F1519", letterSpacing: "-0.028em", lineHeight: 1.02 }}
         >
           Why Aura exists.
         </h1>
@@ -258,7 +258,7 @@ const OurStory = () => {
           <div className="pt-8">
             <p
               className="text-xl mb-1"
-              style={{ fontFamily: "'Instrument Serif', Georgia, serif", color: "#0F1519" }}
+              style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", color: "#0F1519" }}
             >
               — Mohammad Mahafdhah
             </p>
