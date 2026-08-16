@@ -339,41 +339,93 @@ const LANDING_V2_HTML = `
       </div>
     </div>
     <div class="loopwrap">
-      <svg viewBox="0 0 560 578" fill="none">
-        <circle cx="280" cy="280" r="245" stroke="#EFF4FA" stroke-width="1.2"/>
-        <circle cx="280" cy="280" r="205" stroke="#E2E7EE" stroke-width="1.2"/>
-        <circle class="dash" cx="280" cy="280" r="150" stroke="#D2D8E0" stroke-width="1.2"/>
+      <div class="jring">
+      <svg viewBox="-120 -24 840 664" fill="none" role="img" aria-label="The nine-step Aura journey, running clockwise from step one. Step one, your assessment, is free. Then: capture what you read, organise it, evidence in fragments, your field's trends, tuned to your voice, the draft by dawn, you publish, and the outcome — your standing moves.">
         <defs>
-          <linearGradient id="arcg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0670C4"/><stop offset="1" stop-color="#00CEC9"/></linearGradient>
+          <linearGradient id="jarc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0670C4"/><stop offset="1" stop-color="#04477C"/></linearGradient>
         </defs>
-        <circle cx="280" cy="280" r="205" stroke="url(#arcg)" stroke-width="3" stroke-linecap="round" fill="none" stroke-dasharray="876 1288" transform="rotate(-96 280 280)"/>
-        <g class="orb"><circle cx="485" cy="280" r="12" fill="#00CEC9" fill-opacity=".18"/><circle cx="485" cy="280" r="6" fill="#00CEC9"/></g>
-        <path class="dash" d="M280 192 V119    M368 280 H441    M280 368 V441    M192 280 H119" stroke="#D2D8E0" stroke-width="1.2"/>
-        <circle cx="280" cy="280" r="76" fill="#0F1519"/>
-        <text x="280" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="36" font-weight="600" fill="#FFFFFF">85</text>
-        <text x="280" y="289" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.6" fill="#00CEC9">YOUR IMPRINT</text>
-        <text x="280" y="306" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" fill="#8E99A6">rises every week</text>
+        <circle cx="300" cy="300" r="200" stroke="#E2E7EE" stroke-width="1" stroke-dasharray="2 5" fill="none"/>
 
-        <circle cx="280" cy="75" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
-        <g stroke="#0670C4" stroke-width="1.6" stroke-linecap="round"><path d="M266 68h28M266 75h28M266 82h18"/></g>
-        <text class="nodeL" x="280" y="133" text-anchor="middle">1 · YOU READ</text>
-        <text class="nodeS" x="280" y="149" text-anchor="middle">One tap. One second.</text>
+        <path d="M248.24 106.82 A200 200 0 0 1 351.76 106.82" stroke="#00CEC9" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <path d="M384.52 118.74 A200 200 0 0 1 441.42 441.42" stroke="url(#jarc)" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <path d="M414.72 463.83 A200 200 0 0 1 106.82 351.76" stroke="url(#jarc)" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <path d="M100.76 317.43 A200 200 0 0 1 248.24 106.82" stroke="url(#jarc)" stroke-width="6" stroke-linecap="round" fill="none"/>
 
-        <circle cx="485" cy="280" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
-        <g class="pulse"><circle cx="485" cy="280" r="13" stroke="#0670C4" stroke-width="1.6" fill="none"/><circle cx="485" cy="280" r="4.5" fill="#00CEC9"/></g>
-        <text class="nodeL" x="485" y="338" text-anchor="middle">2 · IT LEARNS</text>
-        <text class="nodeS" x="485" y="354" text-anchor="middle">Your subjects, your voice.</text>
+        <text x="300" y="164" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.4" fill="#00807B">SEE YOURSELF</text>
+        <text x="437.9" y="275.7" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.4" fill="#0670C4">NOTHING LOST</text>
+        <text x="252.1" y="435.6" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.4" fill="#0670C4">IT COMPOSES</text>
+        <text x="185.3" y="223.7" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.4" fill="#0670C4">YOU ARE SEEN</text>
+        <circle cx="300" cy="300" r="86" fill="#0F1519"/>
+        <text x="300" y="292" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="40" font-weight="600" fill="#FFFFFF">85</text>
+        <text x="300" y="314" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.6" fill="#00CEC9">YOUR PRESENCE</text>
+        <text x="300" y="332" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="#8E99A6">step 9 feeds this</text>
 
-        <circle cx="280" cy="485" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
-        <path d="M284 471l-11 15h9l-3 12 12-16h-9z" fill="#E0A82E"/>
-        <text class="nodeL" x="280" y="543" text-anchor="middle">3 · IT WRITES AT NIGHT</text>
-        <text class="nodeS" x="280" y="559" text-anchor="middle">While you sleep.</text>
+        <text x="300" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.7" fill="#00807B">▼ YOU START HERE · FREE</text>
 
-        <circle cx="75" cy="280" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
-        <path d="M63 280l8 9 17-19" stroke="#00807B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <text class="nodeL" x="75" y="338" text-anchor="middle">4 · YOU APPROVE</text>
-        <text class="nodeS" x="75" y="354" text-anchor="middle">One click. It is live.</text>
+        <circle cx="300" cy="100" r="15" fill="#FFFFFF" stroke="#00CEC9" stroke-width="2.5"/>
+        <text x="300" y="104.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#00807B">1</text>
+        <text x="300" y="52" text-anchor="middle" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Your assessment</text>
+
+        <circle cx="428.56" cy="146.8" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <text x="428.56" y="151" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">2</text>
+        <text x="454.28" y="116.16" text-anchor="start" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Capture what you read</text>
+        <text x="454.28" y="132.16" text-anchor="start" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">one tap</text>
+
+        <circle cx="496.96" cy="265.28" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <text x="496.96" y="269.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">3</text>
+        <text x="536.35" y="258.34" text-anchor="start" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Organise it</text>
+        <text x="536.35" y="274.34" text-anchor="start" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">nothing lost</text>
+
+        <circle cx="473.21" cy="400" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <text x="473.21" y="404.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">4</text>
+        <text x="507.85" y="420" text-anchor="start" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Evidence, in fragments</text>
+        <text x="507.85" y="436" text-anchor="start" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">usable in November</text>
+
+        <circle cx="368.4" cy="487.94" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <text x="368.4" y="492.14" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">5</text>
+        <text x="382.08" y="525.53" text-anchor="start" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Your field's trends</text>
+        <text x="382.08" y="541.53" text-anchor="start" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">matched to you</text>
+
+        <circle cx="231.6" cy="487.94" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <text x="231.6" y="492.14" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">6</text>
+        <text x="217.92" y="525.53" text-anchor="end" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Tuned to your voice</text>
+        <text x="217.92" y="541.53" text-anchor="end" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">learned, not guessed</text>
+
+        <circle cx="126.79" cy="400" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <text x="126.79" y="404.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">7</text>
+        <text x="92.15" y="420" text-anchor="end" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">The draft</text>
+        <text x="92.15" y="436" text-anchor="end" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">by dawn</text>
+
+        <circle cx="103.04" cy="265.28" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <text x="103.04" y="269.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">8</text>
+        <text x="63.65" y="258.34" text-anchor="end" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">You publish</text>
+        <text x="63.65" y="274.34" text-anchor="end" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">one click</text>
+
+        <circle cx="171.44" cy="146.8" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <text x="171.44" y="151" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">9</text>
+        <text x="145.72" y="116.16" text-anchor="end" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">The outcome</text>
+        <text x="145.72" y="132.16" text-anchor="end" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">your standing moves</text>
       </svg>
+      </div>
+
+      <div class="jrail">
+        <p class="rstart">▼ You start here · free</p>
+        <p class="rkick">SEE YOURSELF · FREE</p>
+        <div class="rrow first"><span class="rbead"><i></i><u></u></span><span><span class="rt">Your assessment</span><span class="rs" style="display:block">free, yours to keep</span></span></div>
+        <p class="rkick">NOTHING LOST · THE LOOP</p>
+        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">Capture what you read</span><span class="rs" style="display:block">one tap</span></span></div>
+        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">Organise it</span><span class="rs" style="display:block">nothing lost</span></span></div>
+        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">Evidence, in fragments</span><span class="rs" style="display:block">usable in November</span></span></div>
+        <p class="rkick">IT COMPOSES</p>
+        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">Your field's trends</span><span class="rs" style="display:block">matched to you</span></span></div>
+        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">Tuned to your voice</span><span class="rs" style="display:block">learned, not guessed</span></span></div>
+        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">The draft</span><span class="rs" style="display:block">by dawn</span></span></div>
+        <p class="rkick">YOU ARE SEEN</p>
+        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">You publish</span><span class="rs" style="display:block">one click</span></span></div>
+        <div class="rrow"><span class="rbead"><i></i></span><span><span class="rt">The outcome</span><span class="rs" style="display:block">your standing moves</span></span></div>
+        <div class="rdial"><div class="n">85</div><div class="p">YOUR PRESENCE</div><div class="c">step 9 feeds this</div></div>
+        <a class="btn bp rbtn" href="/auth?intent=assessment">Start at step 1 — free</a>
+      </div>
     </div>
   </div>
 
