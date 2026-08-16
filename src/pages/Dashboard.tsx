@@ -229,6 +229,23 @@ const Dashboard = () => {
   // tier_name / newly_earned payload). A band crossing fires the ceremony
   // and the milestone toast at Dashboard level so both surface from any tab.
   const tierImprint = useTierFromImprint(userId);
+
+  // ── Plan level. The Read is free; the Loop is paid. Loading and errors both
+  // resolve to `loop`, so nobody is ever locked out by a slow query.
+  const { isLoop } = useTier();
+  const { data: signalsToday } = useQuery({
+    queryKey: ["signals-moved-today"],
+    enabled: !isLoop,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 86400000).toISOString();
+      const { count, error } = await supabase
+        .from("industry_trends")
+        .select("id", { count: "exact", head: true })
+        .gte("fetched_at", since);
+      if (error) return null;
+      return count ?? null;
+    },
+  });
   const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const [tierCeremonyOpen, setTierCeremonyOpen] = useState(false);
   useEffect(() => {
