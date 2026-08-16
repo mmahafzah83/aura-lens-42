@@ -31,7 +31,7 @@ const readParam = (key: string) => {
    gate, forced sign-out after a password change.
    ──────────────────────────────────────────────────────────────── */
 
-type View = "signin" | "signup" | "verify" | "sent" | "newPassword";
+type View = "signin" | "signup" | "existing" | "verify" | "sent" | "newPassword";
 
 const Auth = () => {
   const [email, setEmail] = useState(() => readParam("email"));
@@ -207,13 +207,16 @@ const Auth = () => {
           consent_version: CONSENT_VERSION,
         },
       });
-      const msg = (data as any)?.error || (error as any)?.message;
+      const result = data as { ok?: boolean; existing?: boolean; code?: string; error?: string } | null;
+      if (result?.existing) {
+        setView("existing");
+        return;
+      }
+      const msg = result?.error || error?.message;
       if (msg) {
         const raw = String(msg);
         setSignUpError(
-          /already|registered|exists/i.test(raw)
-            ? "If that email can be used, we've sent a confirmation link. Already have an account? Sign in below."
-            : /rate|too many|429/i.test(raw)
+          result?.code === "signup_limit" || /rate|too many|429|as many accounts/i.test(raw)
               ? "That's a lot of attempts from here today. Write to support@aura-intel.org and it's sorted by hand."
               : /password/i.test(raw)
                 ? "Use eight characters or more."
@@ -310,6 +313,7 @@ const Auth = () => {
   const headline =
     view === "newPassword" ? <>Set your <em>password.</em></>
     : view === "signup" ? <>Start your professional <em>assessment.</em></>
+    : view === "existing" ? <>You already have an <em>account.</em></>
     : view === "verify" ? <>Confirm your <em>email.</em></>
     : view === "sent" ? <>Check your <em>email.</em></>
     : linkExpired ? <>That link <em>has expired.</em></>
@@ -318,6 +322,7 @@ const Auth = () => {
   const sub =
     view === "newPassword" ? "Eight characters or more. You'll sign in with it straight after."
     : view === "signup" ? "Free, yours to keep. About nine minutes, and you can stop and come back."
+    : view === "existing" ? <>Sign in with <b>{email}</b> to continue where you left off.</>
     : view === "verify" ? <>A confirmation link is on its way to <b>{email}</b>. Open it and the assessment begins.</>
     : view === "sent" ? <>A link is on its way to <b>{resetSentEmail}</b>. It opens once and expires in twenty-four hours.</>
     : linkExpired ? "They last twenty-four hours. Enter your email and a fresh one is on its way."
@@ -426,6 +431,22 @@ const Auth = () => {
                 <div className="au-center">
                   <button type="button" className="au-linkbtn" onClick={() => setView("signup")}>
                     Use a different email →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {view === "existing" && (
+              <div className="au-fields">
+                <div className="au-note">
+                  No new account was opened, and this attempt did not count against today's limit.
+                </div>
+                <button type="button" className="au-btn" onClick={() => setView("signin")}>
+                  Sign in <span className="au-a">↗</span>
+                </button>
+                <div className="au-center">
+                  <button type="button" className="au-linkbtn quiet" onClick={handleForgotPassword} disabled={resetting}>
+                    {resetting ? "Sending…" : "Set or reset your password →"}
                   </button>
                 </div>
               </div>

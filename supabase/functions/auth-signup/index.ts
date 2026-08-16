@@ -30,6 +30,24 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // GoTrue deliberately disguises an existing email as a successful sign-up.
+    // Detect it here so retries do not consume the per-IP new-account quota and
+    // the client can show an honest route back to sign-in.
+    let existing = false;
+    for (let page = 1; page <= 10 && !existing; page += 1) {
+      const { data: usersPage, error: usersError } = await admin.auth.admin.listUsers({
+        page,
+        perPage: 1000,
+      });
+      if (usersError) {
+        console.error("existing-account lookup failed", usersError);
+        return json({ ok: false, code: "temporarily_unavailable", error: "Account lookup failed. Try again." });
+      }
+      existing = usersPage.users.some((user) => user.email?.toLowerCase() === addr);
+      if (usersPage.users.length < 1000) break;
+    }
+    if (existing) return json({ ok: true, existing: true });
+
     const ip_hash = await hashIp(clientIp(req));
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { count } = await admin
@@ -39,10 +57,15 @@ serve(async (req) => {
       .gte("created_at", since);
 
     if ((count ?? 0) >= LIMITS.SIGNUPS_PER_IP_PER_DAY) {
+      // This is an expected product state, not a crashed function. Keeping the
+      // HTTP response successful prevents the client runtime from treating the
+      // limit as an uncaught Edge Function error while preserving the block.
       return json({
+        ok: false,
+        code: "signup_limit",
         error:
           "That is as many accounts as can be opened from here today. Write to support@aura-intel.org and it is sorted by hand.",
-      }, 429);
+      });
     }
 
     const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
@@ -72,7 +95,7 @@ serve(async (req) => {
       if (profileError) console.error("consent record failed", profileError);
     }
 
-    return json({ ok: true });
+    return json({ ok: true, existing: false });
   } catch (e) {
     return json({ error: (e as Error)?.message || "Something went wrong. Try again." }, 500);
   }
