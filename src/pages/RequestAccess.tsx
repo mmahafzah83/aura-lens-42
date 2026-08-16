@@ -493,6 +493,9 @@ const RA_CSS = `
 @keyframes ra-pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
 .ra-legal{font-size:11.5px;color:var(--n400);text-align:center;margin-top:14px;line-height:1.6;}
 .ra-legal a{color:var(--act);}
+.ra-price{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;margin-top:4px;}
+.ra-price-n{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--n900);}
+.ra-price-s{font-size:12.5px;color:var(--n500);line-height:1.5;}
 .ra-signin{text-align:center;margin-top:22px;padding-top:20px;border-top:1px solid var(--n200);
   font-size:14.5px;color:var(--n500);}
 .ra-signin a{color:var(--act);font-weight:600;}
