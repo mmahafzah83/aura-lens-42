@@ -162,7 +162,8 @@ const RevealCard = forwardRef<
       fontFamily: OB.ui,
       display: "flex",
       flexDirection: "column",
-      justifyContent: "space-between",
+      justifyContent: "flex-start",
+      gap: 44,
       overflow: "hidden",
     }}
   >
@@ -188,9 +189,9 @@ const RevealCard = forwardRef<
     ) : null}
     </div>
 
-    {/* The middle group: freed space spreads between groups, never pools. */}
+    {/* One rhythm: 44px between groups, so slack never pools mid-card. */}
     <div style={{
-      display: "flex", flexDirection: "column", gap: 40,
+      display: "flex", flexDirection: "column", gap: 44,
     }}>
       {data.subjects.length > 0 ? (
         <div>
@@ -229,7 +230,7 @@ const RevealCard = forwardRef<
       ) : null}
     </div>
 
-    <div>
+    <div style={{ marginTop: "auto" }}>
       {data.figures.length > 0 ? (
         <div style={{ display: "flex", gap: 56 }}>
           {data.figures.slice(0, 3).map((f) => (
@@ -244,7 +245,7 @@ const RevealCard = forwardRef<
       )}
 
     <div style={{
-      marginTop: 40, paddingTop: 34,
+      marginTop: 44, paddingTop: 34,
       borderTop: "1px solid rgba(255,255,255,0.28)",
       display: "flex", alignItems: "center", gap: 16,
     }}>
