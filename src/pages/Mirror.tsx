@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import RevealCard, { shareRevealCard, type RevealData } from "@/components/onboarding/RevealCard";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
-import { SEAT_CTA } from "@/lib/seatCopy";
+import { SEAT_CTA, SEAT_PATH } from "@/lib/seatCopy";
 
 /* ── System-B surface ───────────────────────────────────────────── */
 const CANVAS = "#F2F5F9";
@@ -157,6 +157,9 @@ export default function Mirror() {
 
   const [result, setResult] = useState<MirrorResponse | null>(null);
   const [lineIndex, setLineIndex] = useState(0);
+  const [showCancel, setShowCancel] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const autoRan = useRef(false);
 
   const exportRef = useRef<HTMLDivElement>(null);
   const [shareNote, setShareNote] = useState<string>();
@@ -171,21 +174,32 @@ export default function Mirror() {
   const [listDone, setListDone] = useState<{ position?: number; duplicate?: boolean } | null>(null);
 
   useEffect(() => {
-    document.title = "Read me — Aura";
-    const q = new URLSearchParams(window.location.search).get("ref") ?? "";
-    setRef(q.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60));
-    // Prefill only — the person still presses the button.
-    const prefill = new URLSearchParams(window.location.search).get("url");
-    if (prefill) setProfileUrl(prefill.trim().slice(0, 300));
+    document.title = "Show me — Aura";
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("ref") ?? "";
+    const cleanRef = q.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60);
+    setRef(cleanRef);
+    // One URL, one place: a valid address in the link starts the read at once.
+    const prefill = params.get("url")?.trim().slice(0, 300);
+    if (prefill) {
+      setProfileUrl(prefill);
+      if (!autoRan.current && prefill.toLowerCase().includes("linkedin.com/in/")) {
+        autoRan.current = true;
+        void submit(prefill, cleanRef);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // The reading copy advances on its own and holds on the last line.
   useEffect(() => {
     if (stage !== "reading") return;
     setLineIndex(0);
+    setShowCancel(false);
     const timers = READING_DELAYS.slice(1).map((delay, i) =>
       window.setTimeout(() => setLineIndex(i + 1), delay),
     );
+    timers.push(window.setTimeout(() => setShowCancel(true), 10_000));
     return () => timers.forEach(window.clearTimeout);
   }, [stage]);
 
@@ -195,23 +209,27 @@ export default function Mirror() {
     setStage("ask");
   };
 
-  const submit = async () => {
+  const submit = async (urlArg?: string, refArg?: string) => {
+    const target = (urlArg ?? profileUrl).trim();
     setFormError(undefined);
     setShowRateHelp(false);
     let bad = false;
-    if (!profileUrl.toLowerCase().includes("linkedin.com/in/")) {
+    if (!target.toLowerCase().includes("linkedin.com/in/")) {
       setUrlError(ERROR_COPY.invalid_url); bad = true;
     } else setUrlError(undefined);
     if (bad) return;
 
     setStage("reading");
+    const controller = new AbortController();
+    abortRef.current = controller;
     try {
       const base = import.meta.env.VITE_SUPABASE_URL;
       const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const res = await fetch(`${base}/functions/v1/mirror-read`, {
         method: "POST",
+        signal: controller.signal,
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ profile_url: profileUrl.trim(), ref: ref || undefined }),
+        body: JSON.stringify({ profile_url: target, ref: (refArg ?? ref) || undefined }),
       });
       const data: MirrorResponse = await res.json().catch(() => ({} as MirrorResponse));
       if (!res.ok || !data.ok || !data.read) {
@@ -221,9 +239,27 @@ export default function Mirror() {
       setResult(data);
       setListName(data.name ?? "");
       setStage("read");
-    } catch {
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") return;
       failBack("network");
     }
+  };
+
+  const cancelRead = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setStage("ask");
+  };
+
+  const startOver = () => {
+    setResult(null);
+    setProfileUrl("");
+    setSentOk(false);
+    setSendEmail("");
+    setShareNote(undefined);
+    setListOpen(false);
+    setListDone(null);
+    setStage("ask");
   };
 
   const SEND_ERROR: Record<string, string> = {
@@ -338,6 +374,16 @@ export default function Mirror() {
               }}>{l}</p>
             ))}
           </div>
+          {showCancel ? (
+            <button
+              onClick={cancelRead}
+              style={{
+                marginBlockStart: 26, background: "none", border: "none", padding: 0,
+                color: "rgba(255,255,255,0.62)", fontFamily: UI, fontSize: 13.5,
+                textDecoration: "underline", cursor: "pointer",
+              }}
+            >Cancel</button>
+          ) : null}
         </div>
       </main>
     );
@@ -361,6 +407,14 @@ export default function Mirror() {
 
         <div style={{ maxInlineSize: 560, marginInline: "auto", padding: "24px 16px 0",
           display: "flex", flexDirection: "column", gap: 14 }}>
+
+          <button
+            onClick={startOver}
+            style={{
+              alignSelf: "flex-start", background: "none", border: "none", padding: 0,
+              color: INK2, fontFamily: UI, fontSize: 13.5, cursor: "pointer",
+            }}
+          >← Read someone else</button>
 
           <RevealCard data={cardData} emptyFiguresLine={read.uncontested_space ?? ""} />
 
@@ -461,12 +515,31 @@ export default function Mirror() {
         <section style={{ background: INK, color: "#FFFFFF", marginBlockStart: 24, padding: "34px 16px 44px" }}>
           <div style={{ maxInlineSize: 560, marginInline: "auto" }}>
             <p style={{ margin: 0, fontSize: 20, fontWeight: 700, lineHeight: 1.35 }}>
-              This is what the world can see. Aura's members get the read on what only they can see.
+              This is only what the world can see.
+            </p>
+            <p style={{ margin: "12px 0 0", fontSize: 15, lineHeight: 1.65, color: "rgba(255,255,255,0.86)" }}>
+              Nine more minutes — your CV, your own answers, and a capability map — and you will see
+              what your profile is not saying about you. Free, and yours to keep.
             </p>
 
             {!listOpen ? (
               <div style={{ marginBlockStart: 20 }}>
-                <PrimaryButton onClick={() => setListOpen(true)}>{SEAT_CTA}</PrimaryButton>
+                <a
+                  href="/auth?intent=assessment"
+                  className="mr-btn"
+                  style={{
+                    display: "block", textAlign: "center", inlineSize: "100%",
+                    padding: "14px 18px", borderRadius: 8, background: BLUE, color: "#FFFFFF",
+                    fontFamily: UI, fontSize: 15, fontWeight: 700, textDecoration: "none",
+                    boxSizing: "border-box",
+                  }}
+                >Get my full report — free</a>
+                <p style={{ margin: "14px 0 0", fontSize: 13, lineHeight: 1.6, color: "#8E99A6" }}>
+                  Already sure?{" "}
+                  <a href={SEAT_PATH} style={{ color: "#8E99A6", textDecoration: "underline" }}>
+                    See the founding seat
+                  </a>
+                </p>
               </div>
             ) : listDone ? (
               <div style={{
@@ -558,7 +631,9 @@ export default function Mirror() {
             {fieldError(urlError)}
           </div>
           <div>
-            <PrimaryButton onClick={submit}>Read me</PrimaryButton>
+            <PrimaryButton onClick={() => { void submit(); }}>
+              {formError ? "Try again" : "Show me"}
+            </PrimaryButton>
             <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: INK2 }}>
               No account, no sign-up. Ninety seconds.
             </p>
