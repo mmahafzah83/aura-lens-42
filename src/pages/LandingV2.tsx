@@ -359,17 +359,17 @@ const LANDING_V2_HTML = `
         <text x="300" y="152" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.3" fill="#00807B">SEE YOURSELF</text>
         <text x="300" y="166" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" font-weight="600" fill="#0A5F5C">Your understanding</text>
 
-        <rect x="380" y="282" width="112" height="36" rx="10" fill="#E7F1FB"/>
-        <text x="436" y="297" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.3" fill="#0984E3">NOTHING LOST</text>
-        <text x="436" y="311" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" font-weight="600" fill="#04477C">Your knowledge, kept</text>
+        <rect x="382" y="282" width="110" height="36" rx="10" fill="#E7F1FB"/>
+        <text x="437" y="297" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.3" fill="#0984E3">NOTHING LOST</text>
+        <text x="437" y="311" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#04477C">Your knowledge, kept</text>
 
         <rect x="188" y="419" width="124" height="36" rx="10" fill="#E7F1FB"/>
         <text x="250" y="434" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.3" fill="#0670C4">IT COMPOSES</text>
         <text x="250" y="448" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" font-weight="600" fill="#04477C">Your content, written</text>
 
-        <rect x="134" y="198" width="122" height="36" rx="10" fill="#DCE6F0"/>
-        <text x="195" y="213" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.3" fill="#04477C">YOU ARE SEEN</text>
-        <text x="195" y="227" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" font-weight="600" fill="#0F1519">Your standing, measured</text>
+        <rect x="134" y="198" width="120" height="36" rx="10" fill="#DCE6F0"/>
+        <text x="194" y="213" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.3" fill="#04477C">YOU ARE SEEN</text>
+        <text x="194" y="227" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#0F1519">Your standing, measured</text>
 
         <circle cx="300" cy="300" r="78" fill="#0F1519"/>
         <text x="300" y="292" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="40" font-weight="600" fill="#FFFFFF">85</text>
