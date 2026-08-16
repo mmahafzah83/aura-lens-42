@@ -577,10 +577,7 @@ const Auth = () => {
               </div>
             )}
 
-            <p className="au-foot">
-              No seat yet? <Link to="/request-access">{SEAT_CTA} →</Link>
-            </p>
-            <p className="au-legal">
+            <p className="au-legal au-legal-top">
               <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> ·{" "}
               <Link to="/trust">Security</Link> ·{" "}
               <a href="mailto:support@aura-intel.org">Support</a>
@@ -591,6 +588,36 @@ const Auth = () => {
         {/* ── RIGHT · the instrument ── */}
         <div className="au-night" aria-hidden="true">
           <div className="au-stars" />
+          {isAssessment ? (
+            <div className="au-nwrap">
+              <p className="au-neyebrow">What you get, in nine minutes</p>
+              <h2 className="au-nh">Your position, <em>in evidence.</em></h2>
+
+              <div className="au-card">
+                <div className="au-ctop"><span>How the market reads you</span></div>
+                <p className="au-arch">The Delivery Realist</p>
+                <ul className="au-bars">
+                  <li>
+                    <span className="au-blab">Proven</span>
+                    <span className="au-btrack"><i className="au-bfill cy" style={{ width: "85%" }} /></span>
+                  </li>
+                  <li>
+                    <span className="au-blab">Real but invisible</span>
+                    <span className="au-btrack"><i className="au-bfill bl" style={{ width: "55%" }} /></span>
+                  </li>
+                  <li>
+                    <span className="au-blab">Not visible yet</span>
+                    <span className="au-btrack"><i className="au-bfill gy" style={{ width: "25%" }} /></span>
+                  </li>
+                </ul>
+                <div className="au-ctop au-cmid"><span>The space nobody has claimed</span></div>
+                <p className="au-claim">The ground your field keeps circling and no one has put their name to yet.</p>
+              </div>
+
+              <p className="au-illus">Illustrative — yours is built from your own evidence</p>
+              <p className="au-ar" dir="rtl">حتى السوق يعرفك قبل ما يشوفك ✦</p>
+            </div>
+          ) : (
           <div className="au-nwrap">
             <p className="au-neyebrow">While you were away</p>
             <h2 className="au-nh">The night shift <em>doesn't take nights off.</em></h2>
@@ -611,7 +638,8 @@ const Auth = () => {
             <p className="au-illus">Illustrative — your own log is waiting inside</p>
             <p className="au-ar" dir="rtl">حتى السوق يعرفك قبل ما يشوفك ✦</p>
           </div>
-          <p className="au-nfoot">Founding circle · 2026</p>
+          )}
+          {!isAssessment && <p className="au-nfoot">Founding circle · 2026</p>}
         </div>
       </div>
     </div>
