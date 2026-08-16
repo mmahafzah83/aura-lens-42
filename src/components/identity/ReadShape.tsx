@@ -6,7 +6,7 @@
  */
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary } from "@/components/systemb/Button";
 import { useTier } from "@/hooks/useTier";
 import {
