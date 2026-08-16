@@ -56,6 +56,12 @@ import WidgetsPage from "@/components/widgets/WidgetsPage";
 import StudioPanel from "@/components/studio/StudioPanel";
 import { NAV_GROUPS, groupForTab, isGroupActive, isGroupDimmed } from "@/components/nav/navGroups";
 import SubTabs from "@/components/nav/SubTabs";
+import ReadTierHome from "@/components/home/ReadTierHome";
+
+/** The seven tabs a read-tier member can see but not use yet. */
+const LOOP_TABS = new Set([
+  "intelligence", "authority", "influence", "library", "momentum", "overnight", "widgets",
+]);
 import type { Database } from "@/integrations/supabase/types";
 import LockedPanel from "@/components/LockedPanel";
 import { useTier } from "@/hooks/useTier";
