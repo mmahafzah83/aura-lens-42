@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,17 +26,28 @@ serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userErr } = await userClient.auth.getUser(token);
-    if (userErr || !userData?.user?.email) {
+    const token = authHeader.replace("Bearer ", "").trim();
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    const claims = claimsData?.claims as Record<string, unknown> | undefined;
+    const userId = claims?.sub as string | undefined;
+    if (claimsErr || !userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const email = userData.user.email.toLowerCase();
-    const userId = userData.user.id;
     const admin = createClient(supabaseUrl, serviceKey);
+
+    let email = (claims?.email as string | undefined)?.toLowerCase();
+    if (!email) {
+      const { data: adminUser } = await admin.auth.admin.getUserById(userId);
+      email = adminUser?.user?.email?.toLowerCase();
+    }
+    if (!email) {
+      return new Response(JSON.stringify({ ok: true, updated: false, reason: "no_email" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: row } = await admin
       .from("beta_allowlist")
