@@ -336,70 +336,79 @@ const LANDING_V2_HTML = `
     <div class="loopwrap">
       <div class="jring">
       <svg viewBox="-120 -24 840 664" fill="none" role="img" aria-label="The nine-step Aura journey, running clockwise from step one. Step one, your assessment, is free. Then: capture what you read, organise it, evidence in fragments, your field's trends, tuned to your voice, the draft by dawn, you publish, and the outcome — your standing moves.">
-        <defs>
-          <linearGradient id="jarc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0670C4"/><stop offset="1" stop-color="#04477C"/></linearGradient>
-        </defs>
         <circle cx="300" cy="300" r="200" stroke="#E2E7EE" stroke-width="1" stroke-dasharray="2 5" fill="none"/>
 
-        <path d="M248.24 106.82 A200 200 0 0 1 351.76 106.82" stroke="#00CEC9" stroke-width="6" stroke-linecap="round" fill="none"/>
-        <path d="M384.52 118.74 A200 200 0 0 1 441.42 441.42" stroke="url(#jarc)" stroke-width="6" stroke-linecap="round" fill="none"/>
-        <path d="M414.72 463.83 A200 200 0 0 1 106.82 351.76" stroke="url(#jarc)" stroke-width="6" stroke-linecap="round" fill="none"/>
-        <path d="M100.76 317.43 A200 200 0 0 1 248.24 106.82" stroke="url(#jarc)" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <path d="M248.24 106.82 A200 200 0 0 1 351.76 106.82" stroke="#00CEC9" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <path d="M384.52 118.74 A200 200 0 0 1 441.42 441.42" stroke="#0984E3" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <path d="M414.72 463.83 A200 200 0 0 1 106.82 351.76" stroke="#0670C4" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <path d="M100.76 317.43 A200 200 0 0 1 248.24 106.82" stroke="#04477C" stroke-width="7" stroke-linecap="round" fill="none"/>
 
-        <text x="300" y="164" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.4" fill="#00807B">SEE YOURSELF</text>
-        <text x="437.9" y="275.7" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.4" fill="#0670C4">NOTHING LOST</text>
-        <text x="252.1" y="435.6" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.4" fill="#0670C4">IT COMPOSES</text>
-        <text x="185.3" y="223.7" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.4" fill="#0670C4">YOU ARE SEEN</text>
-        <circle cx="300" cy="300" r="86" fill="#0F1519"/>
+        <rect x="238" y="137" width="124" height="36" rx="10" fill="#E3F7F6"/>
+        <text x="300" y="152" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.3" fill="#00807B">SEE YOURSELF</text>
+        <text x="300" y="166" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" font-weight="600" fill="#0A5F5C">Your understanding</text>
+
+        <rect x="379" y="257" width="112" height="36" rx="10" fill="#E7F1FB"/>
+        <text x="435" y="272" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.3" fill="#0984E3">NOTHING LOST</text>
+        <text x="435" y="286" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" font-weight="600" fill="#04477C">Your knowledge, kept</text>
+
+        <rect x="188" y="419" width="124" height="36" rx="10" fill="#E7F1FB"/>
+        <text x="250" y="434" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.3" fill="#0670C4">IT COMPOSES</text>
+        <text x="250" y="448" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" font-weight="600" fill="#04477C">Your content, written</text>
+
+        <rect x="132" y="198" width="122" height="36" rx="10" fill="#DCE6F0"/>
+        <text x="193" y="213" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.3" fill="#04477C">YOU ARE SEEN</text>
+        <text x="193" y="227" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" font-weight="600" fill="#0F1519">Your standing, measured</text>
+
+        <circle cx="300" cy="300" r="78" fill="#0F1519"/>
         <text x="300" y="292" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="40" font-weight="600" fill="#FFFFFF">85</text>
-        <text x="300" y="314" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.6" fill="#00CEC9">YOUR PRESENCE</text>
+        <text x="300" y="314" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.6" fill="#00CEC9">YOUR STANDING</text>
         <text x="300" y="332" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="#8E99A6">step 9 feeds this</text>
 
         <text x="300" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.7" fill="#00807B">▼ YOU START HERE · FREE</text>
 
-        <a href="/auth?intent=assessment" aria-label="Start step one — your free assessment">
+        <a href="/assessment" aria-label="Start step one — your free assessment">
           <circle cx="300" cy="100" r="15" fill="#FFFFFF" stroke="#00CEC9" stroke-width="2.5"/>
           <text x="300" y="104.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#00807B">1</text>
           <text x="300" y="52" text-anchor="middle" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Your assessment</text>
         </a>
 
-        <circle cx="428.56" cy="146.8" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
-        <text x="428.56" y="151" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">2</text>
+        <circle cx="428.56" cy="146.8" r="13" fill="#FFFFFF" stroke="#9FCBEC"/>
+        <text x="428.56" y="151" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0984E3">2</text>
         <text x="454.28" y="116.16" text-anchor="start" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Capture what you read</text>
         <text x="454.28" y="132.16" text-anchor="start" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">one tap</text>
 
-        <circle cx="496.96" cy="265.28" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
-        <text x="496.96" y="269.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">3</text>
+        <circle cx="496.96" cy="265.28" r="13" fill="#FFFFFF" stroke="#9FCBEC"/>
+        <text x="496.96" y="269.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0984E3">3</text>
         <text x="536.35" y="258.34" text-anchor="start" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Organise it</text>
         <text x="536.35" y="274.34" text-anchor="start" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">nothing lost</text>
 
-        <circle cx="473.21" cy="400" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
-        <text x="473.21" y="404.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">4</text>
+        <circle cx="473.21" cy="400" r="13" fill="#FFFFFF" stroke="#9FCBEC"/>
+        <text x="473.21" y="404.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0984E3">4</text>
         <text x="507.85" y="420" text-anchor="start" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Evidence, in fragments</text>
         <text x="507.85" y="436" text-anchor="start" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">usable in November</text>
 
-        <circle cx="368.4" cy="487.94" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <circle cx="368.4" cy="487.94" r="13" fill="#FFFFFF" stroke="#7FB2DC"/>
         <text x="368.4" y="492.14" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">5</text>
         <text x="382.08" y="525.53" text-anchor="start" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Your field's trends</text>
         <text x="382.08" y="541.53" text-anchor="start" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">matched to you</text>
 
-        <circle cx="231.6" cy="487.94" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <circle cx="231.6" cy="487.94" r="13" fill="#FFFFFF" stroke="#7FB2DC"/>
         <text x="231.6" y="492.14" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">6</text>
         <text x="217.92" y="525.53" text-anchor="end" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Tuned to your voice</text>
         <text x="217.92" y="541.53" text-anchor="end" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">learned, not guessed</text>
 
-        <circle cx="126.79" cy="400" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
+        <circle cx="126.79" cy="400" r="13" fill="#FFFFFF" stroke="#7FB2DC"/>
         <text x="126.79" y="404.2" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">7</text>
         <text x="92.15" y="420" text-anchor="end" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">The draft</text>
         <text x="92.15" y="436" text-anchor="end" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">by dawn</text>
 
-        <circle cx="103.04" cy="265.28" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
-        <text x="103.04" y="269.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">8</text>
+        <circle cx="103.04" cy="265.28" r="13" fill="#FFFFFF" stroke="#5C87AF"/>
+        <text x="103.04" y="269.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#04477C">8</text>
         <text x="63.65" y="258.34" text-anchor="end" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">You publish</text>
         <text x="63.65" y="274.34" text-anchor="end" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">one click</text>
 
-        <circle cx="171.44" cy="146.8" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
-        <text x="171.44" y="151" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">9</text>
+        <circle cx="171.44" cy="146.8" r="13" fill="#FFFFFF" stroke="#5C87AF"/>
+        <text x="171.44" y="151" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#04477C">9</text>
         <text x="145.72" y="116.16" text-anchor="end" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">The outcome</text>
         <text x="145.72" y="132.16" text-anchor="end" font-family="Inter, sans-serif" font-size="10.5" fill="#66707D">your standing moves</text>
       </svg>
