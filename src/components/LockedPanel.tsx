@@ -9,6 +9,8 @@ import { ButtonPrimary } from "@/components/systemb/Button";
  * even when the content is withheld. Nothing here is a screenshot or a mock.
  */
 export interface LockedPanelProps {
+  /** When false the real surface renders untouched — no wrapper, no overlay. */
+  locked?: boolean;
   title: string;
   line: string;
   count?: number | null;
@@ -16,7 +18,7 @@ export interface LockedPanelProps {
   children: React.ReactNode;
 }
 
-const LockedPanel: React.FC<LockedPanelProps> = ({ title, line, count, countLabel, children }) => {
+const LockedPanel: React.FC<LockedPanelProps> = ({ locked = true, title, line, count, countLabel, children }) => {
   const navigate = useNavigate();
   const veiled = useRef<HTMLDivElement | null>(null);
 
@@ -25,10 +27,12 @@ const LockedPanel: React.FC<LockedPanelProps> = ({ title, line, count, countLabe
   useEffect(() => {
     const el = veiled.current;
     if (!el) return;
-    if ("inert" in HTMLElement.prototype) (el as any).inert = true;
-  }, []);
+    if ("inert" in HTMLElement.prototype) (el as any).inert = locked;
+  }, [locked]);
 
   const showCount = typeof count === "number" && count > 0 && !!countLabel;
+
+  if (!locked) return <>{children}</>;
 
   return (
     <div style={{ position: "relative" }}>
