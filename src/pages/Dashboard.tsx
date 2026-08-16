@@ -1014,6 +1014,7 @@ const Dashboard = () => {
                 options={g.members.map((m) => ({
                   value: m,
                   label: NAV_ITEMS.find((n) => n.value === m)?.pageHeader ?? m,
+                  dot: !isLoop && LOOP_TABS.has(m) ? "#E0A82E" : undefined,
                 }))}
               />
             );
@@ -1029,6 +1030,11 @@ const Dashboard = () => {
             style={activeTab === "authority" ? undefined : { minHeight: "60vh" }}
           >
             {activeTab === "home" && (
+              !isLoop ? (
+                <ErrorBoundary>
+                  <ReadTierHome onSwitchTab={(t) => switchTab(t as TabValue)} />
+                </ErrorBoundary>
+              ) : (
               <div className="animate-tab-spring aura-page">
                 <LinkedInNudge userId={userId} />
                 <FirstLoginWelcome
@@ -1065,7 +1071,7 @@ const Dashboard = () => {
                   />
                 </ErrorBoundary>
               </div>
-            )}
+              ))}
 
             {activeTab === "identity" && (
               <div className="animate-tab-spring aura-page">
