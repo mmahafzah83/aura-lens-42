@@ -35,6 +35,8 @@ import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import TierExplainer from "@/components/ui/TierExplainer";
 import { TIER_COPY } from "@/constants/tierCopy";
+import ReadShape from "@/components/identity/ReadShape";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import {
   applyPublishedFilter,
   applyCatalogFilter,
@@ -1391,6 +1393,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           data={marketShareData}
         />
       )}
+
+      <ErrorBoundary>
+        <ReadShape />
+      </ErrorBoundary>
     </div>
   );
 };
