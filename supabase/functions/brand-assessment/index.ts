@@ -92,6 +92,9 @@ serve(withObserve("brand-assessment", async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
+    // Claim the run now that the evidence floor is met and the spend is about to happen.
+    await admin.from("instrument_runs").insert({ user_id: uid, kind: "assessment" });
+
     const callAnthropic = async (promptOverride?: string) => {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 110000);
