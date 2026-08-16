@@ -196,7 +196,8 @@ const LANDING_V2_CSS = `
 .aura-v2 .rung h3{font-size:20px;font-weight:700;letter-spacing:-.024em;line-height:1.2;margin-top:14px;max-width:15ch}
 .aura-v2 .rung .one{font-size:13.5px;color:var(--ink3);line-height:1.6;margin-top:10px}
 .aura-v2 .rung.night .one{color:#A7B0BC}
-.aura-v2 .rung .prc{display:flex;align-items:baseline;gap:9px;margin-top:18px}
+.aura-v2 .rung .prc{display:flex;align-items:baseline;gap:9px;margin-top:18px;flex-wrap:wrap}
+.aura-v2 .rung.night .prc .p{font-size:24px}
 .aura-v2 .rung .prc .p{font-family:var(--mono);font-size:30px;font-weight:600;letter-spacing:-.03em}
 .aura-v2 .rung .prc .u{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--ink4)}
 .aura-v2 .rung .pn{font-size:12.5px;color:var(--ink3);line-height:1.55;margin-top:7px}
