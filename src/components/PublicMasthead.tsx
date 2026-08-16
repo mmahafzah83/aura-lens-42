@@ -1,13 +1,28 @@
 import { Link } from "react-router-dom";
 import AuraLogo from "@/components/brand/AuraLogo";
-import { SEAT_CTA } from "@/lib/seatCopy";
+
+export type MastheadCta = { label: string; href: string; variant: "primary" | "quiet" };
+
+/** The default door: the free assessment, never the paid seat. */
+export const DEFAULT_MASTHEAD_CTA: MastheadCta = {
+  label: "Start free",
+  href: "/assessment",
+  variant: "primary",
+};
 
 /**
  * Canonical masthead for every public page (legal, story, guide).
  * System-B: light surface, dark ink, blue for the one action.
  * Scoped under .pm so nothing leaks into the app shell.
  */
-const PublicMasthead = ({ authed = false }: { authed?: boolean }) => (
+const PublicMasthead = ({
+  authed = false,
+  cta = DEFAULT_MASTHEAD_CTA,
+}: {
+  authed?: boolean;
+  /** Pass null on single-action pages (the Gate) so nothing competes with the page's own action. */
+  cta?: MastheadCta | null;
+}) => (
   <>
     <style>{PM_CSS}</style>
     <header className="pm">
@@ -23,9 +38,16 @@ const PublicMasthead = ({ authed = false }: { authed?: boolean }) => (
         ) : (
           <>
             <Link className="pm-link" to="/auth">Sign in</Link>
-            <Link className="pm-cta" to="/request-access">
-              {SEAT_CTA} <span className="pm-a">↗</span>
-            </Link>
+            {cta &&
+              (cta.variant === "primary" ? (
+                <Link className="pm-cta" to={cta.href}>
+                  {cta.label} <span className="pm-a">↗</span>
+                </Link>
+              ) : (
+                <Link className="pm-link" to={cta.href}>
+                  {cta.label}
+                </Link>
+              ))}
           </>
         )}
       </nav>

@@ -335,7 +335,10 @@ const Auth = () => {
             <Link className="au-brandrow" to="/">
               <AuraLogo size={30} variant="auto" />
               <span className="au-bn">Aura</span>
-              <span className="au-bsub">{PRODUCT_DESCRIPTOR}</span>
+              <span className="au-bsub">
+                <span className="au-bsub-l">{PRODUCT_DESCRIPTOR.split(" ").slice(0, 2).join(" ")}</span>
+                <span className="au-bsub-l">{PRODUCT_DESCRIPTOR.split(" ").slice(2).join(" ")}</span>
+              </span>
             </Link>
 
             <h1 className="au-h1">{headline}</h1>
@@ -679,7 +682,8 @@ const AU_CSS = `
 /* Two lines, never four: "AI PROFESSIONAL" / "IDENTITY PLATFORM", centred on the wordmark. */
 .au-bsub{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
   color:var(--n400);padding-left:11px;border-left:1px solid var(--n200);line-height:1.25;
-  width:124px;max-width:124px;align-self:center;}
+  width:128px;max-width:128px;align-self:center;display:flex;flex-direction:column;}
+.au-bsub-l{display:block;white-space:nowrap;}
 .au-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(0,128,123,.28);
   background:rgba(0,206,201,.07);border-radius:999px;padding:7px 13px;margin-bottom:22px;
   font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--cy-t);}
