@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
-import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_LIST_PRICE } from "@/lib/seatCopy";
+import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_LIST_PRICE, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_PROMISE, SEAT_SOLD_OUT_NOTE, waveFrom } from "@/lib/seatCopy";
 
 /* ────────────────────────────────────────────────────────────────
    LandingV2 — six tabbed pages, one at a time.
@@ -55,8 +55,6 @@ const LANDING_V2_CSS = `
 .aura-v2 .bg2{background:var(--white);color:var(--ink);border:1px solid var(--line2)}
 .aura-v2 .bg2:hover{border-color:var(--ink);transform:translateY(-2px)}
 .aura-v2 .acts{display:flex;gap:11px;margin-top:30px;align-items:center;flex-wrap:wrap}
-.aura-v2 .seat{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--amberT);background:var(--ambertint);padding:8px 13px;border-radius:999px}
-.aura-v2 .seatdot{width:6px;height:6px;border-radius:999px;background:var(--amber)}
 .aura-v2 .mi{font-family:var(--mono);font-size:10.5px;color:var(--ink4);letter-spacing:.07em}
 .aura-v2 .big{font-size:clamp(34px,3.8vw,46px);font-weight:700;letter-spacing:-.038em;line-height:.98}
 .aura-v2 .big.b{color:var(--blue)}.aura-v2 .big.c{color:var(--cyanT)}.aura-v2 .big.k{color:var(--ink)}.aura-v2 .big.r{color:var(--red)}
@@ -177,7 +175,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .join-in{position:relative;max-width:470px;margin:0 auto;text-align:center}
 .aura-v2 .join h2{color:#fff;margin-top:16px}
 .aura-v2 .join p{color:#A7B0BC;font-size:15.5px;line-height:1.6;margin-top:14px}
-.aura-v2 .dark .jf,.aura-v2 .dark .seatline{display:block;width:100%;max-width:none;margin-left:auto;margin-right:auto;text-align:center}
+.aura-v2 .dark .jf{display:block;width:100%;max-width:none;margin-left:auto;margin-right:auto;text-align:center}
 .aura-v2 .jf{font-family:var(--mono);font-size:10px;color:#65707E;letter-spacing:.09em;margin-top:16px;line-height:1.8}
 .aura-v2 .founder{display:flex;gap:15px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:19px;margin:18px auto 0;max-width:640px}
 .aura-v2 .fastlane{margin-top:22px;border:1px dashed var(--line2);border-radius:12px;background:#FAFCFE;padding:16px 18px;max-width:58ch}
@@ -248,6 +246,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .pips i{width:20px;height:20px;border-radius:6px;background:var(--canvas);border:1px solid var(--line);display:block}
 .aura-v2 .pips i.taken{background:linear-gradient(135deg,#0670C4,#04477C);border-color:transparent}
 .aura-v2 .pips i.next{background:transparent;border:1.6px dashed var(--amber)}
+.aura-v2 .promise{font-size:14.5px;color:var(--ink3);line-height:1.65;margin-top:12px;max-width:56ch}
 .aura-v2 .wavenote{font-size:12.5px;color:var(--ink3);line-height:1.6;margin-top:12px}
 .aura-v2 .bnight{background:var(--ink);color:#fff;display:block;text-align:center;width:100%;margin-top:18px}
 .aura-v2 .bnight:hover{background:#000}
@@ -805,6 +804,7 @@ const LANDING_V2_HTML = `
 <section class="pg" id="price">
   <div class="hdr">
     <span class="tag">Three ways in</span>
+    <p class="promise">${SEAT_PROMISE}</p>
     <h2>Seeing yourself is free.<br><span class="grad">Being seen every week is the paid part.</span></h2>
   </div>
 
@@ -858,7 +858,7 @@ const LANDING_V2_HTML = `
       <h3>Be seen every week, without writing</h3>
       <p class="one">Your identity stops being a document and starts being a weekly presence.</p>
       <div class="prc"><span class="p" style="color:#fff">${SEAT_PRICE}</span><span class="u">/MONTH · LOCKED FOR LIFE</span></div>
-      <p class="pn">Becomes ${SEAT_LIST_PRICE} when the fifty seats are gone. You keep ${SEAT_PRICE.split(" ")[0]}.</p>
+      <p class="pn" data-wave="pricenote">Becomes ${SEAT_LIST_PRICE} when the fifty seats are gone. You keep ${SEAT_PRICE.split(" ")[0]}.</p>
       <div class="blk">
         <span class="bl do">WHAT YOU DO</span>
         <ul><li>One tap on anything worth keeping</li><li>Two minutes to read and approve</li></ul>
@@ -890,7 +890,7 @@ const LANDING_V2_HTML = `
     </div>
     <div>
       <ul class="terms">
-        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>No card today. Billing does not open until Aura has published a post for someone who is not the founder. If that never happens, you are never charged.</span></li>
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>${SEAT_NO_CARD} If that never happens, you are never charged.</span></li>
         <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Your report is free either way. The seat buys the weekly loop. The assessment was always yours to keep.</span></li>
         <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Locked for as long as you stay — not twelve months, not “introductory”.</span></li>
         <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Leave and take everything. Every capture, draft and report exports. Nothing is held back.</span></li>
@@ -1194,29 +1194,34 @@ const LandingV2 = () => {
         if (!Number.isFinite(claimed) || !Number.isFinite(cap) || cap <= 0) return;
         const root = rootRef.current;
         if (!root) return;
-        const wave = Math.floor(claimed / 10) + 1;
-        const inWave = claimed % 10;
-        const leftWave = 10 - inWave;
-        const line = `Wave ${wave} · ${leftWave} left`;
-        root.querySelectorAll<HTMLElement>(".seatline").forEach((el) => { el.textContent = line; });
-        root.querySelectorAll<HTMLElement>('[data-wave="chip"],[data-wave="chip2"]').forEach((el) => {
-          el.textContent = `WAVE ${wave} · ${leftWave} LEFT`;
+        const w = waveFrom(claimed, cap || SEAT_CAP);
+        const chips = root.querySelectorAll<HTMLElement>('[data-wave="chip"],[data-wave="chip2"]');
+        const card = root.querySelector<HTMLElement>('[data-wave="card"]');
+        const priceNote = root.querySelector<HTMLElement>('[data-wave="pricenote"]');
+
+        if (!w) {
+          // The fifty are gone — no wave exists, so nothing about waves is shown.
+          chips.forEach((el) => { el.style.display = "none"; });
+          if (card) card.style.display = "none";
+          if (priceNote) priceNote.textContent = SEAT_SOLD_OUT_NOTE;
+          return;
+        }
+
+        chips.forEach((el) => {
+          el.textContent = w.chip.toUpperCase();
           el.style.display = "";
         });
-        const card = root.querySelector<HTMLElement>('[data-wave="card"]');
         if (card) card.style.display = "";
         const pips = root.querySelector<HTMLElement>('[data-wave="pips"]');
         if (pips) {
-          pips.innerHTML = Array.from({ length: 10 }, (_, i) =>
-            `<i class="${i < inWave ? "taken" : i === inWave ? "next" : ""}"></i>`,
+          pips.innerHTML = Array.from({ length: SEAT_WAVE_SIZE }, (_, i) =>
+            `<i class="${i < w.inWave ? "taken" : i === w.inWave ? "next" : ""}"></i>`,
           ).join("");
         }
         const note = root.querySelector<HTMLElement>('[data-wave="note"]');
-        if (note) {
-          note.textContent = `${inWave} of the first ten are taken. When wave one closes, wave two opens — same rate, until the fiftieth seat.`;
-        }
+        if (note) note.textContent = w.note;
       } catch {
-        /* silent — the seat line simply stays empty */
+        /* silent — the wave elements simply stay hidden */
       }
     })();
     return () => { cancelled = true; };
