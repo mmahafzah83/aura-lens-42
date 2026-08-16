@@ -362,9 +362,11 @@ const LANDING_V2_HTML = `
 
         <text x="300" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.7" fill="#00807B">▼ YOU START HERE · FREE</text>
 
-        <circle cx="300" cy="100" r="15" fill="#FFFFFF" stroke="#00CEC9" stroke-width="2.5"/>
-        <text x="300" y="104.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#00807B">1</text>
-        <text x="300" y="52" text-anchor="middle" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Your assessment</text>
+        <a href="/auth?intent=assessment" aria-label="Start step one — your free assessment">
+          <circle cx="300" cy="100" r="15" fill="#FFFFFF" stroke="#00CEC9" stroke-width="2.5"/>
+          <text x="300" y="104.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#00807B">1</text>
+          <text x="300" y="52" text-anchor="middle" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Your assessment</text>
+        </a>
 
         <circle cx="428.56" cy="146.8" r="13" fill="#FFFFFF" stroke="#D2D8E0"/>
         <text x="428.56" y="151" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#0670C4">2</text>
