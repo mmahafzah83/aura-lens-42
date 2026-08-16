@@ -188,19 +188,36 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignUpError(null);
-    if (!email.includes("@")) { setSignUpError("Enter a valid email address."); return; }
-    if (password.length < 8) { setSignUpError("Use eight characters or more."); return; }
+    setEmailError(null);
+    if (signingUp) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setEmailError("That doesn't look like an email address. Check it and try again.");
+      emailRef.current?.focus();
+      return;
+    }
+    if (password.length < 8) { setSignUpError("Use eight characters or more."); pwdRef.current?.focus(); return; }
+    if (!consent) return;
     setSigningUp(true);
     try {
       const { data, error } = await supabase.functions.invoke("auth-signup", {
-        body: { email: email.trim().toLowerCase(), password, origin: window.location.origin },
+        body: {
+          email: email.trim().toLowerCase(),
+          password,
+          origin: window.location.origin,
+          consent_version: CONSENT_VERSION,
+        },
       });
       const msg = (data as any)?.error || (error as any)?.message;
       if (msg) {
+        const raw = String(msg);
         setSignUpError(
-          /already/i.test(String(msg))
-            ? "There is already an account on that email. Sign in below."
-            : String(msg),
+          /already|registered|exists/i.test(raw)
+            ? "If that email can be used, we've sent a confirmation link. Already have an account? Sign in below."
+            : /rate|too many|429/i.test(raw)
+              ? "That's a lot of attempts from here today. Write to support@aura-intel.org and it's sorted by hand."
+              : /password/i.test(raw)
+                ? "Use eight characters or more."
+                : "Couldn't open the account just now. Try again in a moment.",
         );
         return;
       }
