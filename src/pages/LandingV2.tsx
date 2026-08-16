@@ -14,7 +14,7 @@ import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_LIST_PRICE } from "@/lib/seatCopy
 const LANDING_V2_CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
 .aura-v2{--ink:#0F1519;--ink2:#37424F;--ink3:#66707D;--ink4:#9AA4B0;--line:#E2E7EE;--line2:#D2D8E0;--white:#FFF;--canvas:#F2F5F9;--tint:#EFF4FA;--blue:#0670C4;--blue2:#04477C;--bluetint:#E7F1FB;--cyan:#00CEC9;--cyanT:#00807B;--cyantint:#E0F7F6;--amber:#E0A82E;--amberT:#9A6F12;--ambertint:#FDF3DF;--red:#C0392B;--green:#12805C;--greentint:#E4F6EC;--ui:"Inter",system-ui,sans-serif;--mono:"IBM Plex Mono",monospace;--sp:cubic-bezier(.16,1,.3,1);font-family:var(--ui);background:var(--canvas);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
-.aura-v2 .navshell{position:sticky;top:0;z-index:60;padding:16px 20px;display:flex;justify-content:center;pointer-events:none;background:linear-gradient(var(--canvas) 55%,rgba(247,249,252,0))}
+.aura-v2 .navshell{position:sticky;top:0;z-index:60;padding:16px 20px;display:flex;justify-content:center;pointer-events:none;background:linear-gradient(var(--canvas) 55%,rgba(242,245,249,0))}
 .aura-v2 .nav{pointer-events:auto;display:flex;align-items:center;gap:2px;background:var(--ink);border-radius:999px;padding:7px 7px 7px 18px;box-shadow:0 20px 46px -20px rgba(15,21,25,.55);max-width:calc(100vw - 40px)}
 .aura-v2 .brand{display:flex;align-items:center;gap:9px;margin-right:16px;text-decoration:none;cursor:pointer}
 .aura-v2 .mark{width:24px;height:24px;flex:0 0 24px;color:#fff}
@@ -290,7 +290,7 @@ const LANDING_V2_HTML = `
       <button data-p="faq">Questions</button>
     </div>
     <a class="navalt" id="navalt" href="/auth">Sign in</a>
-    <a class="navcta" id="navcta" href="/read">Read me free <span class="a">↗</span></a>
+    <a class="navcta" id="navcta" href="/read">Show me free <span class="a">↗</span></a>
   </nav>
 </div>
 
@@ -319,7 +319,7 @@ const LANDING_V2_HTML = `
     <div class="loopwrap">
       <svg viewBox="0 0 560 578" fill="none">
         <circle cx="280" cy="280" r="245" stroke="#EFF4FA" stroke-width="1.2"/>
-        <circle cx="280" cy="280" r="205" stroke="#E4E8EE" stroke-width="1.2"/>
+        <circle cx="280" cy="280" r="205" stroke="#E2E7EE" stroke-width="1.2"/>
         <circle class="dash" cx="280" cy="280" r="150" stroke="#D2D8E0" stroke-width="1.2"/>
         <defs>
           <linearGradient id="arcg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0670C4"/><stop offset="1" stop-color="#00CEC9"/></linearGradient>
@@ -327,27 +327,27 @@ const LANDING_V2_HTML = `
         <circle cx="280" cy="280" r="205" stroke="url(#arcg)" stroke-width="3" stroke-linecap="round" fill="none" stroke-dasharray="876 1288" transform="rotate(-96 280 280)"/>
         <g class="orb"><circle cx="485" cy="280" r="12" fill="#00CEC9" fill-opacity=".18"/><circle cx="485" cy="280" r="6" fill="#00CEC9"/></g>
         <path class="dash" d="M280 192 V119    M368 280 H441    M280 368 V441    M192 280 H119" stroke="#D2D8E0" stroke-width="1.2"/>
-        <circle cx="280" cy="280" r="76" fill="#0B1220"/>
+        <circle cx="280" cy="280" r="76" fill="#0F1519"/>
         <text x="280" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="36" font-weight="600" fill="#FFFFFF">85</text>
         <text x="280" y="289" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.6" fill="#00CEC9">YOUR IMPRINT</text>
         <text x="280" y="306" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" fill="#8E99A6">rises every week</text>
 
-        <circle cx="280" cy="75" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <circle cx="280" cy="75" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
         <g stroke="#0670C4" stroke-width="1.6" stroke-linecap="round"><path d="M266 68h28M266 75h28M266 82h18"/></g>
         <text class="nodeL" x="280" y="133" text-anchor="middle">1 · YOU READ</text>
         <text class="nodeS" x="280" y="149" text-anchor="middle">One tap. One second.</text>
 
-        <circle cx="485" cy="280" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <circle cx="485" cy="280" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
         <g class="pulse"><circle cx="485" cy="280" r="13" stroke="#0670C4" stroke-width="1.6" fill="none"/><circle cx="485" cy="280" r="4.5" fill="#00CEC9"/></g>
         <text class="nodeL" x="485" y="338" text-anchor="middle">2 · IT LEARNS</text>
         <text class="nodeS" x="485" y="354" text-anchor="middle">Your subjects, your voice.</text>
 
-        <circle cx="280" cy="485" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <circle cx="280" cy="485" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
         <path d="M284 471l-11 15h9l-3 12 12-16h-9z" fill="#E0A82E"/>
         <text class="nodeL" x="280" y="543" text-anchor="middle">3 · IT WRITES AT NIGHT</text>
         <text class="nodeS" x="280" y="559" text-anchor="middle">While you sleep.</text>
 
-        <circle cx="75" cy="280" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <circle cx="75" cy="280" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
         <path d="M63 280l8 9 17-19" stroke="#00807B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         <text class="nodeL" x="75" y="338" text-anchor="middle">4 · YOU APPROVE</text>
         <text class="nodeS" x="75" y="354" text-anchor="middle">One click. It is live.</text>
@@ -360,7 +360,7 @@ const LANDING_V2_HTML = `
     <div class="bene">
       <span class="step">01</span>
       <div class="viz"><svg width="120" height="90" viewBox="0 0 120 90" fill="none">
-        <circle cx="60" cy="45" r="34" stroke="#E4E8EE"/><circle cx="60" cy="45" r="22" stroke="#EFF4FA"/>
+        <circle cx="60" cy="45" r="34" stroke="#E2E7EE"/><circle cx="60" cy="45" r="22" stroke="#EFF4FA"/>
         <circle cx="60" cy="45" r="30" stroke="#E0A82E" stroke-width="1.2" stroke-dasharray="3 4"/>
         <path d="M60 11v68M26 45h68M36 21l48 48M84 21L36 69" stroke="#EFF4FA"/>
         <path d="M60 19 84 34 78 62 60 72 38 60 34 33Z" fill="#0670C4" fill-opacity=".18" stroke="#0670C4" stroke-width="1.4"/>
@@ -372,11 +372,11 @@ const LANDING_V2_HTML = `
     <div class="bene">
       <span class="step">02</span>
       <div class="viz"><svg width="150" height="90" viewBox="0 0 150 90" fill="none">
-        <rect x="2" y="26" width="34" height="42" rx="5" fill="#FFF" stroke="#E4E8EE"/>
+        <rect x="2" y="26" width="34" height="42" rx="5" fill="#FFF" stroke="#E2E7EE"/>
         <rect x="14" y="20" width="34" height="42" rx="5" fill="#FFF" stroke="#D2D8E0"/>
         <rect x="26" y="14" width="34" height="42" rx="5" fill="#FFF" stroke="#0670C4"/>
         <path class="dash" d="M64 40h22" stroke="#00CEC9" stroke-width="1.4"/>
-        <rect x="90" y="14" width="56" height="60" rx="10" fill="#0B1220"/>
+        <rect x="90" y="14" width="56" height="60" rx="10" fill="#0F1519"/>
         <g fill="#00CEC9"><circle cx="104" cy="30" r="3"/><circle cx="118" cy="30" r="3"/><circle cx="132" cy="30" r="3"/><circle class="pulse" cx="104" cy="44" r="3"/><circle cx="118" cy="44" r="3"/><circle cx="132" cy="44" r="3"/><circle cx="104" cy="58" r="3"/><circle cx="118" cy="58" r="3"/><circle cx="132" cy="58" r="3"/></g>
       </svg></div>
       <div class="big k">Nothing lost</div>
@@ -386,12 +386,12 @@ const LANDING_V2_HTML = `
     <div class="bene">
       <span class="step">03</span>
       <div class="viz"><svg width="180" height="90" viewBox="0 0 180 90" fill="none">
-        <rect x="0" y="12" width="86" height="66" rx="10" fill="#0B1220"/>
+        <rect x="0" y="12" width="86" height="66" rx="10" fill="#0F1519"/>
         <path d="M28 30a13 13 0 1 0 12 19 15 15 0 0 1-12-19Z" fill="#E0A82E"/>
         <g fill="#00CEC9"><circle cx="56" cy="28" r="1.6"/><circle cx="66" cy="38" r="1.2"/><circle cx="50" cy="45" r="1.2"/></g>
         <text x="12" y="68" font-family="IBM Plex Mono, monospace" font-size="7.5" letter-spacing="1.1" fill="#8E99A6">02:00 → DAWN</text>
         <path class="dash" d="M90 45h16" stroke="#D2D8E0" stroke-width="1.3"/>
-        <rect x="110" y="16" width="42" height="34" rx="6" fill="#FFF" stroke="#E4E8EE"/>
+        <rect x="110" y="16" width="42" height="34" rx="6" fill="#FFF" stroke="#E2E7EE"/>
         <g stroke="#D2D8E0" stroke-width="1.4" stroke-linecap="round"><path d="M118 26h26M118 32h26M118 38h16"/></g>
         <g fill="#0670C4" fill-opacity=".22"><rect x="110" y="58" width="12" height="18" rx="3"/><rect x="126" y="58" width="12" height="18" rx="3"/><rect x="142" y="58" width="12" height="18" rx="3"/></g>
       </svg></div>
@@ -433,20 +433,20 @@ const LANDING_V2_HTML = `
   <div class="eyebrow">The pipeline, end to end</div>
   <div class="wide rv">
     <svg viewBox="0 0 900 300" fill="none">
-      <rect x="222" y="18" width="440" height="176" rx="16" fill="#0B1220"/>
+      <rect x="222" y="18" width="440" height="176" rx="16" fill="#0F1519"/>
       <text x="442" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.6" fill="#00CEC9">02:00 → DAWN · YOU ARE ASLEEP</text>
 
       <rect x="10" y="58" width="196" height="106" rx="12" fill="#FFFFFF" stroke="#0670C4" stroke-width="1.4"/>
       <text x="30" y="84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.4" fill="#0670C4">STAGE 1 · YOU</text>
-      <text x="30" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0B1220">You read</text>
+      <text x="30" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0F1519">You read</text>
       <text x="30" y="134" font-family="Inter, sans-serif" font-size="12" fill="#66707D">One tap on an article</text>
       <text x="30" y="150" font-family="Inter, sans-serif" font-size="12" fill="#66707D">worth keeping.</text>
 
       <path d="M212 111h22" stroke="#D2D8E0" stroke-width="1.4"/><path d="M230 106l7 5-7 5" fill="#D2D8E0"/>
 
-      <rect x="240" y="58" width="196" height="106" rx="12" fill="#FFFFFF" stroke="#E4E8EE"/>
+      <rect x="240" y="58" width="196" height="106" rx="12" fill="#FFFFFF" stroke="#E2E7EE"/>
       <text x="260" y="84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.4" fill="#9AA4B0">STAGE 2 · AURA</text>
-      <text x="260" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0B1220">It keeps it</text>
+      <text x="260" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0F1519">It keeps it</text>
       <text x="260" y="134" font-family="Inter, sans-serif" font-size="12" fill="#66707D">Broken into pieces you</text>
       <text x="260" y="150" font-family="Inter, sans-serif" font-size="12" fill="#66707D">can use months later.</text>
 
@@ -463,7 +463,7 @@ const LANDING_V2_HTML = `
 
       <rect x="694" y="58" width="196" height="106" rx="12" fill="#FFFFFF" stroke="#0670C4" stroke-width="1.4"/>
       <text x="714" y="84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.4" fill="#0670C4">STAGE 4 · YOU</text>
-      <text x="714" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0B1220">You approve</text>
+      <text x="714" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0F1519">You approve</text>
       <text x="714" y="134" font-family="Inter, sans-serif" font-size="12" fill="#66707D">One click and it is live</text>
       <text x="714" y="150" font-family="Inter, sans-serif" font-size="12" fill="#66707D">on LinkedIn.</text>
 
@@ -526,7 +526,7 @@ const LANDING_V2_HTML = `
       <div class="pb">
         <svg viewBox="0 0 320 230" fill="none" style="width:100%;height:auto">
           <g stroke="#EFF4FA"><circle cx="160" cy="115" r="88"/><circle cx="160" cy="115" r="66"/><circle cx="160" cy="115" r="44"/><circle cx="160" cy="115" r="22"/></g>
-          <g stroke="#E4E8EE"><path d="M160 27v176M72 115h176M98 53l124 124M222 53L98 177"/></g>
+          <g stroke="#E2E7EE"><path d="M160 27v176M72 115h176M98 53l124 124M222 53L98 177"/></g>
           <path d="M160 36 226 66 240 115 214 168 160 186 104 166 84 112 106 62Z" fill="#0670C4" fill-opacity=".16" stroke="#0670C4" stroke-width="1.6"/>
           <g fill="#0670C4"><circle cx="160" cy="36" r="3"/><circle cx="226" cy="66" r="3"/><circle cx="240" cy="115" r="3"/><circle cx="214" cy="168" r="3"/><circle cx="160" cy="186" r="3"/><circle cx="104" cy="166" r="3"/><circle cx="84" cy="112" r="3"/><circle cx="106" cy="62" r="3"/></g>
           <circle cx="84" cy="112" r="7" stroke="#E0A82E" stroke-width="1.8" fill="none"/>
@@ -538,8 +538,8 @@ const LANDING_V2_HTML = `
             <text x="242" y="188" text-anchor="middle">LEADERSHIP</text>
             <text x="160" y="212" text-anchor="middle">DELIVERY</text>
             <text x="74" y="188" text-anchor="middle">COMMERCIAL</text>
-            <text x="34" y="118" text-anchor="middle" fill="#95690F">FINANCE</text>
-            <text x="70" y="46" text-anchor="middle" fill="#95690F">C-SUITE</text>
+            <text x="34" y="118" text-anchor="middle" fill="#9A6F12">FINANCE</text>
+            <text x="70" y="46" text-anchor="middle" fill="#9A6F12">C-SUITE</text>
           </g>
         </svg>
         <div style="display:flex;align-items:center;gap:9px;margin-top:12px;font-size:13px;color:#66707D">
@@ -554,7 +554,7 @@ const LANDING_V2_HTML = `
         <svg viewBox="0 0 300 118" fill="none" style="width:100%;height:auto">
           <circle cx="112" cy="59" r="52" fill="#0670C4" fill-opacity=".1" stroke="#0670C4"/>
           <circle cx="188" cy="59" r="52" fill="#00CEC9" fill-opacity=".12" stroke="#00807B"/>
-          <path d="M150 14a52 52 0 0 1 0 90 52 52 0 0 1 0-90Z" fill="#0B1220"/>
+          <path d="M150 14a52 52 0 0 1 0 90 52 52 0 0 1 0-90Z" fill="#0F1519"/>
           <text x="70" y="54" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" letter-spacing="1" fill="#0670C4">BIG PLANS</text>
           <text x="70" y="68" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="#66707D">strategy people</text>
           <text x="232" y="54" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" letter-spacing="1" fill="#00807B">REAL DELIVERY</text>
@@ -599,7 +599,7 @@ const LANDING_V2_HTML = `
       <div class="ph"><span class="t">The carousel, designed for you</span><span class="m">NO DESIGNER NEEDED</span></div>
       <div class="pb">
         <div class="slides">
-          <div class="sl" style="background:#0B1220;color:#fff">
+          <div class="sl" style="background:#0F1519;color:#fff">
             <svg class="shape" style="top:-14px;right:-14px" width="70" height="70" viewBox="0 0 70 70" fill="none"><circle cx="40" cy="30" r="26" stroke="#00CEC9" stroke-opacity=".35"/><circle cx="40" cy="30" r="16" stroke="#00CEC9" stroke-opacity=".2"/></svg>
             <span class="n">01</span><span class="t">The twin was<br><span style="color:#00CEC9">never the asset</span></span>
           </div>
@@ -607,11 +607,11 @@ const LANDING_V2_HTML = `
             <svg class="shape" style="right:10px;top:26px" width="56" height="42" viewBox="0 0 56 42" fill="none"><rect x="2" y="24" width="10" height="16" rx="2" fill="#fff" fill-opacity=".3"/><rect x="16" y="16" width="10" height="24" rx="2" fill="#fff" fill-opacity=".45"/><rect x="30" y="8" width="10" height="32" rx="2" fill="#fff" fill-opacity=".6"/><rect x="44" y="2" width="10" height="38" rx="2" fill="#fff" fill-opacity=".8"/></svg>
             <span class="n">02</span><span class="t" style="font-size:19px">85m spent<br><span style="font-size:10px;font-weight:500;opacity:.85">over 18 months</span></span>
           </div>
-          <div class="sl" style="background:#EFF4FA;border:1px solid #D2D8E0;color:#0B1220">
+          <div class="sl" style="background:#EFF4FA;border:1px solid #D2D8E0;color:#0F1519">
             <svg class="shape" style="top:10px;right:10px" width="30" height="28" viewBox="0 0 30 28" fill="none"><path d="M15 3l12 22H3z" stroke="#E0A82E" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 11v6M15 20v1.4" stroke="#E0A82E" stroke-width="1.8" stroke-linecap="round"/></svg>
             <span class="n">03</span><span class="t">Operations still<br>use the old system</span>
           </div>
-          <div class="sl" style="background:#0B1220;color:#00CEC9">
+          <div class="sl" style="background:#0F1519;color:#00CEC9">
             <svg class="shape" style="right:10px;top:26px" width="66" height="66" viewBox="0 0 66 66" fill="none"><path d="M12 46L48 14M32 14h16v16" stroke="#00CEC9" stroke-opacity=".3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span class="n">04</span><span class="t">Trust in the data<br>is the real asset</span>
           </div>
@@ -650,12 +650,12 @@ const LANDING_V2_HTML = `
       <text x="760" y="63" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="24" font-weight="600" fill="#C0392B">0</text>
       <text x="822" y="59" font-family="Inter, sans-serif" font-size="12" fill="#66707D">posts written</text>
       <text x="10" y="100" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.3" fill="#C0392B" id="dCost">= SAR 78,000 OF YOUR OWN TIME, AND NOTHING TO SHOW</text>
-      <path d="M10 122h880" stroke="#E4E8EE"/>
+      <path d="M10 122h880" stroke="#E2E7EE"/>
       <text x="10" y="152" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.5" fill="#00807B">WITH AURA</text>
       <rect x="10" y="164" width="600" height="46" rx="10" fill="url(#rise)"/>
-      <text x="30" y="193" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#0B1220" id="dHours2">the same 260 hours</text>
+      <text x="30" y="193" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#0F1519" id="dHours2">the same 260 hours</text>
       <path d="M618 187h100" stroke="#00CEC9" stroke-width="1.8"/>
-      <circle cx="760" cy="187" r="34" fill="#0B1220"/>
+      <circle cx="760" cy="187" r="34" fill="#0F1519"/>
       <text x="760" y="195" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="20" font-weight="600" fill="#00CEC9">50+</text>
       <text x="822" y="184" font-family="Inter, sans-serif" font-size="12" fill="#66707D">posts, in</text>
       <text x="822" y="200" font-family="Inter, sans-serif" font-size="12" fill="#66707D">your voice</text>
@@ -674,7 +674,7 @@ const LANDING_V2_HTML = `
   </div>
 
   <div class="g2 rv" style="margin-top:22px">
-    <div style="background:#FFF;border:1px solid #E4E8EE;border-radius:20px;padding:32px 28px">
+    <div style="background:#FFF;border:1px solid #E2E7EE;border-radius:20px;padding:32px 28px">
       <div class="viz"><svg width="230" height="80" viewBox="0 0 230 80" fill="none">
         <rect x="2" y="14" width="40" height="52" rx="6" fill="#FFF" stroke="#0670C4"/>
         <rect x="50" y="14" width="40" height="52" rx="6" fill="#FFF" stroke="#0670C4" stroke-opacity=".6"/>
@@ -764,7 +764,7 @@ const LANDING_V2_HTML = `
       <div class="viz"><svg width="180" height="80" viewBox="0 0 180 80" fill="none">
         <circle cx="26" cy="40" r="20" fill="#0670C4"/><path d="M18 40l6 7 13-15" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         <path class="dash" d="M52 40h30" stroke="#00CEC9" stroke-width="1.6"/>
-        <rect x="88" y="12" width="88" height="56" rx="9" fill="#0B1220"/>
+        <rect x="88" y="12" width="88" height="56" rx="9" fill="#0F1519"/>
         <g stroke="#00CEC9" stroke-width="1.6" stroke-linecap="round"><path d="M100 30h58M100 40h58M100 50h34"/></g>
       </svg></div>
       <div class="big b" style="font-size:28px">We learn<br>you first</div>
@@ -976,7 +976,7 @@ const LandingV2 = () => {
       else delete alt.dataset.signout;
     }
     if (cta) {
-      cta.innerHTML = `${signedIn ? "Open Aura" : "Read me free"} <span class="a">↗</span>`;
+      cta.innerHTML = `${signedIn ? "Open Aura" : "Show me free"} <span class="a">↗</span>`;
       cta.setAttribute("href", signedIn ? "/home" : "/read");
     }
     if (hero) {
