@@ -178,10 +178,10 @@ const LANDING_V2_CSS = `
 .aura-v2 .dark .jf{display:block;width:100%;max-width:none;margin-left:auto;margin-right:auto;text-align:center}
 .aura-v2 .jf{font-family:var(--mono);font-size:10px;color:#65707E;letter-spacing:.09em;margin-top:16px;line-height:1.8}
 .aura-v2 .founder{display:flex;gap:15px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:19px;margin:18px auto 0;max-width:640px}
-.aura-v2 .fastlane{margin-top:22px;border:1px dashed var(--line2);border-radius:12px;background:#FAFCFE;padding:16px 18px;max-width:58ch}
-.aura-v2 .fastlane .fl{font-size:13.5px;color:var(--ink2);line-height:1.6;margin-bottom:12px}
-.aura-v2 .fastlane .fl b{color:var(--ink);font-weight:650}
 .aura-v2 .support{font-size:13px;color:var(--ink3);line-height:1.6;margin-top:14px;max-width:52ch}
+.aura-v2 .fastline{font-size:13px;color:var(--ink3);line-height:1.6;margin-top:12px;max-width:52ch}
+.aura-v2 .fastline a{color:var(--blue);font-weight:600;text-decoration:none}
+.aura-v2 .fastline a:hover{text-decoration:underline}
 .aura-v2 .subxs{font-size:14px;color:var(--ink3);line-height:1.6;margin-top:12px;max-width:540px}
 .aura-v2 .rungs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
 .aura-v2 .rung{position:relative;background:var(--white);border:1px solid var(--line);border-radius:20px;padding:26px 22px;display:flex;flex-direction:column}
@@ -326,17 +326,11 @@ const LANDING_V2_HTML = `
       <p class="sub">Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof you can put in front of anyone.</p>
       <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
       <div class="acts">
-        <a class="btn bp" id="heropri" href="/auth?intent=assessment">Discover My Professional Position</a>
-        <button class="btn bg2" data-p="how">See How Aura Works</button>
+        <a class="btn bp" id="heropri" href="/auth?intent=assessment">Discover my professional position</a>
+        <button class="btn bg2" data-p="how">See how it works</button>
       </div>
       <p class="support">Starts with a guided professional assessment. Free, yours to keep, no publishing required.</p>
-      <div class="fastlane">
-        <p class="fl"><b>In a hurry? Get the ninety-second read</b> → Paste your LinkedIn address and see how the market reads you today. No account.</p>
-        <form id="heroform" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0">
-          <input class="heroin" id="heroin" type="text" inputmode="url" autocomplete="url" placeholder="linkedin.com/in/yourname" aria-label="Your LinkedIn profile address" style="font-family:var(--ui);font-size:14.5px;font-weight:500;padding:13px 15px;border:1px solid var(--line2);border-radius:9px;background:var(--white);color:var(--ink);min-width:235px;max-width:100%;flex:1;line-height:1.2">
-          <button class="btn bg2" id="herofast" type="submit">Show me</button>
-        </form>
-      </div>
+      <p class="fastline">In a hurry? <a id="herofastlink" href="/read">Take the ninety-second read first</a> → no account needed.</p>
     </div>
     <div class="loopwrap">
       <div class="jring">
@@ -925,7 +919,7 @@ const LANDING_V2_HTML = `
           <li><b>The full report as a PDF</b>, and a card to share</li>
         </ul>
       </div>
-      <div class="cta"><a class="btn bp" href="/auth?intent=assessment">Discover My Professional Position</a><p class="time">ABOUT 9 MINUTES · SAVE AND RETURN</p></div>
+      <div class="cta"><a class="btn bp" href="/auth?intent=assessment">Discover my professional position</a><p class="time">ABOUT 9 MINUTES · SAVE AND RETURN</p></div>
     </div>
 
     <div class="rung night">
@@ -1043,9 +1037,8 @@ const LandingV2 = () => {
     const alt = root.querySelector<HTMLAnchorElement>("#navalt");
     const cta = root.querySelector<HTMLAnchorElement>("#navcta");
     const hero = root.querySelector<HTMLAnchorElement>("#heropri");
-    const fast = root.querySelector<HTMLButtonElement>("#herofast");
-    const lane = root.querySelector<HTMLElement>(".fastlane");
-    const heroIn = root.querySelector<HTMLInputElement>("#heroin");
+    const fastLink = root.querySelector<HTMLAnchorElement>("#herofastlink");
+    const fastLine = root.querySelector<HTMLElement>(".fastline");
     if (alt) {
       alt.textContent = signedIn ? "Sign out" : "Sign in";
       alt.setAttribute("href", signedIn ? "#" : "/auth");
@@ -1057,35 +1050,15 @@ const LandingV2 = () => {
       cta.setAttribute("href", signedIn ? "/home" : "/read");
     }
     if (hero) {
-      hero.textContent = signedIn ? "Open Aura" : "Discover My Professional Position";
+      hero.textContent = signedIn ? "Open Aura" : "Discover my professional position";
       hero.setAttribute("href", signedIn ? "/home" : "/auth?intent=assessment");
     }
-    if (fast) fast.textContent = "Show me";
-    if (heroIn) heroIn.style.display = signedIn ? "none" : "";
-    if (lane) lane.style.display = signedIn ? "none" : "";
-  }, [signedIn, mounted]);
-
-  /* ── the hero form: never blocks, /read does the validating ── */
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const form = root.querySelector<HTMLFormElement>("#heroform");
-    if (!form) return;
-    const onSubmit = (e: Event) => {
-      e.preventDefault();
-      if (signedIn) { navigate("/home"); return; }
-      const input = root.querySelector<HTMLInputElement>("#heroin");
-      const value = (input?.value || "").trim();
-      const params = new URLSearchParams();
-      if (value.toLowerCase().includes("linkedin.com/in/")) params.set("url", value);
+    if (fastLink) {
       const landingRef = new URLSearchParams(window.location.search).get("ref");
-      if (landingRef) params.set("ref", landingRef);
-      const qs = params.toString();
-      navigate(qs ? `/read?${qs}` : "/read");
-    };
-    form.addEventListener("submit", onSubmit);
-    return () => form.removeEventListener("submit", onSubmit);
-  }, [mounted, navigate, signedIn]);
+      fastLink.setAttribute("href", landingRef ? `/read?ref=${encodeURIComponent(landingRef)}` : "/read");
+    }
+    if (fastLine) fastLine.style.display = signedIn ? "none" : "";
+  }, [signedIn, mounted]);
 
   /* ── calculator + in-app link interception ── */
   useEffect(() => {
