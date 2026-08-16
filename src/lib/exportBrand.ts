@@ -13,8 +13,10 @@ export const EXPORT_ACTION = "#0670C4";
 /** Brand line (URL) — same on every export. */
 export const EXPORT_URL = "aura-intel.org";
 
+import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
+
 /** Tagline copy — bilingual. */
-export const EXPORT_TAGLINE_EN = "Personal Intelligence System";
+export const EXPORT_TAGLINE_EN = PRODUCT_DESCRIPTOR;
 export const EXPORT_TAGLINE_AR = "نظام ذكاء شخصي";
 
 /**
