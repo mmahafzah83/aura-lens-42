@@ -326,17 +326,11 @@ const LANDING_V2_HTML = `
       <p class="sub">Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof you can put in front of anyone.</p>
       <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
       <div class="acts">
-        <a class="btn bp" id="heropri" href="/auth?intent=assessment">Discover My Professional Position</a>
-        <button class="btn bg2" data-p="how">See How Aura Works</button>
+        <a class="btn bp" id="heropri" href="/auth?intent=assessment">Discover my professional position</a>
+        <button class="btn bg2" data-p="how">See how it works</button>
       </div>
       <p class="support">Starts with a guided professional assessment. Free, yours to keep, no publishing required.</p>
-      <div class="fastlane">
-        <p class="fl"><b>In a hurry? Get the ninety-second read</b> → Paste your LinkedIn address and see how the market reads you today. No account.</p>
-        <form id="heroform" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0">
-          <input class="heroin" id="heroin" type="text" inputmode="url" autocomplete="url" placeholder="linkedin.com/in/yourname" aria-label="Your LinkedIn profile address" style="font-family:var(--ui);font-size:14.5px;font-weight:500;padding:13px 15px;border:1px solid var(--line2);border-radius:9px;background:var(--white);color:var(--ink);min-width:235px;max-width:100%;flex:1;line-height:1.2">
-          <button class="btn bg2" id="herofast" type="submit">Show me</button>
-        </form>
-      </div>
+      <p class="fastline">In a hurry? <a id="herofastlink" href="/read">Take the ninety-second read first</a> → no account needed.</p>
     </div>
     <div class="loopwrap">
       <div class="jring">
