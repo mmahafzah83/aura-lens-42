@@ -677,7 +677,7 @@ const AU_CSS = `
 .au-brandrow{display:flex;align-items:center;gap:10px;margin-bottom:26px;}
 .au-bn{font-family:var(--ser);font-weight:700;font-size:26px;line-height:1;}
 .au-bsub{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--n400);padding-left:11px;border-left:1px solid var(--n200);line-height:1.4;max-width:11ch;}
+  color:var(--n400);padding-left:11px;border-left:1px solid var(--n200);line-height:1.5;max-width:14ch;}
 .au-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(0,128,123,.28);
   background:rgba(0,206,201,.07);border-radius:999px;padding:7px 13px;margin-bottom:22px;
   font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--cy-t);}
