@@ -416,21 +416,21 @@ const LANDING_V2_HTML = `
 
       <div class="jrail">
         <p class="rstart">▼ You start here · free</p>
-        <p class="rkick">SEE YOURSELF · FREE</p>
-        <div class="rrow first"><span class="rbead"><i></i><u></u></span><span><span class="rt">Your assessment</span><span class="rs" style="display:block">free, yours to keep</span></span></div>
-        <p class="rkick">NOTHING LOST · THE LOOP</p>
-        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">Capture what you read</span><span class="rs" style="display:block">one tap</span></span></div>
-        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">Organise it</span><span class="rs" style="display:block">nothing lost</span></span></div>
-        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">Evidence, in fragments</span><span class="rs" style="display:block">usable in November</span></span></div>
-        <p class="rkick">IT COMPOSES</p>
-        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">Your field's trends</span><span class="rs" style="display:block">matched to you</span></span></div>
-        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">Tuned to your voice</span><span class="rs" style="display:block">learned, not guessed</span></span></div>
-        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">The draft</span><span class="rs" style="display:block">by dawn</span></span></div>
-        <p class="rkick">YOU ARE SEEN</p>
-        <div class="rrow"><span class="rbead"><i></i><u></u></span><span><span class="rt">You publish</span><span class="rs" style="display:block">one click</span></span></div>
-        <div class="rrow"><span class="rbead"><i></i></span><span><span class="rt">The outcome</span><span class="rs" style="display:block">your standing moves</span></span></div>
-        <div class="rdial"><div class="n">85</div><div class="p">YOUR PRESENCE</div><div class="c">step 9 feeds this</div></div>
-        <a class="btn bp rbtn" href="/auth?intent=assessment">Start at step 1 — free</a>
+        <p class="rkick ka">SEE YOURSELF · YOUR UNDERSTANDING · FREE</p>
+        <div class="rrow first ra"><span class="rbead"><i></i><u></u></span><span><span class="rt">Your assessment</span><span class="rs" style="display:block">free, yours to keep</span></span></div>
+        <p class="rkick kb">NOTHING LOST · YOUR KNOWLEDGE, KEPT</p>
+        <div class="rrow rb"><span class="rbead"><i></i><u></u></span><span><span class="rt">Capture what you read</span><span class="rs" style="display:block">one tap</span></span></div>
+        <div class="rrow rb"><span class="rbead"><i></i><u></u></span><span><span class="rt">Organise it</span><span class="rs" style="display:block">nothing lost</span></span></div>
+        <div class="rrow rb"><span class="rbead"><i></i><u></u></span><span><span class="rt">Evidence, in fragments</span><span class="rs" style="display:block">usable in November</span></span></div>
+        <p class="rkick kc">IT COMPOSES · YOUR CONTENT, WRITTEN</p>
+        <div class="rrow rc"><span class="rbead"><i></i><u></u></span><span><span class="rt">Your field's trends</span><span class="rs" style="display:block">matched to you</span></span></div>
+        <div class="rrow rc"><span class="rbead"><i></i><u></u></span><span><span class="rt">Tuned to your voice</span><span class="rs" style="display:block">learned, not guessed</span></span></div>
+        <div class="rrow rc"><span class="rbead"><i></i><u></u></span><span><span class="rt">The draft</span><span class="rs" style="display:block">by dawn</span></span></div>
+        <p class="rkick kd">YOU ARE SEEN · YOUR STANDING, MEASURED</p>
+        <div class="rrow rd"><span class="rbead"><i></i><u></u></span><span><span class="rt">You publish</span><span class="rs" style="display:block">one click</span></span></div>
+        <div class="rrow rd"><span class="rbead"><i></i></span><span><span class="rt">The outcome</span><span class="rs" style="display:block">your standing moves</span></span></div>
+        <div class="rdial"><div class="n">85</div><div class="p">YOUR STANDING</div><div class="c">step 9 feeds this</div></div>
+        <a class="btn bp rbtn" href="/assessment">Start at step 1 — free</a>
       </div>
     </div>
   </div>
