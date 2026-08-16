@@ -254,12 +254,12 @@ export default function RequestAccess() {
                   </div>
                 )}
 
+                <div className="ra-price">
+                  <span className="ra-price-n">{SEAT_PRICE}</span>
+                  <span className="ra-price-s">{SEAT_PRICE_SUBLINE}</span>
+                </div>
+
                 <button type="submit" disabled={status === "loading"} className="ra-btn">
-                </button>
-              </form>
-            </>
-          )}
-        </div>
                   {status === "loading" ? (
                     <span className="ra-pulse">Sending…</span>
                   ) : (
@@ -271,6 +271,10 @@ export default function RequestAccess() {
               <p className="ra-legal">
                 Your data is protected under Saudi PDPL. See our{" "}
                 <Link to="/privacy">Privacy Policy</Link>.
+              </p>
+              <p className="ra-legal">
+                Not ready for a seat? <Link to="/read">Read yourself free</Link> — no account,
+                ninety seconds.
               </p>
               <p className="ra-signin">
                 Already have a seat? <Link to="/auth">Sign in →</Link>
