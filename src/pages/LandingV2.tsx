@@ -216,7 +216,7 @@ const LANDING_V2_HTML = `
       <button data-p="faq">Questions</button>
     </div>
     <a class="navalt" id="navalt" href="/auth">Sign in</a>
-    <a class="navcta" id="navcta" href="/request-access">Request a founder seat <span class="a">↗</span></a>
+    <a class="navcta" id="navcta" href="/read">Read me free <span class="a">↗</span></a>
   </nav>
 </div>
 
@@ -229,10 +229,13 @@ const LANDING_V2_HTML = `
       <h1>You know a lot.<br><span class="grad">Not enough people<br>know it.</span></h1>
       <p class="sub">Aura tells you what you are truly good at — then turns what you read into <b>LinkedIn posts and carousels</b> in your own style.</p>
       <div class="acts">
-        <a class="btn bp" id="heropri" href="/request-access">Join free</a>
+        <form id="heroform" style="display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin:0">
+          <input class="heroin" id="heroin" type="text" inputmode="url" autocomplete="url" placeholder="linkedin.com/in/yourname" aria-label="Your LinkedIn profile address" style="font-family:var(--ui);font-size:14.5px;font-weight:500;padding:14px 16px;border:1px solid var(--line2);border-radius:9px;background:var(--white);color:var(--ink);min-width:255px;max-width:100%;line-height:1.2">
+          <button class="btn bp" id="heropri" type="submit">Read me</button>
+        </form>
         <button class="btn bg2" data-p="how">See how it works</button>
         <span class="seat"><span class="seatdot"></span><span class="seatline"></span></span>
-        <span class="mi">NO CARD</span>
+        <span class="mi">No account. Ninety seconds.</span>
       </div>
     </div>
     <div class="loopwrap">
