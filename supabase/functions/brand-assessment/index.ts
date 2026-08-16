@@ -69,9 +69,6 @@ serve(withObserve("brand-assessment", async (req) => {
       );
     }
 
-    // Claim the run before the spend happens.
-    await admin.from("instrument_runs").insert({ user_id: uid, kind: "assessment" });
-
     const { floorMet, userPrompt } = await buildReadEvidence(admin, uid, { answers, auditScores, sector, band });
 
     if (!floorMet) {
