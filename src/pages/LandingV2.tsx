@@ -1037,9 +1037,8 @@ const LandingV2 = () => {
     const alt = root.querySelector<HTMLAnchorElement>("#navalt");
     const cta = root.querySelector<HTMLAnchorElement>("#navcta");
     const hero = root.querySelector<HTMLAnchorElement>("#heropri");
-    const fast = root.querySelector<HTMLButtonElement>("#herofast");
-    const lane = root.querySelector<HTMLElement>(".fastlane");
-    const heroIn = root.querySelector<HTMLInputElement>("#heroin");
+    const fastLink = root.querySelector<HTMLAnchorElement>("#herofastlink");
+    const fastLine = root.querySelector<HTMLElement>(".fastline");
     if (alt) {
       alt.textContent = signedIn ? "Sign out" : "Sign in";
       alt.setAttribute("href", signedIn ? "#" : "/auth");
@@ -1051,35 +1050,15 @@ const LandingV2 = () => {
       cta.setAttribute("href", signedIn ? "/home" : "/read");
     }
     if (hero) {
-      hero.textContent = signedIn ? "Open Aura" : "Discover My Professional Position";
+      hero.textContent = signedIn ? "Open Aura" : "Discover my professional position";
       hero.setAttribute("href", signedIn ? "/home" : "/auth?intent=assessment");
     }
-    if (fast) fast.textContent = "Show me";
-    if (heroIn) heroIn.style.display = signedIn ? "none" : "";
-    if (lane) lane.style.display = signedIn ? "none" : "";
-  }, [signedIn, mounted]);
-
-  /* ── the hero form: never blocks, /read does the validating ── */
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const form = root.querySelector<HTMLFormElement>("#heroform");
-    if (!form) return;
-    const onSubmit = (e: Event) => {
-      e.preventDefault();
-      if (signedIn) { navigate("/home"); return; }
-      const input = root.querySelector<HTMLInputElement>("#heroin");
-      const value = (input?.value || "").trim();
-      const params = new URLSearchParams();
-      if (value.toLowerCase().includes("linkedin.com/in/")) params.set("url", value);
+    if (fastLink) {
       const landingRef = new URLSearchParams(window.location.search).get("ref");
-      if (landingRef) params.set("ref", landingRef);
-      const qs = params.toString();
-      navigate(qs ? `/read?${qs}` : "/read");
-    };
-    form.addEventListener("submit", onSubmit);
-    return () => form.removeEventListener("submit", onSubmit);
-  }, [mounted, navigate, signedIn]);
+      fastLink.setAttribute("href", landingRef ? `/read?ref=${encodeURIComponent(landingRef)}` : "/read");
+    }
+    if (fastLine) fastLine.style.display = signedIn ? "none" : "";
+  }, [signedIn, mounted]);
 
   /* ── calculator + in-app link interception ── */
   useEffect(() => {
