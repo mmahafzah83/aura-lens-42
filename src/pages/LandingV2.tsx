@@ -286,6 +286,7 @@ const LANDING_V2_HTML = `
       <button data-p="get">What you get</button>
       <button data-p="why">Why now</button>
       <button data-p="cmp">Compare</button>
+      <button data-p="price">Pricing</button>
       <button data-p="faq">Questions</button>
     </div>
     <a class="navalt" id="navalt" href="/auth">Sign in</a>
@@ -298,17 +299,21 @@ const LANDING_V2_HTML = `
 <section class="pg on" id="home">
   <div class="hero">
     <div>
-      <span class="tag"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2.6" fill="#0670C4"/><path d="M6 .8v1.8M6 9.4v1.8M.8 6h1.8M9.4 6h1.8M2.3 2.3l1.3 1.3M8.4 8.4l1.3 1.3M9.7 2.3L8.4 3.6M3.6 8.4l-1.3 1.3" stroke="#0670C4" stroke-width="1.1" stroke-linecap="round"/></svg> Personal intelligence system</span>
-      <h1>You know a lot.<br><span class="grad">Not enough people<br>know it.</span></h1>
-      <p class="sub">Aura tells you what you are truly good at — then turns what you read into <b>LinkedIn posts and carousels</b> in your own style.</p>
+      <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> AI professional identity platform</span>
+      <h1>Your experience is worth more<br><span class="grad">than your profile shows.</span></h1>
+      <p class="sub">Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof you can put in front of anyone.</p>
+      <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
       <div class="acts">
-        <form id="heroform" style="display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin:0">
-          <input class="heroin" id="heroin" type="text" inputmode="url" autocomplete="url" placeholder="linkedin.com/in/yourname" aria-label="Your LinkedIn profile address" style="font-family:var(--ui);font-size:14.5px;font-weight:500;padding:14px 16px;border:1px solid var(--line2);border-radius:9px;background:var(--white);color:var(--ink);min-width:255px;max-width:100%;line-height:1.2">
-          <button class="btn bp" id="heropri" type="submit">Read me</button>
+        <a class="btn bp" id="heropri" href="/auth?intent=assessment">Discover My Professional Position</a>
+        <button class="btn bg2" data-p="how">See How Aura Works</button>
+      </div>
+      <p class="support">Starts with a guided professional assessment. Free, yours to keep, no publishing required.</p>
+      <div class="fastlane">
+        <p class="fl"><b>In a hurry? Get the ninety-second read</b> → Paste your LinkedIn address and see how the market reads you today. No account.</p>
+        <form id="heroform" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0">
+          <input class="heroin" id="heroin" type="text" inputmode="url" autocomplete="url" placeholder="linkedin.com/in/yourname" aria-label="Your LinkedIn profile address" style="font-family:var(--ui);font-size:14.5px;font-weight:500;padding:13px 15px;border:1px solid var(--line2);border-radius:9px;background:var(--white);color:var(--ink);min-width:235px;max-width:100%;flex:1;line-height:1.2">
+          <button class="btn bg2" id="herofast" type="submit">Show me</button>
         </form>
-        <button class="btn bg2" data-p="how">See how it works</button>
-        <span class="seat"><span class="seatdot"></span><span class="seatline"></span></span>
-        <span class="mi">No account. Ninety seconds.</span>
       </div>
     </div>
     <div class="loopwrap">
