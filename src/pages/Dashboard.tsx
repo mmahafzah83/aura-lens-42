@@ -517,10 +517,24 @@ const Dashboard = () => {
         try {
           const key = `aura_marked_active_${uid}`;
           if (!localStorage.getItem(key)) {
-            supabase.functions
-              .invoke("mark-user-active", { body: {} })
-              .then(() => localStorage.setItem(key, "1"))
-              .catch((e) => console.warn("mark-user-active failed", e));
+            void (async () => {
+              try {
+                const { data: fresh } = await supabase.auth.getSession();
+                const token = fresh?.session?.access_token;
+                if (!token) return;
+                const { error } = await supabase.functions.invoke("mark-user-active", {
+                  body: {},
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (error) {
+                  console.warn("mark-user-active failed", error);
+                  return;
+                }
+                localStorage.setItem(key, "1");
+              } catch (e) {
+                console.warn("mark-user-active failed", e);
+              }
+            })();
           }
         } catch {}
         const { data: profile } = await supabase
