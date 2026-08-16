@@ -71,7 +71,7 @@ const LG_CSS = `
   --n400:#98A2AE; --n500:#5B6673; --n700:#3A434E; --n900:#0F1519;
   --act:#0670C4; --cy:#00CEC9; --cy-t:#00807B;
   --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
-  --ser:'Instrument Serif',Georgia,serif;
+  --ser:'Inter',ui-sans-serif,system-ui,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   min-height:100vh; display:flex; flex-direction:column;
   background:var(--page); color:var(--n900);
@@ -95,7 +95,7 @@ const LG_CSS = `
   border:1.5px solid var(--n300);}
 .lg-eyebrow::before{left:0;bottom:0;border-top:0;border-right:0;}
 .lg-eyebrow::after{right:0;top:0;border-bottom:0;border-left:0;}
-.lg-h1{font-family:var(--ser);font-weight:400;font-size:clamp(34px,4.4vw,52px);
+.lg-h1{font-family:var(--ser);font-weight:700;font-size:clamp(34px,4.4vw,52px);
   line-height:1.02;letter-spacing:-.028em;}
 .lg-updated{margin-top:12px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--n400);}
@@ -103,7 +103,7 @@ const LG_CSS = `
 .lg-sections{margin-top:clamp(36px,5vw,54px);border-top:2px solid var(--n900);}
 .lg-sec{padding:clamp(26px,3.4vw,34px) 0;border-bottom:1px solid var(--n200);}
 .lg-sec:last-child{border-bottom:0;}
-.lg-h2{font-family:var(--ser);font-weight:400;font-size:clamp(22px,2.6vw,29px);
+.lg-h2{font-family:var(--ser);font-weight:700;font-size:clamp(22px,2.6vw,29px);
   line-height:1.15;letter-spacing:-.018em;display:flex;gap:14px;align-items:baseline;}
 .lg-no{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--cy-t);
   flex:0 0 auto;transform:translateY(-2px);}

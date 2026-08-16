@@ -209,7 +209,7 @@ const ACCEPT_CSS = `
   --n400:#98A2AE; --n500:#5B6673; --n900:#0F1519;
   --act:#0670C4; --cy-t:#00807B;
   --ui:'Inter',ui-sans-serif,system-ui,-apple-system,sans-serif;
-  --ser:'Instrument Serif',Georgia,serif;
+  --ser:'Inter',ui-sans-serif,system-ui,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   min-height:100vh; background:var(--page); color:var(--n900);
   font-family:var(--ui); font-size:16px; line-height:1.6;
@@ -232,7 +232,7 @@ const ACCEPT_CSS = `
   color:var(--n400);margin-bottom:14px;
 }
 .ai-headline{
-  font-family:var(--ser);font-weight:400;font-size:clamp(28px,5.2vw,40px);
+  font-family:var(--ser);font-weight:700;font-size:clamp(28px,5.2vw,40px);
   line-height:1.12;letter-spacing:-.02em;color:var(--n900);margin:0 0 16px;
 }
 .ai-subline{font-size:16px;line-height:1.65;color:var(--n500);margin:0 auto 30px;max-width:400px;}
@@ -258,7 +258,7 @@ const ACCEPT_CSS = `
 }
 .ai-panel.is-in{opacity:1;transform:translateY(0);}
 .ai-num{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--n400);margin-bottom:10px;}
-.ai-ptitle{font-family:var(--ser);font-weight:400;font-size:21px;line-height:1.25;color:var(--n900);margin:0 0 10px;letter-spacing:-.01em;}
+.ai-ptitle{font-family:var(--ser);font-weight:700;font-size:21px;line-height:1.25;color:var(--n900);margin:0 0 10px;letter-spacing:-.01em;}
 .ai-pbody{font-size:15px;line-height:1.65;color:var(--n500);margin:0;}
 .ai-more-cta{margin-top:24px;text-align:center;}
 

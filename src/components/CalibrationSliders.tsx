@@ -55,7 +55,7 @@ const TRACK = "#E2E7EE";      // rule / track
 const INK = "#0F1519";        // ink
 const INK_SOFT = "#5B6673";   // ink soft
 const INK_FAINT = "#98A2AE";  // ink faint
-const SERIF = "'Instrument Serif', Georgia, serif";
+const SERIF = "'Inter', ui-sans-serif, system-ui, sans-serif";
 const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
 
 const pillBtn: React.CSSProperties = {

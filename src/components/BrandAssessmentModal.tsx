@@ -27,7 +27,7 @@ const INK_FAINT = "#98A2AE";
 const ACT = "#0670C4";
 const ACT_TINT = "#E6F2FD";
 const TEAL = "#00807B";
-const SERIF = "'Instrument Serif', Georgia, serif";
+const SERIF = "'Inter', ui-sans-serif, system-ui, sans-serif";
 const BODY = "'Inter', -apple-system, 'Segoe UI', sans-serif";
 const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
 

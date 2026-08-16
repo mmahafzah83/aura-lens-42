@@ -5,7 +5,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import AuraLogo from "@/components/brand/AuraLogo";
-import { SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA } from "@/lib/seatCopy";
+import { SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, waveFrom } from "@/lib/seatCopy";
 
 /* ────────────────────────────────────────────────────────────────
    /request-access — "The Door".
@@ -47,7 +47,7 @@ function usePositionCount(target: number, start: boolean, duration = 800) {
 
 export default function RequestAccess() {
   usePageMeta({
-    title: "Aura — Request a founder seat",
+    title: "Aura — Take a founding seat",
     description:
       "The founding fifty is for the weekly loop. Thirty seconds to ask. Read personally, answered within 24 hours.",
     path: "/request-access",
@@ -168,8 +168,12 @@ export default function RequestAccess() {
             <div className="ra-rack">
               <div className="ra-rackhead">
                 <span className="ra-n">
-                  Wave <b>{Math.floor(seats.claimed / 10) + 1}</b> ·{" "}
-                  <b>{10 - (seats.claimed % 10)}</b> left at {SEAT_PRICE.split(" ")[0]}
+                  {(() => {
+                    const w = waveFrom(seats.claimed, seats.cap);
+                    return w
+                      ? <>Wave <b>{w.wave}</b> · <b>{w.leftWave}</b> left at {SEAT_PRICE.split(" ")[0]}</>
+                      : <>The founding fifty are taken</>;
+                  })()}
                 </span>
                 <span className="ra-lb">Founding circle</span>
               </div>
@@ -232,7 +236,7 @@ export default function RequestAccess() {
                   onChange={(v) => { setName(v); if (errors.name) setErrors((p) => ({ ...p, name: undefined })); }}
                 />
                 <Field
-                  id="ra-email" label="Your work email" type="email" placeholder="you@company.com"
+                  id="ra-email" label="Your email" type="email" placeholder="you@email.com"
                   value={email} maxLength={255} error={errors.email}
                   onChange={(v) => { setEmail(v); if (errors.email) setErrors((p) => ({ ...p, email: undefined })); }}
                 />

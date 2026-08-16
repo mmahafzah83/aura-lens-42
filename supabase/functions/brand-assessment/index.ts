@@ -5,6 +5,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { buildReadEvidence } from "../_shared/readEvidence.ts";
+import { LIMITS, QUEUE_MESSAGE } from "../_shared/limits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +38,37 @@ serve(withObserve("brand-assessment", async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const uid = userData.user.id;
 
+    /* ── cost controls · enforced here, never in the UI ── */
+    if (LIMITS.REQUIRE_VERIFIED_EMAIL && !userData.user.email_confirmed_at) {
+      return new Response(
+        JSON.stringify({ error: "Confirm your email first — the link is in your inbox. Then this starts." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const { count: ownRuns } = await admin
+      .from("instrument_runs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", uid);
+    if ((ownRuns ?? 0) >= LIMITS.INSTRUMENT_RUNS_PER_ACCOUNT) {
+      return new Response(
+        JSON.stringify({ error: "Your report has already been written. Open it from My Story." }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
+    const { count: today } = await admin
+      .from("instrument_runs")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", dayStart.toISOString());
+    if ((today ?? 0) >= LIMITS.DAILY_INSTRUMENT_RUN_CEILING) {
+      return new Response(
+        JSON.stringify({ queued: true, error: QUEUE_MESSAGE }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const { floorMet, userPrompt } = await buildReadEvidence(admin, uid, { answers, auditScores, sector, band });
 
     if (!floorMet) {
@@ -59,6 +91,9 @@ serve(withObserve("brand-assessment", async (req) => {
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+
+    // Claim the run now that the evidence floor is met and the spend is about to happen.
+    await admin.from("instrument_runs").insert({ user_id: uid, kind: "assessment" });
 
     const callAnthropic = async (promptOverride?: string) => {
       const ctrl = new AbortController();

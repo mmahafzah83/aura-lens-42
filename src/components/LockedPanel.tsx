@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonPrimary } from "@/components/systemb/Button";
+import { SEAT_CTA } from "@/lib/seatCopy";
 
 /**
  * LockedPanel — the one "not yours yet" surface.
@@ -106,7 +107,7 @@ const LockedPanel: React.FC<LockedPanelProps> = ({ locked = true, title, line, c
           <p style={{ fontSize: 13, color: "#5B6673", margin: "0 0 16px", lineHeight: 1.55 }}>{line}</p>
 
           <ButtonPrimary onClick={() => navigate("/request-access")}>
-            Ask for a founding seat
+            {SEAT_CTA}
           </ButtonPrimary>
         </div>
       </div>
