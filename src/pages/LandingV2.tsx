@@ -785,32 +785,125 @@ const LANDING_V2_HTML = `
     <details><summary>Will the posts really sound like me?</summary><p>Aura learns from your own posts: how you open, how you explain, how you finish. And you read every word before anything goes out.</p></details>
     <details><summary>Does it work in Arabic?</summary><p>Yes. Arabic is written as Arabic and English as English. One is never a translation of the other.</p></details>
     <details><summary>Who owns what I save?</summary><p>You do. Your articles, your notes, your posts. We never use your work to help anyone else.</p></details>
-    <details><summary>What does “free” mean exactly?</summary><p>The first members pay nothing, with no card. If a price arrives later it does not apply to you — you keep the terms you joined on.</p></details>
+    <details><summary>What does “free” mean exactly?</summary><p>Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. Founding members keep that rate for as long as they stay, and no card is taken until Aura has published a post for someone who is not the founder.</p></details>
     <details><summary>What if I stop using it?</summary><p>Everything you saved stays yours and you can take it with you. Nothing is locked.</p></details>
   </div>
 
   <div class="dark rv"><div class="dark-in" style="grid-template-columns:1fr;text-align:center">
     <div>
-      <h3 style="max-width:none;margin:0 auto">Still deciding?<br><em>It costs nothing to look and try.</em></h3>
-      <p style="max-width:460px;margin:12px auto 0">The founder seats close soon — and members keep the terms they joined on.</p>
-      <div style="margin-top:22px"><button class="btn bp" data-p="join">Request a founder seat</button></div>
-      <p class="jf"><span class="seatline"></span></p>
+      <h3 style="max-width:none;margin:0 auto">Still deciding?<br><em style="font-style:italic;color:var(--ink4)">Then just take the free report.</em></h3>
+      <p style="max-width:460px;margin:12px auto 0">It is yours whether you ever pay us or not. If it shows you something you did not know about yourself, the seat will still be here.</p>
+      <div style="margin-top:22px;display:flex;gap:11px;justify-content:center;flex-wrap:wrap">
+        <a class="btn bp" href="/auth?intent=assessment">Get my report — free</a>
+        <a class="btn bg2" href="#price" data-p="price">See the founding seat</a>
+      </div>
     </div>
   </div></div>
 </section>
 
-<section class="pg" id="join">
-  <div class="join"><div class="join-in">
-    <span class="tag" style="background:rgba(0,206,201,.14);color:#00CEC9">Founding circle · 50 seats</span>
-    <h2>Show the market<br>what you already know.</h2>
-    <p>Your report first — what you are good at and the space that is yours. Then your posts and carousels, from what you read.</p>
-    <div style="margin-top:26px">
-      <div style="font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.02em;color:#fff">$29 a month</div>
-      <div class="jf" style="margin-top:6px">For as long as you stay. It will be $69.</div>
+<section class="pg" id="price">
+  <div class="hdr">
+    <span class="tag">Three ways in</span>
+    <h2>Seeing yourself is free.<br><span class="grad">Being seen every week is the paid part.</span></h2>
+  </div>
+
+  <div class="rungs rv">
+    <div class="rung">
+      <span class="chip">NO ACCOUNT</span>
+      <span class="kick">01 · THE QUICK READ</span>
+      <h3>See yourself as the market does</h3>
+      <p class="one">The fastest honest look at how you currently come across.</p>
+      <div class="prc"><span class="p">Free</span><span class="u">FOREVER</span></div>
+      <p class="pn">No account, no card, no email required.</p>
+      <div class="blk">
+        <span class="bl do">WHAT YOU DO</span>
+        <ul><li>Paste your LinkedIn address</li><li>Wait ninety seconds</li></ul>
+      </div>
+      <div class="blk">
+        <span class="bl get">WHAT YOU GET</span>
+        <ul><li>How the market reads you today, in plain words</li><li>The one thing your profile is not saying about you</li><li>A card you can keep or send to someone</li></ul>
+      </div>
+      <div class="cta"><a class="btn bout" href="/read">Show me the quick read</a><p class="time">90 SECONDS</p></div>
     </div>
-    <div style="margin-top:20px"><a class="btn bp" href="/request-access">Request my founder seat</a></div>
-    <div class="jf">30 SECONDS · WE ANSWER WITHIN 24 HOURS · <span class="seatline"></span></div>
-  </div></div>
+
+    <div class="rung">
+      <span class="chip">FREE ACCOUNT</span>
+      <span class="kick">02 · YOUR PROFESSIONAL IDENTITY</span>
+      <h3>The full picture, and it stays yours</h3>
+      <p class="one">The complete assessment. Most people have never seen this much about themselves in one place.</p>
+      <div class="prc"><span class="p">Free</span><span class="u">YOURS TO KEEP</span></div>
+      <p class="pn">Free permanently — not a trial, not thirty days.</p>
+      <div class="blk">
+        <span class="bl do">WHAT YOU DO</span>
+        <ul><li>Connect your LinkedIn profile</li><li>Upload your CV</li><li>Answer nine questions about your work</li><li>Rate yourself on 24 capability statements</li></ul>
+      </div>
+      <div class="blk">
+        <span class="bl get">WHAT YOU GET</span>
+        <ul>
+          <li><b>A capability and skills map</b> — what is proven, what is real but invisible, what is not there yet</li>
+          <li><b>CV against LinkedIn</b> — where the two disagree, and what each one is hiding</li>
+          <li><b>The space nobody else holds</b> — the position that is yours</li>
+          <li><b>Your three subjects</b> — instead of writing about ten</li>
+          <li><b>How three people read you</b> — a headhunter, a client, a peer</li>
+          <li><b>The full report as a PDF</b>, and a card to share</li>
+        </ul>
+      </div>
+      <div class="cta"><a class="btn bp" href="/auth?intent=assessment">Discover My Professional Position</a><p class="time">ABOUT 9 MINUTES · SAVE AND RETURN</p></div>
+    </div>
+
+    <div class="rung night">
+      <span class="chip wavechip-live" data-wave="chip"></span>
+      <span class="kick"><span class="cdot"></span>03 · THE LOOP</span>
+      <h3>Be seen every week, without writing</h3>
+      <p class="one">Your identity stops being a document and starts being a weekly presence.</p>
+      <div class="prc"><span class="p" style="color:#fff">${SEAT_PRICE}</span><span class="u">/MONTH · LOCKED FOR LIFE</span></div>
+      <p class="pn">Becomes ${"$69"} when the fifty seats are gone. You keep ${SEAT_PRICE.split(" ")[0]}.</p>
+      <div class="blk">
+        <span class="bl do">WHAT YOU DO</span>
+        <ul><li>One tap on anything worth keeping</li><li>Two minutes to read and approve</li></ul>
+      </div>
+      <div class="blk">
+        <span class="bl get">WHAT YOU GET</span>
+        <ul>
+          <li><b>Everything you read, kept</b> — broken into pieces you can still use in November</li>
+          <li><b>Posts and carousels written by dawn</b> — in your voice, designed, ready</li>
+          <li><b>The source shown</b> — when someone asks where this came from, you have the answer</li>
+          <li><b>English or Arabic</b> — neither a translation of the other</li>
+          <li><b>Your identity rewritten every quarter</b> — it moves as you do</li>
+        </ul>
+      </div>
+      <div class="cta"><a class="btn bwhite" href="${SEAT_PATH}">${SEAT_CTA}</a><p class="time">≈ 2 MINUTES A DAY</p></div>
+    </div>
+  </div>
+
+  <div class="pricegrid rv">
+    <div class="pnight">
+      <span class="kick">THE LOOP · FOUNDING RATE</span>
+      <div class="amt"><span class="n">${SEAT_PRICE.split(" ")[0]}</span><span class="u">PER MONTH</span></div>
+      <span class="cypill">YOURS FOR AS LONG AS YOU STAY</span>
+      <div class="tl">
+        <div class="tli"><span class="bead"></span><div><div class="tt">Now — seats 1 to 50</div><div class="tb">${SEAT_PRICE}. The rate is attached to you, not to the date you joined.</div></div></div>
+        <div class="tli"><span class="bead hollow"></span><div><div class="tt">From seat 51</div><div class="tb">${"$69"} a month for everyone who comes after. The founding fifty are not moved.</div></div></div>
+        <div class="tli"><span class="bead hollow"></span><div><div class="tt">Every year after that</div><div class="tb">You are still paying ${SEAT_PRICE.split(" ")[0]}. That is the entire promise, and it is in writing.</div></div></div>
+      </div>
+    </div>
+    <div>
+      <ul class="terms">
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>No card today. Billing does not open until Aura has published a post for someone who is not the founder. If that never happens, you are never charged.</span></li>
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Your report is free either way. The seat buys the weekly loop. The assessment was always yours to keep.</span></li>
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Locked for as long as you stay — not twelve months, not “introductory”.</span></li>
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Leave and take everything. Every capture, draft and report exports. Nothing is held back.</span></li>
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Signed by the founder, with his name and his face, and he answers you himself.</span></li>
+      </ul>
+      <div class="wavecard" data-wave="card" style="display:none">
+        <h4>Seats open in waves of ten</h4>
+        <span class="wavechip" data-wave="chip2"></span>
+        <div class="pips" data-wave="pips"></div>
+        <p class="wavenote" data-wave="note"></p>
+      </div>
+      <a class="btn bnight" href="${SEAT_PATH}">Take a founding seat — ${SEAT_PRICE.split(" ")[0]} locked</a>
+    </div>
+  </div>
   <div class="founder">
     <img src="/aura-founder.jpg" alt="Mohammad Mahafdhah">
     <div class="t"><b>Mohammad Mahafdhah</b> — I built Aura from my own reading, because I had the same problem. Write to me directly and I will answer.</div>
