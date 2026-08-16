@@ -287,6 +287,18 @@ const LANDING_V2_CSS = `
  .aura-v2 .jrail .rbead u{width:2px;flex:1;min-height:26px;background:#C3D8EC;display:block;margin-top:4px}
  .aura-v2 .jrail .rrow.first .rbead i{background:#00CEC9;box-shadow:0 0 0 4px rgba(0,206,201,.18)}
  .aura-v2 .jrail .rrow.first .rbead u{background:#00CEC9}
+ .aura-v2 .jrail .rrow.ra .rbead i{background:#00CEC9}
+ .aura-v2 .jrail .rrow.ra .rbead u{background:#00CEC9}
+ .aura-v2 .jrail .rrow.rb .rbead i{background:#0984E3}
+ .aura-v2 .jrail .rrow.rb .rbead u{background:#BBD9F2}
+ .aura-v2 .jrail .rrow.rc .rbead i{background:#0670C4}
+ .aura-v2 .jrail .rrow.rc .rbead u{background:#9FC3E4}
+ .aura-v2 .jrail .rrow.rd .rbead i{background:#04477C}
+ .aura-v2 .jrail .rrow.rd .rbead u{background:#8AA6C2}
+ .aura-v2 .jrail .rkick.ka{color:#00807B}
+ .aura-v2 .jrail .rkick.kb{color:#0984E3}
+ .aura-v2 .jrail .rkick.kc{color:#0670C4}
+ .aura-v2 .jrail .rkick.kd{color:#04477C}
  .aura-v2 .jrail .rt{font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.3}
  .aura-v2 .jrail .rs{font-size:12px;color:#66707D;line-height:1.45;margin:3px 0 16px}
  .aura-v2 .jrail .rdial{background:#0F1519;border-radius:16px;padding:22px;text-align:center;margin-top:8px}
