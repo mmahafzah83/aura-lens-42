@@ -8,6 +8,7 @@ import { useGuideArticles } from "@/hooks/useGuideArticles";
 import type { GuideArticle } from "@/hooks/useGuideArticles";
 import PublicFooter from "@/components/PublicFooter";
 import PublicMasthead from "@/components/PublicMasthead";
+import { SEAT_CTA } from "@/lib/seatCopy";
 
 const SECTION_ORDER = [
   "getting-started",
@@ -238,12 +239,12 @@ const Guide = () => {
         <h1
           className="mb-5"
           style={{
-            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif",
             fontSize: "clamp(32px, 5vw, 48px)",
             lineHeight: 1.375,
             letterSpacing: "-0.02em",
             color: "#0F1519",
-            fontWeight: 500,
+            fontWeight: 700,
           }}
         >
           How Aura works
@@ -420,18 +421,18 @@ const Guide = () => {
 
       {/* CTA */}
       <section className="px-5 sm:px-10 py-20 text-center" style={{ borderTop: "1px solid #E2E7EE" }}>
-        <h2 className="mb-5" style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontSize: "clamp(28px, 4vw, 40px)", color: "#0F1519", fontWeight: 500 }}>
+        <h2 className="mb-5" style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif", fontSize: "clamp(28px, 4vw, 40px)", color: "#0F1519", fontWeight: 700, letterSpacing: "-0.02em" }}>
           {authed ? "Ready to keep going?" : "Ready to start?"}
         </h2>
         <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "#3A434E", lineHeight: 1.625 }}>
-          {authed ? "Jump back into your dashboard and keep building." : "Join the founding fifty. Every application is read personally and answered within twenty-four hours."}
+          {authed ? "Jump back into your dashboard and keep building." : "The report is open to anyone — the founding fifty is for the weekly loop that writes while you sleep. Every request is read personally and answered within twenty-four hours."}
         </p>
         <button
           onClick={() => navigate(authed ? "/dashboard" : "/request-access")}
           className="px-7 py-3 rounded-full text-sm font-medium transition-all hover:brightness-110"
           style={{ background: "#0F1519", color: "#FFFFFF", fontWeight: 500 }}
         >
-          {authed ? "Back to your dashboard" : "Request a founder seat"}
+          {authed ? "Back to your dashboard" : SEAT_CTA}
         </button>
       </section>
 

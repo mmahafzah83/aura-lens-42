@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
+import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_LIST_PRICE } from "@/lib/seatCopy";
 
 /* ────────────────────────────────────────────────────────────────
    LandingV2 — six tabbed pages, one at a time.
@@ -12,12 +13,12 @@ import { signOutAndLand } from "@/lib/signOut";
 
 const LANDING_V2_CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
-.aura-v2{--ink:#0B1220;--ink2:#37424F;--ink3:#66707D;--ink4:#9AA4B0;--line:#E4E8EE;--line2:#D2D8E0;--white:#FFF;--canvas:#F7F9FC;--tint:#EFF4FA;--blue:#0670C4;--blue2:#04477C;--bluetint:#E7F1FB;--cyan:#00CEC9;--cyanT:#00807B;--cyantint:#E0F7F6;--amber:#E0A82E;--amberT:#95690F;--ambertint:#FDF3DF;--red:#C0392B;--green:#12805C;--greentint:#E4F6EC;--ui:"Inter",system-ui,sans-serif;--mono:"IBM Plex Mono",monospace;--sp:cubic-bezier(.16,1,.3,1);font-family:var(--ui);background:var(--canvas);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
-.aura-v2 .navshell{position:sticky;top:0;z-index:60;padding:16px 20px;display:flex;justify-content:center;pointer-events:none;background:linear-gradient(var(--canvas) 55%,rgba(247,249,252,0))}
+.aura-v2{--ink:#0F1519;--ink2:#37424F;--ink3:#66707D;--ink4:#9AA4B0;--line:#E2E7EE;--line2:#D2D8E0;--white:#FFF;--canvas:#F2F5F9;--tint:#EFF4FA;--blue:#0670C4;--blue2:#04477C;--bluetint:#E7F1FB;--cyan:#00CEC9;--cyanT:#00807B;--cyantint:#E0F7F6;--amber:#E0A82E;--amberT:#9A6F12;--ambertint:#FDF3DF;--red:#C0392B;--green:#12805C;--greentint:#E4F6EC;--ui:"Inter",system-ui,sans-serif;--mono:"IBM Plex Mono",monospace;--sp:cubic-bezier(.16,1,.3,1);font-family:var(--ui);background:var(--canvas);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
+.aura-v2 .navshell{position:sticky;top:0;z-index:60;padding:16px 20px;display:flex;justify-content:center;pointer-events:none;background:linear-gradient(var(--canvas) 55%,rgba(242,245,249,0))}
 .aura-v2 .nav{pointer-events:auto;display:flex;align-items:center;gap:2px;background:var(--ink);border-radius:999px;padding:7px 7px 7px 18px;box-shadow:0 20px 46px -20px rgba(15,21,25,.55);max-width:calc(100vw - 40px)}
 .aura-v2 .brand{display:flex;align-items:center;gap:9px;margin-right:16px;text-decoration:none;cursor:pointer}
 .aura-v2 .mark{width:24px;height:24px;flex:0 0 24px;color:#fff}
-.aura-v2 .bn{font-family:"Newsreader",Georgia,serif;color:#fff;font-size:21px;line-height:1}
+.aura-v2 .bn{font-family:var(--ui);font-weight:700;color:#fff;font-size:19px;letter-spacing:-.02em;line-height:1}
 .aura-v2 .links{display:flex;align-items:center;gap:1px}
 .aura-v2 .links button{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.58);background:none;border:0;cursor:pointer;padding:11px 12px;border-radius:999px;transition:.2s;white-space:nowrap}
 .aura-v2 .links button:hover{color:#fff;background:rgba(255,255,255,.08)}
@@ -179,6 +180,79 @@ const LANDING_V2_CSS = `
 .aura-v2 .dark .jf,.aura-v2 .dark .seatline{display:block;width:100%;max-width:none;margin-left:auto;margin-right:auto;text-align:center}
 .aura-v2 .jf{font-family:var(--mono);font-size:10px;color:#65707E;letter-spacing:.09em;margin-top:16px;line-height:1.8}
 .aura-v2 .founder{display:flex;gap:15px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:19px;margin:18px auto 0;max-width:640px}
+.aura-v2 .fastlane{margin-top:22px;border:1px dashed var(--line2);border-radius:12px;background:#FAFCFE;padding:16px 18px;max-width:58ch}
+.aura-v2 .fastlane .fl{font-size:13.5px;color:var(--ink2);line-height:1.6;margin-bottom:12px}
+.aura-v2 .fastlane .fl b{color:var(--ink);font-weight:650}
+.aura-v2 .support{font-size:13px;color:var(--ink3);line-height:1.6;margin-top:14px;max-width:52ch}
+.aura-v2 .subxs{font-size:14px;color:var(--ink3);line-height:1.6;margin-top:12px;max-width:540px}
+.aura-v2 .rungs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
+.aura-v2 .rung{position:relative;background:var(--white);border:1px solid var(--line);border-radius:20px;padding:26px 22px;display:flex;flex-direction:column}
+.aura-v2 .rung.night{background:var(--ink);border-color:#28313A;color:#fff}
+.aura-v2 .rung .kick{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--ink4);display:flex;align-items:center;gap:7px}
+.aura-v2 .rung.night .kick{color:#A7B0BC}
+.aura-v2 .rung .cdot{width:6px;height:6px;border-radius:999px;background:var(--cyan);display:inline-block}
+.aura-v2 .rung .chip{position:absolute;top:18px;right:18px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;padding:5px 9px;border-radius:999px;background:var(--cyantint);color:var(--cyanT)}
+.aura-v2 .rung.night .chip{background:rgba(0,206,201,.16);color:var(--cyan)}
+.aura-v2 .rung h3{font-size:20px;font-weight:700;letter-spacing:-.024em;line-height:1.2;margin-top:14px;max-width:15ch}
+.aura-v2 .rung .one{font-size:13.5px;color:var(--ink3);line-height:1.6;margin-top:10px}
+.aura-v2 .rung.night .one{color:#A7B0BC}
+.aura-v2 .rung .prc{display:flex;align-items:baseline;gap:9px;margin-top:18px;flex-wrap:wrap}
+.aura-v2 .rung.night .prc .p{font-size:24px}
+.aura-v2 .rung .prc .p{font-family:var(--mono);font-size:30px;font-weight:600;letter-spacing:-.03em}
+.aura-v2 .rung .prc .u{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--ink4)}
+.aura-v2 .rung .pn{font-size:12.5px;color:var(--ink3);line-height:1.55;margin-top:7px}
+.aura-v2 .rung.night .pn{color:#8E99A6}
+.aura-v2 .rung .blk{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.aura-v2 .rung.night .blk{border-top-color:rgba(255,255,255,.14)}
+.aura-v2 .rung .bl{font-family:var(--mono);font-size:9px;letter-spacing:.14em;margin-bottom:9px;display:block}
+.aura-v2 .rung .bl.do{color:var(--blue)}
+.aura-v2 .rung .bl.get{color:var(--cyanT)}
+.aura-v2 .rung.night .bl.do{color:#6FB7EE}
+.aura-v2 .rung.night .bl.get{color:var(--cyan)}
+.aura-v2 .rung ul{list-style:none;display:grid;gap:8px}
+.aura-v2 .rung li{font-size:13px;line-height:1.55;color:var(--ink2);padding-left:15px;position:relative}
+.aura-v2 .rung.night li{color:#C7CFD8}
+.aura-v2 .rung li::before{content:"";position:absolute;left:0;top:8px;width:5px;height:5px;border-radius:999px;background:var(--line2)}
+.aura-v2 .rung.night li::before{background:#4A5563}
+.aura-v2 .rung li b{color:var(--ink);font-weight:650}
+.aura-v2 .rung.night li b{color:#fff}
+.aura-v2 .rung .cta{margin-top:auto;padding-top:20px}
+.aura-v2 .rung .cta .btn{display:block;text-align:center;width:100%}
+.aura-v2 .bout{background:var(--white);color:var(--ink);border:1px solid var(--line2)}
+.aura-v2 .bwhite{background:#fff;color:var(--ink)}
+.aura-v2 .rung .time{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;color:var(--ink4);margin-top:10px;text-align:center}
+.aura-v2 .pricegrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px;align-items:start}
+.aura-v2 .pnight{background:var(--ink);border-radius:24px;padding:32px 28px;position:relative;overflow:hidden;color:#fff}
+.aura-v2 .pnight::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 88% 6%,rgba(0,206,201,.18),transparent 48%)}
+.aura-v2 .pnight > *{position:relative}
+.aura-v2 .pnight .kick{font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;color:#8E99A6}
+.aura-v2 .pnight .amt{display:flex;align-items:baseline;gap:12px;margin-top:14px}
+.aura-v2 .pnight .amt .n{font-family:var(--mono);font-size:clamp(44px,6vw,62px);font-weight:600;letter-spacing:-.045em;line-height:1;color:#fff}
+.aura-v2 .pnight .amt .u{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink4)}
+.aura-v2 .cypill{display:inline-block;margin-top:16px;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;padding:7px 12px;border-radius:999px;background:rgba(0,206,201,.14);color:var(--cyan)}
+.aura-v2 .tl{margin-top:26px;display:grid;gap:20px;position:relative}
+.aura-v2 .tl .tli{display:grid;grid-template-columns:18px 1fr;gap:14px;position:relative}
+.aura-v2 .tl .tli::after{content:"";position:absolute;left:8px;top:20px;bottom:-20px;width:2px;background:#28313A}
+.aura-v2 .tl .tli:last-child::after{display:none}
+.aura-v2 .bead{width:18px;height:18px;border-radius:999px;background:var(--cyan);margin-top:2px}
+.aura-v2 .bead.hollow{background:transparent;border:2px solid #4A5563}
+.aura-v2 .tl .tt{font-size:14px;font-weight:650;color:#fff}
+.aura-v2 .tl .tb{font-size:13px;color:#A7B0BC;line-height:1.6;margin-top:5px}
+.aura-v2 .terms{display:grid;gap:12px}
+.aura-v2 .terms li{display:grid;grid-template-columns:20px 1fr;gap:11px;font-size:13.5px;color:var(--ink2);line-height:1.6;list-style:none}
+.aura-v2 .tick{width:18px;height:18px;border-radius:999px;background:var(--greentint);display:grid;place-items:center;margin-top:2px}
+.aura-v2 .wavecard{margin-top:18px;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:20px}
+.aura-v2 .wavecard h4{font-size:15px;font-weight:650;letter-spacing:-.015em}
+.aura-v2 .wavechip{display:inline-flex;align-items:center;gap:7px;margin-top:10px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--amberT);background:var(--ambertint);padding:6px 11px;border-radius:999px}
+.aura-v2 .pips{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.aura-v2 .pips i{width:20px;height:20px;border-radius:6px;background:var(--canvas);border:1px solid var(--line);display:block}
+.aura-v2 .pips i.taken{background:linear-gradient(135deg,#0670C4,#04477C);border-color:transparent}
+.aura-v2 .pips i.next{background:transparent;border:1.6px dashed var(--amber)}
+.aura-v2 .wavenote{font-size:12.5px;color:var(--ink3);line-height:1.6;margin-top:12px}
+.aura-v2 .bnight{background:var(--ink);color:#fff;display:block;text-align:center;width:100%;margin-top:18px}
+.aura-v2 .bnight:hover{background:#000}
+@media(max-width:900px){.aura-v2 .rungs{grid-template-columns:1fr}}
+@media(max-width:860px){.aura-v2 .pricegrid{grid-template-columns:1fr}}
 .aura-v2 .founder img{width:48px;height:48px;border-radius:999px;object-fit:cover;flex-shrink:0}
 .aura-v2 .founder .t{font-size:14px;color:var(--ink3);line-height:1.55}
 .aura-v2 .founder .t b{color:var(--ink)}
@@ -213,10 +287,11 @@ const LANDING_V2_HTML = `
       <button data-p="get">What you get</button>
       <button data-p="why">Why now</button>
       <button data-p="cmp">Compare</button>
+      <button data-p="price">Pricing</button>
       <button data-p="faq">Questions</button>
     </div>
     <a class="navalt" id="navalt" href="/auth">Sign in</a>
-    <a class="navcta" id="navcta" href="/read">Read me free <span class="a">↗</span></a>
+    <a class="navcta" id="navcta" href="/read">Show me free <span class="a">↗</span></a>
   </nav>
 </div>
 
@@ -225,23 +300,27 @@ const LANDING_V2_HTML = `
 <section class="pg on" id="home">
   <div class="hero">
     <div>
-      <span class="tag"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2.6" fill="#0670C4"/><path d="M6 .8v1.8M6 9.4v1.8M.8 6h1.8M9.4 6h1.8M2.3 2.3l1.3 1.3M8.4 8.4l1.3 1.3M9.7 2.3L8.4 3.6M3.6 8.4l-1.3 1.3" stroke="#0670C4" stroke-width="1.1" stroke-linecap="round"/></svg> Personal intelligence system</span>
-      <h1>You know a lot.<br><span class="grad">Not enough people<br>know it.</span></h1>
-      <p class="sub">Aura tells you what you are truly good at — then turns what you read into <b>LinkedIn posts and carousels</b> in your own style.</p>
+      <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> AI professional identity platform</span>
+      <h1>Your experience is worth more<br><span class="grad">than your profile shows.</span></h1>
+      <p class="sub">Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof you can put in front of anyone.</p>
+      <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
       <div class="acts">
-        <form id="heroform" style="display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin:0">
-          <input class="heroin" id="heroin" type="text" inputmode="url" autocomplete="url" placeholder="linkedin.com/in/yourname" aria-label="Your LinkedIn profile address" style="font-family:var(--ui);font-size:14.5px;font-weight:500;padding:14px 16px;border:1px solid var(--line2);border-radius:9px;background:var(--white);color:var(--ink);min-width:255px;max-width:100%;line-height:1.2">
-          <button class="btn bp" id="heropri" type="submit">Read me</button>
+        <a class="btn bp" id="heropri" href="/auth?intent=assessment">Discover My Professional Position</a>
+        <button class="btn bg2" data-p="how">See How Aura Works</button>
+      </div>
+      <p class="support">Starts with a guided professional assessment. Free, yours to keep, no publishing required.</p>
+      <div class="fastlane">
+        <p class="fl"><b>In a hurry? Get the ninety-second read</b> → Paste your LinkedIn address and see how the market reads you today. No account.</p>
+        <form id="heroform" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0">
+          <input class="heroin" id="heroin" type="text" inputmode="url" autocomplete="url" placeholder="linkedin.com/in/yourname" aria-label="Your LinkedIn profile address" style="font-family:var(--ui);font-size:14.5px;font-weight:500;padding:13px 15px;border:1px solid var(--line2);border-radius:9px;background:var(--white);color:var(--ink);min-width:235px;max-width:100%;flex:1;line-height:1.2">
+          <button class="btn bg2" id="herofast" type="submit">Show me</button>
         </form>
-        <button class="btn bg2" data-p="how">See how it works</button>
-        <span class="seat"><span class="seatdot"></span><span class="seatline"></span></span>
-        <span class="mi">No account. Ninety seconds.</span>
       </div>
     </div>
     <div class="loopwrap">
       <svg viewBox="0 0 560 578" fill="none">
         <circle cx="280" cy="280" r="245" stroke="#EFF4FA" stroke-width="1.2"/>
-        <circle cx="280" cy="280" r="205" stroke="#E4E8EE" stroke-width="1.2"/>
+        <circle cx="280" cy="280" r="205" stroke="#E2E7EE" stroke-width="1.2"/>
         <circle class="dash" cx="280" cy="280" r="150" stroke="#D2D8E0" stroke-width="1.2"/>
         <defs>
           <linearGradient id="arcg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0670C4"/><stop offset="1" stop-color="#00CEC9"/></linearGradient>
@@ -249,27 +328,27 @@ const LANDING_V2_HTML = `
         <circle cx="280" cy="280" r="205" stroke="url(#arcg)" stroke-width="3" stroke-linecap="round" fill="none" stroke-dasharray="876 1288" transform="rotate(-96 280 280)"/>
         <g class="orb"><circle cx="485" cy="280" r="12" fill="#00CEC9" fill-opacity=".18"/><circle cx="485" cy="280" r="6" fill="#00CEC9"/></g>
         <path class="dash" d="M280 192 V119    M368 280 H441    M280 368 V441    M192 280 H119" stroke="#D2D8E0" stroke-width="1.2"/>
-        <circle cx="280" cy="280" r="76" fill="#0B1220"/>
+        <circle cx="280" cy="280" r="76" fill="#0F1519"/>
         <text x="280" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="36" font-weight="600" fill="#FFFFFF">85</text>
         <text x="280" y="289" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8.5" letter-spacing="1.6" fill="#00CEC9">YOUR IMPRINT</text>
         <text x="280" y="306" text-anchor="middle" font-family="Inter, sans-serif" font-size="9.5" fill="#8E99A6">rises every week</text>
 
-        <circle cx="280" cy="75" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <circle cx="280" cy="75" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
         <g stroke="#0670C4" stroke-width="1.6" stroke-linecap="round"><path d="M266 68h28M266 75h28M266 82h18"/></g>
         <text class="nodeL" x="280" y="133" text-anchor="middle">1 · YOU READ</text>
         <text class="nodeS" x="280" y="149" text-anchor="middle">One tap. One second.</text>
 
-        <circle cx="485" cy="280" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <circle cx="485" cy="280" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
         <g class="pulse"><circle cx="485" cy="280" r="13" stroke="#0670C4" stroke-width="1.6" fill="none"/><circle cx="485" cy="280" r="4.5" fill="#00CEC9"/></g>
         <text class="nodeL" x="485" y="338" text-anchor="middle">2 · IT LEARNS</text>
         <text class="nodeS" x="485" y="354" text-anchor="middle">Your subjects, your voice.</text>
 
-        <circle cx="280" cy="485" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <circle cx="280" cy="485" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
         <path d="M284 471l-11 15h9l-3 12 12-16h-9z" fill="#E0A82E"/>
         <text class="nodeL" x="280" y="543" text-anchor="middle">3 · IT WRITES AT NIGHT</text>
         <text class="nodeS" x="280" y="559" text-anchor="middle">While you sleep.</text>
 
-        <circle cx="75" cy="280" r="32" fill="#FFFFFF" stroke="#E4E8EE"/>
+        <circle cx="75" cy="280" r="32" fill="#FFFFFF" stroke="#E2E7EE"/>
         <path d="M63 280l8 9 17-19" stroke="#00807B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         <text class="nodeL" x="75" y="338" text-anchor="middle">4 · YOU APPROVE</text>
         <text class="nodeS" x="75" y="354" text-anchor="middle">One click. It is live.</text>
@@ -282,7 +361,7 @@ const LANDING_V2_HTML = `
     <div class="bene">
       <span class="step">01</span>
       <div class="viz"><svg width="120" height="90" viewBox="0 0 120 90" fill="none">
-        <circle cx="60" cy="45" r="34" stroke="#E4E8EE"/><circle cx="60" cy="45" r="22" stroke="#EFF4FA"/>
+        <circle cx="60" cy="45" r="34" stroke="#E2E7EE"/><circle cx="60" cy="45" r="22" stroke="#EFF4FA"/>
         <circle cx="60" cy="45" r="30" stroke="#E0A82E" stroke-width="1.2" stroke-dasharray="3 4"/>
         <path d="M60 11v68M26 45h68M36 21l48 48M84 21L36 69" stroke="#EFF4FA"/>
         <path d="M60 19 84 34 78 62 60 72 38 60 34 33Z" fill="#0670C4" fill-opacity=".18" stroke="#0670C4" stroke-width="1.4"/>
@@ -294,11 +373,11 @@ const LANDING_V2_HTML = `
     <div class="bene">
       <span class="step">02</span>
       <div class="viz"><svg width="150" height="90" viewBox="0 0 150 90" fill="none">
-        <rect x="2" y="26" width="34" height="42" rx="5" fill="#FFF" stroke="#E4E8EE"/>
+        <rect x="2" y="26" width="34" height="42" rx="5" fill="#FFF" stroke="#E2E7EE"/>
         <rect x="14" y="20" width="34" height="42" rx="5" fill="#FFF" stroke="#D2D8E0"/>
         <rect x="26" y="14" width="34" height="42" rx="5" fill="#FFF" stroke="#0670C4"/>
         <path class="dash" d="M64 40h22" stroke="#00CEC9" stroke-width="1.4"/>
-        <rect x="90" y="14" width="56" height="60" rx="10" fill="#0B1220"/>
+        <rect x="90" y="14" width="56" height="60" rx="10" fill="#0F1519"/>
         <g fill="#00CEC9"><circle cx="104" cy="30" r="3"/><circle cx="118" cy="30" r="3"/><circle cx="132" cy="30" r="3"/><circle class="pulse" cx="104" cy="44" r="3"/><circle cx="118" cy="44" r="3"/><circle cx="132" cy="44" r="3"/><circle cx="104" cy="58" r="3"/><circle cx="118" cy="58" r="3"/><circle cx="132" cy="58" r="3"/></g>
       </svg></div>
       <div class="big k">Nothing lost</div>
@@ -308,12 +387,12 @@ const LANDING_V2_HTML = `
     <div class="bene">
       <span class="step">03</span>
       <div class="viz"><svg width="180" height="90" viewBox="0 0 180 90" fill="none">
-        <rect x="0" y="12" width="86" height="66" rx="10" fill="#0B1220"/>
+        <rect x="0" y="12" width="86" height="66" rx="10" fill="#0F1519"/>
         <path d="M28 30a13 13 0 1 0 12 19 15 15 0 0 1-12-19Z" fill="#E0A82E"/>
         <g fill="#00CEC9"><circle cx="56" cy="28" r="1.6"/><circle cx="66" cy="38" r="1.2"/><circle cx="50" cy="45" r="1.2"/></g>
         <text x="12" y="68" font-family="IBM Plex Mono, monospace" font-size="7.5" letter-spacing="1.1" fill="#8E99A6">02:00 → DAWN</text>
         <path class="dash" d="M90 45h16" stroke="#D2D8E0" stroke-width="1.3"/>
-        <rect x="110" y="16" width="42" height="34" rx="6" fill="#FFF" stroke="#E4E8EE"/>
+        <rect x="110" y="16" width="42" height="34" rx="6" fill="#FFF" stroke="#E2E7EE"/>
         <g stroke="#D2D8E0" stroke-width="1.4" stroke-linecap="round"><path d="M118 26h26M118 32h26M118 38h16"/></g>
         <g fill="#0670C4" fill-opacity=".22"><rect x="110" y="58" width="12" height="18" rx="3"/><rect x="126" y="58" width="12" height="18" rx="3"/><rect x="142" y="58" width="12" height="18" rx="3"/></g>
       </svg></div>
@@ -355,20 +434,20 @@ const LANDING_V2_HTML = `
   <div class="eyebrow">The pipeline, end to end</div>
   <div class="wide rv">
     <svg viewBox="0 0 900 300" fill="none">
-      <rect x="222" y="18" width="440" height="176" rx="16" fill="#0B1220"/>
+      <rect x="222" y="18" width="440" height="176" rx="16" fill="#0F1519"/>
       <text x="442" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" letter-spacing="1.6" fill="#00CEC9">02:00 → DAWN · YOU ARE ASLEEP</text>
 
       <rect x="10" y="58" width="196" height="106" rx="12" fill="#FFFFFF" stroke="#0670C4" stroke-width="1.4"/>
       <text x="30" y="84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.4" fill="#0670C4">STAGE 1 · YOU</text>
-      <text x="30" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0B1220">You read</text>
+      <text x="30" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0F1519">You read</text>
       <text x="30" y="134" font-family="Inter, sans-serif" font-size="12" fill="#66707D">One tap on an article</text>
       <text x="30" y="150" font-family="Inter, sans-serif" font-size="12" fill="#66707D">worth keeping.</text>
 
       <path d="M212 111h22" stroke="#D2D8E0" stroke-width="1.4"/><path d="M230 106l7 5-7 5" fill="#D2D8E0"/>
 
-      <rect x="240" y="58" width="196" height="106" rx="12" fill="#FFFFFF" stroke="#E4E8EE"/>
+      <rect x="240" y="58" width="196" height="106" rx="12" fill="#FFFFFF" stroke="#E2E7EE"/>
       <text x="260" y="84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.4" fill="#9AA4B0">STAGE 2 · AURA</text>
-      <text x="260" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0B1220">It keeps it</text>
+      <text x="260" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0F1519">It keeps it</text>
       <text x="260" y="134" font-family="Inter, sans-serif" font-size="12" fill="#66707D">Broken into pieces you</text>
       <text x="260" y="150" font-family="Inter, sans-serif" font-size="12" fill="#66707D">can use months later.</text>
 
@@ -385,7 +464,7 @@ const LANDING_V2_HTML = `
 
       <rect x="694" y="58" width="196" height="106" rx="12" fill="#FFFFFF" stroke="#0670C4" stroke-width="1.4"/>
       <text x="714" y="84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.4" fill="#0670C4">STAGE 4 · YOU</text>
-      <text x="714" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0B1220">You approve</text>
+      <text x="714" y="110" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0F1519">You approve</text>
       <text x="714" y="134" font-family="Inter, sans-serif" font-size="12" fill="#66707D">One click and it is live</text>
       <text x="714" y="150" font-family="Inter, sans-serif" font-size="12" fill="#66707D">on LinkedIn.</text>
 
@@ -448,7 +527,7 @@ const LANDING_V2_HTML = `
       <div class="pb">
         <svg viewBox="0 0 320 230" fill="none" style="width:100%;height:auto">
           <g stroke="#EFF4FA"><circle cx="160" cy="115" r="88"/><circle cx="160" cy="115" r="66"/><circle cx="160" cy="115" r="44"/><circle cx="160" cy="115" r="22"/></g>
-          <g stroke="#E4E8EE"><path d="M160 27v176M72 115h176M98 53l124 124M222 53L98 177"/></g>
+          <g stroke="#E2E7EE"><path d="M160 27v176M72 115h176M98 53l124 124M222 53L98 177"/></g>
           <path d="M160 36 226 66 240 115 214 168 160 186 104 166 84 112 106 62Z" fill="#0670C4" fill-opacity=".16" stroke="#0670C4" stroke-width="1.6"/>
           <g fill="#0670C4"><circle cx="160" cy="36" r="3"/><circle cx="226" cy="66" r="3"/><circle cx="240" cy="115" r="3"/><circle cx="214" cy="168" r="3"/><circle cx="160" cy="186" r="3"/><circle cx="104" cy="166" r="3"/><circle cx="84" cy="112" r="3"/><circle cx="106" cy="62" r="3"/></g>
           <circle cx="84" cy="112" r="7" stroke="#E0A82E" stroke-width="1.8" fill="none"/>
@@ -460,8 +539,8 @@ const LANDING_V2_HTML = `
             <text x="242" y="188" text-anchor="middle">LEADERSHIP</text>
             <text x="160" y="212" text-anchor="middle">DELIVERY</text>
             <text x="74" y="188" text-anchor="middle">COMMERCIAL</text>
-            <text x="34" y="118" text-anchor="middle" fill="#95690F">FINANCE</text>
-            <text x="70" y="46" text-anchor="middle" fill="#95690F">C-SUITE</text>
+            <text x="34" y="118" text-anchor="middle" fill="#9A6F12">FINANCE</text>
+            <text x="70" y="46" text-anchor="middle" fill="#9A6F12">C-SUITE</text>
           </g>
         </svg>
         <div style="display:flex;align-items:center;gap:9px;margin-top:12px;font-size:13px;color:#66707D">
@@ -476,7 +555,7 @@ const LANDING_V2_HTML = `
         <svg viewBox="0 0 300 118" fill="none" style="width:100%;height:auto">
           <circle cx="112" cy="59" r="52" fill="#0670C4" fill-opacity=".1" stroke="#0670C4"/>
           <circle cx="188" cy="59" r="52" fill="#00CEC9" fill-opacity=".12" stroke="#00807B"/>
-          <path d="M150 14a52 52 0 0 1 0 90 52 52 0 0 1 0-90Z" fill="#0B1220"/>
+          <path d="M150 14a52 52 0 0 1 0 90 52 52 0 0 1 0-90Z" fill="#0F1519"/>
           <text x="70" y="54" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" letter-spacing="1" fill="#0670C4">BIG PLANS</text>
           <text x="70" y="68" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" fill="#66707D">strategy people</text>
           <text x="232" y="54" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" letter-spacing="1" fill="#00807B">REAL DELIVERY</text>
@@ -521,7 +600,7 @@ const LANDING_V2_HTML = `
       <div class="ph"><span class="t">The carousel, designed for you</span><span class="m">NO DESIGNER NEEDED</span></div>
       <div class="pb">
         <div class="slides">
-          <div class="sl" style="background:#0B1220;color:#fff">
+          <div class="sl" style="background:#0F1519;color:#fff">
             <svg class="shape" style="top:-14px;right:-14px" width="70" height="70" viewBox="0 0 70 70" fill="none"><circle cx="40" cy="30" r="26" stroke="#00CEC9" stroke-opacity=".35"/><circle cx="40" cy="30" r="16" stroke="#00CEC9" stroke-opacity=".2"/></svg>
             <span class="n">01</span><span class="t">The twin was<br><span style="color:#00CEC9">never the asset</span></span>
           </div>
@@ -529,11 +608,11 @@ const LANDING_V2_HTML = `
             <svg class="shape" style="right:10px;top:26px" width="56" height="42" viewBox="0 0 56 42" fill="none"><rect x="2" y="24" width="10" height="16" rx="2" fill="#fff" fill-opacity=".3"/><rect x="16" y="16" width="10" height="24" rx="2" fill="#fff" fill-opacity=".45"/><rect x="30" y="8" width="10" height="32" rx="2" fill="#fff" fill-opacity=".6"/><rect x="44" y="2" width="10" height="38" rx="2" fill="#fff" fill-opacity=".8"/></svg>
             <span class="n">02</span><span class="t" style="font-size:19px">85m spent<br><span style="font-size:10px;font-weight:500;opacity:.85">over 18 months</span></span>
           </div>
-          <div class="sl" style="background:#EFF4FA;border:1px solid #D2D8E0;color:#0B1220">
+          <div class="sl" style="background:#EFF4FA;border:1px solid #D2D8E0;color:#0F1519">
             <svg class="shape" style="top:10px;right:10px" width="30" height="28" viewBox="0 0 30 28" fill="none"><path d="M15 3l12 22H3z" stroke="#E0A82E" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 11v6M15 20v1.4" stroke="#E0A82E" stroke-width="1.8" stroke-linecap="round"/></svg>
             <span class="n">03</span><span class="t">Operations still<br>use the old system</span>
           </div>
-          <div class="sl" style="background:#0B1220;color:#00CEC9">
+          <div class="sl" style="background:#0F1519;color:#00CEC9">
             <svg class="shape" style="right:10px;top:26px" width="66" height="66" viewBox="0 0 66 66" fill="none"><path d="M12 46L48 14M32 14h16v16" stroke="#00CEC9" stroke-opacity=".3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span class="n">04</span><span class="t">Trust in the data<br>is the real asset</span>
           </div>
@@ -572,12 +651,12 @@ const LANDING_V2_HTML = `
       <text x="760" y="63" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="24" font-weight="600" fill="#C0392B">0</text>
       <text x="822" y="59" font-family="Inter, sans-serif" font-size="12" fill="#66707D">posts written</text>
       <text x="10" y="100" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.3" fill="#C0392B" id="dCost">= SAR 78,000 OF YOUR OWN TIME, AND NOTHING TO SHOW</text>
-      <path d="M10 122h880" stroke="#E4E8EE"/>
+      <path d="M10 122h880" stroke="#E2E7EE"/>
       <text x="10" y="152" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1.5" fill="#00807B">WITH AURA</text>
       <rect x="10" y="164" width="600" height="46" rx="10" fill="url(#rise)"/>
-      <text x="30" y="193" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#0B1220" id="dHours2">the same 260 hours</text>
+      <text x="30" y="193" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="#0F1519" id="dHours2">the same 260 hours</text>
       <path d="M618 187h100" stroke="#00CEC9" stroke-width="1.8"/>
-      <circle cx="760" cy="187" r="34" fill="#0B1220"/>
+      <circle cx="760" cy="187" r="34" fill="#0F1519"/>
       <text x="760" y="195" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="20" font-weight="600" fill="#00CEC9">50+</text>
       <text x="822" y="184" font-family="Inter, sans-serif" font-size="12" fill="#66707D">posts, in</text>
       <text x="822" y="200" font-family="Inter, sans-serif" font-size="12" fill="#66707D">your voice</text>
@@ -596,7 +675,7 @@ const LANDING_V2_HTML = `
   </div>
 
   <div class="g2 rv" style="margin-top:22px">
-    <div style="background:#FFF;border:1px solid #E4E8EE;border-radius:20px;padding:32px 28px">
+    <div style="background:#FFF;border:1px solid #E2E7EE;border-radius:20px;padding:32px 28px">
       <div class="viz"><svg width="230" height="80" viewBox="0 0 230 80" fill="none">
         <rect x="2" y="14" width="40" height="52" rx="6" fill="#FFF" stroke="#0670C4"/>
         <rect x="50" y="14" width="40" height="52" rx="6" fill="#FFF" stroke="#0670C4" stroke-opacity=".6"/>
@@ -631,8 +710,9 @@ const LANDING_V2_HTML = `
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A designer</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:40%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$30–160</span></div>
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A posting tool</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:26%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–100</span></div>
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">An AI writing tool</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:18%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–40</span></div>
-    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center"><span style="font-size:13.5px;color:#0B1220;font-weight:600">Aura, all of it</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:100%;border-radius:7px;background:linear-gradient(90deg,#7FD3B4,#12805C)"></i></span><span class="mi" style="text-align:right;color:#12805C;font-weight:700">Free</span></div>
-    <p class="mi" style="margin-top:16px;line-height:1.7">EXAMPLE FIGURES, ADJUSTABLE TO YOUR OWN HOURS AND RATE. WE DO NOT PROMISE FOLLOWERS OR LIKES.</p>
+    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center"><span style="font-size:13.5px;color:#0F1519;font-weight:600">Aura, all of it</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:100%;border-radius:7px;background:linear-gradient(90deg,#7FD3B4,#12805C)"></i></span><span class="mi" style="text-align:right;color:#12805C;font-weight:700">${SEAT_PRICE.split(" ")[0]}</span></div>
+    <p style="margin-top:16px;font-size:13.5px;color:var(--ink3);line-height:1.7">Your report is free and stays free. The part that runs every night is ${SEAT_PRICE} — locked for as long as you stay, while the founding seats last.</p>
+    <p class="mi" style="margin-top:12px;line-height:1.7">EXAMPLE FIGURES, ADJUSTABLE TO YOUR OWN HOURS AND RATE. WE DO NOT PROMISE FOLLOWERS OR LIKES.</p>
   </div>
 </section>
 
@@ -685,7 +765,7 @@ const LANDING_V2_HTML = `
       <div class="viz"><svg width="180" height="80" viewBox="0 0 180 80" fill="none">
         <circle cx="26" cy="40" r="20" fill="#0670C4"/><path d="M18 40l6 7 13-15" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         <path class="dash" d="M52 40h30" stroke="#00CEC9" stroke-width="1.6"/>
-        <rect x="88" y="12" width="88" height="56" rx="9" fill="#0B1220"/>
+        <rect x="88" y="12" width="88" height="56" rx="9" fill="#0F1519"/>
         <g stroke="#00CEC9" stroke-width="1.6" stroke-linecap="round"><path d="M100 30h58M100 40h58M100 50h34"/></g>
       </svg></div>
       <div class="big b" style="font-size:28px">We learn<br>you first</div>
@@ -706,32 +786,125 @@ const LANDING_V2_HTML = `
     <details><summary>Will the posts really sound like me?</summary><p>Aura learns from your own posts: how you open, how you explain, how you finish. And you read every word before anything goes out.</p></details>
     <details><summary>Does it work in Arabic?</summary><p>Yes. Arabic is written as Arabic and English as English. One is never a translation of the other.</p></details>
     <details><summary>Who owns what I save?</summary><p>You do. Your articles, your notes, your posts. We never use your work to help anyone else.</p></details>
-    <details><summary>What does “free” mean exactly?</summary><p>The first members pay nothing, with no card. If a price arrives later it does not apply to you — you keep the terms you joined on.</p></details>
+    <details><summary>What does “free” mean exactly?</summary><p>Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. Founding members keep that rate for as long as they stay, and no card is taken until Aura has published a post for someone who is not the founder.</p></details>
     <details><summary>What if I stop using it?</summary><p>Everything you saved stays yours and you can take it with you. Nothing is locked.</p></details>
   </div>
 
   <div class="dark rv"><div class="dark-in" style="grid-template-columns:1fr;text-align:center">
     <div>
-      <h3 style="max-width:none;margin:0 auto">Still deciding?<br><em>It costs nothing to look and try.</em></h3>
-      <p style="max-width:460px;margin:12px auto 0">The founder seats close soon — and members keep the terms they joined on.</p>
-      <div style="margin-top:22px"><button class="btn bp" data-p="join">Request a founder seat</button></div>
-      <p class="jf"><span class="seatline"></span></p>
+      <h3 style="max-width:none;margin:0 auto">Still deciding?<br><em style="font-style:italic;color:var(--ink4)">Then just take the free report.</em></h3>
+      <p style="max-width:460px;margin:12px auto 0">It is yours whether you ever pay us or not. If it shows you something you did not know about yourself, the seat will still be here.</p>
+      <div style="margin-top:22px;display:flex;gap:11px;justify-content:center;flex-wrap:wrap">
+        <a class="btn bp" href="/auth?intent=assessment">Get my report — free</a>
+        <a class="btn bg2" href="#price" data-p="price">See the founding seat</a>
+      </div>
     </div>
   </div></div>
 </section>
 
-<section class="pg" id="join">
-  <div class="join"><div class="join-in">
-    <span class="tag" style="background:rgba(0,206,201,.14);color:#00CEC9">Founding circle · 50 seats</span>
-    <h2>Show the market<br>what you already know.</h2>
-    <p>Your report first — what you are good at and the space that is yours. Then your posts and carousels, from what you read.</p>
-    <div style="margin-top:26px">
-      <div style="font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.02em;color:#fff">$29 a month</div>
-      <div class="jf" style="margin-top:6px">For as long as you stay. It will be $69.</div>
+<section class="pg" id="price">
+  <div class="hdr">
+    <span class="tag">Three ways in</span>
+    <h2>Seeing yourself is free.<br><span class="grad">Being seen every week is the paid part.</span></h2>
+  </div>
+
+  <div class="rungs rv">
+    <div class="rung">
+      <span class="chip">NO ACCOUNT</span>
+      <span class="kick">01 · THE QUICK READ</span>
+      <h3>See yourself as the market does</h3>
+      <p class="one">The fastest honest look at how you currently come across.</p>
+      <div class="prc"><span class="p">Free</span><span class="u">FOREVER</span></div>
+      <p class="pn">No account, no card, no email required.</p>
+      <div class="blk">
+        <span class="bl do">WHAT YOU DO</span>
+        <ul><li>Paste your LinkedIn address</li><li>Wait ninety seconds</li></ul>
+      </div>
+      <div class="blk">
+        <span class="bl get">WHAT YOU GET</span>
+        <ul><li>How the market reads you today, in plain words</li><li>The one thing your profile is not saying about you</li><li>A card you can keep or send to someone</li></ul>
+      </div>
+      <div class="cta"><a class="btn bout" href="/read">Show me the quick read</a><p class="time">90 SECONDS</p></div>
     </div>
-    <div style="margin-top:20px"><a class="btn bp" href="/request-access">Request my founder seat</a></div>
-    <div class="jf">30 SECONDS · WE ANSWER WITHIN 24 HOURS · <span class="seatline"></span></div>
-  </div></div>
+
+    <div class="rung">
+      <span class="chip">FREE ACCOUNT</span>
+      <span class="kick">02 · YOUR PROFESSIONAL IDENTITY</span>
+      <h3>The full picture, and it stays yours</h3>
+      <p class="one">The complete assessment. Most people have never seen this much about themselves in one place.</p>
+      <div class="prc"><span class="p">Free</span><span class="u">YOURS TO KEEP</span></div>
+      <p class="pn">Free permanently — not a trial, not thirty days.</p>
+      <div class="blk">
+        <span class="bl do">WHAT YOU DO</span>
+        <ul><li>Connect your LinkedIn profile</li><li>Upload your CV</li><li>Answer nine questions about your work</li><li>Rate yourself on 24 capability statements</li></ul>
+      </div>
+      <div class="blk">
+        <span class="bl get">WHAT YOU GET</span>
+        <ul>
+          <li><b>A capability and skills map</b> — what is proven, what is real but invisible, what is not there yet</li>
+          <li><b>CV against LinkedIn</b> — where the two disagree, and what each one is hiding</li>
+          <li><b>The space nobody else holds</b> — the position that is yours</li>
+          <li><b>Your three subjects</b> — instead of writing about ten</li>
+          <li><b>How three people read you</b> — a headhunter, a client, a peer</li>
+          <li><b>The full report as a PDF</b>, and a card to share</li>
+        </ul>
+      </div>
+      <div class="cta"><a class="btn bp" href="/auth?intent=assessment">Discover My Professional Position</a><p class="time">ABOUT 9 MINUTES · SAVE AND RETURN</p></div>
+    </div>
+
+    <div class="rung night">
+      <span class="chip" data-wave="chip" style="display:none"></span>
+      <span class="kick"><span class="cdot"></span>03 · THE LOOP</span>
+      <h3>Be seen every week, without writing</h3>
+      <p class="one">Your identity stops being a document and starts being a weekly presence.</p>
+      <div class="prc"><span class="p" style="color:#fff">${SEAT_PRICE}</span><span class="u">/MONTH · LOCKED FOR LIFE</span></div>
+      <p class="pn">Becomes ${SEAT_LIST_PRICE} when the fifty seats are gone. You keep ${SEAT_PRICE.split(" ")[0]}.</p>
+      <div class="blk">
+        <span class="bl do">WHAT YOU DO</span>
+        <ul><li>One tap on anything worth keeping</li><li>Two minutes to read and approve</li></ul>
+      </div>
+      <div class="blk">
+        <span class="bl get">WHAT YOU GET</span>
+        <ul>
+          <li><b>Everything you read, kept</b> — broken into pieces you can still use in November</li>
+          <li><b>Posts and carousels written by dawn</b> — in your voice, designed, ready</li>
+          <li><b>The source shown</b> — when someone asks where this came from, you have the answer</li>
+          <li><b>English or Arabic</b> — neither a translation of the other</li>
+          <li><b>Your identity rewritten every quarter</b> — it moves as you do</li>
+        </ul>
+      </div>
+      <div class="cta"><a class="btn bwhite" href="${SEAT_PATH}">${SEAT_CTA}</a><p class="time">≈ 2 MINUTES A DAY</p></div>
+    </div>
+  </div>
+
+  <div class="pricegrid rv">
+    <div class="pnight">
+      <span class="kick">THE LOOP · FOUNDING RATE</span>
+      <div class="amt"><span class="n">${SEAT_PRICE.split(" ")[0]}</span><span class="u">PER MONTH</span></div>
+      <span class="cypill">YOURS FOR AS LONG AS YOU STAY</span>
+      <div class="tl">
+        <div class="tli"><span class="bead"></span><div><div class="tt">Now — seats 1 to 50</div><div class="tb">${SEAT_PRICE}. The rate is attached to you, not to the date you joined.</div></div></div>
+        <div class="tli"><span class="bead hollow"></span><div><div class="tt">From seat 51</div><div class="tb">${SEAT_LIST_PRICE} a month for everyone who comes after. The founding fifty are not moved.</div></div></div>
+        <div class="tli"><span class="bead hollow"></span><div><div class="tt">Every year after that</div><div class="tb">You are still paying ${SEAT_PRICE.split(" ")[0]}. That is the entire promise, and it is in writing.</div></div></div>
+      </div>
+    </div>
+    <div>
+      <ul class="terms">
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>No card today. Billing does not open until Aura has published a post for someone who is not the founder. If that never happens, you are never charged.</span></li>
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Your report is free either way. The seat buys the weekly loop. The assessment was always yours to keep.</span></li>
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Locked for as long as you stay — not twelve months, not “introductory”.</span></li>
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Leave and take everything. Every capture, draft and report exports. Nothing is held back.</span></li>
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Signed by the founder, with his name and his face, and he answers you himself.</span></li>
+      </ul>
+      <div class="wavecard" data-wave="card" style="display:none">
+        <h4>Seats open in waves of ten</h4>
+        <span class="wavechip" data-wave="chip2"></span>
+        <div class="pips" data-wave="pips"></div>
+        <p class="wavenote" data-wave="note"></p>
+      </div>
+      <a class="btn bnight" href="${SEAT_PATH}">Take a founding seat — ${SEAT_PRICE.split(" ")[0]} locked</a>
+    </div>
+  </div>
   <div class="founder">
     <img src="/aura-founder.jpg" alt="Mohammad Mahafdhah">
     <div class="t"><b>Mohammad Mahafdhah</b> — I built Aura from my own reading, because I had the same problem. Write to me directly and I will answer.</div>
@@ -767,9 +940,9 @@ const LandingV2 = () => {
   const [mounted, setMounted] = useState(false);
 
   usePageMeta({
-    title: "Aura — You know a lot. Not enough people know it.",
+    title: "Aura — Your experience is worth more than your profile shows",
     description:
-      "Aura tells you what you are truly good at, then turns what you read into LinkedIn posts and carousels in your own style. Free for the first founding members.",
+      "Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof. The assessment is free and yours to keep.",
     path: "/",
   });
 
@@ -793,7 +966,9 @@ const LandingV2 = () => {
     if (!root || signedIn === null) return;
     const alt = root.querySelector<HTMLAnchorElement>("#navalt");
     const cta = root.querySelector<HTMLAnchorElement>("#navcta");
-    const hero = root.querySelector<HTMLButtonElement>("#heropri");
+    const hero = root.querySelector<HTMLAnchorElement>("#heropri");
+    const fast = root.querySelector<HTMLButtonElement>("#herofast");
+    const lane = root.querySelector<HTMLElement>(".fastlane");
     const heroIn = root.querySelector<HTMLInputElement>("#heroin");
     if (alt) {
       alt.textContent = signedIn ? "Sign out" : "Sign in";
@@ -802,13 +977,16 @@ const LandingV2 = () => {
       else delete alt.dataset.signout;
     }
     if (cta) {
-      cta.innerHTML = `${signedIn ? "Open Aura" : "Read me free"} <span class="a">↗</span>`;
+      cta.innerHTML = `${signedIn ? "Open Aura" : "Show me free"} <span class="a">↗</span>`;
       cta.setAttribute("href", signedIn ? "/home" : "/read");
     }
     if (hero) {
-      hero.textContent = signedIn ? "Open Aura" : "Read me";
+      hero.textContent = signedIn ? "Open Aura" : "Discover My Professional Position";
+      hero.setAttribute("href", signedIn ? "/home" : "/auth?intent=assessment");
     }
+    if (fast) fast.textContent = "Show me";
     if (heroIn) heroIn.style.display = signedIn ? "none" : "";
+    if (lane) lane.style.display = signedIn ? "none" : "";
   }, [signedIn, mounted]);
 
   /* ── the hero form: never blocks, /read does the validating ── */
@@ -1014,9 +1192,29 @@ const LandingV2 = () => {
         const claimed = Number(row?.claimed);
         const cap = Number(row?.cap);
         if (!Number.isFinite(claimed) || !Number.isFinite(cap) || cap <= 0) return;
-        rootRef.current?.querySelectorAll(".seatline").forEach((el) => {
-          el.textContent = `${claimed} of ${cap} founding seats taken`;
+        const root = rootRef.current;
+        if (!root) return;
+        const wave = Math.floor(claimed / 10) + 1;
+        const inWave = claimed % 10;
+        const leftWave = 10 - inWave;
+        const line = `Wave ${wave} · ${leftWave} left`;
+        root.querySelectorAll<HTMLElement>(".seatline").forEach((el) => { el.textContent = line; });
+        root.querySelectorAll<HTMLElement>('[data-wave="chip"],[data-wave="chip2"]').forEach((el) => {
+          el.textContent = `WAVE ${wave} · ${leftWave} LEFT`;
+          el.style.display = "";
         });
+        const card = root.querySelector<HTMLElement>('[data-wave="card"]');
+        if (card) card.style.display = "";
+        const pips = root.querySelector<HTMLElement>('[data-wave="pips"]');
+        if (pips) {
+          pips.innerHTML = Array.from({ length: 10 }, (_, i) =>
+            `<i class="${i < inWave ? "taken" : i === inWave ? "next" : ""}"></i>`,
+          ).join("");
+        }
+        const note = root.querySelector<HTMLElement>('[data-wave="note"]');
+        if (note) {
+          note.textContent = `${inWave} of the first ten are taken. When wave one closes, wave two opens — same rate, until the fiftieth seat.`;
+        }
       } catch {
         /* silent — the seat line simply stays empty */
       }
