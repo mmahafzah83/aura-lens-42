@@ -17,11 +17,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { email, password, origin } = await req.json();
+    const { email, password, origin, consent_version } = await req.json();
     const addr = String(email || "").trim().toLowerCase();
     const pwd = String(password || "");
     if (!addr.includes("@") || addr.length < 5) return json({ error: "Enter a valid email address." }, 400);
     if (pwd.length < 8) return json({ error: "Use eight characters or more." }, 400);
+    const version = String(consent_version || "").trim();
+    if (!version) return json({ error: "Consent is required before an account can be opened." }, 400);
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -44,7 +46,7 @@ serve(async (req) => {
     }
 
     const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { error } = await anon.auth.signUp({
+    const { data: signUpData, error } = await anon.auth.signUp({
       email: addr,
       password: pwd,
       options: { emailRedirectTo: `${origin || "https://aura-intel.org"}/auth?msg=verified` },
@@ -52,6 +54,23 @@ serve(async (req) => {
     if (error) return json({ error: error.message }, 400);
 
     await admin.from("signup_attempts").insert({ ip_hash });
+
+    // Record the consent against the profile row. A ticked box that leaves no
+    // record proves nothing later.
+    const newUserId = signUpData?.user?.id;
+    if (newUserId) {
+      const { error: profileError } = await admin
+        .from("diagnostic_profiles")
+        .upsert(
+          {
+            user_id: newUserId,
+            consented_at: new Date().toISOString(),
+            consent_version: version,
+          },
+          { onConflict: "user_id" },
+        );
+      if (profileError) console.error("consent record failed", profileError);
+    }
 
     return json({ ok: true });
   } catch (e) {

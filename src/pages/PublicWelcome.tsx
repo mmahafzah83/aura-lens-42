@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import usePageMeta from "@/hooks/usePageMeta";
 import ScrollSpyNav from "@/components/ScrollSpyNav";
 import { AuraLogo } from "@/components/brand/AuraLogo";
+import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
 
 // System-A tokens (resolved at runtime from index.css)
 const BRONZE = "var(--action)";
@@ -797,7 +798,7 @@ export default function PublicWelcome() {
         <div style={{ fontSize: 12, color: INK_2, marginTop: 4 }}>Aura builder</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16 }}>
           <AuraLogo variant="auto" size={20} />
-          <span style={{ fontSize: 11, color: INK_2, fontFamily: BODY }}>Aura · Personal Intelligence System · aura-intel.org</span>
+          <span style={{ fontSize: 11, color: INK_2, fontFamily: BODY }}>Aura · {PRODUCT_DESCRIPTOR} · aura-intel.org</span>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 14, marginTop: 16, fontSize: 12 }}>
           <Link to="/our-story" style={{ color: "var(--glass-2)" }}>Our story</Link>

@@ -6,7 +6,16 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 import usePageMeta from "@/hooks/usePageMeta";
 import { isProfileComplete } from "@/lib/onboarding";
-import { SEAT_CTA } from "@/lib/seatCopy";
+import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
+
+/** The consent text version recorded against every new account. */
+export const CONSENT_VERSION = "2026-08-16";
+
+const readParam = (key: string) => {
+  if (typeof window === "undefined") return "";
+  try { return new URLSearchParams(window.location.search).get(key) ?? ""; }
+  catch { return ""; }
+};
 
 /* ────────────────────────────────────────────────────────────────
    /auth — "The Return".
@@ -25,22 +34,20 @@ import { SEAT_CTA } from "@/lib/seatCopy";
 type View = "signin" | "signup" | "verify" | "sent" | "newPassword";
 
 const Auth = () => {
-  usePageMeta({
-    title: "Aura — Sign in",
-    description: "Sign in to Aura — your signals, your drafts, and the work that ran overnight.",
-    path: "/auth",
-  });
-
-  const readParam = (key: string) => {
-    if (typeof window === "undefined") return "";
-    try { return new URLSearchParams(window.location.search).get(key) ?? ""; }
-    catch { return ""; }
-  };
-
   const [email, setEmail] = useState(() => readParam("email"));
   const [hasEmailParam] = useState(() => !!readParam("email"));
   const [isAssessment] = useState(() => readParam("intent") === "assessment");
+
+  usePageMeta({
+    title: isAssessment ? "Aura — Start your professional assessment" : "Aura — Sign in",
+    description: isAssessment
+      ? "Create your Aura account and start your professional assessment — free, and yours to keep."
+      : "Sign in to Aura — your signals, your drafts, and the work that ran overnight.",
+    path: "/auth",
+  });
+
   const [password, setPassword] = useState("");
+  const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resending, setResending] = useState(false);
@@ -181,19 +188,36 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignUpError(null);
-    if (!email.includes("@")) { setSignUpError("Enter a valid email address."); return; }
-    if (password.length < 8) { setSignUpError("Use eight characters or more."); return; }
+    setEmailError(null);
+    if (signingUp) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setEmailError("That doesn't look like an email address. Check it and try again.");
+      emailRef.current?.focus();
+      return;
+    }
+    if (password.length < 8) { setSignUpError("Use eight characters or more."); pwdRef.current?.focus(); return; }
+    if (!consent) return;
     setSigningUp(true);
     try {
       const { data, error } = await supabase.functions.invoke("auth-signup", {
-        body: { email: email.trim().toLowerCase(), password, origin: window.location.origin },
+        body: {
+          email: email.trim().toLowerCase(),
+          password,
+          origin: window.location.origin,
+          consent_version: CONSENT_VERSION,
+        },
       });
       const msg = (data as any)?.error || (error as any)?.message;
       if (msg) {
+        const raw = String(msg);
         setSignUpError(
-          /already/i.test(String(msg))
-            ? "There is already an account on that email. Sign in below."
-            : String(msg),
+          /already|registered|exists/i.test(raw)
+            ? "If that email can be used, we've sent a confirmation link. Already have an account? Sign in below."
+            : /rate|too many|429/i.test(raw)
+              ? "That's a lot of attempts from here today. Write to support@aura-intel.org and it's sorted by hand."
+              : /password/i.test(raw)
+                ? "Use eight characters or more."
+                : "Couldn't open the account just now. Try again in a moment.",
         );
         return;
       }
@@ -311,7 +335,7 @@ const Auth = () => {
             <Link className="au-brandrow" to="/">
               <AuraLogo size={30} variant="auto" />
               <span className="au-bn">Aura</span>
-              <span className="au-bsub">Personal professional intelligence</span>
+              <span className="au-bsub">{PRODUCT_DESCRIPTOR}</span>
             </Link>
 
             <h1 className="au-h1">{headline}</h1>
@@ -324,36 +348,62 @@ const Auth = () => {
                   <label htmlFor="au-suemail">Your email</label>
                   <input
                     id="au-suemail" ref={emailRef} type="email" value={email} required
-                    autoComplete="email" placeholder="you@email.com" className="au-field"
-                    onChange={(e) => { setEmail(e.target.value); setSignUpError(null); }}
+                    autoComplete="email" inputMode="email" autoCapitalize="off"
+                    autoCorrect="off" spellCheck={false}
+                    placeholder="you@email.com" className="au-field"
+                    aria-invalid={!!emailError}
+                    aria-describedby={emailError ? "au-suemail-err" : undefined}
+                    onChange={(e) => { setEmail(e.target.value); setSignUpError(null); setEmailError(null); }}
                   />
+                  <p className="au-err" id="au-suemail-err" aria-live="polite">{emailError || ""}</p>
                 </div>
                 <div>
                   <label htmlFor="au-supwd">Choose a password</label>
                   <div className="au-pwwrap">
                     <input
-                      id="au-supwd" type={showLoginPwd ? "text" : "password"} value={password}
+                      id="au-supwd" ref={pwdRef} type={showLoginPwd ? "text" : "password"} value={password}
                       required minLength={8} autoComplete="new-password"
-                      placeholder="Eight characters or more" className="au-field au-haspeek"
+                      className="au-field au-haspeek"
+                      aria-describedby="au-supwd-help"
+                      aria-invalid={!!signUpError}
                       onChange={(e) => { setPassword(e.target.value); setSignUpError(null); }}
                     />
                     <button
                       type="button" className="au-peek"
                       aria-label={showLoginPwd ? "Hide password" : "Show password"}
+                      aria-pressed={showLoginPwd}
                       onClick={() => setShowLoginPwd((s) => !s)}
                     >
                       {showLoginPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
+                  <p className="au-help" id="au-supwd-help">Eight characters or more.</p>
                 </div>
 
-                {signUpError && <div className="au-note warn" role="alert">{signUpError}</div>}
+                <div aria-live="polite">
+                  {signUpError && <div className="au-note warn">{signUpError}</div>}
+                </div>
 
-                <button type="submit" disabled={signingUp} className="au-btn">
+                <label className="au-consent" htmlFor="au-consent">
+                  <input
+                    id="au-consent" type="checkbox" checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                  />
+                  <span>
+                    I agree to the <Link to="/terms">Terms</Link> and{" "}
+                    <Link to="/privacy">Privacy Policy</Link>. My data is processed under Saudi
+                    PDPL, and I can delete everything in one click.
+                  </span>
+                </label>
+
+                <button type="submit" disabled={signingUp || !consent} className="au-btn">
                   {signingUp
                     ? (<><Loader2 className="au-spin" size={16} /> Opening your account…</>)
-                    : (<>Start the assessment <span className="au-a">↗</span></>)}
+                    : (<>Start my assessment <span className="au-a">↗</span></>)}
                 </button>
+                <p className="au-trust">
+                  Nothing is posted, shared or shown to anyone — ever, without you clicking.
+                </p>
 
                 <div className="au-center">
                   <button type="button" className="au-linkbtn quiet" onClick={() => setView("signin")}>
@@ -387,8 +437,8 @@ const Auth = () => {
                   </div>
                 ) : (
                   <div className="au-note">
-                    First time here? Use <b>Set or reset your password</b> below — enter the
-                    email your invitation was sent to.
+                    First time here? <a href="/auth?intent=assessment"><b>Create your account</b></a> —
+                    it takes about thirty seconds.
                   </div>
                 )}
 
@@ -396,11 +446,14 @@ const Auth = () => {
                   <label htmlFor="au-email">Email</label>
                   <input
                     id="au-email" ref={emailRef} type="email" value={email} required
-                    autoComplete="username" placeholder="you@email.com" className="au-field"
+                    autoComplete="email" inputMode="email" autoCapitalize="off"
+                    autoCorrect="off" spellCheck={false}
+                    placeholder="you@email.com" className="au-field"
                     aria-invalid={!!emailError}
+                    aria-describedby="au-email-err"
                     onChange={(e) => { setEmail(e.target.value); setEmailError(null); setSignInError(null); }}
                   />
-                  {emailError && <p className="au-err" role="alert">{emailError}</p>}
+                  <p className="au-err" id="au-email-err" aria-live="polite">{emailError || ""}</p>
                 </div>
 
                 <div>
@@ -411,19 +464,22 @@ const Auth = () => {
                       value={password} required minLength={6} autoComplete="current-password"
                       placeholder="••••••••" className="au-field au-haspeek"
                       aria-invalid={!!signInError}
+                      aria-describedby="au-password-err"
                       onChange={(e) => { setPassword(e.target.value); setSignInError(null); }}
                     />
                     <button
                       type="button" className="au-peek"
                       aria-label={showLoginPwd ? "Hide password" : "Show password"}
+                      aria-pressed={showLoginPwd}
                       onClick={() => setShowLoginPwd((s) => !s)}
                     >
                       {showLoginPwd ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
+                  <div id="au-password-err" aria-live="polite">
+                    {signInError && <p className="au-err">{signInError}</p>}
+                  </div>
                 </div>
-
-                {signInError && <div className="au-note warn" role="alert">{signInError}</div>}
 
                 <button type="submit" disabled={loading} className="au-btn">
                   {loading ? (
@@ -521,10 +577,7 @@ const Auth = () => {
               </div>
             )}
 
-            <p className="au-foot">
-              No seat yet? <Link to="/request-access">{SEAT_CTA} →</Link>
-            </p>
-            <p className="au-legal">
+            <p className="au-legal au-legal-top">
               <Link to="/privacy">Privacy</Link> · <Link to="/terms">Terms</Link> ·{" "}
               <Link to="/trust">Security</Link> ·{" "}
               <a href="mailto:support@aura-intel.org">Support</a>
@@ -535,6 +588,36 @@ const Auth = () => {
         {/* ── RIGHT · the instrument ── */}
         <div className="au-night" aria-hidden="true">
           <div className="au-stars" />
+          {isAssessment ? (
+            <div className="au-nwrap">
+              <p className="au-neyebrow">What you get, in nine minutes</p>
+              <h2 className="au-nh">Your position, <em>in evidence.</em></h2>
+
+              <div className="au-card">
+                <div className="au-ctop"><span>How the market reads you</span></div>
+                <p className="au-arch">The Delivery Realist</p>
+                <ul className="au-bars">
+                  <li>
+                    <span className="au-blab">Proven</span>
+                    <span className="au-btrack"><i className="au-bfill cy" style={{ width: "85%" }} /></span>
+                  </li>
+                  <li>
+                    <span className="au-blab">Real but invisible</span>
+                    <span className="au-btrack"><i className="au-bfill bl" style={{ width: "55%" }} /></span>
+                  </li>
+                  <li>
+                    <span className="au-blab">Not visible yet</span>
+                    <span className="au-btrack"><i className="au-bfill gy" style={{ width: "25%" }} /></span>
+                  </li>
+                </ul>
+                <div className="au-ctop au-cmid"><span>The space nobody has claimed</span></div>
+                <p className="au-claim">The ground your field keeps circling and no one has put their name to yet.</p>
+              </div>
+
+              <p className="au-illus">Illustrative — yours is built from your own evidence</p>
+              <p className="au-ar" dir="rtl">حتى السوق يعرفك قبل ما يشوفك ✦</p>
+            </div>
+          ) : (
           <div className="au-nwrap">
             <p className="au-neyebrow">While you were away</p>
             <h2 className="au-nh">The night shift <em>doesn't take nights off.</em></h2>
@@ -555,7 +638,8 @@ const Auth = () => {
             <p className="au-illus">Illustrative — your own log is waiting inside</p>
             <p className="au-ar" dir="rtl">حتى السوق يعرفك قبل ما يشوفك ✦</p>
           </div>
-          <p className="au-nfoot">Founding circle · 2026</p>
+          )}
+          {!isAssessment && <p className="au-nfoot">Founding circle · 2026</p>}
         </div>
       </div>
     </div>
@@ -593,7 +677,7 @@ const AU_CSS = `
 .au-brandrow{display:flex;align-items:center;gap:10px;margin-bottom:26px;}
 .au-bn{font-family:var(--ser);font-weight:700;font-size:26px;line-height:1;}
 .au-bsub{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--n400);padding-left:11px;border-left:1px solid var(--n200);line-height:1.4;max-width:11ch;}
+  color:var(--n400);padding-left:11px;border-left:1px solid var(--n200);line-height:1.5;max-width:14ch;}
 .au-pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(0,128,123,.28);
   background:rgba(0,206,201,.07);border-radius:999px;padding:7px 13px;margin-bottom:22px;
   font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--cy-t);}
@@ -621,6 +705,26 @@ const AU_CSS = `
   border:0;cursor:pointer;color:var(--n400);padding:10px;display:flex;align-items:center;}
 .au-peek:hover{color:var(--n700);}
 .au-err{margin-top:7px;font-size:12.5px;color:var(--err);}
+.au-err:empty{display:none;}
+.au-help{margin-top:7px;font-size:12.5px;color:var(--n500);}
+.au-trust{margin-top:2px;font-size:12.5px;line-height:1.5;color:var(--n500);text-align:center;}
+.au-consent{display:flex !important;align-items:flex-start;gap:10px;font-family:var(--ui) !important;
+  font-size:13px !important;line-height:1.55;letter-spacing:normal !important;text-transform:none !important;
+  color:var(--n700) !important;margin-bottom:0 !important;cursor:pointer;}
+.au-consent input{width:18px;height:18px;flex:0 0 18px;margin-top:2px;accent-color:var(--act);cursor:pointer;}
+.au-consent a{color:var(--act);font-weight:600;text-decoration:underline;}
+.au-arch{font-size:17px;font-weight:600;color:#fff;margin:10px 0 16px !important;}
+.au-bars{display:grid;gap:12px;margin-bottom:20px;}
+.au-bars li{display:grid;gap:6px;}
+.au-blab{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(255,255,255,.55);}
+.au-btrack{display:block;height:6px;border-radius:999px;background:rgba(255,255,255,.09);overflow:hidden;}
+.au-bfill{display:block;height:100%;border-radius:999px;}
+.au-bfill.cy{background:var(--cy);}
+.au-bfill.bl{background:var(--act);}
+.au-bfill.gy{background:rgba(255,255,255,.28);}
+.au-cmid{padding-top:16px;border-top:1px solid var(--nline);}
+.au-claim{font-size:13.5px;line-height:1.55;color:rgba(255,255,255,.5);margin-top:9px !important;}
 .au-note{padding:13px 15px;border-radius:12px;font-size:13.5px;line-height:1.6;color:var(--n700);
   background:var(--n100);border:1px solid var(--n200);}
 .au-note b{color:var(--n900);font-weight:600;}
@@ -656,11 +760,9 @@ const AU_CSS = `
 .au-linkbtn:disabled{opacity:.6;cursor:default;}
 .au-linkbtn.quiet{color:var(--n500);font-weight:400;}
 
-.au-foot{margin-top:30px;padding-top:22px;border-top:1px solid var(--n200);
-  font-size:14.5px;color:var(--n500);}
-.au-foot a{color:var(--act);font-weight:600;}
 .au-legal{margin-top:14px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--n400);}
+.au-legal-top{margin-top:30px;padding-top:22px;border-top:1px solid var(--n200);}
 .au-legal a:hover{color:var(--n700);}
 
 .au-night{background:var(--night);position:relative;overflow:hidden;display:flex;

@@ -1,4 +1,5 @@
 import { createContext, useContext, ReactNode } from "react";
+import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
 
 interface LanguageContextType {
   lang: "en";
@@ -9,7 +10,7 @@ interface LanguageContextType {
 
 const translations: Record<string, string> = {
   "app.name": "Aura",
-  "app.subtitle": "Executive Intelligence Platform",
+  "app.subtitle": PRODUCT_DESCRIPTOR,
   "header.askAura": "Ask Aura",
   "header.logout": "Sign Out",
   "tab.briefing": "Briefing",

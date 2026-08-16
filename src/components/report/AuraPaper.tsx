@@ -10,6 +10,7 @@ import React, { useEffect, useState } from "react";
 import { AuraLogo } from "@/components/brand/AuraLogo";
 import { supabase } from "@/integrations/supabase/client";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
+import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
 
 // ── Tokens (System-A) ──────────────────────────────────────────────────
 export const T = {
@@ -159,7 +160,7 @@ export function PaperFooter({
       >
         <span>aura-intel.org</span>
         <span>
-          Personal Intelligence System
+          {PRODUCT_DESCRIPTOR}
           <span style={{ margin: "0 8px", color: T.spot }}>·</span>
           <span
             style={{ fontFamily: FONT.arabic, textTransform: "none", letterSpacing: "normal" }}

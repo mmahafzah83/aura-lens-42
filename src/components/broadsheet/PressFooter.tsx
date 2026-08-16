@@ -1,6 +1,7 @@
 import React from "react";
 import PageRail from "./PageRail";
 import { INK, INK2, SPOT, MONO, ARABIC } from "./pressTokens";
+import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
 
 export interface PressFooterProps {
   w: number;
@@ -137,7 +138,7 @@ export default function PressFooter({
           letterSpacing={1.5}
           fill={INK2}
         >
-          Personal Intelligence System
+          {PRODUCT_DESCRIPTOR}
         </text>
       )}
     </g>
