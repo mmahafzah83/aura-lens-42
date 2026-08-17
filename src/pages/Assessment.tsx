@@ -180,6 +180,18 @@ const Assessment = () => {
     }
   };
 
+  /* ── one click saved: an address in the link starts step one at once ── */
+  useEffect(() => {
+    if (autoRan.current) return;
+    const prefill = new URLSearchParams(window.location.search).get("url")?.trim().slice(0, 300);
+    if (!prefill) return;
+    autoRan.current = true;
+    setAddr(prefill);
+    setStage("address");
+    if (prefill.toLowerCase().includes("linkedin.com/in/")) void runRead(prefill);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const saveAnswer = async (index: number) => {
     const answers = { ...(state.answers ?? {}), [`q${index}`]: answer.trim() };
     const nextStep = index < QUESTIONS.length - 1 ? `q${index + 1}` : "wall";
