@@ -619,8 +619,20 @@ function buildBlocks(d: ReportData): Block[] {
   // ── CAPABILITY ───────────────────────────────────────────────────────
   if (d.capabilities || d.profile_intelligence) {
     blocks.push({ key: "c-title", section: "capability", spacing: 20, node: <SectionTitle title="Capability & Intelligence" kicker={name || "Capability"} /> });
-    if (d.capabilities && d.capabilities.length > 0)
+    if (CAPABILITY_FIGURE_ENABLED && d.capabilities && d.capabilities.length > 0) {
       blocks.push({ key: "c-radar", section: "capability", spacing: 18, node: <CapabilityFigure data={d.capabilities} /> });
+    } else if (d.capabilities && d.capabilities.length > 0) {
+      blocks.push({
+        key: "c-radar-honest",
+        section: "capability",
+        spacing: 4,
+        node: (
+          <div style={{ maxWidth: 576, fontFamily: FONT.serif, fontSize: 15, lineHeight: 1.7, color: T.ink2 }}>
+            Your capability map is being rebuilt on the evidence behind each claim. It is deliberately absent here rather than estimated.
+          </div>
+        ),
+      });
+    }
     const intel = d.profile_intelligence;
     if (intel) {
       blocks.push({ key: "c-intel-label", section: "capability", spacing: 26, node: <SectionLabel>Profile Intelligence</SectionLabel> });
