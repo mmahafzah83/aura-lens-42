@@ -397,7 +397,17 @@ export default function Mirror() {
       <main style={{ minBlockSize: "100dvh", background: CANVAS, fontFamily: UI, color: INK }}>
         <style>{MIRROR_CSS}</style>
 
-        <ReadResult read={read} postsRead={postsRead} sparse={sparse} />
+        <div style={{ maxInlineSize: 560, marginInline: "auto", padding: "24px 16px 0",
+          display: "flex", flexDirection: "column", gap: 14 }}>
+          <button
+            onClick={startOver}
+            style={{
+              alignSelf: "flex-start", background: "none", border: "none", padding: 0,
+              color: INK2, fontFamily: UI, fontSize: 13.5, cursor: "pointer",
+            }}
+          >← Read someone else</button>
+
+          <ReadResult read={read} postsRead={postsRead} sparse={sparse} />
 
         {/* Keep this — the promise the old gate never kept */}
           <Card>
