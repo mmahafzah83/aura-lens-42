@@ -601,6 +601,14 @@ const Onboarding = () => {
         const st = (found.state ?? {}) as any;
         anonStateRef.current = { answers: {}, ...st };
         const pf = (st.profile ?? {}) as any;
+        /* P7 — a fresh visitor must never see a previous run's level or sector.
+           Identity is hydrated only when it belongs to the address this session
+           actually read. */
+        const sameSubject = !pf.profile_url || !st.profile_url || pf.profile_url === st.profile_url;
+        if (!sameSubject) {
+          Object.assign(anonStateRef.current as any, { profile: { profile_url: st.profile_url } });
+        }
+        if (sameSubject) {
         if (pf.first_name) setFirstName(pf.first_name);
         if (pf.last_name) setLastName(pf.last_name);
         if (pf.firm) setFirm(pf.firm);
@@ -608,6 +616,7 @@ const Onboarding = () => {
         if (pf.level) setLevelTitle(pf.level);
         if (pf.seniority_band) setBand(pf.seniority_band as Band);
         if (pf.skill_ratings && typeof pf.skill_ratings === "object") setScores(pf.skill_ratings);
+        }
         if (st.answers && typeof st.answers === "object") setAnswers(st.answers);
         if (st.profile_url) setLiInput(st.profile_url);
         /* The quick read already happened at /assessment — never ask twice. */
