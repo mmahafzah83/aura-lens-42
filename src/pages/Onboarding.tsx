@@ -1384,7 +1384,7 @@ const Onboarding = () => {
     setAnswers({});
     setScores({});
     setClaims([]);
-    setStep1Phase("ask");
+    returnToAddress();
     setLiInput("");
     setLiProfile(null);
     setReadDone(false);
