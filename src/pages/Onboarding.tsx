@@ -2825,12 +2825,12 @@ const Onboarding = () => {
     );
   }
 
-  /* 13b — NIGHT, and only after 13 */
+  /* 13b — WHITE, and only after 13 */
   if (screen === 14) {
     content = (
-      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>When should I bring it to you?</h1>
-        <p style={{ ...bodyNight, textAlign: "center" }}>
+      <PaperShell onExit={saveAndExit} bead={4} face footer={escapeFooter}>
+        <h1 style={{ ...h1Light, textAlign: "center" }}>When should I bring it to you?</h1>
+        <p style={{ ...bodyLight, textAlign: "center" }}>
           I read overnight. Tell me when your day starts and that's when it's waiting.
         </p>
         <div style={{ display: "flex", gap: 9, marginBlockStart: 20 }}>
@@ -2838,40 +2838,44 @@ const Onboarding = () => {
             <button key={slot} type="button" onClick={() => void chooseDailyTime(slot)} style={{
               flex: 1, padding: "13px 8px", borderRadius: RADIUS.card, cursor: "pointer",
               fontFamily: "inherit", fontSize: 13.5, fontWeight: dailyTime === slot ? 700 : 500,
-              background: dailyTime === slot ? OB.blue : OB.nightSoft,
-              border: `1px solid ${dailyTime === slot ? OB.blue : OB.lineNight}`,
-              color: "#FFFFFF",
+              background: dailyTime === slot ? OB.blue : OB.canvas,
+              border: `1px solid ${dailyTime === slot ? OB.blue : OB.line}`,
+              color: dailyTime === slot ? "#FFFFFF" : OB.ink,
             }}>{slot}</button>
           ))}
         </div>
-        <p style={{ margin: "10px 0 0", fontSize: 12, color: OB.mutedNight, textAlign: "center" }}>
+        <p style={{ margin: "10px 0 0", fontSize: 12, color: OB.muted, textAlign: "center" }}>
           Your time zone · {timeZone}
         </p>
 
-        {connected ? null : (
+        {connected || !userId ? null : (
           <>
-            <div style={{ blockSize: 1, background: OB.lineNight, margin: "24px 0 18px" }} />
-            <p style={{ ...bodyNight, textAlign: "center" }}>
+            <div style={{ blockSize: 1, background: OB.line, margin: "24px 0 18px" }} />
+            <p style={{ ...bodyLight, textAlign: "center" }}>
               Connect LinkedIn and you find out which of the signals in your read your audience already rewards — so nothing
               written for you is a guess.
             </p>
             <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton variant="secondary" onNight onClick={() => void connectLinkedIn({ allowRedirect: true })}
+              <OBButton variant="secondary" onClick={() => void connectLinkedIn({ allowRedirect: true })}
                 loading={connecting} loadingLabel="Connecting…">
                 Connect LinkedIn
               </OBButton>
             </Actions>
             {connectNote ? (
-              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.mutedNight }}>{connectNote}</p>
+              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{connectNote}</p>
             ) : null}
           </>
+        )}
+
+        {connected || userId ? null : (
+          <p style={{ ...bodyLight, textAlign: "center" }}>{CONNECT_AFTER_ACCOUNT}</p>
         )}
 
         <Actions style={{ marginBlockStart: 22 }}>
           <OBButton onClick={() => void finish()}>Take me in</OBButton>
         </Actions>
-        <p style={{ ...footnote, color: OB.mutedNight }}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
-      </NightShell>
+        <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
+      </PaperShell>
     );
   }
 
