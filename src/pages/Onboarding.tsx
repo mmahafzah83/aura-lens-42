@@ -883,11 +883,12 @@ const Onboarding = () => {
       setReadDone(true);
     } catch (e: any) {
       const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "";
-      setLiError(msg && msg.length < 120
-        ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
-        : "Aura couldn't open that page. Check it matches what you see in your browser on your own profile.");
       /* the read failing never moves them: the field, the error and the manual path all stay here */
-      setStep1Phase("ask");
+      returnToAddress(
+        msg && msg.length < 120
+          ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
+          : "Aura couldn't open that page. Check it matches what you see in your browser on your own profile.",
+      );
     } finally {
       setLiBusy(false);
     }
