@@ -2901,7 +2901,10 @@ const Onboarding = () => {
       }
     };
     return (
-      <PaperShell bead={4}>
+      <>
+      <style>{PAGE_CSS}</style>
+      <JourneyNav.Provider value={{ onBack: undefined, banner: null }}>
+      <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
         <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
           YOUR REPORT IS READY
         </p>
@@ -2944,6 +2947,8 @@ const Onboarding = () => {
           </form>
         )}
       </PaperShell>
+      </JourneyNav.Provider>
+      </>
     );
   }
 
