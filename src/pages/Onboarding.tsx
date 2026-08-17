@@ -10,7 +10,7 @@
  * (band, sector IS NULL). If both come back empty the member sees a friendly
  * retry, never a blank screen.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
@@ -360,6 +360,21 @@ const Onboarding = () => {
    */
   const [anonToken, setAnonToken] = useState<string | null>(null);
   const anonStateRef = useRef<AssessmentState & Record<string, any>>({ answers: {} });
+  /* The genuine start of the anonymous run, when the session gave us one. */
+  const sessionStartedAtRef = useRef<string | null>(null);
+  /* THE ARRIVAL — read once, on mount. Stale or absent means the journey
+     behaves exactly as it always has. */
+  const [arrival, setArrival] = useState<
+    null | { first_name?: string | null; answers?: number; sliders?: number; captures?: number; minutes?: number }
+  >(() => {
+    try {
+      const raw = localStorage.getItem("aura_just_joined");
+      if (!raw) return null;
+      const e = JSON.parse(raw);
+      if (!e || typeof e.at !== "number" || Date.now() - e.at > 10 * 60 * 1000) return null;
+      return e;
+    } catch { return null; }
+  });
   const [wallEmail, setWallEmail] = useState("");
   const [wallPassword, setWallPassword] = useState("");
   const [wallConsent, setWallConsent] = useState(false);
@@ -690,6 +705,7 @@ const Onboarding = () => {
         if (!held || !found) { navigate("/auth?next=%2Fonboarding", { replace: true }); return; }
         setAnonToken(held);
         const st = (found.state ?? {}) as any;
+        sessionStartedAtRef.current = found.created_at ?? null;
         anonStateRef.current = { answers: {}, ...st };
         const pf = (st.profile ?? {}) as any;
         /* P7 — a fresh visitor must never see a previous run's level or sector.
@@ -2907,6 +2923,24 @@ const Onboarding = () => {
           } catch (e) {
             console.error("[journey] handoff read failed", e);
           }
+          /* THE ARRIVAL — record only what they genuinely gave us. Written
+             before the token goes, because the token is what proves the run. */
+          try {
+            const entry: Record<string, unknown> = {
+              at: Date.now(),
+              first_name: pf.first_name ?? null,
+              answers: Object.keys(st.answers ?? {}).length,
+              sliders: Object.keys((pf.skill_ratings ?? {}) as Record<string, unknown>).length,
+              captures: Array.isArray((st as any).pending_captures) ? (st as any).pending_captures.length : 0,
+            };
+            const startedAt = sessionStartedAtRef.current;
+            if (startedAt) {
+              const mins = Math.round((Date.now() - new Date(startedAt).getTime()) / 60000);
+              /* A duration is only honest if it is positive and plausible. */
+              if (Number.isFinite(mins) && mins >= 1 && mins <= 240) entry.minutes = mins;
+            }
+            localStorage.setItem("aura_just_joined", JSON.stringify(entry));
+          } catch { /* private mode — the arrival is a grace, not a gate */ }
           clearToken();
           window.location.replace("/onboarding");
           return;
@@ -2973,6 +3007,50 @@ const Onboarding = () => {
 
   /* 12 — WHITE, the shelf */
   if (screen === 12) {
+    /* THE ARRIVAL — the last beat before the reveal, shown once. */
+    if (arrival) {
+      const parts: JSX.Element[] = [];
+      const push = (n: number, tail: string) => {
+        parts.push(
+          <span key={tail}>
+            <span style={{ fontFamily: OB.mono, color: "#FFFFFF" }}>{n}</span>{" "}{tail}
+          </span>,
+        );
+      };
+      if (typeof arrival.answers === "number" && arrival.answers > 0) push(arrival.answers, arrival.answers === 1 ? "answer" : "answers");
+      if (typeof arrival.sliders === "number" && arrival.sliders > 0) push(arrival.sliders, arrival.sliders === 1 ? "placement" : "placements");
+      if (typeof arrival.captures === "number" && arrival.captures > 0) push(arrival.captures, arrival.captures === 1 ? "article you kept" : "articles you kept");
+      if (typeof arrival.minutes === "number") push(arrival.minutes, arrival.minutes === 1 ? "minute of your attention" : "minutes of your attention");
+      content = (
+        <NightShell onExit={saveAndExit} footer={escapeFooter}>
+          <div style={{ textAlign: "center", paddingBlock: 28 }}>
+            <h1 style={{ ...h1Night }}>
+              {arrival.first_name ? `Thank you, ${arrival.first_name}.` : "Thank you."}
+            </h1>
+            {parts.length ? (
+              <p style={{
+                fontFamily: OB.ui, fontSize: 14, color: OB.mutedNight,
+                marginBlockStart: 22, lineHeight: 1.7,
+              }}>
+                {parts.map((p, i) => (
+                  <Fragment key={i}>{i > 0 ? <span style={{ opacity: 0.6 }}>{" · "}</span> : null}{p}</Fragment>
+                ))}
+              </p>
+            ) : null}
+            <p style={{ ...bodyNight, marginBlockStart: 22, maxInlineSize: 460, marginInline: "auto" }}>
+              That is more than most people ever put into how they are seen. Here is what came back.
+            </p>
+            <Actions style={{ marginBlockStart: 30 }}>
+              <OBButton onClick={() => {
+                try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
+                setArrival(null);
+                go(13);
+              }}>Show me my read</OBButton>
+            </Actions>
+          </div>
+        </NightShell>
+      );
+    } else {
     /* the four things the report is actually doing, in order */
     const genSteps = [
       { key: "posts", label: "Reading your posts", done: !revealPending || genElapsed > 2000 },
@@ -3041,6 +3119,7 @@ const Onboarding = () => {
         </Actions>
       </PaperShell>
     );
+    }
   }
 
   /* 13 — FULL-BLEED BLUE */
