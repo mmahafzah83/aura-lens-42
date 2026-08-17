@@ -10,6 +10,7 @@
 import { rankFromLevel } from "@/lib/marketPersonas";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
+import CvCrosscheck, { hasCvCrosscheck } from "@/components/report/CvCrosscheck";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   PaperHeader,
