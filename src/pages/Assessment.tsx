@@ -274,7 +274,7 @@ const Assessment = () => {
 
           {stage === "address" && (
             <section className="asg-panel">
-              <span className="asg-k">STEP ONE · 90 SECONDS</span>
+              <span className="asg-k">STEP ONE · THE QUICK READ</span>
               <h1 className="asg-ph">What's your LinkedIn?</h1>
               <p className="asg-pp">We read what is already public. Nothing is posted or shared.</p>
               <label className="asg-lbl" htmlFor="asg-addr">Your LinkedIn address</label>
@@ -296,32 +296,21 @@ const Assessment = () => {
             <section className="asg-panel asg-center">
               <span className="asg-k">READING</span>
               <h1 className="asg-ph">{READING_LINES[Math.min(line, 3)]}</h1>
-              <p className="asg-pp">About ninety seconds. Leave the tab open.</p>
+              <p className="asg-pp">This takes a moment. Leave the tab open.</p>
             </section>
           )}
 
           {stage === "read" && (
-            <section className="asg-panel">
-              <span className="asg-k">YOUR READ</span>
-              <h1 className="asg-ph">{String(read.archetype ?? "How your field reads you")}</h1>
-              {read.market_read && <p className="asg-pp" dir="auto">{String(read.market_read)}</p>}
-              {Array.isArray(read.themes) && read.themes.length > 0 && (
-                <ul className="asg-themes">
-                  {(read.themes as string[]).map((t) => <li key={t} dir="auto">{t}</li>)}
-                </ul>
-              )}
-              {read.uncontested_space && (
-                <><h2 className="asg-sh">The space nobody has claimed</h2>
-                  <p className="asg-pp" dir="auto">{String(read.uncontested_space)}</p></>
-              )}
-              {read.honest_gap && (
-                <><h2 className="asg-sh">The honest gap</h2>
-                  <p className="asg-pp" dir="auto">{String(read.honest_gap)}</p></>
-              )}
+            <div className="asg-read">
+              <span className="asg-k">STEP ONE · YOUR READ</span>
+              <ReadResult read={read as ReadShape} postsRead={postsRead} sparse={sparse} />
               <button className="asg-btn asg-bp asg-full" onClick={() => openQuestion(0)}>
-                Now your own words <span className="asg-a">↗</span>
+                Continue — your CV and nine questions <span className="asg-a">↗</span>
               </button>
-            </section>
+              <p className="asg-trust">
+                Saved as you go. No account yet — we ask once, at the end.
+              </p>
+            </div>
           )}
 
           {(stage === "q0" || stage === "q1" || stage === "q2") && (() => {
