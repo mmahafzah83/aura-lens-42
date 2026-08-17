@@ -21,7 +21,10 @@ import { useCountUp } from "@/hooks/useCountUp";
 import { useCapturedClaims } from "@/hooks/useCapturedClaims";
 import { SECTORS } from "@/constants/sectors";
 import { initThemeFromStorage } from "@/lib/applyTheme";
-import { claimPendingSession } from "@/lib/assessmentSession";
+import {
+  claimPendingSession, readToken, loadSession, saveSession, clearToken, claimSession,
+  type AssessmentState,
+} from "@/lib/assessmentSession";
 import { track } from "@/lib/track";
 import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@/lib/marketRead";
 import AuraFace from "@/components/onboarding/AuraFace";
@@ -44,6 +47,7 @@ import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyHeader from "@/components/onboarding/JourneyHeader";
+import { CONSENT_VERSION } from "@/pages/Auth";
 import DocumentUpload, { DOCUMENT_STATUS_EVENT } from "@/components/DocumentUpload";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
@@ -262,6 +266,20 @@ const Onboarding = () => {
   useEffect(() => { void claimPendingSession(); }, []);
 
   const [checking, setChecking] = useState(true);
+  /**
+   * The anonymous run. A visitor who came through the quick read carries a
+   * browser-held session token instead of a user_id. Everything the journey
+   * would write to `diagnostic_profiles` is kept in that session row until the
+   * account is opened at the reveal, and then claimed onto the new user_id.
+   */
+  const [anonToken, setAnonToken] = useState<string | null>(null);
+  const anonStateRef = useRef<AssessmentState & Record<string, any>>({ answers: {} });
+  const [wallEmail, setWallEmail] = useState("");
+  const [wallPassword, setWallPassword] = useState("");
+  const [wallConsent, setWallConsent] = useState(false);
+  const [wallBusy, setWallBusy] = useState(false);
+  const [wallError, setWallError] = useState<string | null>(null);
+  const [wallDone, setWallDone] = useState<string | null>(null);
   // The morning promise is only made when the system has actually been
   // delivering. Reads public.morning_promise_state; fails to the honest line.
   const mayPromiseMorning = useMayPromiseMorning();
@@ -441,15 +459,32 @@ const Onboarding = () => {
     uid?: string | null,
   ): Promise<boolean> => {
     const id = uid ?? userId;
-    if (!id) return false;
+    if (!id) {
+      // Anonymous run: the same facts are kept on the session row and written
+      // to diagnostic_profiles once the account exists and claims the run.
+      if (!anonToken) return false;
+      const clean: Record<string, any> = {};
+      for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
+      anonStateRef.current = {
+        ...anonStateRef.current,
+        profile: { ...((anonStateRef.current as any).profile ?? {}), ...clean },
+      };
+      return saveSession(anonToken, anonStateRef.current);
+    }
     // The journey never clears a column it does not name, so nulls are dropped
     // before the shared writer sees them.
     const clean: Record<string, any> = {};
     for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
     return upsertProfile(id, clean, `journey ${label}`);
-  }, [userId]);
+  }, [userId, anonToken]);
 
   const persistScreen = useCallback(async (next: number) => {
+    if (!userId && anonToken) {
+      anonStateRef.current = { ...anonStateRef.current, journey_screen: next };
+      try { localStorage.setItem("aura_ob_screen_anon", String(next)); } catch { /* ignore */ }
+      await saveSession(anonToken, anonStateRef.current);
+      return;
+    }
     if (!userId) return;
     try { localStorage.setItem(`aura_ob_screen_${userId}`, String(next)); } catch { /* ignore */ }
     try {
@@ -466,7 +501,7 @@ const Onboarding = () => {
         onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
       }, "progress save");
     } catch (e) { console.error("[journey] progress save threw", e); }
-  }, [userId, writeProfile]);
+  }, [userId, anonToken, writeProfile]);
 
   const go = useCallback((next: number) => {
     setScreen(next);
@@ -480,7 +515,48 @@ const Onboarding = () => {
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/auth?next=%2Fonboarding", { replace: true }); return; }
+      if (!session) {
+        /* No account is not the same as no visitor. A valid anonymous session
+           token walks the whole journey; only a missing or dead token sends
+           anyone to the door. */
+        const held = readToken();
+        const found = held ? await loadSession(held) : null;
+        if (!held || !found) { navigate("/auth?next=%2Fonboarding", { replace: true }); return; }
+        setAnonToken(held);
+        const st = (found.state ?? {}) as any;
+        anonStateRef.current = { answers: {}, ...st };
+        const pf = (st.profile ?? {}) as any;
+        if (pf.first_name) setFirstName(pf.first_name);
+        if (pf.last_name) setLastName(pf.last_name);
+        if (pf.firm) setFirm(pf.firm);
+        if (pf.sector_focus) { setSector(pf.sector_focus); setSectorKnown(true); }
+        if (pf.level) setLevelTitle(pf.level);
+        if (pf.seniority_band) setBand(pf.seniority_band as Band);
+        if (pf.skill_ratings && typeof pf.skill_ratings === "object") setScores(pf.skill_ratings);
+        if (st.answers && typeof st.answers === "object") setAnswers(st.answers);
+        if (st.profile_url) setLiInput(st.profile_url);
+        /* The quick read already happened at /assessment — never ask twice. */
+        if (st.read) {
+          setStep1Phase("result");
+          setReadDone(true);
+          setPostsRead(Number(st.posts_read ?? 0));
+        }
+        if (st.name && !firstName) {
+          const parts = String(st.name).split(/\s+/);
+          setFirstName(parts[0] || "");
+          if (parts.length > 1) setLastName(parts.slice(1).join(" "));
+        }
+        let back = Number(st.journey_screen ?? 0);
+        try {
+          const local = Number(localStorage.getItem("aura_ob_screen_anon") ?? "0");
+          if (local > back) back = local;
+        } catch { /* ignore */ }
+        if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
+        if (back === 6 || back === 7) back = 5;
+        if (back > 0 && back <= 14) { setScreen(back); screenRef.current = back; }
+        setChecking(false);
+        return;
+      }
       const uid = session.user.id;
       setUserId(uid);
       setUserEmail(session.user.email ?? null);
@@ -851,7 +927,11 @@ const Onboarding = () => {
      Existing members keep whatever keys are already on file: new answers are
      MERGED in alongside them, never written over the top of the object. */
   const saveScores = useCallback(async (next: Record<string, number>) => {
-    if (!userId) return;
+    if (!userId) {
+      // Anonymous run — the sliders are kept on the session row.
+      await writeProfile({ skill_ratings: next, audit_results: next, instrument_version: 2, ...(band ? { answered_band: band } : {}) }, "slider save");
+      return;
+    }
     try {
       const { data: current } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("skill_ratings, audit_results").eq("user_id", userId).maybeSingle();
@@ -877,7 +957,13 @@ const Onboarding = () => {
   const finishQuestions = async (finalAnswers: Record<string, string>) => {
     setRevealPending(true);
     go(12);
-    if (!userId) return;
+    if (!userId) {
+      if (anonToken) {
+        anonStateRef.current = { ...anonStateRef.current, answers: finalAnswers, journey_screen: 12 };
+        await saveSession(anonToken, anonStateRef.current);
+      }
+      return;
+    }
     await saveAnswers(userId, finalAnswers);
     try {
       await writeProfile({ instrument_version: 2, ...(band ? { answered_band: band } : {}) }, "instrument stamp");
@@ -2273,6 +2359,100 @@ const Onboarding = () => {
         </PaperShell>
       );
     }
+  }
+
+  /* The wall — asked once, and only here. An anonymous run reaches the reveal
+     and stops: the account is opened, then the run is claimed onto it. */
+  if (!userId && anonToken && screen >= 12) {
+    const openAccount = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (wallBusy) return;
+      setWallError(null);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(wallEmail.trim())) {
+        setWallError("That doesn't look like an email address. Check it and try again."); return;
+      }
+      if (wallPassword.length < 8) { setWallError("Use eight characters or more."); return; }
+      if (!wallConsent) return;
+      setWallBusy(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("auth-signup", {
+          body: {
+            email: wallEmail.trim().toLowerCase(), password: wallPassword,
+            origin: window.location.origin, consent_version: CONSENT_VERSION,
+          },
+        });
+        const result = data as { ok?: boolean; existing?: boolean; error?: string } | null;
+        if (result?.existing) {
+          setWallError("You already have an account with that address. Sign in and your report is waiting.");
+          return;
+        }
+        const msg = result?.error || error?.message;
+        if (msg) {
+          setWallError("Couldn't open the account just now. Nothing is lost — try again in a moment.");
+          return;
+        }
+        const { data: signedIn } = await supabase.auth.signInWithPassword({
+          email: wallEmail.trim().toLowerCase(), password: wallPassword,
+        });
+        if (signedIn?.session) {
+          const claimed = await claimSession(anonToken);
+          if (!claimed.ok) {
+            setWallError("We could not attach your report to your account yet — nothing is lost. Try again.");
+            return;
+          }
+          clearToken();
+          window.location.replace("/onboarding");
+          return;
+        }
+        setWallDone("Your account is open. Confirm it from the link in your inbox and your report follows you in — nothing is lost.");
+      } catch {
+        setWallError("Couldn't open the account just now. Nothing is lost — try again in a moment.");
+      } finally {
+        setWallBusy(false);
+      }
+    };
+    return (
+      <PaperShell bead={4}>
+        <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
+          YOUR REPORT IS READY
+        </p>
+        <h1 style={{ fontFamily: OB.ui, fontSize: 28, fontWeight: 700, color: OB.ink, marginBlockStart: 10 }}>
+          Where should we send it?
+        </h1>
+        <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 10 }}>
+          It is yours either way. An account keeps it, lets you come back, and sends you the PDF.
+        </p>
+        {wallDone ? (
+          <p role="status" style={{ marginBlockStart: 18, color: OB.ink, fontFamily: OB.ui }}>{wallDone}</p>
+        ) : (
+          <form onSubmit={openAccount} style={{ marginBlockStart: 18 }}>
+            <label htmlFor="ob-wall-email" style={{ display: "block", fontSize: 13, color: OB.muted, marginBlockEnd: 6 }}>Your email</label>
+            <input id="ob-wall-email" type="email" autoComplete="email" value={wallEmail}
+              onChange={(e) => setWallEmail(e.target.value)} style={fieldStyle} />
+            <label htmlFor="ob-wall-pwd" style={{ display: "block", fontSize: 13, color: OB.muted, margin: "16px 0 6px" }}>A password</label>
+            <input id="ob-wall-pwd" type="password" autoComplete="new-password" value={wallPassword}
+              onChange={(e) => setWallPassword(e.target.value)} style={fieldStyle} />
+            <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>Eight characters or more.</p>
+            <div aria-live="polite">
+              {wallError && <p style={{ fontSize: 13, color: OB.err, marginBlockStart: 10 }}>{wallError}</p>}
+            </div>
+            <label htmlFor="ob-wall-consent" style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBlockStart: 16, fontSize: 13, color: OB.muted }}>
+              <input id="ob-wall-consent" type="checkbox" checked={wallConsent}
+                onChange={(e) => setWallConsent(e.target.checked)} />
+              <span>
+                I agree to the Terms and Privacy Policy. My data is processed under Saudi PDPL,
+                and I can delete everything in one click.
+              </span>
+            </label>
+            <Actions style={{ marginBlockStart: 18 }}>
+              <OBButton disabled={wallBusy || !wallConsent} onClick={() => undefined} type="submit">
+                {wallBusy ? "Saving your report…" : "Save my report"}
+              </OBButton>
+            </Actions>
+          </form>
+        )}
+      </PaperShell>
+    );
   }
 
   /* 12 — NIGHT, the shelf */

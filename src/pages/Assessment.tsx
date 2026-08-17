@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { supabase } from "@/integrations/supabase/client";
-import { CONSENT_VERSION } from "@/pages/Auth";
 import {
-  createSession, loadSession, saveSession, startRun, claimSession,
+  createSession, loadSession, saveSession, startRun,
   readToken, clearToken, type AssessmentState,
 } from "@/lib/assessmentSession";
 import PublicMasthead from "@/components/PublicMasthead";
@@ -12,17 +10,11 @@ import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
 
 /**
- * The Gate — what someone reads before the nine-minute assessment begins.
- * System-B only. The whole journey runs in-page with no account: the address,
- * the read, the questions, and only then the account, at the reveal.
+ * The Gate — and the quick read, which is step one of the one assessment.
+ * This page owns the address, the read and its result. Nothing else: the
+ * questions, the CV, the sliders and the reveal all live in /onboarding.
  */
-type Stage = "gate" | "address" | "reading" | "read" | "q0" | "q1" | "q2" | "wall";
-
-const QUESTIONS = [
-  "What is the piece of work you are proudest of in the last two years?",
-  "What do people come to you for that is not in your job title?",
-  "Who do you most want to be known by — and for what?",
-];
+type Stage = "gate" | "address" | "reading" | "read";
 
 const READING_LINES = [
   "Opening the profile…",
@@ -32,7 +24,7 @@ const READING_LINES = [
 ];
 
 const STEP_TO_STAGE: Record<string, Stage> = {
-  address: "address", read: "read", q0: "q0", q1: "q1", q2: "q2", wall: "wall",
+  address: "address", read: "read",
 };
 
 const Assessment = () => {
@@ -52,12 +44,6 @@ const Assessment = () => {
   const [addr, setAddr] = useState("");
   const [addrError, setAddrError] = useState<string | null>(null);
   const [line, setLine] = useState(0);
-  const [answer, setAnswer] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [consent, setConsent] = useState(false);
-  const [wallError, setWallError] = useState<string | null>(null);
-  const [wallDone, setWallDone] = useState<string | null>(null);
   const insideRef = useRef<HTMLElement | null>(null);
   const autoRan = useRef(false);
   const [postsRead, setPostsRead] = useState(0);
@@ -77,10 +63,13 @@ const Assessment = () => {
       setState({ answers: {}, ...found.state });
       if (!arriving) setAddr(found.state.profile_url ?? "");
       if (arriving) return;                   // a link with an address wins over the old step
+      /* Past the read, the journey is the real onboarding — go back to it. */
+      if (found.state.step === "onboarding") { navigate("/onboarding", { replace: true }); return; }
       const back = STEP_TO_STAGE[found.state.step ?? ""] ?? null;
       if (back) setStage(back === "reading" ? "address" : back);
     })();
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* progress is written after each screen, never mid-typing */
@@ -172,7 +161,10 @@ const Assessment = () => {
       }
       setPostsRead(Number(data.posts_read ?? 0));
       setSparse(!!data.sparse);
-      await persist({ ...state, step: "read", profile_url: target, name: data.name ?? null, read: data.read });
+      await persist({
+        ...state, step: "read", profile_url: target, name: data.name ?? null, read: data.read,
+        posts_read: Number(data.posts_read ?? 0),
+      } as AssessmentState);
       setStage("read");
     } catch {
       setNotice("Something failed on our side. Nothing is lost — try once more.");
@@ -192,73 +184,10 @@ const Assessment = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const saveAnswer = async (index: number) => {
-    const answers = { ...(state.answers ?? {}), [`q${index}`]: answer.trim() };
-    const nextStep = index < QUESTIONS.length - 1 ? `q${index + 1}` : "wall";
-    await persist({ ...state, step: nextStep, answers });
-    setAnswer(answers[`q${index + 1}`] ?? "");
-    setStage(nextStep as Stage);
-  };
-
-  const openQuestion = (index: number) => {
-    setAnswer((state.answers ?? {})[`q${index}`] ?? "");
-    setStage(`q${index}` as Stage);
-  };
-
-  /* ── the wall, at the reveal ── */
-  const saveMyReport = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (busy) return;
-    setWallError(null);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setWallError("That doesn't look like an email address. Check it and try again."); return;
-    }
-    if (password.length < 8) { setWallError("Use eight characters or more."); return; }
-    if (!consent) return;
-    setBusy(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("auth-signup", {
-        body: {
-          email: email.trim().toLowerCase(), password,
-          origin: window.location.origin, consent_version: CONSENT_VERSION,
-        },
-      });
-      const result = data as { ok?: boolean; existing?: boolean; code?: string; error?: string } | null;
-      if (result?.existing) {
-        setWallError("You already have an account with that address. Sign in and your report is waiting.");
-        return;
-      }
-      const msg = result?.error || error?.message;
-      if (msg) {
-        setWallError(/as many accounts|rate|429/i.test(String(msg))
-          ? "That's a lot of attempts from here today. Write to support@aura-intel.org and it's sorted by hand."
-          : "Couldn't open the account just now. Nothing is lost — try again in a moment.");
-        return;
-      }
-
-      // If the account is live straight away, attach the run to it now.
-      const { data: signedIn } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(), password,
-      });
-      const held = token ?? readToken();
-      if (signedIn?.session && held) {
-        const claimed = await claimSession(held);
-        if (!claimed.ok) {
-          setWallError("We could not attach your report to your account yet — nothing is lost. Try again.");
-          return;
-        }
-        clearToken();
-        navigate("/onboarding");
-        return;
-      }
-      // Not signed in yet: the link is in the inbox. The token stays put and is
-      // claimed on the first authenticated load.
-      setWallDone("Your account is open. Confirm it from the link in your inbox and your report follows you in — nothing is lost.");
-    } catch {
-      setWallError("Couldn't open the account just now. Nothing is lost — try again in a moment.");
-    } finally {
-      setBusy(false);
-    }
+  /** The read is step one. Everything after it lives in the real onboarding. */
+  const continueToOnboarding = async () => {
+    await persist({ ...state, step: "onboarding" });
+    navigate("/onboarding");
   };
 
   const read = (state.read ?? {}) as Record<string, string | string[] | undefined>;
@@ -304,7 +233,7 @@ const Assessment = () => {
             <div className="asg-read">
               <span className="asg-k">STEP ONE · YOUR READ</span>
               <ReadResult read={read as unknown as ReadShape} postsRead={postsRead} sparse={sparse} />
-              <button className="asg-btn asg-bp asg-full" onClick={() => openQuestion(0)}>
+              <button className="asg-btn asg-bp asg-full" onClick={() => void continueToOnboarding()}>
                 Continue — your CV and nine questions <span className="asg-a">↗</span>
               </button>
               <p className="asg-trust">
@@ -313,60 +242,6 @@ const Assessment = () => {
             </div>
           )}
 
-          {(stage === "q0" || stage === "q1" || stage === "q2") && (() => {
-            const index = Number(stage.slice(1));
-            return (
-              <section className="asg-panel">
-                <span className="asg-k">IN YOUR OWN WORDS · {index + 1} OF {QUESTIONS.length}</span>
-                <h1 className="asg-ph">{QUESTIONS[index]}</h1>
-                <textarea
-                  className="asg-ta" autoFocus value={answer} rows={6}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  placeholder="A few sentences is plenty."
-                />
-                <button className="asg-btn asg-bp asg-full" onClick={() => void saveAnswer(index)}>
-                  {index < QUESTIONS.length - 1 ? "Next" : "See my report"} <span className="asg-a">↗</span>
-                </button>
-                <p className="asg-trust">Saved as you go. Close the tab and come back whenever you like.</p>
-              </section>
-            );
-          })()}
-
-          {stage === "wall" && (
-            <section className="asg-panel">
-              <span className="asg-k">YOUR REPORT IS READY</span>
-              <h1 className="asg-ph">Where should we send it?</h1>
-              <p className="asg-pp">
-                It is yours either way. An account keeps it, lets you come back, and sends you the PDF.
-              </p>
-              {wallDone ? (
-                <p className="asg-ok" role="status">{wallDone}</p>
-              ) : (
-                <form onSubmit={saveMyReport}>
-                  <label className="asg-lbl" htmlFor="asg-email">Your email</label>
-                  <input id="asg-email" className="asg-in" type="email" autoComplete="email"
-                    value={email} onChange={(e) => setEmail(e.target.value)} />
-                  <label className="asg-lbl" htmlFor="asg-pwd">A password</label>
-                  <input id="asg-pwd" className="asg-in" type="password" autoComplete="new-password"
-                    value={password} onChange={(e) => setPassword(e.target.value)} />
-                  <p className="asg-help">Eight characters or more.</p>
-                  <div aria-live="polite">{wallError && <p className="asg-err">{wallError}</p>}</div>
-                  <label className="asg-consent" htmlFor="asg-consent">
-                    <input id="asg-consent" type="checkbox" checked={consent}
-                      onChange={(e) => setConsent(e.target.checked)} />
-                    <span>
-                      I agree to the <Link to="/terms">Terms</Link> and{" "}
-                      <Link to="/privacy">Privacy Policy</Link>. My data is processed under Saudi
-                      PDPL, and I can delete everything in one click.
-                    </span>
-                  </label>
-                  <button type="submit" className="asg-btn asg-bp asg-full" disabled={busy || !consent}>
-                    {busy ? "Saving your report…" : "Save my report"}
-                  </button>
-                </form>
-              )}
-            </section>
-          )}
         </main>
         <PublicFooter />
       </div>
