@@ -215,7 +215,7 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
   ] = await Promise.all([
     (supabase.from("diagnostic_profiles" as any) as any)
       .select(
-        "first_name,last_name,level,firm,core_practice,sector_focus,north_star_goal,years_experience,primary_strength,brand_pillars,brand_assessment_results,identity_intelligence,audit_interpretation,audit_results,skill_ratings,generated_skills",
+        "first_name,last_name,level,firm,core_practice,sector_focus,north_star_goal,years_experience,primary_strength,brand_pillars,brand_assessment_results,identity_intelligence,audit_interpretation,audit_results,skill_ratings,generated_skills,cv_crosscheck",
       )
       .eq("user_id", userId)
       .maybeSingle(),
@@ -528,6 +528,7 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     footprint,
     content,
     voice,
+    cv_crosscheck: p?.cv_crosscheck ?? null,
     brand_paper: p?.brand_assessment_results
       ? buildBrandPaper(brandResults, {
           first_name: p.first_name ?? null,
