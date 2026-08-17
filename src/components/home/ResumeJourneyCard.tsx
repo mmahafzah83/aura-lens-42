@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { nEvidence } from "@/constants/vocabulary";
+import { ASSESSMENT_STEPS, stepLabel } from "@/lib/brand";
 
 const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
 const dismissKey = (uid: string) => `aura_resume_hidden_${uid}`;
