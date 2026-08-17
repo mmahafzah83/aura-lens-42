@@ -1818,7 +1818,9 @@ const Onboarding = () => {
                 {connected ? <Check size={16} style={{ color: "#12805C", flexShrink: 0, marginBlockStart: 2 }} /> : <span style={{ inlineSize: 16, flexShrink: 0 }} />}
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: OB.ink }}>
-                    {connected ? "Connected · Aura can read your posts and publish when you approve" : "What's private · not connected"}
+                    {connected
+                      ? `Connected${connectedName ? ` · ${connectedName}` : ""} · Aura can read your posts and publish when you approve`
+                      : "What's private · not connected"}
                   </p>
                   {connected ? null : (
                     <>
