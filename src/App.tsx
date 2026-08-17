@@ -65,6 +65,8 @@ const ReadAlias = () => {
 };
 // The Gate — read before the nine-minute assessment. Public, no gate of its own.
 const Assessment = lazy(() => import("./pages/Assessment"));
+// The public destination of a minted share link. Ungated by design.
+const SharedRead = lazy(() => import("./pages/SharedRead"));
 // Dev-only carousel renderer harness. Registered below only when import.meta.env.DEV.
 const CarouselPreview = lazy(() => import("./carousel/render/CarouselPreview"));
 
@@ -116,6 +118,7 @@ const App = () => (
             <Route path="/read" element={<ReadAlias />} />
             <Route path="/assessment" element={<Assessment />} />
             <Route path="/mirror" element={<ReadAlias />} />
+            <Route path="/r/:token" element={<SharedRead />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/auth" element={<Auth />} />
