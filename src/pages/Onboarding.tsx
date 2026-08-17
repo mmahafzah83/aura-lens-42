@@ -1435,7 +1435,8 @@ const Onboarding = () => {
           Then it writes like you — and helps you be known better on LinkedIn and in the professional circles that matter to you.
         </p>
         <p style={bodyLight}>
-          Five short steps, about ten minutes. You can stop anywhere — everything saves as you go.
+          {ASSESSMENT_STEPS_WORD.charAt(0).toUpperCase() + ASSESSMENT_STEPS_WORD.slice(1)} short steps,{" "}
+          {ASSESSMENT_MINUTES_LINE.toLowerCase()}. You can stop anywhere — everything saves as you go.
         </p>
         <p style={{
           margin: "26px 0 10px", fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em",
@@ -1453,9 +1454,7 @@ const Onboarding = () => {
           ))}
         </div>
         <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>Start</OBButton></Actions>
-        <p style={footnote}>
-          Free while Aura is in beta. Your read is private — only you can see it unless you share it.
-        </p>
+        <p style={footnote}>{REPORT_FREE_LINE}</p>
       </PaperShell>
     );
   }
