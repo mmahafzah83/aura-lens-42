@@ -268,7 +268,7 @@ export default function SharedRead() {
       >
         <p style={{ margin: 0, fontSize: 17, lineHeight: 1.7, maxWidth: "60ch" }}>
           Aura reads what you have already published and tells you what the market can see. It
-          takes about ten minutes and costs nothing.
+          takes {FULL_PICTURE_LINE.toLowerCase()} and costs nothing.
         </p>
         <PrimaryButton label="Read me too" onClick={() => navigate("/assessment")} />
         <p style={{ margin: 0, fontSize: 14, color: OB.mutedNight }}>

@@ -116,8 +116,8 @@ export default function LinkedInImport() {
         <p style={{ fontSize: 15, lineHeight: 1.65, color: "var(--text-secondary)", margin: 0 }}>
           LinkedIn gives us your post metrics but never the words. Ask LinkedIn for a copy of your
           data — <a href={EXPORT_URL} target="_blank" rel="noreferrer" style={{ color: "var(--brand)" }}>Settings → Data privacy → Get a copy of your data</a>,
-          tick <strong>Posts</strong>, and request the archive. The email usually arrives within about
-          ten minutes. Upload the zip here, or just the <code>Shares.csv</code> inside it, and we will
+          tick <strong>Posts</strong>, and request the archive. The email usually arrives within a few
+          minutes. Upload the zip here, or just the <code>Shares.csv</code> inside it, and we will
           match every post to what we already track and fill in the missing text.
         </p>
       </header>
