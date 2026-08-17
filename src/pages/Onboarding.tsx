@@ -333,6 +333,13 @@ const Onboarding = () => {
   const screenRef = useRef(0);
   /** Where Back goes. Screens are pushed as they are left, popped on return. */
   const backStack = useRef<number[]>([]);
+  /**
+   * THE SILENT RESUME. Landing on step three with no word for it reads as a
+   * bug. When the journey opens past step one, say so once — and offer the
+   * way out. Shown for the resume, not for every step change after it.
+   */
+  const [resumedAt, setResumedAt] = useState<{ stage: number; readDone: boolean } | null>(null);
+  const [resumeAsking, setResumeAsking] = useState(false);
 
   /* member facts */
   const [firstName, setFirstName] = useState("");
