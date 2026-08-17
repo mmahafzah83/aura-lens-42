@@ -266,7 +266,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     try {
       const [profileRes, signalsRes] = await withTimeout(Promise.all([
         (supabase.from("diagnostic_profiles" as any) as any)
-          .select("first_name, last_name, level, firm, sector_focus, seniority_band, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
+          .select("first_name, last_name, level, firm, sector_focus, seniority_band, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength, instrument_version")
           .eq("user_id", uid).maybeSingle(),
         (supabase.from("strategic_signals") as any)
           .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids, strength_score, lifecycle_tier")
@@ -283,7 +283,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           core_practice: null, north_star_goal: null, brand_pillars: [],
           avatar_url: null, onboarding_completed: false, audit_completed_at: null,
           audit_method: null, brand_assessment_completed_at: null, brand_assessment_results: null,
-          identity_intelligence: null, primary_strength: null,
+          identity_intelligence: null, primary_strength: null, instrument_version: null,
         } as ProfileRow);
       }
       
