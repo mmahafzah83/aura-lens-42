@@ -227,7 +227,7 @@ const Assessment = () => {
             <div className="asg-read">
               <span className="asg-k">STEP ONE · YOUR READ</span>
               <ReadResult read={read as unknown as ReadShape} postsRead={postsRead} sparse={sparse} />
-              <button className="asg-btn asg-bp asg-full" onClick={() => openQuestion(0)}>
+              <button className="asg-btn asg-bp asg-full" onClick={() => void continueToOnboarding()}>
                 Continue — your CV and nine questions <span className="asg-a">↗</span>
               </button>
               <p className="asg-trust">
@@ -236,60 +236,6 @@ const Assessment = () => {
             </div>
           )}
 
-          {(stage === "q0" || stage === "q1" || stage === "q2") && (() => {
-            const index = Number(stage.slice(1));
-            return (
-              <section className="asg-panel">
-                <span className="asg-k">IN YOUR OWN WORDS · {index + 1} OF {QUESTIONS.length}</span>
-                <h1 className="asg-ph">{QUESTIONS[index]}</h1>
-                <textarea
-                  className="asg-ta" autoFocus value={answer} rows={6}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  placeholder="A few sentences is plenty."
-                />
-                <button className="asg-btn asg-bp asg-full" onClick={() => void saveAnswer(index)}>
-                  {index < QUESTIONS.length - 1 ? "Next" : "See my report"} <span className="asg-a">↗</span>
-                </button>
-                <p className="asg-trust">Saved as you go. Close the tab and come back whenever you like.</p>
-              </section>
-            );
-          })()}
-
-          {stage === "wall" && (
-            <section className="asg-panel">
-              <span className="asg-k">YOUR REPORT IS READY</span>
-              <h1 className="asg-ph">Where should we send it?</h1>
-              <p className="asg-pp">
-                It is yours either way. An account keeps it, lets you come back, and sends you the PDF.
-              </p>
-              {wallDone ? (
-                <p className="asg-ok" role="status">{wallDone}</p>
-              ) : (
-                <form onSubmit={saveMyReport}>
-                  <label className="asg-lbl" htmlFor="asg-email">Your email</label>
-                  <input id="asg-email" className="asg-in" type="email" autoComplete="email"
-                    value={email} onChange={(e) => setEmail(e.target.value)} />
-                  <label className="asg-lbl" htmlFor="asg-pwd">A password</label>
-                  <input id="asg-pwd" className="asg-in" type="password" autoComplete="new-password"
-                    value={password} onChange={(e) => setPassword(e.target.value)} />
-                  <p className="asg-help">Eight characters or more.</p>
-                  <div aria-live="polite">{wallError && <p className="asg-err">{wallError}</p>}</div>
-                  <label className="asg-consent" htmlFor="asg-consent">
-                    <input id="asg-consent" type="checkbox" checked={consent}
-                      onChange={(e) => setConsent(e.target.checked)} />
-                    <span>
-                      I agree to the <Link to="/terms">Terms</Link> and{" "}
-                      <Link to="/privacy">Privacy Policy</Link>. My data is processed under Saudi
-                      PDPL, and I can delete everything in one click.
-                    </span>
-                  </label>
-                  <button type="submit" className="asg-btn asg-bp asg-full" disabled={busy || !consent}>
-                    {busy ? "Saving your report…" : "Save my report"}
-                  </button>
-                </form>
-              )}
-            </section>
-          )}
         </main>
         <PublicFooter />
       </div>
