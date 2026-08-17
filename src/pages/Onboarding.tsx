@@ -894,8 +894,8 @@ const Onboarding = () => {
   };
 
   /** Return to the address card without losing anything already read. */
-  const returnToAddress = useCallback(() => {
-    setLiError("");
+  const returnToAddress = useCallback((error?: string) => {
+    setLiError(error ?? "");
     setStep1Phase("ask");
   }, []);
 
