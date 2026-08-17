@@ -258,8 +258,16 @@ ${posts.map((p, i) => `${i + 1}. [${p.like_count ?? 0} reactions${p.published_at
 
   // The one question where they bet on their own strength. Everything in
   // THE HONEST TRUTH turns on whether their posts back this up.
-  const selfClaimKey = Object.keys(answers ?? {}).find((k) => /strongest at/i.test(k));
+  // framework = 'self-claim' is the binding; the regex is legacy fallback only.
+  let selfClaimKey: string | undefined;
+  if (selfClaimPrompt) {
+    selfClaimKey = Object.keys(answers ?? {}).find((k) => k.includes(selfClaimPrompt as string));
+  }
+  if (!selfClaimKey) {
+    selfClaimKey = Object.keys(answers ?? {}).find((k) => /strongest at/i.test(k));
+  }
   const selfClaim = selfClaimKey ? String((answers as any)[selfClaimKey] ?? "").trim() : "";
+
   const selfClaimBlock = selfClaim
     ? `WHERE THEY BET THEY ARE STRONGEST
 The member claims they are strongest at: "${selfClaim}".
