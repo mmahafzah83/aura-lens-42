@@ -608,6 +608,9 @@ const AdminQA = () => {
       {/* Hidden iframe container used by the DOM audit to load other routes without unmounting this page */}
       <div ref={iframeContainerRef} aria-hidden="true" style={{ position: "fixed", left: -99999, top: 0, width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }} />
 
+      {/* Testing — provision a stranger, reset a journey, clean up after */}
+      <TestingPanel />
+
       {/* End-to-end walkthrough (relocated from Access) */}
       <Section title="End-to-end walkthrough">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -1039,6 +1042,247 @@ function Stat({ label, value, color, emphasis }: { label: string; value: number;
       <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "var(--brand, #B08D3A)" : "#B8B0A2", fontWeight: 600 }}>{label}</div>
       <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: emphasis ? 40 : 30, marginTop: 6, color: color || "#F4EFE6", fontWeight: emphasis ? 700 : 500 }}>{value}</div>
     </div>
+  );
+}
+
+/* ---------------- Testing (QA members + journey reset) ---------------- */
+
+type QaAccount = { email: string; created_at: string; user_id: string | null; password?: string };
+type MemberRow = { user_id: string; first_name: string | null; last_name: string | null };
+
+function TestingPanel() {
+  const [creating, setCreating] = useState(false);
+  const [fresh, setFresh] = useState<QaAccount | null>(null);
+  const [qaAccounts, setQaAccounts] = useState<QaAccount[]>([]);
+  const [members, setMembers] = useState<MemberRow[]>([]);
+  const [adminIds, setAdminIds] = useState<string[]>([]);
+  const [targetId, setTargetId] = useState("");
+  const [wipeCaptures, setWipeCaptures] = useState(false); // default unchecked, always
+  const [confirmName, setConfirmName] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const loadAccounts = async () => {
+    const { data } = await (supabase.from("beta_allowlist" as any) as any)
+      .select("email, created_at, user_id")
+      .eq("source", "qa")
+      .order("created_at", { ascending: false })
+      .limit(5);
+    setQaAccounts((data as QaAccount[]) || []);
+  };
+
+  useEffect(() => {
+    void loadAccounts();
+    void (async () => {
+      const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("user_id, first_name, last_name")
+        .order("first_name", { ascending: true })
+        .limit(500);
+      setMembers((data as MemberRow[]) || []);
+      const { data: roles } = await (supabase.from("user_roles" as any) as any)
+        .select("user_id").eq("role", "admin");
+      setAdminIds(((roles as any[]) || []).map((r) => r.user_id));
+    })();
+  }, []);
+
+  const nameOf = (m: MemberRow) =>
+    [m.first_name, m.last_name].filter(Boolean).join(" ").trim() || m.user_id.slice(0, 8);
+  const selected = members.find((m) => m.user_id === targetId) || null;
+  const selectedName = selected ? nameOf(selected) : "";
+  const selectedIsFounder = !!selected && adminIds.includes(selected.user_id);
+  const canReset = !!selected && confirmName.trim() === selectedName && !resetting;
+
+  const createAccount = async () => {
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("qa-account", { body: {} });
+      if (error || !(data as any)?.ok) throw new Error((data as any)?.error || error?.message || "Failed");
+      setFresh({
+        email: (data as any).email,
+        password: (data as any).password,
+        user_id: (data as any).user_id,
+        created_at: new Date().toISOString(),
+      });
+      await loadAccounts();
+      toast.success("Test member created.");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not create the test member.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const runReset = async () => {
+    if (!canReset || !selected) return;
+    setResetting(true);
+    try {
+      const { error } = await (supabase.rpc as any)("reset_journey", {
+        p_user_id: selected.user_id,
+        p_wipe_captures: wipeCaptures,
+      });
+      if (error) throw error;
+      toast.success(`${selectedName}'s journey was reset.`);
+      setConfirmName("");
+      setWipeCaptures(false);
+    } catch (e: any) {
+      toast.error(e?.message || "Reset failed.");
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const deleteTest = async () => {
+    if (!deleteEmail.startsWith("aura.qa+")) return;
+    setDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { target_email: deleteEmail },
+      });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      toast.success("Test member deleted.");
+      setDeleteEmail("");
+      await loadAccounts();
+    } catch (e: any) {
+      toast.error(e?.message || "Delete failed.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <Section title="Testing">
+      {/* 1 — create a test member */}
+      <div style={{ ...cardStyle, marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 14, color: "#D4CCBC", maxWidth: 520 }}>
+            A fresh account with the confirmation mail and the password gate already bypassed.
+          </div>
+          <PrimaryBtn onClick={createAccount} disabled={creating}>
+            {creating ? <Loader2 size={14} className="animate-spin" /> : null} Create a test member
+          </PrimaryBtn>
+        </div>
+
+        {fresh && (
+          <div style={{ marginTop: 14, background: "rgba(0,0,0,0.3)", borderRadius: 6, padding: 14 }}>
+            <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#F4EFE6", wordBreak: "break-all" }}>
+              <div>{fresh.email}</div>
+              <div>{fresh.password}</div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+              <SecondaryBtn
+                onClick={() => {
+                  void navigator.clipboard.writeText(`${fresh.email}\n${fresh.password}`);
+                  toast.success("Copied.");
+                }}
+                style={{ padding: "8px 14px", display: "inline-flex", alignItems: "center", gap: 6 }}
+              >
+                <Copy size={13} /> Copy
+              </SecondaryBtn>
+              <span style={{ fontSize: 14, color: "#B8B0A2" }}>
+                Open a private window, sign in with these, and walk the journey as a stranger.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {qaAccounts.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600, marginBottom: 6 }}>
+              Last five test members
+            </div>
+            {qaAccounts.map((a) => (
+              <div key={a.email} style={{ display: "flex", gap: 12, justifyContent: "space-between", fontSize: 14, color: "#D4CCBC", padding: "6px 0", borderTop: "1px solid rgba(255,255,255,0.08)", fontFamily: "var(--font-mono, monospace)", flexWrap: "wrap" }}>
+                <span style={{ wordBreak: "break-all" }}>{a.email}</span>
+                <span style={{ color: "#9C9485" }}>{new Date(a.created_at).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 2 — reset a member's journey */}
+      <div style={{ ...cardStyle, marginBottom: 12 }}>
+        <div style={{ fontSize: 16, color: "#F4EFE6", fontWeight: 600, marginBottom: 10 }}>Reset a member's journey</div>
+        <label htmlFor="qa-reset-member" style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600, marginBottom: 6 }}>
+          Member
+        </label>
+        <select
+          id="qa-reset-member"
+          value={targetId}
+          onChange={(e) => { setTargetId(e.target.value); setConfirmName(""); }}
+          style={{ ...secondaryBtnStyle, minHeight: 44, minWidth: 280, maxWidth: "100%" }}
+        >
+          <option value="">Choose a member…</option>
+          {members.map((m) => (
+            <option key={m.user_id} value={m.user_id}>{nameOf(m)}</option>
+          ))}
+        </select>
+
+        {selectedIsFounder && (
+          <div style={{ marginTop: 10, fontSize: 14, color: "#dc2626", border: "1px solid rgba(220,38,38,0.5)", background: "rgba(220,38,38,0.08)", borderRadius: 6, padding: "10px 12px" }}>
+            This account holds 182 captures and 6 reports. Reset only a test member.
+          </div>
+        )}
+
+        <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, fontSize: 14, color: "#D4CCBC", minHeight: 44, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={wipeCaptures}
+            onChange={(e) => setWipeCaptures(e.target.checked)}
+            style={{ width: 18, height: 18 }}
+          />
+          Also delete their captures
+        </label>
+
+        <label htmlFor="qa-reset-confirm" style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600, margin: "12px 0 6px" }}>
+          Type “{selectedName || "the member's name"}” to confirm
+        </label>
+        <input
+          id="qa-reset-confirm"
+          value={confirmName}
+          onChange={(e) => setConfirmName(e.target.value)}
+          disabled={!selected}
+          placeholder={selectedName}
+          aria-label="Type the member's name to confirm the reset"
+          style={{ ...secondaryBtnStyle, minHeight: 44, minWidth: 280, maxWidth: "100%", display: "block" }}
+        />
+
+        <div style={{ marginTop: 12 }}>
+          <PrimaryBtn onClick={runReset} disabled={!canReset} style={{ background: "#dc2626", color: "#fff", minHeight: 44 }}>
+            {resetting ? <Loader2 size={14} className="animate-spin" /> : null} Reset this journey
+          </PrimaryBtn>
+        </div>
+      </div>
+
+      {/* 3 — delete a test member */}
+      <div style={cardStyle}>
+        <div style={{ fontSize: 16, color: "#F4EFE6", fontWeight: 600, marginBottom: 10 }}>Delete a test member</div>
+        <label htmlFor="qa-delete-member" style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600, marginBottom: 6 }}>
+          Test address
+        </label>
+        <select
+          id="qa-delete-member"
+          value={deleteEmail}
+          onChange={(e) => setDeleteEmail(e.target.value)}
+          style={{ ...secondaryBtnStyle, minHeight: 44, minWidth: 280, maxWidth: "100%" }}
+        >
+          <option value="">Choose a test address…</option>
+          {qaAccounts.filter((a) => a.email.startsWith("aura.qa+")).map((a) => (
+            <option key={a.email} value={a.email}>{a.email}</option>
+          ))}
+        </select>
+        <div style={{ marginTop: 12 }}>
+          <SecondaryBtn
+            onClick={deleteTest}
+            disabled={!deleteEmail.startsWith("aura.qa+") || deleting}
+            style={{ minHeight: 44 }}
+          >
+            {deleting ? <Loader2 size={14} className="animate-spin" /> : null} Delete this test member
+          </SecondaryBtn>
+        </div>
+      </div>
+    </Section>
   );
 }
 

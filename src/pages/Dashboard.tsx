@@ -20,6 +20,7 @@ import AskAuraButton from "@/components/AskAuraButton";
 import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
 import { signOutAndLand } from "@/lib/signOut";
+import { sweepIfServerReset } from "@/lib/resetSweep";
 import EditProfileModal, { type EditProfileField } from "@/components/EditProfileModal";
 import SetPasswordModal from "@/components/SetPasswordModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
@@ -539,9 +540,12 @@ const Dashboard = () => {
         } catch {}
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed, onboarding_completed, onboarding_step, first_name, firm, level, sector_focus, seniority_band, last_visit_at, avatar_url, identity_intelligence")
+          .select("completed, onboarding_completed, onboarding_step, first_name, firm, level, sector_focus, seniority_band, last_visit_at, avatar_url, identity_intelligence, journey_reset_at")
           .eq("user_id", uid)
           .maybeSingle();
+
+        /* A reset on the server must never leave a stale journey in the browser. */
+        sweepIfServerReset((profile as any)?.journey_reset_at);
 
         if (profile) {
           setUser((u) => ({
