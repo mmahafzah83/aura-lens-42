@@ -2048,7 +2048,22 @@ const Onboarding = () => {
                   ? readCache.notice
                   : `Read from your profile on ${new Date(readCache.generated_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`
               ) : null}
-              {readCache ? " · " : null}
+              {readCache ? (
+                <>
+                  {" · "}
+                  <button
+                    type="button"
+                    onClick={() => void readProfile(true)}
+                    style={{
+                      background: "none", border: 0, padding: 0, font: "inherit",
+                      color: OB.blue, cursor: "pointer", textDecoration: "underline",
+                    }}
+                  >
+                    Read again
+                  </button>
+                </>
+              ) : null}
+              {" · "}
               <button
                 type="button"
                 onClick={() => void returnToAddress()}
