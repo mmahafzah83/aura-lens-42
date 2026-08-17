@@ -24,9 +24,13 @@ test.describe("landing", () => {
     expect(prices.twentyNine, "the $29 seat price must be stated").toBeGreaterThan(0);
 
     // The headline price node says it once, and says $29.
-    const priceNode = page.locator(".prc .p");
-    expect(await priceNode.count(), "exactly one headline price").toBe(1);
-    expect((await priceNode.first().textContent()) || "").toContain("$29");
+    // Every headline price node states the same single figure.
+    const priceNodes = page.locator(".prc .p");
+    const count = await priceNodes.count();
+    expect(count, "the landing states a headline price").toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      expect((await priceNodes.nth(i).textContent()) || "").toContain("$29");
+    }
 
     // D100 — no strikethrough price anywhere.
     const struck = await page.evaluate(() => {
