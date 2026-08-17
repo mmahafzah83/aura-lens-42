@@ -151,6 +151,33 @@ const quietLink: React.CSSProperties = {
   display: "inline-block", minBlockSize: 44,
 };
 
+/** The selectable row used by choice questions and the reveal feedback block. */
+const optionButton = (
+  key: string | number,
+  label: string,
+  onClick: () => void,
+  picked = false,
+  blocked = false,
+  why?: string,
+) => (
+  <button key={key} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
+    textAlign: "start", padding: "14px 15px", borderRadius: 14,
+    cursor: blocked ? "not-allowed" : "pointer",
+    border: `1px solid ${OB.line}`,
+    borderInlineStart: picked ? `2px solid ${OB.blue}` : `1px solid ${OB.line}`,
+    background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
+    fontWeight: picked ? 600 : 400,
+    lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
+    opacity: blocked ? 0.45 : 1,
+    minBlockSize: 44,
+    transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
+  }}>
+    {label}
+    {why ? <span style={{ display: "block", marginBlockStart: 5, fontSize: 12.5, lineHeight: 1.5, color: OB.muted }}>{why}</span> : null}
+  </button>
+);
+
+
 const PAGE_CSS = `
 .obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};
   --ob-max:420px;--ob-pad:clamp(22px,6vw,30px);--ob-h1:clamp(25px,7vw,30px);--ob-h2:clamp(21px,5.6vw,26px);
