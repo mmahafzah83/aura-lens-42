@@ -3877,6 +3877,51 @@ export type Database = {
         }
         Relationships: []
       }
+      report_shares: {
+        Row: {
+          archetype: string | null
+          created_at: string
+          display_name: string | null
+          headline: string | null
+          lang: string | null
+          market_read: string | null
+          own_words: string | null
+          revoked_at: string | null
+          subjects: Json | null
+          token: string
+          user_id: string
+          views: number
+        }
+        Insert: {
+          archetype?: string | null
+          created_at?: string
+          display_name?: string | null
+          headline?: string | null
+          lang?: string | null
+          market_read?: string | null
+          own_words?: string | null
+          revoked_at?: string | null
+          subjects?: Json | null
+          token: string
+          user_id: string
+          views?: number
+        }
+        Update: {
+          archetype?: string | null
+          created_at?: string
+          display_name?: string | null
+          headline?: string | null
+          lang?: string | null
+          market_read?: string | null
+          own_words?: string | null
+          revoked_at?: string | null
+          subjects?: Json | null
+          token?: string
+          user_id?: string
+          views?: number
+        }
+        Relationships: []
+      }
       report_snapshots: {
         Row: {
           created_at: string
@@ -5890,6 +5935,18 @@ export type Database = {
           id: string
           runs_started: number
           state: Json
+        }[]
+      }
+      get_shared_read: {
+        Args: { p_token: string }
+        Returns: {
+          archetype: string
+          display_name: string
+          headline: string
+          lang: string
+          market_read: string
+          own_words: string
+          subjects: Json
         }[]
       }
       has_role: {
