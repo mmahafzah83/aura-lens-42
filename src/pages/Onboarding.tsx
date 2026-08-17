@@ -1252,6 +1252,25 @@ const Onboarding = () => {
 
   const bandLabel = band ? BAND_LABEL[band] : null;
 
+  /* The browser's back button walks the journey, and Escape is Finish later. */
+  useEffect(() => {
+    const onPop = () => { goBack(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const el = document.activeElement as HTMLElement | null;
+      const typing = !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+      if (typing) return;
+      e.preventDefault();
+      saveAndExit();
+    };
+    window.addEventListener("popstate", onPop);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [goBack, saveAndExit]);
+
   /** One writer for the level, wherever it is picked. */
   const chooseTitle = async (title: string, b: Band) => {
     setLevelTitle(title);
