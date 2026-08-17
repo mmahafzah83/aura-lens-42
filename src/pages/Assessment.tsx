@@ -251,7 +251,7 @@ const Assessment = () => {
               />
               <div aria-live="polite">{addrError && <p className="asg-err">{addrError}</p>}</div>
               <button className="asg-btn asg-bp asg-full" onClick={() => void runRead()}>
-                Read me <span className="asg-a">↗</span>
+                Read my profile <span className="asg-a">↗</span>
               </button>
               <p className="asg-trust">No account needed. You can stop and come back — this page remembers.</p>
             </section>
