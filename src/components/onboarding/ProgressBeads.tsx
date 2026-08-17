@@ -48,7 +48,7 @@ const ProgressBeads = ({ active }: { active: number }) => (
       fontFamily: OB.mono, fontSize: 9.5, textTransform: "uppercase",
       letterSpacing: "0.12em", color: OB.muted, textAlign: "center",
     }}>
-      Step {Math.min(Math.max(active, 0), 4) + 1} of 5 · {STAGE_NAMES[Math.min(Math.max(active, 0), 4)]}
+      {stepLabel(Math.min(Math.max(active, 0), ASSESSMENT_STEPS - 1) + 1)} · {STAGE_NAMES[Math.min(Math.max(active, 0), ASSESSMENT_STEPS - 1)]}
     </span>
   </div>
 );
