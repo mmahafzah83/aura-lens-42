@@ -1,0 +1,1 @@
+UPDATE public.mirror_reads SET generated_at = now() - interval '8 days' WHERE handle = 'mmahafzah';
