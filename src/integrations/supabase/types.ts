@@ -5754,6 +5754,16 @@ export type Database = {
       }
     }
     Functions: {
+      _clone_member_rows: {
+        Args: {
+          p_donor: string
+          p_limit: number
+          p_overrides?: Json
+          p_table: string
+          p_target: string
+        }
+        Returns: number
+      }
       activate_design_version: {
         Args: { p_created_by?: string; p_new_tokens: Json }
         Returns: string
@@ -6088,6 +6098,10 @@ export type Database = {
           title: string
           type: string
         }[]
+      }
+      seed_test_member: {
+        Args: { p_persona?: string; p_user_id: string }
+        Returns: Json
       }
       start_assessment_run: {
         Args: { p_daily_cap?: number; p_token: string }

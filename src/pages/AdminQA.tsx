@@ -1050,6 +1050,29 @@ function Stat({ label, value, color, emphasis }: { label: string; value: number;
 type QaAccount = { email: string; created_at: string; user_id: string | null; password?: string };
 type MemberRow = { user_id: string; first_name: string | null; last_name: string | null };
 
+/* The five personas live in public.seed_test_member. Keep this list in sync. */
+const PERSONAS: { value: string; label: string }[] = [
+  { value: "stranger", label: "stranger — clean account" },
+  { value: "read", label: "read — assessment, profile, report" },
+  { value: "loop_quiet", label: "loop_quiet — captures, evidence, signals" },
+  { value: "loop_ready", label: "loop_ready — plus waiting drafts" },
+  { value: "dormant", label: "dormant — loop_ready, 20 days away" },
+];
+
+/** "loop_ready · 8 captures · 20 evidence · 6 signals · 4 drafts" */
+function describeSeed(r: any): string {
+  if (!r) return "";
+  const persona = String(r.persona ?? "");
+  if (r.seeded === "nothing") return `${persona} · clean account`;
+  const parts = [
+    r.entries ? `${r.entries} captures` : null,
+    r.evidence ? `${r.evidence} evidence` : null,
+    r.signals ? `${r.signals} signals` : null,
+    r.drafts ? `${r.drafts} drafts` : null,
+  ].filter(Boolean);
+  return [persona, ...parts].join(" · ");
+}
+
 function TestingPanel() {
   const [creating, setCreating] = useState(false);
   const [fresh, setFresh] = useState<QaAccount | null>(null);
@@ -1062,6 +1085,11 @@ function TestingPanel() {
   const [resetting, setResetting] = useState(false);
   const [deleteEmail, setDeleteEmail] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [persona, setPersona] = useState("stranger");
+  const [seedSummary, setSeedSummary] = useState("");
+  const [reseedPersona, setReseedPersona] = useState("read");
+  const [reseeding, setReseeding] = useState(false);
+  const [reseedSummary, setReseedSummary] = useState("");
 
   const loadAccounts = async () => {
     const { data } = await (supabase.from("beta_allowlist" as any) as any)
@@ -1092,9 +1120,11 @@ function TestingPanel() {
   const selectedName = selected ? nameOf(selected) : "";
   const selectedIsFounder = !!selected && adminIds.includes(selected.user_id);
   const canReset = !!selected && confirmName.trim() === selectedName && !resetting;
+  const canReseed = !!selected && confirmName.trim() === selectedName && !reseeding;
 
   const createAccount = async () => {
     setCreating(true);
+    setSeedSummary("");
     try {
       const { data, error } = await supabase.functions.invoke("qa-account", { body: {} });
       if (error || !(data as any)?.ok) throw new Error((data as any)?.error || error?.message || "Failed");
@@ -1106,6 +1136,20 @@ function TestingPanel() {
       });
       await loadAccounts();
       toast.success("Test member created.");
+
+      if (persona !== "stranger" && (data as any).user_id) {
+        const { data: seeded, error: seedErr } = await (supabase.rpc as any)("seed_test_member", {
+          p_user_id: (data as any).user_id,
+          p_persona: persona,
+        });
+        if (seedErr) {
+          toast.error(seedErr.message || "The account was created but the persona did not seed.");
+        } else {
+          setSeedSummary(describeSeed(seeded));
+        }
+      } else {
+        setSeedSummary("stranger · clean account");
+      }
     } catch (e: any) {
       toast.error(e?.message || "Could not create the test member.");
     } finally {
@@ -1129,6 +1173,26 @@ function TestingPanel() {
       toast.error(e?.message || "Reset failed.");
     } finally {
       setResetting(false);
+    }
+  };
+
+  const runReseed = async () => {
+    if (!canReseed || !selected) return;
+    setReseeding(true);
+    setReseedSummary("");
+    try {
+      const { data, error } = await (supabase.rpc as any)("seed_test_member", {
+        p_user_id: selected.user_id,
+        p_persona: reseedPersona,
+      });
+      if (error) throw error;
+      setReseedSummary(describeSeed(data));
+      setConfirmName("");
+      toast.success(`${selectedName} was re-seeded as ${reseedPersona}.`);
+    } catch (e: any) {
+      toast.error(e?.message || "Re-seed failed.");
+    } finally {
+      setReseeding(false);
     }
   };
 
@@ -1158,10 +1222,32 @@ function TestingPanel() {
           <div style={{ fontSize: 14, color: "#D4CCBC", maxWidth: 520 }}>
             A fresh account with the confirmation mail and the password gate already bypassed.
           </div>
-          <PrimaryBtn onClick={createAccount} disabled={creating}>
-            {creating ? <Loader2 size={14} className="animate-spin" /> : null} Create a test member
-          </PrimaryBtn>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <label htmlFor="qa-create-persona" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600 }}>
+              Persona
+            </label>
+            <select
+              id="qa-create-persona"
+              value={persona}
+              onChange={(e) => setPersona(e.target.value)}
+              aria-label="Persona for the new test member"
+              style={{ ...secondaryBtnStyle, minHeight: 44, minWidth: 240, maxWidth: "100%" }}
+            >
+              {PERSONAS.map((p) => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+            <PrimaryBtn onClick={createAccount} disabled={creating}>
+              {creating ? <Loader2 size={14} className="animate-spin" /> : null} Create a test member
+            </PrimaryBtn>
+          </div>
         </div>
+
+        {seedSummary && (
+          <div style={{ marginTop: 12, fontSize: 14, color: "#F4EFE6", fontFamily: "var(--font-mono, monospace)" }}>
+            {seedSummary}
+          </div>
+        )}
 
         {fresh && (
           <div style={{ marginTop: 14, background: "rgba(0,0,0,0.3)", borderRadius: 6, padding: 14 }}>
@@ -1252,6 +1338,37 @@ function TestingPanel() {
           <PrimaryBtn onClick={runReset} disabled={!canReset} style={{ background: "#dc2626", color: "#fff", minHeight: 44 }}>
             {resetting ? <Loader2 size={14} className="animate-spin" /> : null} Reset this journey
           </PrimaryBtn>
+        </div>
+
+        {/* Re-seed — same member, same typed confirmation, a chosen persona */}
+        <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ fontSize: 14, color: "#D4CCBC", marginBottom: 10, maxWidth: 560 }}>
+            Or re-seed this member as a persona. The journey is reset first, so the result is always the same.
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <label htmlFor="qa-reseed-persona" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600 }}>
+              Persona
+            </label>
+            <select
+              id="qa-reseed-persona"
+              value={reseedPersona}
+              onChange={(e) => setReseedPersona(e.target.value)}
+              aria-label="Persona to re-seed this member as"
+              style={{ ...secondaryBtnStyle, minHeight: 44, minWidth: 240, maxWidth: "100%" }}
+            >
+              {PERSONAS.map((p) => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+            <SecondaryBtn onClick={runReseed} disabled={!canReseed} style={{ minHeight: 44 }}>
+              {reseeding ? <Loader2 size={14} className="animate-spin" /> : null} Re-seed
+            </SecondaryBtn>
+          </div>
+          {reseedSummary && (
+            <div style={{ marginTop: 10, fontSize: 14, color: "#F4EFE6", fontFamily: "var(--font-mono, monospace)" }}>
+              {reseedSummary}
+            </div>
+          )}
         </div>
       </div>
 

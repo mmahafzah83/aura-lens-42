@@ -57,7 +57,7 @@ const CookieConsent = () => {
           type="button"
           onClick={accept}
           className="px-5 py-2 rounded-md text-sm font-medium transition-opacity hover:opacity-90 shrink-0 v23-tap v23-focus"
-          style={{ background: "var(--brand)", color: "var(--paper)" }}
+          style={{ background: "var(--brand)", color: "var(--paper)", minHeight: 44 }}
         >
           Accept
         </button>

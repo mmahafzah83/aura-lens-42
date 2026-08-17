@@ -255,6 +255,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .founder .t b{color:var(--ink)}
 .aura-v2 .foot{border-top:1px solid var(--line);margin-top:56px;padding:20px 0;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .aura-v2 .foot span,.aura-v2 .foot a{font-family:var(--mono);font-size:10px;color:var(--ink4);letter-spacing:.09em;text-decoration:none}
+.aura-v2 .foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px}
 .aura-v2 .foot a:hover{color:var(--blue)}
 .aura-v2 .rv{opacity:0;transform:translateY(16px);transition:750ms var(--sp)}
 .aura-v2 .rv.in{opacity:1;transform:none}
