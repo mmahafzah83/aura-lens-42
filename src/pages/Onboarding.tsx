@@ -2849,6 +2849,21 @@ const Onboarding = () => {
           } catch (e) {
             console.error("[journey] capture replay failed", e);
           }
+          /* Replay the optional reveal feedback collected while anonymous. */
+          try {
+            const fb = (st as any).reveal_feedback;
+            if (fb?.rating != null) {
+              await supabase.from("beta_feedback").upsert({
+                user_id: uid,
+                feedback_type: "reveal",
+                rating: fb.rating,
+                message: fb.message || null,
+                page: "/onboarding",
+              });
+            }
+          } catch (e) {
+            console.error("[journey] reveal feedback handoff failed", e);
+          }
           try {
             await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null));
           } catch (e) {
