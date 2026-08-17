@@ -47,6 +47,7 @@ import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyHeader from "@/components/onboarding/JourneyHeader";
+import { CONSENT_VERSION } from "@/pages/Auth";
 import DocumentUpload, { DOCUMENT_STATUS_EVENT } from "@/components/DocumentUpload";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
