@@ -307,8 +307,8 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
 };
 
 const PaperShell = ({
-  children, bead, cream = false, footer, onExit, face = false,
-}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void; face?: boolean }) => {
+  children, bead, cream = false, footer, onExit, face = false, subProgress,
+}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number }) => {
   const { onBack, banner } = useContext(JourneyNav);
   return (
   <div className="obc" style={{
@@ -319,7 +319,7 @@ const PaperShell = ({
       {onExit ? <JourneyHeader onExit={onExit} onBack={onBack} /> : null}
       {banner}
       <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
-        <ProgressBeads active={bead} />
+        <ProgressBeads active={bead} subProgress={subProgress} />
       </div>
       <div className="obc-in" style={{
         background: OB.white, borderRadius: RADIUS.hero, border: `1px solid ${OB.line}`,
