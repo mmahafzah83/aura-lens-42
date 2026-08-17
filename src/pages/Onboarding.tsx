@@ -2889,7 +2889,9 @@ const Onboarding = () => {
           }}>{exitNote}</span>
         </div>
       ) : null}
-      {content}
+      <JourneyNav.Provider value={{ onBack: canBack ? goBack : undefined }}>
+        {content}
+      </JourneyNav.Provider>
     </>
   );
 };
