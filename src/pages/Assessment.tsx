@@ -178,73 +178,10 @@ const Assessment = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const saveAnswer = async (index: number) => {
-    const answers = { ...(state.answers ?? {}), [`q${index}`]: answer.trim() };
-    const nextStep = index < QUESTIONS.length - 1 ? `q${index + 1}` : "wall";
-    await persist({ ...state, step: nextStep, answers });
-    setAnswer(answers[`q${index + 1}`] ?? "");
-    setStage(nextStep as Stage);
-  };
-
-  const openQuestion = (index: number) => {
-    setAnswer((state.answers ?? {})[`q${index}`] ?? "");
-    setStage(`q${index}` as Stage);
-  };
-
-  /* ── the wall, at the reveal ── */
-  const saveMyReport = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (busy) return;
-    setWallError(null);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setWallError("That doesn't look like an email address. Check it and try again."); return;
-    }
-    if (password.length < 8) { setWallError("Use eight characters or more."); return; }
-    if (!consent) return;
-    setBusy(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("auth-signup", {
-        body: {
-          email: email.trim().toLowerCase(), password,
-          origin: window.location.origin, consent_version: CONSENT_VERSION,
-        },
-      });
-      const result = data as { ok?: boolean; existing?: boolean; code?: string; error?: string } | null;
-      if (result?.existing) {
-        setWallError("You already have an account with that address. Sign in and your report is waiting.");
-        return;
-      }
-      const msg = result?.error || error?.message;
-      if (msg) {
-        setWallError(/as many accounts|rate|429/i.test(String(msg))
-          ? "That's a lot of attempts from here today. Write to support@aura-intel.org and it's sorted by hand."
-          : "Couldn't open the account just now. Nothing is lost — try again in a moment.");
-        return;
-      }
-
-      // If the account is live straight away, attach the run to it now.
-      const { data: signedIn } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(), password,
-      });
-      const held = token ?? readToken();
-      if (signedIn?.session && held) {
-        const claimed = await claimSession(held);
-        if (!claimed.ok) {
-          setWallError("We could not attach your report to your account yet — nothing is lost. Try again.");
-          return;
-        }
-        clearToken();
-        navigate("/onboarding");
-        return;
-      }
-      // Not signed in yet: the link is in the inbox. The token stays put and is
-      // claimed on the first authenticated load.
-      setWallDone("Your account is open. Confirm it from the link in your inbox and your report follows you in — nothing is lost.");
-    } catch {
-      setWallError("Couldn't open the account just now. Nothing is lost — try again in a moment.");
-    } finally {
-      setBusy(false);
-    }
+  /** The read is step one. Everything after it lives in the real onboarding. */
+  const continueToOnboarding = async () => {
+    await persist({ ...state, step: "onboarding" });
+    navigate("/onboarding");
   };
 
   const read = (state.read ?? {}) as Record<string, string | string[] | undefined>;
