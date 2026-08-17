@@ -122,15 +122,25 @@ const Assessment = () => {
     return () => t.forEach(window.clearTimeout);
   }, [stage]);
 
-  const runRead = async () => {
-    const target = addr.trim();
+  const runRead = async (urlArg?: string) => {
+    const target = (urlArg ?? addr).trim();
     if (!target.toLowerCase().includes("linkedin.com/in/")) {
       setAddrError("That doesn't look like a LinkedIn profile address. It should look like linkedin.com/in/yourname.");
       return;
     }
     setAddrError(null);
-    const t = token ?? readToken();
-    if (!t) { setNotice("Your session has expired. Start again — nothing is lost."); setStage("gate"); return; }
+    let t = token ?? readToken();
+    if (!t) {
+      // Someone arriving from a link has no session yet — open one silently.
+      const opened = await createSession();
+      if (opened.error || !opened.token) {
+        setNotice(opened.error ?? "Your session has expired. Start again — nothing is lost.");
+        setStage("gate"); return;
+      }
+      t = opened.token;
+      setToken(t);
+      await saveSession(t, { step: "address", answers: {} });
+    }
 
     const gate = await startRun(t);
     if (gate.ok !== true) { setNotice(gate.error); return; }
@@ -160,6 +170,8 @@ const Assessment = () => {
         setStage("address");
         return;
       }
+      setPostsRead(Number(data.posts_read ?? 0));
+      setSparse(!!data.sparse);
       await persist({ ...state, step: "read", profile_url: target, name: data.name ?? null, read: data.read });
       setStage("read");
     } catch {
