@@ -651,7 +651,7 @@ const Onboarding = () => {
         } catch { /* ignore */ }
         if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
         if (back === 6 || back === 7) back = 5;
-        if (back > 0 && back <= 14) {
+        if (back > 0 && (back <= 14 || back === MANUAL_SCREEN)) {
           setScreen(back); screenRef.current = back;
           if (stageOf(back) > 1) setResumedAt({ stage: stageOf(back), readDone: Boolean(st.read) });
         }
@@ -722,7 +722,7 @@ const Onboarding = () => {
           if (data?.length) { setClaims(data as any); resume = 7; } else { resume = 5; }
         } catch { resume = 5; }
       }
-      if (resume > 0 && resume <= 14) {
+      if (resume > 0 && (resume <= 14 || resume === MANUAL_SCREEN)) {
         setScreen(resume); screenRef.current = resume;
         if (stageOf(resume) > 1) {
           setResumedAt({
@@ -898,6 +898,12 @@ const Onboarding = () => {
   const returnToAddress = useCallback((error?: string) => {
     setLiError(error ?? "");
     setStep1Phase("ask");
+    if (error && screenRef.current !== 1) {
+      toast.error(error, {
+        action: { label: "Try again", onClick: () => go(1) },
+        duration: 8000,
+      });
+    }
   }, []);
 
   /* ── the read resolves line by line, in place on the step-1 card ── */
@@ -1491,11 +1497,9 @@ const Onboarding = () => {
     setBand(b);
     setDims(null);
     setQuestions(null);
-    if (userId) {
-      try {
-        await writeProfile({ level: title, seniority_band: b, band_source: "corrected" }, "level save");
-      } catch (e) { console.error("[journey] level save threw", e); }
-    }
+    try {
+      await writeProfile({ level: title, seniority_band: b, band_source: "corrected" }, "level save");
+    } catch (e) { console.error("[journey] level save threw", e); }
   };
 
   const titleList = (onPick: (t: string, b: Band) => void) => (
@@ -1968,7 +1972,7 @@ const Onboarding = () => {
                 const v = e.target.value;
                 setSector(v);
                 setSectorKnown(!!v);
-                if (userId && v) {
+                if (v) {
                   await writeProfile({ sector_focus: v }, "sector save");
                 }
               }} style={{ ...fieldStyle, marginBlockStart: 8 }}>
@@ -2106,14 +2110,12 @@ const Onboarding = () => {
         {titleList((t, b) => { setLevelTitle(t); setBand(b); })}
         <Actions style={{ marginBlockStart: 20 }}>
         <OBButton disabled={!ready} onClick={async () => {
-          if (userId) {
-            await writeProfile({
-              first_name: firstName.trim(), last_name: lastName.trim() || undefined,
-              firm: firm.trim(), sector_focus: sector,
-              level: levelTitle || (band ? BAND_TO_LEVEL[band] : undefined),
-              seniority_band: band, band_source: "corrected",
-            }, "identity save");
-          }
+          await writeProfile({
+            first_name: firstName.trim(), last_name: lastName.trim() || undefined,
+            firm: firm.trim(), sector_focus: sector,
+            level: levelTitle || (band ? BAND_TO_LEVEL[band] : undefined),
+            seniority_band: band, band_source: "corrected",
+          }, "identity save");
           go(4);
         }}>Save and carry on</OBButton>
         <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
