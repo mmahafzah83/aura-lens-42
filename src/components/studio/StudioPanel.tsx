@@ -3107,6 +3107,14 @@ export default function StudioPanel({
 
           {!draftsLoading && drafts.length > 0 && (
             <div style={{ marginTop: 14 }}>
+              <div style={{
+                fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 700,
+                color: "var(--act)", marginBottom: 6,
+              }}>
+                {lang === "ar" ? "عمل جاهز بالفعل" : "Work already waiting"}
+                {" · "}
+                <span style={{ fontFamily: "var(--ff-mono)" }}>{drafts.length}</span>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowDrafts((v) => !v)}
