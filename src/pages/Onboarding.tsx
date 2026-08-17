@@ -1289,6 +1289,89 @@ const Onboarding = () => {
     })();
   }, [persistScreen, screen, navigate, userId, writeProfile]);
 
+  /**
+   * START OVER — the answers go, the session does not. The row keeps its token
+   * and its `runs_started`, so starting over is never a way around the metering.
+   */
+  const startOver = useCallback(async () => {
+    setResumeAsking(false);
+    setResumedAt(null);
+    if (anonToken) {
+      anonStateRef.current = { answers: {} };
+      await saveSession(anonToken, {});
+      try { localStorage.removeItem("aura_ob_screen_anon"); } catch { /* ignore */ }
+    }
+    if (userId) {
+      try {
+        const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+          .select("identity_intelligence").eq("user_id", userId).maybeSingle();
+        const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+        await writeProfile({
+          identity_intelligence: { ...ii, journey_screen: 0, journey_paused: false },
+          onboarding_step: 0,
+        }, "start over");
+      } catch (e) { console.error("[journey] start over save threw", e); }
+      try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
+    }
+    setAnswers({});
+    setScores({});
+    setClaims([]);
+    setStep1Phase("ask");
+    setLiInput("");
+    setLiProfile(null);
+    setReadDone(false);
+    setPostsRead(null);
+    setOwnWords(null);
+    setSector(""); setSectorKnown(false);
+    setBand(null); setLevelTitle("");
+    setCvUploads(0);
+    backStack.current = [];
+    setScreen(0);
+    screenRef.current = 0;
+    try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
+  }, [anonToken, userId, writeProfile]);
+
+  /** The slim line above the card. One resume, one banner. */
+  const resumeBanner = resumedAt ? (
+    <div style={{
+      display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10,
+      background: OB.white, border: `1px solid ${OB.line}`, borderRadius: RADIUS.card,
+      padding: "10px 14px", marginBlockEnd: 14,
+      fontSize: 13, color: OB.ink,
+    }}>
+      <span style={{ flex: "1 1 220px", lineHeight: 1.45 }}>
+        {resumeAsking
+          ? "This clears your answers so far."
+          : resumedAt.readDone
+            ? `Welcome back — your read is done. You were on ${stepLabel(resumedAt.stage)}.`
+            : `Welcome back — you were on ${stepLabel(resumedAt.stage)}.`}
+      </span>
+      {resumeAsking ? (
+        <>
+          <button type="button" onClick={() => { void startOver(); }}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, fontWeight: 600, color: OB.ink, textDecoration: "underline" }}>
+            Start fresh
+          </button>
+          <button type="button" onClick={() => setResumeAsking(false)}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, color: OB.muted }}>
+            Keep going
+          </button>
+        </>
+      ) : (
+        <>
+          <button type="button" onClick={() => setResumeAsking(true)}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, color: OB.muted, textDecoration: "underline" }}>
+            Start over
+          </button>
+          <button type="button" aria-label="Dismiss" onClick={() => setResumedAt(null)}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 16, lineHeight: 1, color: OB.muted }}>
+            ×
+          </button>
+        </>
+      )}
+    </div>
+  ) : null;
+
   /** Remembers when their day starts, alongside the time zone we detected. */
   const chooseDailyTime = useCallback(async (slot: "Morning" | "Midday" | "Evening") => {
     setDailyTime(slot);
