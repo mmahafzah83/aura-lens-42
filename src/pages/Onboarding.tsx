@@ -373,6 +373,7 @@ const Onboarding = () => {
   const sendingLinkRef = useRef(false);
   /* the read never left the building — never make them watch for nothing */
   const [linkFailed, setLinkFailed] = useState(false);
+  const [capturePending, setCapturePending] = useState(false);
   const [suggested, setSuggested] = useState<{ url: string; title: string; summary?: string; source?: string; published_at?: string | null } | null>(null);
   const [suggestDead, setSuggestDead] = useState(false);
   const [readStep, setReadStep] = useState(0);
@@ -969,6 +970,7 @@ const Onboarding = () => {
     setLinkFailed(false);
     go(6);
     let sent = false;
+    let deferred = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -986,10 +988,25 @@ const Onboarding = () => {
           });
           sent = res.ok;
         } finally { window.clearTimeout(to); }
+      } else if (anonToken) {
+        /* No session is our gap, not their bad link — keep it and replay at hand-off. */
+        anonStateRef.current = {
+          ...anonStateRef.current,
+          pending_captures: [
+            ...(((anonStateRef.current as any).pending_captures) ?? []),
+            { url: v, title: meta?.title ?? null, summary: meta?.summary ?? null, at: new Date().toISOString() },
+          ],
+        };
+        await saveSession(anonToken, anonStateRef.current);
+        deferred = true;
       }
     } catch { sent = false; /* aborted or offline — nothing was written */ }
     sendingLinkRef.current = false;
     setSendingLink(false);
+    if (deferred) {
+      setCapturePending(true);
+      return;
+    }
     if (!sent) {
       /* nothing will ever land — don't make them watch a 120s ceiling for it */
       setLinkFailed(true);
