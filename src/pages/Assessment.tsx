@@ -127,7 +127,7 @@ const Assessment = () => {
     if (!t) { setNotice("Your session has expired. Start again — nothing is lost."); setStage("gate"); return; }
 
     const gate = await startRun(t);
-    if (!gate.ok) { setNotice(gate.error); return; }
+    if (gate.ok !== true) { setNotice(gate.error); return; }
 
     setStage("reading");
     try {
@@ -627,3 +627,5 @@ button.asg-btn{border:none;cursor:pointer;font-family:var(--ui);}
 button.asg-bg{border:1px solid var(--line);}
 @media(max-width:700px){.asg-panel{padding:20px;}.asg-ph{font-size:21px;}}
 `;
+
+export default Assessment;
