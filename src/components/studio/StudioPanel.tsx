@@ -1036,6 +1036,10 @@ export default function StudioPanel({
    */
   const delegatorPreparedRef = useRef(false);
   useEffect(() => {
+    if (draftsLoading || draftsOpened.current) return;
+    if (drafts.length > 0) { draftsOpened.current = true; setShowDrafts(true); }
+  }, [draftsLoading, drafts.length]);
+  useEffect(() => {
     // Leaving the posture arms the preparation again, so returning to it over
     // an empty piece prepares once more.
     if (posture !== "delegator") { delegatorPreparedRef.current = false; return; }
