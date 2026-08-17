@@ -574,6 +574,11 @@ const HEADER_RESERVE = 60;
 const FOOTER_RESERVE = 70; // taller footer w/ ticks + secondary row
 const CONTENT_H = SHEET_H - 2 * PAGE_PAD - HEADER_RESERVE - FOOTER_RESERVE - 6;
 
+// Law #111 / D97: the legacy ten capability dimensions are not in
+// capability_dimensions. Do not render fabricated figures until the real
+// map (derived from evidence per band) is wired.
+const CAPABILITY_FIGURE_ENABLED = false;
+
 function buildBlocks(d: ReportData): Block[] {
   const blocks: Block[] = [];
   const name = [d.profile?.first_name, d.profile?.last_name].filter(Boolean).join(" ").trim();
