@@ -63,10 +63,13 @@ const Assessment = () => {
       setState({ answers: {}, ...found.state });
       if (!arriving) setAddr(found.state.profile_url ?? "");
       if (arriving) return;                   // a link with an address wins over the old step
+      /* Past the read, the journey is the real onboarding — go back to it. */
+      if (found.state.step === "onboarding") { navigate("/onboarding", { replace: true }); return; }
       const back = STEP_TO_STAGE[found.state.step ?? ""] ?? null;
       if (back) setStage(back === "reading" ? "address" : back);
     })();
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* progress is written after each screen, never mid-typing */
