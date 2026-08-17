@@ -720,7 +720,15 @@ const Onboarding = () => {
           if (data?.length) { setClaims(data as any); resume = 7; } else { resume = 5; }
         } catch { resume = 5; }
       }
-      if (resume > 0 && resume <= 14) { setScreen(resume); screenRef.current = resume; }
+      if (resume > 0 && resume <= 14) {
+        setScreen(resume); screenRef.current = resume;
+        if (stageOf(resume) > 1) {
+          setResumedAt({
+            stage: stageOf(resume),
+            readDone: Boolean((p.identity_intelligence as any)?.read_done ?? p.sector_focus),
+          });
+        }
+      }
 
       setChecking(false);
     })();
