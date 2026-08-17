@@ -3164,27 +3164,6 @@ const Onboarding = () => {
       }
     };
 
-    const unusedSaveReadForLater = async () => {
-      if (!userId) return;
-      if (busy) return;
-      setSavingDraft(true);
-      try {
-        const { error } = await supabase.from("linkedin_posts").insert({
-          user_id: userId,
-          post_text: liveCaption,
-          source_type: "onboarding_reveal",
-          tracking_status: "draft",
-        });
-        if (error) throw error;
-        toast.success("Saved to your drafts.");
-      } catch (err) {
-        console.error("[reveal] save draft failed", err);
-        toast.error("Couldn't save that draft. Your read is safe — it's on your Home.");
-      } finally {
-        setSavingDraft(false);
-      }
-    };
-
     content = (
       <div className="obc" style={{
         minBlockSize: "100dvh",
