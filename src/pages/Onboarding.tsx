@@ -2351,6 +2351,94 @@ const Onboarding = () => {
     }
   }
 
+  /* The wall — asked once, and only here. An anonymous run reaches the reveal
+     and stops: the account is opened, then the run is claimed onto it. */
+  if (!userId && anonToken && screen >= 12) {
+    const openAccount = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (wallBusy) return;
+      setWallError(null);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(wallEmail.trim())) {
+        setWallError("That doesn't look like an email address. Check it and try again."); return;
+      }
+      if (wallPassword.length < 8) { setWallError("Use eight characters or more."); return; }
+      if (!wallConsent) return;
+      setWallBusy(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("auth-signup", {
+          body: {
+            email: wallEmail.trim().toLowerCase(), password: wallPassword,
+            origin: window.location.origin, consent_version: CONSENT_VERSION,
+          },
+        });
+        const result = data as { ok?: boolean; existing?: boolean; error?: string } | null;
+        if (result?.existing) {
+          setWallError("You already have an account with that address. Sign in and your report is waiting.");
+          return;
+        }
+        const msg = result?.error || error?.message;
+        if (msg) {
+          setWallError("Couldn't open the account just now. Nothing is lost — try again in a moment.");
+          return;
+        }
+        const { data: signedIn } = await supabase.auth.signInWithPassword({
+          email: wallEmail.trim().toLowerCase(), password: wallPassword,
+        });
+        if (signedIn?.session) {
+          const claimed = await claimSession(anonToken);
+          if (!claimed.ok) {
+            setWallError("We could not attach your report to your account yet — nothing is lost. Try again.");
+            return;
+          }
+          clearToken();
+          window.location.replace("/onboarding");
+          return;
+        }
+        setWallDone("Your account is open. Confirm it from the link in your inbox and your report follows you in — nothing is lost.");
+      } catch {
+        setWallError("Couldn't open the account just now. Nothing is lost — try again in a moment.");
+      } finally {
+        setWallBusy(false);
+      }
+    };
+    return (
+      <PaperShell bead={4}>
+        <Kicker>YOUR REPORT IS READY</Kicker>
+        <Head>Where should we send it?</Head>
+        <Sub>It is yours either way. An account keeps it, lets you come back, and sends you the PDF.</Sub>
+        {wallDone ? (
+          <p role="status" style={{ marginBlockStart: 18, color: OB.ink, fontFamily: OB.ui }}>{wallDone}</p>
+        ) : (
+          <form onSubmit={openAccount} style={{ marginBlockStart: 18 }}>
+            <label htmlFor="ob-wall-email" style={{ display: "block", fontSize: 13, color: OB.muted, marginBlockEnd: 6 }}>Your email</label>
+            <input id="ob-wall-email" type="email" autoComplete="email" value={wallEmail}
+              onChange={(e) => setWallEmail(e.target.value)} style={fieldStyle} />
+            <label htmlFor="ob-wall-pwd" style={{ display: "block", fontSize: 13, color: OB.muted, margin: "16px 0 6px" }}>A password</label>
+            <input id="ob-wall-pwd" type="password" autoComplete="new-password" value={wallPassword}
+              onChange={(e) => setWallPassword(e.target.value)} style={fieldStyle} />
+            <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>Eight characters or more.</p>
+            <div aria-live="polite">
+              {wallError && <p style={{ fontSize: 13, color: OB.err, marginBlockStart: 10 }}>{wallError}</p>}
+            </div>
+            <label htmlFor="ob-wall-consent" style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBlockStart: 16, fontSize: 13, color: OB.muted }}>
+              <input id="ob-wall-consent" type="checkbox" checked={wallConsent}
+                onChange={(e) => setWallConsent(e.target.checked)} />
+              <span>
+                I agree to the Terms and Privacy Policy. My data is processed under Saudi PDPL,
+                and I can delete everything in one click.
+              </span>
+            </label>
+            <Actions style={{ marginBlockStart: 18 }}>
+              <OBButton disabled={wallBusy || !wallConsent} onClick={() => undefined} type="submit">
+                {wallBusy ? "Saving your report…" : "Save my report"}
+              </OBButton>
+            </Actions>
+          </form>
+        )}
+      </PaperShell>
+    );
+  }
+
   /* 12 — NIGHT, the shelf */
   if (screen === 12) {
     /* the four things the report is actually doing, in order */
