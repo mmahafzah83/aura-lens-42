@@ -51,6 +51,21 @@ export async function buildReadEvidence(
   const resolvedSector = sector || prof.sector_focus || null;
   const resolvedBand = band || prof.seniority_band || null;
 
+  // The self-claim question is identified by its framework tag, not by prompt
+  // wording, so rewording the question does not silently break THE HONEST TRUTH.
+  let selfClaimPrompt: string | null = null;
+  if (resolvedBand) {
+    const { data: scRow } = await admin
+      .from("onboarding_questions")
+      .select("prompt")
+      .eq("framework", "self-claim")
+      .eq("active", true)
+      .eq("band", resolvedBand)
+      .maybeSingle();
+    if (scRow?.prompt) selfClaimPrompt = String(scRow.prompt).trim();
+  }
+
+
   // COHORT AWARENESS — the cohort widens when it is too small to be meaningful
   // and narrows again automatically as the member base grows.
   const MIN_COHORT = 10;
