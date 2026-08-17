@@ -1807,12 +1807,18 @@ const Onboarding = () => {
                         How those posts actually performed. This is how Aura learns which of the signals in your read
                         your audience already rewards — instead of guessing.
                       </p>
-                      <Actions style={{ marginBlockStart: 12 }}>
-                        <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel="Connecting…">
-                          Connect LinkedIn
-                        </OBButton>
-                      </Actions>
-                      {connectNote ? (
+                      {userId ? (
+                        <Actions style={{ marginBlockStart: 12 }}>
+                          <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel="Connecting…">
+                            Connect LinkedIn
+                          </OBButton>
+                        </Actions>
+                      ) : (
+                        <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>
+                          {CONNECT_AFTER_ACCOUNT}
+                        </p>
+                      )}
+                      {userId && connectNote ? (
                         <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{connectNote}</p>
                       ) : null}
                     </>
