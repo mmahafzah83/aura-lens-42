@@ -266,6 +266,10 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
 
       const northStarArr = Array.isArray(answers.north_star_goal) ? answers.north_star_goal : [answers.north_star_goal].filter(Boolean);
 
+      const { data: currentProfile } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("skill_ratings").eq("user_id", session.user.id).maybeSingle();
+      const existingRatings = ((currentProfile as any)?.skill_ratings as Record<string, number>) || {};
+
       await supabase.from("diagnostic_profiles").upsert({
         user_id: session.user.id,
         firm: (answers.firm as string) || null,
@@ -276,7 +280,8 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
         years_experience: yearsLabel,
         leadership_style: (answers.leadership_style as string) || null,
         generated_skills: skills,
-        skill_ratings: ratings,
+        // Merge — never replace: placements from the new instrument stay put.
+        skill_ratings: { ...existingRatings, ...ratings },
         brand_pillars: brandPillarsArr,
         completed: true,
       } as any, { onConflict: "user_id" });

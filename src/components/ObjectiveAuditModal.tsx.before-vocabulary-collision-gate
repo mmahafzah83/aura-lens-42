@@ -24,9 +24,6 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
   const [saving, setSaving] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [finalScores, setFinalScores] = useState<Record<string, number>>({});
-  // v2 members set their capabilities with the new instrument. This legacy
-  // ten-name audit must never run for them — its vocabulary is retired.
-  const [instrumentVersion, setInstrumentVersion] = useState<number | null>(null);
   const { toast } = useToast();
 
   const skill = EVIDENCE_MATRIX[currentSkillIdx];
@@ -68,21 +65,12 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
 
       const skills = EVIDENCE_MATRIX.map((s) => ({ name: s.name, description: `${s.category} — ${s.tier} Tier` }));
 
-      // Merge — never replace. Any key this matrix does not know (the new
-      // instrument's placements) must survive untouched.
-      const { data: current } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("skill_ratings, audit_results")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const existingRatings = ((current as any)?.skill_ratings as Record<string, number>) || {};
-      const existingAudit = ((current as any)?.audit_results as Record<string, number>) || {};
-
       await (supabase.from("diagnostic_profiles" as any) as any)
         .update({
-          skill_ratings: { ...existingRatings, ...newRatings },
+          skill_ratings: newRatings,
           generated_skills: skills,
           completed: true,
-          audit_results: { ...existingAudit, ...newRatings },
+          audit_results: newRatings,
           audit_completed_at: new Date().toISOString(),
           audit_method: "evidence_audit",
         })
@@ -145,22 +133,6 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
     }
   }, [open]);
 
-  // Which instrument set this member's capabilities?
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("instrument_version").eq("user_id", user.id).maybeSingle();
-      if (!cancelled) setInstrumentVersion(Number((data as any)?.instrument_version) || 1);
-    })();
-    return () => { cancelled = true; };
-  }, [open]);
-
-  const isV2 = instrumentVersion === 2;
-
   if (!open) return null;
 
   return createPortal(
@@ -206,8 +178,6 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           </div>
           {!showResults && (
             <>
-              {isV2 ? null : (
-              <>
               <Progress value={progress} className="h-1.5 mb-2" />
               <div className="flex items-center justify-between">
                 <p className="text-xs text-ink-5">
@@ -215,19 +185,13 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
                 </p>
                 <p className="text-xs text-ink-5">Answer honestly. Only verified evidence counts.</p>
               </div>
-              </>
-              )}
             </>
           )}
         </div>
 
         {/* Content — scrollable */}
         <div className="flex-1 overflow-y-auto px-5 pb-4">
-          {isV2 ? (
-            <p className="text-sm text-ink-6 leading-relaxed py-4">
-              Your capabilities were set in your assessment. Re-rate them from My Story.
-            </p>
-          ) : showResults ? (
+          {showResults ? (
             <AuditResultsView
               scores={finalScores}
               onNavigate={onNavigate}
@@ -270,7 +234,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
         </div>
 
         {/* Footer — sticky */}
-        {!showResults && !isV2 && (
+        {!showResults && (
           <div
             className="shrink-0"
             style={{

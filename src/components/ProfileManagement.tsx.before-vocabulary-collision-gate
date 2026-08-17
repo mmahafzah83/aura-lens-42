@@ -54,8 +54,6 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
   const [newPillar, setNewPillar] = useState("");
   const [skills, setSkills] = useState<Skill[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
-  // The full stored object, so a save merges over keys this editor never seeded.
-  const [storedRatings, setStoredRatings] = useState<Record<string, number>>({});
   const [newSkillName, setNewSkillName] = useState("");
   const [expanded, setExpanded] = useState(!!startExpanded);
   const [radarKey, setRadarKey] = useState(0);
@@ -90,7 +88,6 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         setBrandPillars(profile.brand_pillars || []);
         setSkills(profile.generated_skills || []);
         setRatings(profile.skill_ratings || {});
-        setStoredRatings(profile.skill_ratings || {});
         setHasSavedBefore(!!(profile.first_name && profile.firm && profile.level && profile.sector_focus));
       }
       setLoading(false);
@@ -121,9 +118,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         north_star_goal: northStar,
         brand_pillars: brandPillars,
         generated_skills: skills,
-        // Merge — local state is seeded only from generated_skills ∩ skill_ratings,
-        // so a wholesale write would drop every placement it never saw.
-        skill_ratings: { ...(storedRatings || {}), ...ratings },
+        skill_ratings: ratings,
         ...(mandatoryComplete ? { onboarding_completed: true, completed: true } : {}),
       }, "ProfileManagement.handleSave");
     if (!ok) {
