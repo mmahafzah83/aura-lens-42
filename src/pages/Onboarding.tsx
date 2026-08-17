@@ -2520,7 +2520,7 @@ const Onboarding = () => {
     );
   }
 
-  /* 12 — NIGHT, the shelf */
+  /* 12 — WHITE, the shelf */
   if (screen === 12) {
     /* the four things the report is actually doing, in order */
     const genSteps = [
@@ -2530,11 +2530,11 @@ const Onboarding = () => {
       { key: "write", label: "Writing your read", done: !revealPending },
     ];
     content = (
-      <NightShell onExit={saveAndExit} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
         {!revealPending ? <Confetti /> : null}
         {revealPending ? (
           <div style={{ marginBlockEnd: 4 }}>
-            <WorkProgress onNight slowAfterMs={20000}
+            <WorkProgress slowAfterMs={20000}
               done={genSteps.filter((s) => s.done).length} total={genSteps.length} />
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockEnd: 22 }}>
               {genSteps.map((s) => (
@@ -2543,14 +2543,14 @@ const Onboarding = () => {
             </div>
           </div>
         ) : null}
-        <h1 style={{ ...h1Night, textAlign: "center" }}>You've got a shelf.</h1>
+        <h1 style={{ ...h1Light, textAlign: "center" }}>You've got a shelf.</h1>
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           gap: 8, justifyItems: "center", maxWidth: 420, margin: "26px auto 6px",
         }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
-              tone={s.tone} onNight unlocked
+              tone={s.tone} unlocked
               icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
               figure={
                 i === 0 ? (postsRead ? num(postsRead) : "✓")
@@ -2560,7 +2560,7 @@ const Onboarding = () => {
               } />
           ))}
         </div>
-        <p style={{ ...bodyNight, textAlign: "center" }}>
+        <p style={{ ...bodyLight, textAlign: "center" }}>
           {proof && proof.posts > 0 ? (
             <>
               I have {num(proof.posts)} of your posts and {num(proof.words)} words in your own voice
@@ -2570,12 +2570,12 @@ const Onboarding = () => {
             </>
           ) : (
             <>
-              {EMPTY_POSTS_LINE_NIGHT}
+              {EMPTY_POSTS_LINE}
               {claims.length ? ` I already have ${num(claims.length)} ${claims.length === 1 ? "thing" : "things"} you captured and your own answers on file.` : " I already have your own answers on file."}
             </>
           )}
         </p>
-        <p style={{ ...bodyNight, textAlign: "center" }}>
+        <p style={{ ...bodyLight, textAlign: "center" }}>
           {mayPromiseMorning
             ? "Tonight I read for the signals in your read. Tomorrow morning there's something waiting."
             : "I'll keep reading for the signals in your read. When something is worth your name on it, you'll hear — not before."}
@@ -2588,7 +2588,7 @@ const Onboarding = () => {
             {revealPending && revealSlow ? "See what I have so far" : "See how people see me"}
           </OBButton>
         </Actions>
-      </NightShell>
+      </PaperShell>
     );
   }
 
