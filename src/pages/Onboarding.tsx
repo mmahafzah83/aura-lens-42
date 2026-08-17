@@ -2087,13 +2087,19 @@ const Onboarding = () => {
           programmes, the things nobody posted about. Aura reads it against your profile and shows you the
           difference.
         </p>
-        <div style={{ marginBlockStart: 20 }}>
-          <DocumentUpload
-            documentType="cv"
-            cvLabel="latest"
-            onUploaded={(id) => { if (id) setCvUploads((n) => n + 1); }}
-          />
-        </div>
+        {userId ? (
+          <div style={{ marginBlockStart: 20 }}>
+            <DocumentUpload
+              documentType="cv"
+              cvLabel="latest"
+              onUploaded={(id) => { if (id) setCvUploads((n) => n + 1); }}
+            />
+          </div>
+        ) : (
+          <p style={{ margin: "20px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>
+            Available after you save your report — you can add your CV then, and Aura reads it against your profile.
+          </p>
+        )}
         <Actions style={{ marginBlockStart: 20 }}>
           <OBButton onClick={leaveCv}>
             {cvUploads > 0 ? "Read it" : "Continue"}
