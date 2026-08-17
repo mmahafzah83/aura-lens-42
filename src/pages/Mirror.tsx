@@ -255,7 +255,6 @@ export default function Mirror() {
     setProfileUrl("");
     setSentOk(false);
     setSendEmail("");
-    setShareNote(undefined);
     setListOpen(false);
     setListDone(null);
     setStage("ask");
