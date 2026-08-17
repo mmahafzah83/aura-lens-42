@@ -748,6 +748,58 @@ const Onboarding = () => {
     setLiBusy(true);
     setStep1Phase("reading");
     try {
+      /**
+       * A visitor with no account cannot call the member-only readers — they
+       * answer 401 and the card dies. The public read engine is the same read,
+       * open to anyone, and it is what step one of the journey already uses.
+       */
+      if (!userId) {
+        const base = import.meta.env.VITE_SUPABASE_URL as string;
+        const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+        const res = await fetch(`${base}/functions/v1/mirror-read`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
+          body: JSON.stringify({ profile_url }),
+        });
+        const payload = await res.json().catch(() => ({} as any));
+        if (!res.ok || !payload?.ok || !payload?.read) {
+          const READ_ERRORS: Record<string, string> = {
+            invalid_url: "That doesn't look like a LinkedIn profile address. It should look like linkedin.com/in/yourname.",
+            profile_unreadable: "LinkedIn didn't return that profile. If it's set to private, Aura can't see it either.",
+            provider_limit: "Aura has hit today's reading limit with our LinkedIn provider. Nothing is wrong with your profile — try again shortly.",
+            rate_limited: "That's as many reads as can come from here this hour. Nothing is lost — try again shortly.",
+            not_configured: "Reading is briefly unavailable on our side. Nothing is lost — try again shortly.",
+          };
+          setLiError(READ_ERRORS[String(payload?.error ?? "")] ??
+            "The read didn't come back clean. Nothing is lost — try once more.");
+          setStep1Phase("ask");
+          setLiBusy(false);
+          return;
+        }
+        const full = String(payload.name ?? "").trim();
+        if (full && !firstName.trim()) {
+          const parts = full.split(/\s+/);
+          setFirstName(parts[0] || "");
+          if (parts.length > 1) setLastName(parts.slice(1).join(" "));
+        }
+        setLiProfile({ full_name: full || null, read: payload.read } as any);
+        setStep1Phase("result");
+        setLiBusy(false);
+        setPostsRead(Number(payload.posts_read ?? 0));
+        setOwnWords(0);
+        setReadDone(true);
+        if (anonToken) {
+          anonStateRef.current = {
+            ...anonStateRef.current,
+            profile_url,
+            name: full || null,
+            read: payload.read,
+            posts_read: Number(payload.posts_read ?? 0),
+          } as any;
+          void saveSession(anonToken, anonStateRef.current);
+        }
+        return;
+      }
       if (userId) { try { await saveLinkedInAddress(userId, profile_url); } catch { /* saved again later */ } }
       // Both reads start at the same moment. Running them one after the other
       // was most of the wait, and the posts read never needed the profile.
