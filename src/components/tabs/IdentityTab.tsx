@@ -1125,6 +1125,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       )}
 
       {/* SECTION 6b — PROFILE INTELLIGENCE */}
+      {/* CV against LinkedIn — renders nothing until a cross-check exists. */}
+      <CvCrosscheck userId={authUser?.id ?? null} />
+
       {assessmentCompleted && (
         <div>
           <SectionHeader label="Profile intelligence" />
