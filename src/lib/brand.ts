@@ -6,29 +6,36 @@ export const PRODUCT_DESCRIPTOR_CAPS = "AI PROFESSIONAL IDENTITY PLATFORM";
  * THE SIZE OF THE JOURNEY — one place, everywhere.
  *
  * The flow contradicted itself (five steps / nine questions / nine minutes /
- * ten minutes) because every surface carried its own literal. Nothing outside
+ * fifteen minutes) because every surface carried its own literal. Nothing outside
  * this file may print a step, question or minute count.
  */
 export const ASSESSMENT_STEPS = 5;
 export const ASSESSMENT_QUESTIONS = 9;
-export const ASSESSMENT_MINUTES = 10;
+export const ASSESSMENT_MINUTES = 15;
 
-const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"] as const;
+/** The fast promise. Everything else is the total journey. */
+export const FIRST_READ_LINE = "Your first read in ninety seconds";
+export const FIRST_READ_TIME = "90 seconds";
+export const FIRST_READ_SHORT = "90 sec";
+
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen"] as const;
 const word = (n: number) => WORDS[n] ?? String(n);
 
 /** "five" */
 export const ASSESSMENT_STEPS_WORD = word(ASSESSMENT_STEPS);
 /** "nine" */
 export const ASSESSMENT_QUESTIONS_WORD = word(ASSESSMENT_QUESTIONS);
-/** "ten" */
+/** "fifteen" */
 export const ASSESSMENT_MINUTES_WORD = word(ASSESSMENT_MINUTES);
 
-/** "About ten minutes" */
+/** "About fifteen minutes" */
 export const ASSESSMENT_MINUTES_LINE = `About ${ASSESSMENT_MINUTES_WORD} minutes`;
-/** "ABOUT 10 MINUTES" */
+/** "ABOUT 15 MINUTES" */
 export const ASSESSMENT_MINUTES_CAPS = `ABOUT ${ASSESSMENT_MINUTES} MINUTES`;
-/** "10 min" */
+/** "15 min" */
 export const ASSESSMENT_MINUTES_SHORT = `${ASSESSMENT_MINUTES} min`;
+/** The honest total promise, derived from ASSESSMENT_MINUTES. */
+export const FULL_PICTURE_LINE = `The full picture in about ${ASSESSMENT_MINUTES_WORD} minutes`;
 /** "nine questions" */
 export const ASSESSMENT_QUESTIONS_PHRASE = `${ASSESSMENT_QUESTIONS_WORD} questions`;
 /** "Step 3 of 5" */
