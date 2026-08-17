@@ -1481,8 +1481,8 @@ const Onboarding = () => {
 
   const retryPanel = (retry: () => void) => (
     <>
-      <h1 style={h1Night}>Give that one more go.</h1>
-      <p style={bodyNight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
+      <h1 style={h1Light}>Give that one more go.</h1>
+      <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
       <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={retry}>Try again</OBButton></Actions>
     </>
   );
