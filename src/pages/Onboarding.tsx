@@ -219,29 +219,43 @@ const wordsIn = (rows: { post_text?: string | null }[]): number =>
 
 /* ──────────────────────────────── shells ────────────────────────────────── */
 
-const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => (
+/**
+ * ONE LOOK, END TO END.
+ *
+ * Every screen that asks the member anything renders in the light card shell.
+ * The night surface is kept for the machine's own moments — reading, and the
+ * reveal. `JourneyNav` carries the back control so no screen has to pass it.
+ */
+const JourneyNav = createContext<{ onBack?: () => void }>({});
+
+const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => {
+  const { onBack } = useContext(JourneyNav);
+  return (
   <div className="obc" style={{
     minBlockSize: "100dvh", background: OB.night, display: "flex", alignItems: "center",
     justifyContent: "center", padding: "28px 20px",
   }}>
     <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-      {onExit ? <JourneyHeader onNight onExit={onExit} /> : null}
+      {onExit ? <JourneyHeader onNight onExit={onExit} onBack={onBack} /> : null}
       {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace size="var(--ob-face)" /></div> : null}
       {children}
       {footer}
     </div>
   </div>
-);
+  );
+};
 
 const PaperShell = ({
-  children, bead, cream = false, footer, onExit,
-}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void }) => (
+  children, bead, cream = false, footer, onExit, face = false,
+}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void; face?: boolean }) => {
+  const { onBack } = useContext(JourneyNav);
+  return (
   <div className="obc" style={{
     minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
     display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
   }}>
     <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-      {onExit ? <JourneyHeader onExit={onExit} /> : null}
+      {onExit ? <JourneyHeader onExit={onExit} onBack={onBack} /> : null}
       <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
         <ProgressBeads active={bead} />
       </div>
@@ -249,12 +263,18 @@ const PaperShell = ({
         background: OB.white, borderRadius: RADIUS.hero, border: `1px solid ${OB.line}`,
         padding: "var(--ob-pad)", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
       }}>
+        {face ? (
+          <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 22 }}>
+            <AuraFace size="var(--ob-face)" />
+          </div>
+        ) : null}
         {children}
       </div>
       {footer}
     </div>
   </div>
-);
+  );
+};
 
 /* ──────────────────────────────── page ──────────────────────────────────── */
 
