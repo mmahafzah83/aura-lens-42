@@ -5,6 +5,13 @@
 import { forwardRef } from "react";
 import { OB, RADIUS } from "./tokens";
 
+/**
+ * EXPORT LAW: the shared card and the screen print the same strings. These two
+ * literals are the only place either label exists.
+ */
+export const LABEL_SIGNALS = "The signals in your read";
+export const LABEL_SOFT = "Where you're thinnest";
+
 export interface RevealData {
   archetype: string;
   marketRead: string;
