@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { supabase } from "@/integrations/supabase/client";
-import { CONSENT_VERSION } from "@/pages/Auth";
 import {
-  createSession, loadSession, saveSession, startRun, claimSession,
+  createSession, loadSession, saveSession, startRun,
   readToken, clearToken, type AssessmentState,
 } from "@/lib/assessmentSession";
 import PublicMasthead from "@/components/PublicMasthead";
@@ -12,17 +10,11 @@ import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
 
 /**
- * The Gate — what someone reads before the nine-minute assessment begins.
- * System-B only. The whole journey runs in-page with no account: the address,
- * the read, the questions, and only then the account, at the reveal.
+ * The Gate — and the quick read, which is step one of the one assessment.
+ * This page owns the address, the read and its result. Nothing else: the
+ * questions, the CV, the sliders and the reveal all live in /onboarding.
  */
-type Stage = "gate" | "address" | "reading" | "read" | "q0" | "q1" | "q2" | "wall";
-
-const QUESTIONS = [
-  "What is the piece of work you are proudest of in the last two years?",
-  "What do people come to you for that is not in your job title?",
-  "Who do you most want to be known by — and for what?",
-];
+type Stage = "gate" | "address" | "reading" | "read";
 
 const READING_LINES = [
   "Opening the profile…",
@@ -32,7 +24,7 @@ const READING_LINES = [
 ];
 
 const STEP_TO_STAGE: Record<string, Stage> = {
-  address: "address", read: "read", q0: "q0", q1: "q1", q2: "q2", wall: "wall",
+  address: "address", read: "read",
 };
 
 const Assessment = () => {
@@ -52,12 +44,6 @@ const Assessment = () => {
   const [addr, setAddr] = useState("");
   const [addrError, setAddrError] = useState<string | null>(null);
   const [line, setLine] = useState(0);
-  const [answer, setAnswer] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [consent, setConsent] = useState(false);
-  const [wallError, setWallError] = useState<string | null>(null);
-  const [wallDone, setWallDone] = useState<string | null>(null);
   const insideRef = useRef<HTMLElement | null>(null);
   const autoRan = useRef(false);
   const [postsRead, setPostsRead] = useState(0);
