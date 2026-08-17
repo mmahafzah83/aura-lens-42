@@ -2249,7 +2249,7 @@ const Onboarding = () => {
             <DocumentUpload
               documentType="cv"
               cvLabel="latest"
-              onUploaded={(id) => { if (id) setCvUploads((n) => n + 1); }}
+              onUploaded={(id) => { if (id) { setCvUploads((n) => n + 1); void runCvCrosscheck(); } }}
             />
           </div>
         ) : (
@@ -2257,6 +2257,8 @@ const Onboarding = () => {
             Available after you save your report — you can add your CV then, and Aura reads it against your profile.
           </p>
         )}
+        {/* Shows only once the comparison comes back; absent, it renders nothing. */}
+        <CvCrosscheck data={cvCrosscheck} style={{ marginBlockStart: 20 }} />
         <Actions style={{ marginBlockStart: 20 }}>
           <OBButton onClick={leaveCv}>
             {cvUploads > 0 ? "Read it" : "Continue"}
