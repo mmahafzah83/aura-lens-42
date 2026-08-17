@@ -528,12 +528,29 @@ const Onboarding = () => {
   }, [userId, anonToken, writeProfile]);
 
   const go = useCallback((next: number) => {
+    if (next !== screenRef.current) backStack.current.push(screenRef.current);
     setScreen(next);
     screenRef.current = next;
     void track("onboarding_step", { step: `screen_${next}`, step_index: next });
     void persistScreen(next);
+    /* The browser's own back button moves one STEP, never out of the flow. */
+    try { window.history.pushState({ obScreen: next }, ""); } catch { /* ignore */ }
     try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
   }, [persistScreen]);
+
+  /**
+   * Back — one step, with everything the member typed still in state. Nothing
+   * is re-fetched and nothing is cleared; only the screen number moves.
+   */
+  const goBack = useCallback(() => {
+    const prev = backStack.current.pop();
+    if (prev === undefined) return;
+    setScreen(prev);
+    screenRef.current = prev;
+    void persistScreen(prev);
+    try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
+  }, [persistScreen]);
+  const canBack = backStack.current.length > 0;
 
   /* ── boot ── */
   useEffect(() => {
