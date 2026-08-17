@@ -85,7 +85,8 @@ async function sha256Hex(input: string): Promise<string> {
 /** Apify profile scrape — same two input shapes, 45s per attempt. */
 async function fetchProfile(canonical_url: string, token: string): Promise<Record<string, unknown> | null> {
   const inputShapes: Record<string, unknown>[] = [
-    { queries: [canonical_url], profileScraperMode: "Profile details no email ($4 per 1k)" },
+    { urls: [canonical_url], profileScraperMode: "Profile details no email ($4 per 1k)" },
+    { urls: [canonical_url] },
     { queries: [canonical_url] },
   ];
   for (const input of inputShapes) {
