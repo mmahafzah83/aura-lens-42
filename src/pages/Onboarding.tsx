@@ -3248,12 +3248,72 @@ const Onboarding = () => {
               background: dailyTime === slot ? OB.blue : OB.canvas,
               border: `1px solid ${dailyTime === slot ? OB.blue : OB.line}`,
               color: dailyTime === slot ? "#FFFFFF" : OB.ink,
+              minBlockSize: 44,
             }}>{slot}</button>
           ))}
         </div>
         <p style={{ margin: "10px 0 0", fontSize: 12, color: OB.muted, textAlign: "center" }}>
           Your time zone · {timeZone}
         </p>
+
+        {/* 1 · One feedback question */}
+        <div style={{ marginBlockStart: 24 }}>
+          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+            One question
+          </p>
+          <p style={{ margin: "8px 0 0", fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink }}>
+            Was that read accurate about you?
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 14 }}>
+            {optionButton("reveal-yes", "Yes, close", () => void handleRevealFeedback(5, revealMessage), revealRating === 5)}
+            {optionButton("reveal-partly", "Partly", () => void handleRevealFeedback(3, revealMessage), revealRating === 3)}
+            {optionButton("reveal-no", "Not really", () => void handleRevealFeedback(1, revealMessage), revealRating === 1)}
+          </div>
+          {revealRating !== null ? (
+            <textarea
+              aria-label="What did it miss? (optional)"
+              value={revealMessage}
+              onChange={(e) => setRevealMessage(e.target.value)}
+              onBlur={() => { if (revealRating !== null && revealMessage.trim()) void handleRevealFeedback(revealRating, revealMessage.trim()); }}
+              placeholder="What did it miss? (optional)"
+              rows={3}
+              style={{ ...fieldStyle, marginBlockStart: 14, resize: "vertical" }}
+            />
+          ) : null}
+        </div>
+
+        {/* 2 · What a seat adds, and what stays out of reach */}
+        <div style={{ marginBlockStart: 28, padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
+          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+            {SEAT_HEADING}
+          </p>
+          <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+            {SEAT_ROWS.map((row, i) => (
+              <li key={i} style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, paddingInlineStart: 18, position: "relative" }}>
+                <span style={{ position: "absolute", insetInlineStart: 0, color: OB.blue }}>—</span>
+                {row}
+              </li>
+            ))}
+          </ul>
+          <p style={{ margin: "18px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+            What stays out of reach without one
+          </p>
+          <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+            {LOSS_LINES.map((line, i) => (
+              <li key={i} style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, paddingInlineStart: 18, position: "relative" }}>
+                <span style={{ position: "absolute", insetInlineStart: 0, color: OB.blue }}>—</span>
+                {line}
+              </li>
+            ))}
+          </ul>
+          <p style={{ margin: "16px 0 0", fontSize: "var(--ob-body)", fontWeight: 600, color: OB.ink }}>{SEAT_PRICE}</p>
+          <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_PRICE_SUBLINE}</p>
+          <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_NO_CARD}</p>
+          <Actions style={{ marginBlockStart: 16 }}>
+            <OBButton variant="secondary" onClick={() => navigate(SEAT_PATH)}>{SEAT_CTA}</OBButton>
+          </Actions>
+        </div>
+
 
         {connected || !userId ? null : (
           <>
