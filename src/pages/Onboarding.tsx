@@ -151,6 +151,15 @@ const quietLink: React.CSSProperties = {
   display: "inline-block", minBlockSize: 44,
 };
 
+/** A real, tappable share action on the blue reveal surface. */
+const shareAction: React.CSSProperties = {
+  display: "flex", alignItems: "center", justifyContent: "center",
+  minBlockSize: 44, padding: "12px 14px", borderRadius: 999,
+  border: "1px solid rgba(255,255,255,.55)", background: "rgba(255,255,255,.12)",
+  color: "#FFFFFF", fontFamily: OB.ui, fontSize: 13.5, fontWeight: 600,
+  cursor: "pointer", textAlign: "center", textDecoration: "none",
+};
+
 /** The selectable row used by choice questions and the reveal feedback block. */
 const optionButton = (
   key: string | number,
