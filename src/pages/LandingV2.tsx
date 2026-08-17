@@ -180,9 +180,6 @@ const LANDING_V2_CSS = `
 .aura-v2 .jf{font-family:var(--mono);font-size:10px;color:#65707E;letter-spacing:.09em;margin-top:16px;line-height:1.8}
 .aura-v2 .founder{display:flex;gap:15px;align-items:center;background:var(--white);border:1px solid var(--line);border-radius:16px;padding:19px;margin:18px auto 0;max-width:640px}
 .aura-v2 .support{font-size:13px;color:var(--ink3);line-height:1.6;margin-top:14px;max-width:52ch}
-.aura-v2 .fastline{font-size:13px;color:var(--ink3);line-height:1.6;margin-top:12px;max-width:52ch}
-.aura-v2 .fastline a{color:var(--blue);font-weight:600;text-decoration:none}
-.aura-v2 .fastline a:hover{text-decoration:underline}
 .aura-v2 .subxs{font-size:14px;color:var(--ink3);line-height:1.6;margin-top:12px;max-width:540px}
 .aura-v2 .rungs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
 .aura-v2 .rung{position:relative;background:var(--white);border:1px solid var(--line);border-radius:20px;padding:26px 22px;display:flex;flex-direction:column}
@@ -325,7 +322,7 @@ const LANDING_V2_HTML = `
       <button data-p="faq">Questions</button>
     </div>
     <a class="navalt" id="navalt" href="/auth">Sign in</a>
-    <a class="navcta" id="navcta" href="/read">Show me free <span class="a">↗</span></a>
+    <a class="navcta" id="navcta" href="/assessment">Show me free <span class="a">↗</span></a>
   </nav>
 </div>
 
@@ -343,7 +340,6 @@ const LANDING_V2_HTML = `
         <button class="btn bg2" data-p="how">See how it works</button>
       </div>
       <p class="support">Starts with a guided professional assessment. Free, yours to keep, no publishing required.</p>
-      <p class="fastline">In a hurry? <a id="herofastlink" href="/read">Take the ninety-second read first</a> → no account needed.</p>
     </div>
     <div class="loopwrap">
       <div class="jring">
@@ -910,13 +906,13 @@ const LANDING_V2_HTML = `
       <p class="pn">No account, no card, no email required.</p>
       <div class="blk">
         <span class="bl do">WHAT YOU DO</span>
-        <ul><li>Paste your LinkedIn address</li><li>Wait ninety seconds</li></ul>
+        <ul><li>Paste your LinkedIn address</li><li>Wait while Aura reads it</li></ul>
       </div>
       <div class="blk">
         <span class="bl get">WHAT YOU GET</span>
         <ul><li>How the market reads you today, in plain words</li><li>The one thing your profile is not saying about you</li><li>A card you can keep or send to someone</li></ul>
       </div>
-      <div class="cta"><a class="btn bout" href="/read">Show me the quick read</a><p class="time">90 SECONDS</p></div>
+      <div class="cta"><a class="btn bout" href="/assessment">Show me the quick read</a><p class="time">THE QUICK READ</p></div>
     </div>
 
     <div class="rung">
@@ -1001,7 +997,7 @@ const LANDING_V2_HTML = `
     <img src="/aura-founder.jpg" alt="Mohammad Mahafdhah">
     <div class="t"><b>Mohammad Mahafdhah</b> — I built Aura from my own reading, because I had the same problem. Write to me directly and I will answer.</div>
   </div>
-  <p style="max-width:640px;margin:14px auto 0;text-align:center;font-size:13px;color:var(--ink3);line-height:1.6">Not ready for a seat? <a href="/read" style="color:var(--blue);font-weight:600">Read yourself free</a> — no account, ninety seconds.</p>
+  <p style="max-width:640px;margin:14px auto 0;text-align:center;font-size:13px;color:var(--ink3);line-height:1.6">Not ready for a seat? <a href="/assessment" style="color:var(--blue);font-weight:600">Read yourself free</a> — it starts free, no card.</p>
 </section>
 
 <div class="foot">
@@ -1059,8 +1055,6 @@ const LandingV2 = () => {
     const alt = root.querySelector<HTMLAnchorElement>("#navalt");
     const cta = root.querySelector<HTMLAnchorElement>("#navcta");
     const hero = root.querySelector<HTMLAnchorElement>("#heropri");
-    const fastLink = root.querySelector<HTMLAnchorElement>("#herofastlink");
-    const fastLine = root.querySelector<HTMLElement>(".fastline");
     if (alt) {
       alt.textContent = signedIn ? "Sign out" : "Sign in";
       alt.setAttribute("href", signedIn ? "#" : "/auth");
@@ -1069,17 +1063,12 @@ const LandingV2 = () => {
     }
     if (cta) {
       cta.innerHTML = `${signedIn ? "Open Aura" : "Show me free"} <span class="a">↗</span>`;
-      cta.setAttribute("href", signedIn ? "/home" : "/read");
+      cta.setAttribute("href", signedIn ? "/home" : "/assessment");
     }
     if (hero) {
       hero.textContent = signedIn ? "Open Aura" : "Discover my professional position";
       hero.setAttribute("href", signedIn ? "/home" : "/assessment");
     }
-    if (fastLink) {
-      const landingRef = new URLSearchParams(window.location.search).get("ref");
-      fastLink.setAttribute("href", landingRef ? `/read?ref=${encodeURIComponent(landingRef)}` : "/read");
-    }
-    if (fastLine) fastLine.style.display = signedIn ? "none" : "";
   }, [signedIn, mounted]);
 
   /* ── calculator + in-app link interception ── */

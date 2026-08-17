@@ -4,7 +4,7 @@
  * One page, four states: ask → reading → the read → the list.
  */
 import { useEffect, useRef, useState } from "react";
-import RevealCard, { shareRevealCard, type RevealData } from "@/components/onboarding/RevealCard";
+import ReadResult from "@/components/read/ReadResult";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import { SEAT_CTA, SEAT_PATH } from "@/lib/seatCopy";
 
@@ -163,9 +163,6 @@ export default function Mirror() {
   const abortRef = useRef<AbortController | null>(null);
   const autoRan = useRef(false);
 
-  const exportRef = useRef<HTMLDivElement>(null);
-  const [shareNote, setShareNote] = useState<string>();
-
   // list panel
   const [listOpen, setListOpen] = useState(false);
   const [listName, setListName] = useState("");
@@ -258,7 +255,6 @@ export default function Mirror() {
     setProfileUrl("");
     setSentOk(false);
     setSendEmail("");
-    setShareNote(undefined);
     setListOpen(false);
     setListDone(null);
     setStage("ask");
@@ -333,29 +329,6 @@ export default function Mirror() {
   const sparse = !!result?.sparse;
   const postsRead = result?.posts_read ?? 0;
 
-  const cardData: RevealData = {
-    archetype: read?.archetype ?? "",
-    marketRead: read?.market_read ?? "",
-    subjects: (read?.themes ?? []).slice(0, 3),
-    softGround: [],
-    figures: postsRead > 0 ? [{ value: String(postsRead), label: "posts of yours read" }] : [],
-  };
-
-  const share = async () => {
-    if (!exportRef.current) return;
-    setShareNote(undefined);
-    try {
-      const outcome = await shareRevealCard(exportRef.current, {
-        fileName: "how-my-field-sees-me.png",
-        caption:
-          "I had something read my LinkedIn and tell me how my field actually sees me. This is what came back.",
-      });
-      setShareNote(outcome === "shared" ? "Shared." : "Saved to your device, caption copied.");
-    } catch {
-      setShareNote("The card didn't render. Try once more.");
-    }
-  };
-
   /* ── STATE B — reading (night) ── */
   if (stage === "reading") {
     return (
@@ -397,19 +370,8 @@ export default function Mirror() {
       <main style={{ minBlockSize: "100dvh", background: CANVAS, fontFamily: UI, color: INK }}>
         <style>{MIRROR_CSS}</style>
 
-        {/* off-screen export node — one builder, two paths */}
-        <div style={{ position: "fixed", insetInlineStart: -10000, insetBlockStart: 0 }} aria-hidden>
-          <RevealCard
-            ref={exportRef}
-            data={cardData}
-            forExport
-            emptyFiguresLine={read.uncontested_space ?? ""}
-          />
-        </div>
-
         <div style={{ maxInlineSize: 560, marginInline: "auto", padding: "24px 16px 0",
           display: "flex", flexDirection: "column", gap: 14 }}>
-
           <button
             onClick={startOver}
             style={{
@@ -418,74 +380,9 @@ export default function Mirror() {
             }}
           >← Read someone else</button>
 
-          <RevealCard data={cardData} emptyFiguresLine={read.uncontested_space ?? ""} />
+          <ReadResult read={read} postsRead={postsRead} sparse={sparse} />
 
-          {sparse ? (
-            <Card>
-              <Heading>Your profile is quieter than your career.</Heading>
-              <Body>
-                Aura can see the shape but not the substance. Two questions or one CV would change that.
-              </Body>
-            </Card>
-          ) : (
-            <>
-              {read.uncontested_space ? (
-                <Card>
-                  <Heading dot={CYAN}>The space nobody has claimed</Heading>
-                  <Body>{read.uncontested_space}</Body>
-                </Card>
-              ) : null}
-
-              {read.honest_gap ? (
-                <Card>
-                  <Heading dot={AMBER}>One honest gap</Heading>
-                  <Body>{read.honest_gap}</Body>
-                </Card>
-              ) : null}
-
-              {read.own_words_quote ? (
-                <Card>
-                  <Heading>In your own words</Heading>
-                  {(() => {
-                    const arabic = ARABIC_RE.test(read.own_words_quote ?? "");
-                    const script: React.CSSProperties = arabic
-                      ? { fontFamily: "Cairo, 'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.9, textAlign: "start" }
-                      : {};
-                    return (
-                      <>
-                        <p dir="auto" style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.65,
-                          color: INK, fontStyle: arabic ? "normal" : "italic", ...script }}>
-                          {`“${read.own_words_quote}”`}
-                        </p>
-                        {read.own_words_read ? (
-                          <p dir="auto" style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.65,
-                            color: INK2, ...script }}>
-                            {read.own_words_read}
-                          </p>
-                        ) : null}
-                      </>
-                    );
-                  })()}
-                </Card>
-              ) : null}
-            </>
-          )}
-
-          <div>
-            <button
-              onClick={share}
-              style={{
-                inlineSize: "100%", padding: "13px 18px", borderRadius: 8,
-                border: `1px solid ${LINE}`, background: CARD, color: INK,
-                fontFamily: UI, fontSize: 15, fontWeight: 600, cursor: "pointer",
-              }}
-            >Share this card</button>
-            {shareNote ? (
-              <p style={{ margin: "8px 0 0", fontSize: 12.5, color: INK2 }}>{shareNote}</p>
-            ) : null}
-          </div>
-
-          {/* Keep this — the promise the old gate never kept */}
+        {/* Keep this — the promise the old gate never kept */}
           <Card>
             {sentOk ? (
               <>

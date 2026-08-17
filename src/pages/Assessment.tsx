@@ -9,6 +9,7 @@ import {
 } from "@/lib/assessmentSession";
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
+import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
 
 /**
  * The Gate — what someone reads before the nine-minute assessment begins.
@@ -58,10 +59,14 @@ const Assessment = () => {
   const [wallError, setWallError] = useState<string | null>(null);
   const [wallDone, setWallDone] = useState<string | null>(null);
   const insideRef = useRef<HTMLElement | null>(null);
+  const autoRan = useRef(false);
+  const [postsRead, setPostsRead] = useState(0);
+  const [sparse, setSparse] = useState(false);
 
   /* ── on every load: if a token is held, pick the visitor back up ── */
   useEffect(() => {
     let alive = true;
+    const arriving = new URLSearchParams(window.location.search).get("url");
     const held = readToken();
     if (!held) return;
     void (async () => {
@@ -70,7 +75,8 @@ const Assessment = () => {
       if (!found) { clearToken(); return; }   // expired, claimed or unknown — start fresh
       setToken(held);
       setState({ answers: {}, ...found.state });
-      setAddr(found.state.profile_url ?? "");
+      if (!arriving) setAddr(found.state.profile_url ?? "");
+      if (arriving) return;                   // a link with an address wins over the old step
       const back = STEP_TO_STAGE[found.state.step ?? ""] ?? null;
       if (back) setStage(back === "reading" ? "address" : back);
     })();
@@ -116,15 +122,25 @@ const Assessment = () => {
     return () => t.forEach(window.clearTimeout);
   }, [stage]);
 
-  const runRead = async () => {
-    const target = addr.trim();
+  const runRead = async (urlArg?: string) => {
+    const target = (urlArg ?? addr).trim();
     if (!target.toLowerCase().includes("linkedin.com/in/")) {
       setAddrError("That doesn't look like a LinkedIn profile address. It should look like linkedin.com/in/yourname.");
       return;
     }
     setAddrError(null);
-    const t = token ?? readToken();
-    if (!t) { setNotice("Your session has expired. Start again — nothing is lost."); setStage("gate"); return; }
+    let t = token ?? readToken();
+    if (!t) {
+      // Someone arriving from a link has no session yet — open one silently.
+      const opened = await createSession();
+      if (opened.error || !opened.token) {
+        setNotice(opened.error ?? "Your session has expired. Start again — nothing is lost.");
+        setStage("gate"); return;
+      }
+      t = opened.token;
+      setToken(t);
+      await saveSession(t, { step: "address", answers: {} });
+    }
 
     const gate = await startRun(t);
     if (gate.ok !== true) { setNotice(gate.error); return; }
@@ -154,6 +170,8 @@ const Assessment = () => {
         setStage("address");
         return;
       }
+      setPostsRead(Number(data.posts_read ?? 0));
+      setSparse(!!data.sparse);
       await persist({ ...state, step: "read", profile_url: target, name: data.name ?? null, read: data.read });
       setStage("read");
     } catch {
@@ -161,6 +179,18 @@ const Assessment = () => {
       setStage("address");
     }
   };
+
+  /* ── one click saved: an address in the link starts step one at once ── */
+  useEffect(() => {
+    if (autoRan.current) return;
+    const prefill = new URLSearchParams(window.location.search).get("url")?.trim().slice(0, 300);
+    if (!prefill) return;
+    autoRan.current = true;
+    setAddr(prefill);
+    setStage("address");
+    if (prefill.toLowerCase().includes("linkedin.com/in/")) void runRead(prefill);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveAnswer = async (index: number) => {
     const answers = { ...(state.answers ?? {}), [`q${index}`]: answer.trim() };
@@ -244,7 +274,7 @@ const Assessment = () => {
 
           {stage === "address" && (
             <section className="asg-panel">
-              <span className="asg-k">STEP ONE · 90 SECONDS</span>
+              <span className="asg-k">STEP ONE · THE QUICK READ</span>
               <h1 className="asg-ph">What's your LinkedIn?</h1>
               <p className="asg-pp">We read what is already public. Nothing is posted or shared.</p>
               <label className="asg-lbl" htmlFor="asg-addr">Your LinkedIn address</label>
@@ -266,32 +296,21 @@ const Assessment = () => {
             <section className="asg-panel asg-center">
               <span className="asg-k">READING</span>
               <h1 className="asg-ph">{READING_LINES[Math.min(line, 3)]}</h1>
-              <p className="asg-pp">About ninety seconds. Leave the tab open.</p>
+              <p className="asg-pp">This takes a moment. Leave the tab open.</p>
             </section>
           )}
 
           {stage === "read" && (
-            <section className="asg-panel">
-              <span className="asg-k">YOUR READ</span>
-              <h1 className="asg-ph">{String(read.archetype ?? "How your field reads you")}</h1>
-              {read.market_read && <p className="asg-pp" dir="auto">{String(read.market_read)}</p>}
-              {Array.isArray(read.themes) && read.themes.length > 0 && (
-                <ul className="asg-themes">
-                  {(read.themes as string[]).map((t) => <li key={t} dir="auto">{t}</li>)}
-                </ul>
-              )}
-              {read.uncontested_space && (
-                <><h2 className="asg-sh">The space nobody has claimed</h2>
-                  <p className="asg-pp" dir="auto">{String(read.uncontested_space)}</p></>
-              )}
-              {read.honest_gap && (
-                <><h2 className="asg-sh">The honest gap</h2>
-                  <p className="asg-pp" dir="auto">{String(read.honest_gap)}</p></>
-              )}
+            <div className="asg-read">
+              <span className="asg-k">STEP ONE · YOUR READ</span>
+              <ReadResult read={read as unknown as ReadShape} postsRead={postsRead} sparse={sparse} />
               <button className="asg-btn asg-bp asg-full" onClick={() => openQuestion(0)}>
-                Now your own words <span className="asg-a">↗</span>
+                Continue — your CV and nine questions <span className="asg-a">↗</span>
               </button>
-            </section>
+              <p className="asg-trust">
+                Saved as you go. No account yet — we ask once, at the end.
+              </p>
+            </div>
           )}
 
           {(stage === "q0" || stage === "q1" || stage === "q2") && (() => {
@@ -610,6 +629,8 @@ const ASG_CSS = `
 }
 /* ── the in-page journey ── */
 .asg-flow{max-width:620px;}
+.asg-read{display:flex;flex-direction:column;gap:14px;}
+.asg-read .asg-full{margin-top:4px;}
 .asg-panel{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:26px;}
 .asg-center{text-align:center;}
 .asg-ph{font-size:24px;font-weight:700;line-height:1.2;letter-spacing:-.018em;margin:10px 0 0;}

@@ -52,8 +52,17 @@ const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
 const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
 const VoiceHarness = lazy(() => import("./pages/VoiceHarness"));
 const Studio = lazy(() => import("./pages/Studio"));
-// Public read — no gate, strangers land here.
-const Mirror = lazy(() => import("./pages/Mirror"));
+/** The second door, closed: /read and /mirror carry ?url= and ?ref= into /assessment. */
+const ReadAlias = () => {
+  const params = new URLSearchParams(window.location.search);
+  const keep = new URLSearchParams();
+  const url = params.get("url");
+  const ref = params.get("ref");
+  if (url) keep.set("url", url);
+  if (ref) keep.set("ref", ref);
+  const q = keep.toString();
+  return <Navigate to={q ? `/assessment?${q}` : "/assessment"} replace />;
+};
 // The Gate — read before the nine-minute assessment. Public, no gate of its own.
 const Assessment = lazy(() => import("./pages/Assessment"));
 // Dev-only carousel renderer harness. Registered below only when import.meta.env.DEV.
@@ -104,9 +113,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingV2 />} />
             <Route path="/v2" element={<LandingV2 />} />
-            <Route path="/read" element={<Mirror />} />
+            <Route path="/read" element={<ReadAlias />} />
             <Route path="/assessment" element={<Assessment />} />
-            <Route path="/mirror" element={<Mirror />} />
+            <Route path="/mirror" element={<ReadAlias />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/auth" element={<Auth />} />
