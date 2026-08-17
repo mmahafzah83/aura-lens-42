@@ -34,7 +34,7 @@ async function hasFresherEvidence(
   const { data: owners } = await admin
     .from("diagnostic_profiles")
     .select("user_id, linkedin_handle, linkedin_url")
-    .or(`linkedin_handle.eq.${handle},linkedin_url.ilike.%/${handle}%`)
+    .or(`linkedin_handle.eq.${handle.toLowerCase()},linkedin_url.ilike.%/${handle.toLowerCase()}%`)
     .limit(5);
   const ids = (owners ?? []).map((o: any) => o.user_id).filter(Boolean);
   if (!ids.length) return false;
@@ -66,7 +66,7 @@ function parseHandle(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
   const cleaned = raw.trim().split("?")[0].split("#")[0];
   const m = cleaned.match(/linkedin\.com\/in\/([^/?#\s]+)/i) ?? cleaned.match(/^\/?in\/([^/?#\s]+)/i);
-  const handle = (m?.[1] ?? "").replace(/[.,;:)\]]+$/, "").replace(/\/+$/, "").trim();
+  const handle = (m?.[1] ?? "").replace(/[.,;:)\]]+$/, "").replace(/\/+$/, "").trim().toLowerCase();
   return handle ? handle : null;
 }
 
@@ -247,6 +247,7 @@ Deno.serve(async (req) => {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  let refund: () => Promise<void> = async () => {};
 
   try {
     let body: any = {};
@@ -275,8 +276,10 @@ Deno.serve(async (req) => {
     const force = body?.force === true;
 
     const fwd = req.headers.get("x-forwarded-for") ?? "";
-    const firstIp = fwd.split(",")[0].trim() || "unknown";
-    const ip_hash = await sha256Hex(firstIp);
+    const parts = fwd.split(",").map((s) => s.trim()).filter(Boolean);
+    const clientIp = parts.length ? parts[parts.length - 1] : "";
+    if (!clientIp) return serveStale() ?? json({ error: "unreadable" }, 503);
+    const ip_hash = await sha256Hex(clientIp);
 
     // --- b) Cache — served before metering. A cached read costs nothing to
     // produce, so it must not consume the visitor's hourly allowance.
@@ -308,7 +311,7 @@ Deno.serve(async (req) => {
      * A failed regeneration must not break a page we can still fill. Serve the
      * stale row with a quiet note about its age.
      */
-    const serveStale = (): Response | null => {
+    function serveStale(): Response | null {
       if (!cached?.read) return null;
       return json({
         ok: true, cached: true, stale: true, sparse: cached.sparse, handle,
@@ -319,7 +322,7 @@ Deno.serve(async (req) => {
           day: "numeric", month: "long", year: "numeric",
         })}.`,
       });
-    };
+    }
 
     // --- c) Rate limit — only fresh reads are metered ---
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -328,14 +331,14 @@ Deno.serve(async (req) => {
       .select("id", { count: "exact", head: true })
       .eq("ip_hash", ip_hash)
       .gte("created_at", since);
-    if ((count ?? 0) >= 5) return json({ error: "rate_limited" }, 429);
+    if ((count ?? 0) >= 5) return serveStale() ?? json({ error: "rate_limited" }, 429);
     const { data: metered } = await admin
       .from("mirror_requests")
       .insert({ ip_hash, handle, email, ref })
       .select("id")
       .maybeSingle();
     /** A failure on our side must not cost the visitor an attempt. */
-    const refund = async () => {
+    refund = async () => {
       if (metered?.id) await admin.from("mirror_requests").delete().eq("id", metered.id);
     };
 
@@ -353,9 +356,9 @@ Deno.serve(async (req) => {
       if (profile.reason === "provider_limit") await refund();
       const fallback = serveStale();
       if (fallback) return fallback;
-      return profile.reason === "provider_limit"
-        ? json({ error: "provider_limit" }, 503)
-        : json({ error: "profile_unreadable" }, 502);
+      if (profile.reason === "provider_limit") return json({ error: "provider_limit" }, 503);
+      await refund();
+      return json({ error: "profile_unreadable" }, 502);
     }
 
     const firstName = pickText(item, ["firstName", "first_name", "givenName"]);
@@ -407,7 +410,7 @@ Deno.serve(async (req) => {
     ].join("\n");
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) return serveStale() ?? json({ error: "not_configured" }, 400);
+    if (!ANTHROPIC_API_KEY) { await refund(); return serveStale() ?? json({ error: "not_configured" }, 400); }
 
     async function callModel(messages: { role: string; content: string }[]) {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -468,6 +471,7 @@ Deno.serve(async (req) => {
         severity: "high",
         context: { handle, sparse },
       });
+      await refund();
       return serveStale() ?? json({ error: "unreadable" }, 502);
     }
 
@@ -496,6 +500,7 @@ Deno.serve(async (req) => {
       name: full_name ?? null, posts_read: postTexts.length, generated_at,
     });
   } catch (e) {
+    await refund();
     await logError("mirror-read", e, { user_id: null, severity: "high" });
     return json({ error: "unreadable" }, 502);
   }
