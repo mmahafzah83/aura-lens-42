@@ -917,7 +917,11 @@ const Onboarding = () => {
      Existing members keep whatever keys are already on file: new answers are
      MERGED in alongside them, never written over the top of the object. */
   const saveScores = useCallback(async (next: Record<string, number>) => {
-    if (!userId) return;
+    if (!userId) {
+      // Anonymous run — the sliders are kept on the session row.
+      await writeProfile({ skill_ratings: next, audit_results: next, instrument_version: 2, ...(band ? { answered_band: band } : {}) }, "slider save");
+      return;
+    }
     try {
       const { data: current } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("skill_ratings, audit_results").eq("user_id", userId).maybeSingle();
@@ -943,7 +947,13 @@ const Onboarding = () => {
   const finishQuestions = async (finalAnswers: Record<string, string>) => {
     setRevealPending(true);
     go(12);
-    if (!userId) return;
+    if (!userId) {
+      if (anonToken) {
+        anonStateRef.current = { ...anonStateRef.current, answers: finalAnswers, journey_screen: 12 };
+        await saveSession(anonToken, anonStateRef.current);
+      }
+      return;
+    }
     await saveAnswers(userId, finalAnswers);
     try {
       await writeProfile({ instrument_version: 2, ...(band ? { answered_band: band } : {}) }, "instrument stamp");
