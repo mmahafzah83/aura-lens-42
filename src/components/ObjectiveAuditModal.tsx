@@ -24,6 +24,9 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
   const [saving, setSaving] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [finalScores, setFinalScores] = useState<Record<string, number>>({});
+  // v2 members set their capabilities with the new instrument. This legacy
+  // ten-name audit must never run for them — its vocabulary is retired.
+  const [instrumentVersion, setInstrumentVersion] = useState<number | null>(null);
   const { toast } = useToast();
 
   const skill = EVIDENCE_MATRIX[currentSkillIdx];
@@ -65,12 +68,21 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
 
       const skills = EVIDENCE_MATRIX.map((s) => ({ name: s.name, description: `${s.category} — ${s.tier} Tier` }));
 
+      // Merge — never replace. Any key this matrix does not know (the new
+      // instrument's placements) must survive untouched.
+      const { data: current } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("skill_ratings, audit_results")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const existingRatings = ((current as any)?.skill_ratings as Record<string, number>) || {};
+      const existingAudit = ((current as any)?.audit_results as Record<string, number>) || {};
+
       await (supabase.from("diagnostic_profiles" as any) as any)
         .update({
-          skill_ratings: newRatings,
+          skill_ratings: { ...existingRatings, ...newRatings },
           generated_skills: skills,
           completed: true,
-          audit_results: newRatings,
+          audit_results: { ...existingAudit, ...newRatings },
           audit_completed_at: new Date().toISOString(),
           audit_method: "evidence_audit",
         })

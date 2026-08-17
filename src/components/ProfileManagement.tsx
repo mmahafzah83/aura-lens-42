@@ -118,7 +118,9 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         north_star_goal: northStar,
         brand_pillars: brandPillars,
         generated_skills: skills,
-        skill_ratings: ratings,
+        // Merge — local state is seeded only from generated_skills ∩ skill_ratings,
+        // so a wholesale write would drop every placement it never saw.
+        skill_ratings: { ...(storedRatings || {}), ...ratings },
         ...(mandatoryComplete ? { onboarding_completed: true, completed: true } : {}),
       }, "ProfileManagement.handleSave");
     if (!ok) {
