@@ -61,10 +61,6 @@ import {
   ASSESSMENT_STEPS, ASSESSMENT_STEPS_WORD, ASSESSMENT_MINUTES_LINE,
   ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stepLabel,
 } from "@/lib/brand";
-import {
-  SEAT_HEADING, SEAT_ROWS, SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_NO_CARD, SEAT_CTA, SEAT_PATH,
-} from "@/lib/seatCopy";
-
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
@@ -125,13 +121,6 @@ const MANUAL_SCREEN = 15;
 const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you capture.";
 /** The same truth, in the first person, because the dark screens are Aura speaking. */
 const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you capture.";
-/** What the free tier deliberately does not do — used on the final screen. */
-const LOSS_LINES = [
-  "The signals keep arriving in your field. Nothing reads them for you.",
-  "What you capture stays a list. It never becomes evidence.",
-  "This read is today's. Nothing keeps it current.",
-] as const;
-
 /**
  * LinkedIn's OAuth grant is stored against an account — there is nowhere to
  * safely keep an access token for a visitor who has none. So the button is not
@@ -150,33 +139,6 @@ const quietLink: React.CSSProperties = {
   fontFamily: OB.ui, fontSize: 13.5, color: "#FFFFFF", textDecoration: "underline",
   display: "inline-block", minBlockSize: 44,
 };
-
-/** The selectable row used by choice questions and the reveal feedback block. */
-const optionButton = (
-  key: string | number,
-  label: string,
-  onClick: () => void,
-  picked = false,
-  blocked = false,
-  why?: string,
-) => (
-  <button key={key} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
-    textAlign: "start", padding: "14px 15px", borderRadius: 14,
-    cursor: blocked ? "not-allowed" : "pointer",
-    border: `1px solid ${OB.line}`,
-    borderInlineStart: picked ? `2px solid ${OB.blue}` : `1px solid ${OB.line}`,
-    background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
-    fontWeight: picked ? 600 : 400,
-    lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
-    opacity: blocked ? 0.45 : 1,
-    minBlockSize: 44,
-    transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
-  }}>
-    {label}
-    {why ? <span style={{ display: "block", marginBlockStart: 5, fontSize: 12.5, lineHeight: 1.5, color: OB.muted }}>{why}</span> : null}
-  </button>
-);
-
 
 const PAGE_CSS = `
 .obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};
@@ -379,10 +341,6 @@ const Onboarding = () => {
    */
   const [resumedAt, setResumedAt] = useState<{ stage: number; readDone: boolean } | null>(null);
   const [resumeAsking, setResumeAsking] = useState(false);
-  /** The reveal-endgame feedback question: rating + optional message. */
-  const [revealRating, setRevealRating] = useState<number | null>(null);
-  const [revealMessage, setRevealMessage] = useState("");
-
 
   /* member facts */
   const [firstName, setFirstName] = useState("");
@@ -592,26 +550,6 @@ const Onboarding = () => {
     const clean: Record<string, any> = {};
     for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
     return upsertProfile(id, clean, `journey ${label}`);
-  }, [userId, anonToken]);
-
-  /**
-   * The one reveal feedback question. Optional, never blocks the journey.
-   * Anonymous runs keep it on the session row and replay it at hand-off.
-   */
-  const handleRevealFeedback = useCallback(async (rating: number, message: string) => {
-    setRevealRating(rating);
-    if (!userId) {
-      anonStateRef.current.reveal_feedback = { rating, message };
-      if (anonToken) await saveSession(anonToken, anonStateRef.current);
-      return;
-    }
-    await supabase.from("beta_feedback").upsert({
-      user_id: userId,
-      feedback_type: "reveal",
-      rating,
-      message: message || null,
-      page: "/onboarding",
-    });
   }, [userId, anonToken]);
 
   const persistScreen = useCallback(async (next: number) => {
@@ -2652,6 +2590,23 @@ const Onboarding = () => {
       const placeholder = phList[phIdx % phList.length];
       const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
+      /* keyed by position, never by label — two options may carry the same text */
+      const optionButton = (key: string | number, label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
+        <button key={key} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
+          textAlign: "start", padding: "14px 15px", borderRadius: 14,
+          cursor: blocked ? "not-allowed" : "pointer",
+          border: `1px solid ${OB.line}`,
+          borderInlineStart: picked ? `2px solid ${OB.blue}` : `1px solid ${OB.line}`,
+          background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
+          fontWeight: picked ? 600 : 400,
+          lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
+          opacity: blocked ? 0.45 : 1,
+          transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
+        }}>
+          {label}
+          {why ? <span style={{ display: "block", marginBlockStart: 5, fontSize: 12.5, lineHeight: 1.5, color: OB.muted }}>{why}</span> : null}
+        </button>
+      );
 
       content = (
         <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
@@ -2848,21 +2803,6 @@ const Onboarding = () => {
             }
           } catch (e) {
             console.error("[journey] capture replay failed", e);
-          }
-          /* Replay the optional reveal feedback collected while anonymous. */
-          try {
-            const fb = (st as any).reveal_feedback;
-            if (fb?.rating != null) {
-              await supabase.from("beta_feedback").upsert({
-                user_id: uid,
-                feedback_type: "reveal",
-                rating: fb.rating,
-                message: fb.message || null,
-                page: "/onboarding",
-              });
-            }
-          } catch (e) {
-            console.error("[journey] reveal feedback handoff failed", e);
           }
           try {
             await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null));
@@ -3248,72 +3188,12 @@ const Onboarding = () => {
               background: dailyTime === slot ? OB.blue : OB.canvas,
               border: `1px solid ${dailyTime === slot ? OB.blue : OB.line}`,
               color: dailyTime === slot ? "#FFFFFF" : OB.ink,
-              minBlockSize: 44,
             }}>{slot}</button>
           ))}
         </div>
         <p style={{ margin: "10px 0 0", fontSize: 12, color: OB.muted, textAlign: "center" }}>
           Your time zone · {timeZone}
         </p>
-
-        {/* 1 · One feedback question */}
-        <div style={{ marginBlockStart: 24 }}>
-          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-            One question
-          </p>
-          <p style={{ margin: "8px 0 0", fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink }}>
-            Was that read accurate about you?
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 14 }}>
-            {optionButton("reveal-yes", "Yes, close", () => void handleRevealFeedback(5, revealMessage), revealRating === 5)}
-            {optionButton("reveal-partly", "Partly", () => void handleRevealFeedback(3, revealMessage), revealRating === 3)}
-            {optionButton("reveal-no", "Not really", () => void handleRevealFeedback(1, revealMessage), revealRating === 1)}
-          </div>
-          {revealRating !== null ? (
-            <textarea
-              aria-label="What did it miss? (optional)"
-              value={revealMessage}
-              onChange={(e) => setRevealMessage(e.target.value)}
-              onBlur={() => { if (revealRating !== null && revealMessage.trim()) void handleRevealFeedback(revealRating, revealMessage.trim()); }}
-              placeholder="What did it miss? (optional)"
-              rows={3}
-              style={{ ...fieldStyle, marginBlockStart: 14, resize: "vertical" }}
-            />
-          ) : null}
-        </div>
-
-        {/* 2 · What a seat adds, and what stays out of reach */}
-        <div style={{ marginBlockStart: 28, padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
-          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-            {SEAT_HEADING}
-          </p>
-          <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
-            {SEAT_ROWS.map((row, i) => (
-              <li key={i} style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, paddingInlineStart: 18, position: "relative" }}>
-                <span style={{ position: "absolute", insetInlineStart: 0, color: OB.blue }}>—</span>
-                {row}
-              </li>
-            ))}
-          </ul>
-          <p style={{ margin: "18px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-            What stays out of reach without one
-          </p>
-          <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
-            {LOSS_LINES.map((line, i) => (
-              <li key={i} style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, paddingInlineStart: 18, position: "relative" }}>
-                <span style={{ position: "absolute", insetInlineStart: 0, color: OB.blue }}>—</span>
-                {line}
-              </li>
-            ))}
-          </ul>
-          <p style={{ margin: "16px 0 0", fontSize: "var(--ob-body)", fontWeight: 600, color: OB.ink }}>{SEAT_PRICE}</p>
-          <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_PRICE_SUBLINE}</p>
-          <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_NO_CARD}</p>
-          <Actions style={{ marginBlockStart: 16 }}>
-            <OBButton variant="secondary" onClick={() => navigate(SEAT_PATH)}>{SEAT_CTA}</OBButton>
-          </Actions>
-        </div>
-
 
         {connected || !userId ? null : (
           <>
