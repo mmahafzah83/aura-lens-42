@@ -44,6 +44,33 @@ export function coerceEnding(value: unknown): EndingTypeLabel {
 }
 
 export const isHook = (v: unknown) => (HOOK_STYLES as readonly string[]).includes(String(v));
+
+/**
+ * A rule is written in plain English ("opens with a question", "uses numbers").
+ * When the words of the rule do not appear in the writing, the concept behind
+ * it still can — this turns a named concept into something findable.
+ * Returns null when the rule names no concept we can look for.
+ */
+const CONCEPTS: Array<{ match: RegExp; find: RegExp }> = [
+  { match: /\bquestion/i, find: /[^.!?\n]{5,160}\?/ },
+  { match: /\bnumber|figure|stat|percent|metric/i, find: /\b\d[\d,.]*\s?%?\b/ },
+  { match: /\bshort sentence|brevity|one line/i, find: /(^|[.!?]\s)[^.!?\n]{1,45}[.!?]/ },
+  { match: /\blist|bullet/i, find: /(^|\n)\s*(?:[-–—•*]|\d+[.)])\s+\S/ },
+  { match: /\bem dash|dash/i, find: /—/ },
+  { match: /\bemoji/i, find: /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u },
+  { match: /\bhashtag/i, find: /(^|\s)#[\p{L}\d_]+/u },
+  { match: /\bfirst person|\bI\b|\bwe\b/i, find: /\b(I|we|my|our)\b/i },
+  { match: /\bsecond person|\byou\b/i, find: /\byou(r|rs)?\b/i },
+  { match: /\bquote|quotation/i, find: /["“][^"”\n]{5,200}["”]/ },
+  { match: /\bcall to action|\bask(s)? the reader/i, find: /\b(tell me|what do you think|share|comment|let me know)\b/i },
+];
+
+export function conceptRegexOf(rule: unknown): RegExp | null {
+  const text = String(rule ?? "");
+  if (!text.trim()) return null;
+  for (const c of CONCEPTS) if (c.match.test(text)) return new RegExp(c.find.source, c.find.flags.replace("g", ""));
+  return null;
+}
 export const isEnding = (v: unknown) => (ENDING_TYPES as readonly string[]).includes(String(v));
 
 /** One worked example per opener, used to make the model prompt concrete. */
