@@ -1078,6 +1078,7 @@ export type Database = {
           id: string
           identity_intelligence: Json
           instrument_version: number | null
+          journey_reset_at: string | null
           last_active_at: string | null
           last_name: string | null
           last_visit_at: string | null
@@ -1142,6 +1143,7 @@ export type Database = {
           id?: string
           identity_intelligence?: Json
           instrument_version?: number | null
+          journey_reset_at?: string | null
           last_active_at?: string | null
           last_name?: string | null
           last_visit_at?: string | null
@@ -1206,6 +1208,7 @@ export type Database = {
           id?: string
           identity_intelligence?: Json
           instrument_version?: number | null
+          journey_reset_at?: string | null
           last_active_at?: string | null
           last_name?: string | null
           last_visit_at?: string | null
@@ -6059,6 +6062,10 @@ export type Database = {
         Returns: undefined
       }
       report_invariants: { Args: never; Returns: Json }
+      reset_journey: {
+        Args: { p_user_id?: string; p_wipe_captures?: boolean }
+        Returns: Json
+      }
       rollback_design_version: {
         Args: { p_target_version: number }
         Returns: undefined
