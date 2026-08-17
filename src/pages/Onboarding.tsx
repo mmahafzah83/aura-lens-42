@@ -49,6 +49,7 @@ import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyHeader from "@/components/onboarding/JourneyHeader";
 import { CONSENT_VERSION } from "@/pages/Auth";
 import DocumentUpload, { DOCUMENT_STATUS_EVENT } from "@/components/DocumentUpload";
+import CvCrosscheck from "@/components/report/CvCrosscheck";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
