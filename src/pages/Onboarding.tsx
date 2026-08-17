@@ -307,8 +307,8 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
 };
 
 const PaperShell = ({
-  children, bead, cream = false, footer, onExit, face = false,
-}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void; face?: boolean }) => {
+  children, bead, cream = false, footer, onExit, face = false, subProgress,
+}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number }) => {
   const { onBack, banner } = useContext(JourneyNav);
   return (
   <div className="obc" style={{
@@ -319,7 +319,7 @@ const PaperShell = ({
       {onExit ? <JourneyHeader onExit={onExit} onBack={onBack} /> : null}
       {banner}
       <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
-        <ProgressBeads active={bead} />
+        <ProgressBeads active={bead} subProgress={subProgress} />
       </div>
       <div className="obc-in" style={{
         background: OB.white, borderRadius: RADIUS.hero, border: `1px solid ${OB.line}`,
@@ -1860,7 +1860,7 @@ const Onboarding = () => {
     ].filter(Boolean).join(" · ");
 
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} subProgress={step1Phase === "result" ? 0.6 : 0.25} footer={escapeFooter}>
         {step1Phase === "result" ? (
           <h1 style={h1Light}>This is what Aura can see.</h1>
         ) : (
@@ -2252,12 +2252,12 @@ const Onboarding = () => {
       go(4);
     };
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
-        <h1 style={h1Light}>Have a CV handy?</h1>
+      <PaperShell onExit={saveAndExit} bead={0} subProgress={1} footer={escapeFooter}>
+        <h1 style={h1Light}>{userId ? "Have a CV handy?" : "Your CV comes next."}</h1>
         <p style={bodyLight}>
-          Your profile says what the world can see. A CV says what you actually did — the numbers, the
-          programmes, the things nobody posted about. Aura reads it against your profile and shows you the
-          difference.
+          {userId
+            ? "Your profile says what the world can see. A CV says what you actually did — the numbers, the programmes, the things nobody posted about. Aura reads it against your profile and shows you the difference."
+            : "Your profile says what the world can see. A CV says what you actually did — the numbers, the scale, the things you led. Aura reads it against your profile and shows you where the two disagree. You'll add it the moment your report is saved."}
         </p>
         {userId ? (
           <div style={{ marginBlockStart: 20 }}>
@@ -2267,11 +2267,7 @@ const Onboarding = () => {
               onUploaded={(id) => { if (id) { setCvUploads((n) => n + 1); void runCvCrosscheck(); } }}
             />
           </div>
-        ) : (
-          <p style={{ margin: "20px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>
-            Available after you save your report — you can add your CV then, and Aura reads it against your profile.
-          </p>
-        )}
+        ) : null}
         {/* Shows only once the comparison comes back; absent, it renders nothing. */}
         <CvCrosscheck data={cvCrosscheck} style={{ marginBlockStart: 20 }} />
         <Actions style={{ marginBlockStart: 20 }}>
@@ -2513,7 +2509,7 @@ const Onboarding = () => {
       const value = scores[d.name] ?? 50;
       const last = dimIdx >= dims.length - 1;
       content = (
-        <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={2} subProgress={(dimIdx + 1) / dims.length} footer={escapeFooter}>
           {flatWarn ? (
             <>
               <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>Can I check something?</h1>
@@ -2687,7 +2683,7 @@ const Onboarding = () => {
 
 
       content = (
-        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={3} subProgress={(qIdx + 1) / questions.length} footer={escapeFooter}>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             Question {qIdx + 1} of {questions.length}
           </p>

@@ -25,7 +25,43 @@ const READING_LINES = [
   "Reading recent posts…",
   "Finding what only you have…",
   "Writing your read…",
+  "Still going — some profiles take longer.",
 ];
+
+/** The wait has to look like it is moving, because it is. */
+const ReadingProgress = () => {
+  const reduced = typeof window !== "undefined"
+    && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const [pct, setPct] = useState(reduced ? 40 : 0);
+  useEffect(() => {
+    if (reduced) return;
+    const started = Date.now();
+    const id = window.setInterval(() => {
+      const t = (Date.now() - started) / 25_000;
+      setPct(Math.min(92, Math.round(t * 92)));
+    }, 200);
+    return () => window.clearInterval(id);
+  }, [reduced]);
+  return (
+    <div
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+      aria-label="Reading your profile"
+      style={{
+        marginBlockStart: 18, blockSize: 3, borderRadius: 999,
+        background: "#E2E7EE", overflow: "hidden",
+      }}
+    >
+      <div style={{
+        blockSize: "100%", inlineSize: `${pct}%`, borderRadius: 999,
+        background: "#0670C4",
+        transition: reduced ? "none" : "inline-size 200ms linear",
+      }} />
+    </div>
+  );
+};
 
 const STEP_TO_STAGE: Record<string, Stage> = {
   address: "address", read: "read",
@@ -110,7 +146,7 @@ const Assessment = () => {
   useEffect(() => {
     if (stage !== "reading") return;
     setLine(0);
-    const t = [14_000, 32_000, 50_000].map((d, i) =>
+    const t = [4_000, 9_000, 15_000, 26_000].map((d, i) =>
       window.setTimeout(() => setLine(i + 1), d));
     return () => t.forEach(window.clearTimeout);
   }, [stage]);
@@ -228,8 +264,9 @@ const Assessment = () => {
           {stage === "reading" && (
             <section className="asg-panel asg-center">
               <span className="asg-k">READING</span>
-              <h1 className="asg-ph">{READING_LINES[Math.min(line, 3)]}</h1>
+              <h1 className="asg-ph">{READING_LINES[Math.min(line, READING_LINES.length - 1)]}</h1>
               <p className="asg-pp">This takes a moment. Leave the tab open.</p>
+              <ReadingProgress />
             </section>
           )}
 
