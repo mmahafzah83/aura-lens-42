@@ -102,18 +102,23 @@ async function fetchProfile(canonical_url: string, token: string): Promise<Recor
           signal: controller.signal,
         },
       );
-    } catch (_e) {
+    } catch (e) {
+      console.error("mirror-read profile fetch failed:", e instanceof Error ? e.message : String(e));
       continue;
     } finally {
       clearTimeout(timer);
     }
-    if (res.status !== 200 && res.status !== 201) continue;
+    if (res.status !== 200 && res.status !== 201) {
+      console.error(`mirror-read profile scrape status ${res.status}:`, (await res.text()).slice(0, 300));
+      continue;
+    }
     const payload = await res.json().catch(() => null);
     const list: any[] = Array.isArray(payload) ? payload : [];
     const candidate = (list.find((r) => r && typeof r === "object" && !r.error) ?? null) as
       | Record<string, unknown>
       | null;
     if (candidate) return candidate;
+    console.error("mirror-read profile scrape returned no rows for keys:", Object.keys(input).join(", "));
   }
   return null;
 }
