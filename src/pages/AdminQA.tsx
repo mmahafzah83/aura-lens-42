@@ -608,6 +608,9 @@ const AdminQA = () => {
       {/* Hidden iframe container used by the DOM audit to load other routes without unmounting this page */}
       <div ref={iframeContainerRef} aria-hidden="true" style={{ position: "fixed", left: -99999, top: 0, width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }} />
 
+      {/* Testing — provision a stranger, reset a journey, clean up after */}
+      <TestingPanel />
+
       {/* End-to-end walkthrough (relocated from Access) */}
       <Section title="End-to-end walkthrough">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
