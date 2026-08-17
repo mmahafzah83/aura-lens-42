@@ -163,9 +163,6 @@ export default function Mirror() {
   const abortRef = useRef<AbortController | null>(null);
   const autoRan = useRef(false);
 
-  const exportRef = useRef<HTMLDivElement>(null);
-  const [shareNote, setShareNote] = useState<string>();
-
   // list panel
   const [listOpen, setListOpen] = useState(false);
   const [listName, setListName] = useState("");
@@ -332,29 +329,6 @@ export default function Mirror() {
   const read = result?.read;
   const sparse = !!result?.sparse;
   const postsRead = result?.posts_read ?? 0;
-
-  const cardData: RevealData = {
-    archetype: read?.archetype ?? "",
-    marketRead: read?.market_read ?? "",
-    subjects: (read?.themes ?? []).slice(0, 3),
-    softGround: [],
-    figures: postsRead > 0 ? [{ value: String(postsRead), label: "posts of yours read" }] : [],
-  };
-
-  const share = async () => {
-    if (!exportRef.current) return;
-    setShareNote(undefined);
-    try {
-      const outcome = await shareRevealCard(exportRef.current, {
-        fileName: "how-my-field-sees-me.png",
-        caption:
-          "I had something read my LinkedIn and tell me how my field actually sees me. This is what came back.",
-      });
-      setShareNote(outcome === "shared" ? "Shared." : "Saved to your device, caption copied.");
-    } catch {
-      setShareNote("The card didn't render. Try once more.");
-    }
-  };
 
   /* ── STATE B — reading (night) ── */
   if (stage === "reading") {
