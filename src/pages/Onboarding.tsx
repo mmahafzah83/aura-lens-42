@@ -233,7 +233,11 @@ const wordsIn = (rows: { post_text?: string | null }[]): number =>
  * The night surface is kept for the machine's own moments — reading, and the
  * reveal. `JourneyNav` carries the back control so no screen has to pass it.
  */
-const JourneyNav = createContext<{ onBack?: () => void }>({});
+const JourneyNav = createContext<{ onBack?: () => void; banner?: React.ReactNode }>({});
+
+/** Which of the five named stages a screen belongs to. One definition, used
+ *  by the resume banner and by Finish later. */
+const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
 
 const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => {
   const { onBack } = useContext(JourneyNav);
@@ -255,7 +259,7 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
 const PaperShell = ({
   children, bead, cream = false, footer, onExit, face = false,
 }: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void; face?: boolean }) => {
-  const { onBack } = useContext(JourneyNav);
+  const { onBack, banner } = useContext(JourneyNav);
   return (
   <div className="obc" style={{
     minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
@@ -263,6 +267,7 @@ const PaperShell = ({
   }}>
     <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
       {onExit ? <JourneyHeader onExit={onExit} onBack={onBack} /> : null}
+      {banner}
       <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
         <ProgressBeads active={bead} />
       </div>
@@ -328,6 +333,13 @@ const Onboarding = () => {
   const screenRef = useRef(0);
   /** Where Back goes. Screens are pushed as they are left, popped on return. */
   const backStack = useRef<number[]>([]);
+  /**
+   * THE SILENT RESUME. Landing on step three with no word for it reads as a
+   * bug. When the journey opens past step one, say so once — and offer the
+   * way out. Shown for the resume, not for every step change after it.
+   */
+  const [resumedAt, setResumedAt] = useState<{ stage: number; readDone: boolean } | null>(null);
+  const [resumeAsking, setResumeAsking] = useState(false);
 
   /* member facts */
   const [firstName, setFirstName] = useState("");
@@ -637,7 +649,10 @@ const Onboarding = () => {
         } catch { /* ignore */ }
         if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
         if (back === 6 || back === 7) back = 5;
-        if (back > 0 && back <= 14) { setScreen(back); screenRef.current = back; }
+        if (back > 0 && back <= 14) {
+          setScreen(back); screenRef.current = back;
+          if (stageOf(back) > 1) setResumedAt({ stage: stageOf(back), readDone: Boolean(st.read) });
+        }
         setChecking(false);
         return;
       }
@@ -705,7 +720,15 @@ const Onboarding = () => {
           if (data?.length) { setClaims(data as any); resume = 7; } else { resume = 5; }
         } catch { resume = 5; }
       }
-      if (resume > 0 && resume <= 14) { setScreen(resume); screenRef.current = resume; }
+      if (resume > 0 && resume <= 14) {
+        setScreen(resume); screenRef.current = resume;
+        if (stageOf(resume) > 1) {
+          setResumedAt({
+            stage: stageOf(resume),
+            readDone: Boolean((p.identity_intelligence as any)?.read_done ?? p.sector_focus),
+          });
+        }
+      }
 
       setChecking(false);
     })();
@@ -1232,8 +1255,6 @@ const Onboarding = () => {
   };
 
   /* ── finish later: a saved place, a said-out-loud confirmation, and a way back ── */
-  /** Which of the five named stages this screen belongs to. */
-  const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
 
   /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
@@ -1267,6 +1288,89 @@ const Onboarding = () => {
       window.setTimeout(() => navigate(userId ? "/home" : "/"), 900);
     })();
   }, [persistScreen, screen, navigate, userId, writeProfile]);
+
+  /**
+   * START OVER — the answers go, the session does not. The row keeps its token
+   * and its `runs_started`, so starting over is never a way around the metering.
+   */
+  const startOver = useCallback(async () => {
+    setResumeAsking(false);
+    setResumedAt(null);
+    if (anonToken) {
+      anonStateRef.current = { answers: {} };
+      await saveSession(anonToken, {});
+      try { localStorage.removeItem("aura_ob_screen_anon"); } catch { /* ignore */ }
+    }
+    if (userId) {
+      try {
+        const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+          .select("identity_intelligence").eq("user_id", userId).maybeSingle();
+        const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+        await writeProfile({
+          identity_intelligence: { ...ii, journey_screen: 0, journey_paused: false },
+          onboarding_step: 0,
+        }, "start over");
+      } catch (e) { console.error("[journey] start over save threw", e); }
+      try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
+    }
+    setAnswers({});
+    setScores({});
+    setClaims([]);
+    setStep1Phase("ask");
+    setLiInput("");
+    setLiProfile(null);
+    setReadDone(false);
+    setPostsRead(null);
+    setOwnWords(null);
+    setSector(""); setSectorKnown(false);
+    setBand(null); setLevelTitle("");
+    setCvUploads(0);
+    backStack.current = [];
+    setScreen(0);
+    screenRef.current = 0;
+    try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
+  }, [anonToken, userId, writeProfile]);
+
+  /** The slim line above the card. One resume, one banner. */
+  const resumeBanner = resumedAt ? (
+    <div style={{
+      display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10,
+      background: OB.white, border: `1px solid ${OB.line}`, borderRadius: RADIUS.card,
+      padding: "10px 14px", marginBlockEnd: 14,
+      fontSize: 13, color: OB.ink,
+    }}>
+      <span style={{ flex: "1 1 220px", lineHeight: 1.45 }}>
+        {resumeAsking
+          ? "This clears your answers so far."
+          : resumedAt.readDone
+            ? `Welcome back — your read is done. You were on ${stepLabel(resumedAt.stage)}.`
+            : `Welcome back — you were on ${stepLabel(resumedAt.stage)}.`}
+      </span>
+      {resumeAsking ? (
+        <>
+          <button type="button" onClick={() => { void startOver(); }}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, fontWeight: 600, color: OB.ink, textDecoration: "underline" }}>
+            Start fresh
+          </button>
+          <button type="button" onClick={() => setResumeAsking(false)}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, color: OB.muted }}>
+            Keep going
+          </button>
+        </>
+      ) : (
+        <>
+          <button type="button" onClick={() => setResumeAsking(true)}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, color: OB.muted, textDecoration: "underline" }}>
+            Start over
+          </button>
+          <button type="button" aria-label="Dismiss" onClick={() => setResumedAt(null)}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 16, lineHeight: 1, color: OB.muted }}>
+            ×
+          </button>
+        </>
+      )}
+    </div>
+  ) : null;
 
   /** Remembers when their day starts, alongside the time zone we detected. */
   const chooseDailyTime = useCallback(async (slot: "Morning" | "Midday" | "Evening") => {
@@ -2942,7 +3046,7 @@ const Onboarding = () => {
           }}>{exitNote}</span>
         </div>
       ) : null}
-      <JourneyNav.Provider value={{ onBack: canBack ? goBack : undefined }}>
+      <JourneyNav.Provider value={{ onBack: canBack ? goBack : undefined, banner: resumeBanner }}>
         {content}
       </JourneyNav.Provider>
     </>
