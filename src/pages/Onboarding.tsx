@@ -2729,6 +2729,28 @@ const Onboarding = () => {
             setWallError("We could not attach your report to your account yet — nothing is lost. Try again.");
             return;
           }
+          /* Hand the anonymous run onto the account: persist first, so nothing
+             can be lost even if the read fails. */
+          const uid = signedIn.session.user.id;
+          const st = (anonStateRef.current ?? {}) as AssessmentState & Record<string, any>;
+          const pf = (st as any).profile ?? {};
+          const patch: Record<string, any> = {};
+          for (const k of ["first_name", "last_name", "firm", "sector_focus", "level", "seniority_band", "skill_ratings"]) {
+            if (pf[k] !== undefined && pf[k] !== null) patch[k] = pf[k];
+          }
+          if (Object.keys(patch).length) await upsertProfile(uid, patch, "journey anon handoff");
+          await upsertProfile(
+            uid,
+            { onboarding_step: 3, identity_intelligence: { journey_screen: 12, read_done: true } },
+            "journey anon handoff step",
+          );
+          try { localStorage.setItem(`aura_ob_screen_${uid}`, "12"); } catch { /* private mode */ }
+          if (st.answers && Object.keys(st.answers).length) await saveAnswers(uid, st.answers);
+          try {
+            await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null));
+          } catch (e) {
+            console.error("[journey] handoff read failed", e);
+          }
           clearToken();
           window.location.replace("/onboarding");
           return;
