@@ -3,7 +3,7 @@
  * member how much of the shelf is left, never how well they are doing.
  */
 import { OB, EASE } from "./tokens";
-import { ASSESSMENT_STEPS } from "@/lib/brand";
+import { ASSESSMENT_STEPS, stepLabel } from "@/lib/brand";
 
 /** The five named stages. Only the active one is ever labelled. */
 export const STAGE_NAMES = [
