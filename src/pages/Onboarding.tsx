@@ -379,6 +379,10 @@ const Onboarding = () => {
    */
   const [resumedAt, setResumedAt] = useState<{ stage: number; readDone: boolean } | null>(null);
   const [resumeAsking, setResumeAsking] = useState(false);
+  /** The reveal-endgame feedback question: rating + optional message. */
+  const [revealRating, setRevealRating] = useState<number | null>(null);
+  const [revealMessage, setRevealMessage] = useState("");
+
 
   /* member facts */
   const [firstName, setFirstName] = useState("");
