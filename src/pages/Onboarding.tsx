@@ -594,6 +594,26 @@ const Onboarding = () => {
     return upsertProfile(id, clean, `journey ${label}`);
   }, [userId, anonToken]);
 
+  /**
+   * The one reveal feedback question. Optional, never blocks the journey.
+   * Anonymous runs keep it on the session row and replay it at hand-off.
+   */
+  const handleRevealFeedback = useCallback(async (rating: number, message: string) => {
+    setRevealRating(rating);
+    if (!userId) {
+      anonStateRef.current.reveal_feedback = { rating, message };
+      if (anonToken) await saveSession(anonToken, anonStateRef.current);
+      return;
+    }
+    await supabase.from("beta_feedback").upsert({
+      user_id: userId,
+      feedback_type: "reveal",
+      rating,
+      message: message || null,
+      page: "/onboarding",
+    });
+  }, [userId, anonToken]);
+
   const persistScreen = useCallback(async (next: number) => {
     if (!userId && anonToken) {
       anonStateRef.current = { ...anonStateRef.current, journey_screen: next };
