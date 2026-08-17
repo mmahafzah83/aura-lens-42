@@ -467,6 +467,12 @@ const Onboarding = () => {
   }, [userId]);
 
   const persistScreen = useCallback(async (next: number) => {
+    if (!userId && anonToken) {
+      anonStateRef.current = { ...anonStateRef.current, journey_screen: next };
+      try { localStorage.setItem("aura_ob_screen_anon", String(next)); } catch { /* ignore */ }
+      await saveSession(anonToken, anonStateRef.current);
+      return;
+    }
     if (!userId) return;
     try { localStorage.setItem(`aura_ob_screen_${userId}`, String(next)); } catch { /* ignore */ }
     try {
@@ -483,7 +489,7 @@ const Onboarding = () => {
         onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
       }, "progress save");
     } catch (e) { console.error("[journey] progress save threw", e); }
-  }, [userId, writeProfile]);
+  }, [userId, anonToken, writeProfile]);
 
   const go = useCallback((next: number) => {
     setScreen(next);
