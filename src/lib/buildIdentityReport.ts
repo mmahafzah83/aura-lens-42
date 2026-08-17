@@ -146,6 +146,8 @@ export interface ReportData {
   footprint: FootprintSection | null;
   content: ContentSection | null;
   voice: VoiceSection | null;
+  /** CV against LinkedIn — the stored `diagnostic_profiles.cv_crosscheck`. */
+  cv_crosscheck?: unknown | null;
   /**
    * SLICE 4d — the Brand Assessment narrative, frozen into the artifact so
    * the combined PDF is reproducible. Optional: v1 snapshots lack it.
