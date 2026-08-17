@@ -66,6 +66,7 @@ const Assessment = () => {
   /* ── on every load: if a token is held, pick the visitor back up ── */
   useEffect(() => {
     let alive = true;
+    const arriving = new URLSearchParams(window.location.search).get("url");
     const held = readToken();
     if (!held) return;
     void (async () => {
@@ -74,7 +75,8 @@ const Assessment = () => {
       if (!found) { clearToken(); return; }   // expired, claimed or unknown — start fresh
       setToken(held);
       setState({ answers: {}, ...found.state });
-      setAddr(found.state.profile_url ?? "");
+      if (!arriving) setAddr(found.state.profile_url ?? "");
+      if (arriving) return;                   // a link with an address wins over the old step
       const back = STEP_TO_STAGE[found.state.step ?? ""] ?? null;
       if (back) setStage(back === "reading" ? "address" : back);
     })();
