@@ -460,9 +460,9 @@ const INSIDE_ITEMS = [
 ];
 
 const ASG_CSS = `
-.asg{--ink:#0F1519;--ink2:#37424F;--ink3:#66707D;--ink4:#9AA4B0;--line:#E2E7EE;--white:#FFF;
+.asg{--ink:#0F1519;--ink2:#37424F;--ink3:#66707D;--ink4:#5B6673;--line:#E2E7EE;--white:#FFF;
   --canvas:#F2F5F9;--blue:#0670C4;--blue2:#04477C;--bluetint:#E7F1FB;--cyan:#00CEC9;--cyanT:#00807B;
-  --cyantint:#E0F7F6;--ui:"Inter",system-ui,sans-serif;--mono:"IBM Plex Mono",monospace;
+  --cyantint:#CCEFEE;--ui:"Inter",system-ui,sans-serif;--mono:"IBM Plex Mono",monospace;
   font-family:var(--ui);background:var(--canvas);color:var(--ink);min-height:100vh;}
 .asg-wrap{max-width:1120px;margin:0 auto;padding:44px 22px 80px;}
 .asg-cols{display:grid;grid-template-columns:1.05fr .95fr;gap:52px;align-items:center;}
@@ -478,8 +478,8 @@ const ASG_CSS = `
 .asg-acts{display:flex;flex-wrap:wrap;gap:12px;margin:30px 0 0;}
 .asg-btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:14px 22px;
   font-size:14.5px;font-weight:600;text-decoration:none;transition:transform .25s ease,background .25s ease;}
-.asg-bp{background:var(--ink);color:var(--white);}
-.asg-bp:hover{transform:translateY(-2px);}
+.asg-bp{background:#0670C4;color:var(--white);}
+.asg-bp:hover{background:#04477C;transform:translateY(-2px);}
 .asg-bg{background:transparent;color:var(--ink2);border:1px solid var(--line);}
 .asg-bg:hover{background:var(--white);}
 .asg-trust{font-size:12px;color:var(--ink3);line-height:1.55;margin:18px 0 0;max-width:50ch;}
@@ -521,7 +521,7 @@ const ASG_CSS = `
   border:1px solid var(--line);background:var(--white);color:var(--ink);font-family:var(--ui);font-size:15px;}
 .asg-ta{margin-top:14px;line-height:1.6;resize:vertical;}
 .asg-help{font-size:11.5px;color:var(--ink3);margin:6px 0 0;}
-.asg-err{font-size:12.5px;color:#B4232A;margin:8px 0 0;}
+.asg-err{font-size:12.5px;color:#C0392B;margin:8px 0 0;}
 .asg-ok{font-size:14px;line-height:1.6;color:var(--cyanT);margin:16px 0 0;}
 .asg-full{width:100%;justify-content:center;margin-top:18px;border:none;cursor:pointer;font-family:var(--ui);}
 .asg-btn[disabled]{opacity:.55;cursor:default;}

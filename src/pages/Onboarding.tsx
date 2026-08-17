@@ -135,8 +135,9 @@ const CV_SCREEN = 3.5;
 
 /** Plain text buttons inside the screen-13 "Save it" row. */
 const quietLink: React.CSSProperties = {
-  background: "none", border: "none", padding: 0, cursor: "pointer",
+  background: "none", border: "none", padding: "13px 12px", cursor: "pointer",
   fontFamily: OB.ui, fontSize: 13.5, color: "#FFFFFF", textDecoration: "underline",
+  display: "inline-block", minBlockSize: 44,
 };
 
 const PAGE_CSS = `

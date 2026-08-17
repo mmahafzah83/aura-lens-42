@@ -54,14 +54,14 @@ const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = 
         marginInline: "auto",
         display: "flex", alignItems: "center", justifyContent: "center",
         background: on ? FILL[tone] : (onNight ? "#141E25" : OB.canvas),
-        border: on ? "1px solid transparent" : `1.5px dashed ${onNight ? OB.lineNight : OB.line}`,
+        border: on ? "1px solid transparent" : `1.5px dashed ${onNight ? OB.lineNight : "#C3CBD5"}`,
         color: on ? "#FFFFFF" : (onNight ? OB.mutedNight : OB.muted),
         transition: `background 300ms ${SPRING}`,
       }}
     >
       {on
         ? <span style={{ fontFamily: OB.mono, fontSize: 17, fontWeight: 600 }}>{figure ?? "✓"}</span>
-        : <Icon size={20} strokeWidth={1.5} color="#98A2AE" />}
+        : <Icon size={20} strokeWidth={1.5} color="#5B6673" />}
     </div>
     <p style={{
       margin: "8px 0 0", fontSize: 10.5, lineHeight: 1.35,
@@ -69,8 +69,8 @@ const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = 
     }}>{label}</p>
     {sublabel ? (
       <p style={{
-        margin: "3px 0 0", fontSize: 9.5, lineHeight: 1.35,
-        color: onNight ? OB.mutedNight : OB.muted, opacity: 0.6,
+        margin: "3px 0 0", fontSize: 11, lineHeight: 1.35,
+        color: onNight ? OB.mutedNight : OB.muted,
       }}>{sublabel}</p>
     ) : null}
   </div>

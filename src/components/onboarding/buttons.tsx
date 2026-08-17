@@ -26,7 +26,7 @@ export const BUTTON_CSS = `
 .ob-btn-secondary.on-night{border-color:#2C3A44;color:#C8D4DC;}
 .ob-btn-secondary.on-night:hover:not(:disabled){background:#18222A;}
 .ob-btn-secondary:active:not(:disabled){transform:scale(.985);}
-.ob-btn-tertiary{inline-size:auto;background:none;border:none;padding:8px 2px;font-size:14px;font-weight:500;color:#5B6673;}
+.ob-btn-tertiary{inline-size:auto;background:none;border:none;padding:12px 14px;font-size:14px;font-weight:500;color:#5B6673;min-block-size:44px;}
 .ob-btn-tertiary.on-night{color:#9BA9B4;}
 .ob-btn-tertiary:hover:not(:disabled){text-decoration:underline;}
 .ob-btn-primary:disabled,.ob-btn-secondary:disabled{background:#E2E7EE;color:#98A2AE;border-color:#E2E7EE;cursor:not-allowed;}
