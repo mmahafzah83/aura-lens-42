@@ -1,3 +1,39 @@
 /** The single source of truth for how Aura describes itself. Never inline this. */
 export const PRODUCT_DESCRIPTOR = "AI Professional Identity Platform";
 export const PRODUCT_DESCRIPTOR_CAPS = "AI PROFESSIONAL IDENTITY PLATFORM";
+
+/**
+ * THE SIZE OF THE JOURNEY — one place, everywhere.
+ *
+ * The flow contradicted itself (five steps / nine questions / nine minutes /
+ * ten minutes) because every surface carried its own literal. Nothing outside
+ * this file may print a step, question or minute count.
+ */
+export const ASSESSMENT_STEPS = 5;
+export const ASSESSMENT_QUESTIONS = 9;
+export const ASSESSMENT_MINUTES = 10;
+
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"] as const;
+const word = (n: number) => WORDS[n] ?? String(n);
+
+/** "five" */
+export const ASSESSMENT_STEPS_WORD = word(ASSESSMENT_STEPS);
+/** "nine" */
+export const ASSESSMENT_QUESTIONS_WORD = word(ASSESSMENT_QUESTIONS);
+/** "ten" */
+export const ASSESSMENT_MINUTES_WORD = word(ASSESSMENT_MINUTES);
+
+/** "About ten minutes" */
+export const ASSESSMENT_MINUTES_LINE = `About ${ASSESSMENT_MINUTES_WORD} minutes`;
+/** "ABOUT 10 MINUTES" */
+export const ASSESSMENT_MINUTES_CAPS = `ABOUT ${ASSESSMENT_MINUTES} MINUTES`;
+/** "10 min" */
+export const ASSESSMENT_MINUTES_SHORT = `${ASSESSMENT_MINUTES} min`;
+/** "nine questions" */
+export const ASSESSMENT_QUESTIONS_PHRASE = `${ASSESSMENT_QUESTIONS_WORD} questions`;
+/** "Step 3 of 5" */
+export const stepLabel = (n: number) => `Step ${n} of ${ASSESSMENT_STEPS}`;
+
+/** The price truth, said the same way on every surface. */
+export const REPORT_FREE_LINE =
+  "Your report is free, and stays free. Private — only you can see it unless you share it.";
