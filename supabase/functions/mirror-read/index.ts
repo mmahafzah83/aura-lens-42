@@ -232,20 +232,12 @@ Deno.serve(async (req) => {
     if (!handle) return json({ error: "invalid_url" }, 400);
     const canonical_url = `https://www.linkedin.com/in/${handle}`;
 
-    // --- b) Rate limit ---
     const fwd = req.headers.get("x-forwarded-for") ?? "";
     const firstIp = fwd.split(",")[0].trim() || "unknown";
     const ip_hash = await sha256Hex(firstIp);
-    const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const { count } = await admin
-      .from("mirror_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("ip_hash", ip_hash)
-      .gte("created_at", since);
-    if ((count ?? 0) >= 5) return json({ error: "rate_limited" }, 429);
-    await admin.from("mirror_requests").insert({ ip_hash, handle, email, ref });
 
-    // --- c) Cache ---
+    // --- b) Cache — served before metering. A cached read costs nothing to
+    // produce, so it must not consume the visitor's hourly allowance.
     const { data: cached } = await admin
       .from("mirror_reads")
       .select("handle, read, sparse, generated_at, hit_count, name, posts_read, read_version")
@@ -265,6 +257,16 @@ Deno.serve(async (req) => {
         name: cached.name ?? null, posts_read: cached.posts_read ?? 0,
       });
     }
+
+    // --- c) Rate limit — only fresh reads are metered ---
+    const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await admin
+      .from("mirror_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("ip_hash", ip_hash)
+      .gte("created_at", since);
+    if ((count ?? 0) >= 5) return json({ error: "rate_limited" }, 429);
+    await admin.from("mirror_requests").insert({ ip_hash, handle, email, ref });
 
     const APIFY_TOKEN = Deno.env.get("APIFY_TOKEN");
     if (!APIFY_TOKEN) return json({ error: "not_configured" }, 400);
