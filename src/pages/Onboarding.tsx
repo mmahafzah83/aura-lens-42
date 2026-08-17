@@ -3242,29 +3242,49 @@ const Onboarding = () => {
               textDecoration: "underline", padding: "10px 0",
             }}>View it on LinkedIn</a>
           ) : null}
-          <OBButton variant="secondary" disabled={busy} onClick={() => setSaveOpen((v) => !v)}
-            aria-expanded={saveOpen}
-            style={{ borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }}
-          >Share the card</OBButton>
-          {saveOpen ? (
-            <div style={{
-              display: "flex", flexDirection: "column", gap: 10, alignItems: "center",
-              padding: "4px 0 2px", color: "rgba(255,255,255,.92)", fontSize: 13.5,
-            }}>
-              {canPostToLinkedIn && !postedUrl ? (
-                <button type="button" disabled={!reveal || !captionDraft.trim() || busy}
-                  onClick={() => void postToLinkedIn()} style={quietLink}>
-                  {posting ? "Posting…" : "Post it to LinkedIn"}
-                </button>
-              ) : null}
-              <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()} style={quietLink}>
-                {sharing ? "Building…" : "Download the image"}
-              </button>
-              <button type="button" disabled={busy} onClick={() => void saveReadForLater()} style={quietLink}>
-                {savingDraft ? "Saving…" : "Save it to my drafts"}
-              </button>
-            </div>
-          ) : null}
+          {/* The share surface — open on arrival. */}
+          <div style={{ marginBlockStart: 4 }}>
+            <p style={{
+              margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em",
+              textTransform: "uppercase", color: "rgba(255,255,255,.82)", textAlign: "center",
+            }}>Share the card</p>
+
+            {!userId ? (
+              <p style={{
+                margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6,
+                color: "rgba(255,255,255,.85)", textAlign: "center",
+              }}>Available after you save your report.</p>
+            ) : !shareUrl ? (
+              <Actions style={{ marginBlockStart: 12 }}>
+                <OBButton disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
+                  onClick={() => void mintShare()}
+                  style={{ background: "#FFFFFF", color: OB.blue }}>Share my read</OBButton>
+              </Actions>
+            ) : (
+              <>
+                <div style={{
+                  display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 10, marginBlockStart: 12,
+                }}>
+                  <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                    target="_blank" rel="noopener noreferrer" style={shareAction}>WhatsApp</a>
+                  <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
+                    target="_blank" rel="noopener noreferrer" style={shareAction}>LinkedIn</a>
+                  <button type="button" onClick={() => void copyShareLink()} style={shareAction}>Copy link</button>
+                  <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()}
+                    style={{ ...shareAction, opacity: busy ? 0.6 : 1 }}>
+                    {sharing ? "Building…" : "Download the image"}
+                  </button>
+                </div>
+                <p style={{
+                  margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6,
+                  color: "rgba(255,255,255,.78)", textAlign: "center",
+                }}>
+                  Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
+                </p>
+              </>
+            )}
+          </div>
           <OBButton variant="tertiary" onClick={() => go(14)}
             style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
           </Actions>
