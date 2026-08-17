@@ -121,6 +121,13 @@ const MANUAL_SCREEN = 15;
 const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you capture.";
 /** The same truth, in the first person, because the dark screens are Aura speaking. */
 const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you capture.";
+/**
+ * LinkedIn's OAuth grant is stored against an account — there is nowhere to
+ * safely keep an access token for a visitor who has none. So the button is not
+ * offered before the account exists; this line is offered instead.
+ */
+const CONNECT_AFTER_ACCOUNT =
+  "Available after you save your report — Aura reads your public posts either way.";
 /** A short dark panel that sits between screen 8 and the sliders. */
 const TRUST_SLIDERS_SCREEN = 8.5;
 /** A white CV step between screen 3 and screen 4 — fractional so nothing renumbers. */
