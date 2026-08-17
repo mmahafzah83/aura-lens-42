@@ -387,6 +387,9 @@ export default function StudioPanel({
   // words already open. The controls are identical for everyone.
   const [showPaste, setShowPaste] = useState(() => readStoredPosture() === "author");
   const [showDrafts, setShowDrafts] = useState(false);
+  // Finished work must never hide behind a collapsed link: open the list the
+  // moment drafts arrive.
+  const draftsOpened = useRef(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
   /* The reading generation already took, held only for display. */
@@ -1032,6 +1035,10 @@ export default function StudioPanel({
    * money on something they did not ask for.
    */
   const delegatorPreparedRef = useRef(false);
+  useEffect(() => {
+    if (draftsLoading || draftsOpened.current) return;
+    if (drafts.length > 0) { draftsOpened.current = true; setShowDrafts(true); }
+  }, [draftsLoading, drafts.length]);
   useEffect(() => {
     // Leaving the posture arms the preparation again, so returning to it over
     // an empty piece prepares once more.
@@ -3107,6 +3114,14 @@ export default function StudioPanel({
 
           {!draftsLoading && drafts.length > 0 && (
             <div style={{ marginTop: 14 }}>
+              <div style={{
+                fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 700,
+                color: "var(--act)", marginBottom: 6,
+              }}>
+                {lang === "ar" ? "عمل جاهز بالفعل" : "Work already waiting"}
+                {" · "}
+                <span style={{ fontFamily: "var(--ff-mono)" }}>{drafts.length}</span>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowDrafts((v) => !v)}

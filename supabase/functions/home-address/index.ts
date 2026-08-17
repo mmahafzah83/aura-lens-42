@@ -395,7 +395,7 @@ function chooseMoves(f: Facts): Move[] {
       why: fallbackWhy("publish_draft", f),
       how: "Open the library, pick the draft, make your edits, press publish.",
       outcome: "One idea leaves your notes and reaches the people who need it.",
-      cta_route: "/dashboard?tab=library",
+      cta_route: "/dashboard?tab=authority",
       est_minutes: 8,
     });
   }
