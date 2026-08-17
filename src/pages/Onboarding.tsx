@@ -3009,7 +3009,7 @@ const Onboarding = () => {
   if (screen === 12) {
     /* THE ARRIVAL — the last beat before the reveal, shown once. */
     if (arrival) {
-      const parts: React.ReactNode[] = [];
+      const parts: JSX.Element[] = [];
       const push = (n: number, tail: string) => {
         parts.push(
           <span key={tail}>
@@ -3033,7 +3033,7 @@ const Onboarding = () => {
                 marginBlockStart: 22, lineHeight: 1.7,
               }}>
                 {parts.map((p, i) => (
-                  <React.Fragment key={i}>{i > 0 ? <span style={{ opacity: 0.6 }}>{" · "}</span> : null}{p}</React.Fragment>
+                  <Fragment key={i}>{i > 0 ? <span style={{ opacity: 0.6 }}>{" · "}</span> : null}{p}</Fragment>
                 ))}
               </p>
             ) : null}
@@ -3050,8 +3050,7 @@ const Onboarding = () => {
           </div>
         </NightShell>
       );
-      return shell(content);
-    }
+    } else {
     /* the four things the report is actually doing, in order */
     const genSteps = [
       { key: "posts", label: "Reading your posts", done: !revealPending || genElapsed > 2000 },
