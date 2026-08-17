@@ -924,7 +924,7 @@ const LANDING_V2_HTML = `
       <p class="pn">Free permanently — not a trial, not thirty days.</p>
       <div class="blk">
         <span class="bl do">WHAT YOU DO</span>
-        <ul><li>Connect your LinkedIn profile</li><li>Upload your CV</li><li>Answer ${ASSESSMENT_QUESTIONS_PHRASE} about your work</li><li>Rate yourself on eight capability statements</li></ul>
+        <ul><li>Connect your LinkedIn profile</li><li>Upload your CV once your report is saved</li><li>Answer ${ASSESSMENT_QUESTIONS_PHRASE} about your work</li><li>Rate yourself on eight capability statements</li></ul>
       </div>
       <div class="blk">
         <span class="bl get">WHAT YOU GET</span>
