@@ -19,6 +19,41 @@ const POSTS_ACTOR = "harvestapi~linkedin-profile-posts";
 const MAX_POSTS = 20;
 /** Bumped whenever the read prompt changes; older cached rows regenerate. */
 const READ_VERSION = 2;
+/** A read older than this is always regenerated. */
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Has anything new been learned about this person since the cached read?
+ * A newer LinkedIn snapshot or a CV uploaded after generated_at both count.
+ */
+async function hasFresherEvidence(
+  admin: ReturnType<typeof createClient>,
+  handle: string,
+  generated_at: string,
+): Promise<boolean> {
+  const { data: owners } = await admin
+    .from("diagnostic_profiles")
+    .select("user_id, linkedin_handle, linkedin_url")
+    .or(`linkedin_handle.eq.${handle},linkedin_url.ilike.%/${handle}%`)
+    .limit(5);
+  const ids = (owners ?? []).map((o: any) => o.user_id).filter(Boolean);
+  if (!ids.length) return false;
+
+  const [{ count: snapCount }, { count: cvCount }] = await Promise.all([
+    admin
+      .from("linkedin_profile_snapshots")
+      .select("id", { count: "exact", head: true })
+      .in("user_id", ids)
+      .gt("fetched_at", generated_at),
+    admin
+      .from("documents")
+      .select("id", { count: "exact", head: true })
+      .in("user_id", ids)
+      .eq("document_type", "cv")
+      .gt("created_at", generated_at),
+  ]);
+  return (snapCount ?? 0) > 0 || (cvCount ?? 0) > 0;
+}
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -243,11 +278,14 @@ Deno.serve(async (req) => {
       .select("handle, read, sparse, generated_at, hit_count, name, posts_read, read_version")
       .eq("handle", handle)
       .maybeSingle();
-    if (
-      cached &&
+    const withinTtl =
+      !!cached &&
       (cached.read_version ?? 1) >= READ_VERSION &&
-      Date.now() - new Date(cached.generated_at).getTime() < 14 * 24 * 60 * 60 * 1000
-    ) {
+      Date.now() - new Date(cached.generated_at).getTime() < CACHE_TTL_MS;
+    const stale =
+      withinTtl && (await hasFresherEvidence(admin, handle, cached!.generated_at));
+
+    if (withinTtl && !stale) {
       await admin
         .from("mirror_reads")
         .update({ hit_count: (cached.hit_count ?? 1) + 1 })
@@ -255,8 +293,26 @@ Deno.serve(async (req) => {
       return json({
         ok: true, cached: true, sparse: cached.sparse, handle, read: cached.read,
         name: cached.name ?? null, posts_read: cached.posts_read ?? 0,
+        generated_at: cached.generated_at,
       });
     }
+
+    /**
+     * A failed regeneration must not break a page we can still fill. Serve the
+     * stale row with a quiet note about its age.
+     */
+    const serveStale = (): Response | null => {
+      if (!cached?.read) return null;
+      return json({
+        ok: true, cached: true, stale: true, sparse: cached.sparse, handle,
+        read: cached.read, name: cached.name ?? null,
+        posts_read: cached.posts_read ?? 0,
+        generated_at: cached.generated_at,
+        notice: `Last read on ${new Date(cached.generated_at).toLocaleDateString("en-GB", {
+          day: "numeric", month: "long", year: "numeric",
+        })}.`,
+      });
+    };
 
     // --- c) Rate limit — only fresh reads are metered ---
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -277,7 +333,7 @@ Deno.serve(async (req) => {
     };
 
     const APIFY_TOKEN = Deno.env.get("APIFY_TOKEN");
-    if (!APIFY_TOKEN) { await refund(); return json({ error: "not_configured" }, 400); }
+    if (!APIFY_TOKEN) { await refund(); return serveStale() ?? json({ error: "not_configured" }, 400); }
 
     // --- d) Fetch profile and posts in parallel ---
     const [profile, postTexts] = await Promise.all([
@@ -288,6 +344,8 @@ Deno.serve(async (req) => {
     if (!item) {
       // The provider cap is ours, not theirs — give the attempt back.
       if (profile.reason === "provider_limit") await refund();
+      const fallback = serveStale();
+      if (fallback) return fallback;
       return profile.reason === "provider_limit"
         ? json({ error: "provider_limit" }, 503)
         : json({ error: "profile_unreadable" }, 502);
@@ -342,7 +400,7 @@ Deno.serve(async (req) => {
     ].join("\n");
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) return json({ error: "not_configured" }, 400);
+    if (!ANTHROPIC_API_KEY) return serveStale() ?? json({ error: "not_configured" }, 400);
 
     async function callModel(messages: { role: string; content: string }[]) {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -403,10 +461,11 @@ Deno.serve(async (req) => {
         severity: "high",
         context: { handle, sparse },
       });
-      return json({ error: "unreadable" }, 502);
+      return serveStale() ?? json({ error: "unreadable" }, 502);
     }
 
     // --- 4) Cache and return ---
+    const generated_at = new Date().toISOString();
     const { error: upErr } = await admin
       .from("mirror_reads")
       .upsert(
@@ -418,7 +477,7 @@ Deno.serve(async (req) => {
           name: full_name ?? null,
           posts_read: postTexts.length,
           read_version: READ_VERSION,
-          generated_at: new Date().toISOString(),
+          generated_at,
           hit_count: (cached?.hit_count ?? 0) + 1,
         },
         { onConflict: "handle" },
@@ -427,7 +486,7 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true, cached: false, sparse, handle, read,
-      name: full_name ?? null, posts_read: postTexts.length,
+      name: full_name ?? null, posts_read: postTexts.length, generated_at,
     });
   } catch (e) {
     await logError("mirror-read", e, { user_id: null, severity: "high" });
