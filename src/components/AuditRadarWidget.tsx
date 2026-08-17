@@ -274,6 +274,8 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
     }
   };
 
+  if (!CAPABILITY_RADAR_ENABLED) return null;
+
   if (loading) return null;
 
   if (!completed) {
