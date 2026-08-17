@@ -2062,9 +2062,9 @@ const Onboarding = () => {
     );
   }
 
-  /* 8 — NIGHT, before the sliders */
+  /* 8 — WHITE, before the sliders */
   if (screen === 8) {
-    if (!band) { content = bandPrompt(2, true); } else {
+    if (!band) { content = bandPrompt(2); } else {
     const sliderCount = dims?.length ?? 0;
     // Sector rows do not exist yet — every member gets the band set, so the
     // copy may only promise the level.
@@ -2072,17 +2072,17 @@ const Onboarding = () => {
       ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel}.`
       : null;
     content = (
-      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={2} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadDimensions()) : (
           <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>Now your own read.</h1>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
+            <h1 style={{ ...h1Light, textAlign: "center" }}>Now your own read.</h1>
+            <p style={{ ...bodyLight, textAlign: "center" }}>
               Where your own read and your posts disagree is where the useful part is.
             </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
+            <p style={{ ...bodyLight, textAlign: "center" }}>
               This isn't a test. Each one asks what you've actually done, in plain sentences rather than numbers.
             </p>
-            {pickedLine ? <p style={{ ...bodyNight, textAlign: "center" }}>{pickedLine}</p> : null}
+            {pickedLine ? <p style={{ ...bodyLight, textAlign: "center" }}>{pickedLine}</p> : null}
             <Actions style={{ marginBlockStart: 24 }}>
               <OBButton onClick={() => { setDimIdx(0); go(9); }} loading={!dims} loadingLabel="Loading…">
                 Okay
@@ -2090,7 +2090,7 @@ const Onboarding = () => {
             </Actions>
           </>
         )}
-      </NightShell>
+      </PaperShell>
     );
     }
   }
