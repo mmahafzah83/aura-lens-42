@@ -48,3 +48,17 @@ publish loop we need:
    panel, so each run starts from the same account in the same state.
 
 Do not commit `e2e/.auth/`.
+
+## Known exceptions
+
+- **Tap targets.** `a11y-375.spec.ts` measures actions inside the page body.
+  Masthead and footer chrome (10px mono links, the sign-in link) is small by
+  design and is excluded via `nav, header, footer`. Footer links on the landing
+  carry a 44px hit area even though the type is 10px.
+- **Price.** The landing repeats "$29" in prose. The spec asserts one *paid*
+  headline figure (`.prc .p`) and no strikethrough price anywhere.
+- **Cost.** `free-journey.spec.ts` runs one live read. Cached profiles return in
+  seconds; a cold profile spends a scrape. Override with `E2E_LINKEDIN_URL`.
+
+Default base URL is `http://localhost:8080`. Point at the preview with
+`E2E_BASE_URL=https://…lovable.app`.

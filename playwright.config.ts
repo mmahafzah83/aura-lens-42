@@ -2,7 +2,7 @@ import { defineConfig, devices, type PlaywrightTestConfig } from "@playwright/te
 import { createRequire } from "node:module";
 
 const BASE_URL =
-  process.env.E2E_BASE_URL || "https://id-preview--ebcdc7ac-e312-488b-8661-90ceb9c5c745.lovable.app";
+  process.env.E2E_BASE_URL || "http://localhost:8080";
 
 const overrides: PlaywrightTestConfig = {
   testDir: "./e2e",
