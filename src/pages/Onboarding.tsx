@@ -649,7 +649,10 @@ const Onboarding = () => {
         } catch { /* ignore */ }
         if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
         if (back === 6 || back === 7) back = 5;
-        if (back > 0 && back <= 14) { setScreen(back); screenRef.current = back; }
+        if (back > 0 && back <= 14) {
+          setScreen(back); screenRef.current = back;
+          if (stageOf(back) > 1) setResumedAt({ stage: stageOf(back), readDone: Boolean(st.read) });
+        }
         setChecking(false);
         return;
       }
