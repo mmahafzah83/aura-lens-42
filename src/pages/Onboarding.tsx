@@ -2943,7 +2943,8 @@ const Onboarding = () => {
             </div>
             <label htmlFor="ob-wall-consent" style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBlockStart: 16, fontSize: 13, color: OB.muted }}>
               <input id="ob-wall-consent" type="checkbox" checked={wallConsent}
-                onChange={(e) => setWallConsent(e.target.checked)} />
+                onChange={(e) => setWallConsent(e.target.checked)}
+                style={{ width: 20, height: 20, flexShrink: 0, marginBlockStart: 1, accentColor: OB.blue, cursor: "pointer" }} />
               <span>
                 I agree to the{" "}
                 <a href="/terms" target="_blank" rel="noopener" style={{ color: OB.blue, textDecoration: "underline" }}>Terms</a>{" "}
