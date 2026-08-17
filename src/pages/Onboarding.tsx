@@ -1192,7 +1192,13 @@ const Onboarding = () => {
     const timer = window.setTimeout(() => { if (alive) setProposalsDead(true); }, 15000);
     supabase.functions
       .invoke("onboarding-proposals", {
-        body: { claims: claims.map((c) => c.title), sector: sector || null, level: levelTitle || null },
+        body: {
+          claims: claims.map((c) => c.title),
+          sector: sector || null,
+          level: levelTitle || null,
+          /* anonymous run: the read already on file stands in for the posts */
+          ...(userId ? {} : anonToken ? { token: anonToken } : {}),
+        },
       })
       .then(({ data, error }) => {
         if (!alive) return;
@@ -1203,7 +1209,7 @@ const Onboarding = () => {
       .catch(() => { if (alive) setProposalsDead(true); })
       .finally(() => window.clearTimeout(timer));
     return () => { alive = false; window.clearTimeout(timer); };
-  }, [screen, questions, qIdx, proposals, proposalsDead, claims, sector, levelTitle]);
+  }, [screen, questions, qIdx, proposals, proposalsDead, claims, sector, levelTitle, userId, anonToken]);
 
   /* ── autosave after every slider ──
      Existing members keep whatever keys are already on file: new answers are
@@ -2732,6 +2738,9 @@ const Onboarding = () => {
           ) : q.kind === "proposed" ? (
             proposedReady ? (
               <>
+                <p style={{ margin: "14px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.12em", color: OB.muted }}>
+                  FROM WHAT AURA JUST READ IN YOUR WRITING.
+                </p>
                 <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
                   Keep the one that's actually you. The two you drop tell Aura just as much.
                 </p>
