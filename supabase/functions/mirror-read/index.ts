@@ -278,7 +278,6 @@ Deno.serve(async (req) => {
     const fwd = req.headers.get("x-forwarded-for") ?? "";
     const parts = fwd.split(",").map((s) => s.trim()).filter(Boolean);
     const clientIp = parts.length ? parts[parts.length - 1] : "";
-    if (!clientIp) return serveStale() ?? json({ error: "unreadable" }, 503);
     const ip_hash = await sha256Hex(clientIp);
 
     // --- b) Cache — served before metering. A cached read costs nothing to
@@ -323,6 +322,8 @@ Deno.serve(async (req) => {
         })}.`,
       });
     }
+
+    if (!clientIp) return serveStale() ?? json({ error: "unreadable" }, 503);
 
     // --- c) Rate limit — only fresh reads are metered ---
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
