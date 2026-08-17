@@ -892,6 +892,12 @@ const Onboarding = () => {
     }
   };
 
+  /** Return to the address card without losing anything already read. */
+  const returnToAddress = useCallback(() => {
+    setLiError("");
+    setStep1Phase("ask");
+  }, []);
+
   /* ── the read resolves line by line, in place on the step-1 card ── */
   const reading = screen === 1 && step1Phase !== "ask";
   const upPosts = useCountUp(reading && postsRead ? postsRead : 0, { duration: 900 });
@@ -2031,27 +2037,27 @@ const Onboarding = () => {
               </p>
             </div>
 
-            {readCache ? (
-              <p style={{
-                margin: "16px 0 0", fontFamily: OB.mono, fontSize: 11.5,
-                lineHeight: 1.6, color: OB.muted,
-              }}>
-                {readCache.notice
+            <p style={{
+              margin: "16px 0 0", fontFamily: OB.mono, fontSize: 11.5,
+              lineHeight: 1.6, color: OB.muted,
+            }}>
+              {readCache ? (
+                readCache.notice
                   ? readCache.notice
-                  : `Read from your profile on ${new Date(readCache.generated_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`}
-                {" · "}
-                <button
-                  type="button"
-                  onClick={() => void readProfile(true)}
-                  style={{
-                    background: "none", border: 0, padding: 0, font: "inherit",
-                    color: OB.blue, cursor: "pointer", textDecoration: "underline",
-                  }}
-                >
-                  Read again
-                </button>
-              </p>
-            ) : null}
+                  : `Read from your profile on ${new Date(readCache.generated_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`
+              ) : null}
+              {readCache ? " · " : null}
+              <button
+                type="button"
+                onClick={() => void returnToAddress()}
+                style={{
+                  background: "none", border: 0, padding: 0, font: "inherit",
+                  color: OB.blue, cursor: "pointer", textDecoration: "underline",
+                }}
+              >
+                Use a different profile
+              </button>
+            </p>
 
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton onClick={() => { void confirmBandIfDetected(); go(CV_SCREEN); }}>Continue</OBButton>
@@ -3134,7 +3140,7 @@ const Onboarding = () => {
           }}>{exitNote}</span>
         </div>
       ) : null}
-      <JourneyNav.Provider value={{ onBack: canBack ? goBack : undefined, banner: resumeBanner }}>
+      <JourneyNav.Provider value={{ onBack: screen === 1 && step1Phase === "result" ? returnToAddress : canBack ? goBack : undefined, banner: resumeBanner }}>
         {content}
       </JourneyNav.Provider>
     </>
