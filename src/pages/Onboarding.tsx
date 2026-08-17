@@ -533,22 +533,20 @@ const Onboarding = () => {
     setCaptionDraft((c) => c || suggestedCaption(postsRead ?? 0));
   }, [screen, postsRead]);
 
-  /* 3.5 — if a CV finishes while they are still on this screen, queue the
-     cross-check so a quick "Continue" doesn't silently lose the comparison. */
-  useEffect(() => {
-    if (screen !== CV_SCREEN) return;
-    let fired = false;
-    const onStatus = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { documentId: string; status: string };
-      if (!detail?.status) return;
-      if ((detail.status === "completed" || detail.status === "ready") && !fired) {
-        fired = true;
-        try { void supabase.functions.invoke("cv-crosscheck", {}).catch(() => undefined); } catch { /* ignore */ }
-      }
-    };
-    window.addEventListener(DOCUMENT_STATUS_EVENT, onStatus);
-    return () => window.removeEventListener(DOCUMENT_STATUS_EVENT, onStatus);
-  }, [screen]);
+  /* 3.5 — the cross-check runs exactly once, and we keep what it says.
+     It never blocks progression: the member walks on, and if it fails or
+     times out they simply see nothing. */
+  const cvRunRef = useRef(false);
+  const runCvCrosscheck = useCallback(async () => {
+    if (cvRunRef.current) return;
+    cvRunRef.current = true;
+    try {
+      const { data, error } = await supabase.functions.invoke("cv-crosscheck", { body: {} });
+      if (error) return;
+      const cc = (data as { ok?: boolean; crosscheck?: unknown } | null)?.crosscheck;
+      if (cc) setCvCrosscheck(cc);
+    } catch { /* the journey continues regardless */ }
+  }, []);
 
   /* loop safety valve — kept from the previous journey */
   const [visits, setVisits] = useState(0);
