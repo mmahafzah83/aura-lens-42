@@ -303,7 +303,7 @@ const Assessment = () => {
           {stage === "read" && (
             <div className="asg-read">
               <span className="asg-k">STEP ONE · YOUR READ</span>
-              <ReadResult read={read as ReadShape} postsRead={postsRead} sparse={sparse} />
+              <ReadResult read={read as unknown as ReadShape} postsRead={postsRead} sparse={sparse} />
               <button className="asg-btn asg-bp asg-full" onClick={() => openQuestion(0)}>
                 Continue — your CV and nine questions <span className="asg-a">↗</span>
               </button>
@@ -629,6 +629,8 @@ const ASG_CSS = `
 }
 /* ── the in-page journey ── */
 .asg-flow{max-width:620px;}
+.asg-read{display:flex;flex-direction:column;gap:14px;}
+.asg-read .asg-full{margin-top:4px;}
 .asg-panel{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:26px;}
 .asg-center{text-align:center;}
 .asg-ph{font-size:24px;font-weight:700;line-height:1.2;letter-spacing:-.018em;margin:10px 0 0;}
