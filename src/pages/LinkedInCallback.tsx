@@ -60,9 +60,13 @@ const LinkedInCallback = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          setErrorMsg("You must be logged in to connect LinkedIn.");
+          // LinkedIn's grant is stored against an account. Without one there is
+          // nowhere safe to keep it — say that plainly instead of "failed".
+          const msg = "Save your report first — LinkedIn connects to your account. Aura reads your public posts either way.";
+          setErrorMsg(msg);
           setStatus("error");
-          setTimeout(() => navigate("/auth"), 3000);
+          if (tellOpener(false, msg)) return;
+          setTimeout(() => goBack("/onboarding"), 3500);
           return;
         }
 
