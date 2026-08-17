@@ -276,8 +276,10 @@ Deno.serve(async (req) => {
     const force = body?.force === true;
 
     const fwd = req.headers.get("x-forwarded-for") ?? "";
-    const firstIp = fwd.split(",")[0].trim() || "unknown";
-    const ip_hash = await sha256Hex(firstIp);
+    const parts = fwd.split(",").map((s) => s.trim()).filter(Boolean);
+    const clientIp = parts.length ? parts[parts.length - 1] : "";
+    if (!clientIp) return serveStale() ?? json({ error: "unreadable" }, 503);
+    const ip_hash = await sha256Hex(clientIp);
 
     // --- b) Cache — served before metering. A cached read costs nothing to
     // produce, so it must not consume the visitor's hourly allowance.
@@ -309,7 +311,7 @@ Deno.serve(async (req) => {
      * A failed regeneration must not break a page we can still fill. Serve the
      * stale row with a quiet note about its age.
      */
-    const serveStale = (): Response | null => {
+    function serveStale(): Response | null {
       if (!cached?.read) return null;
       return json({
         ok: true, cached: true, stale: true, sparse: cached.sparse, handle,
@@ -320,7 +322,7 @@ Deno.serve(async (req) => {
           day: "numeric", month: "long", year: "numeric",
         })}.`,
       });
-    };
+    }
 
     // --- c) Rate limit — only fresh reads are metered ---
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -329,14 +331,14 @@ Deno.serve(async (req) => {
       .select("id", { count: "exact", head: true })
       .eq("ip_hash", ip_hash)
       .gte("created_at", since);
-    if ((count ?? 0) >= 5) return json({ error: "rate_limited" }, 429);
+    if ((count ?? 0) >= 5) return serveStale() ?? json({ error: "rate_limited" }, 429);
     const { data: metered } = await admin
       .from("mirror_requests")
       .insert({ ip_hash, handle, email, ref })
       .select("id")
       .maybeSingle();
     /** A failure on our side must not cost the visitor an attempt. */
-    const refund = async () => {
+    refund = async () => {
       if (metered?.id) await admin.from("mirror_requests").delete().eq("id", metered.id);
     };
 
