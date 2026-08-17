@@ -455,7 +455,7 @@ const LANDING_V2_HTML = `
       </svg></div>
       <div class="big b">Know</div>
       <div class="rest">your strengths, your skills,<br>and what you stand for.</div>
-      <div class="det">Ten questions and your profile become a real report: the subjects you truly own, the space nobody else holds, and the two things to improve next. <b>Most people have never seen this about themselves.</b></div>
+      <div class="det">${ASSESSMENT_QUESTIONS_PHRASE.replace(/^./, (c) => c.toUpperCase())} and your profile become a real report: the subjects you truly own, the space nobody else holds, and the two things to improve next. <b>Most people have never seen this about themselves.</b></div>
     </div>
     <div class="bene">
       <span class="step">02</span>
@@ -867,7 +867,7 @@ const LANDING_V2_HTML = `
     <h2>What people ask<br>before joining.</h2>
   </div>
   <div style="max-width:760px;margin:0 auto">
-    <details open><summary>How much of my time does this take?</summary><p>Ten questions once at the start. After that, one tap when you read something good, and about two minutes to approve a post. Nothing more.</p></details>
+    <details open><summary>How much of my time does this take?</summary><p>${ASSESSMENT_QUESTIONS_PHRASE.replace(/^./, (c) => c.toUpperCase())} once at the start. After that, one tap when you read something good, and about two minutes to approve a post. Nothing more.</p></details>
     <details><summary>How many posts will I get?</summary><p>As many as you want. There is no weekly quota. Save two articles and you can publish two posts; save ten and you can publish ten. It follows your reading, not a calendar.</p></details>
     <details><summary>Do I need a designer for the carousels?</summary><p>No. Aura designs them for you, ready to post — no design tool, no design skill, no fee.</p></details>
     <details><summary>Will the posts really sound like me?</summary><p>Aura learns from your own posts: how you open, how you explain, how you finish. And you read every word before anything goes out.</p></details>
@@ -924,7 +924,7 @@ const LANDING_V2_HTML = `
       <p class="pn">Free permanently — not a trial, not thirty days.</p>
       <div class="blk">
         <span class="bl do">WHAT YOU DO</span>
-        <ul><li>Connect your LinkedIn profile</li><li>Upload your CV</li><li>Answer ${ASSESSMENT_QUESTIONS_PHRASE} about your work</li><li>Rate yourself on 24 capability statements</li></ul>
+        <ul><li>Connect your LinkedIn profile</li><li>Upload your CV</li><li>Answer ${ASSESSMENT_QUESTIONS_PHRASE} about your work</li><li>Rate yourself on eight capability statements</li></ul>
       </div>
       <div class="blk">
         <span class="bl get">WHAT YOU GET</span>
