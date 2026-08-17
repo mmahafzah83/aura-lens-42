@@ -415,6 +415,7 @@ const Onboarding = () => {
   const [sectorKnown, setSectorKnown] = useState(false);
   const [bandPicker, setBandPicker] = useState(false);
   const [cvUploads, setCvUploads] = useState(0);
+  const [cvCrosscheck, setCvCrosscheck] = useState<unknown>(null);
 
   /* screen 5–7 */
   const [linkInput, setLinkInput] = useState("");
