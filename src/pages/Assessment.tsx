@@ -161,7 +161,10 @@ const Assessment = () => {
       }
       setPostsRead(Number(data.posts_read ?? 0));
       setSparse(!!data.sparse);
-      await persist({ ...state, step: "read", profile_url: target, name: data.name ?? null, read: data.read });
+      await persist({
+        ...state, step: "read", profile_url: target, name: data.name ?? null, read: data.read,
+        posts_read: Number(data.posts_read ?? 0),
+      } as AssessmentState);
       setStage("read");
     } catch {
       setNotice("Something failed on our side. Nothing is lost — try once more.");
