@@ -3036,46 +3036,6 @@ const Onboarding = () => {
       }
     };
 
-    const postToLinkedIn = async () => {
-      if (!shareRef.current) return;
-      if (busy) return;
-      setPosting(true);
-      try {
-        const { dataUrl } = await rasteriseRevealCard(shareRef.current, { format: "png" });
-        const imageBase64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
-        const { data, error } = await invokeEdgeFunction<{
-          ok: boolean; reason?: string; postUrn?: string | null; step?: string; status?: number;
-        }>(
-          "linkedin-share-read", { body: { imageBase64, caption: liveCaption } },
-        );
-        if (error) throw error;
-        if (data?.ok) {
-          setPostedUrl(data.postUrn
-            ? `https://www.linkedin.com/feed/update/${data.postUrn}`
-            : "https://www.linkedin.com/feed/");
-          toast.success("Posted. It's on your LinkedIn now.");
-          return;
-        }
-        if (data?.reason === "not_permitted") {
-          setCanPostToLinkedIn(false);
-          toast.message("Aura can't post for you yet — image saved instead.");
-          setPosting(false);
-          await downloadRead();
-          return;
-        }
-        console.error("[reveal] post refused", { step: data?.step, status: data?.status, reason: data?.reason });
-        toast.error("That didn't go through. Try again, or download the image.");
-      } catch (err) {
-        console.error("[reveal] post failed", err);
-        toast.error("That didn't go through. Try again, or download the image.");
-      } finally {
-        setPosting(false);
-      }
-    };
-
-    const brandPaper: BrandPaper | null = (() => {
-      if (!readRaw) return null;
-      try {
         const p = buildBrandPaper(readRaw, { first_name: firstName.trim() || null });
         return p && (p.positioning_statement || p.market_read || p.topics.length) ? p : null;
       } catch (e) {
