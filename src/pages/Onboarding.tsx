@@ -151,6 +151,15 @@ const quietLink: React.CSSProperties = {
   display: "inline-block", minBlockSize: 44,
 };
 
+/** A real, tappable share action on the blue reveal surface. */
+const shareAction: React.CSSProperties = {
+  display: "flex", alignItems: "center", justifyContent: "center",
+  minBlockSize: 44, padding: "12px 14px", borderRadius: 999,
+  border: "1px solid rgba(255,255,255,.55)", background: "rgba(255,255,255,.12)",
+  color: "#FFFFFF", fontFamily: OB.ui, fontSize: 13.5, fontWeight: 600,
+  cursor: "pointer", textAlign: "center", textDecoration: "none",
+};
+
 /** The selectable row used by choice questions and the reveal feedback block. */
 const optionButton = (
   key: string | number,
@@ -499,7 +508,10 @@ const Onboarding = () => {
   const [postedUrl, setPostedUrl] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   /** The "Save it" row on screen 13 — collapsed until asked for. */
-  const [saveOpen, setSaveOpen] = useState(false);
+  /* The growth loop is not a secondary action — the share row is open on arrival. */
+  const [saveOpen, setSaveOpen] = useState(true);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [minting, setMinting] = useState(false);
   /* the two things screen 13 needs: may we post, and what would we say */
   useEffect(() => {
     if (screen !== 13 || !userId) return;
@@ -3024,43 +3036,6 @@ const Onboarding = () => {
       }
     };
 
-    const postToLinkedIn = async () => {
-      if (!shareRef.current) return;
-      if (busy) return;
-      setPosting(true);
-      try {
-        const { dataUrl } = await rasteriseRevealCard(shareRef.current, { format: "png" });
-        const imageBase64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
-        const { data, error } = await invokeEdgeFunction<{
-          ok: boolean; reason?: string; postUrn?: string | null; step?: string; status?: number;
-        }>(
-          "linkedin-share-read", { body: { imageBase64, caption: liveCaption } },
-        );
-        if (error) throw error;
-        if (data?.ok) {
-          setPostedUrl(data.postUrn
-            ? `https://www.linkedin.com/feed/update/${data.postUrn}`
-            : "https://www.linkedin.com/feed/");
-          toast.success("Posted. It's on your LinkedIn now.");
-          return;
-        }
-        if (data?.reason === "not_permitted") {
-          setCanPostToLinkedIn(false);
-          toast.message("Aura can't post for you yet — image saved instead.");
-          setPosting(false);
-          await downloadRead();
-          return;
-        }
-        console.error("[reveal] post refused", { step: data?.step, status: data?.status, reason: data?.reason });
-        toast.error("That didn't go through. Try again, or download the image.");
-      } catch (err) {
-        console.error("[reveal] post failed", err);
-        toast.error("That didn't go through. Try again, or download the image.");
-      } finally {
-        setPosting(false);
-      }
-    };
-
     const brandPaper: BrandPaper | null = (() => {
       if (!readRaw) return null;
       try {
@@ -3090,24 +3065,44 @@ const Onboarding = () => {
       }
     };
 
-    const saveReadForLater = async () => {
-      if (!userId) return;
-      if (busy) return;
-      setSavingDraft(true);
+    /* One share row per member: once a token exists in state it is reused, never re-minted. */
+    const mintShare = async () => {
+      if (!userId || !reveal || shareUrl || minting) return;
+      setMinting(true);
       try {
-        const { error } = await supabase.from("linkedin_posts").insert({
+        const token = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+        const isArabic = /[\u0600-\u06FF]/.test(`${reveal.archetype} ${reveal.marketRead || ""}`);
+        const { error } = await (supabase.from("report_shares") as any).insert({
+          token,
           user_id: userId,
-          post_text: liveCaption,
-          source_type: "onboarding_reveal",
-          tracking_status: "draft",
+          headline: reveal.archetype,
+          archetype: reveal.archetype,
+          market_read: reveal.marketRead || null,
+          subjects: reveal.subjects ?? [],
+          own_words: reveal.ownWordsQuote || null,
+          display_name: firstName.trim() || null,
+          lang: isArabic ? "ar" : "en",
         });
         if (error) throw error;
-        toast.success("Saved to your drafts.");
+        setShareUrl(`${window.location.origin}/r/${token}`);
       } catch (err) {
-        console.error("[reveal] save draft failed", err);
-        toast.error("Couldn't save that draft. Your read is safe — it's on your Home.");
+        console.error("[reveal] share link failed", err);
+        toast.error("Couldn't make the link just now. Try again in a moment.");
       } finally {
-        setSavingDraft(false);
+        setMinting(false);
+      }
+    };
+
+    const shareCaption = liveCaption || `${reveal?.archetype ?? "My read"} — my read from Aura.`;
+    const shareText = shareUrl ? `${shareCaption}\n\n${shareUrl}` : shareCaption;
+
+    const copyShareLink = async () => {
+      if (!shareUrl) return;
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success("Link copied.");
+      } catch {
+        toast.error("Couldn't copy that. Long-press the link to copy it.");
       }
     };
 
@@ -3152,7 +3147,7 @@ const Onboarding = () => {
               </div>
             </div>
           ) : null}
-          {canPostToLinkedIn && !postedUrl && reveal ? (
+          {reveal && !postedUrl ? (
             <div style={{ marginBlockStart: 18 }}>
               <label htmlFor="ob-caption" style={{
                 display: "block", fontSize: 12.5, color: "rgba(255,255,255,.85)", marginBlockEnd: 6,
@@ -3189,29 +3184,49 @@ const Onboarding = () => {
               textDecoration: "underline", padding: "10px 0",
             }}>View it on LinkedIn</a>
           ) : null}
-          <OBButton variant="secondary" disabled={busy} onClick={() => setSaveOpen((v) => !v)}
-            aria-expanded={saveOpen}
-            style={{ borderColor: "rgba(255,255,255,.55)", color: "#FFFFFF", background: "transparent" }}
-          >Share the card</OBButton>
-          {saveOpen ? (
-            <div style={{
-              display: "flex", flexDirection: "column", gap: 10, alignItems: "center",
-              padding: "4px 0 2px", color: "rgba(255,255,255,.92)", fontSize: 13.5,
-            }}>
-              {canPostToLinkedIn && !postedUrl ? (
-                <button type="button" disabled={!reveal || !captionDraft.trim() || busy}
-                  onClick={() => void postToLinkedIn()} style={quietLink}>
-                  {posting ? "Posting…" : "Post it to LinkedIn"}
-                </button>
-              ) : null}
-              <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()} style={quietLink}>
-                {sharing ? "Building…" : "Download the image"}
-              </button>
-              <button type="button" disabled={busy} onClick={() => void saveReadForLater()} style={quietLink}>
-                {savingDraft ? "Saving…" : "Save it to my drafts"}
-              </button>
-            </div>
-          ) : null}
+          {/* The share surface — open on arrival. */}
+          <div style={{ marginBlockStart: 4 }}>
+            <p style={{
+              margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em",
+              textTransform: "uppercase", color: "rgba(255,255,255,.82)", textAlign: "center",
+            }}>Share the card</p>
+
+            {!userId ? (
+              <p style={{
+                margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6,
+                color: "rgba(255,255,255,.85)", textAlign: "center",
+              }}>Available after you save your report.</p>
+            ) : !shareUrl ? (
+              <Actions style={{ marginBlockStart: 12 }}>
+                <OBButton disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
+                  onClick={() => void mintShare()}
+                  style={{ background: "#FFFFFF", color: OB.blue }}>Share my read</OBButton>
+              </Actions>
+            ) : (
+              <>
+                <div style={{
+                  display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 10, marginBlockStart: 12,
+                }}>
+                  <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                    target="_blank" rel="noopener noreferrer" style={shareAction}>WhatsApp</a>
+                  <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
+                    target="_blank" rel="noopener noreferrer" style={shareAction}>LinkedIn</a>
+                  <button type="button" onClick={() => void copyShareLink()} style={shareAction}>Copy link</button>
+                  <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()}
+                    style={{ ...shareAction, opacity: busy ? 0.6 : 1 }}>
+                    {sharing ? "Building…" : "Download the image"}
+                  </button>
+                </div>
+                <p style={{
+                  margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6,
+                  color: "rgba(255,255,255,.78)", textAlign: "center",
+                }}>
+                  Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
+                </p>
+              </>
+            )}
+          </div>
           <OBButton variant="tertiary" onClick={() => go(14)}
             style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
           </Actions>
