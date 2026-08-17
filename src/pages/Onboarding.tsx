@@ -3046,7 +3046,7 @@ const Onboarding = () => {
           }}>{exitNote}</span>
         </div>
       ) : null}
-      <JourneyNav.Provider value={{ onBack: canBack ? goBack : undefined }}>
+      <JourneyNav.Provider value={{ onBack: canBack ? goBack : undefined, banner: resumeBanner }}>
         {content}
       </JourneyNav.Provider>
     </>
