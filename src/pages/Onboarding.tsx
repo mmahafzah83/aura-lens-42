@@ -2302,7 +2302,9 @@ const Onboarding = () => {
       <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>Something you read this week.</h1>
         <p style={bodyLight}>
-          Paste a link to an article or a post. Aura reads it and shows you what it found.
+          {userId
+            ? "Paste a link to an article or a post. Aura reads it and shows you what it found."
+            : "Paste a link to an article or a post. Aura keeps it, and reads it the moment your report is saved."}
         </p>
         <label htmlFor="ob-link" style={{
           display: "block", margin: "20px 0 6px", fontSize: 12.5, fontWeight: 600, color: OB.ink,
