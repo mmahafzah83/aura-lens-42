@@ -2628,23 +2628,6 @@ const Onboarding = () => {
       const placeholder = phList[phIdx % phList.length];
       const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
-      /* keyed by position, never by label — two options may carry the same text */
-      const optionButton = (key: string | number, label: string, onClick: () => void, picked = false, blocked = false, why?: string) => (
-        <button key={key} type="button" disabled={blocked} onClick={onClick} className="ob-opt" style={{
-          textAlign: "start", padding: "14px 15px", borderRadius: 14,
-          cursor: blocked ? "not-allowed" : "pointer",
-          border: `1px solid ${OB.line}`,
-          borderInlineStart: picked ? `2px solid ${OB.blue}` : `1px solid ${OB.line}`,
-          background: picked ? OB.blueTint : OB.white, fontSize: 14.5,
-          fontWeight: picked ? 600 : 400,
-          lineHeight: 1.45, fontFamily: "inherit", color: OB.ink,
-          opacity: blocked ? 0.45 : 1,
-          transition: `border-color 220ms ${EASE}, background 220ms ${EASE}`,
-        }}>
-          {label}
-          {why ? <span style={{ display: "block", marginBlockStart: 5, fontSize: 12.5, lineHeight: 1.5, color: OB.muted }}>{why}</span> : null}
-        </button>
-      );
 
       content = (
         <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
