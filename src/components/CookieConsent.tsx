@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 const STORAGE_KEY = "aura-cookie-consent";
@@ -6,6 +6,7 @@ const STORAGE_KEY = "aura-cookie-consent";
 const CookieConsent = () => {
   const [show, setShow] = useState(false);
   const [closing, setClosing] = useState(false);
+  const bar = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     try {
@@ -14,6 +15,32 @@ const CookieConsent = () => {
       // ignore
     }
   }, []);
+
+  /* The bar is docked: while it is up, the page keeps room for it, so it can
+     never come to rest on top of an action — the hero CTA on a phone above all. */
+  useEffect(() => {
+    const el = bar.current;
+    if (!show || closing || !el) {
+      document.documentElement.style.removeProperty("--cookie-bar-h");
+      document.body.style.paddingBottom = "";
+      return;
+    }
+    const apply = () => {
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      document.documentElement.style.setProperty("--cookie-bar-h", `${h}px`);
+      document.body.style.paddingBottom = `${h}px`;
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+      document.documentElement.style.removeProperty("--cookie-bar-h");
+      document.body.style.paddingBottom = "";
+    };
+  }, [show, closing]);
 
   const accept = () => {
     try {
@@ -29,6 +56,7 @@ const CookieConsent = () => {
 
   return (
     <div
+      ref={bar}
       role="region"
       aria-label="Cookie consent"
       className="fixed left-0 right-0 bottom-0 z-50"
@@ -40,16 +68,18 @@ const CookieConsent = () => {
       }}
     >
       <div
-        className="mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 px-5 sm:px-10 py-4"
+        className="mx-auto flex flex-row items-center justify-between gap-3 px-4 sm:px-10 py-2.5 sm:py-4"
         style={{ maxWidth: 1280 }}
       >
         <p
-          className="text-sm text-center sm:text-left"
+          className="text-xs sm:text-sm text-left"
           style={{ color: "var(--ink)", fontFamily: "var(--font-body)" }}
         >
-          Aura uses essential cookies for authentication and preferences.{" "}
+          <span className="hidden sm:inline">Aura uses essential cookies for authentication and preferences. </span>
+          <span className="sm:hidden">Essential cookies only. </span>
           <Link to="/privacy" className="v23-textlink">
-            Read our Privacy Policy
+            <span className="hidden sm:inline">Read our Privacy Policy</span>
+            <span className="sm:hidden">Privacy</span>
           </Link>
           .
         </p>
