@@ -2910,6 +2910,24 @@ const Onboarding = () => {
           } catch (e) {
             console.error("[journey] handoff read failed", e);
           }
+          /* THE ARRIVAL — record only what they genuinely gave us. Written
+             before the token goes, because the token is what proves the run. */
+          try {
+            const entry: Record<string, unknown> = {
+              at: Date.now(),
+              first_name: pf.first_name ?? null,
+              answers: Object.keys(st.answers ?? {}).length,
+              sliders: Object.keys((pf.skill_ratings ?? {}) as Record<string, unknown>).length,
+              captures: Array.isArray((st as any).pending_captures) ? (st as any).pending_captures.length : 0,
+            };
+            const startedAt = sessionStartedAtRef.current;
+            if (startedAt) {
+              const mins = Math.round((Date.now() - new Date(startedAt).getTime()) / 60000);
+              /* A duration is only honest if it is positive and plausible. */
+              if (Number.isFinite(mins) && mins >= 1 && mins <= 240) entry.minutes = mins;
+            }
+            localStorage.setItem("aura_just_joined", JSON.stringify(entry));
+          } catch { /* private mode — the arrival is a grace, not a gate */ }
           clearToken();
           window.location.replace("/onboarding");
           return;
