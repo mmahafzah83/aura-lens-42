@@ -135,8 +135,9 @@ const CV_SCREEN = 3.5;
 
 /** Plain text buttons inside the screen-13 "Save it" row. */
 const quietLink: React.CSSProperties = {
-  background: "none", border: "none", padding: 0, cursor: "pointer",
+  background: "none", border: "none", padding: "13px 12px", cursor: "pointer",
   fontFamily: OB.ui, fontSize: 13.5, color: "#FFFFFF", textDecoration: "underline",
+  display: "inline-block", minBlockSize: 44,
 };
 
 const PAGE_CSS = `
@@ -1423,22 +1424,22 @@ const Onboarding = () => {
       {resumeAsking ? (
         <>
           <button type="button" onClick={() => { void startOver(); }}
-            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, fontWeight: 600, color: OB.ink, textDecoration: "underline" }}>
+            style={{ background: "none", border: "none", padding: "10px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: OB.ink, textDecoration: "underline" }}>
             Start fresh
           </button>
           <button type="button" onClick={() => setResumeAsking(false)}
-            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, color: OB.muted }}>
+            style={{ background: "none", border: "none", padding: "10px 12px", cursor: "pointer", fontSize: 13, color: OB.muted }}>
             Keep going
           </button>
         </>
       ) : (
         <>
           <button type="button" onClick={() => setResumeAsking(true)}
-            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 13, color: OB.muted, textDecoration: "underline" }}>
+            style={{ background: "none", border: "none", padding: "10px 12px", cursor: "pointer", fontSize: 13, color: OB.muted, textDecoration: "underline" }}>
             Start over
           </button>
           <button type="button" aria-label="Dismiss" onClick={() => setResumedAt(null)}
-            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 16, lineHeight: 1, color: OB.muted }}>
+            style={{ background: "none", border: "none", padding: "10px 12px", cursor: "pointer", fontSize: 16, lineHeight: 1, color: OB.muted, minInlineSize: 44, minBlockSize: 44 }}>
             ×
           </button>
         </>
@@ -1782,7 +1783,11 @@ const Onboarding = () => {
               onChange={(e) => { setLiInput(e.target.value); setLiError(""); }}
               onKeyDown={(e) => { if (e.key === "Enter" && liInput.trim()) void readProfile(); }}
               placeholder="linkedin.com/in/yourname"
+              aria-label="Your LinkedIn address"
               inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               style={{ ...fieldStyle, marginBlockStart: 20 }}
             />
             {liError ? (
@@ -2064,8 +2069,9 @@ const Onboarding = () => {
                     type="button"
                     onClick={() => void readProfile(true)}
                     style={{
-                      background: "none", border: 0, padding: 0, font: "inherit",
+                      background: "none", border: 0, padding: "10px 6px", fontSize: 13,
                       color: OB.blue, cursor: "pointer", textDecoration: "underline",
+                      display: "inline-block",
                     }}
                   >
                     Read again
@@ -2077,8 +2083,9 @@ const Onboarding = () => {
                 type="button"
                 onClick={() => void returnToAddress()}
                 style={{
-                  background: "none", border: 0, padding: 0, font: "inherit",
+                  background: "none", border: 0, padding: "10px 6px", fontSize: 13,
                   color: OB.blue, cursor: "pointer", textDecoration: "underline",
+                  display: "inline-block",
                 }}
               >
                 Use a different profile
@@ -2104,9 +2111,9 @@ const Onboarding = () => {
         <h1 style={h1Light}>Aura couldn't read it — tell it the basics.</h1>
         <p style={bodyLight}>Four things, and Aura works from these until you point it at your profile.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockStart: 20 }}>
-          <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" style={fieldStyle} />
-          <input value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="Where you work" style={fieldStyle} />
-          <select value={sector} onChange={(e) => setSector(e.target.value)} style={fieldStyle}>
+          <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" aria-label="First name" style={fieldStyle} />
+          <input value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="Where you work" aria-label="Where you work" style={fieldStyle} />
+          <select value={sector} onChange={(e) => setSector(e.target.value)} aria-label="Your sector" style={fieldStyle}>
             <option value="">Your sector</option>
             {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
