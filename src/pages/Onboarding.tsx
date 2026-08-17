@@ -60,7 +60,7 @@ import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 import { ensureTimezone, browserTimezone } from "@/lib/ensureTimezone";
 import {
-  ASSESSMENT_STEPS, ASSESSMENT_STEPS_WORD, ASSESSMENT_MINUTES_LINE,
+  ASSESSMENT_STEPS, ASSESSMENT_STEPS_WORD, FULL_PICTURE_LINE,
   ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stepLabel,
 } from "@/lib/brand";
 import {
@@ -343,7 +343,7 @@ const PaperShell = ({
 const Onboarding = () => {
   usePageMeta({
     title: "Aura — Start your shelf",
-    description: `${ASSESSMENT_MINUTES_LINE}. Aura learns your sector, your level and the way you already write.`,
+    description: `${FULL_PICTURE_LINE}. Aura learns your sector, your level and the way you already write.`,
     path: "/onboarding",
   });
   const navigate = useNavigate();
@@ -1813,14 +1813,14 @@ const Onboarding = () => {
   /* 0 — CREAM */
   if (screen === 0) {
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} subProgress={readDone ? 0.5 : undefined} cream footer={escapeFooter}>
         <h1 style={h1Light}>By the end of this, Aura knows how you work.</h1>
         <p style={bodyLight}>
           Then it writes like you — and helps you be known better on LinkedIn and in the professional circles that matter to you.
         </p>
         <p style={bodyLight}>
           {ASSESSMENT_STEPS_WORD.charAt(0).toUpperCase() + ASSESSMENT_STEPS_WORD.slice(1)} short steps,{" "}
-          {ASSESSMENT_MINUTES_LINE.toLowerCase()}. You can stop anywhere — everything saves as you go.
+          {FULL_PICTURE_LINE.toLowerCase()}. You can stop anywhere — everything saves as you go.
         </p>
         <p style={{
           margin: "26px 0 10px", fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em",

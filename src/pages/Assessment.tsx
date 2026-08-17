@@ -9,8 +9,8 @@ import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
 import {
-  ASSESSMENT_MINUTES, ASSESSMENT_MINUTES_LINE, ASSESSMENT_MINUTES_SHORT,
-  ASSESSMENT_QUESTIONS_PHRASE,
+  ASSESSMENT_MINUTES, FIRST_READ_LINE, FULL_PICTURE_LINE,
+  FIRST_READ_SHORT, ASSESSMENT_QUESTIONS_PHRASE,
 } from "@/lib/brand";
 
 /**
@@ -71,7 +71,7 @@ const Assessment = () => {
   usePageMeta({
     title: "Aura — Start your professional assessment",
     description:
-      `${ASSESSMENT_MINUTES_LINE}, free, and yours to keep. Aura reads your LinkedIn, your CV and your own answers, then shows what you are provably good at and what is real but invisible.`,
+      `${FULL_PICTURE_LINE}, free, and yours to keep. Aura reads your LinkedIn, your CV and your own answers, then shows what you are provably good at and what is real but invisible.`,
     path: "/assessment",
   });
 
@@ -308,7 +308,7 @@ const Assessment = () => {
             </span>
 
             <h1 className="asg-h1">
-              {ASSESSMENT_MINUTES_LINE}, and you&rsquo;ll see
+              {FIRST_READ_LINE}, and you&rsquo;ll see
               <br />
               <span className="asg-h1b">what your profile has been hiding.</span>
             </h1>
@@ -316,12 +316,13 @@ const Assessment = () => {
             <p className="asg-sub">
               Aura reads your LinkedIn, your CV and your own answers, then tells you what you are
               provably good at, what is real but invisible, and the position nobody else is holding.
+              {" "}{FULL_PICTURE_LINE}.
             </p>
 
             <div className="asg-stats">
               <div className="asg-stat">
-                <span className="asg-n">{ASSESSMENT_MINUTES_SHORT}</span>
-                <span className="asg-c">stop and return anytime</span>
+                <span className="asg-n">{FIRST_READ_SHORT}</span>
+                <span className="asg-c">to your first read</span>
               </div>
               <div className="asg-stat">
                 <span className="asg-n">Free</span>
@@ -444,7 +445,7 @@ const Assessment = () => {
         {/* ── below · the shape of the journey ── */}
         <section className="asg-three">
           <article className="asg-card">
-            <span className="asg-k">FIRST · 90 SECONDS</span>
+            <span className="asg-k">FIRST · {FIRST_READ_SHORT.toUpperCase()}</span>
             <h2>Your LinkedIn, read</h2>
             <p>We read what is already public and turn it into a first picture of how you land.</p>
           </article>

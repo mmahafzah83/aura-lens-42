@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import AuraLogo from "@/components/brand/AuraLogo";
 import usePageMeta from "@/hooks/usePageMeta";
 import { supabase } from "@/integrations/supabase/client";
-import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
+import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE } from "@/lib/brand";
 
 /**
  * Acceptance page — the ceremonial intermediate screen between the invite
@@ -162,7 +162,7 @@ export default function AcceptInvitation() {
             />
             <Panel
               num="03"
-              title="10 minutes to set up. A career of visibility."
+              title={`${ASSESSMENT_MINUTES_LINE.charAt(0).toUpperCase() + ASSESSMENT_MINUTES_LINE.slice(1)} to set up. A career of visibility.`}
               body="No ghostwriter. No social media agency. Just your expertise, made visible — finally."
             />
 

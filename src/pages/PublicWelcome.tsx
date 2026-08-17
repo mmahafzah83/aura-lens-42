@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import usePageMeta from "@/hooks/usePageMeta";
 import ScrollSpyNav from "@/components/ScrollSpyNav";
 import { AuraLogo } from "@/components/brand/AuraLogo";
-import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
+import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE } from "@/lib/brand";
 
 // System-A tokens (resolved at runtime from index.css)
 const BRONZE = "var(--action)";
@@ -768,7 +768,7 @@ export default function PublicWelcome() {
               Stop being the best-kept secret in your field.
             </h2>
             <p className="reveal reveal-d2" style={{ fontSize: 16, color: INK_2, maxWidth: 440, margin: "24px auto 36px", lineHeight: 1.75 }}>
-              Your expertise has earned its place. Give Aura 10 minutes — and it will show you who you really are in the market.
+              Your expertise has earned its place. Give Aura {ASSESSMENT_MINUTES_LINE.toLowerCase()} — and it will show you who you really are in the market.
             </p>
             <Link to="/request-access" className="pw-cta pw-cta-shimmer pw-cta-breathe reveal reveal-d3">
               <span style={{ position: "relative", zIndex: 1 }}>

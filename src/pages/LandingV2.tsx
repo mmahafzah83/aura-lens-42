@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
 import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_LIST_PRICE, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_PROMISE, SEAT_SOLD_OUT_NOTE, waveFrom } from "@/lib/seatCopy";
-import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_CAPS, ASSESSMENT_QUESTIONS_PHRASE } from "@/lib/brand";
+import { PRODUCT_DESCRIPTOR, FIRST_READ_LINE, FULL_PICTURE_LINE, ASSESSMENT_QUESTIONS_PHRASE } from "@/lib/brand";
 
 /* ────────────────────────────────────────────────────────────────
    LandingV2 — six tabbed pages, one at a time.
@@ -340,7 +340,7 @@ const LANDING_V2_HTML = `
         <a class="btn bp" id="heropri" href="/assessment">Discover my professional position</a>
         <button class="btn bg2" data-p="how">See how it works</button>
       </div>
-      <p class="support">Starts with a guided professional assessment. Free, yours to keep, no publishing required.</p>
+      <p class="support">${FIRST_READ_LINE}. ${FULL_PICTURE_LINE}. Free, and yours to keep.</p>
     </div>
     <div class="loopwrap">
       <div class="jring">
@@ -938,7 +938,7 @@ const LANDING_V2_HTML = `
           <li><b>The full report as a PDF</b>, and a card to share</li>
         </ul>
       </div>
-      <div class="cta"><a class="btn bp" href="/assessment">Discover my professional position</a><p class="time">${ASSESSMENT_MINUTES_CAPS} · SAVE AND RETURN</p></div>
+      <div class="cta"><a class="btn bp" href="/assessment">Discover my professional position</a><p class="time">${FIRST_READ_LINE.toUpperCase()} · ${FULL_PICTURE_LINE.toUpperCase()} · SAVE AND RETURN</p></div>
     </div>
 
     <div class="rung night">
