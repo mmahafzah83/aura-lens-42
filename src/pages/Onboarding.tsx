@@ -57,6 +57,10 @@ import { exportReportPdf } from "@/lib/exportReportPdf";
 import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 import { ensureTimezone, browserTimezone } from "@/lib/ensureTimezone";
+import {
+  ASSESSMENT_STEPS, ASSESSMENT_STEPS_WORD, ASSESSMENT_MINUTES_LINE,
+  ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stepLabel,
+} from "@/lib/brand";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
