@@ -2205,23 +2205,23 @@ const Onboarding = () => {
     }
   }
 
-  /* 10 — NIGHT, before the six */
+  /* 10 — WHITE, before the questions */
   if (screen === 10) {
-    if (!band) { content = bandPrompt(3, true); } else {
+    if (!band) { content = bandPrompt(3); } else {
     content = (
-      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={3} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
           <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is what makes it yours.</h1>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
+            <h1 style={{ ...h1Light, textAlign: "center" }}>This next bit is what makes it yours.</h1>
+            <p style={{ ...bodyLight, textAlign: "center" }}>
               {ASSESSMENT_QUESTIONS_WORD.charAt(0).toUpperCase() + ASSESSMENT_QUESTIONS_WORD.slice(1)} questions about
               how you actually work — read together with your posts, what you captured and your sliders.
             </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
+            <p style={{ ...bodyLight, textAlign: "center" }}>
               What comes out is the signals in your read, the space nobody near you has claimed, and where the ground is
               still soft.
             </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>{ASSESSMENT_QUESTIONS} questions. Two minutes. Saved as you go.</p>
+            <p style={{ ...bodyLight, textAlign: "center" }}>{ASSESSMENT_QUESTIONS} questions. Two minutes. Saved as you go.</p>
             <Actions style={{ marginBlockStart: 24 }}>
               <OBButton onClick={() => { setQIdx(0); go(11); }} loading={!questions} loadingLabel="Loading…">
                 Let's do it
@@ -2229,7 +2229,7 @@ const Onboarding = () => {
             </Actions>
           </>
         )}
-      </NightShell>
+      </PaperShell>
     );
     }
   }
