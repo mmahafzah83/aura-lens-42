@@ -1860,7 +1860,7 @@ const Onboarding = () => {
     ].filter(Boolean).join(" · ");
 
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} subProgress={step1Phase === "result" ? 0.6 : 0.25} footer={escapeFooter}>
         {step1Phase === "result" ? (
           <h1 style={h1Light}>This is what Aura can see.</h1>
         ) : (
