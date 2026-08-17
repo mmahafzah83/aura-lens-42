@@ -12,8 +12,8 @@ import PublicFooter from "@/components/PublicFooter";
 
 /**
  * The Gate — what someone reads before the nine-minute assessment begins.
- * System-B only. The account step still lives at /auth?intent=assessment;
- * this page leads to it.
+ * System-B only. The whole journey runs in-page with no account: the address,
+ * the read, the questions, and only then the account, at the reveal.
  */
 type Stage = "gate" | "address" | "reading" | "read" | "q0" | "q1" | "q2" | "wall";
 
