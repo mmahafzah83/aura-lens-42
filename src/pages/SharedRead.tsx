@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { OB, RADIUS } from "@/components/onboarding/tokens";
+import { FULL_PICTURE_LINE } from "@/lib/brand";
 
 type SharedRead = {
   headline: string | null;
