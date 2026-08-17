@@ -519,7 +519,13 @@ const Onboarding = () => {
       for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
       anonStateRef.current = {
         ...anonStateRef.current,
-        profile: { ...((anonStateRef.current as any).profile ?? {}), ...clean },
+        /* Stamped with the address this run is about, so a later run against a
+           different profile can never inherit this one's level or sector. */
+        profile: {
+          ...((anonStateRef.current as any).profile ?? {}),
+          ...clean,
+          profile_url: (anonStateRef.current as any).profile_url ?? null,
+        },
       };
       return saveSession(anonToken, anonStateRef.current);
     }
