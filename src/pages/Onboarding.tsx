@@ -2066,7 +2066,12 @@ const Onboarding = () => {
           background: OB.canvas, border: `1px solid ${OB.line}`,
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <span style={{ fontSize: 14 }}>Level · <strong>{levelTitle || bandLabel || "not set"}</strong></span>
+            <span style={{ fontSize: 14 }}>
+              Level ·{" "}
+              {levelTitle || bandLabel
+                ? <strong>{levelTitle || bandLabel}</strong>
+                : <span style={{ color: OB.muted }}>tell Aura</span>}
+            </span>
             <OBButton variant="tertiary" onClick={() => setBandPicker((v) => !v)} style={{ flexShrink: 0 }}>
               {bandPicker ? "Close" : "Change"}
             </OBButton>
@@ -2083,9 +2088,12 @@ const Onboarding = () => {
                   await writeProfile({ sector_focus: v }, "sector save");
                 }
               }} style={{ ...fieldStyle, marginBlockStart: 8 }}>
-                <option value="">Your sector</option>
+                <option value="">Choose your sector</option>
                 {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
+              <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>
+                Optional — it sharpens what Aura watches for you.
+              </p>
             </div>
           )}
         </div>
@@ -2294,7 +2302,9 @@ const Onboarding = () => {
       <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>Something you read this week.</h1>
         <p style={bodyLight}>
-          Paste a link to an article or a post. Aura reads it and shows you what it found.
+          {userId
+            ? "Paste a link to an article or a post. Aura reads it and shows you what it found."
+            : "Paste a link to an article or a post. Aura keeps it, and reads it the moment your report is saved."}
         </p>
         <label htmlFor="ob-link" style={{
           display: "block", margin: "20px 0 6px", fontSize: 12.5, fontWeight: 600, color: OB.ink,
@@ -2672,6 +2682,9 @@ const Onboarding = () => {
       const placeholder = phList[phIdx % phList.length];
       const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
+      /* The headline can never promise three positions we are about to withdraw. */
+      const promptText = proposedFallback ? "What position could only you credibly take?" : q.prompt;
+
 
       content = (
         <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
@@ -2681,7 +2694,7 @@ const Onboarding = () => {
           {qIdx === 0 ? (
             <p style={{ margin: "6px 0 0", fontSize: 12, color: OB.muted }}>Saved as you go — you can stop any time.</p>
           ) : null}
-          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{q.prompt}</h1>
+          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{promptText}</h1>
           {helperText ? <p style={bodyLight}>{helperText}</p> : null}
           {q.why_asked ? (
             <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted }}>
@@ -2901,7 +2914,10 @@ const Onboarding = () => {
       }
     };
     return (
-      <PaperShell bead={4}>
+      <>
+      <style>{PAGE_CSS}</style>
+      <JourneyNav.Provider value={{ onBack: undefined, banner: null }}>
+      <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
         <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
           YOUR REPORT IS READY
         </p>
@@ -2927,7 +2943,8 @@ const Onboarding = () => {
             </div>
             <label htmlFor="ob-wall-consent" style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBlockStart: 16, fontSize: 13, color: OB.muted }}>
               <input id="ob-wall-consent" type="checkbox" checked={wallConsent}
-                onChange={(e) => setWallConsent(e.target.checked)} />
+                onChange={(e) => setWallConsent(e.target.checked)}
+                style={{ width: 20, height: 20, flexShrink: 0, marginBlockStart: 1, accentColor: OB.blue, cursor: "pointer" }} />
               <span>
                 I agree to the{" "}
                 <a href="/terms" target="_blank" rel="noopener" style={{ color: OB.blue, textDecoration: "underline" }}>Terms</a>{" "}
@@ -2944,6 +2961,8 @@ const Onboarding = () => {
           </form>
         )}
       </PaperShell>
+      </JourneyNav.Provider>
+      </>
     );
   }
 
