@@ -5,6 +5,10 @@ import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
 
+// Law #111 / D97: the legacy ten capability dimensions are not in
+// capability_dimensions. Suppress the fabricated radar until the real map exists.
+const CAPABILITY_RADAR_ENABLED = false;
+
 // Legacy ordering hint only. The radar renders whatever keys the member
 // actually has — 8, 10 or 18 — and never assumes this list.
 const LEGACY_ORDER = [
@@ -269,6 +273,8 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
       setTooltip(null);
     }
   };
+
+  if (!CAPABILITY_RADAR_ENABLED) return null;
 
   if (loading) return null;
 

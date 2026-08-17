@@ -9,6 +9,11 @@ import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
 
+// Law #111 / D97: the legacy ten capability dimensions are not in
+// capability_dimensions, and the Partner benchmark is identical for every user.
+// Suppress the fabricated comparison until the real map exists.
+const CAPABILITY_RADAR_ENABLED = false;
+
 // Partner Gold Standard benchmarks
 const PARTNER_BENCHMARK: Record<string, number> = {
   "Strategic Architecture": 95,
@@ -163,6 +168,8 @@ const SkillRadar = () => {
   const selectedBenchmark = selectedSkill
     ? PARTNER_BENCHMARK[selectedSkill] || 90
     : 0;
+
+  if (!CAPABILITY_RADAR_ENABLED) return null;
 
   return (
     <div className="w-full h-full flex flex-col">
