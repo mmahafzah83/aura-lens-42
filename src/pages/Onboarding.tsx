@@ -26,6 +26,7 @@ import {
   type AssessmentState,
 } from "@/lib/assessmentSession";
 import { track } from "@/lib/track";
+import { sweepIfServerReset } from "@/lib/resetSweep";
 import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@/lib/marketRead";
 import AuraFace from "@/components/onboarding/AuraFace";
 import ShelfBadge, { type ShelfBadgeTone } from "@/components/onboarding/ShelfBadge";
