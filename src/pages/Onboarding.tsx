@@ -734,6 +734,9 @@ const Onboarding = () => {
   const suggestRan = useRef(false);
   useEffect(() => {
     if (screen < 4 || suggestRan.current) return;
+    /* The suggested read needs an account — an anonymous visitor is offered
+       nothing rather than a 401 and a dead promise on screen. */
+    if (!userId) { suggestRan.current = true; setSuggestDead(true); return; }
     suggestRan.current = true;
     let settled = false;
     // A promise left hanging on screen is worse than no promise at all.
@@ -758,7 +761,7 @@ const Onboarding = () => {
       window.clearTimeout(giveUp);
       setSuggestDead(true);
     });
-  }, [screen, sector, firm, band, liProfile]);
+  }, [screen, sector, firm, band, liProfile, userId]);
 
   /* ── screen 5/6: send the link, then watch for what came out of it ── */
   const submitLink = () => {
