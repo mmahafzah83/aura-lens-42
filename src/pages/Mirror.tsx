@@ -57,6 +57,8 @@ const ERROR_COPY: Record<string, string> = {
   profile_unreadable:
     "LinkedIn didn't return that profile. If it's set to private, Aura can't see it either — and neither can most of your market.",
   not_configured: "Aura can't run reads right now. Try again shortly.",
+  provider_limit:
+    "Aura has hit today's reading limit with our LinkedIn provider. Nothing is wrong with your profile — try again shortly.",
   unreadable: "The read didn't come back clean. Nothing was saved. Try once more.",
   network: "Something failed on our side. Nothing was saved.",
 };

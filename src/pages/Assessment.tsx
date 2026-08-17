@@ -140,9 +140,12 @@ const Assessment = () => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok || !data?.read) {
-        setNotice(data?.error === "profile_unreadable"
-          ? "LinkedIn didn't return that profile. If it's set to private, Aura can't see it either."
-          : "The read didn't come back clean. Nothing is lost — try once more.");
+        setNotice(
+          data?.error === "profile_unreadable"
+            ? "LinkedIn didn't return that profile. If it's set to private, Aura can't see it either."
+            : data?.error === "provider_limit"
+              ? "Aura has hit today's reading limit with our LinkedIn provider. Nothing is wrong with your profile — try again shortly."
+              : "The read didn't come back clean. Nothing is lost — try once more.");
         setStage("address");
         return;
       }
