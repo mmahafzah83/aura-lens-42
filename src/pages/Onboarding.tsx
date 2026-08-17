@@ -1237,8 +1237,6 @@ const Onboarding = () => {
   };
 
   /* ── finish later: a saved place, a said-out-loud confirmation, and a way back ── */
-  /** Which of the five named stages this screen belongs to. */
-  const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
 
   /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
