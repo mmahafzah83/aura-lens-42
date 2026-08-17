@@ -36,6 +36,7 @@ import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import TierExplainer from "@/components/ui/TierExplainer";
 import { TIER_COPY } from "@/constants/tierCopy";
 import ReadShape from "@/components/identity/ReadShape";
+import CvCrosscheck from "@/components/report/CvCrosscheck";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import {
   applyPublishedFilter,
@@ -1124,6 +1125,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       )}
 
       {/* SECTION 6b — PROFILE INTELLIGENCE */}
+      {/* CV against LinkedIn — renders nothing until a cross-check exists. */}
+      <CvCrosscheck userId={authUser?.id ?? null} />
+
       {assessmentCompleted && (
         <div>
           <SectionHeader label="Profile intelligence" />

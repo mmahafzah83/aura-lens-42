@@ -10,6 +10,7 @@
 import { rankFromLevel } from "@/lib/marketPersonas";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
 import type { ReportData, CapabilitiesSection } from "@/lib/buildIdentityReport";
+import CvCrosscheck, { hasCvCrosscheck } from "@/components/report/CvCrosscheck";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   PaperHeader,
@@ -645,6 +646,16 @@ function buildBlocks(d: ReportData): Block[] {
       else if (intel.expertise_areas.length > 0)
         blocks.push({ key: "c-chips", section: "capability", spacing: 10, node: <ChipRow items={intel.expertise_areas} /> });
     }
+  }
+
+  // ── CV AGAINST LINKEDIN ──────────────────────────────────────────────
+  if (hasCvCrosscheck(d.cv_crosscheck)) {
+    blocks.push({
+      key: "c-cv-crosscheck",
+      section: "capability",
+      spacing: 22,
+      node: <CvCrosscheck data={d.cv_crosscheck} />,
+    });
   }
 
   // ── MARKET ───────────────────────────────────────────────────────────

@@ -202,6 +202,41 @@ Judge this material. Return exactly this JSON object and nothing else:
   "headline_suggestion": ""
 }`;
 
+  /* Structured output: one forced tool. The prompt wording is unchanged —
+     only the transport moved off free-text JSON, which discarded four runs
+     in five. `reading_the_shape` and `headline_suggestion` stay in the schema
+     because the prompt asks for them and the admin panel reads them; only the
+     five member-facing fields are required. */
+  const CROSSCHECK_TOOL = {
+    name: "record_crosscheck",
+    description: "Record the CV-against-profile review.",
+    input_schema: {
+      type: "object",
+      properties: {
+        headline_finding: { type: "string" },
+        findings: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              what: { type: "string" },
+              why_it_matters: { type: "string" },
+              do_this: { type: "string" },
+              weight: { type: "string", enum: ["high", "medium"] },
+            },
+            required: ["what", "why_it_matters", "do_this", "weight"],
+          },
+        },
+        defensibility: { type: "array", items: { type: "string" } },
+        cv_is_behind: { type: "array", items: { type: "string" } },
+        profile_vs_voice: { type: "string" },
+        reading_the_shape: { type: "string" },
+        headline_suggestion: { type: "string" },
+      },
+      required: ["headline_finding", "findings", "defensibility", "cv_is_behind", "profile_vs_voice"],
+    },
+  } as const;
+
   const callAnthropic = (prompt: string) => fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -214,6 +249,8 @@ Judge this material. Return exactly this JSON object and nothing else:
       max_tokens: 3000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: prompt }],
+      tools: [CROSSCHECK_TOOL],
+      tool_choice: { type: "tool", name: CROSSCHECK_TOOL.name },
     }),
   });
 
@@ -231,7 +268,10 @@ Judge this material. Return exactly this JSON object and nothing else:
       return { data: null as any, text: "" };
     }
     const data = JSON.parse(rawBody);
-    const text = (data.content || []).map((c: any) => c.text || "").join("") || "";
+    const blocks: any[] = Array.isArray(data.content) ? data.content : [];
+    const text = blocks.map((c: any) => c.text || "").join("") || "";
+    const toolUse = blocks.find((c: any) => c?.type === "tool_use" && c?.name === CROSSCHECK_TOOL.name);
+    const toolInput = toolUse && typeof toolUse.input === "object" ? toolUse.input : null;
     try {
       EdgeRuntime.waitUntil(logAIUsage({
         user_id: targetId,
@@ -242,7 +282,8 @@ Judge this material. Return exactly this JSON object and nothing else:
         output_tokens: data.usage?.output_tokens,
       }));
     } catch (_) { /* non-blocking */ }
-    return { data, text };
+    /* Raw text is kept so a future parse failure is recoverable, not lost. */
+    return { data, text, toolInput, rawBody };
   };
 
   /** Placeholders are only meaningful inside the model's own sentences. */
@@ -254,30 +295,36 @@ Judge this material. Return exactly this JSON object and nothing else:
     return false;
   }
 
-  let { data, text } = await runOnce(userPrompt);
-  let parsed = parseJsonLoose(text);
+  let { data, text, toolInput, rawBody } = await runOnce(userPrompt);
+  let parsed: any = toolInput ?? parseJsonLoose(text);
 
   if (!parsed || hasPlaceholderInValues(parsed)) {
     const correction = `${userPrompt}
 
 CORRECTION — your previous attempt was not a single valid JSON object, or contained a bracketed placeholder. Output the JSON object only, with real values drawn from the material above. No code fences, no commentary, no square-bracket placeholders.`;
     const retry = await runOnce(correction);
-    if (retry.data) { data = retry.data; text = retry.text; }
-    parsed = parseJsonLoose(retry.text);
+    if (retry.data) { data = retry.data; text = retry.text; rawBody = retry.rawBody; }
+    parsed = retry.toolInput ?? parseJsonLoose(retry.text);
     if (!parsed || hasPlaceholderInValues(parsed)) {
       await logEfError(admin, {
         function_name: "cv-crosscheck",
         error: "Unparseable crosscheck after retry — nothing saved",
         severity: "high",
         user_id: targetId,
-        context: { path: "unparseable" },
+        context: { path: "unparseable", raw: String(retry.text || retry.rawBody || "").slice(0, 2000) },
       });
       return json({ ok: false, pending: true, reason: "unparseable" });
     }
   }
 
 
-  const crosscheck = { ...parsed, cv_count: cvs.length, model: data?.model ?? null };
+  const crosscheck = {
+    ...parsed,
+    cv_count: cvs.length,
+    model: data?.model ?? null,
+    /* The model's own text alongside the parsed object, so nothing is lost. */
+    cv_crosscheck_raw: String(text || rawBody || "").slice(0, 20000),
+  };
 
   const { error: writeErr } = await admin
     .from("diagnostic_profiles")
