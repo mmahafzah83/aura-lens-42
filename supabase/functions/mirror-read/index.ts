@@ -34,7 +34,7 @@ async function hasFresherEvidence(
   const { data: owners } = await admin
     .from("diagnostic_profiles")
     .select("user_id, linkedin_handle, linkedin_url")
-    .or(`linkedin_handle.eq.${handle},linkedin_url.ilike.%/${handle}%`)
+    .or(`linkedin_handle.eq.${handle.toLowerCase()},linkedin_url.ilike.%/${handle.toLowerCase()}%`)
     .limit(5);
   const ids = (owners ?? []).map((o: any) => o.user_id).filter(Boolean);
   if (!ids.length) return false;
