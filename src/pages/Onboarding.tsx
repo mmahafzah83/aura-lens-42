@@ -2403,9 +2403,15 @@ const Onboarding = () => {
     };
     return (
       <PaperShell bead={4}>
-        <Kicker>YOUR REPORT IS READY</Kicker>
-        <Head>Where should we send it?</Head>
-        <Sub>It is yours either way. An account keeps it, lets you come back, and sends you the PDF.</Sub>
+        <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
+          YOUR REPORT IS READY
+        </p>
+        <h1 style={{ fontFamily: OB.ui, fontSize: 28, fontWeight: 700, color: OB.ink, marginBlockStart: 10 }}>
+          Where should we send it?
+        </h1>
+        <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 10 }}>
+          It is yours either way. An account keeps it, lets you come back, and sends you the PDF.
+        </p>
         {wallDone ? (
           <p role="status" style={{ marginBlockStart: 18, color: OB.ink, fontFamily: OB.ui }}>{wallDone}</p>
         ) : (
