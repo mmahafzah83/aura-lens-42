@@ -61,6 +61,10 @@ import {
   ASSESSMENT_STEPS, ASSESSMENT_STEPS_WORD, ASSESSMENT_MINUTES_LINE,
   ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stepLabel,
 } from "@/lib/brand";
+import {
+  SEAT_HEADING, SEAT_ROWS, SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_NO_CARD, SEAT_CTA, SEAT_PATH,
+} from "@/lib/seatCopy";
+
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
