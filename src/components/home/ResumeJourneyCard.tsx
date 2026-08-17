@@ -55,7 +55,7 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
   }, [userId]);
 
   if (!paused || hidden) return null;
-  const left = Math.max(2, (5 - paused.stage) * 2);
+  const left = Math.max(2, (ASSESSMENT_STEPS - paused.stage) * 2);
 
   return (
     <section style={{
@@ -64,8 +64,8 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
     }}>
       <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
         {paused.chose
-          ? `You're part-way through — ${paused.stage} of 5 done, about ${left} minutes left.`
-          : `You started setting up and stopped at step ${paused.stage} of 5. It's all still here.`}
+          ? `You're part-way through — ${paused.stage} of ${ASSESSMENT_STEPS} done, about ${left} minutes left.`
+          : `You started setting up and stopped at ${stepLabel(paused.stage).toLowerCase()}. It's all still here.`}
       </h2>
       {paused.saved.length ? (
         <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.6, color: "var(--text-secondary)" }}>
