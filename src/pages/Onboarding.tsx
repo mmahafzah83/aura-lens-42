@@ -2031,6 +2031,28 @@ const Onboarding = () => {
               </p>
             </div>
 
+            {readCache ? (
+              <p style={{
+                margin: "16px 0 0", fontFamily: OB.mono, fontSize: 11.5,
+                lineHeight: 1.6, color: OB.muted,
+              }}>
+                {readCache.notice
+                  ? readCache.notice
+                  : `Read from your profile on ${new Date(readCache.generated_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`}
+                {" · "}
+                <button
+                  type="button"
+                  onClick={() => void readProfile(true)}
+                  style={{
+                    background: "none", border: 0, padding: 0, font: "inherit",
+                    color: OB.blue, cursor: "pointer", textDecoration: "underline",
+                  }}
+                >
+                  Read again
+                </button>
+              </p>
+            ) : null}
+
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton onClick={() => { void confirmBandIfDetected(); go(CV_SCREEN); }}>Continue</OBButton>
               <OBButton variant="tertiary" onClick={() => go(4)}>I'll do that later</OBButton>
