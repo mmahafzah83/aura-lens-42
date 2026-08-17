@@ -773,9 +773,10 @@ const Onboarding = () => {
             rate_limited: "That's as many reads as can come from here this hour. Nothing is lost — try again shortly.",
             not_configured: "Reading is briefly unavailable on our side. Nothing is lost — try again shortly.",
           };
-          setLiError(READ_ERRORS[String(payload?.error ?? "")] ??
-            "The read didn't come back clean. Nothing is lost — try once more.");
-          setStep1Phase("ask");
+          returnToAddress(
+            READ_ERRORS[String(payload?.error ?? "")] ??
+            "The read didn't come back clean. Nothing is lost — try once more.",
+          );
           setLiBusy(false);
           return;
         }
@@ -882,15 +883,22 @@ const Onboarding = () => {
       setReadDone(true);
     } catch (e: any) {
       const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "";
-      setLiError(msg && msg.length < 120
-        ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
-        : "Aura couldn't open that page. Check it matches what you see in your browser on your own profile.");
       /* the read failing never moves them: the field, the error and the manual path all stay here */
-      setStep1Phase("ask");
+      returnToAddress(
+        msg && msg.length < 120
+          ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
+          : "Aura couldn't open that page. Check it matches what you see in your browser on your own profile.",
+      );
     } finally {
       setLiBusy(false);
     }
   };
+
+  /** Return to the address card without losing anything already read. */
+  const returnToAddress = useCallback((error?: string) => {
+    setLiError(error ?? "");
+    setStep1Phase("ask");
+  }, []);
 
   /* ── the read resolves line by line, in place on the step-1 card ── */
   const reading = screen === 1 && step1Phase !== "ask";
@@ -1376,7 +1384,7 @@ const Onboarding = () => {
     setAnswers({});
     setScores({});
     setClaims([]);
-    setStep1Phase("ask");
+    returnToAddress();
     setLiInput("");
     setLiProfile(null);
     setReadDone(false);
@@ -2031,27 +2039,42 @@ const Onboarding = () => {
               </p>
             </div>
 
-            {readCache ? (
-              <p style={{
-                margin: "16px 0 0", fontFamily: OB.mono, fontSize: 11.5,
-                lineHeight: 1.6, color: OB.muted,
-              }}>
-                {readCache.notice
+            <p style={{
+              margin: "16px 0 0", fontFamily: OB.mono, fontSize: 11.5,
+              lineHeight: 1.6, color: OB.muted,
+            }}>
+              {readCache ? (
+                readCache.notice
                   ? readCache.notice
-                  : `Read from your profile on ${new Date(readCache.generated_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`}
-                {" · "}
-                <button
-                  type="button"
-                  onClick={() => void readProfile(true)}
-                  style={{
-                    background: "none", border: 0, padding: 0, font: "inherit",
-                    color: OB.blue, cursor: "pointer", textDecoration: "underline",
-                  }}
-                >
-                  Read again
-                </button>
-              </p>
-            ) : null}
+                  : `Read from your profile on ${new Date(readCache.generated_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`
+              ) : null}
+              {readCache ? (
+                <>
+                  {" · "}
+                  <button
+                    type="button"
+                    onClick={() => void readProfile(true)}
+                    style={{
+                      background: "none", border: 0, padding: 0, font: "inherit",
+                      color: OB.blue, cursor: "pointer", textDecoration: "underline",
+                    }}
+                  >
+                    Read again
+                  </button>
+                </>
+              ) : null}
+              {readCache ? " · " : null}
+              <button
+                type="button"
+                onClick={() => void returnToAddress()}
+                style={{
+                  background: "none", border: 0, padding: 0, font: "inherit",
+                  color: OB.blue, cursor: "pointer", textDecoration: "underline",
+                }}
+              >
+                Use a different profile
+              </button>
+            </p>
 
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton onClick={() => { void confirmBandIfDetected(); go(CV_SCREEN); }}>Continue</OBButton>
@@ -3134,7 +3157,7 @@ const Onboarding = () => {
           }}>{exitNote}</span>
         </div>
       ) : null}
-      <JourneyNav.Provider value={{ onBack: canBack ? goBack : undefined, banner: resumeBanner }}>
+      <JourneyNav.Provider value={{ onBack: screen === 1 && step1Phase === "result" ? returnToAddress : canBack ? goBack : undefined, banner: resumeBanner }}>
         {content}
       </JourneyNav.Provider>
     </>
