@@ -323,6 +323,8 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (!clientIp) return serveStale() ?? json({ error: "unreadable" }, 503);
+
     // --- c) Rate limit — only fresh reads are metered ---
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count } = await admin
