@@ -1,0 +1,1 @@
+ALTER FUNCTION public.create_assessment_session(text) SET search_path = public, extensions;

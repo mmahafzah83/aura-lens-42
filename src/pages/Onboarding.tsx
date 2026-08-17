@@ -21,6 +21,7 @@ import { useCountUp } from "@/hooks/useCountUp";
 import { useCapturedClaims } from "@/hooks/useCapturedClaims";
 import { SECTORS } from "@/constants/sectors";
 import { initThemeFromStorage } from "@/lib/applyTheme";
+import { claimPendingSession } from "@/lib/assessmentSession";
 import { track } from "@/lib/track";
 import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@/lib/marketRead";
 import AuraFace from "@/components/onboarding/AuraFace";
@@ -257,6 +258,8 @@ const Onboarding = () => {
   });
   const navigate = useNavigate();
   useEffect(() => { initThemeFromStorage(); }, []);
+  // An anonymous run started at /assessment is attached to the account here.
+  useEffect(() => { void claimPendingSession(); }, []);
 
   const [checking, setChecking] = useState(true);
   // The morning promise is only made when the system has actually been

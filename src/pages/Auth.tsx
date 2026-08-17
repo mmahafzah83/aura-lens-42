@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
+import { claimPendingSession } from "@/lib/assessmentSession";
 import usePageMeta from "@/hooks/usePageMeta";
 import { isProfileComplete } from "@/lib/onboarding";
 import { PRODUCT_DESCRIPTOR } from "@/lib/brand";
@@ -105,6 +106,10 @@ const Auth = () => {
   }, [view, hasEmailParam]);
 
   const checkOnboardingAndRedirect = async (session: any) => {
+    // An anonymous run started at /assessment is attached to this account now.
+    // A failure keeps the local token — nothing is dropped, it is claimed later.
+    await claimPendingSession();
+
     // Honour ?next=... (and legacy ?returnTo=...) so a member who was sent to
     // sign in lands back on the page they wanted. Internal paths only —
     // absolute URLs and protocol-relative paths are rejected outright, or this
