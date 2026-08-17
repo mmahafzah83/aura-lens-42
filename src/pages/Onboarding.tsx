@@ -401,6 +401,25 @@ const Onboarding = () => {
   const [connecting, setConnecting] = useState(false);
   const [connectNote, setConnectNote] = useState("");
   const [connected, setConnected] = useState(false);
+  const [connectedName, setConnectedName] = useState<string | null>(null);
+
+  /* A connection made in a previous visit must still read as connected after a
+     reload — the tick came only from the popup message before this. */
+  useEffect(() => {
+    if (!userId) { setConnected(false); setConnectedName(null); return; }
+    let alive = true;
+    void (async () => {
+      const { data } = await (supabase.from("linkedin_connections_safe" as any) as any)
+        .select("display_name, status")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .maybeSingle();
+      if (!alive || !data) return;
+      setConnected(true);
+      setConnectedName((data as any).display_name ?? null);
+    })();
+    return () => { alive = false; };
+  }, [userId]);
 
   /* 13b — when their day starts, so the overnight read lands at the right hour */
   const [dailyTime, setDailyTime] = useState<"Morning" | "Midday" | "Evening">("Morning");
