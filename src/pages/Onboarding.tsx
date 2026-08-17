@@ -2286,7 +2286,17 @@ const Onboarding = () => {
       { key: "c", label: "Matched to your sector", done: readStep >= 3 },
     ];
     const settled = claimsSlow && claims.length === 0;
-    content = linkFailed ? (
+    content = capturePending ? (
+      <NightShell onExit={saveAndExit} footer={escapeFooter}>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>Saved.</h1>
+        <p style={{ ...bodyNight, textAlign: "center" }}>
+          Aura files this against your account the moment you save your report — nothing is lost.
+        </p>
+        <Actions style={{ marginBlockStart: 22 }}>
+          <OBButton onClick={() => { setCapturePending(false); go(8); }}>Carry on</OBButton>
+        </Actions>
+      </NightShell>
+    ) : linkFailed ? (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>That one didn't come through.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
@@ -2777,6 +2787,23 @@ const Onboarding = () => {
           );
           try { localStorage.setItem(`aura_ob_screen_${uid}`, "12"); } catch { /* private mode */ }
           if (st.answers && Object.keys(st.answers).length) await saveAnswers(uid, st.answers);
+          /* Replay any links captured while anonymous — never block the redirect. */
+          try {
+            const pending = ((st as any).pending_captures ?? []) as Array<{ url: string; title?: string | null; summary?: string | null }>;
+            for (const c of pending) {
+              if (!c?.url) continue;
+              await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${signedIn.session.access_token}` },
+                body: JSON.stringify({
+                  type: "link", content: c.url, source_url: c.url,
+                  metadata: { title: c.title ?? undefined, summary: c.summary ?? undefined, source: "onboarding_collection" },
+                }),
+              });
+            }
+          } catch (e) {
+            console.error("[journey] capture replay failed", e);
+          }
           try {
             await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null));
           } catch (e) {
