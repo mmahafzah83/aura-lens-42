@@ -785,7 +785,7 @@ export default function PublicWelcome() {
               حتى السوق يعرفك قبل ما يشوفك ✦
             </p>
             <p className="reveal reveal-d4" style={{ fontSize: 11, letterSpacing: "2px", color: INK_3, marginTop: 20 }}>
-              PRIVATE BETA · BY INVITATION ONLY
+              YOUR REPORT IS FREE, AND STAYS FREE
             </p>
           </div>
         </section>

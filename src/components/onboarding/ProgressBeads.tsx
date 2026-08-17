@@ -3,6 +3,7 @@
  * member how much of the shelf is left, never how well they are doing.
  */
 import { OB, EASE } from "./tokens";
+import { ASSESSMENT_STEPS, stepLabel } from "@/lib/brand";
 
 /** The five named stages. Only the active one is ever labelled. */
 export const STAGE_NAMES = [
@@ -22,7 +23,7 @@ const CSS = `
 const ProgressBeads = ({ active }: { active: number }) => (
   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7 }}
     role="group"
-    aria-label={`Step ${Math.min(Math.max(active, 0), 4) + 1} of 5 — ${STAGE_NAMES[Math.min(Math.max(active, 0), 4)]}`}>
+    aria-label={`Step ${Math.min(Math.max(active, 0), ASSESSMENT_STEPS - 1) + 1} of ${ASSESSMENT_STEPS} — ${STAGE_NAMES[Math.min(Math.max(active, 0), ASSESSMENT_STEPS - 1)]}`}>
     <div style={{ display: "flex", gap: 6, alignItems: "center" }} aria-hidden>
       <style>{CSS}</style>
       {[0, 1, 2, 3, 4].map((i) => {
@@ -47,7 +48,7 @@ const ProgressBeads = ({ active }: { active: number }) => (
       fontFamily: OB.mono, fontSize: 9.5, textTransform: "uppercase",
       letterSpacing: "0.12em", color: OB.muted, textAlign: "center",
     }}>
-      Step {Math.min(Math.max(active, 0), 4) + 1} of 5 · {STAGE_NAMES[Math.min(Math.max(active, 0), 4)]}
+      {stepLabel(Math.min(Math.max(active, 0), ASSESSMENT_STEPS - 1) + 1)} · {STAGE_NAMES[Math.min(Math.max(active, 0), ASSESSMENT_STEPS - 1)]}
     </span>
   </div>
 );

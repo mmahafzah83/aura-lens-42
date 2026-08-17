@@ -467,7 +467,7 @@ export default function Mirror() {
                 display: "flex", flexDirection: "column", gap: 14,
               }}>
                 <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: "rgba(255,255,255,0.82)" }}>
-                  Aura is in private beta. Founding members lock the early rate for life.
+                  Founding members lock the early rate for life.
                 </p>
                 <div>
                   <label style={{ ...label, color: "rgba(255,255,255,0.72)" }} htmlFor="mr-name">Name</label>

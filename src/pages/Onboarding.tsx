@@ -10,7 +10,7 @@
  * (band, sector IS NULL). If both come back empty the member sees a friendly
  * retry, never a blank screen.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
@@ -57,6 +57,10 @@ import { exportReportPdf } from "@/lib/exportReportPdf";
 import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 import { ensureTimezone, browserTimezone } from "@/lib/ensureTimezone";
+import {
+  ASSESSMENT_STEPS, ASSESSMENT_STEPS_WORD, ASSESSMENT_MINUTES_LINE,
+  ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stepLabel,
+} from "@/lib/brand";
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
 
@@ -117,6 +121,13 @@ const MANUAL_SCREEN = 15;
 const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you capture.";
 /** The same truth, in the first person, because the dark screens are Aura speaking. */
 const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you capture.";
+/**
+ * LinkedIn's OAuth grant is stored against an account — there is nowhere to
+ * safely keep an access token for a visitor who has none. So the button is not
+ * offered before the account exists; this line is offered instead.
+ */
+const CONNECT_AFTER_ACCOUNT =
+  "Available after you save your report — Aura reads your public posts either way.";
 /** A short dark panel that sits between screen 8 and the sliders. */
 const TRUST_SLIDERS_SCREEN = 8.5;
 /** A white CV step between screen 3 and screen 4 — fractional so nothing renumbers. */
@@ -215,29 +226,43 @@ const wordsIn = (rows: { post_text?: string | null }[]): number =>
 
 /* ──────────────────────────────── shells ────────────────────────────────── */
 
-const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => (
+/**
+ * ONE LOOK, END TO END.
+ *
+ * Every screen that asks the member anything renders in the light card shell.
+ * The night surface is kept for the machine's own moments — reading, and the
+ * reveal. `JourneyNav` carries the back control so no screen has to pass it.
+ */
+const JourneyNav = createContext<{ onBack?: () => void }>({});
+
+const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => {
+  const { onBack } = useContext(JourneyNav);
+  return (
   <div className="obc" style={{
     minBlockSize: "100dvh", background: OB.night, display: "flex", alignItems: "center",
     justifyContent: "center", padding: "28px 20px",
   }}>
     <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-      {onExit ? <JourneyHeader onNight onExit={onExit} /> : null}
+      {onExit ? <JourneyHeader onNight onExit={onExit} onBack={onBack} /> : null}
       {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace size="var(--ob-face)" /></div> : null}
       {children}
       {footer}
     </div>
   </div>
-);
+  );
+};
 
 const PaperShell = ({
-  children, bead, cream = false, footer, onExit,
-}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void }) => (
+  children, bead, cream = false, footer, onExit, face = false,
+}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void; face?: boolean }) => {
+  const { onBack } = useContext(JourneyNav);
+  return (
   <div className="obc" style={{
     minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
     display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
   }}>
     <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-      {onExit ? <JourneyHeader onExit={onExit} /> : null}
+      {onExit ? <JourneyHeader onExit={onExit} onBack={onBack} /> : null}
       <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
         <ProgressBeads active={bead} />
       </div>
@@ -245,19 +270,25 @@ const PaperShell = ({
         background: OB.white, borderRadius: RADIUS.hero, border: `1px solid ${OB.line}`,
         padding: "var(--ob-pad)", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
       }}>
+        {face ? (
+          <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 22 }}>
+            <AuraFace size="var(--ob-face)" />
+          </div>
+        ) : null}
         {children}
       </div>
       {footer}
     </div>
   </div>
-);
+  );
+};
 
 /* ──────────────────────────────── page ──────────────────────────────────── */
 
 const Onboarding = () => {
   usePageMeta({
     title: "Aura — Start your shelf",
-    description: "About ten minutes. Aura learns your sector, your level and the way you already write.",
+    description: `${ASSESSMENT_MINUTES_LINE}. Aura learns your sector, your level and the way you already write.`,
     path: "/onboarding",
   });
   const navigate = useNavigate();
@@ -295,6 +326,8 @@ const Onboarding = () => {
 
   const [screen, setScreen] = useState(0);
   const screenRef = useRef(0);
+  /** Where Back goes. Screens are pushed as they are left, popped on return. */
+  const backStack = useRef<number[]>([]);
 
   /* member facts */
   const [firstName, setFirstName] = useState("");
@@ -368,6 +401,25 @@ const Onboarding = () => {
   const [connecting, setConnecting] = useState(false);
   const [connectNote, setConnectNote] = useState("");
   const [connected, setConnected] = useState(false);
+  const [connectedName, setConnectedName] = useState<string | null>(null);
+
+  /* A connection made in a previous visit must still read as connected after a
+     reload — the tick came only from the popup message before this. */
+  useEffect(() => {
+    if (!userId) { setConnected(false); setConnectedName(null); return; }
+    let alive = true;
+    void (async () => {
+      const { data } = await (supabase.from("linkedin_connections_safe" as any) as any)
+        .select("display_name, status")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .maybeSingle();
+      if (!alive || !data) return;
+      setConnected(true);
+      setConnectedName((data as any).display_name ?? null);
+    })();
+    return () => { alive = false; };
+  }, [userId]);
 
   /* 13b — when their day starts, so the overnight read lands at the right hour */
   const [dailyTime, setDailyTime] = useState<"Morning" | "Midday" | "Evening">("Morning");
@@ -467,7 +519,13 @@ const Onboarding = () => {
       for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
       anonStateRef.current = {
         ...anonStateRef.current,
-        profile: { ...((anonStateRef.current as any).profile ?? {}), ...clean },
+        /* Stamped with the address this run is about, so a later run against a
+           different profile can never inherit this one's level or sector. */
+        profile: {
+          ...((anonStateRef.current as any).profile ?? {}),
+          ...clean,
+          profile_url: (anonStateRef.current as any).profile_url ?? null,
+        },
       };
       return saveSession(anonToken, anonStateRef.current);
     }
@@ -504,12 +562,29 @@ const Onboarding = () => {
   }, [userId, anonToken, writeProfile]);
 
   const go = useCallback((next: number) => {
+    if (next !== screenRef.current) backStack.current.push(screenRef.current);
     setScreen(next);
     screenRef.current = next;
     void track("onboarding_step", { step: `screen_${next}`, step_index: next });
     void persistScreen(next);
+    /* The browser's own back button moves one STEP, never out of the flow. */
+    try { window.history.pushState({ obScreen: next }, ""); } catch { /* ignore */ }
     try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
   }, [persistScreen]);
+
+  /**
+   * Back — one step, with everything the member typed still in state. Nothing
+   * is re-fetched and nothing is cleared; only the screen number moves.
+   */
+  const goBack = useCallback(() => {
+    const prev = backStack.current.pop();
+    if (prev === undefined) return;
+    setScreen(prev);
+    screenRef.current = prev;
+    void persistScreen(prev);
+    try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
+  }, [persistScreen]);
+  const canBack = backStack.current.length > 0;
 
   /* ── boot ── */
   useEffect(() => {
@@ -526,6 +601,14 @@ const Onboarding = () => {
         const st = (found.state ?? {}) as any;
         anonStateRef.current = { answers: {}, ...st };
         const pf = (st.profile ?? {}) as any;
+        /* P7 — a fresh visitor must never see a previous run's level or sector.
+           Identity is hydrated only when it belongs to the address this session
+           actually read. */
+        const sameSubject = !pf.profile_url || !st.profile_url || pf.profile_url === st.profile_url;
+        if (!sameSubject) {
+          Object.assign(anonStateRef.current as any, { profile: { profile_url: st.profile_url } });
+        }
+        if (sameSubject) {
         if (pf.first_name) setFirstName(pf.first_name);
         if (pf.last_name) setLastName(pf.last_name);
         if (pf.firm) setFirm(pf.firm);
@@ -533,6 +616,7 @@ const Onboarding = () => {
         if (pf.level) setLevelTitle(pf.level);
         if (pf.seniority_band) setBand(pf.seniority_band as Band);
         if (pf.skill_ratings && typeof pf.skill_ratings === "object") setScores(pf.skill_ratings);
+        }
         if (st.answers && typeof st.answers === "object") setAnswers(st.answers);
         if (st.profile_url) setLiInput(st.profile_url);
         /* The quick read already happened at /assessment — never ask twice. */
@@ -1154,7 +1238,7 @@ const Onboarding = () => {
   /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
     const stage = stageOf(screen);
-    setExitNote(`Saved at step ${stage} of 5. Pick it up any time.`);
+    setExitNote(`Saved at ${stepLabel(stage).toLowerCase()}. Pick it up any time.`);
     void (async () => {
       await persistScreen(screen);
       if (userId) {
@@ -1179,7 +1263,8 @@ const Onboarding = () => {
           }
         } catch (e) { console.error("[journey] finish later save threw", e); }
       }
-      window.setTimeout(() => navigate("/home"), 900);
+      /* An anonymous run has no Home to go to — the token keeps their place. */
+      window.setTimeout(() => navigate(userId ? "/home" : "/"), 900);
     })();
   }, [persistScreen, screen, navigate, userId, writeProfile]);
 
@@ -1208,6 +1293,25 @@ const Onboarding = () => {
   ) : null;
 
   const bandLabel = band ? BAND_LABEL[band] : null;
+
+  /* The browser's back button walks the journey, and Escape is Finish later. */
+  useEffect(() => {
+    const onPop = () => { goBack(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const el = document.activeElement as HTMLElement | null;
+      const typing = !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+      if (typing) return;
+      e.preventDefault();
+      saveAndExit();
+    };
+    window.addEventListener("popstate", onPop);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [goBack, saveAndExit]);
 
   /** One writer for the level, wherever it is picked. */
   const chooseTitle = async (title: string, b: Band) => {
@@ -1418,8 +1522,8 @@ const Onboarding = () => {
 
   const retryPanel = (retry: () => void) => (
     <>
-      <h1 style={h1Night}>Give that one more go.</h1>
-      <p style={bodyNight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
+      <h1 style={h1Light}>Give that one more go.</h1>
+      <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
       <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={retry}>Try again</OBButton></Actions>
     </>
   );
@@ -1435,7 +1539,8 @@ const Onboarding = () => {
           Then it writes like you — and helps you be known better on LinkedIn and in the professional circles that matter to you.
         </p>
         <p style={bodyLight}>
-          Five short steps, about ten minutes. You can stop anywhere — everything saves as you go.
+          {ASSESSMENT_STEPS_WORD.charAt(0).toUpperCase() + ASSESSMENT_STEPS_WORD.slice(1)} short steps,{" "}
+          {ASSESSMENT_MINUTES_LINE.toLowerCase()}. You can stop anywhere — everything saves as you go.
         </p>
         <p style={{
           margin: "26px 0 10px", fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em",
@@ -1453,9 +1558,7 @@ const Onboarding = () => {
           ))}
         </div>
         <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>Start</OBButton></Actions>
-        <p style={footnote}>
-          Free while Aura is in beta. Your read is private — only you can see it unless you share it.
-        </p>
+        <p style={footnote}>{REPORT_FREE_LINE}</p>
       </PaperShell>
     );
   }
@@ -1730,7 +1833,9 @@ const Onboarding = () => {
                 {connected ? <Check size={16} style={{ color: "#12805C", flexShrink: 0, marginBlockStart: 2 }} /> : <span style={{ inlineSize: 16, flexShrink: 0 }} />}
                 <div style={{ flex: 1 }}>
                   <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: OB.ink }}>
-                    {connected ? "Connected · Aura can read your posts and publish when you approve" : "What's private · not connected"}
+                    {connected
+                      ? `Connected${connectedName ? ` · ${connectedName}` : ""} · Aura can read your posts and publish when you approve`
+                      : "What's private · not connected"}
                   </p>
                   {connected ? null : (
                     <>
@@ -1738,12 +1843,18 @@ const Onboarding = () => {
                         How those posts actually performed. This is how Aura learns which of the signals in your read
                         your audience already rewards — instead of guessing.
                       </p>
-                      <Actions style={{ marginBlockStart: 12 }}>
-                        <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel="Connecting…">
-                          Connect LinkedIn
-                        </OBButton>
-                      </Actions>
-                      {connectNote ? (
+                      {userId ? (
+                        <Actions style={{ marginBlockStart: 12 }}>
+                          <OBButton variant="secondary" onClick={() => void connectLinkedIn()} loading={connecting} loadingLabel="Connecting…">
+                            Connect LinkedIn
+                          </OBButton>
+                        </Actions>
+                      ) : (
+                        <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>
+                          {CONNECT_AFTER_ACCOUNT}
+                        </p>
+                      )}
+                      {userId && connectNote ? (
                         <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{connectNote}</p>
                       ) : null}
                     </>
@@ -1836,16 +1947,16 @@ const Onboarding = () => {
     );
   }
 
-  /* 4 — NIGHT */
+  /* 4 — WHITE, the same card shell as every other question screen */
   if (screen === 4) {
     content = (
-      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>I know who you are. Now I need what you notice.</h1>
-        <p style={{ ...bodyNight, textAlign: "center" }}>
+      <PaperShell onExit={saveAndExit} bead={1} face footer={escapeFooter}>
+        <h1 style={{ ...h1Light, textAlign: "center" }}>I know who you are. Now I need what you notice.</h1>
+        <p style={{ ...bodyLight, textAlign: "center" }}>
           Your profile says what you've done. It doesn't say what you think. One link is enough to start.
         </p>
         <Actions style={{ marginBlockStart: 26 }}><OBButton onClick={() => go(5)}>Okay</OBButton></Actions>
-      </NightShell>
+      </PaperShell>
     );
   }
 
@@ -2000,9 +2111,9 @@ const Onboarding = () => {
     );
   }
 
-  /* 8 — NIGHT, before the sliders */
+  /* 8 — WHITE, before the sliders */
   if (screen === 8) {
-    if (!band) { content = bandPrompt(2, true); } else {
+    if (!band) { content = bandPrompt(2); } else {
     const sliderCount = dims?.length ?? 0;
     // Sector rows do not exist yet — every member gets the band set, so the
     // copy may only promise the level.
@@ -2010,17 +2121,17 @@ const Onboarding = () => {
       ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel}.`
       : null;
     content = (
-      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={2} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadDimensions()) : (
           <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>Now your own read.</h1>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
+            <h1 style={{ ...h1Light, textAlign: "center" }}>Now your own read.</h1>
+            <p style={{ ...bodyLight, textAlign: "center" }}>
               Where your own read and your posts disagree is where the useful part is.
             </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
+            <p style={{ ...bodyLight, textAlign: "center" }}>
               This isn't a test. Each one asks what you've actually done, in plain sentences rather than numbers.
             </p>
-            {pickedLine ? <p style={{ ...bodyNight, textAlign: "center" }}>{pickedLine}</p> : null}
+            {pickedLine ? <p style={{ ...bodyLight, textAlign: "center" }}>{pickedLine}</p> : null}
             <Actions style={{ marginBlockStart: 24 }}>
               <OBButton onClick={() => { setDimIdx(0); go(9); }} loading={!dims} loadingLabel="Loading…">
                 Okay
@@ -2028,7 +2139,7 @@ const Onboarding = () => {
             </Actions>
           </>
         )}
-      </NightShell>
+      </PaperShell>
     );
     }
   }
@@ -2143,23 +2254,23 @@ const Onboarding = () => {
     }
   }
 
-  /* 10 — NIGHT, before the six */
+  /* 10 — WHITE, before the questions */
   if (screen === 10) {
-    if (!band) { content = bandPrompt(3, true); } else {
+    if (!band) { content = bandPrompt(3); } else {
     content = (
-      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={3} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
           <>
-            <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is what makes it yours.</h1>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
-              Nine questions about how you actually work — read together with your posts, what you captured and your
-              sliders.
+            <h1 style={{ ...h1Light, textAlign: "center" }}>This next bit is what makes it yours.</h1>
+            <p style={{ ...bodyLight, textAlign: "center" }}>
+              {ASSESSMENT_QUESTIONS_WORD.charAt(0).toUpperCase() + ASSESSMENT_QUESTIONS_WORD.slice(1)} questions about
+              how you actually work — read together with your posts, what you captured and your sliders.
             </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>
+            <p style={{ ...bodyLight, textAlign: "center" }}>
               What comes out is the signals in your read, the space nobody near you has claimed, and where the ground is
               still soft.
             </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>Nine questions. Two minutes. Saved as you go.</p>
+            <p style={{ ...bodyLight, textAlign: "center" }}>{ASSESSMENT_QUESTIONS} questions. Two minutes. Saved as you go.</p>
             <Actions style={{ marginBlockStart: 24 }}>
               <OBButton onClick={() => { setQIdx(0); go(11); }} loading={!questions} loadingLabel="Loading…">
                 Let's do it
@@ -2167,7 +2278,7 @@ const Onboarding = () => {
             </Actions>
           </>
         )}
-      </NightShell>
+      </PaperShell>
     );
     }
   }
@@ -2458,7 +2569,7 @@ const Onboarding = () => {
     );
   }
 
-  /* 12 — NIGHT, the shelf */
+  /* 12 — WHITE, the shelf */
   if (screen === 12) {
     /* the four things the report is actually doing, in order */
     const genSteps = [
@@ -2468,11 +2579,11 @@ const Onboarding = () => {
       { key: "write", label: "Writing your read", done: !revealPending },
     ];
     content = (
-      <NightShell onExit={saveAndExit} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
         {!revealPending ? <Confetti /> : null}
         {revealPending ? (
           <div style={{ marginBlockEnd: 4 }}>
-            <WorkProgress onNight slowAfterMs={20000}
+            <WorkProgress slowAfterMs={20000}
               done={genSteps.filter((s) => s.done).length} total={genSteps.length} />
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockEnd: 22 }}>
               {genSteps.map((s) => (
@@ -2481,14 +2592,14 @@ const Onboarding = () => {
             </div>
           </div>
         ) : null}
-        <h1 style={{ ...h1Night, textAlign: "center" }}>You've got a shelf.</h1>
+        <h1 style={{ ...h1Light, textAlign: "center" }}>You've got a shelf.</h1>
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           gap: 8, justifyItems: "center", maxWidth: 420, margin: "26px auto 6px",
         }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
-              tone={s.tone} onNight unlocked
+              tone={s.tone} unlocked
               icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
               figure={
                 i === 0 ? (postsRead ? num(postsRead) : "✓")
@@ -2498,7 +2609,7 @@ const Onboarding = () => {
               } />
           ))}
         </div>
-        <p style={{ ...bodyNight, textAlign: "center" }}>
+        <p style={{ ...bodyLight, textAlign: "center" }}>
           {proof && proof.posts > 0 ? (
             <>
               I have {num(proof.posts)} of your posts and {num(proof.words)} words in your own voice
@@ -2508,12 +2619,12 @@ const Onboarding = () => {
             </>
           ) : (
             <>
-              {EMPTY_POSTS_LINE_NIGHT}
+              {EMPTY_POSTS_LINE}
               {claims.length ? ` I already have ${num(claims.length)} ${claims.length === 1 ? "thing" : "things"} you captured and your own answers on file.` : " I already have your own answers on file."}
             </>
           )}
         </p>
-        <p style={{ ...bodyNight, textAlign: "center" }}>
+        <p style={{ ...bodyLight, textAlign: "center" }}>
           {mayPromiseMorning
             ? "Tonight I read for the signals in your read. Tomorrow morning there's something waiting."
             : "I'll keep reading for the signals in your read. When something is worth your name on it, you'll hear — not before."}
@@ -2526,7 +2637,7 @@ const Onboarding = () => {
             {revealPending && revealSlow ? "See what I have so far" : "See how people see me"}
           </OBButton>
         </Actions>
-      </NightShell>
+      </PaperShell>
     );
   }
 
@@ -2747,7 +2858,7 @@ const Onboarding = () => {
             style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
           </Actions>
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
-            Free while Aura is in beta. Your read is private — only you can see it unless you share it.
+            {REPORT_FREE_LINE}
           </p>
           <p style={{
             margin: "12px 0 0", fontSize: 12, lineHeight: 1.7,
@@ -2763,12 +2874,12 @@ const Onboarding = () => {
     );
   }
 
-  /* 13b — NIGHT, and only after 13 */
+  /* 13b — WHITE, and only after 13 */
   if (screen === 14) {
     content = (
-      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>When should I bring it to you?</h1>
-        <p style={{ ...bodyNight, textAlign: "center" }}>
+      <PaperShell onExit={saveAndExit} bead={4} face footer={escapeFooter}>
+        <h1 style={{ ...h1Light, textAlign: "center" }}>When should I bring it to you?</h1>
+        <p style={{ ...bodyLight, textAlign: "center" }}>
           I read overnight. Tell me when your day starts and that's when it's waiting.
         </p>
         <div style={{ display: "flex", gap: 9, marginBlockStart: 20 }}>
@@ -2776,40 +2887,44 @@ const Onboarding = () => {
             <button key={slot} type="button" onClick={() => void chooseDailyTime(slot)} style={{
               flex: 1, padding: "13px 8px", borderRadius: RADIUS.card, cursor: "pointer",
               fontFamily: "inherit", fontSize: 13.5, fontWeight: dailyTime === slot ? 700 : 500,
-              background: dailyTime === slot ? OB.blue : OB.nightSoft,
-              border: `1px solid ${dailyTime === slot ? OB.blue : OB.lineNight}`,
-              color: "#FFFFFF",
+              background: dailyTime === slot ? OB.blue : OB.canvas,
+              border: `1px solid ${dailyTime === slot ? OB.blue : OB.line}`,
+              color: dailyTime === slot ? "#FFFFFF" : OB.ink,
             }}>{slot}</button>
           ))}
         </div>
-        <p style={{ margin: "10px 0 0", fontSize: 12, color: OB.mutedNight, textAlign: "center" }}>
+        <p style={{ margin: "10px 0 0", fontSize: 12, color: OB.muted, textAlign: "center" }}>
           Your time zone · {timeZone}
         </p>
 
-        {connected ? null : (
+        {connected || !userId ? null : (
           <>
-            <div style={{ blockSize: 1, background: OB.lineNight, margin: "24px 0 18px" }} />
-            <p style={{ ...bodyNight, textAlign: "center" }}>
+            <div style={{ blockSize: 1, background: OB.line, margin: "24px 0 18px" }} />
+            <p style={{ ...bodyLight, textAlign: "center" }}>
               Connect LinkedIn and you find out which of the signals in your read your audience already rewards — so nothing
               written for you is a guess.
             </p>
             <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton variant="secondary" onNight onClick={() => void connectLinkedIn({ allowRedirect: true })}
+              <OBButton variant="secondary" onClick={() => void connectLinkedIn({ allowRedirect: true })}
                 loading={connecting} loadingLabel="Connecting…">
                 Connect LinkedIn
               </OBButton>
             </Actions>
             {connectNote ? (
-              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.mutedNight }}>{connectNote}</p>
+              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{connectNote}</p>
             ) : null}
           </>
+        )}
+
+        {connected || userId ? null : (
+          <p style={{ ...bodyLight, textAlign: "center" }}>{CONNECT_AFTER_ACCOUNT}</p>
         )}
 
         <Actions style={{ marginBlockStart: 22 }}>
           <OBButton onClick={() => void finish()}>Take me in</OBButton>
         </Actions>
-        <p style={{ ...footnote, color: OB.mutedNight }}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
-      </NightShell>
+        <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
+      </PaperShell>
     );
   }
 
@@ -2827,7 +2942,9 @@ const Onboarding = () => {
           }}>{exitNote}</span>
         </div>
       ) : null}
-      {content}
+      <JourneyNav.Provider value={{ onBack: canBack ? goBack : undefined }}>
+        {content}
+      </JourneyNav.Provider>
     </>
   );
 };

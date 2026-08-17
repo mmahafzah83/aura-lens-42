@@ -112,7 +112,7 @@ export function InviteColleagueModal({ open, onClose }: Props) {
 
         <SectionHeader
           label="Bring someone in to Aura"
-          subtitle="They'll receive an invitation email and join the beta"
+          subtitle="They'll receive an invitation email and can start their own read"
         />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>

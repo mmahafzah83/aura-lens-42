@@ -8,6 +8,10 @@ import {
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
+import {
+  ASSESSMENT_MINUTES, ASSESSMENT_MINUTES_LINE, ASSESSMENT_MINUTES_SHORT,
+  ASSESSMENT_QUESTIONS_PHRASE,
+} from "@/lib/brand";
 
 /**
  * The Gate — and the quick read, which is step one of the one assessment.
@@ -31,7 +35,7 @@ const Assessment = () => {
   usePageMeta({
     title: "Aura — Start your professional assessment",
     description:
-      "Nine minutes, free, and yours to keep. Aura reads your LinkedIn, your CV and your own answers, then shows what you are provably good at and what is real but invisible.",
+      `${ASSESSMENT_MINUTES_LINE}, free, and yours to keep. Aura reads your LinkedIn, your CV and your own answers, then shows what you are provably good at and what is real but invisible.`,
     path: "/assessment",
   });
 
@@ -234,7 +238,7 @@ const Assessment = () => {
               <span className="asg-k">STEP ONE · YOUR READ</span>
               <ReadResult read={read as unknown as ReadShape} postsRead={postsRead} sparse={sparse} />
               <button className="asg-btn asg-bp asg-full" onClick={() => void continueToOnboarding()}>
-                Continue — your CV and nine questions <span className="asg-a">↗</span>
+                Continue — your CV and {ASSESSMENT_QUESTIONS_PHRASE} <span className="asg-a">↗</span>
               </button>
               <p className="asg-trust">
                 Saved as you go. No account yet — we ask once, at the end.
@@ -267,7 +271,7 @@ const Assessment = () => {
             </span>
 
             <h1 className="asg-h1">
-              Nine minutes, and you&rsquo;ll see
+              {ASSESSMENT_MINUTES_LINE}, and you&rsquo;ll see
               <br />
               <span className="asg-h1b">what your profile has been hiding.</span>
             </h1>
@@ -279,7 +283,7 @@ const Assessment = () => {
 
             <div className="asg-stats">
               <div className="asg-stat">
-                <span className="asg-n">9 min</span>
+                <span className="asg-n">{ASSESSMENT_MINUTES_SHORT}</span>
                 <span className="asg-c">stop and return anytime</span>
               </div>
               <div className="asg-stat">
@@ -400,7 +404,7 @@ const Assessment = () => {
           </div>
         </section>
 
-        {/* ── below · the shape of the nine minutes ── */}
+        {/* ── below · the shape of the journey ── */}
         <section className="asg-three">
           <article className="asg-card">
             <span className="asg-k">FIRST · 90 SECONDS</span>
@@ -408,8 +412,8 @@ const Assessment = () => {
             <p>We read what is already public and turn it into a first picture of how you land.</p>
           </article>
           <article className="asg-card">
-            <span className="asg-k">THEN · 7 MINUTES</span>
-            <h2>Your CV and nine questions</h2>
+            <span className="asg-k">THEN · {ASSESSMENT_MINUTES - 3} MINUTES</span>
+            <h2>Your CV and {ASSESSMENT_QUESTIONS_PHRASE}</h2>
             <p>Upload what you have. Answer in your own words. Stop and come back whenever you like.</p>
           </article>
           <article className="asg-card">
