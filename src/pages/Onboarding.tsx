@@ -2682,6 +2682,9 @@ const Onboarding = () => {
       const placeholder = phList[phIdx % phList.length];
       const rotatePlaceholder = () => setPhIdx((i) => i + 1);
 
+      /* The headline can never promise three positions we are about to withdraw. */
+      const promptText = proposedFallback ? "What position could only you credibly take?" : q.prompt;
+
 
       content = (
         <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
@@ -2691,7 +2694,7 @@ const Onboarding = () => {
           {qIdx === 0 ? (
             <p style={{ margin: "6px 0 0", fontSize: 12, color: OB.muted }}>Saved as you go — you can stop any time.</p>
           ) : null}
-          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{q.prompt}</h1>
+          <h1 style={{ ...h1Light, marginBlockStart: 10, fontSize: "clamp(21px,5.6vw,27px)" }}>{promptText}</h1>
           {helperText ? <p style={bodyLight}>{helperText}</p> : null}
           {q.why_asked ? (
             <p style={{ margin: "10px 0 0", fontSize: 12, lineHeight: 1.55, color: OB.muted }}>
