@@ -266,10 +266,18 @@ Deno.serve(async (req) => {
       .eq("ip_hash", ip_hash)
       .gte("created_at", since);
     if ((count ?? 0) >= 5) return json({ error: "rate_limited" }, 429);
-    await admin.from("mirror_requests").insert({ ip_hash, handle, email, ref });
+    const { data: metered } = await admin
+      .from("mirror_requests")
+      .insert({ ip_hash, handle, email, ref })
+      .select("id")
+      .maybeSingle();
+    /** A failure on our side must not cost the visitor an attempt. */
+    const refund = async () => {
+      if (metered?.id) await admin.from("mirror_requests").delete().eq("id", metered.id);
+    };
 
     const APIFY_TOKEN = Deno.env.get("APIFY_TOKEN");
-    if (!APIFY_TOKEN) return json({ error: "not_configured" }, 400);
+    if (!APIFY_TOKEN) { await refund(); return json({ error: "not_configured" }, 400); }
 
     // --- d) Fetch profile and posts in parallel ---
     const [profile, postTexts] = await Promise.all([
@@ -278,6 +286,8 @@ Deno.serve(async (req) => {
     ]);
     const item = profile.item;
     if (!item) {
+      // The provider cap is ours, not theirs — give the attempt back.
+      if (profile.reason === "provider_limit") await refund();
       return profile.reason === "provider_limit"
         ? json({ error: "provider_limit" }, 503)
         : json({ error: "profile_unreadable" }, 502);
