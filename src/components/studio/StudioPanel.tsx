@@ -387,6 +387,9 @@ export default function StudioPanel({
   // words already open. The controls are identical for everyone.
   const [showPaste, setShowPaste] = useState(() => readStoredPosture() === "author");
   const [showDrafts, setShowDrafts] = useState(false);
+  // Finished work must never hide behind a collapsed link: open the list the
+  // moment drafts arrive.
+  const draftsOpened = useRef(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
   /* The reading generation already took, held only for display. */
