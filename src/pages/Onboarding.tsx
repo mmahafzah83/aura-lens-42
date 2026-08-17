@@ -1222,7 +1222,8 @@ const Onboarding = () => {
           }
         } catch (e) { console.error("[journey] finish later save threw", e); }
       }
-      window.setTimeout(() => navigate("/home"), 900);
+      /* An anonymous run has no Home to go to — the token keeps their place. */
+      window.setTimeout(() => navigate(userId ? "/home" : "/"), 900);
     })();
   }, [persistScreen, screen, navigate, userId, writeProfile]);
 
