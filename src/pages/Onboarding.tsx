@@ -233,7 +233,11 @@ const wordsIn = (rows: { post_text?: string | null }[]): number =>
  * The night surface is kept for the machine's own moments — reading, and the
  * reveal. `JourneyNav` carries the back control so no screen has to pass it.
  */
-const JourneyNav = createContext<{ onBack?: () => void }>({});
+const JourneyNav = createContext<{ onBack?: () => void; banner?: React.ReactNode }>({});
+
+/** Which of the five named stages a screen belongs to. One definition, used
+ *  by the resume banner and by Finish later. */
+const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
 
 const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => {
   const { onBack } = useContext(JourneyNav);
@@ -255,7 +259,7 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
 const PaperShell = ({
   children, bead, cream = false, footer, onExit, face = false,
 }: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void; face?: boolean }) => {
-  const { onBack } = useContext(JourneyNav);
+  const { onBack, banner } = useContext(JourneyNav);
   return (
   <div className="obc" style={{
     minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
@@ -263,6 +267,7 @@ const PaperShell = ({
   }}>
     <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
       {onExit ? <JourneyHeader onExit={onExit} onBack={onBack} /> : null}
+      {banner}
       <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
         <ProgressBeads active={bead} />
       </div>
