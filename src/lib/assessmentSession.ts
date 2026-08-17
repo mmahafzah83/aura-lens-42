@@ -69,7 +69,7 @@ export async function createSession(): Promise<{ token?: string; error?: string 
 /** Empty result means expired, claimed or unknown — the caller starts fresh. */
 export async function loadSession(
   token: string,
-): Promise<{ state: AssessmentState; runs_started: number } | null> {
+): Promise<{ state: AssessmentState; runs_started: number; created_at: string | null } | null> {
   const { data, error } = await supabase.rpc("get_assessment_session", { p_token: token });
   if (error) return null;
   const row = Array.isArray(data) ? data[0] : null;
@@ -77,6 +77,8 @@ export async function loadSession(
   return {
     state: (row.state ?? {}) as AssessmentState,
     runs_started: Number(row.runs_started ?? 0),
+    /* The genuine start of this run. Never guessed — null when absent. */
+    created_at: (row as { created_at?: string | null }).created_at ?? null,
   };
 }
 
