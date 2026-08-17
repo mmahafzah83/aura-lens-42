@@ -3119,6 +3119,7 @@ const Onboarding = () => {
         </Actions>
       </PaperShell>
     );
+    }
   }
 
   /* 13 — FULL-BLEED BLUE */
