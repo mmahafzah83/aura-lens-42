@@ -140,12 +140,17 @@ const Assessment = () => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok || !data?.read) {
+        // Every code the engine can return gets its own honest line.
+        const READ_ERRORS: Record<string, string> = {
+          invalid_url: "That doesn't look like a LinkedIn profile address. It should look like linkedin.com/in/yourname.",
+          profile_unreadable: "LinkedIn didn't return that profile. If it's set to private, Aura can't see it either.",
+          provider_limit: "Aura has hit today's reading limit with our LinkedIn provider. Nothing is wrong with your profile — try again shortly.",
+          rate_limited: "That's as many reads as can come from here this hour. Nothing is lost — try again shortly.",
+          not_configured: "Reading is briefly unavailable on our side. Nothing is lost — try again shortly.",
+        };
         setNotice(
-          data?.error === "profile_unreadable"
-            ? "LinkedIn didn't return that profile. If it's set to private, Aura can't see it either."
-            : data?.error === "provider_limit"
-              ? "Aura has hit today's reading limit with our LinkedIn provider. Nothing is wrong with your profile — try again shortly."
-              : "The read didn't come back clean. Nothing is lost — try once more.");
+          READ_ERRORS[String(data?.error ?? "")] ??
+          "The read didn't come back clean. Nothing is lost — try once more.");
         setStage("address");
         return;
       }
