@@ -319,6 +319,8 @@ const Onboarding = () => {
 
   const [screen, setScreen] = useState(0);
   const screenRef = useRef(0);
+  /** Where Back goes. Screens are pushed as they are left, popped on return. */
+  const backStack = useRef<number[]>([]);
 
   /* member facts */
   const [firstName, setFirstName] = useState("");
