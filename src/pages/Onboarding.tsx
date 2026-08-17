@@ -261,7 +261,7 @@ const PaperShell = ({
 const Onboarding = () => {
   usePageMeta({
     title: "Aura — Start your shelf",
-    description: "About ten minutes. Aura learns your sector, your level and the way you already write.",
+    description: `${ASSESSMENT_MINUTES_LINE}. Aura learns your sector, your level and the way you already write.`,
     path: "/onboarding",
   });
   const navigate = useNavigate();
@@ -1158,7 +1158,7 @@ const Onboarding = () => {
   /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
     const stage = stageOf(screen);
-    setExitNote(`Saved at step ${stage} of 5. Pick it up any time.`);
+    setExitNote(`Saved at ${stepLabel(stage).toLowerCase()}. Pick it up any time.`);
     void (async () => {
       await persistScreen(screen);
       if (userId) {
@@ -2155,14 +2155,14 @@ const Onboarding = () => {
           <>
             <h1 style={{ ...h1Night, textAlign: "center" }}>This next bit is what makes it yours.</h1>
             <p style={{ ...bodyNight, textAlign: "center" }}>
-              Nine questions about how you actually work — read together with your posts, what you captured and your
-              sliders.
+              {ASSESSMENT_QUESTIONS_WORD.charAt(0).toUpperCase() + ASSESSMENT_QUESTIONS_WORD.slice(1)} questions about
+              how you actually work — read together with your posts, what you captured and your sliders.
             </p>
             <p style={{ ...bodyNight, textAlign: "center" }}>
               What comes out is the signals in your read, the space nobody near you has claimed, and where the ground is
               still soft.
             </p>
-            <p style={{ ...bodyNight, textAlign: "center" }}>Nine questions. Two minutes. Saved as you go.</p>
+            <p style={{ ...bodyNight, textAlign: "center" }}>{ASSESSMENT_QUESTIONS} questions. Two minutes. Saved as you go.</p>
             <Actions style={{ marginBlockStart: 24 }}>
               <OBButton onClick={() => { setQIdx(0); go(11); }} loading={!questions} loadingLabel="Loading…">
                 Let's do it
@@ -2750,7 +2750,7 @@ const Onboarding = () => {
             style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
           </Actions>
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
-            Free while Aura is in beta. Your read is private — only you can see it unless you share it.
+            {REPORT_FREE_LINE}
           </p>
           <p style={{
             margin: "12px 0 0", fontSize: 12, lineHeight: 1.7,
