@@ -1898,16 +1898,16 @@ const Onboarding = () => {
     );
   }
 
-  /* 4 — NIGHT */
+  /* 4 — WHITE, the same card shell as every other question screen */
   if (screen === 4) {
     content = (
-      <NightShell onExit={saveAndExit} face footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>I know who you are. Now I need what you notice.</h1>
-        <p style={{ ...bodyNight, textAlign: "center" }}>
+      <PaperShell onExit={saveAndExit} bead={1} face footer={escapeFooter}>
+        <h1 style={{ ...h1Light, textAlign: "center" }}>I know who you are. Now I need what you notice.</h1>
+        <p style={{ ...bodyLight, textAlign: "center" }}>
           Your profile says what you've done. It doesn't say what you think. One link is enough to start.
         </p>
         <Actions style={{ marginBlockStart: 26 }}><OBButton onClick={() => go(5)}>Okay</OBButton></Actions>
-      </NightShell>
+      </PaperShell>
     );
   }
 
