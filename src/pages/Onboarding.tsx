@@ -746,10 +746,15 @@ const Onboarding = () => {
       else if (!passwordSet) setNeedsPassword(true);
 
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, level, seniority_band, onboarding_step, skill_ratings, identity_intelligence")
+        .select("first_name, last_name, firm, sector_focus, level, seniority_band, onboarding_step, skill_ratings, identity_intelligence, journey_reset_at")
         .eq("user_id", uid)
         .maybeSingle();
       const p: any = profile || {};
+
+      /* A reset on the server must never leave a stale journey in the browser. */
+      if (sweepIfServerReset(p.journey_reset_at)) {
+        if (!passwordSet) setNeedsIdentityConfirm(true);
+      }
 
       /* Belt and braces: a trigger creates this row on signup, but anyone who
          predates it would otherwise spend the whole journey writing into
