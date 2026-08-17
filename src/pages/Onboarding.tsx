@@ -773,9 +773,10 @@ const Onboarding = () => {
             rate_limited: "That's as many reads as can come from here this hour. Nothing is lost — try again shortly.",
             not_configured: "Reading is briefly unavailable on our side. Nothing is lost — try again shortly.",
           };
-          setLiError(READ_ERRORS[String(payload?.error ?? "")] ??
-            "The read didn't come back clean. Nothing is lost — try once more.");
-          setStep1Phase("ask");
+          returnToAddress(
+            READ_ERRORS[String(payload?.error ?? "")] ??
+            "The read didn't come back clean. Nothing is lost — try once more.",
+          );
           setLiBusy(false);
           return;
         }
