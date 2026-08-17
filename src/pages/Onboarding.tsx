@@ -125,6 +125,13 @@ const MANUAL_SCREEN = 15;
 const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you capture.";
 /** The same truth, in the first person, because the dark screens are Aura speaking. */
 const EMPTY_POSTS_LINE_NIGHT = "Nothing public yet — that's the point. I'll build from what you capture.";
+/** What the free tier deliberately does not do — used on the final screen. */
+const LOSS_LINES = [
+  "The signals keep arriving in your field. Nothing reads them for you.",
+  "What you capture stays a list. It never becomes evidence.",
+  "This read is today's. Nothing keeps it current.",
+] as const;
+
 /**
  * LinkedIn's OAuth grant is stored against an account — there is nowhere to
  * safely keep an access token for a visitor who has none. So the button is not
