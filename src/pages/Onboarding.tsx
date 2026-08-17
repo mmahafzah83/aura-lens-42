@@ -2066,7 +2066,12 @@ const Onboarding = () => {
           background: OB.canvas, border: `1px solid ${OB.line}`,
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <span style={{ fontSize: 14 }}>Level · <strong>{levelTitle || bandLabel || "not set"}</strong></span>
+            <span style={{ fontSize: 14 }}>
+              Level ·{" "}
+              {levelTitle || bandLabel
+                ? <strong>{levelTitle || bandLabel}</strong>
+                : <span style={{ color: OB.muted }}>tell Aura</span>}
+            </span>
             <OBButton variant="tertiary" onClick={() => setBandPicker((v) => !v)} style={{ flexShrink: 0 }}>
               {bandPicker ? "Close" : "Change"}
             </OBButton>
@@ -2083,9 +2088,12 @@ const Onboarding = () => {
                   await writeProfile({ sector_focus: v }, "sector save");
                 }
               }} style={{ ...fieldStyle, marginBlockStart: 8 }}>
-                <option value="">Your sector</option>
+                <option value="">Choose your sector</option>
                 {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
+              <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>
+                Optional — it sharpens what Aura watches for you.
+              </p>
             </div>
           )}
         </div>
