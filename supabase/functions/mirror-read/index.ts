@@ -113,7 +113,9 @@ async function fetchProfile(canonical_url: string, token: string): Promise<Recor
       console.error(`mirror-read profile scrape status ${res.status}:`, (await res.text()).slice(0, 300));
       continue;
     }
-    const payload = await res.json().catch(() => null);
+    const raw = await res.text();
+    console.error("mirror-read profile scrape raw:", res.status, raw.slice(0, 400));
+    const payload = (() => { try { return JSON.parse(raw); } catch { return null; } })();
     const list: any[] = Array.isArray(payload) ? payload : [];
     const candidate = (list.find((r) => r && typeof r === "object" && !r.error) ?? null) as
       | Record<string, unknown>
