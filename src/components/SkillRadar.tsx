@@ -169,6 +169,8 @@ const SkillRadar = () => {
     ? PARTNER_BENCHMARK[selectedSkill] || 90
     : 0;
 
+  if (!CAPABILITY_RADAR_ENABLED) return null;
+
   return (
     <div className="w-full h-full flex flex-col">
       <div className="flex items-center justify-between mb-1">
