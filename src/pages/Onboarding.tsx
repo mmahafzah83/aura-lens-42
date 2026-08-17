@@ -3007,6 +3007,51 @@ const Onboarding = () => {
 
   /* 12 — WHITE, the shelf */
   if (screen === 12) {
+    /* THE ARRIVAL — the last beat before the reveal, shown once. */
+    if (arrival) {
+      const parts: React.ReactNode[] = [];
+      const push = (n: number, tail: string) => {
+        parts.push(
+          <span key={tail}>
+            <span style={{ fontFamily: OB.mono, color: "#FFFFFF" }}>{n}</span>{" "}{tail}
+          </span>,
+        );
+      };
+      if (typeof arrival.answers === "number" && arrival.answers > 0) push(arrival.answers, arrival.answers === 1 ? "answer" : "answers");
+      if (typeof arrival.sliders === "number" && arrival.sliders > 0) push(arrival.sliders, arrival.sliders === 1 ? "placement" : "placements");
+      if (typeof arrival.captures === "number" && arrival.captures > 0) push(arrival.captures, arrival.captures === 1 ? "article you kept" : "articles you kept");
+      if (typeof arrival.minutes === "number") push(arrival.minutes, arrival.minutes === 1 ? "minute of your attention" : "minutes of your attention");
+      content = (
+        <NightShell onExit={saveAndExit} footer={escapeFooter}>
+          <div style={{ textAlign: "center", paddingBlock: 28 }}>
+            <h1 style={{ ...h1Night }}>
+              {arrival.first_name ? `Thank you, ${arrival.first_name}.` : "Thank you."}
+            </h1>
+            {parts.length ? (
+              <p style={{
+                fontFamily: OB.ui, fontSize: 14, color: OB.mutedNight,
+                marginBlockStart: 22, lineHeight: 1.7,
+              }}>
+                {parts.map((p, i) => (
+                  <React.Fragment key={i}>{i > 0 ? <span style={{ opacity: 0.6 }}>{" · "}</span> : null}{p}</React.Fragment>
+                ))}
+              </p>
+            ) : null}
+            <p style={{ ...bodyNight, marginBlockStart: 22, maxInlineSize: 460, marginInline: "auto" }}>
+              That is more than most people ever put into how they are seen. Here is what came back.
+            </p>
+            <Actions style={{ marginBlockStart: 30 }}>
+              <OBButton onClick={() => {
+                try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
+                setArrival(null);
+                go(13);
+              }}>Show me my read</OBButton>
+            </Actions>
+          </div>
+        </NightShell>
+      );
+      return shell(content);
+    }
     /* the four things the report is actually doing, in order */
     const genSteps = [
       { key: "posts", label: "Reading your posts", done: !revealPending || genElapsed > 2000 },
