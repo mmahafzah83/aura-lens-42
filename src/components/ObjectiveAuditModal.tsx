@@ -206,6 +206,8 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           </div>
           {!showResults && (
             <>
+              {isV2 ? null : (
+              <>
               <Progress value={progress} className="h-1.5 mb-2" />
               <div className="flex items-center justify-between">
                 <p className="text-xs text-ink-5">
@@ -213,13 +215,19 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
                 </p>
                 <p className="text-xs text-ink-5">Answer honestly. Only verified evidence counts.</p>
               </div>
+              </>
+              )}
             </>
           )}
         </div>
 
         {/* Content — scrollable */}
         <div className="flex-1 overflow-y-auto px-5 pb-4">
-          {showResults ? (
+          {isV2 ? (
+            <p className="text-sm text-ink-6 leading-relaxed py-4">
+              Your capabilities were set in your assessment. Re-rate them from My Story.
+            </p>
+          ) : showResults ? (
             <AuditResultsView
               scores={finalScores}
               onNavigate={onNavigate}
@@ -262,7 +270,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
         </div>
 
         {/* Footer — sticky */}
-        {!showResults && (
+        {!showResults && !isV2 && (
           <div
             className="shrink-0"
             style={{
