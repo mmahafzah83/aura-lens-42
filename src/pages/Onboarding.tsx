@@ -514,7 +514,39 @@ const Onboarding = () => {
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/auth?next=%2Fonboarding", { replace: true }); return; }
+      if (!session) {
+        /* No account is not the same as no visitor. A valid anonymous session
+           token walks the whole journey; only a missing or dead token sends
+           anyone to the door. */
+        const held = readToken();
+        const found = held ? await loadSession(held) : null;
+        if (!held || !found) { navigate("/auth?next=%2Fonboarding", { replace: true }); return; }
+        setAnonToken(held);
+        const st = (found.state ?? {}) as any;
+        anonStateRef.current = { answers: {}, ...st };
+        const pf = (st.profile ?? {}) as any;
+        if (pf.first_name) setFirstName(pf.first_name);
+        if (pf.last_name) setLastName(pf.last_name);
+        if (pf.firm) setFirm(pf.firm);
+        if (pf.sector_focus) { setSector(pf.sector_focus); setSectorKnown(true); }
+        if (pf.level) setLevelTitle(pf.level);
+        if (pf.seniority_band) setBand(pf.seniority_band as Band);
+        if (pf.skill_ratings && typeof pf.skill_ratings === "object") setScores(pf.skill_ratings);
+        if (st.answers && typeof st.answers === "object") setAnswers(st.answers);
+        if (st.profile_url) setLiInput(st.profile_url);
+        /* The quick read already happened at /assessment — never ask twice. */
+        if (st.read) { setStep1Phase("result"); setReadDone(true); }
+        let back = Number(st.journey_screen ?? 0);
+        try {
+          const local = Number(localStorage.getItem("aura_ob_screen_anon") ?? "0");
+          if (local > back) back = local;
+        } catch { /* ignore */ }
+        if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
+        if (back === 6 || back === 7) back = 5;
+        if (back > 0 && back <= 14) { setScreen(back); screenRef.current = back; }
+        setChecking(false);
+        return;
+      }
       const uid = session.user.id;
       setUserId(uid);
       setUserEmail(session.user.email ?? null);
