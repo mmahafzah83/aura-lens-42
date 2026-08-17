@@ -267,6 +267,13 @@ Deno.serve(async (req) => {
     if (!handle) return json({ error: "invalid_url" }, 400);
     const canonical_url = `https://www.linkedin.com/in/${handle}`;
 
+    /**
+     * An explicit "read again" from the visitor. It only disqualifies the
+     * cached row — metering, rate limiting and the stale fallbacks below are
+     * untouched, so a forced read costs exactly what any fresh read costs.
+     */
+    const force = body?.force === true;
+
     const fwd = req.headers.get("x-forwarded-for") ?? "";
     const firstIp = fwd.split(",")[0].trim() || "unknown";
     const ip_hash = await sha256Hex(firstIp);
@@ -285,7 +292,7 @@ Deno.serve(async (req) => {
     const stale =
       withinTtl && (await hasFresherEvidence(admin, handle, cached!.generated_at));
 
-    if (withinTtl && !stale) {
+    if (withinTtl && !stale && !force) {
       await admin
         .from("mirror_reads")
         .update({ hit_count: (cached.hit_count ?? 1) + 1 })

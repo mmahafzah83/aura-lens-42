@@ -358,6 +358,8 @@ const Onboarding = () => {
   const [postsRead, setPostsRead] = useState<number | null>(null);
   const [ownWords, setOwnWords] = useState<number | null>(null);
   const [readDone, setReadDone] = useState(false);
+  /** Provenance of a cached read, so the visitor can see its age and refresh it. */
+  const [readCache, setReadCache] = useState<{ generated_at: string; notice: string | null } | null>(null);
   const [sectorKnown, setSectorKnown] = useState(false);
   const [bandPicker, setBandPicker] = useState(false);
   const [cvUploads, setCvUploads] = useState(0);
@@ -735,9 +737,10 @@ const Onboarding = () => {
   }, [navigate]);
 
   /* ── screen 1: read the profile — in place, never leaving the card ── */
-  const readProfile = async () => {
+  const readProfile = async (force = false) => {
     setLiError("");
     setReadDone(false);
+    setReadCache(null);
     setPostsRead(null);
     setOwnWords(null);
     const profile_url = normaliseLinkedIn(liInput);
@@ -759,7 +762,7 @@ const Onboarding = () => {
         const res = await fetch(`${base}/functions/v1/mirror-read`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-          body: JSON.stringify({ profile_url }),
+          body: JSON.stringify({ profile_url, ...(force ? { force: true } : {}) }),
         });
         const payload = await res.json().catch(() => ({} as any));
         if (!res.ok || !payload?.ok || !payload?.read) {
@@ -783,6 +786,11 @@ const Onboarding = () => {
           if (parts.length > 1) setLastName(parts.slice(1).join(" "));
         }
         setLiProfile({ full_name: full || null, read: payload.read } as any);
+        setReadCache(
+          payload.cached && payload.generated_at
+            ? { generated_at: String(payload.generated_at), notice: payload.stale ? String(payload.notice ?? "") || null : null }
+            : null,
+        );
         setStep1Phase("result");
         setLiBusy(false);
         setPostsRead(Number(payload.posts_read ?? 0));
@@ -2022,6 +2030,28 @@ const Onboarding = () => {
                 Aura reads your posts, and can publish for you — but only when you approve it. Nothing goes out in your name on its own. You can disconnect either one in Settings.
               </p>
             </div>
+
+            {readCache ? (
+              <p style={{
+                margin: "16px 0 0", fontFamily: OB.mono, fontSize: 11.5,
+                lineHeight: 1.6, color: OB.muted,
+              }}>
+                {readCache.notice
+                  ? readCache.notice
+                  : `Read from your profile on ${new Date(readCache.generated_at).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`}
+                {" · "}
+                <button
+                  type="button"
+                  onClick={() => void readProfile(true)}
+                  style={{
+                    background: "none", border: 0, padding: 0, font: "inherit",
+                    color: OB.blue, cursor: "pointer", textDecoration: "underline",
+                  }}
+                >
+                  Read again
+                </button>
+              </p>
+            ) : null}
 
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton onClick={() => { void confirmBandIfDetected(); go(CV_SCREEN); }}>Continue</OBButton>
