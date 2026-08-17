@@ -3102,27 +3102,6 @@ const Onboarding = () => {
       }
     };
 
-    const saveReadForLater = async () => {
-      if (!userId) return;
-      if (busy) return;
-      setSavingDraft(true);
-      try {
-        const { error } = await supabase.from("linkedin_posts").insert({
-          user_id: userId,
-          post_text: liveCaption,
-          source_type: "onboarding_reveal",
-          tracking_status: "draft",
-        });
-        if (error) throw error;
-        toast.success("Saved to your drafts.");
-      } catch (err) {
-        console.error("[reveal] save draft failed", err);
-        toast.error("Couldn't save that draft. Your read is safe — it's on your Home.");
-      } finally {
-        setSavingDraft(false);
-      }
-    };
-
     /* One share row per member: once a token exists in state it is reused, never re-minted. */
     const mintShare = async () => {
       if (!userId || !reveal || shareUrl || minting) return;
@@ -3205,7 +3184,7 @@ const Onboarding = () => {
               </div>
             </div>
           ) : null}
-          {canPostToLinkedIn && !postedUrl && reveal ? (
+          {reveal && !postedUrl ? (
             <div style={{ marginBlockStart: 18 }}>
               <label htmlFor="ob-caption" style={{
                 display: "block", fontSize: 12.5, color: "rgba(255,255,255,.85)", marginBlockEnd: 6,
