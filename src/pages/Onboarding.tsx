@@ -360,6 +360,8 @@ const Onboarding = () => {
    */
   const [anonToken, setAnonToken] = useState<string | null>(null);
   const anonStateRef = useRef<AssessmentState & Record<string, any>>({ answers: {} });
+  /* The genuine start of the anonymous run, when the session gave us one. */
+  const sessionStartedAtRef = useRef<string | null>(null);
   const [wallEmail, setWallEmail] = useState("");
   const [wallPassword, setWallPassword] = useState("");
   const [wallConsent, setWallConsent] = useState(false);
@@ -690,6 +692,7 @@ const Onboarding = () => {
         if (!held || !found) { navigate("/auth?next=%2Fonboarding", { replace: true }); return; }
         setAnonToken(held);
         const st = (found.state ?? {}) as any;
+        sessionStartedAtRef.current = found.created_at ?? null;
         anonStateRef.current = { answers: {}, ...st };
         const pf = (st.profile ?? {}) as any;
         /* P7 — a fresh visitor must never see a previous run's level or sector.
