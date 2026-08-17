@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { claimPendingSession } from "@/lib/assessmentSession";
 import usePageMeta from "@/hooks/usePageMeta";
 import { isProfileComplete } from "@/lib/onboarding";
-import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE } from "@/lib/brand";
+import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE, ASSESSMENT_MINUTES_WORD } from "@/lib/brand";
 
 /** The consent text version recorded against every new account. */
 export const CONSENT_VERSION = "2026-08-16";
@@ -699,7 +699,7 @@ const Auth = () => {
           <div className="au-stars" />
           {isAssessment ? (
             <div className="au-nwrap">
-              <p className="au-neyebrow">What you get, in {ASSESSMENT_MINUTES_LINE.replace("About ", "")} minutes</p>
+              <p className="au-neyebrow">What you get, in {ASSESSMENT_MINUTES_WORD} minutes</p>
               <h2 className="au-nh">Your position, <em>in evidence.</em></h2>
 
               <div className="au-card">
