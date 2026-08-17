@@ -154,7 +154,9 @@ const RevealCard = forwardRef<
       /* Physical properties only in this branch: the rasteriser's CSS parser does
          not implement logical properties and computes a zero box for them. */
       width: 1080,
-      height: 1350,
+      /* Sized to content: a fixed height pooled all the slack into one void
+         between the signals and the figures. */
+      minHeight: 1080,
       boxSizing: "border-box",
       background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
       padding: "96px 84px 74px",
@@ -163,7 +165,7 @@ const RevealCard = forwardRef<
       display: "flex",
       flexDirection: "column",
       justifyContent: "flex-start",
-      gap: 44,
+      gap: 40,
       overflow: "hidden",
     }}
   >
@@ -198,7 +200,7 @@ const RevealCard = forwardRef<
           <p style={{
             margin: "0 0 16px", fontFamily: OB.mono, fontSize: 15,
             letterSpacing: "0.18em", opacity: 0.82,
-          }}>THE SIGNALS I OWN</p>
+          }}>{LABEL_SIGNALS}</p>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
             {data.subjects.slice(0, 3).map((s) => (
               <span key={s} style={{
@@ -216,7 +218,7 @@ const RevealCard = forwardRef<
           <p style={{
             margin: "0 0 16px", fontFamily: OB.mono, fontSize: 15,
             letterSpacing: "0.18em", opacity: 0.82,
-          }}>SHARPENING NEXT</p>
+          }}>{LABEL_SOFT}</p>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
             {data.softGround.slice(0, 2).map((s) => (
               <span key={s} style={{
@@ -230,7 +232,7 @@ const RevealCard = forwardRef<
       ) : null}
     </div>
 
-    <div style={{ marginTop: "auto" }}>
+    <div>
       {data.figures.length > 0 ? (
         <div style={{ display: "flex", gap: 56 }}>
           {data.figures.slice(0, 3).map((f) => (
@@ -290,7 +292,7 @@ const RevealCard = forwardRef<
 
     {data.subjects.length > 0 && (
       <>
-        <p style={{ margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85 }}>The signals in your read</p>
+        <p style={{ margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85 }}>{LABEL_SIGNALS}</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
           {data.subjects.slice(0, 3).map((s) => (
             <span key={s} style={chip("rgba(255,255,255,0.18)", "#FFFFFF")}>{s}</span>
@@ -336,7 +338,7 @@ const RevealCard = forwardRef<
 
     {data.softGround.length > 0 && (
       <>
-        <p style={{ margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85 }}>Where you're thinnest</p>
+        <p style={{ margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85 }}>{LABEL_SOFT}</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
           {data.softGround.slice(0, 2).map((s) => (
             <span key={s} style={chip(OB.amber, OB.night)}>{s}</span>
