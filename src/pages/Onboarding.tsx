@@ -1797,7 +1797,12 @@ const Onboarding = () => {
             </Actions>
             <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
               Aura reads your profile and your public posts. You get drafts in your own words instead of generic ones.
-              You can delete what it stored, any time, in Settings.
+              {userId
+                ? " You can delete what it stored, any time, in Settings."
+                : " You can delete what Aura stored at any time — and if you don't finish, it is deleted automatically after seven days."}
+            </p>
+            <p style={{ margin: "8px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.55, color: OB.muted }}>
+              Aura reads the public profile and recent posts at this address, and keeps the result for seven days so you can come back.
             </p>
           </>
         ) : null}
@@ -2793,8 +2798,11 @@ const Onboarding = () => {
               <input id="ob-wall-consent" type="checkbox" checked={wallConsent}
                 onChange={(e) => setWallConsent(e.target.checked)} />
               <span>
-                I agree to the Terms and Privacy Policy. My data is processed under Saudi PDPL,
-                and I can delete everything in one click.
+                I agree to the{" "}
+                <a href="/terms" target="_blank" rel="noopener" style={{ color: OB.blue, textDecoration: "underline" }}>Terms</a>{" "}
+                and{" "}
+                <a href="/privacy" target="_blank" rel="noopener" style={{ color: OB.blue, textDecoration: "underline" }}>Privacy Policy</a>.
+                My data is processed under Saudi PDPL, and I can delete everything in one click.
               </span>
             </label>
             <Actions style={{ marginBlockStart: 18 }}>
