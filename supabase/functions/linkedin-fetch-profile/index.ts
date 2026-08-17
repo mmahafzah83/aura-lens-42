@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
     // Nothing else: every extra attempt was a whole timeout the member waited
     // through. Two attempts at 45s each — a hard ceiling of 90 seconds.
     const inputShapes: Record<string, unknown>[] = [
-      { queries: [canonical_url], profileScraperMode: "Full ($8 per 1k)" },
+      { queries: [canonical_url], profileScraperMode: "Profile details no email ($4 per 1k)" },
       { queries: [canonical_url] },
     ];
 
