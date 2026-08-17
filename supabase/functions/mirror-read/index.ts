@@ -82,8 +82,15 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Apify profile scrape — same two input shapes, 45s per attempt. */
-async function fetchProfile(canonical_url: string, token: string): Promise<Record<string, unknown> | null> {
+/**
+ * Apify profile scrape — three input shapes, 45s per attempt.
+ * Returns the record, or a reason: "unreadable" (the profile) or
+ * "provider_limit" (our scraping plan is capped — not the visitor's fault).
+ */
+async function fetchProfile(
+  canonical_url: string,
+  token: string,
+): Promise<{ item: Record<string, unknown> | null; reason?: "provider_limit" }> {
   const inputShapes: Record<string, unknown>[] = [
     { urls: [canonical_url], profileScraperMode: "Profile details no email ($4 per 1k)" },
     { urls: [canonical_url] },
@@ -114,16 +121,20 @@ async function fetchProfile(canonical_url: string, token: string): Promise<Recor
       continue;
     }
     const raw = await res.text();
-    console.error("mirror-read profile scrape raw:", res.status, raw.slice(0, 400));
     const payload = (() => { try { return JSON.parse(raw); } catch { return null; } })();
     const list: any[] = Array.isArray(payload) ? payload : [];
     const candidate = (list.find((r) => r && typeof r === "object" && !r.error) ?? null) as
       | Record<string, unknown>
       | null;
-    if (candidate) return candidate;
-    console.error("mirror-read profile scrape returned no rows for keys:", Object.keys(input).join(", "));
+    if (candidate) return { item: candidate };
+    const firstError = String((list[0] as { error?: unknown })?.error ?? "");
+    console.error("mirror-read profile scrape returned no rows:", Object.keys(input).join(", "), firstError.slice(0, 200));
+    // The scraping plan itself is capped — retrying other shapes cannot help.
+    if (/limited to \d+ runs|upgrade to a paid plan|usage hard limit/i.test(firstError)) {
+      return { item: null, reason: "provider_limit" };
+    }
   }
-  return null;
+  return { item: null };
 }
 
 /** Apify posts scrape — never fatal. */
@@ -259,11 +270,16 @@ Deno.serve(async (req) => {
     if (!APIFY_TOKEN) return json({ error: "not_configured" }, 400);
 
     // --- d) Fetch profile and posts in parallel ---
-    const [item, postTexts] = await Promise.all([
+    const [profile, postTexts] = await Promise.all([
       fetchProfile(canonical_url, APIFY_TOKEN),
       fetchPosts(canonical_url, handle, APIFY_TOKEN).catch(() => [] as string[]),
     ]);
-    if (!item) return json({ error: "profile_unreadable" }, 502);
+    const item = profile.item;
+    if (!item) {
+      return profile.reason === "provider_limit"
+        ? json({ error: "provider_limit" }, 503)
+        : json({ error: "profile_unreadable" }, 502);
+    }
 
     const firstName = pickText(item, ["firstName", "first_name", "givenName"]);
     const lastName = pickText(item, ["lastName", "last_name", "familyName"]);
