@@ -54,6 +54,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
   const [newPillar, setNewPillar] = useState("");
   const [skills, setSkills] = useState<Skill[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
+  // The full stored object, so a save merges over keys this editor never seeded.
+  const [storedRatings, setStoredRatings] = useState<Record<string, number>>({});
   const [newSkillName, setNewSkillName] = useState("");
   const [expanded, setExpanded] = useState(!!startExpanded);
   const [radarKey, setRadarKey] = useState(0);

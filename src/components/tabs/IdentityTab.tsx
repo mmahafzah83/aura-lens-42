@@ -109,6 +109,7 @@ interface ProfileRow {
   brand_assessment_results: any;
   identity_intelligence: any;
   primary_strength: string | null;
+  instrument_version?: number | null;
 }
 
 const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: IdentityTabProps) => {
