@@ -2252,12 +2252,12 @@ const Onboarding = () => {
       go(4);
     };
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
-        <h1 style={h1Light}>Have a CV handy?</h1>
+      <PaperShell onExit={saveAndExit} bead={0} subProgress={1} footer={escapeFooter}>
+        <h1 style={h1Light}>{userId ? "Have a CV handy?" : "Your CV comes next."}</h1>
         <p style={bodyLight}>
-          Your profile says what the world can see. A CV says what you actually did — the numbers, the
-          programmes, the things nobody posted about. Aura reads it against your profile and shows you the
-          difference.
+          {userId
+            ? "Your profile says what the world can see. A CV says what you actually did — the numbers, the programmes, the things nobody posted about. Aura reads it against your profile and shows you the difference."
+            : "Your profile says what the world can see. A CV says what you actually did — the numbers, the scale, the things you led. Aura reads it against your profile and shows you where the two disagree. You'll add it the moment your report is saved."}
         </p>
         {userId ? (
           <div style={{ marginBlockStart: 20 }}>
@@ -2267,11 +2267,7 @@ const Onboarding = () => {
               onUploaded={(id) => { if (id) { setCvUploads((n) => n + 1); void runCvCrosscheck(); } }}
             />
           </div>
-        ) : (
-          <p style={{ margin: "20px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>
-            Available after you save your report — you can add your CV then, and Aura reads it against your profile.
-          </p>
-        )}
+        ) : null}
         {/* Shows only once the comparison comes back; absent, it renders nothing. */}
         <CvCrosscheck data={cvCrosscheck} style={{ marginBlockStart: 20 }} />
         <Actions style={{ marginBlockStart: 20 }}>
