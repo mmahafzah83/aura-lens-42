@@ -536,7 +536,16 @@ const Onboarding = () => {
         if (st.answers && typeof st.answers === "object") setAnswers(st.answers);
         if (st.profile_url) setLiInput(st.profile_url);
         /* The quick read already happened at /assessment — never ask twice. */
-        if (st.read) { setStep1Phase("result"); setReadDone(true); }
+        if (st.read) {
+          setStep1Phase("result");
+          setReadDone(true);
+          setPostsRead(Number(st.posts_read ?? 0));
+        }
+        if (st.name && !firstName) {
+          const parts = String(st.name).split(/\s+/);
+          setFirstName(parts[0] || "");
+          if (parts.length > 1) setLastName(parts.slice(1).join(" "));
+        }
         let back = Number(st.journey_screen ?? 0);
         try {
           const local = Number(localStorage.getItem("aura_ob_screen_anon") ?? "0");
