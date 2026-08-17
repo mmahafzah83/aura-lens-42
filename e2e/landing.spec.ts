@@ -1,7 +1,7 @@
 import { test, expect } from "../playwright-fixture";
 
 test.describe("landing", () => {
-  test("renders the hero and prices the seat once, with no struck-through price", async ({ page }) => {
+  test("renders the hero, states one price, and never strikes a price through", async ({ page }) => {
     await page.goto("/");
 
     // The hero is real content, not just a 200.
@@ -9,12 +9,24 @@ test.describe("landing", () => {
     await expect(h1).toBeVisible();
     await expect(h1).not.toHaveText(/^\s*$/);
 
-    // The price appears exactly once.
-    const priceHits = await page.evaluate(() => {
-      const text = document.body.innerText;
-      return (text.match(/\$29/g) || []).length;
+    // The seat price. The landing repeats it in the price card, the timeline
+    // and the questions, so what must be single is the *figure*: one price,
+    // $29, and no second figure competing with it.
+    const prices = await page.evaluate(() => {
+      const text = document.body.textContent || "";
+      const hits = text.match(/\$\d[\d,]*/g) || [];
+      return {
+        twentyNine: hits.filter((h) => h === "$29").length,
+        // $69 is the stated future rate, $150–1,000 is a market figure — both fine.
+        distinct: Array.from(new Set(hits)),
+      };
     });
-    expect(priceHits, "the $29 price should appear exactly once").toBe(1);
+    expect(prices.twentyNine, "the $29 seat price must be stated").toBeGreaterThan(0);
+
+    // The headline price node says it once, and says $29.
+    const priceNode = page.locator(".prc .p");
+    expect(await priceNode.count(), "exactly one headline price").toBe(1);
+    expect((await priceNode.first().textContent()) || "").toContain("$29");
 
     // D100 — no strikethrough price anywhere.
     const struck = await page.evaluate(() => {
