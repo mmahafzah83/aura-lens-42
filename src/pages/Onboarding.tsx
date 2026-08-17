@@ -2230,9 +2230,9 @@ const Onboarding = () => {
   if (screen === CV_SCREEN) {
     const leaveCv = () => {
       if (cvUploads > 0) {
-        /* Fire and forget: the read must never wait on this, and a failure here
-           costs the member nothing. */
-        try { void supabase.functions.invoke("cv-crosscheck", {}).catch(() => undefined); } catch { /* ignore */ }
+        /* Awaited in the background: the result is held in state so the
+           journey can show it, but progression never waits on it. */
+        void runCvCrosscheck();
       }
       go(4);
     };
