@@ -3157,7 +3157,7 @@ const Onboarding = () => {
           }}>{exitNote}</span>
         </div>
       ) : null}
-      <JourneyNav.Provider value={{ onBack: screen === 1 && step1Phase === "result" ? returnToAddress : canBack ? goBack : undefined, banner: resumeBanner }}>
+      <JourneyNav.Provider value={{ onBack: screen === 1 && step1Phase === "result" ? () => returnToAddress() : canBack ? goBack : undefined, banner: resumeBanner }}>
         {content}
       </JourneyNav.Provider>
     </>
