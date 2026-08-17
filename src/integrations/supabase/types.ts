@@ -212,6 +212,42 @@ export type Database = {
         }
         Relationships: []
       }
+      assessment_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          ip_hash: string | null
+          last_seen_at: string
+          runs_started: number
+          state: Json
+          token: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_hash?: string | null
+          last_seen_at?: string
+          runs_started?: number
+          state?: Json
+          token: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_hash?: string | null
+          last_seen_at?: string
+          runs_started?: number
+          state?: Json
+          token?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       audience_demographics: {
         Row: {
           category: string
@@ -5759,6 +5795,7 @@ export type Database = {
         Returns: undefined
       }
       check_invite_token: { Args: { p_token: string }; Returns: Json }
+      claim_assessment_session: { Args: { p_token: string }; Returns: string }
       claim_job: {
         Args: { p_job_type: string; p_worker: string }
         Returns: {
@@ -5787,6 +5824,10 @@ export type Database = {
       complete_job: {
         Args: { p_error?: string; p_id: string; p_success: boolean }
         Returns: undefined
+      }
+      create_assessment_session: {
+        Args: { p_ip_hash?: string }
+        Returns: string
       }
       decisions_due: {
         Args: { p_on?: string }
@@ -5839,6 +5880,16 @@ export type Database = {
         Returns: {
           cap: number
           claimed: number
+        }[]
+      }
+      get_assessment_session: {
+        Args: { p_token: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          runs_started: number
+          state: Json
         }[]
       }
       has_role: {
@@ -5907,6 +5958,7 @@ export type Database = {
         }[]
       }
       publish_invariants: { Args: never; Returns: Json }
+      purge_expired_assessment_sessions: { Args: never; Returns: number }
       qa_cron_success_jobs: {
         Args: { p_hours: number }
         Returns: {
@@ -5954,6 +6006,10 @@ export type Database = {
         Args: { p_target_version: number }
         Returns: undefined
       }
+      save_assessment_session: {
+        Args: { p_state: Json; p_token: string }
+        Returns: boolean
+      }
       search_vault: {
         Args: { p_limit?: number; p_query: string; p_query_embedding?: string }
         Returns: {
@@ -5968,6 +6024,10 @@ export type Database = {
           title: string
           type: string
         }[]
+      }
+      start_assessment_run: {
+        Args: { p_daily_cap?: number; p_token: string }
+        Returns: boolean
       }
       tier_rank: { Args: { t: string }; Returns: number }
       voice_corpus_stats: {
