@@ -52,9 +52,6 @@ const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
 const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
 const VoiceHarness = lazy(() => import("./pages/VoiceHarness"));
 const Studio = lazy(() => import("./pages/Studio"));
-// Public read — now merged into the assessment. /read and /mirror are aliases.
-const Mirror = lazy(() => import("./pages/Mirror"));
-
 /** The second door, closed: /read and /mirror carry ?url= and ?ref= into /assessment. */
 const ReadAlias = () => {
   const params = new URLSearchParams(window.location.search);
