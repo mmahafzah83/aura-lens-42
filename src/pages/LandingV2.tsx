@@ -906,13 +906,13 @@ const LANDING_V2_HTML = `
       <p class="pn">No account, no card, no email required.</p>
       <div class="blk">
         <span class="bl do">WHAT YOU DO</span>
-        <ul><li>Paste your LinkedIn address</li><li>Wait ninety seconds</li></ul>
+        <ul><li>Paste your LinkedIn address</li><li>Wait while Aura reads it</li></ul>
       </div>
       <div class="blk">
         <span class="bl get">WHAT YOU GET</span>
         <ul><li>How the market reads you today, in plain words</li><li>The one thing your profile is not saying about you</li><li>A card you can keep or send to someone</li></ul>
       </div>
-      <div class="cta"><a class="btn bout" href="/assessment">Show me the quick read</a><p class="time">90 SECONDS</p></div>
+      <div class="cta"><a class="btn bout" href="/assessment">Show me the quick read</a><p class="time">THE QUICK READ</p></div>
     </div>
 
     <div class="rung">
