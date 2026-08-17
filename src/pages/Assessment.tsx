@@ -9,6 +9,7 @@ import {
 } from "@/lib/assessmentSession";
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
+import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
 
 /**
  * The Gate — what someone reads before the nine-minute assessment begins.
@@ -58,6 +59,9 @@ const Assessment = () => {
   const [wallError, setWallError] = useState<string | null>(null);
   const [wallDone, setWallDone] = useState<string | null>(null);
   const insideRef = useRef<HTMLElement | null>(null);
+  const autoRan = useRef(false);
+  const [postsRead, setPostsRead] = useState(0);
+  const [sparse, setSparse] = useState(false);
 
   /* ── on every load: if a token is held, pick the visitor back up ── */
   useEffect(() => {
