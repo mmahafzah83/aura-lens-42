@@ -2509,7 +2509,7 @@ const Onboarding = () => {
       const value = scores[d.name] ?? 50;
       const last = dimIdx >= dims.length - 1;
       content = (
-        <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={2} subProgress={(dimIdx + 1) / dims.length} footer={escapeFooter}>
           {flatWarn ? (
             <>
               <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>Can I check something?</h1>
@@ -2683,7 +2683,7 @@ const Onboarding = () => {
 
 
       content = (
-        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={3} subProgress={(qIdx + 1) / questions.length} footer={escapeFooter}>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             Question {qIdx + 1} of {questions.length}
           </p>
