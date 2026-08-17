@@ -3036,6 +3036,9 @@ const Onboarding = () => {
       }
     };
 
+    const brandPaper: BrandPaper | null = (() => {
+      if (!readRaw) return null;
+      try {
         const p = buildBrandPaper(readRaw, { first_name: firstName.trim() || null });
         return p && (p.positioning_statement || p.market_read || p.topics.length) ? p : null;
       } catch (e) {
