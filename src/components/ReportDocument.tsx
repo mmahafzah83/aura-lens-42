@@ -647,6 +647,16 @@ function buildBlocks(d: ReportData): Block[] {
     }
   }
 
+  // ── CV AGAINST LINKEDIN ──────────────────────────────────────────────
+  if (hasCvCrosscheck(d.cv_crosscheck)) {
+    blocks.push({
+      key: "c-cv-crosscheck",
+      section: "capability",
+      spacing: 22,
+      node: <CvCrosscheck data={d.cv_crosscheck} />,
+    });
+  }
+
   // ── MARKET ───────────────────────────────────────────────────────────
   const showMarket = !!d.market_mirror && d.market_mirror.persona_set === rankFromLevel(d.profile?.level);
   if (showMarket) {
