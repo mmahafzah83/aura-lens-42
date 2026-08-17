@@ -2063,7 +2063,7 @@ const Onboarding = () => {
                   </button>
                 </>
               ) : null}
-              {" · "}
+              {readCache ? " · " : null}
               <button
                 type="button"
                 onClick={() => void returnToAddress()}
