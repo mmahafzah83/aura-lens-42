@@ -21,7 +21,10 @@ import { useCountUp } from "@/hooks/useCountUp";
 import { useCapturedClaims } from "@/hooks/useCapturedClaims";
 import { SECTORS } from "@/constants/sectors";
 import { initThemeFromStorage } from "@/lib/applyTheme";
-import { claimPendingSession } from "@/lib/assessmentSession";
+import {
+  claimPendingSession, readToken, loadSession, saveSession, clearToken, claimSession,
+  type AssessmentState,
+} from "@/lib/assessmentSession";
 import { track } from "@/lib/track";
 import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@/lib/marketRead";
 import AuraFace from "@/components/onboarding/AuraFace";
@@ -262,6 +265,20 @@ const Onboarding = () => {
   useEffect(() => { void claimPendingSession(); }, []);
 
   const [checking, setChecking] = useState(true);
+  /**
+   * The anonymous run. A visitor who came through the quick read carries a
+   * browser-held session token instead of a user_id. Everything the journey
+   * would write to `diagnostic_profiles` is kept in that session row until the
+   * account is opened at the reveal, and then claimed onto the new user_id.
+   */
+  const [anonToken, setAnonToken] = useState<string | null>(null);
+  const anonStateRef = useRef<AssessmentState & Record<string, any>>({ answers: {} });
+  const [wallEmail, setWallEmail] = useState("");
+  const [wallPassword, setWallPassword] = useState("");
+  const [wallConsent, setWallConsent] = useState(false);
+  const [wallBusy, setWallBusy] = useState(false);
+  const [wallError, setWallError] = useState<string | null>(null);
+  const [wallDone, setWallDone] = useState<string | null>(null);
   // The morning promise is only made when the system has actually been
   // delivering. Reads public.morning_promise_state; fails to the honest line.
   const mayPromiseMorning = useMayPromiseMorning();
