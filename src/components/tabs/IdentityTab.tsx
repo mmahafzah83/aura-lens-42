@@ -616,7 +616,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <div className="space-y-6">
         <GuidedJourney journey={journey} onResetDiagnostic={onResetDiagnostic} />
         <BrandAssessmentModal
-          open={brandOpen}
+          open={brandOpen && Number(profile?.instrument_version) !== 2}
           sector={profile?.sector_focus ?? undefined}
           band={profile?.seniority_band ?? undefined}
           onOpenChange={(o) => { setBrandOpen(o); if (!o) { if (authUser) loadAll(authUser.id); journey.refresh(); } }}
@@ -1386,7 +1386,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           if (authUser?.id) loadAll(authUser.id);
         }}
       />
-      <BrandAssessmentModal open={brandOpen} sector={profile?.sector_focus ?? undefined} band={profile?.seniority_band ?? undefined} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
+      <BrandAssessmentModal open={brandOpen && Number(profile?.instrument_version) !== 2} sector={profile?.sector_focus ?? undefined} band={profile?.seniority_band ?? undefined} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
       {celebrationsEnabled && marketShareData && (
         <MilestoneShareModal
           open={!!marketShareData}

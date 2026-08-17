@@ -145,6 +145,22 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
     }
   }, [open]);
 
+  // Which instrument set this member's capabilities?
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("instrument_version").eq("user_id", user.id).maybeSingle();
+      if (!cancelled) setInstrumentVersion(Number((data as any)?.instrument_version) || 1);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  const isV2 = instrumentVersion === 2;
+
   if (!open) return null;
 
   return createPortal(
