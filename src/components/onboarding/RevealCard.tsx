@@ -508,23 +508,33 @@ const RevealCard = forwardRef<
     )}
 
     {data.figures.length > 0 ? (
-      <div style={{ display: "flex", gap: 26, marginBlockStart: 24 }}>
+      <div className="rvc-seq" style={{ display: "flex", gap: 26, marginBlockStart: 24, animationDelay: "1.08s" }}>
         {data.figures.slice(0, 2).map((f) => (
           <div key={f.label}>
-            <div style={{ fontFamily: OB.mono, fontSize: 26, fontWeight: 600, lineHeight: 1 }}>{f.value}</div>
+            <div style={{ fontFamily: OB.mono, fontSize: 26, fontWeight: 600, lineHeight: 1 }}>
+              <CountUp value={f.value} delay={1100} />
+            </div>
             <div style={{ fontSize: 11.5, opacity: 0.85, marginBlockStart: 5 }}>{f.label}</div>
           </div>
         ))}
       </div>
     ) : (
-      <p style={{ margin: "24px 0 0", fontSize: 13.5, lineHeight: 1.6, opacity: 0.92 }}>{emptyFiguresLine}</p>
+      <p className="rvc-seq" style={{
+        margin: "24px 0 0", fontSize: 13.5, lineHeight: 1.6, opacity: 0.92, animationDelay: "1.08s",
+      }}>{emptyFiguresLine}</p>
     )}
 
     <p style={{
       margin: "22px 0 0", marginBlockStart: "auto", paddingBlockStart: 22,
       fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em",
       color: "rgba(255,255,255,0.72)",
-    }}>Read by Aura · aura-intel.org</p>
+    }}>{signatureText(data)}</p>
+    {data.ageNote ? (
+      <p style={{
+        margin: "6px 0 0", fontFamily: OB.mono, fontSize: 11,
+        letterSpacing: "0.06em", color: "rgba(255,255,255,0.58)",
+      }}>{data.ageNote}</p>
+    ) : null}
   </div>
 ));
 
