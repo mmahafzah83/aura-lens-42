@@ -3,7 +3,9 @@
  * by step one of the assessment. One source, so the two can never drift.
  */
 import { useRef, useState } from "react";
-import RevealCard, { shareRevealCard, type RevealData } from "@/components/onboarding/RevealCard";
+import RevealCard, {
+  shareRevealCard, rasteriseRevealCard, type RevealData,
+} from "@/components/onboarding/RevealCard";
 
 export const CANVAS = "#F2F5F9";
 export const CARD = "#FFFFFF";
@@ -51,19 +53,74 @@ export const Body = ({ children, style }: { children: React.ReactNode; style?: R
   <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, color: INK, ...style }}>{children}</p>
 );
 
+/** "18 August 2026" — the same shape the engine uses in its own notices. */
+const longDate = (iso?: string | null): string | undefined => {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return undefined;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+};
+
+const slugOf = (name?: string | null): string =>
+  String(name ?? "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "").slice(0, 40) || "my-read";
+
 /** The read itself: the card, the signals, the honest gap, the own words. */
 export default function ReadResult({
   read, postsRead = 0, sparse = false,
-}: { read: Read; postsRead?: number; sparse?: boolean }) {
+  name, headline, avatarUrl, generatedAt, ageNote,
+}: {
+  read: Read; postsRead?: number; sparse?: boolean;
+  /** Whose read this is — name, headline and picture, when Aura holds them. */
+  name?: string | null;
+  headline?: string | null;
+  avatarUrl?: string | null;
+  /** When the read was written. */
+  generatedAt?: string | null;
+  /** Quiet line about the age of a cached read. */
+  ageNote?: string | null;
+}) {
   const exportRef = useRef<HTMLDivElement>(null);
   const [shareNote, setShareNote] = useState<string>();
 
+  const dateLine = longDate(generatedAt);
   const cardData: RevealData = {
     archetype: read.archetype ?? "",
+    name: name ?? undefined,
+    headline: headline ?? undefined,
+    avatarUrl: avatarUrl ?? undefined,
+    dateLine,
+    ageNote: ageNote ?? undefined,
     marketRead: read.market_read ?? "",
+    ownWordsQuote: read.own_words_quote,
+    ownWordsRead: read.own_words_read,
     subjects: (read.themes ?? []).slice(0, 3),
     softGround: [],
     figures: postsRead > 0 ? [{ value: String(postsRead), label: "posts of yours read" }] : [],
+  };
+
+  const fileName = `aura-read-${slugOf(name)}-${(generatedAt ? new Date(generatedAt) : new Date())
+    .toISOString().slice(0, 10)}.png`;
+
+  /** Give before you ask: the file is his before we ask him to pass it on. */
+  const save = async () => {
+    if (!exportRef.current) return;
+    setShareNote(undefined);
+    try {
+      const { dataUrl } = await rasteriseRevealCard(exportRef.current);
+      const blob = await (await fetch(dataUrl)).blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setShareNote("Saved to your device.");
+    } catch {
+      setShareNote("The card didn't render. Try once more.");
+    }
   };
 
   const share = async () => {
@@ -71,7 +128,7 @@ export default function ReadResult({
     setShareNote(undefined);
     try {
       const outcome = await shareRevealCard(exportRef.current, {
-        fileName: "how-my-field-sees-me.png",
+        fileName,
         caption:
           "I had something read my LinkedIn and tell me how my field actually sees me. This is what came back.",
       });
