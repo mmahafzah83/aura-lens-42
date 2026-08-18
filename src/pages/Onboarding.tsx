@@ -2453,15 +2453,16 @@ const Onboarding = () => {
         <p style={{ ...bodyLight, marginBlockStart: 16, fontWeight: 600, color: OB.ink }}>Your level</p>
         {titleList((t, b) => { setLevelTitle(t); setBand(b); })}
         <Actions style={{ marginBlockStart: 20 }}>
-        <OBButton disabled={!ready} onClick={async () => {
+        <OBButton disabled={!ready} aria-describedby={!ready ? "ob-manual-why" : undefined} onClick={async () => {
           await writeProfile({
             first_name: firstName.trim(), last_name: lastName.trim() || undefined,
             firm: firm.trim(), sector_focus: sector,
             level: levelTitle || (band ? BAND_TO_LEVEL[band] : undefined),
             seniority_band: band, band_source: "corrected",
           }, "identity save");
-          go(4);
+          go(5);
         }}>Save and carry on</OBButton>
+        {!ready ? whyLine("ob-manual-why", "Fill in your name, where you work, your sector and your level to enable this.") : null}
         <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
         </Actions>
       </PaperShell>
@@ -2476,7 +2477,7 @@ const Onboarding = () => {
            journey can show it, but progression never waits on it. */
         void runCvCrosscheck();
       }
-      go(4);
+      go(5);
     };
     content = (
       <PaperShell onExit={saveAndExit} bead={0} subProgress={1} footer={escapeFooter}>
@@ -2506,24 +2507,14 @@ const Onboarding = () => {
     );
   }
 
-  /* 4 — WHITE, the same card shell as every other question screen */
-  if (screen === 4) {
-    content = (
-      <PaperShell onExit={saveAndExit} bead={1} face footer={escapeFooter}>
-        <h1 style={{ ...h1Light, textAlign: "center" }}>I know who you are. Now I need what you notice.</h1>
-        <p style={{ ...bodyLight, textAlign: "center" }}>
-          Your profile says what you've done. It doesn't say what you think. One link is enough to start.
-        </p>
-        <Actions style={{ marginBlockStart: 26 }}><OBButton onClick={() => go(5)}>Okay</OBButton></Actions>
-      </PaperShell>
-    );
-  }
-
   /* 5 — WHITE, the first link */
   if (screen === 5) {
     content = (
       <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>Something you read this week.</h1>
+        <p style={bodyLight}>
+          Your profile says what you've done. It doesn't say what you think. One link is enough to start.
+        </p>
         <p style={bodyLight}>
           {userId
             ? "Paste a link to an article or a post. Aura reads it and shows you what it found."
@@ -2546,7 +2537,9 @@ const Onboarding = () => {
         )}
         <Actions style={{ marginBlockStart: 14 }}>
           <OBButton disabled={!linkInput.trim() || sendingLink} loading={sendingLink} loadingLabel="Sending…"
+            aria-describedby={!linkInput.trim() ? "ob-add-why" : undefined}
             onClick={() => void submitLink()}>Add it</OBButton>
+          {!linkInput.trim() ? whyLine("ob-add-why", "Paste a link to enable this.", true) : null}
         </Actions>
 
         {suggested || !suggestDead ? (
@@ -2586,9 +2579,6 @@ const Onboarding = () => {
             <Loader2 size={14} className="animate-spin" /> Looking for one from your sector…
           </div>
         ) : null}
-        <Actions style={{ marginBlockStart: 14 }}>
-          <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
-        </Actions>
       </PaperShell>
     );
   }
