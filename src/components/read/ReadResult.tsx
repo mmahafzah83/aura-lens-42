@@ -130,20 +130,8 @@ export default function ReadResult({
     }
   };
 
-  const share = async () => {
-    if (!exportRef.current) return;
-    setShareNote(undefined);
-    try {
-      const outcome = await shareRevealCard(exportRef.current, {
-        fileName,
-        caption:
-          "I had something read my LinkedIn and tell me how my field actually sees me. This is what came back.",
-      });
-      setShareNote(outcome === "shared" ? "Shared." : "Saved to your device, caption copied.");
-    } catch {
-      setShareNote("The card didn't render. Try once more.");
-    }
-  };
+  /* Sharing is closed until the preview card is updated — the button below
+     says so out loud rather than handing over a card we are not proud of. */
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: INK }}>
