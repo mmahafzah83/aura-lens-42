@@ -54,7 +54,10 @@ serve(withObserve("admin-set-document-type", async (req) => {
   }
 
   if (!Object.keys(patch).length) return json({ error: "nothing to update" }, 400);
-  if (patch.document_type && patch.document_type !== "cv") patch.cv_label = null;
+  // Invariant: if this document is not a CV, it has no cv_label.
+  // Fires whenever document_type is being set to anything other than 'cv',
+  // including null — otherwise "(unset)" strands the label behind.
+  if ("document_type" in patch && patch.document_type !== "cv") patch.cv_label = null;
 
   const { error } = await admin.from("documents").update(patch).eq("id", id);
   if (error) return json({ error: error.message }, 500);
