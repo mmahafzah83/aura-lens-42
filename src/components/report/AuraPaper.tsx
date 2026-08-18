@@ -275,7 +275,7 @@ export function PaperCover({ data }: { data: ReportData }) {
           marginTop: 28,
           marginInline: -56,
           padding: "22px 56px",
-          background: T.spot,
+          background: "var(--b-600)",
           color: T.paper,
           display: "flex",
           justifyContent: "space-between",
@@ -303,7 +303,7 @@ export function PaperCover({ data }: { data: ReportData }) {
             fontWeight: 700,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
-            color: T.action,
+            color: "#FFFFFF",
             whiteSpace: "nowrap",
           }}
         >
@@ -372,17 +372,19 @@ export function PaperCover({ data }: { data: ReportData }) {
           paddingTop: 14,
           borderTop: `1px solid ${T.rule}`,
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
+          gridTemplateColumns: fullName ? "1fr 1fr 1fr" : "1fr 1fr",
           gap: 20,
           position: "relative",
           zIndex: 1,
         }}
       >
-        <MetaCell
-          label="Prepared for"
-          value={fullName || "—"}
-          sub={level}
-        />
+        {fullName ? (
+          <MetaCell
+            label="Prepared for"
+            value={fullName}
+            sub={level}
+          />
+        ) : null}
         <MetaCell
           label="Standing at issue"
           value={scoreVal !== null ? `Imprint ${scoreVal}` : "—"}
@@ -724,7 +726,7 @@ export function ImprintSparkline({ userId }: { userId: string }) {
           fontFamily: FONT.mono,
           fontSize: 30,
           fontWeight: 700,
-          color: T.live,
+          color: "var(--machine-text)",
           letterSpacing: "0.02em",
         }}
       >
