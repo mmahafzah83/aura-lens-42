@@ -3339,18 +3339,27 @@ const Onboarding = () => {
       <div className="obc" style={{
         minBlockSize: "100dvh",
         overflow: "clip",
-        background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
+        /* Blue, and only blue. Cyan is decoration — never a fill. */
+        background: "linear-gradient(170deg, var(--ob-blue), var(--ob-blue-light))",
         display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
       }}>
         <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-          {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : (
-            <div style={{ textAlign: "center", color: "#FFFFFF" }}>
+          {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : revealLoading ? (
+            /* The read may already be finished and sitting in the database.
+               While we are still asking, say nothing about where it is. */
+            <div role="status" style={{ textAlign: "center", color: "var(--ob-white)" }}>
+              <p style={{ fontSize: 16, lineHeight: 1.6 }}>Opening your read…</p>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", color: "var(--ob-white)" }}>
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>
-                Aura is still writing your read. It'll be on your Home the moment it's done.
+                {readDone
+                  ? "Your read is saved. You'll find it on your Home."
+                  : "Aura is still writing your read. It'll be on your Home the moment it's done."}
               </p>
               <Actions style={{ marginBlockStart: 20 }}>
                 <OBButton onClick={() => go(14)}
-                  style={{ background: "#FFFFFF", color: OB.blue }}>Take me in</OBButton>
+                  style={{ background: "var(--ob-white)", color: "var(--ob-blue)" }}>Take me in</OBButton>
               </Actions>
             </div>
           )}
