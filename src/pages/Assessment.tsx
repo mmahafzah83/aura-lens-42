@@ -247,6 +247,20 @@ const Assessment = () => {
     navigate("/onboarding");
   };
 
+  /** Finish later — nothing is cleared; the browser keeps the place. */
+  const finishLater = () => { navigate("/"); };
+
+  /** A new read replaces the one already held — so it is confirmed first. */
+  const startNewRead = async () => {
+    const ok = window.confirm("Start a new read? This replaces the read you already have.");
+    if (!ok) return;
+    setAgeNote(null);
+    setPostsRead(0);
+    setSparse(false);
+    await persist({ step: "address", answers: {}, profile_url: state.profile_url });
+    setStage("address");
+  };
+
   const read = (state.read ?? {}) as Record<string, string | string[] | undefined>;
 
   /* ══════════ the in-page journey ══════════ */
