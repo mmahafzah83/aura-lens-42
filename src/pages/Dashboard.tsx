@@ -320,6 +320,65 @@ const Dashboard = () => {
     return qs ? new URLSearchParams(qs) : null;
   });
 
+  /**
+   * Zero rows came back for a draft the member was invited to open. Ask the
+   * server whether it exists at all before we tell them anything about their
+   * own work (law #138). Three honest outcomes: wrong account, genuinely
+   * absent, or we could not tell.
+   */
+  const resolveMissingDraft = useCallback(async (draftId: string, src: string | null) => {
+    const fullPath = window.location.pathname + window.location.search;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const currentEmail = sessionData?.session?.user?.email ?? "another account";
+      if (!token) {
+        toast("We can't find that draft.");
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke("draft-owner-check", {
+        body: { draft_id: draftId, src: src ?? undefined },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (error) throw error;
+
+      if ((data as any)?.exists && (data as any)?.is_owner === false) {
+        const masked = (data as any)?.owner_email_masked || "a different address";
+        toast(
+          `This draft belongs to a different Aura account (${masked}). You're signed in as ${currentEmail}.`,
+          {
+            duration: 20000,
+            action: {
+              label: "Sign in as that account",
+              onClick: () => {
+                void (async () => {
+                  try { await supabase.auth.signOut(); } catch { /* sign out best-effort */ }
+                  window.location.assign(`/auth?next=${encodeURIComponent(fullPath)}`);
+                })();
+              },
+            },
+          },
+        );
+        return;
+      }
+
+      if ((data as any)?.exists === false) {
+        toast("We can't find that draft.");
+        return;
+      }
+      // Exists and we own it, yet the read returned nothing — that is a fault,
+      // not a deletion.
+      toast("We couldn't load that draft right now. Please try again.");
+    } catch (e: any) {
+      toast("We couldn't load that draft right now. Please try again.");
+      void reportClientError(
+        `draft-owner-check failed: ${e?.message ?? "unknown"}`,
+        "high",
+        { draft_id: draftId, src: src ?? null },
+      );
+    }
+  }, []);
+
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
     const params = resumedParams ?? searchParams;
