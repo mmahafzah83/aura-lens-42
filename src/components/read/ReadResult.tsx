@@ -206,8 +206,9 @@ export default function ReadResult({
           onClick={save}
           style={{
             inlineSize: "100%", padding: "13px 18px", borderRadius: 8,
-            border: `1px solid ${BLUE}`, background: BLUE, color: "#FFFFFF",
+            border: `1px solid ${LINE}`, background: "transparent", color: INK,
             fontFamily: UI, fontSize: 15, fontWeight: 600, cursor: "pointer",
+            minHeight: 44,
           }}
         >Save this card</button>
         <button

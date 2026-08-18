@@ -278,7 +278,14 @@ const Assessment = () => {
 
           {stage === "read" && (
             <div className="asg-read">
-              <span className="asg-k">STEP ONE · YOUR READ</span>
+              <div className="asg-moment">
+                <div>Ninety seconds ago Aura had never heard of you.</div>
+                <div>
+                  {postsRead > 0
+                    ? `Here is what your last ${postsRead} posts say to the market.`
+                    : "Here is what your profile says to the market."}
+                </div>
+              </div>
               <ReadResult
                 read={read as unknown as ReadShape}
                 postsRead={postsRead}
@@ -342,10 +349,6 @@ const Assessment = () => {
               <div className="asg-stat">
                 <span className="asg-n">Free</span>
                 <span className="asg-c">and yours to keep</span>
-              </div>
-              <div className="asg-stat">
-                <span className="asg-n">0</span>
-                <span className="asg-c">posts published</span>
               </div>
             </div>
 
@@ -563,6 +566,9 @@ const ASG_CSS = `
 .asg-flow{max-width:620px;}
 .asg-read{display:flex;flex-direction:column;gap:14px;}
 .asg-read .asg-full{margin-top:4px;}
+.asg-moment{display:flex;flex-direction:column;}
+.asg-moment div:first-child{font-size:19px;font-weight:600;color:var(--ink);letter-spacing:-0.015em;line-height:1.35;}
+.asg-moment div:last-child{font-size:19px;font-weight:400;color:var(--ink4);line-height:1.35;margin-top:4px;}
 .asg-panel{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:26px;}
 .asg-center{text-align:center;}
 .asg-ph{font-size:24px;font-weight:700;line-height:1.2;letter-spacing:-.018em;margin:10px 0 0;}
