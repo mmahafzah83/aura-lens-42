@@ -2991,7 +2991,12 @@ const Onboarding = () => {
           It is yours either way. An account keeps it, lets you come back, and sends you the PDF.
         </p>
         {wallDone ? (
-          <p role="status" style={{ marginBlockStart: 18, color: OB.ink, fontFamily: OB.ui }}>{wallDone}</p>
+          <>
+            <p role="status" style={{ marginBlockStart: 18, color: OB.ink, fontFamily: OB.ui }}>{wallDone}</p>
+            <Actions style={{ marginBlockStart: 18 }}>
+              <OBButton onClick={() => { window.location.assign("/auth"); }}>Sign in</OBButton>
+            </Actions>
+          </>
         ) : (
           <form onSubmit={openAccount} style={{ marginBlockStart: 18 }}>
             <label htmlFor="ob-wall-email" style={{ display: "block", fontSize: 13, color: OB.muted, marginBlockEnd: 6 }}>Your email</label>
