@@ -507,6 +507,9 @@ CORRECTION — your previous answer failed the assertion "${failure}". Answer ag
       if (Array.isArray(retryParsed?.findings)) {
         retryParsed.findings = retryParsed.findings.filter((f: any) => String(f?.what ?? "").trim().length > 0);
       }
+      for (const k of ["peer_comparison", "profile_vs_voice", "reading_the_shape", "headline_suggestion"]) {
+        if (k in retryParsed) retryParsed[k] = nullify(retryParsed[k]);
+      }
     }
     const retryFailure = retryParsed ? gate(retryParsed) : "unparseable_on_retry";
     if (!retryFailure) {
