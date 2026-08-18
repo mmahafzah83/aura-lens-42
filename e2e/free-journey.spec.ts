@@ -30,9 +30,9 @@ test.describe("the free journey", () => {
     await expect(archetype).toBeVisible({ timeout: READ_TIMEOUT });
     await expect(archetype).not.toHaveText(/^\s*$/);
 
-    // The read names the ground and the gap, and offers the card to share.
+    // The read names the ground and the gap, and gives him the card first.
     await expect(page.getByText(/the space nobody has claimed/i).first()).toBeVisible();
-    await expect(page.getByRole("button", { name: /share this card/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /save this card/i })).toBeVisible();
 
     // Continue hands off to the real onboarding — never a second assessment.
     await page.getByRole("button", { name: /^Continue/ }).first().click();

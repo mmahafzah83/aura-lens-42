@@ -3,7 +3,9 @@
  * by step one of the assessment. One source, so the two can never drift.
  */
 import { useRef, useState } from "react";
-import RevealCard, { shareRevealCard, type RevealData } from "@/components/onboarding/RevealCard";
+import RevealCard, {
+  shareRevealCard, rasteriseRevealCard, type RevealData,
+} from "@/components/onboarding/RevealCard";
 
 export const CANVAS = "#F2F5F9";
 export const CARD = "#FFFFFF";
@@ -51,19 +53,80 @@ export const Body = ({ children, style }: { children: React.ReactNode; style?: R
   <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, color: INK, ...style }}>{children}</p>
 );
 
+/** "18 August 2026" — the same shape the engine uses in its own notices. */
+const longDate = (iso?: string | null): string | undefined => {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return undefined;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+};
+
+const slugOf = (name?: string | null): string =>
+  String(name ?? "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "").slice(0, 40) || "my-read";
+
 /** The read itself: the card, the signals, the honest gap, the own words. */
 export default function ReadResult({
   read, postsRead = 0, sparse = false,
-}: { read: Read; postsRead?: number; sparse?: boolean }) {
+  name, headline, avatarUrl, generatedAt, ageNote,
+}: {
+  read: Read; postsRead?: number; sparse?: boolean;
+  /** Whose read this is — name, headline and picture, when Aura holds them. */
+  name?: string | null;
+  headline?: string | null;
+  avatarUrl?: string | null;
+  /** When the read was written. */
+  generatedAt?: string | null;
+  /** Quiet line about the age of a cached read. */
+  ageNote?: string | null;
+}) {
   const exportRef = useRef<HTMLDivElement>(null);
   const [shareNote, setShareNote] = useState<string>();
 
+  const dateLine = longDate(generatedAt);
   const cardData: RevealData = {
     archetype: read.archetype ?? "",
+    name: name ?? undefined,
+    headline: headline ?? undefined,
+    avatarUrl: avatarUrl ?? undefined,
+    dateLine,
+    ageNote: ageNote ?? undefined,
     marketRead: read.market_read ?? "",
     subjects: (read.themes ?? []).slice(0, 3),
     softGround: [],
     figures: postsRead > 0 ? [{ value: String(postsRead), label: "posts of yours read" }] : [],
+  };
+
+  /* The shareable artefact carries his own sentence; on screen it has its own
+     card below, so the panel inside the card would only repeat it. */
+  const exportData: RevealData = {
+    ...cardData,
+    ownWordsQuote: read.own_words_quote,
+    ownWordsRead: read.own_words_read,
+  };
+
+  const fileName = `aura-read-${slugOf(name)}-${(generatedAt ? new Date(generatedAt) : new Date())
+    .toISOString().slice(0, 10)}.png`;
+
+  /** Give before you ask: the file is his before we ask him to pass it on. */
+  const save = async () => {
+    if (!exportRef.current) return;
+    setShareNote(undefined);
+    try {
+      const { dataUrl } = await rasteriseRevealCard(exportRef.current);
+      const blob = await (await fetch(dataUrl)).blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      setShareNote("Saved to your device.");
+    } catch {
+      setShareNote("The card didn't render. Try once more.");
+    }
   };
 
   const share = async () => {
@@ -71,7 +134,7 @@ export default function ReadResult({
     setShareNote(undefined);
     try {
       const outcome = await shareRevealCard(exportRef.current, {
-        fileName: "how-my-field-sees-me.png",
+        fileName,
         caption:
           "I had something read my LinkedIn and tell me how my field actually sees me. This is what came back.",
       });
@@ -85,7 +148,7 @@ export default function ReadResult({
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: INK }}>
       {/* off-screen export node — one builder, two paths */}
       <div style={{ position: "fixed", insetInlineStart: -10000, insetBlockStart: 0 }} aria-hidden>
-        <RevealCard ref={exportRef} data={cardData} forExport emptyFiguresLine={read.uncontested_space ?? ""} />
+        <RevealCard ref={exportRef} data={exportData} forExport emptyFiguresLine={read.uncontested_space ?? ""} />
       </div>
 
       <RevealCard data={cardData} emptyFiguresLine={read.uncontested_space ?? ""} />
@@ -97,20 +160,6 @@ export default function ReadResult({
         </Card>
       ) : (
         <>
-          {read.uncontested_space ? (
-            <Card>
-              <Heading dot={CYAN}>The space nobody has claimed</Heading>
-              <Body>{read.uncontested_space}</Body>
-            </Card>
-          ) : null}
-
-          {read.honest_gap ? (
-            <Card>
-              <Heading dot={AMBER}>One honest gap</Heading>
-              <Body>{read.honest_gap}</Body>
-            </Card>
-          ) : null}
-
           {read.own_words_quote ? (
             <Card>
               <Heading>In your own words</Heading>
@@ -135,18 +184,40 @@ export default function ReadResult({
               })()}
             </Card>
           ) : null}
+
+          {read.uncontested_space ? (
+            <Card>
+              <Heading dot={CYAN}>The space nobody has claimed</Heading>
+              <Body>{read.uncontested_space}</Body>
+            </Card>
+          ) : null}
+
+          {read.honest_gap ? (
+            <Card>
+              <Heading dot={AMBER}>One honest gap</Heading>
+              <Body>{read.honest_gap}</Body>
+            </Card>
+          ) : null}
         </>
       )}
 
       <div>
         <button
-          onClick={share}
+          onClick={save}
           style={{
             inlineSize: "100%", padding: "13px 18px", borderRadius: 8,
-            border: `1px solid ${LINE}`, background: CARD, color: INK,
+            border: `1px solid ${BLUE}`, background: BLUE, color: "#FFFFFF",
             fontFamily: UI, fontSize: 15, fontWeight: 600, cursor: "pointer",
           }}
-        >Share this card</button>
+        >Save this card</button>
+        <button
+          onClick={share}
+          style={{
+            display: "block", marginBlockStart: 10, marginInline: "auto",
+            background: "none", border: "none", padding: 0, color: INK2,
+            fontFamily: UI, fontSize: 13.5, textDecoration: "underline", cursor: "pointer",
+          }}
+        >Or share it</button>
         {shareNote ? <p style={{ margin: "8px 0 0", fontSize: 12.5, color: INK2 }}>{shareNote}</p> : null}
       </div>
     </div>

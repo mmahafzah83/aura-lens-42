@@ -23,6 +23,9 @@ export type AssessmentState = {
   step?: string;
   profile_url?: string;
   name?: string | null;
+  headline?: string | null;
+  avatar_url?: string | null;
+  generated_at?: string | null;
   read?: Record<string, unknown> | null;
   answers?: Record<string, string>;
 };

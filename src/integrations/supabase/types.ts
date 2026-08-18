@@ -3280,11 +3280,13 @@ export type Database = {
       }
       mirror_reads: {
         Row: {
+          avatar_url: string | null
           canonical_url: string
           emailed_at: string | null
           emailed_to: string | null
           generated_at: string
           handle: string
+          headline: string | null
           hit_count: number
           name: string | null
           posts_read: number | null
@@ -3293,11 +3295,13 @@ export type Database = {
           sparse: boolean
         }
         Insert: {
+          avatar_url?: string | null
           canonical_url: string
           emailed_at?: string | null
           emailed_to?: string | null
           generated_at?: string
           handle: string
+          headline?: string | null
           hit_count?: number
           name?: string | null
           posts_read?: number | null
@@ -3306,11 +3310,13 @@ export type Database = {
           sparse?: boolean
         }
         Update: {
+          avatar_url?: string | null
           canonical_url?: string
           emailed_at?: string | null
           emailed_to?: string | null
           generated_at?: string
           handle?: string
+          headline?: string | null
           hit_count?: number
           name?: string | null
           posts_read?: number | null

@@ -88,6 +88,7 @@ const Assessment = () => {
   const autoRan = useRef(false);
   const [postsRead, setPostsRead] = useState(0);
   const [sparse, setSparse] = useState(false);
+  const [ageNote, setAgeNote] = useState<string | null>(null);
 
   /* ── on every load: if a token is held, pick the visitor back up ── */
   useEffect(() => {
@@ -152,6 +153,8 @@ const Assessment = () => {
   }, [stage]);
 
   const runRead = async (urlArg?: string) => {
+    // An error that outlived its own fix is a lie — clear it before retrying.
+    setNotice(null);
     const target = (urlArg ?? addr).trim();
     if (!target.toLowerCase().includes("linkedin.com/in/")) {
       setAddrError("That doesn't look like a LinkedIn profile address. It should look like linkedin.com/in/yourname.");
@@ -201,8 +204,11 @@ const Assessment = () => {
       }
       setPostsRead(Number(data.posts_read ?? 0));
       setSparse(!!data.sparse);
+      setAgeNote(data.stale && typeof data.notice === "string" ? data.notice : null);
       await persist({
-        ...state, step: "read", profile_url: target, name: data.name ?? null, read: data.read,
+        ...state, step: "read", profile_url: target, name: data.name ?? null,
+        headline: data.headline ?? null, avatar_url: data.avatar_url ?? null,
+        generated_at: data.generated_at ?? null, read: data.read,
         posts_read: Number(data.posts_read ?? 0),
       } as AssessmentState);
       setStage("read");
@@ -273,7 +279,16 @@ const Assessment = () => {
           {stage === "read" && (
             <div className="asg-read">
               <span className="asg-k">STEP ONE · YOUR READ</span>
-              <ReadResult read={read as unknown as ReadShape} postsRead={postsRead} sparse={sparse} />
+              <ReadResult
+                read={read as unknown as ReadShape}
+                postsRead={postsRead}
+                sparse={sparse}
+                name={state.name ?? null}
+                headline={state.headline ?? null}
+                avatarUrl={state.avatar_url ?? null}
+                generatedAt={state.generated_at ?? null}
+                ageNote={ageNote}
+              />
               <button className="asg-btn asg-bp asg-full" onClick={() => void continueToOnboarding()}>
                 Continue — your CV and {ASSESSMENT_QUESTIONS_PHRASE} <span className="asg-a">↗</span>
               </button>

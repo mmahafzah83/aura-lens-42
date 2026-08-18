@@ -111,6 +111,22 @@ function pickLocation(item: Record<string, unknown>): string | null {
   return null;
 }
 
+/** The profile picture, wherever this actor decided to put it. */
+function pickPicture(item: Record<string, unknown>): string | null {
+  const direct = pickText(item, [
+    "profilePicture", "profilePictureUrl", "profilePicHighQuality", "profilePic",
+    "pictureUrl", "photoUrl", "avatar", "avatarUrl", "imageUrl", "image",
+  ]);
+  if (direct && /^https?:\/\//i.test(direct)) return direct.slice(0, 1000);
+  const raw = item.profilePicture ?? item.picture ?? item.photo ?? item.image;
+  if (raw && typeof raw === "object") {
+    const o = raw as Record<string, unknown>;
+    const nested = pickText(o, ["url", "large", "medium", "original", "displayImage"]);
+    if (nested && /^https?:\/\//i.test(nested)) return nested.slice(0, 1000);
+  }
+  return null;
+}
+
 async function sha256Hex(input: string): Promise<string> {
   const bytes = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
@@ -284,7 +300,7 @@ Deno.serve(async (req) => {
     // produce, so it must not consume the visitor's hourly allowance.
     const { data: cached } = await admin
       .from("mirror_reads")
-      .select("handle, read, sparse, generated_at, hit_count, name, posts_read, read_version")
+      .select("handle, read, sparse, generated_at, hit_count, name, headline, avatar_url, posts_read, read_version")
       .eq("handle", handle)
       .maybeSingle();
     const withinTtl =
@@ -302,6 +318,7 @@ Deno.serve(async (req) => {
       return json({
         ok: true, cached: true, sparse: cached.sparse, handle, read: cached.read,
         name: cached.name ?? null, posts_read: cached.posts_read ?? 0,
+        headline: cached.headline ?? null, avatar_url: cached.avatar_url ?? null,
         generated_at: cached.generated_at,
       });
     }
@@ -316,6 +333,7 @@ Deno.serve(async (req) => {
         ok: true, cached: true, stale: true, sparse: cached.sparse, handle,
         read: cached.read, name: cached.name ?? null,
         posts_read: cached.posts_read ?? 0,
+        headline: cached.headline ?? null, avatar_url: cached.avatar_url ?? null,
         generated_at: cached.generated_at,
         notice: `Last read on ${new Date(cached.generated_at).toLocaleDateString("en-GB", {
           day: "numeric", month: "long", year: "numeric",
@@ -367,6 +385,7 @@ Deno.serve(async (req) => {
     const joined = [firstName, lastName].filter(Boolean).join(" ").trim();
     const full_name = joined || pickText(item, ["fullName", "name", "displayName", "title"]);
     const headline = pickText(item, ["headline", "occupation", "subtitle"]);
+    const avatar_url = pickPicture(item);
     const about = pickText(item, ["about", "summary", "bio", "description"]);
     const location = pickLocation(item);
     const followers = pickInt(item, ["followerCount", "followersCount", "followers"]);
@@ -487,6 +506,8 @@ Deno.serve(async (req) => {
           read,
           sparse,
           name: full_name ?? null,
+          headline: headline ?? null,
+          avatar_url,
           posts_read: postTexts.length,
           read_version: READ_VERSION,
           generated_at,
@@ -498,7 +519,8 @@ Deno.serve(async (req) => {
 
     return json({
       ok: true, cached: false, sparse, handle, read,
-      name: full_name ?? null, posts_read: postTexts.length, generated_at,
+      name: full_name ?? null, headline: headline ?? null, avatar_url,
+      posts_read: postTexts.length, generated_at,
     });
   } catch (e) {
     await refund();
