@@ -2955,88 +2955,21 @@ const Onboarding = () => {
           email: wallEmail.trim().toLowerCase(), password: wallPassword,
         });
         if (signedIn?.session) {
-          const claimed = await claimSession(anonToken);
-          if (!claimed.ok) {
+          const res = await handoffAnonRun({
+            token: anonToken,
+            uid: signedIn.session.user.id,
+            accessToken: signedIn.session.access_token,
+            state: (anonStateRef.current ?? {}) as AssessmentState & Record<string, any>,
+            startedAt: sessionStartedAtRef.current,
+          });
+          if (!res.ok) {
             setWallError("We could not attach your report to your account yet — nothing is lost. Try again.");
             return;
           }
-          /* Hand the anonymous run onto the account: persist first, so nothing
-             can be lost even if the read fails. */
-          const uid = signedIn.session.user.id;
-          const st = (anonStateRef.current ?? {}) as AssessmentState & Record<string, any>;
-          const pf = (st as any).profile ?? {};
-          const patch: Record<string, any> = {};
-          for (const k of ["first_name", "last_name", "firm", "sector_focus", "level", "seniority_band", "skill_ratings"]) {
-            if (pf[k] !== undefined && pf[k] !== null) patch[k] = pf[k];
-          }
-          if (Object.keys(patch).length) await upsertProfile(uid, patch, "journey anon handoff");
-          await upsertProfile(
-            uid,
-            { onboarding_step: 3, identity_intelligence: { journey_screen: 12, read_done: true } },
-            "journey anon handoff step",
-          );
-          try { localStorage.setItem(`aura_ob_screen_${uid}`, "12"); } catch { /* private mode */ }
-          if (st.answers && Object.keys(st.answers).length) await saveAnswers(uid, st.answers);
-          /* Replay any links captured while anonymous — never block the redirect. */
-          try {
-            const pending = ((st as any).pending_captures ?? []) as Array<{ url: string; title?: string | null; summary?: string | null }>;
-            for (const c of pending) {
-              if (!c?.url) continue;
-              await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${signedIn.session.access_token}` },
-                body: JSON.stringify({
-                  type: "link", content: c.url, source_url: c.url,
-                  metadata: { title: c.title ?? undefined, summary: c.summary ?? undefined, source: "onboarding_collection" },
-                }),
-              });
-            }
-          } catch (e) {
-            console.error("[journey] capture replay failed", e);
-          }
-          /* Replay the optional reveal feedback collected while anonymous. */
-          try {
-            const fb = (st as any).reveal_feedback;
-            if (fb?.rating != null) {
-              await supabase.from("beta_feedback").upsert({
-                user_id: uid,
-                feedback_type: "reveal",
-                rating: fb.rating,
-                message: fb.message || null,
-                page: "/onboarding",
-              });
-            }
-          } catch (e) {
-            console.error("[journey] reveal feedback handoff failed", e);
-          }
-          try {
-            await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null));
-          } catch (e) {
-            console.error("[journey] handoff read failed", e);
-          }
-          /* THE ARRIVAL — record only what they genuinely gave us. Written
-             before the token goes, because the token is what proves the run. */
-          try {
-            const entry: Record<string, unknown> = {
-              at: Date.now(),
-              first_name: pf.first_name ?? null,
-              answers: Object.keys(st.answers ?? {}).length,
-              sliders: Object.keys((pf.skill_ratings ?? {}) as Record<string, unknown>).length,
-              captures: Array.isArray((st as any).pending_captures) ? (st as any).pending_captures.length : 0,
-            };
-            const startedAt = sessionStartedAtRef.current;
-            if (startedAt) {
-              const mins = Math.round((Date.now() - new Date(startedAt).getTime()) / 60000);
-              /* A duration is only honest if it is positive and plausible. */
-              if (Number.isFinite(mins) && mins >= 1 && mins <= 240) entry.minutes = mins;
-            }
-            localStorage.setItem("aura_just_joined", JSON.stringify(entry));
-          } catch { /* private mode — the arrival is a grace, not a gate */ }
-          clearToken();
           window.location.replace("/onboarding");
           return;
         }
-        setWallDone("Your account is open. Confirm it from the link in your inbox and your report follows you in — nothing is lost.");
+        setWallDone("Your account is open. Sign in and everything you just answered is waiting.");
       } catch {
         setWallError("Couldn't open the account just now. Nothing is lost — try again in a moment.");
       } finally {
