@@ -353,7 +353,8 @@ const PaperShell = ({
       {banner}
       <div className="obc-in" style={{
         background: OB.white, borderRadius: RADIUS.hero, border: `1px solid ${OB.line}`,
-        padding: "var(--ob-pad)", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
+        padding: "var(--ob-pad)", maxInlineSize: "var(--content-max, 640px)",
+        marginInline: "auto", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
       }}>
         {face ? (
           <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 22 }}>

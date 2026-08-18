@@ -167,6 +167,9 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
+          {/* A fixed banner: kept last in the DOM so the journey's skip link
+              stays the first focusable element (WCAG SC 2.4.1). */}
+          <CookieConsent />
         </BrowserRouter>
         </ErrorBoundary>
       </TooltipProvider>
