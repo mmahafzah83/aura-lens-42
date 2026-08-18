@@ -151,12 +151,85 @@ const privateHeading: React.CSSProperties = {
   margin: "8px 0 0", fontSize: 17, fontWeight: 700, lineHeight: 1.25, color: "#FFFFFF",
 };
 
+/**
+ * Night, not a gradient into cyan. One soft cyan glow, low opacity, well under
+ * a tenth of the card — the same treatment as the carousel slides.
+ */
+const nightSurface = (scale = 1): React.CSSProperties => ({
+  background:
+    `radial-gradient(${420 * scale}px ${320 * scale}px at 88% -6%, rgba(0,206,201,0.14), rgba(0,206,201,0) 68%),` +
+    `radial-gradient(${520 * scale}px ${420 * scale}px at 4% 104%, rgba(6,112,196,0.16), rgba(6,112,196,0) 70%),` +
+    OB.night,
+});
+
+/** Two letters, so a missing picture is never a hole. */
+export const initialsOf = (name?: string): string => {
+  const parts = String(name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "";
+  const first = parts[0][0] ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] ?? "" : "";
+  return (first + last).toUpperCase();
+};
+
+/** photo · name · headline — the row that makes the card his. */
+const IdentityRow = ({ data, size }: { data: RevealData; size: number }) => {
+  if (!data.name && !data.headline && !data.avatarUrl) return null;
+  const initials = initialsOf(data.name);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: size * 0.34 }}>
+      <div style={{
+        width: size, height: size, minWidth: size, borderRadius: 999,
+        background: "rgba(255,255,255,0.10)",
+        border: "1px solid rgba(255,255,255,0.22)",
+        overflow: "hidden", display: "flex", alignItems: "center",
+        justifyContent: "center", color: "#FFFFFF",
+        fontFamily: OB.mono, fontWeight: 600, fontSize: size * 0.36,
+        letterSpacing: "0.04em",
+      }}>
+        {data.avatarUrl ? (
+          <img
+            src={data.avatarUrl}
+            alt=""
+            crossOrigin="anonymous"
+            referrerPolicy="no-referrer"
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
+        ) : initials}
+      </div>
+      <div style={{ minWidth: 0 }}>
+        {data.name ? (
+          <p style={{
+            margin: 0, fontSize: size * 0.36, fontWeight: 700, lineHeight: 1.2,
+            letterSpacing: "-0.01em", color: "#FFFFFF",
+          }}>{data.name}</p>
+        ) : null}
+        {data.headline ? (
+          <p style={{
+            margin: `${size * 0.1}px 0 0`, fontSize: size * 0.27, lineHeight: 1.4,
+            color: "rgba(255,255,255,0.78)",
+          }}>{data.headline}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+/** The signature line: who read it, and when. */
+const signatureText = (data: RevealData): string =>
+  data.dateLine ? `Read by Aura · ${data.dateLine}` : "Read by Aura · aura-intel.org";
+
 /** The card is a reading experience; it grows once, at the desk-sized breakpoint. */
 const RVC_CSS = `
 @media (min-width:1280px){
   .rvc{padding:44px 38px 38px !important;}
   .rvc-arch{font-size:46px !important;}
   .rvc-read{font-size:17px !important;line-height:1.7 !important;}
+}
+@keyframes rvc-arrive{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.rvc-seq{opacity:0;animation:rvc-arrive .46s ${EASE} both;}
+@media (prefers-reduced-motion: reduce){
+  .rvc-seq{opacity:1 !important;animation:none !important;}
 }
 `;
 
