@@ -1657,8 +1657,15 @@ const Onboarding = () => {
     setResumeAsking(false);
     setResumedAt(null);
     if (anonToken) {
-      anonStateRef.current = { answers: {} };
-      await saveSession(anonToken, {});
+      /* Start over clears the answers, not the read. The read already exists
+         server-side, and re-asking for an address we hold is a lie about it. */
+      const keep = anonStateRef.current as any;
+      const preserved: Record<string, any> = { answers: {} };
+      for (const k of ["read", "posts_read", "profile_url", "name"]) {
+        if (keep?.[k] !== undefined && keep?.[k] !== null) preserved[k] = keep[k];
+      }
+      anonStateRef.current = preserved as any;
+      await saveSession(anonToken, preserved);
       try { localStorage.removeItem("aura_ob_screen_anon"); } catch { /* ignore */ }
     }
     if (userId) {
@@ -1676,11 +1683,13 @@ const Onboarding = () => {
     setAnswers({});
     setScores({});
     setClaims([]);
-    returnToAddress();
-    setLiInput("");
-    setLiProfile(null);
-    setReadDone(false);
-    setPostsRead(null);
+    /* The resolved address and its read survive — only the journey restarts. */
+    if (!readDone) {
+      returnToAddress();
+      setLiInput("");
+      setLiProfile(null);
+      setPostsRead(null);
+    }
     setOwnWords(null);
     setSector(""); setSectorKnown(false);
     setBand(null); setLevelTitle("");
@@ -1689,7 +1698,7 @@ const Onboarding = () => {
     setScreen(0);
     screenRef.current = 0;
     try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
-  }, [anonToken, userId, writeProfile]);
+  }, [anonToken, userId, writeProfile, readDone, returnToAddress]);
 
   /** The slim line above the card. One resume, one banner. */
   const resumeBanner = resumedAt ? (
