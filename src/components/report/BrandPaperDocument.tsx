@@ -187,7 +187,7 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
         {bp.positioning_statement ? (
           <div style={{
             marginTop: 40, marginInline: -PAGE_PAD, padding: `22px ${PAGE_PAD}px`,
-            background: T.spot, color: T.paper,
+            background: "var(--b-600)", color: T.paper,
             display: "flex", justifyContent: "space-between", alignItems: "center",
             gap: 24,
           }}>
@@ -201,7 +201,7 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
             <span style={{
               fontFamily: FONT.mono, fontSize: 10.5, fontWeight: 700,
               letterSpacing: "0.16em", textTransform: "uppercase",
-              color: T.action, whiteSpace: "nowrap",
+              color: "#FFFFFF", whiteSpace: "nowrap",
             }}>Your position, in one line</span>
           </div>
         ) : null}
@@ -237,9 +237,9 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
         {/* Meta grid */}
         <div style={{
           marginTop: 34, paddingTop: 14, borderTop: `1px solid ${T.rule}`,
-          display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20,
+          display: "grid", gridTemplateColumns: fullName ? "1fr 1fr 1fr" : "1fr 1fr", gap: 20,
         }}>
-          <MetaCell label="Prepared for" value={fullName || "—"} sub={level} />
+          {fullName ? <MetaCell label="Prepared for" value={fullName} sub={level} /> : null}
           <MetaCell label="Secondary read" value={bp.secondary_archetype || "—"} />
           <MetaCell label="Issued" value={todayLabel(bp.generated_at)} sub="Edition 0 · Your read" />
         </div>
@@ -549,7 +549,7 @@ function PaperChips({ label, items }: { label: string; items: string[] }) {
 
 function voiceSheetHasContent(bp: BrandPaper): boolean {
   return !!(
-    bp.voice_signature || bp.natural_tone || bp.trust_pattern || bp.authority_style ||
+    bp.voice_signature || bp.trust_pattern || bp.authority_style ||
     bp.zone_of_genius || bp.key_barrier ||
     bp.content_pillars.length > 0 || bp.growth_areas.length > 0
   );

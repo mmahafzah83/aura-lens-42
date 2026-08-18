@@ -1024,7 +1024,7 @@ export function ClosingPlate({
               color: T.paper,
             }}
           >
-            <div>{fullName || "—"}</div>
+            {fullName ? <div>{fullName}</div> : null}
             <div style={{ color: "rgba(242,245,249,0.6)", marginTop: 3 }}>
               {paperTitle || "The Aura Paper № 01"} · aura-intel.org{pageLine ? ` · ${pageLine}` : ""}
             </div>
