@@ -566,6 +566,9 @@ const ASG_CSS = `
 .asg-flow{max-width:620px;}
 .asg-read{display:flex;flex-direction:column;gap:14px;}
 .asg-read .asg-full{margin-top:4px;}
+.asg-moment{display:flex;flex-direction:column;}
+.asg-moment div:first-child{font-size:19px;font-weight:600;color:var(--ink);letter-spacing:-0.015em;line-height:1.35;}
+.asg-moment div:last-child{font-size:19px;font-weight:400;color:var(--ink4);line-height:1.35;margin-top:4px;}
 .asg-panel{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:26px;}
 .asg-center{text-align:center;}
 .asg-ph{font-size:24px;font-weight:700;line-height:1.2;letter-spacing:-.018em;margin:10px 0 0;}
