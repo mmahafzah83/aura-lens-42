@@ -192,7 +192,9 @@ const optionButton = (
 const PAGE_CSS = `
 .obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};
   --ob-max:420px;--ob-pad:clamp(22px,6vw,30px);--ob-h1:clamp(25px,7vw,30px);--ob-h2:clamp(21px,5.6vw,26px);
-  --ob-body:15px;--ob-small:12.5px;--ob-mono:9.5px;--ob-btn:15px;--ob-anchor:11.5px;--ob-lh:1.65;--ob-face:96px;}
+  --ob-body:15px;--ob-small:12.5px;--ob-mono:9.5px;--ob-btn:15px;--ob-anchor:11.5px;--ob-lh:1.65;--ob-face:96px;
+  /* Colour is a token here too, so the reveal surface is governed like the rest. */
+  --ob-blue:${OB.blue};--ob-blue-light:${OB.blueLight};--ob-white:${OB.white};}
 @media (min-width:768px){.obc{--ob-max:560px;}}
 @media (min-width:1280px){.obc{
   --ob-max:680px;--ob-pad:44px;--ob-h1:34px;--ob-h2:30px;--ob-body:17px;--ob-small:14px;
@@ -519,6 +521,9 @@ const Onboarding = () => {
   const shareRef = useRef<HTMLDivElement | null>(null);
   const paperMountRef = useRef<HTMLDivElement | null>(null);
   const [readRaw, setReadRaw] = useState<Record<string, any> | null>(null);
+  /* The read is on its way from the database. Until it answers, the reveal
+     screen shows a wait — never a claim about where the read is. */
+  const [revealLoading, setRevealLoading] = useState(false);
   const [buildingReport, setBuildingReport] = useState(false);
   /* posting to LinkedIn — offered only where it can actually work */
   const [canPostToLinkedIn, setCanPostToLinkedIn] = useState(false);
