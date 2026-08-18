@@ -233,7 +233,7 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
   );
 }
 
-// ── Sheet 2 — Four findings ────────────────────────────────────────────
+// ── Sheet 2 — Findings ─────────────────────────────────────────────────
 interface Finding { code: string; source: string; body: string }
 
 function FindingRow({ f }: { f: Finding }) {
