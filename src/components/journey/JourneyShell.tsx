@@ -220,7 +220,10 @@ export const JourneyChrome = ({ onBack, onExit, name, beat, sub }: {
   onBack?: () => void; onExit: () => void; name?: string | null;
   beat: Beat; sub?: JourneySub | null;
 }) => (
-  <div style={{ position: "sticky", insetBlockStart: 0, zIndex: 30 }}>
+  <div style={{
+    position: "sticky", insetBlockStart: 0, zIndex: 30,
+    background: CARD, borderBlockEnd: `1px solid ${LINE}`,
+  }}>
     <JourneyBar onBack={onBack} onExit={onExit} name={name} />
     <JourneyProgress beat={beat} sub={sub} />
   </div>
@@ -228,13 +231,14 @@ export const JourneyChrome = ({ onBack, onExit, name, beat, sub }: {
 
 /** Chrome plus a centred stage on whatever canvas the screen stands on. */
 const JourneyShell = ({
-  onBack, onExit, name, beat, sub, background = "#F2F5F9", padding = "28px 16px", children,
+  onBack, onExit, name, beat, sub, background = "#F2F5F9", padding = "28px 16px",
+  className, children,
 }: {
   onBack?: () => void; onExit: () => void; name?: string | null;
   beat: Beat; sub?: JourneySub | null;
-  background?: string; padding?: string; children: React.ReactNode;
+  background?: string; padding?: string; className?: string; children: React.ReactNode;
 }) => (
-  <div style={{ minBlockSize: "100dvh", background, display: "flex", flexDirection: "column" }}>
+  <div className={className} style={{ minBlockSize: "100dvh", background, display: "flex", flexDirection: "column" }}>
     <JourneyChrome onBack={onBack} onExit={onExit} name={name} beat={beat} sub={sub} />
     <div style={{
       flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding,

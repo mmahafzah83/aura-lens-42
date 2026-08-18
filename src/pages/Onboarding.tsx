@@ -325,6 +325,7 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
     sub={subOf(bead)}
     background={OB.night}
     padding="28px 20px"
+    className="obc"
   >
     <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
       {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace size="var(--ob-face)" /></div> : null}
@@ -347,6 +348,7 @@ const PaperShell = ({
     beat={beatOf(bead)}
     sub={subOf(bead)}
     background={OB.canvas}
+    className="obc"
   >
     <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
       {banner}
