@@ -1008,6 +1008,30 @@ export type Database = {
         }
         Relationships: []
       }
+      deleted_test_accounts_20260818: {
+        Row: {
+          deleted_at: string | null
+          id: number
+          row_json: Json | null
+          source_table: string | null
+          user_id: string | null
+        }
+        Insert: {
+          deleted_at?: string | null
+          id?: number
+          row_json?: Json | null
+          source_table?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          deleted_at?: string | null
+          id?: number
+          row_json?: Json | null
+          source_table?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       design_system: {
         Row: {
           created_at: string | null

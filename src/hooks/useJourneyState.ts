@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { isProfileComplete } from "@/lib/onboarding";
+import { hasCoreProfileFields } from "@/lib/onboarding";
 
 export interface JourneyState {
   loading: boolean;
@@ -59,7 +59,7 @@ export function useJourneyState(userId: string | null | undefined): JourneyState
       ]);
 
       const p: any = profileRes.data || {};
-      const profileComplete = isProfileComplete(p);
+      const profileComplete = hasCoreProfileFields(p);
       const assessmentComplete = !!p.brand_assessment_completed_at || (Array.isArray(p.brand_pillars) && p.brand_pillars.length > 0);
 
       const entryRows: any[] = entriesRes.data || [];

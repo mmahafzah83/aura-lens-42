@@ -46,7 +46,9 @@ import useTierFromImprint from "@/hooks/useTierFromImprint";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import usePageMeta from "@/hooks/usePageMeta";
 import { track, getTrackSessionId } from "@/lib/track";
-import { isProfileComplete } from "@/lib/onboarding";
+import { isOnboarded } from "@/lib/onboarding";
+import { setPendingDestination, takePendingDestination } from "@/lib/pendingDestination";
+import { reportClientError } from "@/lib/clientErrorLog";
 import { ensureTimezone } from "@/lib/ensureTimezone";
 
 import AnalyticsV2 from "@/components/analytics/AnalyticsV2";
@@ -307,9 +309,80 @@ const Dashboard = () => {
     if (activeTab === "authority") setAuthorityMounted(true);
   }, [activeTab]);
 
+  /**
+   * A deep link that survived an onboarding or sign-in detour (D122).
+   * Read-and-deleted exactly once, during the first render of the dashboard.
+   */
+  const [resumedParams] = useState<URLSearchParams | null>(() => {
+    const dest = takePendingDestination();
+    if (!dest) return null;
+    const qs = dest.split("?")[1];
+    return qs ? new URLSearchParams(qs) : null;
+  });
+
+  /**
+   * Zero rows came back for a draft the member was invited to open. Ask the
+   * server whether it exists at all before we tell them anything about their
+   * own work (law #138). Three honest outcomes: wrong account, genuinely
+   * absent, or we could not tell.
+   */
+  const resolveMissingDraft = useCallback(async (draftId: string, src: string | null) => {
+    const fullPath = window.location.pathname + window.location.search;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const currentEmail = sessionData?.session?.user?.email ?? "another account";
+      if (!token) {
+        toast("We can't find that draft.");
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke("draft-owner-check", {
+        body: { draft_id: draftId, src: src ?? undefined },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (error) throw error;
+
+      if ((data as any)?.exists && (data as any)?.is_owner === false) {
+        const masked = (data as any)?.owner_email_masked || "a different address";
+        toast(
+          `This draft belongs to a different Aura account (${masked}). You're signed in as ${currentEmail}.`,
+          {
+            duration: 20000,
+            action: {
+              label: "Sign in as that account",
+              onClick: () => {
+                void (async () => {
+                  try { await supabase.auth.signOut(); } catch { /* sign out best-effort */ }
+                  window.location.assign(`/auth?next=${encodeURIComponent(fullPath)}`);
+                })();
+              },
+            },
+          },
+        );
+        return;
+      }
+
+      if ((data as any)?.exists === false) {
+        toast("We can't find that draft.");
+        return;
+      }
+      // Exists and we own it, yet the read returned nothing — that is a fault,
+      // not a deletion.
+      toast("We couldn't load that draft right now. Please try again.");
+    } catch (e: any) {
+      toast("We couldn't load that draft right now. Please try again.");
+      void reportClientError(
+        `draft-owner-check failed: ${e?.message ?? "unknown"}`,
+        "high",
+        { draft_id: draftId, src: src ?? null },
+      );
+    }
+  }, []);
+
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
-    const tabParam = searchParams.get("tab");
+    const params = resumedParams ?? searchParams;
+    const tabParam = params.get("tab");
     const resolvedTab = tabParam ? resolveTab(tabParam) : null;
     if (resolvedTab && isTabValue(resolvedTab)) {
       setActiveTab(resolvedTab as TabValue);
@@ -317,7 +390,7 @@ const Dashboard = () => {
 
     // If we landed on the Publish tab with a signal id, fetch that signal and
     // pre-fill the draft so the user lands directly in the right context.
-    const signalParam = searchParams.get("signal");
+    const signalParam = params.get("signal");
     if (signalParam && resolvedTab === "authority") {
       (async () => {
         const { data: sig } = await (supabase
@@ -345,16 +418,18 @@ const Dashboard = () => {
     // If we landed on the Publish tab with a draft id (from a lifecycle email),
     // fetch that specific draft and hand it to the Composer. Mirrors the
     // signal-param path exactly: same effect, same setSearchParams cleanup.
-    const draftParam = searchParams.get("draft");
-    const srcParam = searchParams.get("src");
+    const draftParam = params.get("draft");
+    const srcParam = params.get("src");
     if (draftParam && resolvedTab === "authority") {
       (async () => {
+        let readError: unknown = null;
         const tryContentItems = async () => {
-          const { data: r } = await (supabase
+          const { data: r, error } = await (supabase
             .from("content_items" as any) as any)
             .select("id, body, language, type, generation_params")
             .eq("id", draftParam)
             .maybeSingle();
+          if (error) readError = error;
           if (!r) return null;
           const lang: "en" | "ar" = r.language === "ar" ? "ar" : "en";
           const type: "carousel" | "framework" | "linkedin_post" =
@@ -369,11 +444,12 @@ const Dashboard = () => {
           };
         };
         const tryLinkedInPosts = async () => {
-          const { data: r } = await (supabase
+          const { data: r, error } = await (supabase
             .from("linkedin_posts" as any) as any)
             .select(DRAFT_OPEN_COLUMNS)
             .eq("id", draftParam)
             .maybeSingle();
+          if (error) readError = error;
           if (!r) return null;
           return { ...draftFromLinkedInPost(r), _source: "linkedin_posts" as const };
         };
@@ -391,8 +467,19 @@ const Dashboard = () => {
         if (prefill) {
           setDraftPrefill(prefill);
           setActiveTab("authority");
+        } else if (readError) {
+          // The query itself failed. Never imply the work is gone.
+          toast("We couldn't load that draft right now. Please try again.");
+          void reportClientError(
+            `draft deep link read failed: ${(readError as any)?.message ?? "unknown"}`,
+            "high",
+            { draft_id: draftParam, src: srcParam ?? null },
+          );
         } else {
-          toast("That draft is no longer available");
+          // Zero rows can mean two very different things under RLS: the draft
+          // does not exist, or it belongs to another Aura account. Ask the
+          // server before we say anything (law #138).
+          await resolveMissingDraft(draftParam, srcParam);
         }
 
         // Clear so a refresh doesn't reapply
@@ -576,11 +663,10 @@ const Dashboard = () => {
         // true at the first-step profile save. The inline checklist was retired in favor
         // of First Flight. Dashboard NEVER creates a profile row — Onboarding.tsx is the
         // only place a real profile is born.
-        const onboardingDone = Number((profile as any)?.onboarding_step ?? 0) >= 4;
+        const onboardingDone = isOnboarded(profile);
         console.log("[Dashboard] onboarding gate", {
           uid: uid.slice(0, 8),
           hasProfile: !!profile,
-          complete: isProfileComplete(profile),
           onboardingDone,
         });
         // A member who chose "Finish later" is not bounced back — Home catches
@@ -594,7 +680,10 @@ const Dashboard = () => {
         // completeness test here caused an infinite loop for every member whose
         // successful journey left `firm` null.
         if (!onboardingDone && !paused) {
-          navigate("/onboarding", { replace: true });
+          // Park where they were actually going — an emailed draft link must
+          // survive the detour, and the back button must still work (D122).
+          setPendingDestination(window.location.pathname + window.location.search);
+          navigate("/onboarding");
           return;
         }
 
