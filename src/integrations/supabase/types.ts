@@ -769,10 +769,33 @@ export type Database = {
         }
         Relationships: []
       }
+      content_gate_cache: {
+        Row: {
+          content_hash: string
+          created_at: string
+          judge_model: string | null
+          verdict: Json
+        }
+        Insert: {
+          content_hash: string
+          created_at?: string
+          judge_model?: string | null
+          verdict: Json
+        }
+        Update: {
+          content_hash?: string
+          created_at?: string
+          judge_model?: string | null
+          verdict?: Json
+        }
+        Relationships: []
+      }
       content_gate_results: {
         Row: {
           assertions: Json | null
+          content_hash: string | null
           created_at: string
+          expected_ending: string | null
           function_name: string | null
           id: string
           judge_model: string | null
@@ -787,7 +810,9 @@ export type Database = {
         }
         Insert: {
           assertions?: Json | null
+          content_hash?: string | null
           created_at?: string
+          expected_ending?: string | null
           function_name?: string | null
           id?: string
           judge_model?: string | null
@@ -802,7 +827,9 @@ export type Database = {
         }
         Update: {
           assertions?: Json | null
+          content_hash?: string | null
           created_at?: string
+          expected_ending?: string | null
           function_name?: string | null
           id?: string
           judge_model?: string | null

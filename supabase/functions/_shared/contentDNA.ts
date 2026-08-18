@@ -9,8 +9,16 @@ export type DNALang = "ar" | "en";
 export type DNATexture = "clean" | "daheeh" | "qawarish";
 
 // 1. THE ENGINE — information as plot; the payoff is never the opening.
+//
+// D121: step 6 used to mandate an uncomfortable QUESTION on every post, while
+// the per-post ENDING directive appended later told five of six endings NOT to
+// end on a question. The generator was handed both instructions and then marked
+// wrong for obeying the later one. The close step is now shape-neutral by
+// default; the question mandate is only emitted when the chosen ending IS the
+// question ending.
 
-export const ENGINE = `CONTENT ENGINE — every piece follows this arc:
+export function buildEngine(closeOnQuestion = false): string {
+  return `CONTENT ENGINE — every piece follows this arc:
 
 1. HOOK — open on a tension, paradox, or counterintuitive claim. Never open with the conclusion or "today I want to talk about".
 
@@ -22,9 +30,15 @@ export const ENGINE = `CONTENT ENGINE — every piece follows this arc:
 
 5. REFRAME — zoom out; connect the small thing to something larger.
 
-6. UNCOMFORTABLE QUESTION — close on a question the reader carries into the week. Never "what do you think?".
+6. ${closeOnQuestion
+    ? `UNCOMFORTABLE QUESTION — close on a question the reader carries into the week. Never "what do you think?".`
+    : `CLOSE — land the post in the exact shape named by the ENDING FOR THIS POST directive below. That directive is the only authority on how this post ends.`}
 
 Test: if the key insight is in the first two lines, move it down and build tension in front of it.`;
+}
+
+/** Default engine — shape-neutral close. */
+export const ENGINE = buildEngine(false);
 
 // 2. NUMBER INTEGRITY — the credibility guardrail. NON-NEGOTIABLE.
 
@@ -50,14 +64,28 @@ export const REGISTER_AR = `اللغة: عربية احترافية معاصرة
 
 export const NEUTRAL_READER = `a senior professional in their field`;
 
-export function buildRegisterEN(readerDescription?: string): string {
+/** The same default the generator scopes an off-language register down to. */
+export const DEFAULT_REGISTER_EN = "contemporary professional English";
+export const DEFAULT_REGISTER_AR = "عربية احترافية معاصرة";
+
+/**
+ * D125: the judge treats `register_match` as a hard pass gate, so English must
+ * be given its register as a CONSTRAINT — the way Arabic already is — not as a
+ * clause buried inside a description of the reader.
+ */
+export function buildRegisterEN(readerDescription?: string, register?: string): string {
   const reader = (readerDescription || "").trim() || NEUTRAL_READER;
-  return `LANGUAGE: contemporary professional English written for ${reader}. Peer-to-peer, not consultant-speak. Short lines, one idea per line, tension before insight.`;
+  const reg = (register || "").trim() || DEFAULT_REGISTER_EN;
+  return `TARGET REGISTER (mandatory — every line must be written in it): ${reg}.
+Write the whole post in that register and nothing else. Do not drift into another variety of English, into consultant-speak, or into marketing copy.
+
+LANGUAGE: written for ${reader}. Peer-to-peer. Short lines, one idea per line, tension before insight.`;
 }
 
-export function buildRegisterAR(readerDescription?: string): string {
+export function buildRegisterAR(readerDescription?: string, register?: string): string {
   const reader = (readerDescription || "").trim() || NEUTRAL_READER;
-  return `${REGISTER_AR}\n\n- الكتابة موجّهة إلى: ${reader}.`;
+  const reg = (register || "").trim() || DEFAULT_REGISTER_AR;
+  return `السجل المستهدف (إلزامي — كل سطر يُكتب به): ${reg}.\n\n${REGISTER_AR}\n\n- الكتابة موجّهة إلى: ${reader}.`;
 }
 
 // 4. FORMATTING
@@ -66,7 +94,7 @@ export const FORMATTING = `FORMATTING:
 
 - ◆ for main points, ↳ for sub-points. One idea per line, blank line between ideas.
 
-- Section markers 📍/⚠️/✅/❌ — max 2–3 total, NEVER in the Hook or the closing Question.
+- Section markers 📍/⚠️/✅/❌ — max 2–3 total, NEVER in the Hook or the closing line.
 
 - No markdown (#, **, ---), no format labels ("POST"/"منشور LinkedIn"), no code fences.`;
 
@@ -96,15 +124,23 @@ export const QAWARISH_TEXTURE = `TEXTURE (optional depth — apply lightly, stay
 
 export const VOICE_PRECEDENCE = `VOICE PROFILE PRECEDENCE: the voice profile adjusts TONE and VOCABULARY FLAVOR only. It NEVER overrides the ENGINE, REGISTER, FORMATTING, BANNED list, or NUMBER INTEGRITY — those are structural and always win.`;
 
-export const OUTPUT_CONTRACT = `OUTPUT CONTRACT (absolute): Your entire response is the finished post and nothing else. The first character you output is the first character of the hook. Do not write anything before the hook or after the closing question — no setup, no notes, no labels of any kind, in any language.`;
+export const OUTPUT_CONTRACT = `OUTPUT CONTRACT (absolute): Your entire response is the finished post and nothing else. The first character you output is the first character of the hook. Do not write anything before the hook or after the closing line — no setup, no notes, no labels of any kind, in any language.`;
 
-export function buildContentDNA(opts: { lang: DNALang; texture?: DNATexture; readerDescription?: string }): string {
+export function buildContentDNA(opts: {
+  lang: DNALang;
+  texture?: DNATexture;
+  readerDescription?: string;
+  /** The register this post must be written in, already scoped to `lang`. */
+  register?: string;
+  /** True only when the chosen ending for this post IS the question ending. */
+  closeOnQuestion?: boolean;
+}): string {
 
-  const { lang, texture = "clean", readerDescription } = opts;
+  const { lang, texture = "clean", readerDescription, register: reg, closeOnQuestion = false } = opts;
 
-  const register = lang === "ar" ? buildRegisterAR(readerDescription) : buildRegisterEN(readerDescription);
+  const register = lang === "ar" ? buildRegisterAR(readerDescription, reg) : buildRegisterEN(readerDescription, reg);
 
-  const parts = [ENGINE, NUMBER_INTEGRITY, register, FORMATTING, BANNED, VOICE_PRECEDENCE, OUTPUT_CONTRACT];
+  const parts = [buildEngine(closeOnQuestion), NUMBER_INTEGRITY, register, FORMATTING, BANNED, VOICE_PRECEDENCE, OUTPUT_CONTRACT];
 
   if (texture !== "clean") parts.splice(5, 0, QAWARISH_TEXTURE);
 

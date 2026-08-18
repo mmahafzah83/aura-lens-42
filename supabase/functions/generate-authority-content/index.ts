@@ -1,10 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY } from "../_shared/contentDNA.ts";
+import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY, DEFAULT_REGISTER_EN, DEFAULT_REGISTER_AR } from "../_shared/contentDNA.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
-import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR } from "../_shared/voiceStyle.ts";
+import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR, endingShapeOk } from "../_shared/voiceStyle.ts";
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
 import { findUnsourcedEntities } from "../_shared/entityGuard.ts";
 import { splitForPrompt, enforcedRuleTexts } from "../_shared/voiceRules.ts";
@@ -436,7 +436,7 @@ serve(withObserve("generate-authority-content", async (req) => {
     const [voiceRes, profileRes] = await Promise.all([
       supabase.from("authority_voice_profiles").select("*").eq("user_id", effectiveUserId).eq("language", effectiveLanguage).maybeSingle(),
       supabase.from("diagnostic_profiles")
-        .select("identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal, level, target_register, audit_interpretation, brand_assessment_results")
+        .select("first_name, identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal, level, target_register, audit_interpretation, brand_assessment_results")
         .eq("user_id", effectiveUserId).maybeSingle(),
     ]);
 
@@ -453,18 +453,32 @@ serve(withObserve("generate-authority-content", async (req) => {
     const identityContext = buildIdentityContext(profile);
 
     // Reader description is built from THIS user's own profile — never hardcoded.
+    // The register is NOT folded in here: a description is not a constraint.
+    // It is stated separately, as a mandate, by buildContentDNA.
     const readerDescription = (() => {
       const lvl = (profile?.level || "").trim();
       const sec = (profile?.sector_focus || "").trim();
-      const reg = (profile?.target_register || "").trim();
-      if (!lvl && !sec && !reg) return "a senior professional in their field";
+      if (!lvl && !sec) return "a senior professional in their field";
       const who = lvl && sec ? `${lvl} in ${sec}` : (lvl || sec);
-      const base = who ? `a ${who}` : "a senior professional in their field";
-      return reg ? `${base}, writing in ${reg}` : base;
+      return who ? `a ${who}` : "a senior professional in their field";
     })();
 
+    // D125 — `target_register` is one language-agnostic column. A member whose
+    // register reads "contemporary Gulf professional Arabic" had every English
+    // post judged against it, and register_match failed 44 of 44. The register
+    // is scoped to the language of the post: the stored value when its script
+    // matches, a same-language default otherwise.
+    const storedRegister = (profile?.target_register || "").trim();
+    const registerIsArabic = /[\u0600-\u06FF]/.test(storedRegister);
+    const effectiveRegister = effectiveLanguage === "ar"
+      ? (registerIsArabic ? storedRegister : DEFAULT_REGISTER_AR)
+      : (storedRegister && !registerIsArabic ? storedRegister : DEFAULT_REGISTER_EN);
+
     if (action === "generate_content") {
-      const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme, signal_id } = params;
+      const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme, signal_id, post_id } = params;
+      // A verdict must be joinable to the post it judged, whenever the caller
+      // already has one.
+      const requestedPostId = typeof post_id === "string" && post_id ? post_id : null;
       const isFlash = flash === true;
       const isNonStream = stream === false;
 
@@ -611,10 +625,25 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       // Language + voice handling
       let voiceSection: string;
       if (effectiveLanguage === "ar") {
-        const arabicBase = ARABIC_VOICE_PROMPT.replace(
-          /\{\{register\}\}/g,
-          (profile?.target_register || "").trim() || "عربية احترافية معاصرة",
-        );
+        // Every placeholder is filled. A clause whose value is missing is
+        // removed — a literal {{name}} must never reach the model.
+        const arName = (profile as any)?.first_name?.trim?.() || "";
+        const arRole = (profile?.level || "").trim();
+        const arSector = (profile?.sector_focus || "").trim();
+        let arabicBase = ARABIC_VOICE_PROMPT.replace(/\{\{register\}\}/g, effectiveRegister);
+        if (arName && arRole && arSector) {
+          arabicBase = arabicBase
+            .replace(/\{\{name\}\}/g, arName)
+            .replace(/\{\{role\}\}/g, arRole)
+            .replace(/\{\{sector\}\}/g, arSector);
+        } else {
+          // Drop the whole naming clause rather than ship a half-filled one.
+          arabicBase = arabicBase
+            .replace(/\s*باسم \{\{name\}\}،\s*\{\{role\}\}\s*المتخصص في \{\{sector\}\}/g, "")
+            .replace(/\{\{name\}\}/g, arName || "الكاتب")
+            .replace(/\{\{role\}\}/g, arRole || "قيادي")
+            .replace(/\{\{sector\}\}/g, arSector || "مجاله");
+        }
         // Arabic-native prompt replaces voice section
         voiceSection = voiceProfile
           ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile, chosenOpening)
@@ -636,7 +665,7 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
 1. Contrarian truth: Challenge what the industry believes in one sentence under 20 words.
 2. Specific tension: Name a contradiction the reader lives with daily. Be specific to ${sectorContextLabel}.
 
-Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.
+Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (in the exact shape named by ENDING FOR THIS POST below — that directive is the only authority on the close). Write in short paragraphs. One idea per line. No dense blocks.
 
 FORMATTING RULES (mandatory):
 - NEVER start the post with a format label like "POST", "LinkedIn Post", "منشور LinkedIn", or "BOOST". The very first line must be the hook content itself.
@@ -718,7 +747,7 @@ FORMATTING RULES (mandatory):
 
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
-${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription })}
+${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription, register: effectiveRegister, closeOnQuestion: chosenEnding === "question" })}
 
 ${groundingContext}
 
@@ -937,99 +966,6 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
 
       content = stripLabels(content);
 
-      // Quality gate — challenge the output before returning
-      // Quality gate intentionally uses a different model (Anthropic Sonnet) for independent evaluation
-      let gateResult: any = null;
-      let gateSkipReason: string | null = null;
-      let hookReplaced = false;
-      let hookOriginal: string | null = null;
-      try {
-        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
-          body: {
-            post_text: content,
-            language: effectiveLanguage,
-            signal_title: groundingSignal?.signal_title || topic || null,
-            voice_tone: voiceProfile?.tone || null,
-            user_sector: profile?.sector_focus || null,
-            target_register: profile?.target_register || null,
-            grounding_text: groundingContext || null,
-            content_kind: "post",
-          },
-          ...((isCron || isServiceRole)
-            ? { headers: { Authorization: `Bearer ${SERVICE_ROLE}` } }
-            : { headers: { Authorization: authHeader } }),
-        });
-        const timeout = new Promise((resolve) => {
-          setTimeout(() => {
-            console.warn("[generate-authority-content] quality gate timed out after 45s — skipped");
-            resolve({ data: null, error: "timeout" });
-          }, 45000);
-        });
-        const gateRes: any = await Promise.race([gatePromise, timeout]);
-        if (gateRes?.data && !gateRes?.error) {
-          gateResult = gateRes.data;
-          if (gateResult?.scores?.hook < 7 && gateResult?.improved_hook) {
-            const lines = content.split("\n");
-            if (lines.length) {
-              hookOriginal = lines[0];
-              lines[0] = gateResult.improved_hook;
-              content = lines.join("\n");
-              hookReplaced = true;
-            }
-          }
-        } else {
-          gateSkipReason = gateRes?.error === "timeout" ? "gate_timeout" : "gate_invoke_error";
-        }
-      } catch (e) {
-        console.warn("[generate-authority-content] quality gate skipped:", (e as Error).message);
-        gateSkipReason = "gate_invoke_exception";
-      }
-
-      const gatePayload = gateResult ? {
-        overall_score: (() => {
-          const o = Number(gateResult.overall ?? 0);
-          // Model returns a weighted average of 0–10 sub-scores; rescale to 0–100.
-          const scaled = o <= 10 ? Math.round(o * 10) : Math.round(o);
-          return Math.min(100, Math.max(0, scaled));
-        })(),
-        pass: (gateResult.pass === true) || (gateResult.pass === undefined && (() => { const o=Number(gateResult.overall??0); const scaled=o<=10?Math.round(o*10):Math.round(o); return scaled>=70; })()),
-        assertions: gateResult.assertions || null,
-        grounded_number: gateResult.assertions?.grounded_number ?? null,
-        scores: gateResult.scores,
-        verdict: gateResult.verdict,
-        weaknesses: Array.isArray(gateResult.weaknesses) ? gateResult.weaknesses : [],
-        skipped: gateResult.skipped || false,
-        hook_replaced: hookReplaced,
-        original_hook: hookOriginal,
-      } : null;
-
-      // Observability: record every gate outcome, always, without blocking the response.
-      try {
-        const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-        const p = admin.from("content_gate_results").insert({
-          user_id: effectiveUserId ?? null,
-          post_id: null,
-          function_name: "generate-authority-content",
-          language: effectiveLanguage,
-          overall_score: gatePayload?.overall_score ?? 0,
-          pass: (gatePayload && !gatePayload.skipped) ? gatePayload.pass : null,
-          assertions: gateResult?.assertions ?? null,
-          weaknesses: Array.isArray(gateResult?.weaknesses) ? gateResult.weaknesses : [],
-          skipped: gateResult ? (gateResult.skipped === true) : true,
-          skip_reason: gateResult?.skip_reason ?? gateSkipReason,
-          judge_model: gateResult?.judge_model ?? null,
-        }).then(() => {}, (err: any) => { console.error("[generate-authority-content] gate log failed:", err?.message); });
-        // @ts-ignore EdgeRuntime is available in Supabase runtime
-        if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
-          // @ts-ignore
-          EdgeRuntime.waitUntil(p);
-        }
-      } catch (_) { /* never block */ }
-
-      // A gate that cannot answer must never swallow the draft. Only an actual
-      // failing verdict blocks; a timeout / invoke error returns the draft free.
-      const gateBlocked = (gatePayload && !gatePayload.skipped) ? gatePayload.pass === false : false;
-
       // Provenance guard: a member is never handed a number the system cannot
       // trace back to the evidence that drove this generation.
       const evidenceText = [
@@ -1066,6 +1002,57 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         if (bansEmoji) t = stripEmoji(t);
         return t.trim();
       };
+
+      // ── D125 · CHEAP ASSERTIONS FIRST ─────────────────────────────────────
+      // Three of the judge's assertions are decidable here for free. Failing
+      // them is a re-ask with a targeted directive, not a paid verdict. One
+      // re-ask, then proceed — never a loop.
+      const primaryFigureCount = (text: string): number => {
+        let n = 0;
+        for (const line of text.split("\n")) {
+          // An ordered-list marker is not a statistic.
+          const body = line.replace(/^\s*\d+\.\s/, " ");
+          const hits = body.match(/[0-9٠-٩۰-۹][\d٠-٩۰-۹,.]*/g);
+          if (hits) n += hits.length;
+        }
+        return n;
+      };
+      const selfCheck = (text: string) => {
+        const figures = primaryFigureCount(text);
+        return {
+          one_number_max: figures <= 1,
+          grounded_number: findUnsourcedNumbers(text, evidenceText).length === 0,
+          ending_ok: endingShapeOk(text, chosenEnding),
+          figures,
+        };
+      };
+      let preGate = selfCheck(content);
+      if (!preGate.one_number_max || !preGate.grounded_number || !preGate.ending_ok) {
+        const endingLine = isAr
+          ? `- الخاتمة: ${ENDING_DIRECTIVE_AR[chosenEnding]}`
+          : `- Ending: ${ENDING_DIRECTIVE_EN[chosenEnding]}`;
+        const directive = isAr
+          ? `\n\nتصحيح إلزامي — أعد كتابة البوست كاملاً مع الالتزام بما يلي:${preGate.one_number_max ? "" : "\n- رقم واحد فقط في البوست كله (أرقام ترقيم القوائم لا تُحتسب)."}${preGate.grounded_number ? "" : "\n- لا تذكر أي رقم غير وارد حرفياً في الأدلة المرفقة."}${preGate.ending_ok ? "" : `\n${endingLine}`}`
+          : `\n\nMANDATORY CORRECTION — rewrite the whole post obeying these:${preGate.one_number_max ? "" : "\n- Use AT MOST one figure in the entire post (ordered-list markers do not count)."}${preGate.grounded_number ? "" : "\n- State no figure that is not present verbatim in the supplied evidence."}${preGate.ending_ok ? "" : `\n${endingLine}`}`;
+        console.warn(
+          "[generate-authority-content] pre-gate self-check failed —",
+          `figures: ${preGate.figures};`,
+          `grounded: ${preGate.grounded_number};`,
+          `ending(${chosenEnding}): ${preGate.ending_ok}`,
+        );
+        const reaskRaw = await callModel(directive);
+        const reask = reaskRaw ? hygiene(stripLabels(stripLeadingScaffold(reaskRaw))) : "";
+        if (reask) {
+          const after = selfCheck(reask);
+          const scoreOf = (c: typeof after) =>
+            Number(c.one_number_max) + Number(c.grounded_number) + Number(c.ending_ok);
+          // Only keep the re-ask if it is genuinely better. One re-ask, no loop.
+          if (scoreOf(after) > scoreOf(preGate)) {
+            content = reask;
+            preGate = after;
+          }
+        }
+      }
 
       content = hygiene(content);
       let unsourcedRemoved = 0;
@@ -1134,6 +1121,96 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       if (!integrity.ok) warnings.push("integrity_issues");
       if (bansEmoji && containsEmoji(content)) warnings.push("emoji_present");
 
+      // ── QUALITY GATE ─────────────────────────────────────────────────────
+      // D125: the gate runs LAST, after every corrective rewrite, so the stored
+      // verdict always describes the exact text the member receives. It uses a
+      // different model (Anthropic Sonnet) for independent evaluation.
+      let gateResult: any = null;
+      let gateSkipReason: string | null = null;
+      let gateResultId: string | null = null;
+      try {
+        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+          body: {
+            post_text: content,
+            language: effectiveLanguage,
+            signal_title: groundingSignal?.signal_title || topic || null,
+            voice_tone: voiceProfile?.tone || null,
+            user_sector: profile?.sector_focus || null,
+            target_register: effectiveRegister,
+            grounding_text: groundingContext || null,
+            content_kind: "post",
+            expected_ending: chosenEnding,
+          },
+          ...((isCron || isServiceRole)
+            ? { headers: { Authorization: `Bearer ${SERVICE_ROLE}` } }
+            : { headers: { Authorization: authHeader } }),
+        });
+        const timeout = new Promise((resolve) => {
+          setTimeout(() => {
+            console.warn("[generate-authority-content] quality gate timed out after 45s — skipped");
+            resolve({ data: null, error: "timeout" });
+          }, 45000);
+        });
+        const gateRes: any = await Promise.race([gatePromise, timeout]);
+        if (gateRes?.data && !gateRes?.error) {
+          gateResult = gateRes.data;
+        } else {
+          gateSkipReason = gateRes?.error === "timeout" ? "gate_timeout" : "gate_invoke_error";
+        }
+      } catch (e) {
+        console.warn("[generate-authority-content] quality gate skipped:", (e as Error).message);
+        gateSkipReason = "gate_invoke_exception";
+      }
+
+      const gatePayload = gateResult ? {
+        overall_score: (() => {
+          const o = Number(gateResult.overall ?? 0);
+          // Model returns a weighted average of 0–10 sub-scores; rescale to 0–100.
+          const scaled = o <= 10 ? Math.round(o * 10) : Math.round(o);
+          return Math.min(100, Math.max(0, scaled));
+        })(),
+        pass: (gateResult.pass === true) || (gateResult.pass === undefined && (() => { const o=Number(gateResult.overall??0); const scaled=o<=10?Math.round(o*10):Math.round(o); return scaled>=70; })()),
+        assertions: gateResult.assertions || null,
+        grounded_number: gateResult.assertions?.grounded_number ?? null,
+        scores: gateResult.scores,
+        verdict: gateResult.verdict,
+        weaknesses: Array.isArray(gateResult.weaknesses) ? gateResult.weaknesses : [],
+        skipped: gateResult.skipped || false,
+        // The gate no longer rewrites the text it judged. An improved hook is
+        // returned as a suggestion the member may take, never a silent swap.
+        hook_replaced: false,
+        suggested_hook: (gateResult?.scores?.hook < 7 && gateResult?.improved_hook) ? gateResult.improved_hook : null,
+        content_hash: gateResult?.content_hash ?? null,
+        expected_ending: chosenEnding,
+      } : null;
+
+      // Observability: record every gate outcome, always.
+      try {
+        const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+        const { data: gateRow } = await admin.from("content_gate_results").insert({
+          user_id: effectiveUserId ?? null,
+          post_id: requestedPostId,
+          function_name: "generate-authority-content",
+          language: effectiveLanguage,
+          overall_score: gatePayload?.overall_score ?? 0,
+          pass: (gatePayload && !gatePayload.skipped) ? gatePayload.pass : null,
+          assertions: gateResult?.assertions ?? null,
+          weaknesses: Array.isArray(gateResult?.weaknesses) ? gateResult.weaknesses : [],
+          skipped: gateResult ? (gateResult.skipped === true) : true,
+          skip_reason: gateResult?.skip_reason ?? gateSkipReason,
+          judge_model: gateResult?.judge_model ?? null,
+          content_hash: gateResult?.content_hash ?? null,
+          expected_ending: chosenEnding,
+        }).select("id").maybeSingle();
+        gateResultId = gateRow?.id ?? null;
+      } catch (err) {
+        console.error("[generate-authority-content] gate log failed:", (err as Error).message);
+      }
+
+      // A gate that cannot answer must never swallow the draft. Only an actual
+      // failing verdict blocks; a timeout / invoke error returns the draft free.
+      const gateBlocked = (gatePayload && !gatePayload.skipped) ? gatePayload.pass === false : false;
+
       // The only failure a member may ever see is genuinely empty output.
       if (!content.trim()) {
         return new Response(JSON.stringify({
@@ -1151,6 +1228,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         framework_used: (framework && FRAMEWORK_PROMPTS[framework]) ? framework : null,
         quality_gate: gatePayload,
         blocked: gateBlocked,
+        gate_result_id: gateResultId,
         // The label describes the text that was actually produced, never the
         // ending the prompt asked for.
         ending_type: endingTypeOf(content),
