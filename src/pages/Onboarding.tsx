@@ -851,6 +851,7 @@ const Onboarding = () => {
           if (local > back) back = local;
         } catch { /* ignore */ }
         if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
+        if (back === 4) back = 5; /* the interstitial is gone */
         if (back === 6 || back === 7) back = 5;
         if (back > 0 && (back <= 14 || back === MANUAL_SCREEN)) {
           setScreen(back); screenRef.current = back;
@@ -948,6 +949,7 @@ const Onboarding = () => {
       /* screens 2 and 3 folded into step 1 — a resume there lands on the address
          card with the address already filled, so nothing Aura read is lost. */
       if (resume === 2 || resume === 3 || resume === CV_SCREEN) resume = 1;
+      if (resume === 4) resume = 5; /* the interstitial is gone */
       if (resume <= 3) {
         try {
           const addr = await loadLinkedInAddress(uid);
