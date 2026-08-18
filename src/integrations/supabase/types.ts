@@ -2048,6 +2048,36 @@ export type Database = {
         }
         Relationships: []
       }
+      identity_registry: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          kind: string
+          linkedin_handle: string | null
+          note: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          kind: string
+          linkedin_handle?: string | null
+          note?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          kind?: string
+          linkedin_handle?: string | null
+          note?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       impact_narratives: {
         Row: {
           content_insight: string
@@ -5739,6 +5769,33 @@ export type Database = {
           },
         ]
       }
+      runs_classified: {
+        Row: {
+          created_at: string | null
+          handle: string | null
+          id: string | null
+          kind: string | null
+          run_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          handle?: never
+          id?: string | null
+          kind?: never
+          run_name?: never
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          handle?: never
+          id?: string | null
+          kind?: never
+          run_name?: never
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       unified_content: {
         Row: {
           content_body: string | null
@@ -5980,7 +6037,9 @@ export type Database = {
       home_record_timeline:
         | { Args: { p_uid?: string }; Returns: Json }
         | { Args: { p_tz?: string; p_uid?: string }; Returns: Json }
+      identity_kind: { Args: { p_user_id: string }; Returns: string }
       is_current_user_admin: { Args: never; Returns: boolean }
+      is_customer: { Args: { p_user_id: string }; Returns: boolean }
       linkedin_handle_valid: { Args: { h: string }; Returns: boolean }
       momentum_funnel: {
         Args: never
