@@ -161,9 +161,9 @@ const RevealCard = forwardRef<
       /* Physical properties only in this branch: the rasteriser's CSS parser does
          not implement logical properties and computes a zero box for them. */
       width: 1080,
-      /* Sized to content: a fixed height pooled all the slack into one void
-         between the signals and the figures. */
-      minHeight: 1080,
+      /* Matches the rasterised frame in rasteriseRevealCard (1080 × 1350), so
+         the declared box and the exported image can never disagree. */
+      minHeight: 1350,
       boxSizing: "border-box",
       background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
       padding: "96px 84px 74px",

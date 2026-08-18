@@ -233,7 +233,7 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
   );
 }
 
-// ── Sheet 2 — Four findings ────────────────────────────────────────────
+// ── Sheet 2 — Findings ─────────────────────────────────────────────────
 interface Finding { code: string; source: string; body: string }
 
 function FindingRow({ f }: { f: Finding }) {
@@ -295,7 +295,11 @@ function GapPanel({ bp, style }: { bp: BrandPaper; style?: React.CSSProperties }
   );
 }
 
-function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
+/** Spelled counts, so a heading can never promise more rows than exist. */
+const spellCount = (n: number) =>
+  ["No", "One", "Two", "Three", "Four", "Five", "Six"][n] ?? String(n);
+
+function buildFindings(bp: BrandPaper): Finding[] {
   const raw: (Finding | null)[] = [
     bp.market_read ? {
       code: "F · 1", body: bp.market_read,
@@ -314,10 +318,16 @@ function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
       source: "Source — Question 10 · barrier reframe",
     } : null,
   ];
-  const findings = raw.filter((f): f is Finding => f !== null);
+  return raw.filter((f): f is Finding => f !== null);
+}
+
+function FindingsSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number }) {
+  const findings = buildFindings(bp);
+  // An empty sheet is worse than no sheet.
+  if (findings.length === 0) return null;
 
   return (
-    <Sheet n={2}>
+    <Sheet n={n}>
       <PaperHeader label="Findings" />
       <div style={{ marginTop: 34, flex: 1 }}>
         <MonoLabel color={T.spot} size={11}>Chapter 01</MonoLabel>
@@ -325,7 +335,8 @@ function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
           fontFamily: FONT.serif, fontSize: 40, fontWeight: 400, lineHeight: 1.1,
           color: T.ink, margin: "10px 0 6px", letterSpacing: "-0.01em",
         }}>
-          Four findings, <span style={{ fontStyle: "italic", color: T.spot }}>evidenced</span>
+          {spellCount(findings.length)} {findings.length === 1 ? "finding" : "findings"},{" "}
+          <span style={{ fontStyle: "italic", color: T.spot }}>evidenced</span>
         </h2>
         <p style={{
           fontFamily: FONT.serif, fontSize: 15, color: T.ink2, lineHeight: 1.55,
@@ -339,7 +350,7 @@ function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
         </div>
         {/* The gap panel always lives at the top of Sheet 3 — never here. */}
       </div>
-      <PaperFooter n={2} total={total} paperTitle={PAPER_TITLE} />
+        <PaperFooter n={n} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>
   );
 }
@@ -372,7 +383,7 @@ function TopicBlock({ n, title, description }: { n: string; title: string; descr
   );
 }
 
-function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
+function SpaceSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number }) {
   const hasInvest = bp.invest_next.length > 0;
   // Older rows carry pillars but no structured topics — fall back so the
   // topics block is never silently empty.
@@ -380,7 +391,7 @@ function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
     ? bp.topics
     : bp.content_pillars.slice(0, 3).map((t) => ({ title: t, description: "" }));
   return (
-    <Sheet n={3}>
+    <Sheet n={n}>
       <PaperHeader label="Ground & Topics" />
       <div style={{ marginTop: 30, flex: 1 }}>
         <GapPanel bp={bp} style={{ marginBottom: 24 }} />
@@ -400,7 +411,9 @@ function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
 
         {topics.length > 0 ? (
           <div style={{ marginTop: 28 }}>
-            <MonoLabel color={T.spot} size={11}>Your three topics</MonoLabel>
+            <MonoLabel color={T.spot} size={11}>
+              {`Your ${spellCount(Math.min(topics.length, 3)).toLowerCase()} ${topics.length === 1 ? "topic" : "topics"}`}
+            </MonoLabel>
             <div style={{ marginTop: 10, borderBottom: `1px solid ${T.rule}` }}>
               {topics.slice(0, 3).map((t, i) => (
                 <TopicBlock
@@ -449,7 +462,7 @@ function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
           </div>
         ) : null}
       </div>
-      <PaperFooter n={3} total={total} paperTitle={PAPER_TITLE} />
+      <PaperFooter n={n} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>
   );
 }
@@ -613,13 +626,18 @@ export default function BrandPaperDocument({
   showClosing?: boolean;
 }) {
   const hasVoice = voiceSheetHasContent(paper);
-  const total = 3 + (hasVoice ? 1 : 0) + (showClosing ? 1 : 0);
+  // A findings sheet with no findings is dropped, so the sheet count follows.
+  const hasFindings = buildFindings(paper).length > 0;
+  const findingsN = hasFindings ? 2 : 0;
+  const spaceN = hasFindings ? 3 : 2;
+  const voiceN = spaceN + 1;
+  const total = 2 + (hasFindings ? 1 : 0) + (hasVoice ? 1 : 0) + (showClosing ? 1 : 0);
   return (
     <div style={{ background: T.paper2, padding: "24px 0" }}>
       <CoverSheet bp={paper} total={total} />
-      <FindingsSheet bp={paper} total={total} />
-      <SpaceSheet bp={paper} total={total} />
-      {hasVoice ? <VoiceSheet bp={paper} n={4} total={total} /> : null}
+      <FindingsSheet bp={paper} n={findingsN} total={total} />
+      <SpaceSheet bp={paper} n={spaceN} total={total} />
+      {hasVoice ? <VoiceSheet bp={paper} n={voiceN} total={total} /> : null}
       {showClosing ? <ClosingSheet bp={paper} n={total} total={total} /> : null}
     </div>
   );

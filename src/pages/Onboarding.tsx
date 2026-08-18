@@ -1472,7 +1472,7 @@ const Onboarding = () => {
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
       if (reveal) {
-        await supabase.functions.invoke("send-read-email", {
+        const { data: mail, error: mailErr } = await supabase.functions.invoke("send-read-email", {
           body: {
             archetype: reveal.archetype,
             marketRead: reveal.marketRead,
@@ -1480,8 +1480,18 @@ const Onboarding = () => {
             softGround: reveal.softGround,
           },
         });
+        if (mailErr || (mail as any)?.error) {
+          console.error("[reveal] send-read-email failed", mailErr || (mail as any));
+          toast.error("We couldn't email your read just now — it's saved on your Home page.");
+        } else {
+          const to = (mail as any)?.to as string | undefined;
+          toast.success(to ? `Your read is on its way to ${to}.` : "Your read is on its way to your inbox.");
+        }
       }
-    } catch { /* the read is already on their Home */ }
+    } catch (err) {
+      console.error("[reveal] send-read-email threw", err);
+      toast.error("We couldn't email your read just now — it's saved on your Home page.");
+    }
     if (userId) {
       try {
         /* Merges — writeProfile drops every null, so finishing can never blank
@@ -3125,11 +3135,17 @@ const Onboarding = () => {
         </NightShell>
       );
     } else {
-    /* the four things the report is actually doing, in order */
+    /* Only the work that actually happened is shown. A member who captured
+       nothing never sees Aura claim it read their captures. The wall-clock
+       pacing stays for the steps that genuinely apply. */
     const genSteps = [
       { key: "posts", label: "Reading your posts", done: !revealPending || genElapsed > 2000 },
-      { key: "saved", label: "Reading what you captured", done: !revealPending || genElapsed > 6000 },
-      { key: "answers", label: "Weighing your answers", done: !revealPending || genElapsed > 11000 },
+      ...(claims.length > 0
+        ? [{ key: "saved", label: "Reading what you captured", done: !revealPending || genElapsed > 6000 }]
+        : []),
+      ...(Object.keys(answers).length > 0
+        ? [{ key: "answers", label: "Weighing your answers", done: !revealPending || genElapsed > 11000 }]
+        : []),
       { key: "write", label: "Writing your read", done: !revealPending },
     ];
     content = (
@@ -3352,12 +3368,21 @@ const Onboarding = () => {
               <OBButton disabled={busy} loading={buildingReport} loadingLabel="Building your read…"
                 onClick={() => void downloadFullReport()}
                 style={{ background: "#FFFFFF", color: OB.blue }}>Keep the full read</OBButton>
-              <p style={{
-                margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
-                color: "rgba(255,255,255,.80)", textAlign: "center",
-              }}>The full read includes the gap. The card doesn't.</p>
+              {/* Promise the gap only when the gap exists. */}
+              {brandPaper.the_gap || brandPaper.own_words_quote ? (
+                <p style={{
+                  margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
+                  color: "rgba(255,255,255,.80)", textAlign: "center",
+                }}>The full read includes the gap. The card doesn't.</p>
+              ) : null}
             </>
-          ) : null}
+          ) : (
+            /* A promised deliverable never vanishes in silence. */
+            <p style={{
+              margin: 0, fontSize: 12.5, lineHeight: 1.55,
+              color: "rgba(255,255,255,.85)", textAlign: "center",
+            }}>Your full read is still being written. It'll be in your inbox and on your Home page shortly.</p>
+          )}
           {postedUrl ? (
             <a href={postedUrl} target="_blank" rel="noopener noreferrer" style={{
               display: "block", textAlign: "center", color: "#FFFFFF", fontSize: 14,
@@ -3376,34 +3401,41 @@ const Onboarding = () => {
                 margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6,
                 color: "rgba(255,255,255,.85)", textAlign: "center",
               }}>Available after you save your report.</p>
-            ) : !shareUrl ? (
-              <Actions style={{ marginBlockStart: 12 }}>
-                <OBButton disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
-                  onClick={() => void mintShare()}
-                  style={{ background: "#FFFFFF", color: OB.blue }}>Share my read</OBButton>
-              </Actions>
             ) : (
               <>
-                <div style={{
-                  display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: 10, marginBlockStart: 12,
-                }}>
-                  <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-                    target="_blank" rel="noopener noreferrer" style={shareAction}>WhatsApp</a>
-                  <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
-                    target="_blank" rel="noopener noreferrer" style={shareAction}>LinkedIn</a>
-                  <button type="button" onClick={() => void copyShareLink()} style={shareAction}>Copy link</button>
+                {!shareUrl ? (
+                  <Actions style={{ marginBlockStart: 12 }}>
+                    <OBButton disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
+                      onClick={() => void mintShare()}
+                      style={{ background: "#FFFFFF", color: OB.blue }}>Share my read</OBButton>
+                  </Actions>
+                ) : (
+                  <>
+                    <div style={{
+                      display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 10, marginBlockStart: 12,
+                    }}>
+                      <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                        target="_blank" rel="noopener noreferrer" style={shareAction}>WhatsApp</a>
+                      <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
+                        target="_blank" rel="noopener noreferrer" style={shareAction}>LinkedIn</a>
+                      <button type="button" onClick={() => void copyShareLink()} style={shareAction}>Copy link</button>
+                    </div>
+                    <p style={{
+                      margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6,
+                      color: "rgba(255,255,255,.78)", textAlign: "center",
+                    }}>
+                      Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
+                    </p>
+                  </>
+                )}
+                {/* Keeping your own card is a private act — never gated behind a public link. */}
+                <div style={{ marginBlockStart: 10 }}>
                   <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()}
-                    style={{ ...shareAction, opacity: busy ? 0.6 : 1 }}>
+                    style={{ ...shareAction, inlineSize: "100%", opacity: busy ? 0.6 : 1 }}>
                     {sharing ? "Building…" : "Download the image"}
                   </button>
                 </div>
-                <p style={{
-                  margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6,
-                  color: "rgba(255,255,255,.78)", textAlign: "center",
-                }}>
-                  Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
-                </p>
               </>
             )}
           </div>
