@@ -3125,11 +3125,17 @@ const Onboarding = () => {
         </NightShell>
       );
     } else {
-    /* the four things the report is actually doing, in order */
+    /* Only the work that actually happened is shown. A member who captured
+       nothing never sees Aura claim it read their captures. The wall-clock
+       pacing stays for the steps that genuinely apply. */
     const genSteps = [
       { key: "posts", label: "Reading your posts", done: !revealPending || genElapsed > 2000 },
-      { key: "saved", label: "Reading what you captured", done: !revealPending || genElapsed > 6000 },
-      { key: "answers", label: "Weighing your answers", done: !revealPending || genElapsed > 11000 },
+      ...(claims.length > 0
+        ? [{ key: "saved", label: "Reading what you captured", done: !revealPending || genElapsed > 6000 }]
+        : []),
+      ...(Object.keys(answers).length > 0
+        ? [{ key: "answers", label: "Weighing your answers", done: !revealPending || genElapsed > 11000 }]
+        : []),
       { key: "write", label: "Writing your read", done: !revealPending },
     ];
     content = (
