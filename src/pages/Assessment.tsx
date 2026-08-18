@@ -274,7 +274,7 @@ const Assessment = () => {
           name={state.name ?? null}
           beat={stage === "read" || stage === "resume" ? 2 : 1}
         />
-        <main className="asg-wrap asg-flow">
+        <main id="journey-main" tabIndex={-1} className="asg-wrap asg-flow">
           {stage === "read" || stage === "resume" ? (
             <div className="asg-strip-under">
               <p className="asg-saved">Your read is saved.</p>
