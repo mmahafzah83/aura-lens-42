@@ -8,7 +8,7 @@ import {
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
-import { ReadIdentityStrip, ReadSpine } from "@/components/read/ReadIdentityStrip";
+import { JourneyChrome } from "@/components/journey/JourneyShell";
 import {
   ASSESSMENT_MINUTES, FIRST_READ_LINE, FULL_PICTURE_LINE,
   FIRST_READ_SHORT, ASSESSMENT_QUESTIONS_PHRASE,
@@ -268,20 +268,16 @@ const Assessment = () => {
     return (
       <div className="asg">
         <style>{ASG_CSS}</style>
-        {stage === "read" || stage === "resume" ? (
-          <ReadIdentityStrip
-            name={state.name ?? null}
-            onExit={finishLater}
-            onSignIn={() => navigate("/auth")}
-          />
-        ) : (
-          <PublicMasthead cta={null} />
-        )}
+        {/* One shell, from the first journey screen to the account wall. */}
+        <JourneyChrome
+          onExit={finishLater}
+          name={state.name ?? null}
+          beat={stage === "read" || stage === "resume" ? 2 : 1}
+        />
         <main className="asg-wrap asg-flow">
           {stage === "read" || stage === "resume" ? (
             <div className="asg-strip-under">
               <p className="asg-saved">Your read is saved.</p>
-              {stage === "read" ? <ReadSpine /> : null}
             </div>
           ) : null}
           {notice && <div className="asg-notice" role="status">{notice}</div>}
