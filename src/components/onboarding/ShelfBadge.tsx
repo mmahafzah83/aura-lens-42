@@ -1,7 +1,7 @@
 /**
  * ShelfBadge — the four things the member collects. Locked is a dashed
- * outline with a question mark; unlocked is a filled gradient with the
- * member's own figure on it.
+ * outline carrying the badge's own outline icon; unlocked is a filled
+ * gradient with the member's own figure on it.
  */
 import { OB, SPRING, RADIUS } from "./tokens";
 import { User, Bookmark, BarChart3, Target } from "lucide-react";
@@ -61,15 +61,15 @@ const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = 
     >
       {on
         ? <span style={{ fontFamily: OB.mono, fontSize: 17, fontWeight: 600 }}>{figure ?? "✓"}</span>
-        : <Icon size={20} strokeWidth={1.5} color="#5B6673" />}
+        : <Icon size={20} strokeWidth={1.75} color={onNight ? OB.mutedNight : OB.muted} />}
     </div>
     <p style={{
-      margin: "8px 0 0", fontSize: 10.5, lineHeight: 1.35,
+      margin: "8px 0 0", fontSize: 10.5, lineHeight: 1.35, minHeight: 29,
       color: onNight ? OB.mutedNight : OB.muted,
     }}>{label}</p>
     {sublabel ? (
       <p style={{
-        margin: "3px 0 0", fontSize: 11, lineHeight: 1.35,
+        margin: "3px 0 0", fontSize: 11, lineHeight: 1.35, minHeight: 45,
         color: onNight ? OB.mutedNight : OB.muted,
       }}>{sublabel}</p>
     ) : null}
