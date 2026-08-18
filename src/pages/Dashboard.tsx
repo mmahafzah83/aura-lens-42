@@ -309,9 +309,21 @@ const Dashboard = () => {
     if (activeTab === "authority") setAuthorityMounted(true);
   }, [activeTab]);
 
+  /**
+   * A deep link that survived an onboarding or sign-in detour (D122).
+   * Read-and-deleted exactly once, during the first render of the dashboard.
+   */
+  const [resumedParams] = useState<URLSearchParams | null>(() => {
+    const dest = takePendingDestination();
+    if (!dest) return null;
+    const qs = dest.split("?")[1];
+    return qs ? new URLSearchParams(qs) : null;
+  });
+
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
-    const tabParam = searchParams.get("tab");
+    const params = resumedParams ?? searchParams;
+    const tabParam = params.get("tab");
     const resolvedTab = tabParam ? resolveTab(tabParam) : null;
     if (resolvedTab && isTabValue(resolvedTab)) {
       setActiveTab(resolvedTab as TabValue);
@@ -319,7 +331,7 @@ const Dashboard = () => {
 
     // If we landed on the Publish tab with a signal id, fetch that signal and
     // pre-fill the draft so the user lands directly in the right context.
-    const signalParam = searchParams.get("signal");
+    const signalParam = params.get("signal");
     if (signalParam && resolvedTab === "authority") {
       (async () => {
         const { data: sig } = await (supabase
@@ -347,16 +359,18 @@ const Dashboard = () => {
     // If we landed on the Publish tab with a draft id (from a lifecycle email),
     // fetch that specific draft and hand it to the Composer. Mirrors the
     // signal-param path exactly: same effect, same setSearchParams cleanup.
-    const draftParam = searchParams.get("draft");
-    const srcParam = searchParams.get("src");
+    const draftParam = params.get("draft");
+    const srcParam = params.get("src");
     if (draftParam && resolvedTab === "authority") {
       (async () => {
+        let readError: unknown = null;
         const tryContentItems = async () => {
-          const { data: r } = await (supabase
+          const { data: r, error } = await (supabase
             .from("content_items" as any) as any)
             .select("id, body, language, type, generation_params")
             .eq("id", draftParam)
             .maybeSingle();
+          if (error) readError = error;
           if (!r) return null;
           const lang: "en" | "ar" = r.language === "ar" ? "ar" : "en";
           const type: "carousel" | "framework" | "linkedin_post" =
@@ -371,11 +385,12 @@ const Dashboard = () => {
           };
         };
         const tryLinkedInPosts = async () => {
-          const { data: r } = await (supabase
+          const { data: r, error } = await (supabase
             .from("linkedin_posts" as any) as any)
             .select(DRAFT_OPEN_COLUMNS)
             .eq("id", draftParam)
             .maybeSingle();
+          if (error) readError = error;
           if (!r) return null;
           return { ...draftFromLinkedInPost(r), _source: "linkedin_posts" as const };
         };
@@ -393,8 +408,19 @@ const Dashboard = () => {
         if (prefill) {
           setDraftPrefill(prefill);
           setActiveTab("authority");
+        } else if (readError) {
+          // The query itself failed. Never imply the work is gone.
+          toast("We couldn't load that draft right now. Please try again.");
+          void reportClientError(
+            `draft deep link read failed: ${(readError as any)?.message ?? "unknown"}`,
+            "high",
+            { draft_id: draftParam, src: srcParam ?? null },
+          );
         } else {
-          toast("That draft is no longer available");
+          // Zero rows can mean two very different things under RLS: the draft
+          // does not exist, or it belongs to another Aura account. Ask the
+          // server before we say anything (law #138).
+          await resolveMissingDraft(draftParam, srcParam);
         }
 
         // Clear so a refresh doesn't reapply
