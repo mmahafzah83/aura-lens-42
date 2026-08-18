@@ -874,7 +874,7 @@ const LANDING_V2_HTML = `
     <details><summary>Will the posts really sound like me?</summary><p>Aura learns from your own posts: how you open, how you explain, how you finish. And you read every word before anything goes out.</p></details>
     <details><summary>Does it work in Arabic?</summary><p>Yes. Arabic is written as Arabic and English as English. One is never a translation of the other.</p></details>
     <details><summary>Who owns what I save?</summary><p>You do. Your articles, your notes, your posts. We never use your work to help anyone else.</p></details>
-    <details><summary>What does “free” mean exactly?</summary><p>Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. Founding members keep that rate for as long as they stay, and no card is taken until Aura has published a post for someone who is not the founder.</p></details>
+    <details><summary>What does “free” mean exactly?</summary><p>Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. Founding members keep that rate for as long as they stay. ${SEAT_NO_CARD}</p></details>
     <details><summary>What if I stop using it?</summary><p>Everything you saved stays yours and you can take it with you. Nothing is locked.</p></details>
   </div>
 
@@ -979,7 +979,7 @@ const LANDING_V2_HTML = `
     </div>
     <div>
       <ul class="terms">
-        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>${SEAT_NO_CARD} If that never happens, you are never charged.</span></li>
+        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>${SEAT_NO_CARD} You are told before anything is ever charged.</span></li>
         <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Your report is free either way. The seat buys the weekly loop. The assessment was always yours to keep.</span></li>
         <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Locked for as long as you stay — not twelve months, not “introductory”.</span></li>
         <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Leave and take everything. Every capture, draft and report exports. Nothing is held back.</span></li>

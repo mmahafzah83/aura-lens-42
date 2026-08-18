@@ -192,7 +192,9 @@ const optionButton = (
 const PAGE_CSS = `
 .obc{font-family:${OB.ui};-webkit-font-smoothing:antialiased;color:${OB.ink};
   --ob-max:420px;--ob-pad:clamp(22px,6vw,30px);--ob-h1:clamp(25px,7vw,30px);--ob-h2:clamp(21px,5.6vw,26px);
-  --ob-body:15px;--ob-small:12.5px;--ob-mono:9.5px;--ob-btn:15px;--ob-anchor:11.5px;--ob-lh:1.65;--ob-face:96px;}
+  --ob-body:15px;--ob-small:12.5px;--ob-mono:9.5px;--ob-btn:15px;--ob-anchor:11.5px;--ob-lh:1.65;--ob-face:96px;
+  /* Colour is a token here too, so the reveal surface is governed like the rest. */
+  --ob-blue:${OB.blue};--ob-blue-light:${OB.blueLight};--ob-white:${OB.white};}
 @media (min-width:768px){.obc{--ob-max:560px;}}
 @media (min-width:1280px){.obc{
   --ob-max:680px;--ob-pad:44px;--ob-h1:34px;--ob-h2:30px;--ob-body:17px;--ob-small:14px;
@@ -519,6 +521,9 @@ const Onboarding = () => {
   const shareRef = useRef<HTMLDivElement | null>(null);
   const paperMountRef = useRef<HTMLDivElement | null>(null);
   const [readRaw, setReadRaw] = useState<Record<string, any> | null>(null);
+  /* The read is on its way from the database. Until it answers, the reveal
+     screen shows a wait — never a claim about where the read is. */
+  const [revealLoading, setRevealLoading] = useState(false);
   const [buildingReport, setBuildingReport] = useState(false);
   /* posting to LinkedIn — offered only where it can actually work */
   const [canPostToLinkedIn, setCanPostToLinkedIn] = useState(false);
@@ -936,6 +941,26 @@ const Onboarding = () => {
         try {
           const addr = await loadLinkedInAddress(uid);
           if (addr.profileUrl) setLiInput(addr.profileUrl);
+          /* NEVER ASK TWICE. read_done is the one readiness flag in the flow;
+             a mirror_reads row for the same address proves the same thing when
+             the flag predates it. Pre-filling the field was not enough — a
+             member whose read exists was still shown "Read my profile". */
+          if (addr.profileUrl) {
+            let done = Boolean((p.identity_intelligence as any)?.read_done);
+            let posts: number | null = null;
+            if (addr.handle) {
+              try {
+                const { data: mr } = await (supabase.from("mirror_reads" as any) as any)
+                  .select("posts_read").eq("handle", addr.handle.toLowerCase()).maybeSingle();
+                if (mr) { done = true; posts = Number((mr as any).posts_read ?? 0); }
+              } catch { /* the flag alone still answers */ }
+            }
+            if (done) {
+              setStep1Phase("result");
+              setReadDone(true);
+              if (posts !== null) setPostsRead(posts);
+            }
+          }
         } catch { /* ignore */ }
       }
       /* A reload on the reading screens loses the in-memory claims watch, so the
@@ -1443,6 +1468,7 @@ const Onboarding = () => {
 
   useEffect(() => {
     if (screen !== 13 || readRaw || !userId) return;
+    setRevealLoading(true);
     loadMarketRead(userId).then((r) => {
       if (r) setReadRaw(r);
       const d = toRevealData(r, {
@@ -1464,7 +1490,7 @@ const Onboarding = () => {
         ];
         setReveal({ ...d, figures });
       }
-    });
+    }).finally(() => setRevealLoading(false));
   }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
 
   /* ── finishing ── */
@@ -1631,8 +1657,15 @@ const Onboarding = () => {
     setResumeAsking(false);
     setResumedAt(null);
     if (anonToken) {
-      anonStateRef.current = { answers: {} };
-      await saveSession(anonToken, {});
+      /* Start over clears the answers, not the read. The read already exists
+         server-side, and re-asking for an address we hold is a lie about it. */
+      const keep = anonStateRef.current as any;
+      const preserved: Record<string, any> = { answers: {} };
+      for (const k of ["read", "posts_read", "profile_url", "name"]) {
+        if (keep?.[k] !== undefined && keep?.[k] !== null) preserved[k] = keep[k];
+      }
+      anonStateRef.current = preserved as any;
+      await saveSession(anonToken, preserved);
       try { localStorage.removeItem("aura_ob_screen_anon"); } catch { /* ignore */ }
     }
     if (userId) {
@@ -1650,11 +1683,13 @@ const Onboarding = () => {
     setAnswers({});
     setScores({});
     setClaims([]);
-    returnToAddress();
-    setLiInput("");
-    setLiProfile(null);
-    setReadDone(false);
-    setPostsRead(null);
+    /* The resolved address and its read survive — only the journey restarts. */
+    if (!readDone) {
+      returnToAddress();
+      setLiInput("");
+      setLiProfile(null);
+      setPostsRead(null);
+    }
     setOwnWords(null);
     setSector(""); setSectorKnown(false);
     setBand(null); setLevelTitle("");
@@ -1663,7 +1698,7 @@ const Onboarding = () => {
     setScreen(0);
     screenRef.current = 0;
     try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
-  }, [anonToken, userId, writeProfile]);
+  }, [anonToken, userId, writeProfile, readDone, returnToAddress]);
 
   /** The slim line above the card. One resume, one banner. */
   const resumeBanner = resumedAt ? (
@@ -2061,9 +2096,16 @@ const Onboarding = () => {
               <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.err }}>{liError}</p>
             ) : null}
             <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton onClick={() => void readProfile()} disabled={!liInput.trim()} loading={liBusy} loadingLabel="Reading…">
+              <OBButton onClick={() => void readProfile()} disabled={!liInput.trim()} loading={liBusy} loadingLabel="Reading…"
+                aria-describedby={!liInput.trim() ? "ob-li-why" : undefined}>
                 Read my profile
               </OBButton>
+              {!liInput.trim() ? (
+                /* A disabled control always carries its reason, next to itself. */
+                <p id="ob-li-why" style={{ margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+                  Paste your LinkedIn address first.
+                </p>
+              ) : null}
               <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
               <OBButton variant="tertiary" onClick={() => go(0)}>Back</OBButton>
             </Actions>
@@ -3306,18 +3348,27 @@ const Onboarding = () => {
       <div className="obc" style={{
         minBlockSize: "100dvh",
         overflow: "clip",
-        background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
+        /* Blue, and only blue. Cyan is decoration — never a fill. */
+        background: "linear-gradient(170deg, var(--ob-blue), var(--ob-blue-light))",
         display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
       }}>
         <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-          {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : (
-            <div style={{ textAlign: "center", color: "#FFFFFF" }}>
+          {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : revealLoading ? (
+            /* The read may already be finished and sitting in the database.
+               While we are still asking, say nothing about where it is. */
+            <div role="status" style={{ textAlign: "center", color: "var(--ob-white)" }}>
+              <p style={{ fontSize: 16, lineHeight: 1.6 }}>Opening your read…</p>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", color: "var(--ob-white)" }}>
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>
-                Aura is still writing your read. It'll be on your Home the moment it's done.
+                {readDone
+                  ? "Your read is saved. You'll find it on your Home."
+                  : "Aura is still writing your read. It'll be on your Home the moment it's done."}
               </p>
               <Actions style={{ marginBlockStart: 20 }}>
                 <OBButton onClick={() => go(14)}
-                  style={{ background: "#FFFFFF", color: OB.blue }}>Take me in</OBButton>
+                  style={{ background: "var(--ob-white)", color: "var(--ob-blue)" }}>Take me in</OBButton>
               </Actions>
             </div>
           )}
@@ -3537,37 +3588,29 @@ const Onboarding = () => {
           <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_PRICE_SUBLINE}</p>
           <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_NO_CARD}</p>
           <Actions style={{ marginBlockStart: 16 }}>
-            <OBButton variant="secondary" onClick={() => navigate(SEAT_PATH)}>{SEAT_CTA}</OBButton>
-          </Actions>
-        </div>
-
-
-        {connected || !userId ? null : (
-          <>
-            <div style={{ blockSize: 1, background: OB.line, margin: "24px 0 18px" }} />
-            <p style={{ ...bodyLight, textAlign: "center" }}>
-              Connect LinkedIn and you find out which of the signals in your read your audience already rewards — so nothing
-              written for you is a guess.
-            </p>
-            <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton variant="secondary" onClick={() => void connectLinkedIn({ allowRedirect: true })}
+            {/* One primary per view, and it is the decision — not the exit. */}
+            <OBButton onClick={() => navigate(SEAT_PATH)}>{SEAT_CTA}</OBButton>
+            {connected || !userId ? null : (
+              /* A settings action, dressed as one: quiet, in the same row. */
+              <OBButton variant="tertiary" onClick={() => void connectLinkedIn({ allowRedirect: true })}
                 loading={connecting} loadingLabel="Connecting…">
                 Connect LinkedIn
               </OBButton>
-            </Actions>
-            {connectNote ? (
-              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{connectNote}</p>
-            ) : null}
-          </>
-        )}
+            )}
+            <OBButton variant="tertiary" onClick={() => void finish()}>Take me in</OBButton>
+          </Actions>
+          {connected || !userId ? null : (
+            <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+              {connectNote || "Connect LinkedIn and you find out which of the signals in your read your audience already rewards."}
+            </p>
+          )}
+        </div>
+
 
         {connected || userId ? null : (
           <p style={{ ...bodyLight, textAlign: "center" }}>{CONNECT_AFTER_ACCOUNT}</p>
         )}
 
-        <Actions style={{ marginBlockStart: 22 }}>
-          <OBButton onClick={() => void finish()}>Take me in</OBButton>
-        </Actions>
         <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
       </PaperShell>
     );

@@ -21,7 +21,7 @@ export const SEAT_LIST_PRICE = "$69";
 export const SEAT_CAP = 50;
 export const SEAT_WAVE_SIZE = 10;
 export const SEAT_NO_CARD =
-  "No card today. Billing opens only when Aura has published a post for someone who is not the founder.";
+  "No card today. You are not charged until Aura is publishing for you.";
 export const SEAT_PROMISE =
   "See yourself for free. Take a seat only if what you see is worth keeping up.";
 
