@@ -1,19 +1,19 @@
 /**
- * ONE SHELL FOR THE WHOLE JOURNEY.
+ * ONE SHELL FOR THE WHOLE JOURNEY — v2.
  *
- * Every screen from the quick read through to the account wall wears this and
- * nothing else. No screen renders its own header, and no screen may alter this
- * one — the chrome changes only when the destination changes.
+ * Bar (56px) + progress (44px) = 100px, sticky, white, one hairline under it,
+ * a border at rest and never a shadow.
  *
- * Bar (56px, sticky, white, one hairline under it), four slots, in this order:
- *   1 back — reserved width even when empty, so the mark never slides
- *   2 the mark + Aura — left-aligned, never centred
- *   3 identity — monogram + first name, reserved when unknown
- *   4 Finish later — always last, always present
- * Nothing else may ever appear in the bar. `Sign in` in particular does not:
- * asking a member to identify themselves while naming them reads as broken.
+ * Four slots, fixed order, reserved width even when empty (an element that
+ * mounts after first paint costs layout shift):
+ *   [back] · ✳ Aura · … · [identity] · Finish later
+ *
+ * PROGRESS IS FLAT. One connected three-segment bar, labelled, no counts
+ * anywhere in the chrome: this journey is conditional (CV, sector and purpose
+ * are all optional), so "step n of 5" is not true of anyone's journey. The
+ * fill is continuous and monotonic — it may never move backwards.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 const CARD = "#FFFFFF";
@@ -21,12 +21,16 @@ const LINE = "#E2E7EE";
 const INK = "#0F1519";
 const INK2 = "#5B6673";
 const CYAN = "#00CEC9";
-const CYAN_SOFT = "rgba(0,206,201,.4)";
+const CYAN_TINT = "rgba(0,206,201,.4)";
 const CYAN_TEXT = "#00807B";
 const UI = "'Inter', system-ui, -apple-system, sans-serif";
 const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
 
-/** The five named steps inside the journey. Only the current one is labelled. */
+export const BAR_H = 56;
+export const PROGRESS_H = 44;
+export const CHROME_H = BAR_H + PROGRESS_H; // 100
+
+/** Kept for callers that still describe where they are; never rendered as a count. */
 export const STAGE_NAMES = [
   "Know you",
   "What you read",
@@ -40,11 +44,56 @@ export const BEATS = ["Your read", "Your evidence", "Your position"] as const;
 export type Beat = 1 | 2 | 3;
 
 export interface JourneySub {
-  /** 1-based step inside the beat currently in progress. */
+  /** 1-based step inside the beat currently in progress. Drives partial fill only. */
   n: number;
   total: number;
   label: string;
 }
+
+/* ─────────────────────────── shell stylesheet ─────────────────────────── */
+
+/**
+ * The container is restored to its measured production value: a 640px card,
+ * 32px padding, so the measure inside is 576px ≈ 72 characters at 16px.
+ * `scroll-padding-top` is required by WCAG SC 2.4.11 — a focused control must
+ * never be entirely hidden behind the sticky bar.
+ */
+const SHELL_CSS = `
+html{scroll-padding-top:${CHROME_H + 8}px;}
+.jshell{--content-max:640px;--card-pad:32px;--gutter:16px;}
+@media (min-width:768px){.jshell{--gutter:24px;}}
+@media (min-width:1280px){.jshell{--gutter:32px;}}
+/* Higher specificity than .obc so the shell owns container and type. */
+.jshell.jshell{--ob-max:var(--content-max);--ob-pad:var(--card-pad);
+  --ob-h1:30px;--ob-h2:20px;--ob-body:16px;--ob-small:14px;--ob-mono:12.5px;--ob-lh:1.6;}
+@media (min-width:768px){.jshell.jshell{--ob-h1:34px;}}
+.jshell-stage{inline-size:100%;max-inline-size:var(--content-max);margin-inline:auto;}
+.jshell-skip{position:absolute;inset-block-start:-200px;inset-inline-start:8px;z-index:60;
+  background:${CARD};color:${INK};border:1px solid ${LINE};border-radius:10px;
+  padding:12px 16px;min-block-size:44px;display:inline-flex;align-items:center;
+  font-family:${UI};font-size:14px;font-weight:600;text-decoration:none;}
+.jshell-skip:focus{inset-block-start:8px;}
+`;
+
+let cssMounted = 0;
+const useShellCss = () => {
+  useEffect(() => {
+    cssMounted += 1;
+    let el = document.getElementById("jshell-css") as HTMLStyleElement | null;
+    if (!el) {
+      el = document.createElement("style");
+      el.id = "jshell-css";
+      el.textContent = SHELL_CSS;
+      document.head.appendChild(el);
+    }
+    return () => {
+      cssMounted -= 1;
+      if (cssMounted <= 0) document.getElementById("jshell-css")?.remove();
+    };
+  }, []);
+};
+
+/* ───────────────────────────────── bar ─────────────────────────────────── */
 
 const firstNameOf = (name?: string | null): string =>
   String(name ?? "").trim().split(/\s+/).filter(Boolean)[0] ?? "";
@@ -62,24 +111,10 @@ const TAP: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
   minHeight: 44, minWidth: 44, padding: "0 8px",
   background: "none", border: "none", cursor: "pointer",
-  fontFamily: UI, fontSize: 13.5, fontWeight: 600,
+  fontFamily: UI, fontSize: 14, fontWeight: 600,
 };
 
-const useNarrow = (query = "(max-width: 767px)"): boolean => {
-  const [narrow, setNarrow] = useState(
-    () => typeof window !== "undefined" && !!window.matchMedia?.(query).matches,
-  );
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const on = () => setNarrow(mq.matches);
-    on();
-    mq.addEventListener?.("change", on);
-    return () => mq.removeEventListener?.("change", on);
-  }, [query]);
-  return narrow;
-};
-
-/** Slot 1 + 2 + 3 + 4. 56px. Never anything else. */
+/** Slot 1 + 2 + 3 + 4. 56px. Every slot keeps its width when empty. */
 const JourneyBar = ({ onBack, onExit, name }: {
   onBack?: () => void; onExit: () => void; name?: string | null;
 }) => {
@@ -88,22 +123,30 @@ const JourneyBar = ({ onBack, onExit, name }: {
   return (
     <div
       style={{
-        blockSize: 56, background: CARD, borderBlockEnd: `1px solid ${LINE}`,
-        display: "flex", alignItems: "center", gap: 8, paddingInline: 8,
+        blockSize: BAR_H, background: CARD,
+        display: "flex", alignItems: "center", gap: 8,
+        paddingInline: "max(8px, calc(var(--gutter, 16px) - 8px))",
       }}
     >
-      {/* slot 1 — reserved width, always */}
+      {/* slot 1 — reserved width, always mounted */}
       <div style={{ inlineSize: 44, flexShrink: 0 }}>
-        {onBack ? (
-          <button type="button" onClick={onBack} aria-label="Back one step"
-            style={{ ...TAP, inlineSize: 44, padding: 0, color: INK2 }}>
-            <ArrowLeft size={17} aria-hidden />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back one step"
+          aria-hidden={onBack ? undefined : true}
+          tabIndex={onBack ? undefined : -1}
+          style={{ ...TAP, inlineSize: 44, padding: 0, color: INK2,
+            visibility: onBack ? "visible" : "hidden",
+            pointerEvents: onBack ? "auto" : "none" }}
+        >
+          <ArrowLeft size={17} aria-hidden />
+        </button>
       </div>
 
-      {/* slot 2 — the mark, left-aligned */}
+      {/* slot 2 — the mark. Identity, not navigation. */}
       <span
+        role="img"
         aria-label="Aura"
         style={{
           display: "inline-flex", alignItems: "center", gap: 7,
@@ -117,28 +160,28 @@ const JourneyBar = ({ onBack, onExit, name }: {
 
       <span style={{ flex: 1 }} />
 
-      {/* slot 3 — identity, reserved when unknown */}
+      {/* slot 3 — identity, reserved-but-empty when unknown. Never with Sign in. */}
       <div style={{
-        display: "flex", alignItems: "center", gap: 8, minInlineSize: 30, minWidth: 0,
+        display: "flex", alignItems: "center", gap: 8,
+        inlineSize: first ? "auto" : 30, minBlockSize: 30, minWidth: 0,
         justifyContent: "flex-end",
       }}>
-        {initials ? (
-          <span aria-hidden style={{
-            inlineSize: 30, blockSize: 30, borderRadius: 999, flexShrink: 0,
-            background: INK, color: CARD, display: "inline-flex",
-            alignItems: "center", justifyContent: "center",
-            fontFamily: MONO, fontSize: 12, letterSpacing: "0.04em",
-          }}>{initials}</span>
-        ) : null}
+        <span aria-hidden style={{
+          inlineSize: 30, blockSize: 30, borderRadius: 999, flexShrink: 0,
+          background: INK, color: CARD, display: "inline-flex",
+          alignItems: "center", justifyContent: "center",
+          fontFamily: MONO, fontSize: 12.5, letterSpacing: "0.04em",
+          visibility: initials ? "visible" : "hidden",
+        }}>{initials || "··"}</span>
         {first ? (
           <span style={{
-            fontFamily: UI, fontSize: 13.5, fontWeight: 600, color: INK,
+            fontFamily: UI, fontSize: 14, fontWeight: 600, color: INK,
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxInlineSize: 120,
           }}>{first}</span>
         ) : null}
       </div>
 
-      {/* slot 4 — the one quiet way out */}
+      {/* slot 4 — the one quiet way out. A label, never an X. */}
       <button type="button" onClick={onExit} style={{ ...TAP, color: INK2, flexShrink: 0 }}>
         Finish later
       </button>
@@ -146,106 +189,164 @@ const JourneyBar = ({ onBack, onExit, name }: {
   );
 };
 
+/* ─────────────────────────────── progress ──────────────────────────────── */
+
+/** Where the fill should sit, 0–1 across the whole journey. */
+const fractionOf = (beat: Beat, sub?: JourneySub | null): number => {
+  const base = (beat - 1) / BEATS.length;
+  const inner = sub && sub.total > 0
+    ? Math.max(0, Math.min(1, (sub.n - 1) / sub.total))
+    : 0;
+  return Math.max(0, Math.min(1, base + inner / BEATS.length));
+};
+
 /**
- * ONE PROGRESS SYSTEM, NESTED. Three beats always; the `n of N` sub-count only
- * on the beat in progress, and only where those steps genuinely exist.
- * No blue in this row — blue is the primary action only.
+ * ONE CONNECTED BAR, THREE LABELLED SEGMENTS. No count, no blue, and the fill
+ * is held rather than allowed to move backwards.
  */
 export const JourneyProgress = ({ beat, sub }: { beat: Beat; sub?: JourneySub | null }) => {
-  const narrow = useNarrow();
-  const label = BEATS[beat - 1];
-  const count = sub ? (
-    <span style={{ fontFamily: UI, fontSize: 12.5, color: INK2, whiteSpace: "nowrap" }}>
-      <span style={{ fontFamily: MONO }}>{sub.n}</span> of <span style={{ fontFamily: MONO }}>{sub.total}</span>
-      {sub.label ? ` · ${sub.label}` : ""}
-    </span>
-  ) : null;
+  const want = fractionOf(beat, sub);
+  const held = useRef(0);
+  const [fill, setFill] = useState(want);
 
-  if (narrow) {
-    return (
-      <div
-        aria-label={`Where you are: ${label}${sub ? `, step ${sub.n} of ${sub.total}` : ""}`}
-        style={{
-          blockSize: 40, background: CARD, borderBlockEnd: `1px solid ${LINE}`,
-          display: "flex", alignItems: "center", gap: 8, paddingInline: 14,
-          overflow: "hidden", whiteSpace: "nowrap",
-        }}
-      >
-        <span aria-hidden style={{
-          inlineSize: 8, blockSize: 8, borderRadius: 999, flexShrink: 0,
-          background: CYAN_SOFT, border: `1px solid ${CYAN}`,
-        }} />
-        <span style={{ fontFamily: UI, fontSize: 12.5, fontWeight: 600, color: CYAN_TEXT }}>{label}</span>
-        {sub ? <span aria-hidden style={{ color: LINE }}>·</span> : null}
-        {count}
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (want < held.current) {
+      // eslint-disable-next-line no-console
+      console.warn(`[JourneyProgress] refused to move backwards: held ${held.current.toFixed(3)}, asked ${want.toFixed(3)}`);
+      return;
+    }
+    held.current = want;
+    setFill(want);
+  }, [want]);
 
   return (
     <div
-      aria-label={`Where you are: ${label}${sub ? `, step ${sub.n} of ${sub.total}` : ""}`}
       style={{
-        blockSize: 40, background: CARD, borderBlockEnd: `1px solid ${LINE}`,
-        display: "flex", alignItems: "center", gap: 12, paddingInline: 16,
-        overflowX: "auto", whiteSpace: "nowrap",
+        blockSize: PROGRESS_H, background: CARD,
+        display: "flex", flexDirection: "column", justifyContent: "center", gap: 6,
+        paddingInline: "var(--gutter, 16px)",
       }}
     >
-      {BEATS.map((name, i) => {
-        const n = (i + 1) as Beat;
-        const done = n < beat;
-        const now = n === beat;
-        return (
-          <span key={name} style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
-            {i > 0 ? <span aria-hidden style={{ color: LINE, marginInlineEnd: 5 }}>—</span> : null}
-            <span aria-hidden style={{
-              inlineSize: 8, blockSize: 8, borderRadius: 999,
-              background: done ? CYAN : now ? CYAN_SOFT : LINE,
-              border: done || now ? `1px solid ${CYAN}` : `1px solid ${LINE}`,
-            }} />
-            <span style={{
-              fontFamily: UI, fontSize: 12.5, fontWeight: done || now ? 600 : 500,
-              color: done || now ? CYAN_TEXT : INK2,
-            }}>{name}</span>
-            {now && sub ? <span style={{ marginInlineStart: 4 }}>{count}</span> : null}
-          </span>
-        );
-      })}
+      {/* the track: one connected bar, filled continuously */}
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(fill * 100)}
+        aria-label={`Where you are: ${BEATS[beat - 1]}`}
+        style={{
+          position: "relative", blockSize: 4, borderRadius: 999,
+          background: LINE, overflow: "hidden",
+        }}
+      >
+        {/* the segment in progress, tinted */}
+        <div aria-hidden style={{
+          position: "absolute", insetBlock: 0,
+          insetInlineStart: `${((beat - 1) / BEATS.length) * 100}%`,
+          inlineSize: `${(1 / BEATS.length) * 100}%`,
+          background: CYAN_TINT,
+        }} />
+        {/* everything completed, solid */}
+        <div aria-hidden style={{
+          position: "absolute", insetBlock: 0, insetInlineStart: 0,
+          inlineSize: `${fill * 100}%`, background: CYAN,
+          transition: "inline-size 320ms cubic-bezier(.22,1,.36,1)",
+        }} />
+      </div>
+
+      {/* the labels, one per segment */}
+      <div style={{ display: "flex", gap: 8 }}>
+        {BEATS.map((name, i) => {
+          const n = (i + 1) as Beat;
+          const now = n === beat;
+          const done = n < beat;
+          return (
+            <span
+              key={name}
+              aria-current={now ? "step" : undefined}
+              style={{
+                flex: 1, minWidth: 0,
+                textAlign: i === 0 ? "start" : i === BEATS.length - 1 ? "end" : "center",
+                fontFamily: UI, fontSize: 12.5, lineHeight: 1.4,
+                fontWeight: done || now ? 700 : 500,
+                color: done || now ? CYAN_TEXT : INK2,
+                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              }}
+            >
+              {name}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 };
 
-/** The bar and the progress row, stuck to the top together. */
+/* ──────────────────────────────── chrome ───────────────────────────────── */
+
+/** Exactly one banner. Skip link is the first focusable element on the page. */
 export const JourneyChrome = ({ onBack, onExit, name, beat, sub }: {
   onBack?: () => void; onExit: () => void; name?: string | null;
   beat: Beat; sub?: JourneySub | null;
-}) => (
-  <div style={{
-    position: "sticky", insetBlockStart: 0, zIndex: 30,
-    background: CARD, borderBlockEnd: `1px solid ${LINE}`,
-  }}>
-    <JourneyBar onBack={onBack} onExit={onExit} name={name} />
-    <JourneyProgress beat={beat} sub={sub} />
-  </div>
-);
+}) => {
+  useShellCss();
+  return (
+    <header
+      role="banner"
+      className="jshell"
+      style={{
+        position: "sticky", insetBlockStart: 0, zIndex: 30,
+        background: CARD, borderBlockEnd: `1px solid ${LINE}`, boxShadow: "none",
+      }}
+    >
+      <a className="jshell-skip" href="#journey-main">Skip to content</a>
+      <JourneyBar onBack={onBack} onExit={onExit} name={name} />
+      <JourneyProgress beat={beat} sub={sub} />
+    </header>
+  );
+};
 
-/** Chrome plus a centred stage on whatever canvas the screen stands on. */
+/* ───────────────────────────────── shell ───────────────────────────────── */
+
+/** Chrome plus one main, one centred 640px stage. */
 const JourneyShell = ({
-  onBack, onExit, name, beat, sub, background = "#F2F5F9", padding = "28px 16px",
-  className, children,
+  onBack, onExit, name, beat, sub, background = "#F2F5F9",
+  padding, className, children,
 }: {
   onBack?: () => void; onExit: () => void; name?: string | null;
   beat: Beat; sub?: JourneySub | null;
   background?: string; padding?: string; className?: string; children: React.ReactNode;
-}) => (
-  <div className={className} style={{ minBlockSize: "100dvh", background, display: "flex", flexDirection: "column" }}>
-    <JourneyChrome onBack={onBack} onExit={onExit} name={name} beat={beat} sub={sub} />
-    <div style={{
-      flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding,
-    }}>
-      {children}
+}) => {
+  useShellCss();
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  /* SC 2.4.3 — a new screen starts at the top of its own content. */
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    const h1 = el.querySelector("h1") as HTMLElement | null;
+    (h1 ?? el).focus?.({ preventScroll: true });
+  }, [beat, sub?.n]);
+
+  return (
+    <div
+      className={["jshell", className].filter(Boolean).join(" ")}
+      style={{ minBlockSize: "100dvh", background, display: "flex", flexDirection: "column" }}
+    >
+      <JourneyChrome onBack={onBack} onExit={onExit} name={name} beat={beat} sub={sub} />
+      <main
+        id="journey-main"
+        ref={mainRef as any}
+        tabIndex={-1}
+        style={{
+          flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: padding ?? "28px var(--gutter, 16px)", outline: "none",
+        }}
+      >
+        <div className="jshell-stage">{children}</div>
+      </main>
     </div>
-  </div>
-);
+  );
+};
 
 export default JourneyShell;
