@@ -4,7 +4,7 @@
  */
 import { useRef, useState } from "react";
 import RevealCard, {
-  shareRevealCard, rasteriseRevealCard, type RevealData,
+  rasteriseRevealCard, type RevealData,
 } from "@/components/onboarding/RevealCard";
 
 export const CANVAS = "#F2F5F9";
