@@ -1813,6 +1813,20 @@ const Onboarding = () => {
     </PaperShell>
   );
 
+  /* The one truth about the shelf. Every badge, on every screen, reads from
+     here — a badge is only lit by work the member actually did, and no figure
+     is ever invented. */
+  const shelfState = useMemo(() => {
+    const ratings = Object.keys(scores).length;
+    const subjects = reveal?.subjects?.length ?? 0;
+    return [
+      { unlocked: Boolean(postsRead) || readDone, figure: postsRead ? num(postsRead) : "✓" },
+      { unlocked: claims.length > 0, figure: num(claims.length) },
+      { unlocked: ratings > 0, figure: num(ratings) },
+      { unlocked: subjects > 0, figure: subjects > 0 ? num(subjects) : undefined },
+    ] as { unlocked: boolean; figure?: string | number }[];
+  }, [postsRead, readDone, claims.length, scores, reveal]);
+
   /* ───────────────────────── password & identity ───────────────────────── */
 
   const confirmIdentityYes = () => {
