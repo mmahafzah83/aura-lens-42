@@ -1468,6 +1468,7 @@ const Onboarding = () => {
 
   useEffect(() => {
     if (screen !== 13 || readRaw || !userId) return;
+    setRevealLoading(true);
     loadMarketRead(userId).then((r) => {
       if (r) setReadRaw(r);
       const d = toRevealData(r, {
@@ -1489,7 +1490,7 @@ const Onboarding = () => {
         ];
         setReveal({ ...d, figures });
       }
-    });
+    }).finally(() => setRevealLoading(false));
   }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
 
   /* ── finishing ── */
