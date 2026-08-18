@@ -295,7 +295,11 @@ function GapPanel({ bp, style }: { bp: BrandPaper; style?: React.CSSProperties }
   );
 }
 
-function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
+/** Spelled counts, so a heading can never promise more rows than exist. */
+const spellCount = (n: number) =>
+  ["No", "One", "Two", "Three", "Four", "Five", "Six"][n] ?? String(n);
+
+function buildFindings(bp: BrandPaper): Finding[] {
   const raw: (Finding | null)[] = [
     bp.market_read ? {
       code: "F · 1", body: bp.market_read,
@@ -314,14 +318,16 @@ function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
       source: "Source — Question 10 · barrier reframe",
     } : null,
   ];
-  const findings = raw.filter((f): f is Finding => f !== null);
-  // A heading may not promise a count the body cannot produce.
+  return raw.filter((f): f is Finding => f !== null);
+}
+
+function FindingsSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number }) {
+  const findings = buildFindings(bp);
+  // An empty sheet is worse than no sheet.
   if (findings.length === 0) return null;
-  const spell = (n: number) =>
-    ["No", "One", "Two", "Three", "Four", "Five", "Six"][n] ?? String(n);
 
   return (
-    <Sheet n={2}>
+    <Sheet n={n}>
       <PaperHeader label="Findings" />
       <div style={{ marginTop: 34, flex: 1 }}>
         <MonoLabel color={T.spot} size={11}>Chapter 01</MonoLabel>
@@ -329,7 +335,7 @@ function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
           fontFamily: FONT.serif, fontSize: 40, fontWeight: 400, lineHeight: 1.1,
           color: T.ink, margin: "10px 0 6px", letterSpacing: "-0.01em",
         }}>
-          {spell(findings.length)} {findings.length === 1 ? "finding" : "findings"},{" "}
+          {spellCount(findings.length)} {findings.length === 1 ? "finding" : "findings"},{" "}
           <span style={{ fontStyle: "italic", color: T.spot }}>evidenced</span>
         </h2>
         <p style={{
@@ -344,7 +350,7 @@ function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
         </div>
         {/* The gap panel always lives at the top of Sheet 3 — never here. */}
       </div>
-      <PaperFooter n={2} total={total} paperTitle={PAPER_TITLE} />
+        <PaperFooter n={n} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>
   );
 }
