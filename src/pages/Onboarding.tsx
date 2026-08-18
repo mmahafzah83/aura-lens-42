@@ -348,8 +348,9 @@ const Onboarding = () => {
   });
   const navigate = useNavigate();
   useEffect(() => { initThemeFromStorage(); }, []);
-  // An anonymous run started at /assessment is attached to the account here.
-  useEffect(() => { void claimPendingSession(); }, []);
+  /* An anonymous run started at /assessment is attached to the account in the
+     boot path below — as a full hand-off, not a bare claim, so nothing the
+     visitor answered is left behind. */
 
   const [checking, setChecking] = useState(true);
   /**
