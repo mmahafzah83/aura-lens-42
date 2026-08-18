@@ -46,7 +46,9 @@ import useTierFromImprint from "@/hooks/useTierFromImprint";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
 import usePageMeta from "@/hooks/usePageMeta";
 import { track, getTrackSessionId } from "@/lib/track";
-import { isProfileComplete } from "@/lib/onboarding";
+import { isOnboarded } from "@/lib/onboarding";
+import { setPendingDestination, takePendingDestination } from "@/lib/pendingDestination";
+import { reportClientError } from "@/lib/clientErrorLog";
 import { ensureTimezone } from "@/lib/ensureTimezone";
 
 import AnalyticsV2 from "@/components/analytics/AnalyticsV2";
