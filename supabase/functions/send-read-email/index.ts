@@ -58,6 +58,17 @@ serve(async (req) => {
     const RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
     if (!RESEND_KEY) return json({ error: "RESEND_API_KEY missing" }, 500);
 
+    // Delivery must be provable afterwards: every attempt is logged, success or not.
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+    const logAttempt = async (key: string) => {
+      try {
+        await admin.from("lifecycle_email_log").insert({ user_id: user.id, message_key: key });
+      } catch (e) { console.error("lifecycle_email_log write failed", e); }
+    };
+
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
@@ -66,9 +77,11 @@ serve(async (req) => {
     if (!resp.ok) {
       const detail = await resp.text();
       console.error(`Resend failed [${resp.status}]: ${detail}`);
+      await logAttempt(`read_email_failed_${new Date().toISOString()}`);
       return json({ error: "Send failed", status: resp.status, details: detail }, resp.status);
     }
-    return json({ ok: true });
+    await logAttempt("read_email");
+    return json({ ok: true, to: user.email });
   } catch (e) {
     console.error("send-read-email", e);
     return json({ error: String((e as Error)?.message || e) }, 500);

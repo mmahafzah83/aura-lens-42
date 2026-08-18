@@ -1472,7 +1472,7 @@ const Onboarding = () => {
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
       if (reveal) {
-        await supabase.functions.invoke("send-read-email", {
+        const { data: mail, error: mailErr } = await supabase.functions.invoke("send-read-email", {
           body: {
             archetype: reveal.archetype,
             marketRead: reveal.marketRead,
@@ -1480,8 +1480,18 @@ const Onboarding = () => {
             softGround: reveal.softGround,
           },
         });
+        if (mailErr || (mail as any)?.error) {
+          console.error("[reveal] send-read-email failed", mailErr || (mail as any));
+          toast.error("We couldn't email your read just now — it's saved on your Home page.");
+        } else {
+          const to = (mail as any)?.to as string | undefined;
+          toast.success(to ? `Your read is on its way to ${to}.` : "Your read is on its way to your inbox.");
+        }
       }
-    } catch { /* the read is already on their Home */ }
+    } catch (err) {
+      console.error("[reveal] send-read-email threw", err);
+      toast.error("We couldn't email your read just now — it's saved on your Home page.");
+    }
     if (userId) {
       try {
         /* Merges — writeProfile drops every null, so finishing can never blank
