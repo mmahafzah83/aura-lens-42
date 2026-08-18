@@ -26,7 +26,6 @@ const CYAN_TEXT = "#00807B";
 const UI = "'Inter', system-ui, -apple-system, sans-serif";
 const MONO = "'IBM Plex Mono', ui-monospace, Menlo, monospace";
 
-/** The three beats of the one journey. Always all three, always visible. */
 /** The five named steps inside the journey. Only the current one is labelled. */
 export const STAGE_NAMES = [
   "Know you",
@@ -36,6 +35,7 @@ export const STAGE_NAMES = [
   "Your read",
 ] as const;
 
+/** The three beats of the one journey. Always all three, always visible. */
 export const BEATS = ["Your read", "Your evidence", "Your position"] as const;
 export type Beat = 1 | 2 | 3;
 
