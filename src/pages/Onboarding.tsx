@@ -226,8 +226,8 @@ const fieldStyle: React.CSSProperties = {
 };
 
 const h1Light: React.CSSProperties = {
-  margin: 0, fontSize: "var(--ob-h1)", fontWeight: 800,
-  letterSpacing: "-0.03em", lineHeight: 1.1, color: OB.ink,
+  margin: 0, fontSize: "var(--ob-h1)", fontWeight: 700,
+  letterSpacing: "-0.02em", lineHeight: 1.15, color: OB.ink,
 };
 
 const h1Night: React.CSSProperties = { ...h1Light, color: "#FFFFFF" };
@@ -324,10 +324,9 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
     beat={beatOf(bead)}
     sub={subOf(bead)}
     background={OB.night}
-    padding="28px 20px"
     className="obc"
   >
-    <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+    <div className="obc-in" style={{ inlineSize: "100%" }}>
       {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace size="var(--ob-face)" /></div> : null}
       {children}
       {footer}
@@ -350,11 +349,12 @@ const PaperShell = ({
     background={OB.canvas}
     className="obc"
   >
-    <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+    <div style={{ inlineSize: "100%" }}>
       {banner}
       <div className="obc-in" style={{
         background: OB.white, borderRadius: RADIUS.hero, border: `1px solid ${OB.line}`,
-        padding: "var(--ob-pad)", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
+        padding: "var(--ob-pad)", maxInlineSize: "var(--content-max, 640px)",
+        marginInline: "auto", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
       }}>
         {face ? (
           <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 22 }}>
