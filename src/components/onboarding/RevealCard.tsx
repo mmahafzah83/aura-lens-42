@@ -3,7 +3,7 @@
  * and the same card is what gets exported when they share it.
  */
 import { forwardRef } from "react";
-import { OB, RADIUS } from "./tokens";
+import { OB, RADIUS, EASE, reducedMotion } from "./tokens";
 
 /**
  * EXPORT LAW: the shared card and the screen print the same strings. These two
@@ -14,6 +14,16 @@ export const LABEL_SOFT = "Where you're thinnest";
 
 export interface RevealData {
   archetype: string;
+  /** Whose card this is. */
+  name?: string;
+  /** Their own headline, as their field reads it. */
+  headline?: string;
+  /** Their picture. Absent is normal — initials stand in. */
+  avatarUrl?: string;
+  /** "18 August 2026" — printed on the signature line. */
+  dateLine?: string;
+  /** Quiet note about the age of a cached read. */
+  ageNote?: string;
   marketRead: string;
   /** The second read — a supporting archetype, when one was found. */
   secondaryRead?: string;
