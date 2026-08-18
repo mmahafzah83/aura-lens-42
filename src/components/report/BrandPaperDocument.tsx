@@ -240,7 +240,7 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
           display: "grid", gridTemplateColumns: fullName ? "1fr 1fr 1fr" : "1fr 1fr", gap: 20,
         }}>
           {fullName ? <MetaCell label="Prepared for" value={fullName} sub={level} /> : null}
-          <MetaCell label="Secondary read" value={bp.secondary_archetype || "—"} />
+          <MetaCell label="Secondary read" value={bp.secondary_archetype || ""} />
           <MetaCell label="Issued" value={todayLabel(bp.generated_at)} sub="Edition 0 · Your read" />
         </div>
       </div>
