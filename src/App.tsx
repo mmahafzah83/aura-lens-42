@@ -91,7 +91,6 @@ const App = () => (
         <Sonner />
         <ErrorBoundary>
         <BrowserRouter>
-          <CookieConsent />
           <PageViewTracker />
           <Suspense
             fallback={
