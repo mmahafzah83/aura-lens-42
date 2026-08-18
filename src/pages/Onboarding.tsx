@@ -847,6 +847,33 @@ const Onboarding = () => {
       setUserEmail(session.user.email ?? null);
       void ensureTimezone(uid);
 
+      /* RESCUE — a run that was walked anonymously and never attached. The
+         token is still in the browser; the session row still has no owner. The
+         same hand-off the wall runs is run here, then the journey reloads onto
+         the reveal instead of starting again from nothing. */
+      const orphan = readToken();
+      if (orphan) {
+        try {
+          const found = await loadSession(orphan);
+          const st = (found?.state ?? {}) as AssessmentState & Record<string, any>;
+          const hasWork = Boolean(st.read) || Object.keys(st.answers ?? {}).length > 0;
+          if (found && hasWork) {
+            const res = await handoffAnonRun({
+              token: orphan,
+              uid,
+              accessToken: session.access_token,
+              state: st,
+              startedAt: found.created_at ?? null,
+            });
+            if (res.ok) { window.location.replace("/onboarding"); return; }
+          } else if (found === null) {
+            clearToken();
+          }
+        } catch (e) {
+          console.error("[journey] orphan rescue failed", e);
+        }
+      }
+
       const passwordSet = Boolean((session.user.user_metadata as any)?.password_set);
       let confirmed = false;
       try { confirmed = sessionStorage.getItem(`aura_identity_confirmed_${uid}`) === "true"; } catch { /* ignore */ }
