@@ -1,0 +1,1 @@
+UPDATE public.documents SET document_type = NULL, cv_label = NULL WHERE id = 'b00d3ddd-0cc8-46e4-89fc-bda0866bb9ee';
