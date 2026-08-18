@@ -51,7 +51,7 @@ const ProgressBeads = ({ active, subProgress }: { active: number; subProgress?: 
             >
               <span style={{
                 display: "block", blockSize: "100%", inlineSize: `${frac * 100}%`,
-                borderRadius: 999, background: OB.cyan,
+                borderRadius: 999, background: "rgba(0,206,201,.4)",
                 transition: reducedMotion() ? "none" : `inline-size 250ms ${EASE}`,
               }} />
             </span>
@@ -65,7 +65,8 @@ const ProgressBeads = ({ active, subProgress }: { active: number; subProgress?: 
               blockSize: 9,
               inlineSize: now ? 9 * 1.7 * 2.4 : 22,
               borderRadius: 999,
-              background: done ? OB.blue : now ? OB.cyan : OB.line,
+              /* Beads carry no blue, in any state. Blue is the primary action only. */
+              background: done ? OB.cyan : now ? "rgba(0,206,201,.4)" : OB.line,
               transition: `background 250ms ${EASE}, inline-size 250ms ${EASE}`,
             }}
           />
