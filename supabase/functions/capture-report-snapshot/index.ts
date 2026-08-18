@@ -243,6 +243,20 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
     const v = (ratingsRaw as any)[dim] ?? (ratingsRaw as any)[SLUG_MAP[dim]];
     if (typeof v === "number" && !Number.isNaN(v)) filled.push({ name: dim, score: Math.round(v) });
   }
+  // The legacy ten are listed first so nothing reorders for existing members;
+  // every other key the member actually placed follows. Filtering to the ten
+  // is what dropped all eight of his placements.
+  const usedKeys = new Set<string>();
+  for (const dim of CAPABILITY_DIMENSIONS) { usedKeys.add(dim); usedKeys.add(SLUG_MAP[dim]); }
+  for (const [key, raw] of Object.entries(ratingsRaw)) {
+    if (usedKeys.has(key)) continue;
+    const n = typeof raw === "number" ? raw : Number(raw);
+    if (!Number.isFinite(n)) continue;
+    const pretty = key.includes("_")
+      ? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+      : key;
+    filled.push({ name: pretty, score: Math.round(n) });
+  }
   const capabilities = filled.length > 0 ? filled : null;
 
   let market_mirror: any = null;
@@ -293,6 +307,18 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
     .sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t]) => t);
   const territories = territoriesList.length > 0 ? territoriesList : null;
 
+  // The member's actual read lives in mirror_reads, keyed by LinkedIn handle.
+  let mirrorRead: Record<string, any> | null = null;
+  const liHandle: string | null = (connRes as any)?.data?.handle || null;
+  if (liHandle) {
+    try {
+      const { data: mrRow } = await db.from("mirror_reads")
+        .select("read").eq("handle", String(liHandle).toLowerCase()).maybeSingle();
+      const blob = (mrRow as any)?.read;
+      if (blob && typeof blob === "object" && Object.keys(blob).length) mirrorRead = blob;
+    } catch { /* the paper still renders from what results hold */ }
+  }
+
   const entriesCount = entriesCountRes.count ?? 0;
   const documentsCount = documentsCountRes.count ?? 0;
   const evidenceCount = evidenceCountRes.count ?? 0;
@@ -336,13 +362,21 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
     template_version: TEMPLATE_VERSION,
     profile, positioning, profile_intelligence, score, brand_position,
     capabilities, market_mirror, territories, footprint, content, voice,
-    brand_paper: p?.brand_assessment_results
-      ? buildBrandPaper(brandResults, {
-          first_name: p.first_name ?? null,
-          last_name: p.last_name ?? null,
-          level: p.level ?? null,
-          sector_focus: p.sector_focus ?? null,
-        })
+    brand_paper: (p || mirrorRead)
+      ? buildBrandPaper(
+          brandResults,
+          {
+            first_name: p?.first_name ?? null,
+            last_name: p?.last_name ?? null,
+            level: p?.level ?? null,
+            sector_focus: p?.sector_focus ?? null,
+          },
+          {
+            mirrorRead,
+            skillRatings: (p?.skill_ratings && Object.keys(p.skill_ratings).length ? p.skill_ratings : null),
+            territories: territoriesList,
+          },
+        )
       : null,
   };
 }

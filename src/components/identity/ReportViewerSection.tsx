@@ -10,6 +10,7 @@ import ReportDocument from "@/components/ReportDocument";
 import { exportReportPdf } from "@/lib/exportReportPdf";
 import { useReportSnapshot } from "@/hooks/useReportSnapshot";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
+import { brandPaperHasContent } from "@/lib/buildBrandPaper";
 
 const SHEET_W = 794; // A4 @ 96dpi — fixed, must be scaled to fit on screen.
 
@@ -50,6 +51,7 @@ export default function ReportViewerSection({
   const snapshotAt = usingOverride ? overrideSnapshotAt ?? null : live.snapshotAt;
   const loading = usingOverride ? false : live.loading;
   const hasAssessment = usingOverride ? true : live.hasAssessment;
+  const paperReady = brandPaperHasContent((report as any)?.brand_paper ?? null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
@@ -135,6 +137,24 @@ export default function ReportViewerSection({
     );
   }
 
+  // A completion stamp is not a read. If the paper has nothing on it, say so
+  // and offer to run the read again — never print a masthead over nothing.
+  if (!loading && report && !paperReady) {
+    return (
+      <section style={SHELL}>
+        <p className="text-sm" style={{ color: "#5B6673", margin: 0 }}>
+          Your read hasn't been written yet, so there is no paper to show. Run it
+          again and we'll build the report from your answers and your profile.
+        </p>
+        <div style={{ marginTop: 12 }}>
+          <Button variant="default" size="sm" onClick={onCompleteAssessment}>
+            Run my read again
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section style={SHELL}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 12 }}>
@@ -200,8 +220,7 @@ export default function ReportViewerSection({
           aria-hidden
           style={{ position: "absolute", left: -9999, top: 0, width: SHEET_W, pointerEvents: "none" }}
         >
-          {report.brand_paper &&
-          (report.brand_paper.primary_archetype || report.brand_paper.market_read) ? (
+          {brandPaperHasContent(report.brand_paper) ? (
             <BrandPaperDocument paper={report.brand_paper} showClosing={false} />
           ) : null}
           <ReportDocument data={report} />

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { buildIdentityReport, type ReportData } from "@/lib/buildIdentityReport";
 import { fetchCurrentReportSnapshot, captureReportSnapshot } from "@/lib/reportSnapshot";
+import { brandPaperHasContent } from "@/lib/buildBrandPaper";
 
 export interface UseReportSnapshotResult {
   report: ReportData | null;
@@ -14,6 +15,8 @@ export interface UseReportSnapshotResult {
   snapshotAt: string | null;
   loading: boolean;
   hasAssessment: boolean;
+  /** True only when the paper actually carries the member's read. */
+  paperReady: boolean;
 }
 
 export function useReportSnapshot(): UseReportSnapshotResult {
@@ -80,7 +83,10 @@ export function useReportSnapshot(): UseReportSnapshotResult {
     return () => { cancelled = true; };
   }, []);
 
-  return { report, version, snapshotAt, loading, hasAssessment };
+  // A completion stamp is a claim; the paper is only ready when it has content.
+  const paperReady = brandPaperHasContent((report as any)?.brand_paper ?? null);
+
+  return { report, version, snapshotAt, loading, hasAssessment, paperReady };
 }
 
 export default useReportSnapshot;

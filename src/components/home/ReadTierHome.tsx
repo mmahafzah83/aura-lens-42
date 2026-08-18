@@ -15,6 +15,7 @@ import { exportReportPdf } from "@/lib/exportReportPdf";
 import BrandPaperDocument from "@/components/report/BrandPaperDocument";
 import RevealCard, { shareRevealCard, type RevealData } from "@/components/onboarding/RevealCard";
 import { toRevealData } from "@/lib/marketRead";
+import { brandPaperHasContent } from "@/lib/buildBrandPaper";
 import {
   SEAT_HEADING,
   SEAT_ROWS,
@@ -124,7 +125,8 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
     }
   };
 
-  const canPdf = !!(report && (report as any).brand_paper);
+  const canPdf = brandPaperHasContent((report as any)?.brand_paper ?? null);
+  const notReady = !!readAt && !results && !canPdf;
 
   return (
     <div className="animate-tab-spring aura-page" style={{ maxWidth: 720 }}>
@@ -152,8 +154,18 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
           {archetype || "Your read"}
         </h2>
         <p style={{ margin: "6px 0 14px", fontSize: 13, color: "var(--text-secondary)" }}>Yours permanently.</p>
+        {notReady ? (
+          <p style={{ margin: "0 0 14px", fontSize: 13.5, lineHeight: 1.6, color: "var(--text-secondary)" }}>
+            Your read hasn't been written yet — nothing was produced the last time it ran.
+            Run it again and we'll write it from your answers and your profile.
+          </p>
+        ) : null}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <ButtonGhost onClick={goIdentity}>Open the read</ButtonGhost>
+          {notReady ? (
+            <ButtonGhost onClick={() => navigate("/onboarding")}>Run my read again</ButtonGhost>
+          ) : (
+            <ButtonGhost onClick={goIdentity}>Open the read</ButtonGhost>
+          )}
           {canPdf && (
             <ButtonGhost onClick={handlePdf} disabled={exporting}>
               {exporting ? "Building…" : "Download the PDF"}
