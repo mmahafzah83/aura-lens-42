@@ -3358,12 +3358,21 @@ const Onboarding = () => {
               <OBButton disabled={busy} loading={buildingReport} loadingLabel="Building your read…"
                 onClick={() => void downloadFullReport()}
                 style={{ background: "#FFFFFF", color: OB.blue }}>Keep the full read</OBButton>
-              <p style={{
-                margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
-                color: "rgba(255,255,255,.80)", textAlign: "center",
-              }}>The full read includes the gap. The card doesn't.</p>
+              {/* Promise the gap only when the gap exists. */}
+              {brandPaper.the_gap || brandPaper.own_words_quote ? (
+                <p style={{
+                  margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
+                  color: "rgba(255,255,255,.80)", textAlign: "center",
+                }}>The full read includes the gap. The card doesn't.</p>
+              ) : null}
             </>
-          ) : null}
+          ) : (
+            /* A promised deliverable never vanishes in silence. */
+            <p style={{
+              margin: 0, fontSize: 12.5, lineHeight: 1.55,
+              color: "rgba(255,255,255,.85)", textAlign: "center",
+            }}>Your full read is still being written. It'll be in your inbox and on your Home page shortly.</p>
+          )}
           {postedUrl ? (
             <a href={postedUrl} target="_blank" rel="noopener noreferrer" style={{
               display: "block", textAlign: "center", color: "#FFFFFF", fontSize: 14,
@@ -3382,34 +3391,41 @@ const Onboarding = () => {
                 margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6,
                 color: "rgba(255,255,255,.85)", textAlign: "center",
               }}>Available after you save your report.</p>
-            ) : !shareUrl ? (
-              <Actions style={{ marginBlockStart: 12 }}>
-                <OBButton disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
-                  onClick={() => void mintShare()}
-                  style={{ background: "#FFFFFF", color: OB.blue }}>Share my read</OBButton>
-              </Actions>
             ) : (
               <>
-                <div style={{
-                  display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: 10, marginBlockStart: 12,
-                }}>
-                  <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-                    target="_blank" rel="noopener noreferrer" style={shareAction}>WhatsApp</a>
-                  <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
-                    target="_blank" rel="noopener noreferrer" style={shareAction}>LinkedIn</a>
-                  <button type="button" onClick={() => void copyShareLink()} style={shareAction}>Copy link</button>
+                {!shareUrl ? (
+                  <Actions style={{ marginBlockStart: 12 }}>
+                    <OBButton disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
+                      onClick={() => void mintShare()}
+                      style={{ background: "#FFFFFF", color: OB.blue }}>Share my read</OBButton>
+                  </Actions>
+                ) : (
+                  <>
+                    <div style={{
+                      display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 10, marginBlockStart: 12,
+                    }}>
+                      <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                        target="_blank" rel="noopener noreferrer" style={shareAction}>WhatsApp</a>
+                      <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
+                        target="_blank" rel="noopener noreferrer" style={shareAction}>LinkedIn</a>
+                      <button type="button" onClick={() => void copyShareLink()} style={shareAction}>Copy link</button>
+                    </div>
+                    <p style={{
+                      margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6,
+                      color: "rgba(255,255,255,.78)", textAlign: "center",
+                    }}>
+                      Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
+                    </p>
+                  </>
+                )}
+                {/* Keeping your own card is a private act — never gated behind a public link. */}
+                <div style={{ marginBlockStart: 10 }}>
                   <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()}
-                    style={{ ...shareAction, opacity: busy ? 0.6 : 1 }}>
+                    style={{ ...shareAction, inlineSize: "100%", opacity: busy ? 0.6 : 1 }}>
                     {sharing ? "Building…" : "Download the image"}
                   </button>
                 </div>
-                <p style={{
-                  margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6,
-                  color: "rgba(255,255,255,.78)", textAlign: "center",
-                }}>
-                  Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
-                </p>
               </>
             )}
           </div>
