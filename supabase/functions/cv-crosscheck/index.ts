@@ -174,7 +174,7 @@ Certifications: ${cut(snap.certifications, 1200)}`;
     .select("title, content, confidence")
     .eq("user_id", targetId)
     .order("confidence", { ascending: false })
-    .limit(12);
+    .limit(24);
 
   const { data: posts } = await admin
     .from("linkedin_posts")
@@ -207,13 +207,28 @@ Certifications: ${cut(snap.certifications, 1200)}`;
   const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   if (!ANTHROPIC_API_KEY) return json({ error: "ANTHROPIC_API_KEY not configured" }, 500);
 
+  /* Peer data is only offered to the model when there is enough of it to say
+     something true. Thin data means the model is told to return null — it is
+     never left to guess whether a comparison is safe. */
+  let peerCount = 0;
+  try {
+    const { count } = await admin
+      .from("mirror_reads")
+      .select("id", { count: "exact", head: true });
+    peerCount = count ?? 0;
+  } catch (_) { peerCount = 0; }
+  const PEER_FLOOR = 8;
+  const peerText = peerCount >= PEER_FLOOR
+    ? `There are ${peerCount} comparable reads on file for this market. You may make a peer comparison ONLY where the material above supports it; otherwise still return null.`
+    : `PEER DATA IS THIN (${peerCount} reads on file). Return null for peer_comparison. Do not fabricate a comparison.`;
+
   const userPrompt = `THEIR CV MATERIAL (${cvs.length} document${cvs.length === 1 ? "" : "s"})
 ${cvText}
 
 THEIR PUBLIC LINKEDIN PROFILE
 ${profileText}
 
-THEIR CAPTURED EVIDENCE
+WHAT THIS PERSON CAN ALREADY PROVE (captured evidence — use these as ammunition)
 ${fragmentsText}
 
 WHAT THEY POST PUBLICLY
@@ -222,16 +237,17 @@ ${postsText}
 WHAT OTHERS SAY ABOUT THEM (LINKEDIN RECOMMENDATIONS)
 ${recsText}
 
-Judge this material. Return exactly this JSON object and nothing else:
-{
-  "headline_finding": "one sentence: the single most valuable thing this comparison found, and what to do about it",
-  "findings": [ { "what": "", "why_it_matters": "", "do_this": "", "weight": "high" } ],
-  "defensibility": [ "" ],
-  "cv_is_behind": [ "" ],
-  "reading_the_shape": "",
-  "profile_vs_voice": "",
-  "headline_suggestion": ""
-}`;
+WHAT IS MISSING (the same captured evidence, read the other way — what it does NOT cover, and where the CV or profile claims something no fragment supports)
+${fragmentsText}
+
+WHAT THIS READ IS FOR
+${PURPOSE_BRIEF[purpose]}
+
+PEER DATA
+${peerText}
+
+Judge this material against that purpose and record the review with the record_crosscheck tool.
+Rules you will be checked on after you answer: exactly one finding has do_first true and that finding states the cost of delay; every high-weight finding carries a ready-to-paste \`rewrite\`; every finding cites \`evidence.cv_line\` and \`evidence.profile_line\` (write "Absent" for the side that has nothing); every \`what_you_lose\` names a reader and a consequence, never a number you invented; \`aura_can\` is from the closed list or null; every span of years is computed from the two dates you cite.`;
 
   /* Structured output: one forced tool. The prompt wording is unchanged —
      only the transport moved off free-text JSON, which discarded four runs
@@ -254,8 +270,20 @@ Judge this material. Return exactly this JSON object and nothing else:
               why_it_matters: { type: "string" },
               do_this: { type: "string" },
               weight: { type: "string", enum: ["high", "medium"] },
+              what_you_lose: { type: "string" },
+              evidence: {
+                type: "object",
+                properties: {
+                  cv_line: { type: "string" },
+                  profile_line: { type: "string" },
+                },
+                required: ["cv_line", "profile_line"],
+              },
+              rewrite: { type: ["string", "null"] },
+              aura_can: { type: ["string", "null"], enum: ["capture_evidence", "draft_post", "suggest_headline", "track_signal", null] },
+              do_first: { type: "boolean" },
             },
-            required: ["what", "why_it_matters", "do_this", "weight"],
+            required: ["what", "why_it_matters", "do_this", "weight", "what_you_lose", "evidence", "do_first"],
           },
         },
         defensibility: { type: "array", items: { type: "string" } },
@@ -263,8 +291,24 @@ Judge this material. Return exactly this JSON object and nothing else:
         profile_vs_voice: { type: "string" },
         reading_the_shape: { type: "string" },
         headline_suggestion: { type: "string" },
+        the_hard_truth: { type: "string" },
+        recommendations: {
+          type: "array",
+          minItems: 3,
+          maxItems: 5,
+          items: {
+            type: "object",
+            properties: {
+              action: { type: "string" },
+              why_now: { type: "string" },
+              aura_can: { type: ["string", "null"], enum: ["capture_evidence", "draft_post", "suggest_headline", "track_signal", null] },
+            },
+            required: ["action", "why_now", "aura_can"],
+          },
+        },
+        peer_comparison: { type: ["string", "null"] },
       },
-      required: ["headline_finding", "findings", "defensibility", "cv_is_behind", "profile_vs_voice"],
+      required: ["headline_finding", "findings", "defensibility", "cv_is_behind", "profile_vs_voice", "the_hard_truth", "recommendations"],
     },
   } as const;
 
