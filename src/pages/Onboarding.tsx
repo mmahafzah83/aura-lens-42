@@ -241,7 +241,17 @@ const bodyNight: React.CSSProperties = { ...bodyLight, color: OB.mutedNight };
 
 const footnote: React.CSSProperties = {
   margin: "14px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center",
+  /* No orphan: the last two words never break onto a line of their own. */
+  textWrap: "balance",
 };
+
+/** Why a control is disabled, said next to it — never left to guesswork. */
+const whyLine = (id: string, text: string, centred = false) => (
+  <p id={id} style={{
+    margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted,
+    textAlign: centred ? "center" : "start",
+  }}>{text}</p>
+);
 
 /* ──────────────────────────────── helpers ───────────────────────────────── */
 
@@ -309,12 +319,13 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
 };
 
 const PaperShell = ({
-  children, bead, cream = false, footer, onExit, face = false, subProgress,
-}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number }) => {
+  children, bead, footer, onExit, face = false, subProgress,
+}: { children: React.ReactNode; bead: number; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number }) => {
   const { onBack, banner } = useContext(JourneyNav);
   return (
   <div className="obc" style={{
-    minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
+    /* ONE CANVAS. Every screen in the journey stands on #F2F5F9. */
+    minBlockSize: "100dvh", background: OB.canvas,
     display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
   }}>
     <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
