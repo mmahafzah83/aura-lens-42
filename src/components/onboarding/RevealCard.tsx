@@ -411,7 +411,7 @@ const RevealCard = forwardRef<
     }}>
       <span style={{ fontFamily: OB.ui, fontWeight: 700, fontSize: 22, letterSpacing: "0.16em" }}>AURA</span>
       <span style={{ fontFamily: OB.mono, fontSize: 18, letterSpacing: "0.06em", opacity: 0.88 }}>
-        {signatureText(data)}
+        {signatureText(data)}<SignatureDate data={data} size={18} />
       </span>
       {footer ? null : null}
     </div>
@@ -538,7 +538,7 @@ const RevealCard = forwardRef<
       margin: "22px 0 0", marginBlockStart: "auto", paddingBlockStart: 22,
       fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em",
       color: "rgba(255,255,255,0.72)",
-    }}>{signatureText(data)}</p>
+    }}>{signatureText(data)}<SignatureDate data={data} size={11.5} /></p>
     {data.ageNote ? (
       <p style={{
         margin: "6px 0 0", fontFamily: OB.mono, fontSize: 11,
