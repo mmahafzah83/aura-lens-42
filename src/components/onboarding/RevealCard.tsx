@@ -217,9 +217,19 @@ const IdentityRow = ({ data, size }: { data: RevealData; size: number }) => {
   );
 };
 
-/** The signature line: who read it, and when. */
-const signatureText = (data: RevealData): string =>
-  data.dateLine ? `Read by Aura · ${data.dateLine}` : "Read by Aura · aura-intel.org";
+/** The signature line: who read it. The date sits beside it, never instead of it. */
+const signatureText = (_data: RevealData): string => "Read by Aura · aura-intel.org";
+
+/**
+ * The date the read was written — mono, tracked, and printed only when the
+ * real generation timestamp is known. No timestamp, no date.
+ */
+const SignatureDate = ({ data, size }: { data: RevealData; size: number }) =>
+  data.dateLine ? (
+    <span style={{ fontFamily: OB.mono, fontSize: size, letterSpacing: "0.12em" }}>
+      {` · ${data.dateLine}`}
+    </span>
+  ) : null;
 
 /** A figure that arrives by counting, unless motion is turned down. */
 const CountUp = ({ value, delay }: { value: string; delay: number }) => {
@@ -401,7 +411,7 @@ const RevealCard = forwardRef<
     }}>
       <span style={{ fontFamily: OB.ui, fontWeight: 700, fontSize: 22, letterSpacing: "0.16em" }}>AURA</span>
       <span style={{ fontFamily: OB.mono, fontSize: 18, letterSpacing: "0.06em", opacity: 0.88 }}>
-        {signatureText(data)}
+        {signatureText(data)}<SignatureDate data={data} size={18} />
       </span>
       {footer ? null : null}
     </div>
@@ -528,7 +538,7 @@ const RevealCard = forwardRef<
       margin: "22px 0 0", marginBlockStart: "auto", paddingBlockStart: 22,
       fontFamily: OB.mono, fontSize: 11.5, letterSpacing: "0.08em",
       color: "rgba(255,255,255,0.72)",
-    }}>{signatureText(data)}</p>
+    }}>{signatureText(data)}<SignatureDate data={data} size={11.5} /></p>
     {data.ageNote ? (
       <p style={{
         margin: "6px 0 0", fontFamily: OB.mono, fontSize: 11,

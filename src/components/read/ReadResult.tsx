@@ -4,7 +4,7 @@
  */
 import { useRef, useState } from "react";
 import RevealCard, {
-  shareRevealCard, rasteriseRevealCard, type RevealData,
+  rasteriseRevealCard, type RevealData,
 } from "@/components/onboarding/RevealCard";
 
 export const CANVAS = "#F2F5F9";
@@ -53,12 +53,13 @@ export const Body = ({ children, style }: { children: React.ReactNode; style?: R
   <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, color: INK, ...style }}>{children}</p>
 );
 
-/** "18 August 2026" — the same shape the engine uses in its own notices. */
+/** "18 AUG 2026" — the stamp printed on the card's own signature line. */
 const longDate = (iso?: string | null): string | undefined => {
   if (!iso) return undefined;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return undefined;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    .replace(/\s+/g, " ").toUpperCase();
 };
 
 const slugOf = (name?: string | null): string =>
@@ -129,20 +130,8 @@ export default function ReadResult({
     }
   };
 
-  const share = async () => {
-    if (!exportRef.current) return;
-    setShareNote(undefined);
-    try {
-      const outcome = await shareRevealCard(exportRef.current, {
-        fileName,
-        caption:
-          "I had something read my LinkedIn and tell me how my field actually sees me. This is what came back.",
-      });
-      setShareNote(outcome === "shared" ? "Shared." : "Saved to your device, caption copied.");
-    } catch {
-      setShareNote("The card didn't render. Try once more.");
-    }
-  };
+  /* Sharing is closed until the preview card is updated — the button below
+     says so out loud rather than handing over a card we are not proud of. */
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: INK }}>
@@ -208,17 +197,23 @@ export default function ReadResult({
             inlineSize: "100%", padding: "13px 18px", borderRadius: 8,
             border: `1px solid ${LINE}`, background: "transparent", color: INK,
             fontFamily: UI, fontSize: 15, fontWeight: 600, cursor: "pointer",
-            minHeight: 44,
+            minHeight: 48,
           }}
         >Save this card</button>
         <button
-          onClick={share}
+          type="button"
+          disabled
+          aria-describedby="read-share-reason"
           style={{
-            display: "block", marginBlockStart: 10, marginInline: "auto",
-            background: "none", border: "none", padding: 0, color: INK2,
-            fontFamily: UI, fontSize: 13.5, textDecoration: "underline", cursor: "pointer",
+            display: "block", inlineSize: "100%", minHeight: 48,
+            marginBlockStart: 10, padding: "13px 18px", borderRadius: 8,
+            border: `1px solid ${LINE}`, background: "transparent", color: INK2,
+            fontFamily: UI, fontSize: 15, fontWeight: 600, cursor: "not-allowed", opacity: 0.6,
           }}
-        >Or share it</button>
+        >Share it</button>
+        <p id="read-share-reason" style={{ margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.5, color: INK2 }}>
+          Sharing opens once the preview card is updated.
+        </p>
         {shareNote ? <p style={{ margin: "8px 0 0", fontSize: 12.5, color: INK2 }}>{shareNote}</p> : null}
       </div>
     </div>

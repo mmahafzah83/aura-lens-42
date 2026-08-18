@@ -8,6 +8,7 @@ import {
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
+import { ReadIdentityStrip, ReadSpine } from "@/components/read/ReadIdentityStrip";
 import {
   ASSESSMENT_MINUTES, FIRST_READ_LINE, FULL_PICTURE_LINE,
   FIRST_READ_SHORT, ASSESSMENT_QUESTIONS_PHRASE,
@@ -18,7 +19,7 @@ import {
  * This page owns the address, the read and its result. Nothing else: the
  * questions, the CV, the sliders and the reveal all live in /onboarding.
  */
-type Stage = "gate" | "address" | "reading" | "read";
+type Stage = "gate" | "address" | "reading" | "read" | "resume";
 
 const READING_LINES = [
   "Opening the profile…",
@@ -64,7 +65,17 @@ const ReadingProgress = () => {
 };
 
 const STEP_TO_STAGE: Record<string, Stage> = {
-  address: "address", read: "read",
+  /* A finished read is never restored silently — the visitor is asked first. */
+  address: "address", read: "resume",
+};
+
+/** "18 AUG 2026" — the one date shape on this page. */
+const stampDate = (iso?: string | null): string | null => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    .replace(/\s+/g, " ").toUpperCase();
 };
 
 const Assessment = () => {
@@ -236,6 +247,20 @@ const Assessment = () => {
     navigate("/onboarding");
   };
 
+  /** Finish later — nothing is cleared; the browser keeps the place. */
+  const finishLater = () => { navigate("/"); };
+
+  /** A new read replaces the one already held — so it is confirmed first. */
+  const startNewRead = async () => {
+    const ok = window.confirm("Start a new read? This replaces the read you already have.");
+    if (!ok) return;
+    setAgeNote(null);
+    setPostsRead(0);
+    setSparse(false);
+    await persist({ step: "address", answers: {}, profile_url: state.profile_url });
+    setStage("address");
+  };
+
   const read = (state.read ?? {}) as Record<string, string | string[] | undefined>;
 
   /* ══════════ the in-page journey ══════════ */
@@ -243,8 +268,22 @@ const Assessment = () => {
     return (
       <div className="asg">
         <style>{ASG_CSS}</style>
-        <PublicMasthead cta={null} />
+        {stage === "read" || stage === "resume" ? (
+          <ReadIdentityStrip
+            name={state.name ?? null}
+            onExit={finishLater}
+            onSignIn={() => navigate("/auth")}
+          />
+        ) : (
+          <PublicMasthead cta={null} />
+        )}
         <main className="asg-wrap asg-flow">
+          {stage === "read" || stage === "resume" ? (
+            <div className="asg-strip-under">
+              <p className="asg-saved">Your read is saved.</p>
+              {stage === "read" ? <ReadSpine /> : null}
+            </div>
+          ) : null}
           {notice && <div className="asg-notice" role="status">{notice}</div>}
 
           {stage === "address" && (
@@ -276,6 +315,22 @@ const Assessment = () => {
             </section>
           )}
 
+          {stage === "resume" && (
+            <section className="asg-panel">
+              <h1 className="asg-ph">You already have a read.</h1>
+              <p className="asg-resume-meta">
+                {[state.name, stampDate(state.generated_at)].filter(Boolean).join(" · ")}
+              </p>
+              <button className="asg-btn asg-bp asg-full" onClick={() => setStage("read")}>
+                Open my read <span className="asg-a">↗</span>
+              </button>
+              <button type="button" className="asg-textbtn" onClick={() => void startNewRead()}>
+                Start a new one
+              </button>
+              <p className="asg-trust">This replaces the read above.</p>
+            </section>
+          )}
+
           {stage === "read" && (
             <div className="asg-read">
               <div className="asg-moment">
@@ -296,6 +351,10 @@ const Assessment = () => {
                 generatedAt={state.generated_at ?? null}
                 ageNote={ageNote}
               />
+              <section className="asg-loss">
+                <h2>This read is anonymous.</h2>
+                <p>It lives in this browser only. Clear your history or switch to your phone and it is gone.</p>
+              </section>
               <button className="asg-btn asg-bp asg-full" onClick={() => void continueToOnboarding()}>
                 Continue — your CV and {ASSESSMENT_QUESTIONS_PHRASE} <span className="asg-a">↗</span>
               </button>
@@ -567,6 +626,15 @@ const ASG_CSS = `
 .asg-read{display:flex;flex-direction:column;gap:14px;}
 .asg-read .asg-full{margin-top:4px;}
 .asg-moment{display:flex;flex-direction:column;}
+.asg-strip-under{display:flex;flex-direction:column;gap:2px;margin:0 0 18px;}
+.asg-saved{font-size:12.5px;line-height:1.5;color:var(--ink4);margin:0;}
+.asg-resume-meta{font-family:var(--mono);font-size:13px;letter-spacing:.08em;color:var(--ink2);margin:12px 0 0;}
+.asg-loss{background:var(--canvas);border:1px solid var(--line);border-radius:12px;padding:16px 18px;}
+.asg-loss h2{font-size:15px;font-weight:700;margin:0;letter-spacing:-.01em;color:var(--ink);}
+.asg-loss p{font-size:14px;line-height:1.6;color:var(--ink4);margin:8px 0 0;}
+.asg-textbtn{display:block;width:100%;min-height:44px;margin:10px 0 0;background:none;border:none;
+  cursor:pointer;font-family:var(--ui);font-size:14px;font-weight:600;color:var(--ink4);
+  text-decoration:underline;}
 .asg-moment div:first-child{font-size:19px;font-weight:600;color:var(--ink);letter-spacing:-0.015em;line-height:1.35;}
 .asg-moment div:last-child{font-size:19px;font-weight:400;color:var(--ink4);line-height:1.35;margin-top:4px;}
 .asg-panel{background:var(--white);border:1px solid var(--line);border-radius:20px;padding:26px;}
