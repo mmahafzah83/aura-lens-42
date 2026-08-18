@@ -3488,6 +3488,11 @@ const Onboarding = () => {
                     <OBButton disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
                       onClick={() => void mintShare()}
                       style={{ background: "#FFFFFF", color: OB.blue }}>Share my read</OBButton>
+                    {!reveal ? (
+                      <p style={{ margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
+                        Your read is still being written — this opens the moment it lands.
+                      </p>
+                    ) : null}
                   </Actions>
                 ) : (
                   <>
@@ -3515,6 +3520,11 @@ const Onboarding = () => {
                     style={{ ...shareAction, inlineSize: "100%", opacity: busy ? 0.6 : 1 }}>
                     {sharing ? "Building…" : "Download the image"}
                   </button>
+                  {!reveal ? (
+                    <p style={{ margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.55, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
+                      Your read is still being written — this opens the moment it lands.
+                    </p>
+                  ) : null}
                 </div>
               </>
             )}
