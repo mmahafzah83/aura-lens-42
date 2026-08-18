@@ -6,7 +6,8 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 import { claimPendingSession } from "@/lib/assessmentSession";
 import usePageMeta from "@/hooks/usePageMeta";
-import { isProfileComplete } from "@/lib/onboarding";
+import { isOnboarded } from "@/lib/onboarding";
+import { setPendingDestination } from "@/lib/pendingDestination";
 import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE, ASSESSMENT_MINUTES_WORD } from "@/lib/brand";
 
 /** The consent text version recorded against every new account. */
@@ -125,13 +126,15 @@ const Auth = () => {
 
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
-      .select("first_name, firm, level, sector_focus")
+      .select("onboarding_step")
       .eq("user_id", session.user.id)
       .maybeSingle();
 
-    // Field-based gate — a row alone is not "onboarded". Anyone missing
-    // first_name / firm / level / sector_focus goes to /onboarding.
-    if (!isProfileComplete(profile)) {
+    // ONE definition of onboarded, shared with Dashboard (D122).
+    if (!isOnboarded(profile)) {
+      // A validated returnTo is never discarded — it is parked and consumed
+      // once the member lands back on the dashboard after onboarding.
+      if (returnTo) setPendingDestination(returnTo);
       navigate("/onboarding", { replace: true });
       return;
     }
