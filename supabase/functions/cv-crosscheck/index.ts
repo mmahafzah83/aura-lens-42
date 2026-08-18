@@ -303,7 +303,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
               why_now: { type: "string" },
               aura_can: { type: "string", enum: ["capture_evidence", "draft_post", "suggest_headline", "track_signal"], description: "Closed list. Omit the field entirely when nothing Aura does helps here." },
             },
-            required: ["action", "why_now", "aura_can"],
+            required: ["action", "why_now"],
           },
         },
         peer_comparison: { type: "string", description: "Omit entirely when the peer data is thin. Never fabricate." },
