@@ -383,7 +383,7 @@ function TopicBlock({ n, title, description }: { n: string; title: string; descr
   );
 }
 
-function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
+function SpaceSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number }) {
   const hasInvest = bp.invest_next.length > 0;
   // Older rows carry pillars but no structured topics — fall back so the
   // topics block is never silently empty.
@@ -391,7 +391,7 @@ function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
     ? bp.topics
     : bp.content_pillars.slice(0, 3).map((t) => ({ title: t, description: "" }));
   return (
-    <Sheet n={3}>
+    <Sheet n={n}>
       <PaperHeader label="Ground & Topics" />
       <div style={{ marginTop: 30, flex: 1 }}>
         <GapPanel bp={bp} style={{ marginBottom: 24 }} />
@@ -411,7 +411,9 @@ function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
 
         {topics.length > 0 ? (
           <div style={{ marginTop: 28 }}>
-            <MonoLabel color={T.spot} size={11}>Your three topics</MonoLabel>
+            <MonoLabel color={T.spot} size={11}>
+              {`Your ${spellCount(Math.min(topics.length, 3)).toLowerCase()} ${topics.length === 1 ? "topic" : "topics"}`}
+            </MonoLabel>
             <div style={{ marginTop: 10, borderBottom: `1px solid ${T.rule}` }}>
               {topics.slice(0, 3).map((t, i) => (
                 <TopicBlock
@@ -460,7 +462,7 @@ function SpaceSheet({ bp, total }: { bp: BrandPaper; total: number }) {
           </div>
         ) : null}
       </div>
-      <PaperFooter n={3} total={total} paperTitle={PAPER_TITLE} />
+      <PaperFooter n={n} total={total} paperTitle={PAPER_TITLE} />
     </Sheet>
   );
 }
