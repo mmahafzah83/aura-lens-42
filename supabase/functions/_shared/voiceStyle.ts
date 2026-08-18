@@ -268,3 +268,49 @@ export const ENDING_DIRECTIVE_AR: Record<EndingType, string> = {
   question: "اختم بسؤال واحد محدد وغير مريح.",
   signature: "اختم بجملة توقيع قصيرة بصوت الكاتب. لا تختم بسؤال.",
 };
+
+/**
+ * What the judge is told to look for. The generator chooses one ending per
+ * post; the judge must be told WHICH one, or it applies a question rule to a
+ * post that was ordered not to end on a question (D121).
+ */
+export const ENDING_SHAPE_DESC: Record<EndingType, string> = {
+  hanging_line: "a short, unresolved hanging line — a single sentence that stops without resolving",
+  equation: "a compact equation or formula naming the trade-off",
+  number: "a single figure drawn from the grounding",
+  reframe: "a reframing of the opening claim into a different shape",
+  question: "one specific, uncomfortable question",
+  signature: "a short signature line in the writer's own register",
+};
+
+/**
+ * The last line that is actually part of the post. Trailing hashtag lines are
+ * skipped: the Arabic prompt appends three hashtags after the close, so a naive
+ * last-line test fails every Arabic post.
+ */
+export function lastMeaningfulLine(text: string): string {
+  const lines = String(text ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
+  while (lines.length) {
+    const last = lines[lines.length - 1];
+    const isHashtagLine = last.split(/\s+/).every((tok) => /^[#＃][^\s#＃]+$/.test(tok));
+    if (isHashtagLine) { lines.pop(); continue; }
+    return last;
+  }
+  return "";
+}
+
+/** Deterministic close check — cheap, run before paying for a judge. */
+export function endingShapeOk(text: string, ending: EndingType): boolean {
+  const line = lastMeaningfulLine(text);
+  if (!line) return false;
+  const isQuestion = /[?؟]\s*$/.test(line);
+  if (ending === "question") return isQuestion;
+  // Every other ending was explicitly told NOT to close on a question.
+  if (isQuestion) return false;
+  const western = toWesternDigits(line);
+  if (ending === "number") return /\d/.test(western);
+  if (ending === "equation") return /[=+×*→>]|\bequals\b|يساوي/.test(line);
+  // hanging_line / reframe / signature: any non-question close of sane length.
+  const words = line.split(/\s+/).filter(Boolean).length;
+  return words >= 2 && words <= 40;
+}
