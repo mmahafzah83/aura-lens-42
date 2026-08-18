@@ -8,6 +8,7 @@ import {
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
+import { ReadIdentityStrip, ReadSpine } from "@/components/read/ReadIdentityStrip";
 import {
   ASSESSMENT_MINUTES, FIRST_READ_LINE, FULL_PICTURE_LINE,
   FIRST_READ_SHORT, ASSESSMENT_QUESTIONS_PHRASE,
@@ -18,7 +19,7 @@ import {
  * This page owns the address, the read and its result. Nothing else: the
  * questions, the CV, the sliders and the reveal all live in /onboarding.
  */
-type Stage = "gate" | "address" | "reading" | "read";
+type Stage = "gate" | "address" | "reading" | "read" | "resume";
 
 const READING_LINES = [
   "Opening the profile…",
@@ -64,7 +65,17 @@ const ReadingProgress = () => {
 };
 
 const STEP_TO_STAGE: Record<string, Stage> = {
-  address: "address", read: "read",
+  /* A finished read is never restored silently — the visitor is asked first. */
+  address: "address", read: "resume",
+};
+
+/** "18 AUG 2026" — the one date shape on this page. */
+const stampDate = (iso?: string | null): string | null => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    .replace(/\s+/g, " ").toUpperCase();
 };
 
 const Assessment = () => {
