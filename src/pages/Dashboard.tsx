@@ -663,11 +663,10 @@ const Dashboard = () => {
         // true at the first-step profile save. The inline checklist was retired in favor
         // of First Flight. Dashboard NEVER creates a profile row — Onboarding.tsx is the
         // only place a real profile is born.
-        const onboardingDone = Number((profile as any)?.onboarding_step ?? 0) >= 4;
+        const onboardingDone = isOnboarded(profile);
         console.log("[Dashboard] onboarding gate", {
           uid: uid.slice(0, 8),
           hasProfile: !!profile,
-          complete: isProfileComplete(profile),
           onboardingDone,
         });
         // A member who chose "Finish later" is not bounced back — Home catches
@@ -681,7 +680,10 @@ const Dashboard = () => {
         // completeness test here caused an infinite loop for every member whose
         // successful journey left `firm` null.
         if (!onboardingDone && !paused) {
-          navigate("/onboarding", { replace: true });
+          // Park where they were actually going — an emailed draft link must
+          // survive the detour, and the back button must still work (D122).
+          setPendingDestination(window.location.pathname + window.location.search);
+          navigate("/onboarding");
           return;
         }
 
