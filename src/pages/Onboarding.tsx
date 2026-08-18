@@ -1936,7 +1936,7 @@ const Onboarding = () => {
     return (
       <>
         <style>{PAGE_CSS}</style>
-        <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
           <h1 style={h1Light}>Is this you?</h1>
           <p style={{ ...bodyLight, fontFamily: OB.mono, fontSize: 14, color: OB.ink, wordBreak: "break-all" }}>
             {userEmail || "—"}
@@ -1975,7 +1975,7 @@ const Onboarding = () => {
     return (
       <>
         <style>{PAGE_CSS}</style>
-        <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
           <h1 style={h1Light}>Set your password.</h1>
           <p style={bodyLight}>One password, and your read is yours to keep.</p>
           <div style={{ position: "relative", marginBlockStart: 18 }}>
@@ -2026,7 +2026,7 @@ const Onboarding = () => {
   /* 0 — CREAM */
   if (screen === 0) {
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} subProgress={readDone ? 0.5 : undefined} cream footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} subProgress={readDone ? 0.5 : undefined} footer={escapeFooter}>
         <h1 style={h1Light}>By the end of this, Aura knows how you work.</h1>
         <p style={bodyLight}>
           Then it writes like you — and helps you be known better on LinkedIn and in the professional circles that matter to you.
