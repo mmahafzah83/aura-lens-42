@@ -104,6 +104,8 @@ serve(withObserve("cv-crosscheck", async (req) => {
   const body = await req.json().catch(() => ({}));
   const email: string | undefined = typeof body?.email === "string" ? body.email.trim() : undefined;
   let targetId: string | undefined = typeof body?.user_id === "string" ? body.user_id.trim() : undefined;
+  const rawPurpose = typeof body?.purpose === "string" ? body.purpose.trim() : "";
+  const purpose = (PURPOSES as readonly string[]).includes(rawPurpose) ? rawPurpose : "unknown";
 
   if (!targetId && email) {
     if (!callerIsAdmin) return json({ error: "Forbidden" }, 403);
