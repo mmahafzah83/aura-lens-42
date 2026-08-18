@@ -486,6 +486,15 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
     parsed.findings = parsed.findings.filter((f: any) => String(f?.what ?? "").trim().length > 0);
   }
 
+  /* A forced tool cannot emit a JSON null for a string field, so the model
+     writes the word "null" instead. Nullable prose fields must be truly null
+     or the panel prints the word to the member. */
+  const nullify = (v: unknown) =>
+    typeof v === "string" && ["null", "none", "n/a", ""].includes(v.trim().toLowerCase()) ? null : v;
+  for (const k of ["peer_comparison", "profile_vs_voice", "reading_the_shape", "headline_suggestion"]) {
+    if (parsed && k in parsed) parsed[k] = nullify(parsed[k]);
+  }
+
   let failure = gate(parsed);
   if (failure) {
     const correction = `${userPrompt}
