@@ -128,6 +128,7 @@ html *:not(canvas):not(video):not(iframe) {
   --border-focus:var(--b-600);
   --act:var(--b-600); --act-hover:var(--b-800);
   --act-fill:var(--b-500); --act-tint:var(--b-50);
+  --paper-fill:var(--b-500);
   --machine:var(--c-500); --machine-text:var(--c-700); --machine-tint:var(--c-50);
   --deadline:var(--a-500); --deadline-text:var(--a-700); --deadline-tint:var(--a-50);
   --deadline-text-on-dark:var(--a-300);
