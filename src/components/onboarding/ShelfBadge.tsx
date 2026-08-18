@@ -44,24 +44,38 @@ const ShelfBadge = ({ label, unlocked = false, figure, tone = "blue", onNight = 
   const isZero = figure === 0 || figure === "0";
   const on = unlocked && !isZero;
   return (
-  <div style={{ width: "100%", maxWidth: 88, minWidth: 0, textAlign: "center" }} title={on ? label : (hint || label)}>
+  <div style={{
+    width: "100%", maxWidth: 88, minWidth: 0, textAlign: "center",
+    /* Equal cells: the four tiles read as one set, sized to the tallest caption. */
+    minBlockSize: 152, display: "flex", flexDirection: "column", alignItems: "center",
+  }} title={on ? label : (hint || label)}>
     <style>{CSS}</style>
     <div
       className={on ? "sb-unlocked" : undefined}
       aria-label={on ? label : `${label} — ${hint || "not unlocked yet"}`}
       style={{
         inlineSize: 54, blockSize: 54, borderRadius: RADIUS.card,
-        marginInline: "auto",
+        marginInline: "auto", position: "relative",
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: on ? FILL[tone] : (onNight ? "#141E25" : OB.canvas),
-        border: on ? "1px solid transparent" : `1.5px dashed ${onNight ? OB.lineNight : "#C3CBD5"}`,
-        color: on ? "#FFFFFF" : (onNight ? OB.mutedNight : OB.muted),
+        /* Completed is not a filled blue rectangle — it never competes with the
+           one primary action on the screen. Solid line, mono figure, cyan dot. */
+        background: onNight ? "#141E25" : (on ? OB.white : OB.canvas),
+        border: `1px solid ${onNight ? OB.lineNight : OB.line}`,
+        color: onNight ? (on ? "#FFFFFF" : OB.mutedNight) : (on ? OB.ink : OB.muted),
         transition: `background 300ms ${SPRING}`,
       }}
     >
-      {on
-        ? <span style={{ fontFamily: OB.mono, fontSize: 17, fontWeight: 600 }}>{figure ?? "✓"}</span>
-        : <Icon size={20} strokeWidth={1.75} color={onNight ? OB.mutedNight : OB.muted} />}
+      {on ? (
+        <>
+          <span style={{ fontFamily: OB.mono, fontSize: 17, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+            {figure ?? "✓"}
+          </span>
+          <span aria-hidden style={{
+            position: "absolute", insetBlockStart: 6, insetInlineEnd: 6,
+            inlineSize: 6, blockSize: 6, borderRadius: 999, background: OB.cyan,
+          }} />
+        </>
+      ) : <Icon size={20} strokeWidth={1.75} color={onNight ? OB.mutedNight : OB.muted} />}
     </div>
     <p style={{
       margin: "8px 0 0", fontSize: 10.5, lineHeight: 1.35, minHeight: 29,

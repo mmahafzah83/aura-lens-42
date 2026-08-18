@@ -241,7 +241,17 @@ const bodyNight: React.CSSProperties = { ...bodyLight, color: OB.mutedNight };
 
 const footnote: React.CSSProperties = {
   margin: "14px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center",
+  /* No orphan: the last two words never break onto a line of their own. */
+  textWrap: "balance",
 };
+
+/** Why a control is disabled, said next to it — never left to guesswork. */
+const whyLine = (id: string, text: string, centred = false) => (
+  <p id={id} style={{
+    margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted,
+    textAlign: centred ? "center" : "start",
+  }}>{text}</p>
+);
 
 /* ──────────────────────────────── helpers ───────────────────────────────── */
 
@@ -309,12 +319,13 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
 };
 
 const PaperShell = ({
-  children, bead, cream = false, footer, onExit, face = false, subProgress,
-}: { children: React.ReactNode; bead: number; cream?: boolean; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number }) => {
+  children, bead, footer, onExit, face = false, subProgress,
+}: { children: React.ReactNode; bead: number; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number }) => {
   const { onBack, banner } = useContext(JourneyNav);
   return (
   <div className="obc" style={{
-    minBlockSize: "100dvh", background: cream ? OB.cream : OB.canvas,
+    /* ONE CANVAS. Every screen in the journey stands on #F2F5F9. */
+    minBlockSize: "100dvh", background: OB.canvas,
     display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
   }}>
     <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
@@ -840,6 +851,7 @@ const Onboarding = () => {
           if (local > back) back = local;
         } catch { /* ignore */ }
         if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
+        if (back === 4) back = 5; /* the interstitial is gone */
         if (back === 6 || back === 7) back = 5;
         if (back > 0 && (back <= 14 || back === MANUAL_SCREEN)) {
           setScreen(back); screenRef.current = back;
@@ -937,6 +949,7 @@ const Onboarding = () => {
       /* screens 2 and 3 folded into step 1 — a resume there lands on the address
          card with the address already filled, so nothing Aura read is lost. */
       if (resume === 2 || resume === 3 || resume === CV_SCREEN) resume = 1;
+      if (resume === 4) resume = 5; /* the interstitial is gone */
       if (resume <= 3) {
         try {
           const addr = await loadLinkedInAddress(uid);
@@ -1925,7 +1938,7 @@ const Onboarding = () => {
     return (
       <>
         <style>{PAGE_CSS}</style>
-        <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
           <h1 style={h1Light}>Is this you?</h1>
           <p style={{ ...bodyLight, fontFamily: OB.mono, fontSize: 14, color: OB.ink, wordBreak: "break-all" }}>
             {userEmail || "—"}
@@ -1964,7 +1977,7 @@ const Onboarding = () => {
     return (
       <>
         <style>{PAGE_CSS}</style>
-        <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
           <h1 style={h1Light}>Set your password.</h1>
           <p style={bodyLight}>One password, and your read is yours to keep.</p>
           <div style={{ position: "relative", marginBlockStart: 18 }}>
@@ -1991,9 +2004,11 @@ const Onboarding = () => {
             ))}
           </div>
           <Actions style={{ marginBlockStart: 0 }}>
-            <OBButton onClick={() => void handleSetPassword()} disabled={!allValid} loading={settingPwd} loadingLabel="Saving…">
+            <OBButton onClick={() => void handleSetPassword()} disabled={!allValid} loading={settingPwd} loadingLabel="Saving…"
+              aria-describedby={!allValid ? "ob-pwd-why" : undefined}>
               Set it and start
             </OBButton>
+            {!allValid ? whyLine("ob-pwd-why", "Meet every rule above to enable this.", true) : null}
           </Actions>
         </PaperShell>
       </>
@@ -2015,7 +2030,7 @@ const Onboarding = () => {
   /* 0 — CREAM */
   if (screen === 0) {
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} subProgress={readDone ? 0.5 : undefined} cream footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} bead={0} subProgress={readDone ? 0.5 : undefined} footer={escapeFooter}>
         <h1 style={h1Light}>By the end of this, Aura knows how you work.</h1>
         <p style={bodyLight}>
           Then it writes like you — and helps you be known better on LinkedIn and in the professional circles that matter to you.
@@ -2026,7 +2041,7 @@ const Onboarding = () => {
         </p>
         <p style={{
           margin: "26px 0 10px", fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em",
-          textTransform: "uppercase", color: OB.muted,
+          color: OB.muted,
         }}>
           What you'll have when you're done
         </p>
@@ -2139,7 +2154,7 @@ const Onboarding = () => {
             ) : null}
             {/* Nothing after this depends on the read being back. */}
             <Actions style={{ marginBlockStart: 20 }}>
-              <OBButton variant="tertiary" onClick={() => go(4)}>Carry on while it reads</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(5)}>Carry on while it reads</OBButton>
             </Actions>
           </div>
         ) : null}
@@ -2320,7 +2335,7 @@ const Onboarding = () => {
               background: OB.canvas, border: `1px solid ${OB.line}`,
             }}>
               <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: OB.ink }}>
-                TWO THINGS AURA CAN SEE — both are yours to decide.
+                Two things Aura can see — both are yours to decide.
               </p>
 
               <div style={{ display: "flex", gap: 9, marginBlockStart: 14 }}>
@@ -2399,23 +2414,23 @@ const Onboarding = () => {
                   </button>
                 </>
               ) : null}
-              {readCache ? " · " : null}
-              <button
-                type="button"
-                onClick={() => void returnToAddress()}
-                style={{
-                  background: "none", border: 0, padding: "10px 6px", fontSize: 13,
-                  color: OB.blue, cursor: "pointer", textDecoration: "underline",
-                  display: "inline-block",
-                }}
-              >
-                Use a different profile
-              </button>
             </p>
+            {/* Mono is for numbers. This is a control, so it is set as one. */}
+            <button
+              type="button"
+              onClick={() => void returnToAddress()}
+              style={{
+                background: "none", border: 0, padding: "11px 0", marginBlockStart: 4,
+                fontFamily: OB.ui, fontSize: 13.5, color: OB.muted, cursor: "pointer",
+                textAlign: "start", minBlockSize: 44, display: "inline-flex", alignItems: "center",
+              }}
+            >
+              This isn't me — read a different profile
+            </button>
 
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton onClick={() => { void confirmBandIfDetected(); go(CV_SCREEN); }}>Continue</OBButton>
-              <OBButton variant="tertiary" onClick={() => go(4)}>I'll do that later</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(5)}>I'll do that later</OBButton>
             </Actions>
           </>
         ) : null}
@@ -2442,15 +2457,16 @@ const Onboarding = () => {
         <p style={{ ...bodyLight, marginBlockStart: 16, fontWeight: 600, color: OB.ink }}>Your level</p>
         {titleList((t, b) => { setLevelTitle(t); setBand(b); })}
         <Actions style={{ marginBlockStart: 20 }}>
-        <OBButton disabled={!ready} onClick={async () => {
+        <OBButton disabled={!ready} aria-describedby={!ready ? "ob-manual-why" : undefined} onClick={async () => {
           await writeProfile({
             first_name: firstName.trim(), last_name: lastName.trim() || undefined,
             firm: firm.trim(), sector_focus: sector,
             level: levelTitle || (band ? BAND_TO_LEVEL[band] : undefined),
             seniority_band: band, band_source: "corrected",
           }, "identity save");
-          go(4);
+          go(5);
         }}>Save and carry on</OBButton>
+        {!ready ? whyLine("ob-manual-why", "Fill in your name, where you work, your sector and your level to enable this.") : null}
         <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
         </Actions>
       </PaperShell>
@@ -2465,7 +2481,7 @@ const Onboarding = () => {
            journey can show it, but progression never waits on it. */
         void runCvCrosscheck();
       }
-      go(4);
+      go(5);
     };
     content = (
       <PaperShell onExit={saveAndExit} bead={0} subProgress={1} footer={escapeFooter}>
@@ -2495,24 +2511,14 @@ const Onboarding = () => {
     );
   }
 
-  /* 4 — WHITE, the same card shell as every other question screen */
-  if (screen === 4) {
-    content = (
-      <PaperShell onExit={saveAndExit} bead={1} face footer={escapeFooter}>
-        <h1 style={{ ...h1Light, textAlign: "center" }}>I know who you are. Now I need what you notice.</h1>
-        <p style={{ ...bodyLight, textAlign: "center" }}>
-          Your profile says what you've done. It doesn't say what you think. One link is enough to start.
-        </p>
-        <Actions style={{ marginBlockStart: 26 }}><OBButton onClick={() => go(5)}>Okay</OBButton></Actions>
-      </PaperShell>
-    );
-  }
-
   /* 5 — WHITE, the first link */
   if (screen === 5) {
     content = (
       <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
         <h1 style={h1Light}>Something you read this week.</h1>
+        <p style={bodyLight}>
+          Your profile says what you've done. It doesn't say what you think. One link is enough to start.
+        </p>
         <p style={bodyLight}>
           {userId
             ? "Paste a link to an article or a post. Aura reads it and shows you what it found."
@@ -2535,7 +2541,9 @@ const Onboarding = () => {
         )}
         <Actions style={{ marginBlockStart: 14 }}>
           <OBButton disabled={!linkInput.trim() || sendingLink} loading={sendingLink} loadingLabel="Sending…"
+            aria-describedby={!linkInput.trim() ? "ob-add-why" : undefined}
             onClick={() => void submitLink()}>Add it</OBButton>
+          {!linkInput.trim() ? whyLine("ob-add-why", "Paste a link to enable this.", true) : null}
         </Actions>
 
         {suggested || !suggestDead ? (
@@ -2575,9 +2583,6 @@ const Onboarding = () => {
             <Loader2 size={14} className="animate-spin" /> Looking for one from your sector…
           </div>
         ) : null}
-        <Actions style={{ marginBlockStart: 14 }}>
-          <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
-        </Actions>
       </PaperShell>
     );
   }
@@ -2919,10 +2924,11 @@ const Onboarding = () => {
                 {opts.map((o, i) => optionButton(i, o.label, () => setSinglePicked(String(i)), singlePicked === String(i)))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
-                <OBButton disabled={!singlePicked} onClick={() => {
+                <OBButton disabled={!singlePicked} aria-describedby={!singlePicked ? "ob-q-why" : undefined} onClick={() => {
                   if (!singlePicked) return;
                   advance(opts[Number(singlePicked)]?.label ?? "");
                 }}>Next</OBButton>
+                {!singlePicked ? whyLine("ob-q-why", "Pick one answer to enable this.", true) : null}
               </Actions>
             </>
           ) : q.kind === "multi" ? (
@@ -2938,16 +2944,17 @@ const Onboarding = () => {
                 ))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
-                <OBButton disabled={multiPicked.length === 0} onClick={() => advance(
+                <OBButton disabled={multiPicked.length === 0} aria-describedby={multiPicked.length === 0 ? "ob-qm-why" : undefined} onClick={() => advance(
                   multiPicked.map((i) => opts[Number(i)]?.label ?? "").filter(Boolean).join(" · "),
                 )}>Next</OBButton>
+                {multiPicked.length === 0 ? whyLine("ob-qm-why", "Pick at least one to enable this.", true) : null}
               </Actions>
             </>
           ) : q.kind === "proposed" ? (
             proposedReady ? (
               <>
                 <p style={{ margin: "14px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.12em", color: OB.muted }}>
-                  FROM WHAT AURA JUST READ IN YOUR WRITING.
+                  From what Aura just read in your writing.
                 </p>
                 <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
                   Keep the one that's actually you. The two you drop tell Aura just as much.
@@ -2965,12 +2972,13 @@ const Onboarding = () => {
                   ))}
                 </div>
                 <Actions style={{ marginBlockStart: 16 }}>
-                  <OBButton disabled={!singlePicked} onClick={() => {
+                  <OBButton disabled={!singlePicked} aria-describedby={!singlePicked ? "ob-qp-why" : undefined} onClick={() => {
                     if (!singlePicked) return;
                     const kept = proposals![Number(singlePicked)]?.label ?? "";
                     const dropped = proposals!.filter((_, i) => String(i) !== singlePicked).map((x) => x.label);
                     advance(`${kept}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
                   }}>Next</OBButton>
+                  {!singlePicked ? whyLine("ob-qp-why", "Keep the one that's actually you to enable this.", true) : null}
                 </Actions>
               </>
             ) : proposedFallback ? (
@@ -2987,7 +2995,9 @@ const Onboarding = () => {
                   }}
                   placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
                 <Actions style={{ marginBlockStart: 16 }}>
-                  <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                  <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qtf-why" : undefined}
+                    onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                  {!textAnswer.trim() ? whyLine("ob-qtf-why", "Write an answer to enable this.", true) : null}
                 </Actions>
               </>
             ) : (
@@ -3006,7 +3016,9 @@ const Onboarding = () => {
                 }}
                 placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
               <Actions style={{ marginBlockStart: 16 }}>
-                <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qt-why" : undefined}
+                  onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                {!textAnswer.trim() ? whyLine("ob-qt-why", "Write an answer to enable this.", true) : null}
               </Actions>
             </>
           )}
@@ -3017,6 +3029,19 @@ const Onboarding = () => {
             ) : null}
             <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else go(10); }}>Back</OBButton>
           </Actions>
+
+          {/* Named once, on the last screen before the account wall — nowhere else. */}
+          {!userId && anonToken && qIdx === questions.length - 1 ? (
+            <div style={{
+              marginBlockStart: 20, padding: "14px 16px", borderRadius: 12,
+              background: OB.canvas, border: `1px solid ${OB.line}`,
+            }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: OB.ink }}>This is still anonymous.</p>
+              <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.6, color: OB.muted }}>
+                Everything you've done is saved to this browser. Saving your report is what makes it yours.
+              </p>
+            </div>
+          ) : null}
         </PaperShell>
       );
     }
@@ -3083,7 +3108,7 @@ const Onboarding = () => {
       <JourneyNav.Provider value={{ onBack: undefined, banner: null }}>
       <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
         <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
-          YOUR REPORT IS READY
+          Your report is ready
         </p>
         <h1 style={{ fontFamily: OB.ui, fontSize: 28, fontWeight: 700, color: OB.ink, marginBlockStart: 10 }}>
           Where should we send it?
@@ -3123,9 +3148,11 @@ const Onboarding = () => {
               </span>
             </label>
             <Actions style={{ marginBlockStart: 18 }}>
-              <OBButton disabled={wallBusy || !wallConsent} onClick={() => undefined} type="submit">
+              <OBButton disabled={wallBusy || !wallConsent} aria-describedby={!wallConsent ? "ob-wall-why" : undefined}
+                onClick={() => undefined} type="submit">
                 {wallBusy ? "Saving your report…" : "Save my report"}
               </OBButton>
+              {!wallConsent && !wallBusy ? whyLine("ob-wall-why", "Tick the box above to enable this.", true) : null}
             </Actions>
           </form>
         )}
@@ -3463,6 +3490,11 @@ const Onboarding = () => {
                     <OBButton disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
                       onClick={() => void mintShare()}
                       style={{ background: "#FFFFFF", color: OB.blue }}>Share my read</OBButton>
+                    {!reveal ? (
+                      <p style={{ margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
+                        Your read is still being written — this opens the moment it lands.
+                      </p>
+                    ) : null}
                   </Actions>
                 ) : (
                   <>
@@ -3490,6 +3522,11 @@ const Onboarding = () => {
                     style={{ ...shareAction, inlineSize: "100%", opacity: busy ? 0.6 : 1 }}>
                     {sharing ? "Building…" : "Download the image"}
                   </button>
+                  {!reveal ? (
+                    <p style={{ margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.55, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
+                      Your read is still being written — this opens the moment it lands.
+                    </p>
+                  ) : null}
                 </div>
               </>
             )}
@@ -3566,7 +3603,7 @@ const Onboarding = () => {
 
         {/* 2 · What a seat adds, and what stays out of reach */}
         <div style={{ marginBlockStart: 28, padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
-          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             {SEAT_HEADING}
           </p>
           <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -3577,7 +3614,7 @@ const Onboarding = () => {
               </li>
             ))}
           </ul>
-          <p style={{ margin: "18px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+          <p style={{ margin: "18px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             What stays out of reach without one
           </p>
           <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
