@@ -855,6 +855,17 @@ const Onboarding = () => {
       const orphan = readToken();
       if (orphan) {
         try {
+          /* (a) Never hijack a healthy account. If this member has already
+             moved past the journey, the token is a leftover — drop it. */
+          const { data: guardRow } = await (supabase.from("diagnostic_profiles" as any) as any)
+            .select("onboarding_step, onboarding_completed")
+            .eq("user_id", uid)
+            .maybeSingle();
+          const progressed = Boolean((guardRow as any)?.onboarding_completed)
+            || Number((guardRow as any)?.onboarding_step ?? 0) >= 3;
+          if (progressed) { clearToken(); throw new Error("SKIP_RESCUE"); }
+          /* (b) get_assessment_session only ever returns a row whose user_id
+             is null, so a returned session is genuinely unowned. */
           const found = await loadSession(orphan);
           const st = (found?.state ?? {}) as AssessmentState & Record<string, any>;
           const hasWork = Boolean(st.read) || Object.keys(st.answers ?? {}).length > 0;
@@ -871,7 +882,7 @@ const Onboarding = () => {
             clearToken();
           }
         } catch (e) {
-          console.error("[journey] orphan rescue failed", e);
+          if ((e as Error)?.message !== "SKIP_RESCUE") console.error("[journey] orphan rescue failed", e);
         }
       }
 
@@ -1801,13 +1812,6 @@ const Onboarding = () => {
       <p style={bodyLight}>Aura is picking the right set for you.</p>
     </PaperShell>
   );
-
-  const shelfUnlocked = useMemo(() => ({
-    profile: screen > 3,
-    claims: screen > 7,
-    strengths: screen > 9 || (dims ? Object.keys(scores).length >= dims.length : false),
-    subjects: screen >= 12,
-  }), [screen, dims, scores]);
 
   /* ───────────────────────── password & identity ───────────────────────── */
 
