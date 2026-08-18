@@ -428,7 +428,12 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
 
     const text = allText(result).toLowerCase();
     if (PLATITUDES.some((p) => text.includes(p))) return "no_cv_platitudes";
-    if (hasBanned(allText(result), bannedWords)) return "no_banned_vocabulary";
+    const whole = allText(result);
+    if (hasBanned(whole, bannedWords)) {
+      /* Name the offending word so the single retry can actually fix it. */
+      const offender = bannedWords.find((w) => hasBanned(whole, [w])) ?? "unknown";
+      return `no_banned_vocabulary: "${offender}"`;
+    }
 
     for (const f of findings) {
       if (allText(f).split(/(?<=[.!?])\s+/).some(spanIsWrong)) return "numbers_recompute";
