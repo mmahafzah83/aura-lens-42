@@ -412,7 +412,7 @@ const RevealCard = forwardRef<
     ref={ref}
     className="rvc"
     style={{
-      background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
+      ...nightSurface(1),
       borderRadius: RADIUS.hero,
       padding: "30px 24px 28px",
       color: "#FFFFFF",
@@ -422,28 +422,39 @@ const RevealCard = forwardRef<
     }}
   >
     <style>{RVC_CSS}</style>
-    <p style={{
-      margin: 0, fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase",
-      fontFamily: OB.mono, opacity: 0.85,
-    }}>How people see you</p>
+    <div className="rvc-seq" style={{ animationDelay: "0s", marginBlockEnd: 18 }}>
+      <IdentityRow data={data} size={46} />
+    </div>
 
-    <h2 className="rvc-arch" style={{
-      margin: "12px 0 0", fontSize: "clamp(34px, 9vw, 40px)", fontWeight: 900,
-      lineHeight: 1.02, letterSpacing: "-0.03em",
-    }}>{data.archetype}</h2>
+    <div className="rvc-seq" style={{ animationDelay: "0.18s" }}>
+      <p style={{
+        margin: 0, fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase",
+        fontFamily: OB.mono, opacity: 0.85,
+      }}>How people see you</p>
 
-    {data.marketRead ? (
-      <p className="rvc-read"
-        style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
-    ) : null}
-    {source(data.provenance?.read)}
+      <h2 className="rvc-arch" style={{
+        margin: "12px 0 0", fontSize: "clamp(34px, 9vw, 40px)", fontWeight: 900,
+        lineHeight: 1.02, letterSpacing: "-0.03em",
+      }}>{data.archetype}</h2>
+    </div>
+
+    <div className="rvc-seq" style={{ animationDelay: "0.42s" }}>
+      {data.marketRead ? (
+        <p className="rvc-read"
+          style={{ margin: "14px 0 0", fontSize: 15, lineHeight: 1.6, opacity: 0.95 }}>{data.marketRead}</p>
+      ) : null}
+      {source(data.provenance?.read)}
+    </div>
 
     {data.subjects.length > 0 && (
       <>
-        <p style={{ margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85 }}>{LABEL_SIGNALS}</p>
+        <p className="rvc-seq" style={{
+          margin: "22px 0 8px", fontSize: 11.5, opacity: 0.85, animationDelay: "0.6s",
+        }}>{LABEL_SIGNALS}</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-          {data.subjects.slice(0, 3).map((s) => (
-            <span key={s} style={chip("rgba(255,255,255,0.18)", "#FFFFFF")}>{s}</span>
+          {data.subjects.slice(0, 3).map((s, i) => (
+            <span key={s} className="rvc-seq"
+              style={{ ...chip("rgba(255,255,255,0.18)", "#FFFFFF"), animationDelay: `${0.72 + i * 0.12}s` }}>{s}</span>
           ))}
         </div>
         {source(data.provenance?.subjects)}
