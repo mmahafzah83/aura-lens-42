@@ -85,6 +85,7 @@ serve(async (req) => {
     // Record the consent against the profile row. A ticked box that leaves no
     // record proves nothing later.
     const newUserId = signUpData?.user?.id;
+    let onboardingStep = 0;
     if (newUserId) {
       const { error: profileError } = await admin
         .from("diagnostic_profiles")
@@ -97,20 +98,31 @@ serve(async (req) => {
           { onConflict: "user_id" },
         );
       if (profileError) console.error("consent record failed", profileError);
+      const { data: prof } = await admin
+        .from("diagnostic_profiles")
+        .select("onboarding_step")
+        .eq("user_id", newUserId)
+        .maybeSingle();
+      onboardingStep = Number((prof as any)?.onboarding_step ?? 0);
     }
 
     // Our own welcome, in our own shell. A failure here never fails sign-up.
     try {
       const RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
       if (RESEND_KEY) {
+        // The read is written after this email is composed, so the email must
+        // not claim it is already waiting. And the CTA has to survive a second
+        // device: the sign-in door carries the destination, never becomes it.
+        const base = origin || "https://www.aura-intel.org";
+        const dest = onboardingStep >= 4 ? "/home" : "/onboarding";
         const html = renderEmail({
-          preheader: "Your account is open. Your read is waiting inside.",
+          preheader: "Your account is open. Your read is being written now.",
           body: [
             heading("Your account is open."),
-            paragraph("Everything you just answered is saved to it. Your read is waiting inside."),
+            paragraph("Everything you just answered is saved to it. Your read is being written now."),
           ].join(""),
           cta: {
-            href: `${origin || "https://www.aura-intel.org"}/onboarding`,
+            href: `${base}/auth?next=${encodeURIComponent(dest)}`,
             label: "Open your read",
           },
         });
