@@ -3,7 +3,7 @@
  *
  * Surface law, absolute:
  *   NIGHT (#0F1519)  = Aura is working, the member does nothing. AuraFace lives here.
- *   WHITE / CREAM    = the member's turn. ProgressBeads live here.
+ *   WHITE / CREAM    = the member's turn. Progress lives in the one journey shell.
  *
  * Content comes from two live tables — capability_dimensions and
  * onboarding_questions — resolved exact (band, sector) first, then
@@ -31,7 +31,6 @@ import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@
 import AuraFace from "@/components/onboarding/AuraFace";
 import ShelfBadge, { type ShelfBadgeTone } from "@/components/onboarding/ShelfBadge";
 import ClaimCard from "@/components/onboarding/ClaimCard";
-import { STAGE_NAMES } from "@/components/onboarding/ProgressBeads";
 import RevealCard, { type RevealData, shareRevealCard, rasteriseRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import StatusRow from "@/components/onboarding/StatusRow";
@@ -47,7 +46,7 @@ import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleB
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
-import JourneyShell, { type Beat, type JourneySub } from "@/components/journey/JourneyShell";
+import JourneyShell, { STAGE_NAMES, type Beat, type JourneySub } from "@/components/journey/JourneyShell";
 import { CONSENT_VERSION } from "@/pages/Auth";
 import DocumentUpload from "@/components/DocumentUpload";
 import CvCrosscheck from "@/components/report/CvCrosscheck";
