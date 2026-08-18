@@ -154,20 +154,6 @@ export default function ReadResult({
         </Card>
       ) : (
         <>
-          {read.uncontested_space ? (
-            <Card>
-              <Heading dot={CYAN}>The space nobody has claimed</Heading>
-              <Body>{read.uncontested_space}</Body>
-            </Card>
-          ) : null}
-
-          {read.honest_gap ? (
-            <Card>
-              <Heading dot={AMBER}>One honest gap</Heading>
-              <Body>{read.honest_gap}</Body>
-            </Card>
-          ) : null}
-
           {read.own_words_quote ? (
             <Card>
               <Heading>In your own words</Heading>
@@ -192,18 +178,40 @@ export default function ReadResult({
               })()}
             </Card>
           ) : null}
+
+          {read.uncontested_space ? (
+            <Card>
+              <Heading dot={CYAN}>The space nobody has claimed</Heading>
+              <Body>{read.uncontested_space}</Body>
+            </Card>
+          ) : null}
+
+          {read.honest_gap ? (
+            <Card>
+              <Heading dot={AMBER}>One honest gap</Heading>
+              <Body>{read.honest_gap}</Body>
+            </Card>
+          ) : null}
         </>
       )}
 
       <div>
         <button
-          onClick={share}
+          onClick={save}
           style={{
             inlineSize: "100%", padding: "13px 18px", borderRadius: 8,
-            border: `1px solid ${LINE}`, background: CARD, color: INK,
+            border: `1px solid ${BLUE}`, background: BLUE, color: "#FFFFFF",
             fontFamily: UI, fontSize: 15, fontWeight: 600, cursor: "pointer",
           }}
-        >Share this card</button>
+        >Save this card</button>
+        <button
+          onClick={share}
+          style={{
+            display: "block", marginBlockStart: 10, marginInline: "auto",
+            background: "none", border: "none", padding: 0, color: INK2,
+            fontFamily: UI, fontSize: 13.5, textDecoration: "underline", cursor: "pointer",
+          }}
+        >Or share it</button>
         {shareNote ? <p style={{ margin: "8px 0 0", fontSize: 12.5, color: INK2 }}>{shareNote}</p> : null}
       </div>
     </div>
