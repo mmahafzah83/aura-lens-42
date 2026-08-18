@@ -2,7 +2,7 @@
  * RevealCard — screen 13. Full-bleed blue, the member's read of the market,
  * and the same card is what gets exported when they share it.
  */
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { OB, RADIUS, EASE, reducedMotion } from "./tokens";
 
 /**
@@ -220,6 +220,27 @@ const IdentityRow = ({ data, size }: { data: RevealData; size: number }) => {
 /** The signature line: who read it, and when. */
 const signatureText = (data: RevealData): string =>
   data.dateLine ? `Read by Aura · ${data.dateLine}` : "Read by Aura · aura-intel.org";
+
+/** A figure that arrives by counting, unless motion is turned down. */
+const CountUp = ({ value, delay }: { value: string; delay: number }) => {
+  const target = Number(String(value).replace(/[^\d.-]/g, ""));
+  const numeric = Number.isFinite(target) && /^\s*\d/.test(value);
+  const [n, setN] = useState(() => (numeric && !reducedMotion() ? 0 : target));
+  useEffect(() => {
+    if (!numeric || reducedMotion()) { setN(target); return; }
+    let raf = 0;
+    const start = performance.now() + delay;
+    const tick = (now: number) => {
+      const t = Math.min(1, Math.max(0, (now - start) / 700));
+      setN(Math.round(target * (1 - Math.pow(1 - t, 3))));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, numeric, delay]);
+  if (!numeric) return <>{value}</>;
+  return <>{String(value).replace(/\d[\d,]*/, String(n))}</>;
+};
 
 /** The card is a reading experience; it grows once, at the desk-sized breakpoint. */
 const RVC_CSS = `
