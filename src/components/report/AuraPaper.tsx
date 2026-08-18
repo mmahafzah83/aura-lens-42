@@ -311,7 +311,18 @@ export function PaperCover({ data }: { data: ReportData }) {
         </span>
       </div>
 
-      {/* Reading legend */}
+      {/* Reading legend — only for the classes of content this report carries */}
+      {(() => {
+        const hasFinding = !!(data.brand_position || data.positioning || data.profile_intelligence);
+        const hasMovement = !!(
+          (data.territories && data.territories.length) ||
+          (data.capabilities && data.capabilities.length) ||
+          data.market_mirror
+        );
+        const hasAction = !!(data.content || data.footprint);
+        const cells = [hasFinding, hasMovement, hasAction].filter(Boolean).length;
+        if (cells === 0) return null;
+        return (
       <div
         style={{
           marginTop: 24,
@@ -333,14 +344,26 @@ export function PaperCover({ data }: { data: ReportData }) {
             color: T.ink,
           }}
         >
-          How to read this paper — three colours, three meanings
+          {cells === 1
+            ? "How to read this paper — one colour, one meaning"
+            : cells === 2
+              ? "How to read this paper — two colours, two meanings"
+              : "How to read this paper — three colours, three meanings"}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
-          <LegendCell swatch={T.spot} title="Finding" body="A conclusion drawn from your evidence." />
-          <LegendCell swatch={T.live} title="Movement" body="Something live and rising in your record." border />
-          <LegendCell swatch="var(--a-500)" title="Action" body="Held by you, unclaimed — the next move." border />
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${cells}, 1fr)` }}>
+          {hasFinding ? (
+            <LegendCell swatch={T.spot} title="Finding" body="A conclusion drawn from your evidence." />
+          ) : null}
+          {hasMovement ? (
+            <LegendCell swatch={T.live} title="Movement" body="Something live and rising in your record." border={hasFinding} />
+          ) : null}
+          {hasAction ? (
+            <LegendCell swatch="var(--a-500)" title="Action" body="Held by you, unclaimed — the next move." border={hasFinding || hasMovement} />
+          ) : null}
         </div>
       </div>
+        );
+      })()}
 
       {/* Meta grid */}
       <div
@@ -835,12 +858,14 @@ export function PaperPersonaCard({ p }: { p: { who: string; sees: string; gap: s
 export function ClosingPlate({
   data, activeSignals = null, evidenceCount = null, sparkDelta = null,
   headline, body, ctaLabel = "Built from my own record ↗",
-  moves, paperTitle, pageLine,
+  moves, paperTitle, pageLine, personName,
 }: {
-  data: ReportData;
+  data?: ReportData | null;
   activeSignals?: number | null;
   evidenceCount?: number | null;
   sparkDelta?: number | null;
+  /** Used when there is no ReportData to read a name from. */
+  personName?: string | null;
   headline?: React.ReactNode;
   body?: React.ReactNode;
   ctaLabel?: string;
@@ -851,9 +876,10 @@ export function ClosingPlate({
   /** e.g. "Page 05 / 05" — appended to the footer line when present. */
   pageLine?: string;
 }) {
-  const p = data.profile;
-  const fullName = [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim();
-  const scoreVal = data.score?.score ?? null;
+  const p = data?.profile;
+  const fullName =
+    [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim() || (personName || "").trim();
+  const scoreVal = data?.score?.score ?? null;
   const showStats =
     scoreVal !== null ||
     activeSignals !== null ||

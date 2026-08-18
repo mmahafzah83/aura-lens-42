@@ -12,12 +12,12 @@ import {
   PaperFooter,
   PaperFigure,
   ClosingPlate,
+  CapabilityDotPlot,
   T,
   FONT,
 } from "@/components/report/AuraPaper";
 import { AuraLogo } from "@/components/brand/AuraLogo";
 import type { BrandPaper } from "@/lib/buildBrandPaper";
-import type { ReportData } from "@/lib/buildIdentityReport";
 
 const SHEET_W = 794;
 const SHEET_H = 1123;
@@ -159,6 +159,12 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
   const level = bp.profile.level || "";
   const archetype = bp.primary_archetype || "Your Position";
   const lede = bp.natural_tone || (bp.market_read ? bp.market_read.split(/(?<=\.)\s+/)[0] : "");
+  // A legend is a key to a map. Only name the classes of content this paper
+  // actually carries — and if it carries none of them, drop the block.
+  const hasFinding = buildFindings(bp).length > 0;
+  const hasMovement = !!(bp.uncontested_space || bp.topics.length > 0 || bp.capabilities.length > 0);
+  const hasAction = bp.invest_next.length > 0;
+  const legendCount = [hasFinding, hasMovement, hasAction].filter(Boolean).length;
 
   return (
     <Sheet n={1}>
@@ -200,7 +206,8 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
           </div>
         ) : null}
 
-        {/* Reading legend */}
+        {/* Reading legend — only for content that exists */}
+        {legendCount > 0 ? (
         <div style={{
           marginTop: 34, border: `1.5px solid ${T.ink}`, background: T.paper2,
         }}>
@@ -209,14 +216,23 @@ function CoverSheet({ bp, total }: { bp: BrandPaper; total: number }) {
             fontFamily: FONT.mono, fontSize: 10.5, fontWeight: 700,
             letterSpacing: "0.14em", textTransform: "uppercase", color: T.ink,
           }}>
-            How to read this paper — three colours, three meanings
+            {legendCount === 1
+              ? "How to read this paper — one colour, one meaning"
+              : `How to read this paper — ${spellCount(legendCount).toLowerCase()} colours, ${spellCount(legendCount).toLowerCase()} meanings`}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
-            <LegendCell swatch={T.spot} title="Finding" body="A conclusion drawn from your answers." />
-            <LegendCell swatch={T.live} title="Movement" body="Something live and rising in your positioning." border />
-            <LegendCell swatch="var(--a-500)" title="Action" body="Held by you, unclaimed — the next move." border />
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${legendCount}, 1fr)` }}>
+            {hasFinding ? (
+              <LegendCell swatch={T.spot} title="Finding" body="A conclusion drawn from your answers." />
+            ) : null}
+            {hasMovement ? (
+              <LegendCell swatch={T.live} title="Movement" body="Something live and rising in your positioning." border={hasFinding} />
+            ) : null}
+            {hasAction ? (
+              <LegendCell swatch="var(--a-500)" title="Action" body="Held by you, unclaimed — the next move." border={hasFinding || hasMovement} />
+            ) : null}
           </div>
         </div>
+        ) : null}
 
         {/* Meta grid */}
         <div style={{
@@ -383,6 +399,14 @@ function TopicBlock({ n, title, description }: { n: string; title: string; descr
   );
 }
 
+function spaceSheetHasContent(bp: BrandPaper): boolean {
+  const topics = bp.topics.length > 0 ? bp.topics : bp.content_pillars.slice(0, 3);
+  return !!(
+    bp.the_gap || bp.own_words_quote || bp.own_words_read ||
+    bp.uncontested_space || topics.length > 0 || bp.invest_next.length > 0
+  );
+}
+
 function SpaceSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number }) {
   const hasInvest = bp.invest_next.length > 0;
   // Older rows carry pillars but no structured topics — fall back so the
@@ -390,6 +414,8 @@ function SpaceSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number
   const topics = bp.topics.length > 0
     ? bp.topics
     : bp.content_pillars.slice(0, 3).map((t) => ({ title: t, description: "" }));
+  // A sheet with nothing on it is never printed.
+  if (!spaceSheetHasContent(bp)) return null;
   return (
     <Sheet n={n}>
       <PaperHeader label="Ground & Topics" />
@@ -562,7 +588,46 @@ function VoiceSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number
 }
 
 // ── Final sheet — ClosingPlate ─────────────────────────────────────────────
-function ClosingSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number }) {
+/** Real counts, supplied by the caller from the snapshot's footprint. */
+export interface PaperStats {
+  sources?: number | null;
+  evidence?: number | null;
+  signals?: number | null;
+  themes?: number | null;
+}
+
+// ── Placements sheet — the member's own numbers, in his own words ──────
+function PlacementsSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number }) {
+  if (bp.capabilities.length === 0) return null;
+  return (
+    <Sheet n={n}>
+      <PaperHeader label="Your own placements" />
+      <div style={{ marginTop: 34, flex: 1 }}>
+        <MonoLabel color={T.spot} size={11}>In your own words</MonoLabel>
+        <h2 style={{
+          fontFamily: FONT.serif, fontSize: 40, fontWeight: 400, lineHeight: 1.1,
+          color: T.ink, margin: "10px 0 6px", letterSpacing: "-0.01em",
+        }}>
+          Where you placed <span style={{ fontStyle: "italic", color: T.spot }}>yourself</span>
+        </h2>
+        <p style={{
+          fontFamily: FONT.serif, fontSize: 15, color: T.ink2, lineHeight: 1.55,
+          margin: "0 0 22px", maxWidth: 560,
+        }}>
+          These are the placements you made yourself, in the words you were given.
+          They are not scores and they are not grades — nobody marked you. They
+          record where you put yourself on the day you answered.
+        </p>
+        <CapabilityDotPlot data={bp.capabilities} />
+      </div>
+      <PaperFooter n={n} total={total} paperTitle={PAPER_TITLE} />
+    </Sheet>
+  );
+}
+
+function ClosingSheet({ bp, n, total, stats }: {
+  bp: BrandPaper; n: number; total: number; stats?: PaperStats | null;
+}) {
   const archetype = bp.primary_archetype || "Your Position";
   const parts = archetype.trim().split(/\s+/);
   const tail = parts.pop() || "";
@@ -581,25 +646,17 @@ function ClosingSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: numb
     ninety ? { horizon: "90d", text: ninety } : null,
   ].filter((m): m is { horizon: string; text: string } => !!m)
     .map((m) => ({ horizon: m.horizon, text: capAtSentence(m.text, 180) }));
-  const closingData: ReportData = {
-    generated_at: bp.generated_at,
-    user_id: "",
-    profile: {
-      first_name: bp.profile.first_name || null,
-      last_name: bp.profile.last_name || null,
-      level: bp.profile.level || null,
-    },
-    score: null,
-    positioning: null,
-    capabilities: null,
-    market: null,
-    // Any additional required fields are typed as nullable slices on ReportData.
-  } as unknown as ReportData;
+  // No fabricated ReportData and no hardcoded null pretending to be a score.
+  // The plate takes the member's name directly and only the counts we hold.
+  const personName = [bp.profile.first_name, bp.profile.last_name]
+    .filter(Boolean).join(" ").trim() || null;
 
   return (
     <Sheet n={n} bleed>
       <ClosingPlate
-        data={closingData}
+        personName={personName}
+        evidenceCount={stats?.evidence ?? null}
+        activeSignals={stats?.signals ?? null}
         headline={
           <>
             {head ? <>{head} </> : null}
@@ -620,25 +677,34 @@ function ClosingSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: numb
 export default function BrandPaperDocument({
   paper,
   showClosing = true,
+  stats = null,
 }: {
   paper: BrandPaper;
   /** false when this paper is bound into the combined report (SLICE 4d). */
   showClosing?: boolean;
+  /** Real counts from the snapshot's footprint — never invented. */
+  stats?: PaperStats | null;
 }) {
   const hasVoice = voiceSheetHasContent(paper);
   // A findings sheet with no findings is dropped, so the sheet count follows.
   const hasFindings = buildFindings(paper).length > 0;
-  const findingsN = hasFindings ? 2 : 0;
-  const spaceN = hasFindings ? 3 : 2;
-  const voiceN = spaceN + 1;
-  const total = 2 + (hasFindings ? 1 : 0) + (hasVoice ? 1 : 0) + (showClosing ? 1 : 0);
+  const hasSpace = spaceSheetHasContent(paper);
+  const hasPlacements = paper.capabilities.length > 0;
+  // Pages are numbered by what actually prints — no header over an empty page.
+  let next = 2;
+  const findingsN = hasFindings ? next++ : 0;
+  const spaceN = hasSpace ? next++ : 0;
+  const placementsN = hasPlacements ? next++ : 0;
+  const voiceN = hasVoice ? next++ : 0;
+  const total = next - 1 + (showClosing ? 1 : 0);
   return (
     <div style={{ background: T.paper2, padding: "24px 0" }}>
       <CoverSheet bp={paper} total={total} />
-      <FindingsSheet bp={paper} n={findingsN} total={total} />
-      <SpaceSheet bp={paper} n={spaceN} total={total} />
+      {hasFindings ? <FindingsSheet bp={paper} n={findingsN} total={total} /> : null}
+      {hasSpace ? <SpaceSheet bp={paper} n={spaceN} total={total} /> : null}
+      {hasPlacements ? <PlacementsSheet bp={paper} n={placementsN} total={total} /> : null}
       {hasVoice ? <VoiceSheet bp={paper} n={voiceN} total={total} /> : null}
-      {showClosing ? <ClosingSheet bp={paper} n={total} total={total} /> : null}
+      {showClosing ? <ClosingSheet bp={paper} n={total} total={total} stats={stats} /> : null}
     </div>
   );
 }

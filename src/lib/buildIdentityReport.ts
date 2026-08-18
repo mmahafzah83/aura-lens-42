@@ -462,6 +462,20 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     .map(([t]) => t);
   const territories: TerritoriesSection | null = territoriesList.length > 0 ? territoriesList : null;
 
+  // The member's actual read — keyed by LinkedIn handle, not user_id.
+  let mirrorRead: Record<string, any> | null = null;
+  const liHandle: string | null = ((connRes as any)?.data?.handle || null);
+  if (liHandle) {
+    try {
+      const { data: mrRow } = await (supabase.from("mirror_reads" as any) as any)
+        .select("read")
+        .eq("handle", String(liHandle).toLowerCase())
+        .maybeSingle();
+      const blob = (mrRow as any)?.read;
+      if (blob && typeof blob === "object" && Object.keys(blob).length) mirrorRead = blob;
+    } catch { /* the paper still renders from what results hold */ }
+  }
+
   // 9. FOOTPRINT — mirrors IntelligenceTab.tsx:1005-1008
   const entriesCount = entriesCountRes.count ?? 0;
   const documentsCount = documentsCountRes.count ?? 0;
@@ -529,13 +543,25 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
     content,
     voice,
     cv_crosscheck: p?.cv_crosscheck ?? null,
-    brand_paper: p?.brand_assessment_results
-      ? buildBrandPaper(brandResults, {
-          first_name: p.first_name ?? null,
-          last_name: p.last_name ?? null,
-          level: p.level ?? null,
-          sector_focus: p.sector_focus ?? null,
-        })
+    // The read lives in mirror_reads; brand_assessment_results wins where it
+    // has a value and the read fills every gap it leaves.
+    brand_paper: (p || mirrorRead)
+      ? buildBrandPaper(
+          brandResults,
+          {
+            first_name: p?.first_name ?? null,
+            last_name: p?.last_name ?? null,
+            level: p?.level ?? null,
+            sector_focus: p?.sector_focus ?? null,
+          },
+          {
+            mirrorRead,
+            skillRatings: (p?.skill_ratings && Object.keys(p.skill_ratings).length
+              ? p.skill_ratings
+              : null),
+            territories: territoriesList,
+          },
+        )
       : null,
   };
 }

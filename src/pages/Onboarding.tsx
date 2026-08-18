@@ -1523,7 +1523,11 @@ const Onboarding = () => {
         /* Merges — writeProfile drops every null, so finishing can never blank
            a column the journey filled in earlier. */
         await writeProfile({
-          first_name: firstName.trim() || "Member",
+          /* Never write a placeholder into a name column. `firstName` is
+             already seeded from the LinkedIn read when the member gave none;
+             if it is still empty, nothing is written and the display fallback
+             does its job at render time. */
+          first_name: firstName.trim() || undefined,
           last_name: lastName.trim() || undefined,
           firm: firm.trim() || undefined,
           sector_focus: sector || undefined,

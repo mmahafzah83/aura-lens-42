@@ -199,15 +199,9 @@ export async function generateMarketRead(
     const interpretation = (data as any)?.interpretation;
     if (!interpretation) {
       console.error("[marketRead] brand-assessment returned no interpretation", data);
-      // The member did answer — only our interpretation failed (evidence floor
-      // unmet, model unreachable, placeholder guard, or the instrument-run cap).
-      // Record completion anyway, or the journey re-asks the retired legacy
-      // questions on top of the ones they just answered. Results stay untouched.
-      if (answers && Object.keys(answers).length) {
-        await writeProfile(userId, {
-          brand_assessment_completed_at: new Date().toISOString(),
-        }, "market read pending completion stamp");
-      }
+      // A completion stamp is a claim. The read did not happen, so nothing is
+      // stamped — the product must be able to tell an unfinished read from a
+      // finished one instead of printing a masthead over nothing.
       return null;
     }
 
@@ -224,16 +218,7 @@ export async function generateMarketRead(
     return results;
   } catch (e) {
     console.error("[marketRead] generation failed", e);
-    // Same reasoning as the pending path above: the answers were given.
-    if (answers && Object.keys(answers).length) {
-      try {
-        await writeProfile(userId, {
-          brand_assessment_completed_at: new Date().toISOString(),
-        }, "market read failure completion stamp");
-      } catch (err) {
-        console.error("[marketRead] completion stamp threw", err);
-      }
-    }
+    // Same rule as above — a failed read never stamps itself complete.
     return null;
   }
 }

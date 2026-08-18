@@ -1,0 +1,1 @@
+UPDATE public.diagnostic_profiles SET first_name = NULL WHERE first_name = 'Member';
