@@ -936,6 +936,26 @@ const Onboarding = () => {
         try {
           const addr = await loadLinkedInAddress(uid);
           if (addr.profileUrl) setLiInput(addr.profileUrl);
+          /* NEVER ASK TWICE. read_done is the one readiness flag in the flow;
+             a mirror_reads row for the same address proves the same thing when
+             the flag predates it. Pre-filling the field was not enough — a
+             member whose read exists was still shown "Read my profile". */
+          if (addr.profileUrl) {
+            let done = Boolean((p.identity_intelligence as any)?.read_done);
+            let posts: number | null = null;
+            if (addr.handle) {
+              try {
+                const { data: mr } = await (supabase.from("mirror_reads" as any) as any)
+                  .select("posts_read").eq("handle", addr.handle.toLowerCase()).maybeSingle();
+                if (mr) { done = true; posts = Number((mr as any).posts_read ?? 0); }
+              } catch { /* the flag alone still answers */ }
+            }
+            if (done) {
+              setStep1Phase("result");
+              setReadDone(true);
+              if (posts !== null) setPostsRead(posts);
+            }
+          }
         } catch { /* ignore */ }
       }
       /* A reload on the reading screens loses the in-memory claims watch, so the
@@ -2061,9 +2081,16 @@ const Onboarding = () => {
               <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.err }}>{liError}</p>
             ) : null}
             <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton onClick={() => void readProfile()} disabled={!liInput.trim()} loading={liBusy} loadingLabel="Reading…">
+              <OBButton onClick={() => void readProfile()} disabled={!liInput.trim()} loading={liBusy} loadingLabel="Reading…"
+                aria-describedby={!liInput.trim() ? "ob-li-why" : undefined}>
                 Read my profile
               </OBButton>
+              {!liInput.trim() ? (
+                /* A disabled control always carries its reason, next to itself. */
+                <p id="ob-li-why" style={{ margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+                  Paste your LinkedIn address first.
+                </p>
+              ) : null}
               <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
               <OBButton variant="tertiary" onClick={() => go(0)}>Back</OBButton>
             </Actions>
