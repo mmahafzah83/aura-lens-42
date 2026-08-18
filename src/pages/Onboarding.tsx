@@ -22,7 +22,7 @@ import { useCapturedClaims } from "@/hooks/useCapturedClaims";
 import { SECTORS } from "@/constants/sectors";
 import { initThemeFromStorage } from "@/lib/applyTheme";
 import {
-  claimPendingSession, readToken, loadSession, saveSession, clearToken, claimSession,
+  readToken, loadSession, saveSession, clearToken, claimSession,
   type AssessmentState,
 } from "@/lib/assessmentSession";
 import { track } from "@/lib/track";
@@ -348,8 +348,9 @@ const Onboarding = () => {
   });
   const navigate = useNavigate();
   useEffect(() => { initThemeFromStorage(); }, []);
-  // An anonymous run started at /assessment is attached to the account here.
-  useEffect(() => { void claimPendingSession(); }, []);
+  /* An anonymous run started at /assessment is attached to the account in the
+     boot path below — as a full hand-off, not a bare claim, so nothing the
+     visitor answered is left behind. */
 
   const [checking, setChecking] = useState(true);
   /**
@@ -642,6 +643,97 @@ const Onboarding = () => {
     });
   }, [userId, anonToken]);
 
+  /**
+   * THE HAND-OFF — the anonymous run becomes the account's run.
+   *
+   * One sequence, called from two places: the account wall, and the boot path
+   * when a signed-in member still carries an unclaimed token (a run orphaned
+   * by the old verification loop). It persists first, so nothing can be lost
+   * even if the read itself fails.
+   */
+  const handoffAnonRun = useCallback(async (opts: {
+    token: string;
+    uid: string;
+    accessToken: string;
+    state: AssessmentState & Record<string, any>;
+    startedAt?: string | null;
+  }): Promise<{ ok: boolean; code?: "claim" }> => {
+    const { token, uid, accessToken } = opts;
+    const claimed = await claimSession(token);
+    if (!claimed.ok && claimed.code !== "NO_CLAIMABLE_SESSION") return { ok: false, code: "claim" };
+    const st = (opts.state ?? {}) as AssessmentState & Record<string, any>;
+    const pf = (st as any).profile ?? {};
+    const patch: Record<string, any> = {};
+    for (const k of ["first_name", "last_name", "firm", "sector_focus", "level", "seniority_band", "skill_ratings"]) {
+      if (pf[k] !== undefined && pf[k] !== null) patch[k] = pf[k];
+    }
+    if (Object.keys(patch).length) await upsertProfile(uid, patch, "journey anon handoff");
+    await upsertProfile(
+      uid,
+      { onboarding_step: 3, identity_intelligence: { journey_screen: 12, read_done: true } },
+      "journey anon handoff step",
+    );
+    try { localStorage.setItem(`aura_ob_screen_${uid}`, "12"); } catch { /* private mode */ }
+    if (st.answers && Object.keys(st.answers).length) await saveAnswers(uid, st.answers);
+    /* Replay any links captured while anonymous — never block the redirect. */
+    try {
+      const pending = ((st as any).pending_captures ?? []) as Array<{ url: string; title?: string | null; summary?: string | null }>;
+      for (const c of pending) {
+        if (!c?.url) continue;
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            type: "link", content: c.url, source_url: c.url,
+            metadata: { title: c.title ?? undefined, summary: c.summary ?? undefined, source: "onboarding_collection" },
+          }),
+        });
+      }
+    } catch (e) {
+      console.error("[journey] capture replay failed", e);
+    }
+    /* Replay the optional reveal feedback collected while anonymous. */
+    try {
+      const fb = (st as any).reveal_feedback;
+      if (fb?.rating != null) {
+        await supabase.from("beta_feedback").upsert({
+          user_id: uid,
+          feedback_type: "reveal",
+          rating: fb.rating,
+          message: fb.message || null,
+          page: "/onboarding",
+        });
+      }
+    } catch (e) {
+      console.error("[journey] reveal feedback handoff failed", e);
+    }
+    try {
+      await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null));
+    } catch (e) {
+      console.error("[journey] handoff read failed", e);
+    }
+    /* THE ARRIVAL — record only what they genuinely gave us. Written before
+       the token goes, because the token is what proves the run. */
+    try {
+      const entry: Record<string, unknown> = {
+        at: Date.now(),
+        first_name: pf.first_name ?? null,
+        answers: Object.keys(st.answers ?? {}).length,
+        sliders: Object.keys((pf.skill_ratings ?? {}) as Record<string, unknown>).length,
+        captures: Array.isArray((st as any).pending_captures) ? (st as any).pending_captures.length : 0,
+      };
+      const startedAt = opts.startedAt ?? null;
+      if (startedAt) {
+        const mins = Math.round((Date.now() - new Date(startedAt).getTime()) / 60000);
+        /* A duration is only honest if it is positive and plausible. */
+        if (Number.isFinite(mins) && mins >= 1 && mins <= 240) entry.minutes = mins;
+      }
+      localStorage.setItem("aura_just_joined", JSON.stringify(entry));
+    } catch { /* private mode — the arrival is a grace, not a gate */ }
+    clearToken();
+    return { ok: true };
+  }, []);
+
   const persistScreen = useCallback(async (next: number) => {
     if (!userId && anonToken) {
       anonStateRef.current = { ...anonStateRef.current, journey_screen: next };
@@ -755,6 +847,33 @@ const Onboarding = () => {
       setUserId(uid);
       setUserEmail(session.user.email ?? null);
       void ensureTimezone(uid);
+
+      /* RESCUE — a run that was walked anonymously and never attached. The
+         token is still in the browser; the session row still has no owner. The
+         same hand-off the wall runs is run here, then the journey reloads onto
+         the reveal instead of starting again from nothing. */
+      const orphan = readToken();
+      if (orphan) {
+        try {
+          const found = await loadSession(orphan);
+          const st = (found?.state ?? {}) as AssessmentState & Record<string, any>;
+          const hasWork = Boolean(st.read) || Object.keys(st.answers ?? {}).length > 0;
+          if (found && hasWork) {
+            const res = await handoffAnonRun({
+              token: orphan,
+              uid,
+              accessToken: session.access_token,
+              state: st,
+              startedAt: found.created_at ?? null,
+            });
+            if (res.ok) { window.location.replace("/onboarding"); return; }
+          } else if (found === null) {
+            clearToken();
+          }
+        } catch (e) {
+          console.error("[journey] orphan rescue failed", e);
+        }
+      }
 
       const passwordSet = Boolean((session.user.user_metadata as any)?.password_set);
       let confirmed = false;
@@ -1780,7 +1899,7 @@ const Onboarding = () => {
         <style>{PAGE_CSS}</style>
         <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
           <h1 style={h1Light}>Set your password.</h1>
-          <p style={bodyLight}>One password, then the shelf.</p>
+          <p style={bodyLight}>One password, and your read is yours to keep.</p>
           <div style={{ position: "relative", marginBlockStart: 18 }}>
             <input type={pwdShow ? "text" : "password"} value={pwd} onChange={(e) => setPwd(e.target.value)}
               placeholder="Create a password" style={pwdField} autoComplete="new-password" />
@@ -2864,88 +2983,21 @@ const Onboarding = () => {
           email: wallEmail.trim().toLowerCase(), password: wallPassword,
         });
         if (signedIn?.session) {
-          const claimed = await claimSession(anonToken);
-          if (!claimed.ok) {
+          const res = await handoffAnonRun({
+            token: anonToken,
+            uid: signedIn.session.user.id,
+            accessToken: signedIn.session.access_token,
+            state: (anonStateRef.current ?? {}) as AssessmentState & Record<string, any>,
+            startedAt: sessionStartedAtRef.current,
+          });
+          if (!res.ok) {
             setWallError("We could not attach your report to your account yet — nothing is lost. Try again.");
             return;
           }
-          /* Hand the anonymous run onto the account: persist first, so nothing
-             can be lost even if the read fails. */
-          const uid = signedIn.session.user.id;
-          const st = (anonStateRef.current ?? {}) as AssessmentState & Record<string, any>;
-          const pf = (st as any).profile ?? {};
-          const patch: Record<string, any> = {};
-          for (const k of ["first_name", "last_name", "firm", "sector_focus", "level", "seniority_band", "skill_ratings"]) {
-            if (pf[k] !== undefined && pf[k] !== null) patch[k] = pf[k];
-          }
-          if (Object.keys(patch).length) await upsertProfile(uid, patch, "journey anon handoff");
-          await upsertProfile(
-            uid,
-            { onboarding_step: 3, identity_intelligence: { journey_screen: 12, read_done: true } },
-            "journey anon handoff step",
-          );
-          try { localStorage.setItem(`aura_ob_screen_${uid}`, "12"); } catch { /* private mode */ }
-          if (st.answers && Object.keys(st.answers).length) await saveAnswers(uid, st.answers);
-          /* Replay any links captured while anonymous — never block the redirect. */
-          try {
-            const pending = ((st as any).pending_captures ?? []) as Array<{ url: string; title?: string | null; summary?: string | null }>;
-            for (const c of pending) {
-              if (!c?.url) continue;
-              await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${signedIn.session.access_token}` },
-                body: JSON.stringify({
-                  type: "link", content: c.url, source_url: c.url,
-                  metadata: { title: c.title ?? undefined, summary: c.summary ?? undefined, source: "onboarding_collection" },
-                }),
-              });
-            }
-          } catch (e) {
-            console.error("[journey] capture replay failed", e);
-          }
-          /* Replay the optional reveal feedback collected while anonymous. */
-          try {
-            const fb = (st as any).reveal_feedback;
-            if (fb?.rating != null) {
-              await supabase.from("beta_feedback").upsert({
-                user_id: uid,
-                feedback_type: "reveal",
-                rating: fb.rating,
-                message: fb.message || null,
-                page: "/onboarding",
-              });
-            }
-          } catch (e) {
-            console.error("[journey] reveal feedback handoff failed", e);
-          }
-          try {
-            await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null));
-          } catch (e) {
-            console.error("[journey] handoff read failed", e);
-          }
-          /* THE ARRIVAL — record only what they genuinely gave us. Written
-             before the token goes, because the token is what proves the run. */
-          try {
-            const entry: Record<string, unknown> = {
-              at: Date.now(),
-              first_name: pf.first_name ?? null,
-              answers: Object.keys(st.answers ?? {}).length,
-              sliders: Object.keys((pf.skill_ratings ?? {}) as Record<string, unknown>).length,
-              captures: Array.isArray((st as any).pending_captures) ? (st as any).pending_captures.length : 0,
-            };
-            const startedAt = sessionStartedAtRef.current;
-            if (startedAt) {
-              const mins = Math.round((Date.now() - new Date(startedAt).getTime()) / 60000);
-              /* A duration is only honest if it is positive and plausible. */
-              if (Number.isFinite(mins) && mins >= 1 && mins <= 240) entry.minutes = mins;
-            }
-            localStorage.setItem("aura_just_joined", JSON.stringify(entry));
-          } catch { /* private mode — the arrival is a grace, not a gate */ }
-          clearToken();
           window.location.replace("/onboarding");
           return;
         }
-        setWallDone("Your account is open. Confirm it from the link in your inbox and your report follows you in — nothing is lost.");
+        setWallDone("Your account is open. Sign in and everything you just answered is waiting.");
       } catch {
         setWallError("Couldn't open the account just now. Nothing is lost — try again in a moment.");
       } finally {
@@ -2967,7 +3019,12 @@ const Onboarding = () => {
           It is yours either way. An account keeps it, lets you come back, and sends you the PDF.
         </p>
         {wallDone ? (
-          <p role="status" style={{ marginBlockStart: 18, color: OB.ink, fontFamily: OB.ui }}>{wallDone}</p>
+          <>
+            <p role="status" style={{ marginBlockStart: 18, color: OB.ink, fontFamily: OB.ui }}>{wallDone}</p>
+            <Actions style={{ marginBlockStart: 18 }}>
+              <OBButton onClick={() => { window.location.assign("/auth"); }}>Sign in</OBButton>
+            </Actions>
+          </>
         ) : (
           <form onSubmit={openAccount} style={{ marginBlockStart: 18 }}>
             <label htmlFor="ob-wall-email" style={{ display: "block", fontSize: 13, color: OB.muted, marginBlockEnd: 6 }}>Your email</label>
