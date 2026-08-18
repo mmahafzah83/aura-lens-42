@@ -53,12 +53,13 @@ export const Body = ({ children, style }: { children: React.ReactNode; style?: R
   <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.65, color: INK, ...style }}>{children}</p>
 );
 
-/** "18 August 2026" — the same shape the engine uses in its own notices. */
+/** "18 AUG 2026" — the stamp printed on the card's own signature line. */
 const longDate = (iso?: string | null): string | undefined => {
   if (!iso) return undefined;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return undefined;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    .replace(/\s+/g, " ").toUpperCase();
 };
 
 const slugOf = (name?: string | null): string =>
