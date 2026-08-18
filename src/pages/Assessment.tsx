@@ -268,8 +268,22 @@ const Assessment = () => {
     return (
       <div className="asg">
         <style>{ASG_CSS}</style>
-        <PublicMasthead cta={null} />
+        {stage === "read" || stage === "resume" ? (
+          <ReadIdentityStrip
+            name={state.name ?? null}
+            onExit={finishLater}
+            onSignIn={() => navigate("/auth")}
+          />
+        ) : (
+          <PublicMasthead cta={null} />
+        )}
         <main className="asg-wrap asg-flow">
+          {stage === "read" || stage === "resume" ? (
+            <div className="asg-strip-under">
+              <p className="asg-saved">Your read is saved.</p>
+              {stage === "read" ? <ReadSpine /> : null}
+            </div>
+          ) : null}
           {notice && <div className="asg-notice" role="status">{notice}</div>}
 
           {stage === "address" && (
@@ -301,6 +315,22 @@ const Assessment = () => {
             </section>
           )}
 
+          {stage === "resume" && (
+            <section className="asg-panel">
+              <h1 className="asg-ph">You already have a read.</h1>
+              <p className="asg-resume-meta">
+                {[state.name, stampDate(state.generated_at)].filter(Boolean).join(" · ")}
+              </p>
+              <button className="asg-btn asg-bp asg-full" onClick={() => setStage("read")}>
+                Open my read <span className="asg-a">↗</span>
+              </button>
+              <button type="button" className="asg-textbtn" onClick={() => void startNewRead()}>
+                Start a new one
+              </button>
+              <p className="asg-trust">This replaces the read above.</p>
+            </section>
+          )}
+
           {stage === "read" && (
             <div className="asg-read">
               <div className="asg-moment">
@@ -321,6 +351,10 @@ const Assessment = () => {
                 generatedAt={state.generated_at ?? null}
                 ageNote={ageNote}
               />
+              <section className="asg-loss">
+                <h2>This read is anonymous.</h2>
+                <p>It lives in this browser only. Clear your history or switch to your phone and it is gone.</p>
+              </section>
               <button className="asg-btn asg-bp asg-full" onClick={() => void continueToOnboarding()}>
                 Continue — your CV and {ASSESSMENT_QUESTIONS_PHRASE} <span className="asg-a">↗</span>
               </button>
