@@ -3,7 +3,7 @@
  *
  * Surface law, absolute:
  *   NIGHT (#0F1519)  = Aura is working, the member does nothing. AuraFace lives here.
- *   WHITE / CREAM    = the member's turn. ProgressBeads live here.
+ *   WHITE / CREAM    = the member's turn. Progress lives in the one journey shell.
  *
  * Content comes from two live tables — capability_dimensions and
  * onboarding_questions — resolved exact (band, sector) first, then
@@ -31,7 +31,6 @@ import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@
 import AuraFace from "@/components/onboarding/AuraFace";
 import ShelfBadge, { type ShelfBadgeTone } from "@/components/onboarding/ShelfBadge";
 import ClaimCard from "@/components/onboarding/ClaimCard";
-import ProgressBeads from "@/components/onboarding/ProgressBeads";
 import RevealCard, { type RevealData, shareRevealCard, rasteriseRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import StatusRow from "@/components/onboarding/StatusRow";
@@ -47,7 +46,7 @@ import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleB
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
-import JourneyHeader from "@/components/onboarding/JourneyHeader";
+import JourneyShell, { STAGE_NAMES, type Beat, type JourneySub } from "@/components/journey/JourneyShell";
 import { CONSENT_VERSION } from "@/pages/Auth";
 import DocumentUpload from "@/components/DocumentUpload";
 import CvCrosscheck from "@/components/report/CvCrosscheck";
@@ -295,45 +294,62 @@ const wordsIn = (rows: { post_text?: string | null }[]): number =>
  * The night surface is kept for the machine's own moments — reading, and the
  * reveal. `JourneyNav` carries the back control so no screen has to pass it.
  */
-const JourneyNav = createContext<{ onBack?: () => void; banner?: React.ReactNode }>({});
+const JourneyNav = createContext<{
+  onBack?: () => void; banner?: React.ReactNode; bead?: number; name?: string | null;
+}>({});
+
+/**
+ * ONE PROGRESS SYSTEM. The five named steps are nested inside the three beats
+ * of the whole journey: steps 1–4 sit inside "Your evidence", step 5 — the
+ * read itself — is "Your position". The quick read on /assessment is beat 1,
+ * so the sequence only ever moves forward.
+ */
+const beatOf = (bead: number): Beat => (bead >= 4 ? 3 : 2);
+const subOf = (bead: number): JourneySub => {
+  const i = Math.max(0, Math.min(4, bead));
+  return { n: i + 1, total: 5, label: STAGE_NAMES[i] };
+};
 
 /** Which of the five named stages a screen belongs to. One definition, used
  *  by the resume banner and by Finish later. */
 const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
 
 const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => {
-  const { onBack } = useContext(JourneyNav);
+  const { onBack, bead = 0, name } = useContext(JourneyNav);
   return (
-  <div className="obc" style={{
-    minBlockSize: "100dvh", background: OB.night, display: "flex", alignItems: "center",
-    justifyContent: "center", padding: "28px 20px",
-  }}>
+  <JourneyShell
+    onBack={onBack}
+    onExit={onExit ?? (() => {})}
+    name={name}
+    beat={beatOf(bead)}
+    sub={subOf(bead)}
+    background={OB.night}
+    padding="28px 20px"
+  >
     <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-      {onExit ? <JourneyHeader onNight onExit={onExit} onBack={onBack} /> : null}
       {face ? <div style={{ marginBlockEnd: 26 }}><AuraFace size="var(--ob-face)" /></div> : null}
       {children}
       {footer}
     </div>
-  </div>
+  </JourneyShell>
   );
 };
 
 const PaperShell = ({
   children, bead, footer, onExit, face = false, subProgress,
 }: { children: React.ReactNode; bead: number; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number }) => {
-  const { onBack, banner } = useContext(JourneyNav);
+  const { onBack, banner, name } = useContext(JourneyNav);
   return (
-  <div className="obc" style={{
-    /* ONE CANVAS. Every screen in the journey stands on #F2F5F9. */
-    minBlockSize: "100dvh", background: OB.canvas,
-    display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
-  }}>
+  <JourneyShell
+    onBack={onBack}
+    onExit={onExit ?? (() => {})}
+    name={name}
+    beat={beatOf(bead)}
+    sub={subOf(bead)}
+    background={OB.canvas}
+  >
     <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-      {onExit ? <JourneyHeader onExit={onExit} onBack={onBack} /> : null}
       {banner}
-      <div style={{ display: "flex", justifyContent: "center", marginBlockEnd: 18 }}>
-        <ProgressBeads active={bead} subProgress={subProgress} />
-      </div>
       <div className="obc-in" style={{
         background: OB.white, borderRadius: RADIUS.hero, border: `1px solid ${OB.line}`,
         padding: "var(--ob-pad)", boxShadow: "0 30px 70px -50px rgba(15,21,25,.4)",
@@ -347,7 +363,7 @@ const PaperShell = ({
       </div>
       {footer}
     </div>
-  </div>
+  </JourneyShell>
   );
 };
 
@@ -3671,7 +3687,12 @@ const Onboarding = () => {
           }}>{exitNote}</span>
         </div>
       ) : null}
-      <JourneyNav.Provider value={{ onBack: screen === 1 && step1Phase === "result" ? () => returnToAddress() : canBack ? goBack : undefined, banner: resumeBanner }}>
+      <JourneyNav.Provider value={{
+        onBack: screen === 1 && step1Phase === "result" ? () => returnToAddress() : canBack ? goBack : undefined,
+        banner: resumeBanner,
+        bead: stageOf(screen) - 1,
+        name: firstName || null,
+      }}>
         {content}
       </JourneyNav.Provider>
     </>
