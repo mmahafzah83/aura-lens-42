@@ -3579,37 +3579,29 @@ const Onboarding = () => {
           <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_PRICE_SUBLINE}</p>
           <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_NO_CARD}</p>
           <Actions style={{ marginBlockStart: 16 }}>
-            <OBButton variant="secondary" onClick={() => navigate(SEAT_PATH)}>{SEAT_CTA}</OBButton>
-          </Actions>
-        </div>
-
-
-        {connected || !userId ? null : (
-          <>
-            <div style={{ blockSize: 1, background: OB.line, margin: "24px 0 18px" }} />
-            <p style={{ ...bodyLight, textAlign: "center" }}>
-              Connect LinkedIn and you find out which of the signals in your read your audience already rewards — so nothing
-              written for you is a guess.
-            </p>
-            <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton variant="secondary" onClick={() => void connectLinkedIn({ allowRedirect: true })}
+            {/* One primary per view, and it is the decision — not the exit. */}
+            <OBButton onClick={() => navigate(SEAT_PATH)}>{SEAT_CTA}</OBButton>
+            {connected || !userId ? null : (
+              /* A settings action, dressed as one: quiet, in the same row. */
+              <OBButton variant="tertiary" onClick={() => void connectLinkedIn({ allowRedirect: true })}
                 loading={connecting} loadingLabel="Connecting…">
                 Connect LinkedIn
               </OBButton>
-            </Actions>
-            {connectNote ? (
-              <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{connectNote}</p>
-            ) : null}
-          </>
-        )}
+            )}
+            <OBButton variant="tertiary" onClick={() => void finish()}>Take me in</OBButton>
+          </Actions>
+          {connected || !userId ? null : (
+            <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+              {connectNote || "Connect LinkedIn and you find out which of the signals in your read your audience already rewards."}
+            </p>
+          )}
+        </div>
+
 
         {connected || userId ? null : (
           <p style={{ ...bodyLight, textAlign: "center" }}>{CONNECT_AFTER_ACCOUNT}</p>
         )}
 
-        <Actions style={{ marginBlockStart: 22 }}>
-          <OBButton onClick={() => void finish()}>Take me in</OBButton>
-        </Actions>
         <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
       </PaperShell>
     );
