@@ -248,7 +248,7 @@ const RevealCard = forwardRef<
          the declared box and the exported image can never disagree. */
       minHeight: 1350,
       boxSizing: "border-box",
-      background: `linear-gradient(170deg, ${OB.blue}, ${OB.blueLight} 55%, ${OB.cyan})`,
+      ...nightSurface(1.6),
       padding: "96px 84px 74px",
       color: "#FFFFFF",
       fontFamily: OB.ui,
@@ -260,6 +260,9 @@ const RevealCard = forwardRef<
     }}
   >
     <div>
+    <div style={{ marginBottom: 40 }}>
+      <IdentityRow data={data} size={104} />
+    </div>
     <p style={{
       margin: 0, fontSize: 20, letterSpacing: "0.20em", textTransform: "uppercase",
       fontFamily: OB.mono, opacity: 0.85,
@@ -278,6 +281,38 @@ const RevealCard = forwardRef<
         margin: "20px 0 0", fontFamily: OB.mono, fontSize: 18,
         letterSpacing: "0.10em", lineHeight: 1.4, opacity: 0.8,
       }}>{`SECOND READ · ${data.secondaryRead}`}</p>
+    ) : null}
+
+    {data.ownWordsQuote ? (
+      <div style={{
+        marginTop: 34, background: "rgba(255,255,255,0.07)",
+        border: "1px solid rgba(255,255,255,0.14)", borderRadius: 24, padding: 30,
+      }}>
+        <p style={{
+          margin: 0, fontFamily: OB.mono, fontSize: 15, letterSpacing: "0.18em",
+          textTransform: "uppercase", opacity: 0.82,
+        }}>In your own words</p>
+        {(() => {
+          const arabic = ARABIC_RE.test(data.ownWordsQuote ?? "");
+          const script: React.CSSProperties = arabic
+            ? { fontFamily: "Cairo, 'IBM Plex Sans Arabic', sans-serif", lineHeight: 1.9, textAlign: "start" }
+            : {};
+          return (
+            <>
+              <p dir="auto" style={{
+                margin: "16px 0 0", fontSize: 24, lineHeight: 1.55,
+                fontStyle: arabic ? "normal" : "italic", color: "#FFFFFF", ...script,
+              }}>{`“${data.ownWordsQuote}”`}</p>
+              {data.ownWordsRead ? (
+                <p dir="auto" style={{
+                  margin: "14px 0 0", fontSize: 19, lineHeight: 1.6,
+                  color: "rgba(255,255,255,0.86)", ...script,
+                }}>{data.ownWordsRead}</p>
+              ) : null}
+            </>
+          );
+        })()}
+      </div>
     ) : null}
     </div>
 
@@ -343,7 +378,7 @@ const RevealCard = forwardRef<
     }}>
       <span style={{ fontFamily: OB.ui, fontWeight: 700, fontSize: 22, letterSpacing: "0.16em" }}>AURA</span>
       <span style={{ fontFamily: OB.mono, fontSize: 18, letterSpacing: "0.06em", opacity: 0.88 }}>
-        Read by Aura · aura-intel.org
+        {signatureText(data)}
       </span>
       {footer ? null : null}
     </div>
