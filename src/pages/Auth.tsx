@@ -29,7 +29,7 @@ const readParam = (key: string) => {
    Every rule is scoped under .au. Palette is System-B verbatim.
 
    All recovery logic is carried over unchanged: PASSWORD_RECOVERY
-   events, expired-hash detection, returnTo, the isProfileComplete
+   events, expired-hash detection, returnTo, the onboarding
    gate, forced sign-out after a password change.
    ──────────────────────────────────────────────────────────────── */
 
