@@ -1871,7 +1871,7 @@ const Onboarding = () => {
         <style>{PAGE_CSS}</style>
         <PaperShell onExit={saveAndExit} bead={0} cream footer={escapeFooter}>
           <h1 style={h1Light}>Set your password.</h1>
-          <p style={bodyLight}>One password, then the shelf.</p>
+          <p style={bodyLight}>One password, and your read is yours to keep.</p>
           <div style={{ position: "relative", marginBlockStart: 18 }}>
             <input type={pwdShow ? "text" : "password"} value={pwd} onChange={(e) => setPwd(e.target.value)}
               placeholder="Create a password" style={pwdField} autoComplete="new-password" />
