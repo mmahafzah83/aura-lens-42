@@ -370,6 +370,88 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     return false;
   }
 
+  /* ---------------- server-side gates ---------------------------------- */
+
+  const AURA_CAN = ["capture_evidence", "draft_post", "suggest_headline", "track_signal"];
+  const PLATITUDES = [
+    "quantify your achievements", "action verbs", "tailor your cv",
+    "ats", "highlight your strengths", "showcase",
+  ];
+
+  const WORD_NUMBERS: Record<string, number> = {
+    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+    ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+    sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
+  };
+
+  /** A stated span is only allowed to stand when the years it cites produce it. */
+  function spanIsWrong(sentence: string): boolean {
+    const span = sentence.match(/\b(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)[-\s]year\b/i);
+    if (!span) return false;
+    const claimed = /^\d+$/.test(span[1]) ? Number(span[1]) : WORD_NUMBERS[span[1].toLowerCase()];
+    if (!claimed && claimed !== 0) return false;
+    const years = (sentence.match(/\b(19|20)\d{2}\b/g) ?? []).map(Number);
+    if (years.length < 2) return false;
+    const actual = Math.max(...years) - Math.min(...years);
+    return actual !== claimed;
+  }
+
+  /** Strip only the offending clause; the rest of the sentence survives. */
+  function repairSpans(value: unknown): unknown {
+    if (typeof value === "string") {
+      const parts = value.split(/(?<=[.!?])\s+/);
+      const kept = parts.filter((s) => !spanIsWrong(s));
+      return kept.join(" ").trim();
+    }
+    if (Array.isArray(value)) return value.map(repairSpans);
+    if (value && typeof value === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = repairSpans(v);
+      return out;
+    }
+    return value;
+  }
+
+  function allText(v: unknown): string {
+    if (typeof v === "string") return ` ${v} `;
+    if (Array.isArray(v)) return v.map(allText).join(" ");
+    if (v && typeof v === "object") return Object.values(v as Record<string, unknown>).map(allText).join(" ");
+    return "";
+  }
+
+  const bannedWords = await loadBannedWords(admin);
+
+  /** Returns the name of the first failing assertion, or null when the result stands. */
+  function gate(result: any): string | null {
+    const findings: any[] = Array.isArray(result?.findings) ? result.findings : [];
+    if (!findings.length) return "findings_empty";
+
+    const text = allText(result).toLowerCase();
+    if (PLATITUDES.some((p) => text.includes(p))) return "no_cv_platitudes";
+    if (hasBanned(allText(result), bannedWords)) return "no_banned_vocabulary";
+
+    for (const f of findings) {
+      if (allText(f).split(/(?<=[.!?])\s+/).some(spanIsWrong)) return "numbers_recompute";
+      if (!String(f?.what ?? "").trim()) return "finding_empty_after_repair";
+      if (!String(f?.what_you_lose ?? "").trim()) return "what_you_lose_missing";
+      const ev = f?.evidence;
+      if (!ev || !String(ev.cv_line ?? "").trim() || !String(ev.profile_line ?? "").trim()) return "evidence_missing";
+      if (f?.weight === "high" && !String(f?.rewrite ?? "").trim()) return "rewrite_missing_on_high";
+      if (f?.aura_can != null && !AURA_CAN.includes(String(f.aura_can))) return "aura_can_outside_enum";
+    }
+
+    if (findings.filter((f) => f?.do_first === true).length !== 1) return "exactly_one_do_first";
+
+    if (!String(result?.the_hard_truth ?? "").trim()) return "the_hard_truth_missing";
+    const recs: any[] = Array.isArray(result?.recommendations) ? result.recommendations : [];
+    if (recs.length < 3 || recs.length > 5) return "recommendations_count";
+    for (const r of recs) {
+      if (!String(r?.action ?? "").trim() || !String(r?.why_now ?? "").trim()) return "recommendation_incomplete";
+      if (r?.aura_can != null && !AURA_CAN.includes(String(r.aura_can))) return "aura_can_outside_enum";
+    }
+    return null;
+  }
+
   let { data, text, toolInput, rawBody } = await runOnce(userPrompt);
   let parsed: any = toolInput ?? parseJsonLoose(text);
 
@@ -392,9 +474,46 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
     }
   }
 
+  /* Arithmetic is repaired before judging: a stripped clause is acceptable,
+     a surviving wrong span is not. */
+  parsed = repairSpans(parsed);
+  if (Array.isArray(parsed?.findings)) {
+    parsed.findings = parsed.findings.filter((f: any) => String(f?.what ?? "").trim().length > 0);
+  }
+
+  let failure = gate(parsed);
+  if (failure) {
+    const correction = `${userPrompt}
+
+CORRECTION — your previous answer failed the assertion "${failure}". Answer again in full, obeying every rule. Do not restate the failing content; fix it.`;
+    const retry = await runOnce(correction);
+    let retryParsed: any = retry.toolInput ?? parseJsonLoose(retry.text);
+    if (retryParsed) {
+      retryParsed = repairSpans(retryParsed);
+      if (Array.isArray(retryParsed?.findings)) {
+        retryParsed.findings = retryParsed.findings.filter((f: any) => String(f?.what ?? "").trim().length > 0);
+      }
+    }
+    const retryFailure = retryParsed ? gate(retryParsed) : "unparseable_on_retry";
+    if (!retryFailure) {
+      parsed = retryParsed;
+      if (retry.data) { data = retry.data; text = retry.text; rawBody = retry.rawBody; }
+      failure = null;
+    } else {
+      await logEfError(admin, {
+        function_name: "cv-crosscheck",
+        error: `Crosscheck failed the gate twice — nothing saved (${failure} then ${retryFailure})`,
+        severity: "high",
+        user_id: targetId,
+        context: { path: "gate_failed", first_assertion: failure, retry_assertion: retryFailure, purpose },
+      });
+      return json({ ok: false, pending: true, reason: "gate_failed", assertion: retryFailure });
+    }
+  }
 
   const crosscheck = {
     ...parsed,
+    purpose,
     cv_count: cvs.length,
     model: data?.model ?? null,
     /* The model's own text alongside the parsed object, so nothing is lost. */
