@@ -2920,10 +2920,11 @@ const Onboarding = () => {
                 {opts.map((o, i) => optionButton(i, o.label, () => setSinglePicked(String(i)), singlePicked === String(i)))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
-                <OBButton disabled={!singlePicked} onClick={() => {
+                <OBButton disabled={!singlePicked} aria-describedby={!singlePicked ? "ob-q-why" : undefined} onClick={() => {
                   if (!singlePicked) return;
                   advance(opts[Number(singlePicked)]?.label ?? "");
                 }}>Next</OBButton>
+                {!singlePicked ? whyLine("ob-q-why", "Pick one answer to enable this.", true) : null}
               </Actions>
             </>
           ) : q.kind === "multi" ? (
@@ -2939,16 +2940,17 @@ const Onboarding = () => {
                 ))}
               </div>
               <Actions style={{ marginBlockStart: 16 }}>
-                <OBButton disabled={multiPicked.length === 0} onClick={() => advance(
+                <OBButton disabled={multiPicked.length === 0} aria-describedby={multiPicked.length === 0 ? "ob-qm-why" : undefined} onClick={() => advance(
                   multiPicked.map((i) => opts[Number(i)]?.label ?? "").filter(Boolean).join(" · "),
                 )}>Next</OBButton>
+                {multiPicked.length === 0 ? whyLine("ob-qm-why", "Pick at least one to enable this.", true) : null}
               </Actions>
             </>
           ) : q.kind === "proposed" ? (
             proposedReady ? (
               <>
                 <p style={{ margin: "14px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.12em", color: OB.muted }}>
-                  FROM WHAT AURA JUST READ IN YOUR WRITING.
+                  From what Aura just read in your writing.
                 </p>
                 <p style={{ margin: "16px 0 0", fontSize: 12.5, color: OB.muted }}>
                   Keep the one that's actually you. The two you drop tell Aura just as much.
@@ -2966,12 +2968,13 @@ const Onboarding = () => {
                   ))}
                 </div>
                 <Actions style={{ marginBlockStart: 16 }}>
-                  <OBButton disabled={!singlePicked} onClick={() => {
+                  <OBButton disabled={!singlePicked} aria-describedby={!singlePicked ? "ob-qp-why" : undefined} onClick={() => {
                     if (!singlePicked) return;
                     const kept = proposals![Number(singlePicked)]?.label ?? "";
                     const dropped = proposals!.filter((_, i) => String(i) !== singlePicked).map((x) => x.label);
                     advance(`${kept}${dropped.length ? ` (not: ${dropped.join(", ")})` : ""}`);
                   }}>Next</OBButton>
+                  {!singlePicked ? whyLine("ob-qp-why", "Keep the one that's actually you to enable this.", true) : null}
                 </Actions>
               </>
             ) : proposedFallback ? (
@@ -2988,7 +2991,9 @@ const Onboarding = () => {
                   }}
                   placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 12 }} />
                 <Actions style={{ marginBlockStart: 16 }}>
-                  <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                  <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qtf-why" : undefined}
+                    onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                  {!textAnswer.trim() ? whyLine("ob-qtf-why", "Write an answer to enable this.", true) : null}
                 </Actions>
               </>
             ) : (
@@ -3007,7 +3012,9 @@ const Onboarding = () => {
                 }}
                 placeholder={placeholder} style={{ ...fieldStyle, marginBlockStart: 20 }} />
               <Actions style={{ marginBlockStart: 16 }}>
-                <OBButton disabled={!textAnswer.trim()} onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                <OBButton disabled={!textAnswer.trim()} aria-describedby={!textAnswer.trim() ? "ob-qt-why" : undefined}
+                  onClick={() => advance(textAnswer.trim())}>Next</OBButton>
+                {!textAnswer.trim() ? whyLine("ob-qt-why", "Write an answer to enable this.", true) : null}
               </Actions>
             </>
           )}
@@ -3018,6 +3025,19 @@ const Onboarding = () => {
             ) : null}
             <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else go(10); }}>Back</OBButton>
           </Actions>
+
+          {/* Named once, on the last screen before the account wall — nowhere else. */}
+          {!userId && anonToken && qIdx === questions.length - 1 ? (
+            <div style={{
+              marginBlockStart: 20, padding: "14px 16px", borderRadius: 12,
+              background: OB.canvas, border: `1px solid ${OB.line}`,
+            }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: OB.ink }}>This is still anonymous.</p>
+              <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.6, color: OB.muted }}>
+                Everything you've done is saved to this browser. Saving your report is what makes it yours.
+              </p>
+            </div>
+          ) : null}
         </PaperShell>
       );
     }
