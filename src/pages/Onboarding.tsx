@@ -22,7 +22,7 @@ import { useCapturedClaims } from "@/hooks/useCapturedClaims";
 import { SECTORS } from "@/constants/sectors";
 import { initThemeFromStorage } from "@/lib/applyTheme";
 import {
-  claimPendingSession, readToken, loadSession, saveSession, clearToken, claimSession,
+  readToken, loadSession, saveSession, clearToken, claimSession,
   type AssessmentState,
 } from "@/lib/assessmentSession";
 import { track } from "@/lib/track";
