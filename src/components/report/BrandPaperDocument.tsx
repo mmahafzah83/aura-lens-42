@@ -626,13 +626,18 @@ export default function BrandPaperDocument({
   showClosing?: boolean;
 }) {
   const hasVoice = voiceSheetHasContent(paper);
-  const total = 3 + (hasVoice ? 1 : 0) + (showClosing ? 1 : 0);
+  // A findings sheet with no findings is dropped, so the sheet count follows.
+  const hasFindings = buildFindings(paper).length > 0;
+  const findingsN = hasFindings ? 2 : 0;
+  const spaceN = hasFindings ? 3 : 2;
+  const voiceN = spaceN + 1;
+  const total = 2 + (hasFindings ? 1 : 0) + (hasVoice ? 1 : 0) + (showClosing ? 1 : 0);
   return (
     <div style={{ background: T.paper2, padding: "24px 0" }}>
       <CoverSheet bp={paper} total={total} />
-      <FindingsSheet bp={paper} total={total} />
-      <SpaceSheet bp={paper} total={total} />
-      {hasVoice ? <VoiceSheet bp={paper} n={4} total={total} /> : null}
+      <FindingsSheet bp={paper} n={findingsN} total={total} />
+      <SpaceSheet bp={paper} n={spaceN} total={total} />
+      {hasVoice ? <VoiceSheet bp={paper} n={voiceN} total={total} /> : null}
       {showClosing ? <ClosingSheet bp={paper} n={total} total={total} /> : null}
     </div>
   );
