@@ -278,7 +278,14 @@ const Assessment = () => {
 
           {stage === "read" && (
             <div className="asg-read">
-              <span className="asg-k">STEP ONE · YOUR READ</span>
+              <div className="asg-moment">
+                <div>Ninety seconds ago Aura had never heard of you.</div>
+                <div>
+                  {postsRead > 0
+                    ? `Here is what your last ${postsRead} posts say to the market.`
+                    : "Here is what your profile says to the market."}
+                </div>
+              </div>
               <ReadResult
                 read={read as unknown as ReadShape}
                 postsRead={postsRead}
@@ -342,10 +349,6 @@ const Assessment = () => {
               <div className="asg-stat">
                 <span className="asg-n">Free</span>
                 <span className="asg-c">and yours to keep</span>
-              </div>
-              <div className="asg-stat">
-                <span className="asg-n">0</span>
-                <span className="asg-c">posts published</span>
               </div>
             </div>
 
