@@ -92,11 +92,17 @@ export default function ReadResult({
     dateLine,
     ageNote: ageNote ?? undefined,
     marketRead: read.market_read ?? "",
-    ownWordsQuote: read.own_words_quote,
-    ownWordsRead: read.own_words_read,
     subjects: (read.themes ?? []).slice(0, 3),
     softGround: [],
     figures: postsRead > 0 ? [{ value: String(postsRead), label: "posts of yours read" }] : [],
+  };
+
+  /* The shareable artefact carries his own sentence; on screen it has its own
+     card below, so the panel inside the card would only repeat it. */
+  const exportData: RevealData = {
+    ...cardData,
+    ownWordsQuote: read.own_words_quote,
+    ownWordsRead: read.own_words_read,
   };
 
   const fileName = `aura-read-${slugOf(name)}-${(generatedAt ? new Date(generatedAt) : new Date())
@@ -142,7 +148,7 @@ export default function ReadResult({
     <div style={{ display: "flex", flexDirection: "column", gap: 14, fontFamily: UI, color: INK }}>
       {/* off-screen export node — one builder, two paths */}
       <div style={{ position: "fixed", insetInlineStart: -10000, insetBlockStart: 0 }} aria-hidden>
-        <RevealCard ref={exportRef} data={cardData} forExport emptyFiguresLine={read.uncontested_space ?? ""} />
+        <RevealCard ref={exportRef} data={exportData} forExport emptyFiguresLine={read.uncontested_space ?? ""} />
       </div>
 
       <RevealCard data={cardData} emptyFiguresLine={read.uncontested_space ?? ""} />
