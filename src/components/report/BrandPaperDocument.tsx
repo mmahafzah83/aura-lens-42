@@ -315,6 +315,10 @@ function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
     } : null,
   ];
   const findings = raw.filter((f): f is Finding => f !== null);
+  // A heading may not promise a count the body cannot produce.
+  if (findings.length === 0) return null;
+  const spell = (n: number) =>
+    ["No", "One", "Two", "Three", "Four", "Five", "Six"][n] ?? String(n);
 
   return (
     <Sheet n={2}>
@@ -325,7 +329,8 @@ function FindingsSheet({ bp, total }: { bp: BrandPaper; total: number }) {
           fontFamily: FONT.serif, fontSize: 40, fontWeight: 400, lineHeight: 1.1,
           color: T.ink, margin: "10px 0 6px", letterSpacing: "-0.01em",
         }}>
-          Four findings, <span style={{ fontStyle: "italic", color: T.spot }}>evidenced</span>
+          {spell(findings.length)} {findings.length === 1 ? "finding" : "findings"},{" "}
+          <span style={{ fontStyle: "italic", color: T.spot }}>evidenced</span>
         </h2>
         <p style={{
           fontFamily: FONT.serif, fontSize: 15, color: T.ink2, lineHeight: 1.55,
