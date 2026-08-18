@@ -217,9 +217,19 @@ const IdentityRow = ({ data, size }: { data: RevealData; size: number }) => {
   );
 };
 
-/** The signature line: who read it, and when. */
-const signatureText = (data: RevealData): string =>
-  data.dateLine ? `Read by Aura · ${data.dateLine}` : "Read by Aura · aura-intel.org";
+/** The signature line: who read it. The date sits beside it, never instead of it. */
+const signatureText = (_data: RevealData): string => "Read by Aura · aura-intel.org";
+
+/**
+ * The date the read was written — mono, tracked, and printed only when the
+ * real generation timestamp is known. No timestamp, no date.
+ */
+const SignatureDate = ({ data, size }: { data: RevealData; size: number }) =>
+  data.dateLine ? (
+    <span style={{ fontFamily: OB.mono, fontSize: size, letterSpacing: "0.12em" }}>
+      {` · ${data.dateLine}`}
+    </span>
+  ) : null;
 
 /** A figure that arrives by counting, unless motion is turned down. */
 const CountUp = ({ value, delay }: { value: string; delay: number }) => {
