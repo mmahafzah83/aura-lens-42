@@ -1,0 +1,1 @@
+ALTER VIEW public.runs_classified SET (security_invoker = on);
