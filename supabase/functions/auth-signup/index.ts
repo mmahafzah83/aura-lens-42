@@ -3,6 +3,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { LIMITS, clientIp, hashIp } from "../_shared/limits.ts";
+import { renderEmail, heading, paragraph } from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,11 +69,14 @@ serve(async (req) => {
       });
     }
 
-    const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: signUpData, error } = await anon.auth.signUp({
+    // The account is created already confirmed. A verification round-trip used
+    // to break the free journey: the new member could not sign in, so the
+    // anonymous run was never claimed onto the account.
+    const { data: signUpData, error } = await admin.auth.admin.createUser({
       email: addr,
       password: pwd,
-      options: { emailRedirectTo: `${origin || "https://aura-intel.org"}/auth?msg=verified` },
+      email_confirm: true,
+      user_metadata: { password_set: true },
     });
     if (error) return json({ error: error.message }, 400);
 
@@ -93,6 +97,37 @@ serve(async (req) => {
           { onConflict: "user_id" },
         );
       if (profileError) console.error("consent record failed", profileError);
+    }
+
+    // Our own welcome, in our own shell. A failure here never fails sign-up.
+    try {
+      const RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
+      if (RESEND_KEY) {
+        const html = renderEmail({
+          preheader: "Your account is open. Your read is waiting inside.",
+          body: [
+            heading("Your account is open."),
+            paragraph("Everything you just answered is saved to it. Your read is waiting inside."),
+          ].join(""),
+          cta: {
+            href: `${origin || "https://www.aura-intel.org"}/onboarding`,
+            label: "Open your read",
+          },
+        });
+        const resp = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from: "Aura <invites@aura-intel.org>",
+            to: [addr],
+            subject: "Welcome to Aura",
+            html,
+          }),
+        });
+        if (!resp.ok) console.error(`welcome email failed [${resp.status}]: ${await resp.text()}`);
+      }
+    } catch (e) {
+      console.error("welcome email threw", (e as Error)?.message);
     }
 
     return json({ ok: true, existing: false });
