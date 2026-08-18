@@ -12,6 +12,8 @@ import { OB, RADIUS, EASE, reducedMotion } from "./tokens";
 export const LABEL_SIGNALS = "The signals in your read";
 export const LABEL_SOFT = "Where you're thinnest";
 
+const ARABIC_RE = /[\u0600-\u06FF]/;
+
 export interface RevealData {
   archetype: string;
   /** Whose card this is. */
