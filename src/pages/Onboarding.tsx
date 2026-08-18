@@ -2037,7 +2037,7 @@ const Onboarding = () => {
         </p>
         <p style={{
           margin: "26px 0 10px", fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em",
-          textTransform: "uppercase", color: OB.muted,
+          color: OB.muted,
         }}>
           What you'll have when you're done
         </p>
@@ -2150,7 +2150,7 @@ const Onboarding = () => {
             ) : null}
             {/* Nothing after this depends on the read being back. */}
             <Actions style={{ marginBlockStart: 20 }}>
-              <OBButton variant="tertiary" onClick={() => go(4)}>Carry on while it reads</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(5)}>Carry on while it reads</OBButton>
             </Actions>
           </div>
         ) : null}
@@ -2331,7 +2331,7 @@ const Onboarding = () => {
               background: OB.canvas, border: `1px solid ${OB.line}`,
             }}>
               <p style={{ margin: 0, fontSize: 13.5, fontWeight: 700, color: OB.ink }}>
-                TWO THINGS AURA CAN SEE — both are yours to decide.
+                Two things Aura can see — both are yours to decide.
               </p>
 
               <div style={{ display: "flex", gap: 9, marginBlockStart: 14 }}>
@@ -2410,23 +2410,23 @@ const Onboarding = () => {
                   </button>
                 </>
               ) : null}
-              {readCache ? " · " : null}
-              <button
-                type="button"
-                onClick={() => void returnToAddress()}
-                style={{
-                  background: "none", border: 0, padding: "10px 6px", fontSize: 13,
-                  color: OB.blue, cursor: "pointer", textDecoration: "underline",
-                  display: "inline-block",
-                }}
-              >
-                Use a different profile
-              </button>
             </p>
+            {/* Mono is for numbers. This is a control, so it is set as one. */}
+            <button
+              type="button"
+              onClick={() => void returnToAddress()}
+              style={{
+                background: "none", border: 0, padding: "11px 0", marginBlockStart: 4,
+                fontFamily: OB.ui, fontSize: 13.5, color: OB.muted, cursor: "pointer",
+                textAlign: "start", minBlockSize: 44, display: "inline-flex", alignItems: "center",
+              }}
+            >
+              This isn't me — read a different profile
+            </button>
 
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton onClick={() => { void confirmBandIfDetected(); go(CV_SCREEN); }}>Continue</OBButton>
-              <OBButton variant="tertiary" onClick={() => go(4)}>I'll do that later</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(5)}>I'll do that later</OBButton>
             </Actions>
           </>
         ) : null}
