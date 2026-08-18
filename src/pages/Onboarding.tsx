@@ -2002,9 +2002,11 @@ const Onboarding = () => {
             ))}
           </div>
           <Actions style={{ marginBlockStart: 0 }}>
-            <OBButton onClick={() => void handleSetPassword()} disabled={!allValid} loading={settingPwd} loadingLabel="Saving…">
+            <OBButton onClick={() => void handleSetPassword()} disabled={!allValid} loading={settingPwd} loadingLabel="Saving…"
+              aria-describedby={!allValid ? "ob-pwd-why" : undefined}>
               Set it and start
             </OBButton>
+            {!allValid ? whyLine("ob-pwd-why", "Meet every rule above to enable this.", true) : null}
           </Actions>
         </PaperShell>
       </>
@@ -3104,7 +3106,7 @@ const Onboarding = () => {
       <JourneyNav.Provider value={{ onBack: undefined, banner: null }}>
       <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
         <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
-          YOUR REPORT IS READY
+          Your report is ready
         </p>
         <h1 style={{ fontFamily: OB.ui, fontSize: 28, fontWeight: 700, color: OB.ink, marginBlockStart: 10 }}>
           Where should we send it?
@@ -3144,9 +3146,11 @@ const Onboarding = () => {
               </span>
             </label>
             <Actions style={{ marginBlockStart: 18 }}>
-              <OBButton disabled={wallBusy || !wallConsent} onClick={() => undefined} type="submit">
+              <OBButton disabled={wallBusy || !wallConsent} aria-describedby={!wallConsent ? "ob-wall-why" : undefined}
+                onClick={() => undefined} type="submit">
                 {wallBusy ? "Saving your report…" : "Save my report"}
               </OBButton>
+              {!wallConsent && !wallBusy ? whyLine("ob-wall-why", "Tick the box above to enable this.", true) : null}
             </Actions>
           </form>
         )}
