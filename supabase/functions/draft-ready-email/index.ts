@@ -385,22 +385,9 @@ serve(async (req) => {
       // Fall through to summary log.
     }
 
-    // Restrict to users with an active LinkedIn connection.
-    const uniqueUserIds = Array.from(new Set(all.map((d) => d.user_id)));
-    let activeUsers = new Set<string>();
-    if (uniqueUserIds.length > 0) {
-      const { data: conns } = await admin
-        .from("linkedin_connections")
-        .select("user_id, status")
-        .in("user_id", uniqueUserIds)
-        .eq("status", "active");
-      activeUsers = new Set((conns || []).map((c) => c.user_id as string));
-    }
-
-    // Newest draft per user, only users with active connection.
+    // Newest draft per user. No LinkedIn gate — the CTA opens a draft, it does not publish (D113).
     const byUser = new Map<string, DraftRow>();
     for (const d of all) {
-      if (!activeUsers.has(d.user_id)) continue;
       const cur = byUser.get(d.user_id);
       if (!cur || new Date(d.created_at).getTime() > new Date(cur.created_at).getTime()) {
         byUser.set(d.user_id, d);
