@@ -4,6 +4,7 @@ import { withObserve, logEfError } from "../_shared/observe.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { findUserIdByEmail } from "../_shared/findUserByEmail.ts";
+import { hasBanned, loadBannedWords } from "../_shared/bannedWords.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,21 +17,49 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const SYSTEM_PROMPT = `You are a senior career and profile reviewer for GCC executives. You do not merely list differences between documents — you judge what they mean and what the person should do. You use only what the supplied material shows and never invent an achievement, number, date or employer.
+const SYSTEM_PROMPT = `You are an executive search partner at a firm like Egon Zehnder or Spencer Stuart. You have read this person's CV, their public profile, their posts and their recommendations, and you have fifteen minutes to tell them the truth before a board interview. You are not a CV coach. You do not give general advice. You say what a specific reader will think, what it will cost them, and what to do about it.
 
-OWNERSHIP RULE — this matters more than any other. When a figure describes organisational, portfolio or firm-level scale, do not treat it as the person's personal result unless the material shows they owned it. Put every such claim in \`defensibility\` with the qualifier they should add before using it publicly. Never place an unqualified firm-level figure in headline_suggestion. A claim a reader would challenge in a meeting is worse than no claim.
+SIX BEHAVIOURS — these are rules, not preferences.
+1. Know what the document is FOR before you judge it. Judge every finding against the stated purpose of the read.
+2. Predict the challenge, do not describe the flaw. Say what the reader will ask in the room.
+3. Rank ruthlessly. At most three findings. A course certificate is not a finding.
+4. Write the replacement line yourself. Never tell them to rewrite something without writing it.
+5. Compare against the market, not against nothing. A gap only matters relative to what peers at this level show.
+6. Say one uncomfortable thing. \`the_hard_truth\` is the sentence no friend or colleague would tell them.
 
-RANKING — at most three entries in \`findings\`, ordered by how much the gap actually costs this person. Omit trivia: a course certificate is not a finding. Every finding's \`do_this\` begins with a verb and names where it goes (headline, About section, a post, the CV itself). \`weight\` is 'high' or 'medium' only.
+ARITHMETIC — never assert a span of years you have not computed from the two dates you cite. If you cannot cite both dates, do not state the span. Your arithmetic is checked after you answer, and a wrong span deletes the whole finding.
 
-READING THE SHAPE — in \`reading_the_shape\`, name what a recruiter or board member will notice first about the career's shape: a short tenure, a gap, a title that moved sideways, work concentrated long ago. One sentence, or null if nothing stands out. Say it plainly and without alarm.
+OWNERSHIP RULE — when a figure describes organisational, portfolio or firm-level scale, do not treat it as the person's personal result unless the material shows they owned it. Put every such claim in \`defensibility\` with the qualifier they should add before using it publicly. Never place an unqualified firm-level figure in headline_suggestion.
 
-VOICE — in \`profile_vs_voice\`, compare what they actually write publicly (their posts) and what others say about them (recommendations) against what the CV claims. Name the disagreement where there is one; that gap is often the most useful line in the review. Null if there are no posts and no recommendations.
+THE EVIDENCE LADDER — every \`defensibility\` entry must resolve to exactly one of three rungs and must say which: "Defensible now" (cite the captured fragment that proves it), "Defensible with one more detail" (name the single detail needed), or "Not defensible" (give the softened line, written out). Attacking a claim is free; telling someone how to keep it is the work.
 
-BEHIND — \`cv_is_behind\` lists where the CV is out of date, written as to-dos, not as contradictions. An out-of-date CV is a task, never an inconsistency.
+READING THE SHAPE — in \`reading_the_shape\`, name what a board member will notice first about the career's shape. One sentence, or null if nothing stands out.
 
-HEADLINE — \`headline_suggestion\` is under 200 characters, at most three segments, and leads with what is distinctive about this person rather than a category label. Do not stack keywords. Do not open with a phrase that would fit half the senior professionals in this market.
+VOICE — in \`profile_vs_voice\`, compare what they write publicly and what others say about them against what the CV claims. Name the disagreement. Null if there are no posts and no recommendations.
 
-LANGUAGE — plain English, short sentences, as a trusted advisor would speak over coffee. Gloss every acronym in four words or fewer on first use. No markdown, no asterisks, no headers, no bracketed placeholders. Never use: authority, trajectory, personal brand, thought leader, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate.`;
+BEHIND — \`cv_is_behind\` lists where the CV is out of date, written as to-dos, never as contradictions.
+
+HEADLINE — \`headline_suggestion\` is under 200 characters, at most three segments, and leads with what is distinctive about this person rather than a category label.
+
+AURA CAN — \`aura_can\` is a CLOSED LIST. You may only return one of: capture_evidence, draft_post, suggest_headline, track_signal, or null. Never write your own offer of help. Never promise a capability in prose.
+
+FILTERS you must apply to yourself before answering:
+· would_be_false_for_someone_else — every finding must be untrue of a different senior professional in this market. Discard any finding that survives that test.
+· Never use these phrases: quantify your achievements, action verbs, tailor your CV, ATS, highlight your strengths, showcase.
+· Never invent a figure in \`what_you_lose\` — a consequence stated to a named reader, never a statistic.
+· \`peer_comparison\` is null unless the peer data supplied below is explicitly described as sufficient.
+
+LANGUAGE — plain English, short sentences, as a trusted advisor would speak. Gloss every acronym in four words or fewer on first use. No markdown, no asterisks, no headers, no bracketed placeholders. Never use: authority, trajectory, personal brand, thought leader, thought leadership, leverage as a verb, delve, landscape, navigate, realm, synergy, utilize, robust, seamless, journey, unlock, empower, elevate.`;
+
+const PURPOSES = ["next_role", "board_seat", "partner_track", "client_credibility", "unknown"] as const;
+
+const PURPOSE_BRIEF: Record<string, string> = {
+  next_role: "The read is for a NEXT ROLE. The reader is a hiring executive or search partner filling a line role. They want recent scope, ownership and a reason this person leaves well.",
+  board_seat: "The read is for a BOARD SEAT. The reader is a nomination committee. They want governance exposure, proximity to profit and loss, independence, and evidence of judgement under scrutiny.",
+  partner_track: "The read is for PARTNER TRACK. The reader is a partnership committee. They want delivery scale, client ownership, revenue they personally hold, and people they have grown.",
+  client_credibility: "The read is for CLIENT CREDIBILITY. The reader is a prospective client. They want proof this person has solved their exact problem before, in their sector.",
+  unknown: "The purpose is UNKNOWN. Produce an exploratory read: name the two most likely purposes this material points at, say plainly how the advice would differ between them, and judge the findings against the more likely of the two. Do not hedge silently between audiences.",
+};
 
 function parseJsonLoose(raw: string): any | null {
   if (!raw) return null;
@@ -75,6 +104,8 @@ serve(withObserve("cv-crosscheck", async (req) => {
   const body = await req.json().catch(() => ({}));
   const email: string | undefined = typeof body?.email === "string" ? body.email.trim() : undefined;
   let targetId: string | undefined = typeof body?.user_id === "string" ? body.user_id.trim() : undefined;
+  const rawPurpose = typeof body?.purpose === "string" ? body.purpose.trim() : "";
+  const purpose = (PURPOSES as readonly string[]).includes(rawPurpose) ? rawPurpose : "unknown";
 
   if (!targetId && email) {
     if (!callerIsAdmin) return json({ error: "Forbidden" }, 403);
@@ -143,7 +174,7 @@ Certifications: ${cut(snap.certifications, 1200)}`;
     .select("title, content, confidence")
     .eq("user_id", targetId)
     .order("confidence", { ascending: false })
-    .limit(12);
+    .limit(24);
 
   const { data: posts } = await admin
     .from("linkedin_posts")
@@ -176,13 +207,28 @@ Certifications: ${cut(snap.certifications, 1200)}`;
   const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   if (!ANTHROPIC_API_KEY) return json({ error: "ANTHROPIC_API_KEY not configured" }, 500);
 
+  /* Peer data is only offered to the model when there is enough of it to say
+     something true. Thin data means the model is told to return null — it is
+     never left to guess whether a comparison is safe. */
+  let peerCount = 0;
+  try {
+    const { count } = await admin
+      .from("mirror_reads")
+      .select("id", { count: "exact", head: true });
+    peerCount = count ?? 0;
+  } catch (_) { peerCount = 0; }
+  const PEER_FLOOR = 8;
+  const peerText = peerCount >= PEER_FLOOR
+    ? `There are ${peerCount} comparable reads on file for this market. You may make a peer comparison ONLY where the material above supports it; otherwise still return null.`
+    : `PEER DATA IS THIN (${peerCount} reads on file). Return null for peer_comparison. Do not fabricate a comparison.`;
+
   const userPrompt = `THEIR CV MATERIAL (${cvs.length} document${cvs.length === 1 ? "" : "s"})
 ${cvText}
 
 THEIR PUBLIC LINKEDIN PROFILE
 ${profileText}
 
-THEIR CAPTURED EVIDENCE
+WHAT THIS PERSON CAN ALREADY PROVE (captured evidence — use these as ammunition)
 ${fragmentsText}
 
 WHAT THEY POST PUBLICLY
@@ -191,16 +237,17 @@ ${postsText}
 WHAT OTHERS SAY ABOUT THEM (LINKEDIN RECOMMENDATIONS)
 ${recsText}
 
-Judge this material. Return exactly this JSON object and nothing else:
-{
-  "headline_finding": "one sentence: the single most valuable thing this comparison found, and what to do about it",
-  "findings": [ { "what": "", "why_it_matters": "", "do_this": "", "weight": "high" } ],
-  "defensibility": [ "" ],
-  "cv_is_behind": [ "" ],
-  "reading_the_shape": "",
-  "profile_vs_voice": "",
-  "headline_suggestion": ""
-}`;
+WHAT IS MISSING (the same captured evidence, read the other way — what it does NOT cover, and where the CV or profile claims something no fragment supports)
+${fragmentsText}
+
+WHAT THIS READ IS FOR
+${PURPOSE_BRIEF[purpose]}
+
+PEER DATA
+${peerText}
+
+Judge this material against that purpose and record the review with the record_crosscheck tool.
+Rules you will be checked on after you answer: exactly one finding has do_first true and that finding states the cost of delay; every high-weight finding carries a ready-to-paste \`rewrite\`; every finding cites \`evidence.cv_line\` and \`evidence.profile_line\` (write "Absent" for the side that has nothing); every \`what_you_lose\` names a reader and a consequence, never a number you invented; \`aura_can\` is from the closed list or null; every span of years is computed from the two dates you cite.`;
 
   /* Structured output: one forced tool. The prompt wording is unchanged —
      only the transport moved off free-text JSON, which discarded four runs
@@ -223,8 +270,20 @@ Judge this material. Return exactly this JSON object and nothing else:
               why_it_matters: { type: "string" },
               do_this: { type: "string" },
               weight: { type: "string", enum: ["high", "medium"] },
+              what_you_lose: { type: "string" },
+              evidence: {
+                type: "object",
+                properties: {
+                  cv_line: { type: "string" },
+                  profile_line: { type: "string" },
+                },
+                required: ["cv_line", "profile_line"],
+              },
+              rewrite: { type: "string", description: "Required when weight is high: the actual replacement sentence, ready to paste." },
+              aura_can: { type: "string", enum: ["capture_evidence", "draft_post", "suggest_headline", "track_signal"], description: "Closed list. Omit the field entirely when nothing Aura does helps here." },
+              do_first: { type: "boolean" },
             },
-            required: ["what", "why_it_matters", "do_this", "weight"],
+            required: ["what", "why_it_matters", "do_this", "weight", "what_you_lose", "evidence", "do_first"],
           },
         },
         defensibility: { type: "array", items: { type: "string" } },
@@ -232,8 +291,24 @@ Judge this material. Return exactly this JSON object and nothing else:
         profile_vs_voice: { type: "string" },
         reading_the_shape: { type: "string" },
         headline_suggestion: { type: "string" },
+        the_hard_truth: { type: "string" },
+        recommendations: {
+          type: "array",
+          minItems: 3,
+          maxItems: 5,
+          items: {
+            type: "object",
+            properties: {
+              action: { type: "string" },
+              why_now: { type: "string" },
+              aura_can: { type: "string", enum: ["capture_evidence", "draft_post", "suggest_headline", "track_signal"], description: "Closed list. Omit the field entirely when nothing Aura does helps here." },
+            },
+            required: ["action", "why_now"],
+          },
+        },
+        peer_comparison: { type: "string", description: "Omit entirely when the peer data is thin. Never fabricate." },
       },
-      required: ["headline_finding", "findings", "defensibility", "cv_is_behind", "profile_vs_voice"],
+      required: ["headline_finding", "findings", "defensibility", "cv_is_behind", "profile_vs_voice", "the_hard_truth", "recommendations"],
     },
   } as const;
 
@@ -295,6 +370,93 @@ Judge this material. Return exactly this JSON object and nothing else:
     return false;
   }
 
+  /* ---------------- server-side gates ---------------------------------- */
+
+  const AURA_CAN = ["capture_evidence", "draft_post", "suggest_headline", "track_signal"];
+  const PLATITUDES = [
+    "quantify your achievements", "action verbs", "tailor your cv",
+    "ats", "highlight your strengths", "showcase",
+  ];
+
+  const WORD_NUMBERS: Record<string, number> = {
+    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+    ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+    sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
+  };
+
+  /** A stated span is only allowed to stand when the years it cites produce it. */
+  function spanIsWrong(sentence: string): boolean {
+    const span = sentence.match(/\b(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)[-\s]year\b/i);
+    if (!span) return false;
+    const claimed = /^\d+$/.test(span[1]) ? Number(span[1]) : WORD_NUMBERS[span[1].toLowerCase()];
+    if (!claimed && claimed !== 0) return false;
+    const years = (sentence.match(/\b(19|20)\d{2}\b/g) ?? []).map(Number);
+    if (years.length < 2) return false;
+    const actual = Math.max(...years) - Math.min(...years);
+    return actual !== claimed;
+  }
+
+  /** Strip only the offending clause; the rest of the sentence survives. */
+  function repairSpans(value: unknown): unknown {
+    if (typeof value === "string") {
+      const parts = value.split(/(?<=[.!?])\s+/);
+      const kept = parts.filter((s) => !spanIsWrong(s));
+      return kept.join(" ").trim();
+    }
+    if (Array.isArray(value)) return value.map(repairSpans);
+    if (value && typeof value === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(value as Record<string, unknown>)) out[k] = repairSpans(v);
+      return out;
+    }
+    return value;
+  }
+
+  function allText(v: unknown): string {
+    if (typeof v === "string") return ` ${v} `;
+    if (Array.isArray(v)) return v.map(allText).join(" ");
+    if (v && typeof v === "object") return Object.values(v as Record<string, unknown>).map(allText).join(" ");
+    return "";
+  }
+
+  const bannedWords = await loadBannedWords(admin);
+
+  /** Returns the name of the first failing assertion, or null when the result stands. */
+  function gate(result: any): string | null {
+    const findings: any[] = Array.isArray(result?.findings) ? result.findings : [];
+    if (!findings.length) return "findings_empty";
+
+    const text = allText(result).toLowerCase();
+    if (PLATITUDES.some((p) => text.includes(p))) return "no_cv_platitudes";
+    const whole = allText(result);
+    if (hasBanned(whole, bannedWords)) {
+      /* Name the offending word so the single retry can actually fix it. */
+      const offender = bannedWords.find((w) => hasBanned(whole, [w])) ?? "unknown";
+      return `no_banned_vocabulary: "${offender}"`;
+    }
+
+    for (const f of findings) {
+      if (allText(f).split(/(?<=[.!?])\s+/).some(spanIsWrong)) return "numbers_recompute";
+      if (!String(f?.what ?? "").trim()) return "finding_empty_after_repair";
+      if (!String(f?.what_you_lose ?? "").trim()) return "what_you_lose_missing";
+      const ev = f?.evidence;
+      if (!ev || !String(ev.cv_line ?? "").trim() || !String(ev.profile_line ?? "").trim()) return "evidence_missing";
+      if (f?.weight === "high" && !String(f?.rewrite ?? "").trim()) return "rewrite_missing_on_high";
+      if (f?.aura_can != null && !AURA_CAN.includes(String(f.aura_can))) return "aura_can_outside_enum";
+    }
+
+    if (findings.filter((f) => f?.do_first === true).length !== 1) return "exactly_one_do_first";
+
+    if (!String(result?.the_hard_truth ?? "").trim()) return "the_hard_truth_missing";
+    const recs: any[] = Array.isArray(result?.recommendations) ? result.recommendations : [];
+    if (recs.length < 3 || recs.length > 5) return "recommendations_count";
+    for (const r of recs) {
+      if (!String(r?.action ?? "").trim() || !String(r?.why_now ?? "").trim()) return "recommendation_incomplete";
+      if (r?.aura_can != null && !AURA_CAN.includes(String(r.aura_can))) return "aura_can_outside_enum";
+    }
+    return null;
+  }
+
   let { data, text, toolInput, rawBody } = await runOnce(userPrompt);
   let parsed: any = toolInput ?? parseJsonLoose(text);
 
@@ -317,9 +479,58 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
     }
   }
 
+  /* Arithmetic is repaired before judging: a stripped clause is acceptable,
+     a surviving wrong span is not. */
+  parsed = repairSpans(parsed);
+  if (Array.isArray(parsed?.findings)) {
+    parsed.findings = parsed.findings.filter((f: any) => String(f?.what ?? "").trim().length > 0);
+  }
+
+  /* A forced tool cannot emit a JSON null for a string field, so the model
+     writes the word "null" instead. Nullable prose fields must be truly null
+     or the panel prints the word to the member. */
+  const nullify = (v: unknown) =>
+    typeof v === "string" && ["null", "none", "n/a", ""].includes(v.trim().toLowerCase()) ? null : v;
+  for (const k of ["peer_comparison", "profile_vs_voice", "reading_the_shape", "headline_suggestion"]) {
+    if (parsed && k in parsed) parsed[k] = nullify(parsed[k]);
+  }
+
+  let failure = gate(parsed);
+  if (failure) {
+    const correction = `${userPrompt}
+
+CORRECTION — your previous answer failed the assertion "${failure}". Answer again in full, obeying every rule. Do not restate the failing content; fix it.`;
+    const retry = await runOnce(correction);
+    let retryParsed: any = retry.toolInput ?? parseJsonLoose(retry.text);
+    if (retryParsed) {
+      retryParsed = repairSpans(retryParsed);
+      if (Array.isArray(retryParsed?.findings)) {
+        retryParsed.findings = retryParsed.findings.filter((f: any) => String(f?.what ?? "").trim().length > 0);
+      }
+      for (const k of ["peer_comparison", "profile_vs_voice", "reading_the_shape", "headline_suggestion"]) {
+        if (k in retryParsed) retryParsed[k] = nullify(retryParsed[k]);
+      }
+    }
+    const retryFailure = retryParsed ? gate(retryParsed) : "unparseable_on_retry";
+    if (!retryFailure) {
+      parsed = retryParsed;
+      if (retry.data) { data = retry.data; text = retry.text; rawBody = retry.rawBody; }
+      failure = null;
+    } else {
+      await logEfError(admin, {
+        function_name: "cv-crosscheck",
+        error: `Crosscheck failed the gate twice — nothing saved (${failure} then ${retryFailure})`,
+        severity: "high",
+        user_id: targetId,
+        context: { path: "gate_failed", first_assertion: failure, retry_assertion: retryFailure, purpose },
+      });
+      return json({ ok: false, pending: true, reason: "gate_failed", assertion: retryFailure });
+    }
+  }
 
   const crosscheck = {
     ...parsed,
+    purpose,
     cv_count: cvs.length,
     model: data?.model ?? null,
     /* The model's own text alongside the parsed object, so nothing is lost. */
