@@ -3334,6 +3334,7 @@ export type Database = {
           id: string
           ip_hash: string
           ref: string | null
+          status: string
         }
         Insert: {
           created_at?: string
@@ -3342,6 +3343,7 @@ export type Database = {
           id?: string
           ip_hash: string
           ref?: string | null
+          status?: string
         }
         Update: {
           created_at?: string
@@ -3350,6 +3352,7 @@ export type Database = {
           id?: string
           ip_hash?: string
           ref?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -3557,6 +3560,51 @@ export type Database = {
           randomise?: boolean
           sector?: string | null
           why_asked?: string | null
+        }
+        Relationships: []
+      }
+      operation_runs: {
+        Row: {
+          anon_token: string | null
+          attempt: number
+          cost_usd: number | null
+          fingerprint_hash: string | null
+          finished_at: string | null
+          id: string
+          meta: Json
+          operation: string
+          outcome: string | null
+          reason_code: string | null
+          started_at: string
+          user_id: string | null
+        }
+        Insert: {
+          anon_token?: string | null
+          attempt?: number
+          cost_usd?: number | null
+          fingerprint_hash?: string | null
+          finished_at?: string | null
+          id?: string
+          meta?: Json
+          operation: string
+          outcome?: string | null
+          reason_code?: string | null
+          started_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          anon_token?: string | null
+          attempt?: number
+          cost_usd?: number | null
+          fingerprint_hash?: string | null
+          finished_at?: string | null
+          id?: string
+          meta?: Json
+          operation?: string
+          outcome?: string | null
+          reason_code?: string | null
+          started_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }

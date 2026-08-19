@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
+import { startRun, type RunHandle } from "../_shared/operationRun.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { findUserIdByEmail } from "../_shared/findUserByEmail.ts";
 import { hasBanned, loadBannedWords } from "../_shared/bannedWords.ts";
@@ -173,24 +174,44 @@ serve(withObserve("cv-crosscheck", async (req) => {
   const rawPurpose = typeof body?.purpose === "string" ? body.purpose.trim() : "";
   const purpose = (PURPOSES as readonly string[]).includes(rawPurpose) ? rawPurpose : "unknown";
 
+  /* One run row for this cross-check, on both the anonymous and the
+     signed-in path. Recording never fails the operation. */
+  let run: RunHandle | null = null;
+  try {
+    run = await startRun(admin, {
+      operation: "cv_crosscheck",
+      user_id: callerId || null,
+      anon_token: anonToken || null,
+      meta: { purpose, anonymous: !!anonToken },
+    });
+  } catch (e) { console.error("[cv-crosscheck] run start failed:", (e as Error)?.message); }
+  const finish = async (outcome: "ok" | "refused" | "failed", reason_code?: string) => {
+    try { await run?.finish({ outcome, reason_code: reason_code ?? null }); }
+    catch (e) { console.error("[cv-crosscheck] run finish failed:", (e as Error)?.message); }
+  };
+
   if (anonToken) {
     targetId = undefined;
     if (!inlineCvText && cvFile) {
       try { inlineCvText = (await extractInMemory(cvFile)).trim(); }
       catch (e) {
         console.error("[cv-crosscheck] transient extraction failed", String((e as Error)?.message ?? e));
+        await finish("failed", "unparseable");
         return json({ ok: false, pending: true, reason: "unparseable" });
       }
     }
-    if (inlineCvText.length < 200) return json({ ok: false, pending: true, reason: "no_cv" });
+    if (inlineCvText.length < 200) {
+      await finish("refused", "no_cv");
+      return json({ ok: false, pending: true, reason: "no_cv" });
+    }
   } else if (!targetId && email) {
-    if (!callerIsAdmin) return json({ error: "Forbidden" }, 403);
+    if (!callerIsAdmin) { await finish("refused", "forbidden"); return json({ error: "Forbidden" }, 403); }
     targetId = (await findUserIdByEmail(admin, email)) ?? undefined;
-    if (!targetId) return json({ error: `No account found for ${email.trim()}` }, 404);
+    if (!targetId) { await finish("refused", "no_account"); return json({ error: `No account found for ${email.trim()}` }, 404); }
   }
   if (!anonToken) {
     if (!targetId) targetId = callerId;
-    if (targetId !== callerId && !callerIsAdmin) return json({ error: "Forbidden" }, 403);
+    if (targetId !== callerId && !callerIsAdmin) { await finish("refused", "forbidden"); return json({ error: "Forbidden" }, 403); }
   }
   const transient = !targetId;
   /* Inline text wins over anything on file: the documents lookup is skipped. */
@@ -207,10 +228,13 @@ serve(withObserve("cv-crosscheck", async (req) => {
     .eq("status", "completed")
     .order("created_at", { ascending: false })
     .limit(3);
-  if (cvErr) return json({ error: cvErr.message }, 500);
+  if (cvErr) { await finish("failed", "documents_query_failed"); return json({ error: cvErr.message }, 500); }
   const cvs = storedCvs ?? [];
 
-  if (!inlineMode && !cvs.length) return json({ ok: false, pending: true, reason: "no_cv" });
+  if (!inlineMode && !cvs.length) {
+    await finish("refused", "no_cv");
+    return json({ ok: false, pending: true, reason: "no_cv" });
+  }
 
   const { data: snapRows } = transient
     ? { data: [] as any[] }
@@ -221,7 +245,10 @@ serve(withObserve("cv-crosscheck", async (req) => {
       .order("created_at", { ascending: false })
       .limit(1);
   const snap: any = snapRows?.[0] ?? null;
-  if (!transient && !snap) return json({ ok: false, pending: true, reason: "no_snapshot" });
+  if (!transient && !snap) {
+    await finish("refused", "no_snapshot");
+    return json({ ok: false, pending: true, reason: "no_snapshot" });
+  }
 
   const { data: chunks } = inlineMode
     ? { data: [] as any[] }
@@ -262,6 +289,7 @@ Education: ${cut(snap.education, 1200)}
 Skills: ${cut(snap.skills, 1200)}
 Certifications: ${cut(snap.certifications, 1200)}`;
   if (transient && !anonRead && !anonState?.headline) {
+    await finish("refused", "no_snapshot");
     return json({ ok: false, pending: true, reason: "no_snapshot" });
   }
 
@@ -306,7 +334,10 @@ Certifications: ${cut(snap.certifications, 1200)}`;
     : "None on file.";
 
   const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!ANTHROPIC_API_KEY) return json({ error: "ANTHROPIC_API_KEY not configured" }, 500);
+  if (!ANTHROPIC_API_KEY) {
+    await finish("failed", "not_configured");
+    return json({ error: "ANTHROPIC_API_KEY not configured" }, 500);
+  }
 
   /* Peer data is only offered to the model when there is enough of it to say
      something true. Thin data means the model is told to return null — it is
@@ -442,6 +473,18 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
         user_id: targetId ?? undefined,
         context: { anthropic_status: resp.status },
       });
+      /* A failed provider call is still a call: record it, or the usage log
+         reports a perfect success rate by construction. */
+      try {
+        EdgeRuntime.waitUntil(logAIUsage({
+          user_id: targetId ?? undefined,
+          function_name: "cv-crosscheck",
+          provider: "anthropic",
+          model: "claude-sonnet-4-5-20250929",
+          success: false,
+          error_code: `http_${resp.status}`,
+        }));
+      } catch (_) { /* non-blocking */ }
       return { data: null as any, text: "" };
     }
     const data = JSON.parse(rawBody);
@@ -577,6 +620,7 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
         user_id: targetId ?? undefined,
         context: { path: "unparseable", raw: String(retry.text || retry.rawBody || "").slice(0, 2000) },
       });
+      await finish("failed", "unparseable");
       return json({ ok: false, pending: true, reason: "unparseable" });
     }
   }
@@ -626,6 +670,7 @@ CORRECTION — your previous answer failed the assertion "${failure}". Answer ag
         user_id: targetId ?? undefined,
         context: { path: "gate_failed", first_assertion: failure, retry_assertion: retryFailure, purpose },
       });
+      await finish("failed", "gate_failed");
       return json({ ok: false, pending: true, reason: "gate_failed", assertion: retryFailure });
     }
   }
@@ -646,8 +691,9 @@ CORRECTION — your previous answer failed the assertion "${failure}". Answer ag
       .from("diagnostic_profiles")
       .update({ cv_crosscheck: crosscheck, cv_crosscheck_at: new Date().toISOString() })
       .eq("user_id", targetId!);
-    if (writeErr) return json({ error: writeErr.message }, 500);
+    if (writeErr) { await finish("failed", "write_failed"); return json({ error: writeErr.message }, 500); }
   }
 
+  await finish("ok");
   return json({ ok: true, cv_count: docCount, crosscheck });
 }));
