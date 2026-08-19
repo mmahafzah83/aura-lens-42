@@ -100,6 +100,8 @@ serve(async (req) => {
       });
       if (usersError) {
         console.error("existing-account lookup failed", usersError);
+        const fp = clientIp(req);
+        await recordRefusal(admin, fp ? await hashIp(fp) : null, "temporarily_unavailable");
         return json({ ok: false, code: "temporarily_unavailable", error: "Account lookup failed. Try again." });
       }
       existing = usersPage.users.some((user) => user.email?.toLowerCase() === addr);
@@ -148,7 +150,7 @@ serve(async (req) => {
       return json({ error: error.message }, 400);
     }
 
-    await admin.from("signup_attempts").insert({ ip_hash });
+    if (ip_hash) await admin.from("signup_attempts").insert({ ip_hash });
 
     // Record the consent against the profile row. A ticked box that leaves no
     // record proves nothing later.
