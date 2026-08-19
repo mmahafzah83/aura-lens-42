@@ -137,13 +137,22 @@ type Failure =
   | { kind: "no_cv" }
   | { kind: "no_snapshot" }
   | { kind: "unparseable" }
+  | { kind: "gate_failed" }
   | { kind: "server" };
 
-const FAILURE_TEXT: Record<Failure["kind"], string> = {
-  no_cv: "Aura hasn't got a CV to read yet.",
-  no_snapshot: "Aura needs to read your profile first. Nothing you've added is lost.",
-  unparseable: "Aura couldn't finish the comparison this time. Your CV is saved — try again.",
-  server: "Something went wrong on our side. Your CV is saved.",
+/* The copy has to be true on the path it is shown: signed in, the file is on
+   file; anonymous, nothing was written down at all. */
+const failureText = (kind: Failure["kind"], signedIn: boolean): string => {
+  const tail = signedIn
+    ? "Your CV is saved — try again."
+    : "Nothing was stored, so you'll need to pick the file again. Your read and your answers are safe.";
+  switch (kind) {
+    case "no_cv": return "Aura hasn't got a CV to read yet.";
+    case "no_snapshot": return "Aura needs to read your profile first. Nothing you've added is lost.";
+    case "gate_failed": return "We couldn't get this to a standard worth showing you. Try once more — it usually works second time.";
+    case "unparseable": return `Aura couldn't finish the comparison this time. ${tail}`;
+    default: return `Something went wrong on our side. ${tail}`;
+  }
 };
 
 interface Props {
@@ -156,12 +165,16 @@ interface Props {
   onCvContact?: (contact: { email?: string; name?: string }) => void;
   /** Hide the purpose question where it does not belong (Settings shows it too). */
   showPurpose?: boolean;
+  /** Anonymous, with no read on the session: a lesser, honest comparison. */
+  cvOnly?: boolean;
 }
 
 export default function CvUploadControl({
-  userId, anonToken, onUploaded, onCrosscheck, onCvContact, showPurpose = true,
+  userId, anonToken, onUploaded, onCrosscheck, onCvContact, showPurpose = true, cvOnly = false,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  /* Held so an anonymous retry can re-send the very file it already had. */
+  const lastFileRef = useRef<File | null>(null);
   const [purpose, setPurpose] = useState<string>(readCvPurpose);
   const [busy, setBusy] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -202,6 +215,7 @@ export default function CvUploadControl({
       if (reason === "no_cv") setFailure({ kind: "no_cv" });
       else if (reason === "no_snapshot") setFailure({ kind: "no_snapshot" });
       else if (reason === "unparseable") setFailure({ kind: "unparseable" });
+      else if (reason === "gate_failed") setFailure({ kind: "gate_failed" });
       else setFailure({ kind: "server" });
     } catch {
       setFailure({ kind: "server" });
