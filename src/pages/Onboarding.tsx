@@ -806,6 +806,18 @@ const Onboarding = () => {
     try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
   }, [persistScreen]);
 
+  /* Back from the account step with a CV still to add: land on the CV screen. */
+  const cvReturnRef = useRef(false);
+  useEffect(() => {
+    if (checking || !userId || cvReturnRef.current) return;
+    let wanted = false;
+    try { wanted = new URLSearchParams(window.location.search).get("cv") === "1"; } catch { /* ignore */ }
+    if (!wanted) return;
+    cvReturnRef.current = true;
+    go(CV_SCREEN);
+    try { window.history.replaceState({}, "", "/onboarding"); } catch { /* ignore */ }
+  }, [checking, userId, go]);
+
   /**
    * Back — one step, with everything the member typed still in state. Nothing
    * is re-fetched and nothing is cleared; only the screen number moves.
