@@ -5,7 +5,13 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import AuraLogo from "@/components/brand/AuraLogo";
-import { SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, waveFrom } from "@/lib/seatCopy";
+import {
+  SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, SEAT_CTA_SECONDARY, SEAT_HEADING, SEAT_LEAD,
+  SEAT_ONE_JOB, SEAT_HOW, SEAT_HOW_LABEL, SEAT_CONSTRAINT, SEAT_RESERVE_NOTE, SEAT_RACK_LABEL,
+  INTENT_RESERVE, INTENT_KEEP_POSTED, RESERVED_TITLE, RESERVED_BODY, POSTED_TITLE,
+  WORTH_QUESTION, WORTH_PLACEHOLDER, WORTH_SEND, WORTH_SKIP, WORTH_THANKS,
+  type SeatIntent,
+} from "@/lib/seatCopy";
 
 /* ────────────────────────────────────────────────────────────────
    /request-access — "The Door".
@@ -61,17 +67,21 @@ export default function RequestAccess() {
   const [submittedName, setSubmittedName] = useState("");
   const [position, setPosition] = useState<number | null>(null);
   const [seats, setSeats] = useState<{ claimed: number; cap: number } | null>(null);
+  const [intent, setIntent] = useState<SeatIntent>(INTENT_RESERVE);
+  const [worth, setWorth] = useState("");
+  const [worthState, setWorthState] = useState<"idle" | "sending" | "sent" | "skipped">("idle");
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string; sector?: string }>({});
   const [validationMessage, setValidationMessage] = useState("");
 
   const isDone = status === "success" || status === "duplicate";
 
-  /* ── founding seats — the only source is the RPC ── */
+  /* ── founding seats — reservations only. The rack counts people who said
+     yes at $69, nothing else. If the RPC is silent, the rack does not render. ── */
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase.rpc("founding_seats");
+        const { data, error } = await (supabase as any).rpc("founding_reservations");
         if (cancelled || error || !data) return;
         const row: any = Array.isArray(data) ? (data as any)[0] : data;
         const claimed = Number(row?.claimed);
@@ -96,13 +106,14 @@ export default function RequestAccess() {
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, chosen: SeatIntent = intent) => {
     e.preventDefault();
+    setIntent(chosen);
     if (!validate()) return;
     setStatus("loading");
     try {
       const { data, error } = await supabase.functions.invoke("submit-waitlist", {
-        body: { name: name.trim(), email: email.trim(), seniority, sector },
+        body: { name: name.trim(), email: email.trim(), seniority, sector, intent: chosen },
       });
       if (error) {
         // FunctionsHttpError exposes the EF response body via error.context;
@@ -127,13 +138,33 @@ export default function RequestAccess() {
       } else {
         if (typeof data?.position === "number") setPosition(data.position);
         setStatus("success");
-        // the seat you just took is counted immediately
-        setSeats((s) => (s ? { ...s, claimed: Math.min(s.claimed + 1, s.cap) } : s));
+        // only a reservation moves the reservation count
+        if (chosen === INTENT_RESERVE) {
+          setSeats((s) => (s ? { ...s, claimed: Math.min(s.claimed + 1, s.cap) } : s));
+        }
       }
     } catch (err) {
       console.error("submit-waitlist failed:", err);
       setStatus("error");
     }
+  };
+
+  /* The optional three-month question, stored with the same rule as the intent. */
+  const sendWorth = async () => {
+    const answer = worth.trim();
+    if (!answer) { setWorthState("skipped"); return; }
+    setWorthState("sending");
+    try {
+      await supabase.functions.invoke("submit-waitlist", {
+        body: {
+          name: name.trim(), email: email.trim(), seniority, sector,
+          intent: INTENT_RESERVE, answer,
+        },
+      });
+    } catch (err) {
+      console.error("worth answer failed:", err);
+    }
+    setWorthState("sent");
   };
 
   return (
