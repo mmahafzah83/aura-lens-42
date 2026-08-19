@@ -811,6 +811,8 @@ const LANDING_V2_HTML = `
     <p class="sub">Other tools hand every person the same shapes and the same words. Aura learns your experience and your reading first — then writes from them.</p>
   </div>
 
+  <p class="sub" style="margin-top:18px;max-width:680px">${SEAT_VS_TOOLS}</p>
+
   <div class="eyebrow">Side by side</div>
   <div class="cmp rv">
     <table>
