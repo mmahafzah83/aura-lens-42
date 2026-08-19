@@ -276,6 +276,54 @@ export const ONBOARDING_INTRO = {
 } as const;
 
 // ════════════════════════════════════
+// ONBOARDING — the ending: what he now owns, the wall, and the after-keep share.
+// ════════════════════════════════════
+export const ENDING = {
+  eyebrow: "YOU BUILT THIS",
+  headline: "You just did something most senior people never do.",
+  body: "You looked at how the market actually reads you, instead of assuming. Here is what exists now that did not exist this morning.",
+  yoursHead: "Yours, now",
+  rowArchetype: "How the market reads you",
+  rowSubjects: (n: number) => `${n} ${n === 1 ? "subject" : "subjects"} you already own`,
+  rowSubjectsLabel: "Your subjects",
+  rowCapabilities: (n: number) => `${n} ${n === 1 ? "capability" : "capabilities"} placed`,
+  rowCapabilitiesLabel: "Your capability map",
+  rowCrosscheck: (n: number) => `${n} ${n === 1 ? "finding" : "findings"}, one to do first`,
+  rowCrosscheckLabel: "Your CV against your profile",
+  rowGapLabel: "The gap",
+  loss: "All of it lives in this browser. Clear your history, or open Aura on your phone, and it is gone — and the read costs real money to produce, so it is not automatic to run again.",
+  tenthHead: "What this is about a tenth of",
+  tenth: [
+    "Your position rewritten every time your evidence changes",
+    "What moved in your sector this week, read against your record",
+    "Drafts in your own voice, from what you already know",
+    "One honest number for whether your standing is growing",
+  ],
+  closing: "Aura is not a report. It is the thing that keeps doing this for you, every week, without adding work to your week.",
+  cta: "Keep my report",
+  ctaSignedIn: "Show me my read",
+  ctaSub: "Free, and it stays free. Private — only you can see it unless you share it.",
+  finishLater: "Finish later",
+} as const;
+
+export const WALL = {
+  heading: "Where should it live?",
+  body: "One address, and everything you just built is yours permanently — on your phone, on your laptop, next year.",
+  cta: "Keep my report",
+  ctaBusy: "Keeping your report…",
+  sub: "No card. Nothing is posted anywhere. You can delete all of it in one click.",
+} as const;
+
+export const AFTER_KEEP = {
+  heading: "Saved. It's yours.",
+  body: "Want the card? It shows your positioning and your subjects — never the gap, and never your own words.",
+  share: "Share my card",
+  download: "Download the image",
+  captionLabel: "What it will say",
+  continue: "Continue — set when Aura brings it to you",
+} as const;
+
+// ════════════════════════════════════
 // EMAIL TEMPLATES
 // ════════════════════════════════════
 export const EMAIL = {

@@ -10,7 +10,7 @@
  * (band, sector IS NULL). If both come back empty the member sees a friendly
  * retry, never a blank screen.
  */
-import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
@@ -65,7 +65,7 @@ import {
 import {
   SEAT_HEADING, SEAT_ROWS, SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_NO_CARD, SEAT_CTA, SEAT_PATH,
 } from "@/lib/seatCopy";
-import { BRAND, ONBOARDING_INTRO } from "@/constants/language";
+import { BRAND, ONBOARDING_INTRO, ENDING, WALL, AFTER_KEEP } from "@/constants/language";
 
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
@@ -145,6 +145,8 @@ const CONNECT_AFTER_ACCOUNT =
 const TRUST_SLIDERS_SCREEN = 8.5;
 /** A white CV step between screen 3 and screen 4 — fractional so nothing renumbers. */
 const CV_SCREEN = 3.5;
+/** The after-keep share screen — offered only once the report is his. */
+const SHARE_SCREEN = 13.5;
 
 /** Plain text buttons inside the screen-13 "Save it" row. */
 const quietLink: React.CSSProperties = {
@@ -398,7 +400,7 @@ const Onboarding = () => {
   /* THE ARRIVAL — read once, on mount. Stale or absent means the journey
      behaves exactly as it always has. */
   const [arrival, setArrival] = useState<
-    null | { first_name?: string | null; answers?: number; sliders?: number; captures?: number; minutes?: number }
+    null | { first_name?: string | null; answers?: number; sliders?: number; captures?: number }
   >(() => {
     try {
       const raw = localStorage.getItem("aura_just_joined");
@@ -883,12 +885,10 @@ const Onboarding = () => {
         sliders: Object.keys((pf.skill_ratings ?? {}) as Record<string, unknown>).length,
         captures: Array.isArray((st as any).pending_captures) ? (st as any).pending_captures.length : 0,
       };
-      const startedAt = opts.startedAt ?? null;
-      if (startedAt) {
-        const mins = Math.round((Date.now() - new Date(startedAt).getTime()) / 60000);
-        /* A duration is only honest if it is positive and plausible. */
-        if (Number.isFinite(mins) && mins >= 1 && mins <= 240) entry.minutes = mins;
-      }
+      /* NO DURATION. The only clock we hold is the session's created_at, which
+         is wall-clock — it counts the hours the browser sat closed. A number
+         nobody earned may not ship, and engaged time is not recorded anywhere,
+         so the figure is deleted rather than approximated. */
       localStorage.setItem("aura_just_joined", JSON.stringify(entry));
     } catch { /* private mode — the arrival is a grace, not a gate */ }
     clearToken();
@@ -3252,9 +3252,9 @@ const Onboarding = () => {
     }
   }
 
-  /* The wall — asked once, and only here. An anonymous run reaches the reveal
-     and stops: the account is opened, then the run is claimed onto it. */
-  if (!userId && anonToken && screen >= 12) {
+  /* The wall — asked once, and only here, and only AFTER screen 12 has made the
+     case. The ask never precedes the inventory of what he now owns. */
+  if (!userId && anonToken && screen >= 13) {
     const openAccount = async (e: React.FormEvent) => {
       e.preventDefault();
       if (wallBusy) return;
@@ -3312,14 +3312,11 @@ const Onboarding = () => {
       <style>{PAGE_CSS}</style>
       <JourneyNav.Provider value={{ onBack: undefined, banner: null }}>
       <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
-        <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
-          Your report is ready
-        </p>
-        <h1 style={{ fontFamily: OB.ui, fontSize: 28, fontWeight: 700, color: OB.ink, marginBlockStart: 10 }}>
-          Where should we send it?
+        <h1 style={{ fontFamily: OB.ui, fontSize: 28, fontWeight: 700, color: OB.ink }}>
+          {WALL.heading}
         </h1>
         <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 10 }}>
-          It is yours either way. An account keeps it, lets you come back, and sends you the PDF.
+          {WALL.body}
         </p>
         {wallDone ? (
           <>
@@ -3355,10 +3352,11 @@ const Onboarding = () => {
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton disabled={wallBusy || !wallConsent} aria-describedby={!wallConsent ? "ob-wall-why" : undefined}
                 onClick={() => undefined} type="submit">
-                {wallBusy ? "Saving your report…" : "Save my report"}
+                {wallBusy ? WALL.ctaBusy : WALL.cta}
               </OBButton>
               {!wallConsent && !wallBusy ? whyLine("ob-wall-why", "Tick the box above to enable this.", true) : null}
             </Actions>
+            <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{WALL.sub}</p>
           </form>
         )}
       </PaperShell>
@@ -3369,48 +3367,87 @@ const Onboarding = () => {
 
   /* 12 — WHITE, the shelf */
   if (screen === 12) {
-    /* THE ARRIVAL — the last beat before the reveal, shown once. */
-    if (arrival) {
-      const parts: JSX.Element[] = [];
-      const push = (n: number, tail: string) => {
-        parts.push(
-          <span key={tail}>
-            <span style={{ fontFamily: OB.mono, color: "#FFFFFF" }}>{n}</span>{" "}{tail}
-          </span>,
-        );
-      };
-      if (typeof arrival.answers === "number" && arrival.answers > 0) push(arrival.answers, arrival.answers === 1 ? "answer" : "answers");
-      if (typeof arrival.sliders === "number" && arrival.sliders > 0) push(arrival.sliders, arrival.sliders === 1 ? "placement" : "placements");
-      if (typeof arrival.captures === "number" && arrival.captures > 0) push(arrival.captures, arrival.captures === 1 ? "article you kept" : "articles you kept");
-      if (typeof arrival.minutes === "number") push(arrival.minutes, arrival.minutes === 1 ? "minute of your attention" : "minutes of your attention");
+    /* WHAT HE NOW OWNS — the case, made before the ask. Every row is drawn
+       from real state; a row with no value does not render at all. */
+    const anonRead = ((anonStateRef.current as any)?.read ?? null) as Record<string, any> | null;
+    const ownArchetype = String(reveal?.archetype || anonRead?.archetype || "").trim();
+    const ownSubjects = (reveal?.subjects?.length ?? 0) || (Array.isArray(anonRead?.themes) ? anonRead!.themes.length : 0);
+    const ownCapabilities = Object.keys(scores ?? {}).length;
+    const ccFindings = Array.isArray((cvCrosscheck as any)?.findings)
+      ? ((cvCrosscheck as any).findings as any[]).filter((f) => f && (f.what || f.do_this)).length
+      : 0;
+    const ownGap = String(readRaw?.honest_gap || anonRead?.honest_gap || "").trim();
+    const ownRows: Array<{ label: string; value: string }> = [];
+    if (ownArchetype) ownRows.push({ label: ENDING.rowArchetype, value: ownArchetype });
+    if (ownSubjects > 0) ownRows.push({ label: ENDING.rowSubjectsLabel, value: ENDING.rowSubjects(ownSubjects) });
+    if (ownCapabilities > 0) ownRows.push({ label: ENDING.rowCapabilitiesLabel, value: ENDING.rowCapabilities(ownCapabilities) });
+    if (ccFindings > 0) ownRows.push({ label: ENDING.rowCrosscheckLabel, value: ENDING.rowCrosscheck(ccFindings) });
+    if (ownGap) ownRows.push({ label: ENDING.rowGapLabel, value: ownGap });
+
+    if (arrival || (!userId && anonToken)) {
       content = (
-        <NightShell onExit={saveAndExit} footer={escapeFooter}>
-          <div style={{ textAlign: "center", paddingBlock: 28 }}>
-            <h1 style={{ ...h1Night }}>
-              {arrival.first_name ? `Thank you, ${arrival.first_name}.` : "Thank you."}
-            </h1>
-            {parts.length ? (
-              <p style={{
-                fontFamily: OB.ui, fontSize: 14, color: OB.mutedNight,
-                marginBlockStart: 22, lineHeight: 1.7,
-              }}>
-                {parts.map((p, i) => (
-                  <Fragment key={i}>{i > 0 ? <span style={{ opacity: 0.6 }}>{" · "}</span> : null}{p}</Fragment>
-                ))}
+        <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
+          <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>{ENDING.eyebrow}</p>
+          <h1 style={{ ...h1Light, marginBlockStart: 10 }}>{ENDING.headline}</h1>
+          <p style={{ ...bodyLight }}>{ENDING.body}</p>
+
+          {ownRows.length ? (
+            <div style={{ marginBlockStart: 22 }}>
+              <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+                {ENDING.yoursHead}
               </p>
-            ) : null}
-            <p style={{ ...bodyNight, marginBlockStart: 22, maxInlineSize: 460, marginInline: "auto" }}>
-              That is more than most people ever put into how they are seen. Here is what came back.
+              <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
+                {ownRows.map((r) => (
+                  <li key={r.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <span style={{ fontSize: "var(--ob-small)", color: OB.muted }}>{r.label}</span>
+                    <span style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, fontWeight: 600 }}>{r.value}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {/* The loss is true only while there is no account. */}
+          {!userId ? (
+            <p style={{
+              margin: "22px 0 0", paddingInlineStart: 14, borderInlineStart: "3px solid #E0A82E",
+              fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink,
+            }}>{ENDING.loss}</p>
+          ) : null}
+
+          <div style={{ marginBlockStart: 26, opacity: 0.72 }}>
+            <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+              {ENDING.tenthHead}
             </p>
-            <Actions style={{ marginBlockStart: 30 }}>
-              <OBButton onClick={() => {
-                try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
-                setArrival(null);
-                go(13);
-              }}>Show me my read</OBButton>
-            </Actions>
+            <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 9 }}>
+              {ENDING.tenth.map((line) => (
+                <li key={line} style={{ position: "relative", paddingInlineStart: 18, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+                  <span aria-hidden style={{
+                    position: "absolute", insetInlineStart: 0, insetBlockStart: 7,
+                    inlineSize: 7, blockSize: 7, borderRadius: 999, border: `1px solid ${OB.muted}`,
+                  }} />
+                  {line}
+                </li>
+              ))}
+            </ul>
           </div>
-        </NightShell>
+
+          <p style={{ ...bodyLight, marginBlockStart: 22 }}>{ENDING.closing}</p>
+
+          <Actions style={{ marginBlockStart: 22 }}>
+            <OBButton onClick={() => {
+              try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
+              setArrival(null);
+              go(13);
+            }}>{userId ? ENDING.ctaSignedIn : ENDING.cta}</OBButton>
+          </Actions>
+          <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+            {ENDING.ctaSub}
+          </p>
+          <Actions style={{ marginBlockStart: 10 }}>
+            <OBButton variant="tertiary" onClick={saveAndExit}>{ENDING.finishLater}</OBButton>
+          </Actions>
+        </PaperShell>
       );
     } else {
     /* Only the work that actually happened is shown. A member who captured
@@ -3539,7 +3576,128 @@ const Onboarding = () => {
       }
     };
 
-    /* One share row per member: once a token exists in state it is reused, never re-minted. */
+    /* Minting the share link and copying it live on the after-keep screen —
+       nothing on the reveal competes with the one decision. */
+    content = (
+      <div className="obc" style={{
+        minBlockSize: "100dvh",
+        overflow: "clip",
+        /* Blue, and only blue. Cyan is decoration — never a fill. */
+        background: "linear-gradient(170deg, var(--ob-blue), var(--ob-blue-light))",
+        display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
+      }}>
+        <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+          {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : revealLoading ? (
+            /* The read may already be finished and sitting in the database.
+               While we are still asking, say nothing about where it is. */
+            <div role="status" style={{ textAlign: "center", color: "var(--ob-white)" }}>
+              <p style={{ fontSize: 16, lineHeight: 1.6 }}>Opening your read…</p>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", color: "var(--ob-white)" }}>
+              <p style={{ fontSize: 16, lineHeight: 1.6 }}>
+                {readDone
+                  ? "Your read is saved. You'll find it on your Home."
+                  : "Aura is still writing your read. It'll be on your Home the moment it's done."}
+              </p>
+              <Actions style={{ marginBlockStart: 20 }}>
+                <OBButton onClick={() => go(SHARE_SCREEN)}
+                  style={{ background: "var(--ob-white)", color: "var(--ob-blue)" }}>{ENDING.cta}</OBButton>
+              </Actions>
+            </div>
+          )}
+          {reveal ? (
+          <>
+          {/* the same card, laid out for the exported image */}
+          {reveal ? (
+            /* html2canvas mis-handles fixed positioning at a large negative
+               offset — an absolute node inside a relative box rasterises. */
+            <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
+              <div style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
+                <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+              </div>
+            </div>
+          ) : null}
+          {reveal && brandPaper ? (
+            <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
+              <div ref={paperMountRef} style={{
+                position: "absolute", left: -10000, top: 0,
+                width: 794, pointerEvents: "none", zIndex: -1,
+              }}>
+                <BrandPaperDocument paper={brandPaper} />
+              </div>
+            </div>
+          ) : null}
+          {/* Share copy is not edited before the decision to share — it lives on
+             the after-keep screen. */}
+          <Actions style={{ marginBlockStart: 20 }}>
+          {/* ONE primary. Every other option moved after the decision. */}
+          <OBButton disabled={busy} loading={buildingReport} loadingLabel="Building your read…"
+            onClick={async () => { if (brandPaper) await downloadFullReport(); go(SHARE_SCREEN); }}
+            style={{ background: "#FFFFFF", color: OB.blue }}>{ENDING.cta}</OBButton>
+          {brandPaper ? (
+            brandPaper.the_gap || brandPaper.own_words_quote ? (
+              <p style={{
+                margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
+                color: "rgba(255,255,255,.80)", textAlign: "center",
+              }}>The full read includes the gap. The card doesn't.</p>
+            ) : null
+          ) : (
+            /* A promised deliverable never vanishes in silence. */
+            <p style={{
+              margin: 0, fontSize: 12.5, lineHeight: 1.55,
+              color: "rgba(255,255,255,.85)", textAlign: "center",
+            }}>Your full read is still being written. It'll be in your inbox and on your Home page shortly.</p>
+          )}
+          {postedUrl ? (
+            <a href={postedUrl} target="_blank" rel="noopener noreferrer" style={{
+              display: "block", textAlign: "center", color: "#FFFFFF", fontSize: 14,
+              textDecoration: "underline", padding: "10px 0",
+            }}>View it on LinkedIn</a>
+          ) : null}
+          <OBButton variant="tertiary" onClick={() => go(SHARE_SCREEN)}
+            style={{ color: "rgba(255,255,255,.72)" }}>Continue without downloading</OBButton>
+          </Actions>
+          <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
+            {REPORT_FREE_LINE}
+          </p>
+          <p style={{
+            margin: "12px 0 0", fontSize: 12, lineHeight: 1.7,
+            color: "rgba(255,255,255,.80)", textAlign: "center",
+          }}>
+            This is a read, not a verdict. <ReadCorrection userId={userId} onNight inline /> ·{" "}
+            <MethodNote onNight inline />
+          </p>
+          </>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  /* 13.5 — AFTER HE HAS KEPT IT. Sharing is offered here and nowhere earlier. */
+  if (screen === SHARE_SCREEN) {
+    const caption = suggestedCaption(postsRead ?? 0);
+    const liveCaption = captionDraft.trim() || caption;
+    const shareFooter = { posts: postsRead ?? 0, saved: claims.length };
+    const busy = sharing || posting || buildingReport || savingDraft;
+
+    const downloadCard = async () => {
+      if (!shareRef.current || busy) return;
+      setSharing(true);
+      try {
+        const how = await shareRevealCard(shareRef.current, { caption: liveCaption });
+        toast.success(how === "shared"
+          ? "Sent to your share sheet."
+          : "Image saved — the caption is on your clipboard, ready to paste.");
+      } catch (err) {
+        console.error("[reveal] share failed", err);
+        toast.error("Couldn't build the image. Your read is safe — it's on your Home.");
+      } finally {
+        setSharing(false);
+      }
+    };
+
     const mintShare = async () => {
       if (!userId || !reveal || shareUrl || minting) return;
       setMinting(true);
@@ -3567,9 +3725,7 @@ const Onboarding = () => {
       }
     };
 
-    const shareCaption = liveCaption || `${reveal?.archetype ?? "My read"} — my read from Aura.`;
-    const shareText = shareUrl ? `${shareCaption}\n\n${shareUrl}` : shareCaption;
-
+    const shareText = shareUrl ? `${liveCaption}\n\n${shareUrl}` : liveCaption;
     const copyShareLink = async () => {
       if (!shareUrl) return;
       try {
@@ -3581,178 +3737,61 @@ const Onboarding = () => {
     };
 
     content = (
-      <div className="obc" style={{
-        minBlockSize: "100dvh",
-        overflow: "clip",
-        /* Blue, and only blue. Cyan is decoration — never a fill. */
-        background: "linear-gradient(170deg, var(--ob-blue), var(--ob-blue-light))",
-        display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
-      }}>
-        <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
-          {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : revealLoading ? (
-            /* The read may already be finished and sitting in the database.
-               While we are still asking, say nothing about where it is. */
-            <div role="status" style={{ textAlign: "center", color: "var(--ob-white)" }}>
-              <p style={{ fontSize: 16, lineHeight: 1.6 }}>Opening your read…</p>
-            </div>
-          ) : (
-            <div style={{ textAlign: "center", color: "var(--ob-white)" }}>
-              <p style={{ fontSize: 16, lineHeight: 1.6 }}>
-                {readDone
-                  ? "Your read is saved. You'll find it on your Home."
-                  : "Aura is still writing your read. It'll be on your Home the moment it's done."}
-              </p>
-              <Actions style={{ marginBlockStart: 20 }}>
-                <OBButton onClick={() => go(14)}
-                  style={{ background: "var(--ob-white)", color: "var(--ob-blue)" }}>Take me in</OBButton>
-              </Actions>
-            </div>
-          )}
-          {reveal ? (
-          <>
-          {/* the same card, laid out for the exported image */}
-          {reveal ? (
-            /* html2canvas mis-handles fixed positioning at a large negative
-               offset — an absolute node inside a relative box rasterises. */
-            <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
-              <div style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
-                <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
-              </div>
-            </div>
-          ) : null}
-          {reveal && brandPaper ? (
-            <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
-              <div ref={paperMountRef} style={{
-                position: "absolute", left: -10000, top: 0,
-                width: 794, pointerEvents: "none", zIndex: -1,
-              }}>
-                <BrandPaperDocument paper={brandPaper} />
-              </div>
-            </div>
-          ) : null}
-          {reveal && !postedUrl ? (
-            <div style={{ marginBlockStart: 18 }}>
-              <label htmlFor="ob-caption" style={{
-                display: "block", fontSize: 12.5, color: "rgba(255,255,255,.85)", marginBlockEnd: 6,
-              }}>What it will say</label>
-              <textarea
-                id="ob-caption"
-                dir="auto"
-                value={captionDraft}
-                onChange={(e) => setCaptionDraft(e.target.value)}
-                rows={4}
-                style={{
-                  inlineSize: "100%", padding: "10px 12px", borderRadius: RADIUS.chip,
-                  border: "1px solid rgba(255,255,255,.35)", background: "rgba(255,255,255,.12)",
-                  color: "#FFFFFF", fontFamily: OB.ui, fontSize: 14, lineHeight: 1.55, resize: "vertical",
-                }}
-              />
-            </div>
-          ) : null}
-          <Actions style={{ marginBlockStart: 20 }}>
-          {brandPaper ? (
-            <>
-              <OBButton disabled={busy} loading={buildingReport} loadingLabel="Building your read…"
-                onClick={() => void downloadFullReport()}
-                style={{ background: "#FFFFFF", color: OB.blue }}>Keep the full read</OBButton>
-              {/* Promise the gap only when the gap exists. */}
-              {brandPaper.the_gap || brandPaper.own_words_quote ? (
-                <p style={{
-                  margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
-                  color: "rgba(255,255,255,.80)", textAlign: "center",
-                }}>The full read includes the gap. The card doesn't.</p>
-              ) : null}
-            </>
-          ) : (
-            /* A promised deliverable never vanishes in silence. */
-            <p style={{
-              margin: 0, fontSize: 12.5, lineHeight: 1.55,
-              color: "rgba(255,255,255,.85)", textAlign: "center",
-            }}>Your full read is still being written. It'll be in your inbox and on your Home page shortly.</p>
-          )}
-          {postedUrl ? (
-            <a href={postedUrl} target="_blank" rel="noopener noreferrer" style={{
-              display: "block", textAlign: "center", color: "#FFFFFF", fontSize: 14,
-              textDecoration: "underline", padding: "10px 0",
-            }}>View it on LinkedIn</a>
-          ) : null}
-          {/* The share surface — open on arrival. */}
-          <div style={{ marginBlockStart: 4 }}>
-            <p style={{
-              margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em",
-              textTransform: "uppercase", color: "rgba(255,255,255,.82)", textAlign: "center",
-            }}>Share the card</p>
+      <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
+        <h1 style={{ ...h1Light }}>{AFTER_KEEP.heading}</h1>
+        <p style={{ ...bodyLight }}>{AFTER_KEEP.body}</p>
 
-            {!userId ? (
-              <p style={{
-                margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6,
-                color: "rgba(255,255,255,.85)", textAlign: "center",
-              }}>Available after you save your report.</p>
-            ) : (
-              <>
-                {!shareUrl ? (
-                  <Actions style={{ marginBlockStart: 12 }}>
-                    <OBButton disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
-                      onClick={() => void mintShare()}
-                      style={{ background: "#FFFFFF", color: OB.blue }}>Share my read</OBButton>
-                    {!reveal ? (
-                      <p style={{ margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
-                        Your read is still being written — this opens the moment it lands.
-                      </p>
-                    ) : null}
-                  </Actions>
-                ) : (
-                  <>
-                    <div style={{
-                      display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                      gap: 10, marginBlockStart: 12,
-                    }}>
-                      <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-                        target="_blank" rel="noopener noreferrer" style={shareAction}>WhatsApp</a>
-                      <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
-                        target="_blank" rel="noopener noreferrer" style={shareAction}>LinkedIn</a>
-                      <button type="button" onClick={() => void copyShareLink()} style={shareAction}>Copy link</button>
-                    </div>
-                    <p style={{
-                      margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6,
-                      color: "rgba(255,255,255,.78)", textAlign: "center",
-                    }}>
-                      Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
-                    </p>
-                  </>
-                )}
-                {/* Keeping your own card is a private act — never gated behind a public link. */}
-                <div style={{ marginBlockStart: 10 }}>
-                  <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()}
-                    style={{ ...shareAction, inlineSize: "100%", opacity: busy ? 0.6 : 1 }}>
-                    {sharing ? "Building…" : "Download the image"}
-                  </button>
-                  {!reveal ? (
-                    <p style={{ margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.55, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
-                      Your read is still being written — this opens the moment it lands.
-                    </p>
-                  ) : null}
-                </div>
-              </>
-            )}
+        {reveal ? (
+          <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
+            <div style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
+              <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+            </div>
           </div>
-          <OBButton variant="tertiary" onClick={() => go(14)}
-            style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
-          </Actions>
-          <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
-            {REPORT_FREE_LINE}
-          </p>
-          <p style={{
-            margin: "12px 0 0", fontSize: 12, lineHeight: 1.7,
-            color: "rgba(255,255,255,.80)", textAlign: "center",
-          }}>
-            This is a read, not a verdict. <ReadCorrection userId={userId} onNight inline /> ·{" "}
-            <MethodNote onNight inline />
-          </p>
-          </>
-          ) : null}
+        ) : null}
+
+        <div style={{ marginBlockStart: 18 }}>
+          <label htmlFor="ob-caption" style={{ display: "block", fontSize: 12.5, color: OB.muted, marginBlockEnd: 6 }}>
+            {AFTER_KEEP.captionLabel}
+          </label>
+          <textarea
+            id="ob-caption"
+            dir="auto"
+            value={captionDraft}
+            onChange={(e) => setCaptionDraft(e.target.value)}
+            rows={4}
+            style={{ ...fieldStyle, resize: "vertical" }}
+          />
         </div>
-      </div>
+
+        <Actions style={{ marginBlockStart: 18 }}>
+          {!shareUrl ? (
+            <OBButton variant="secondary" disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
+              onClick={() => void mintShare()}>{AFTER_KEEP.share}</OBButton>
+          ) : null}
+          <OBButton variant="tertiary" disabled={!reveal || busy} onClick={() => void downloadCard()}>
+            {sharing ? "Building…" : AFTER_KEEP.download}
+          </OBButton>
+        </Actions>
+
+        {shareUrl ? (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBlockStart: 14 }}>
+              <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                target="_blank" rel="noopener noreferrer" style={quietLink}>WhatsApp</a>
+              <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
+                target="_blank" rel="noopener noreferrer" style={quietLink}>LinkedIn</a>
+              <button type="button" onClick={() => void copyShareLink()} style={quietLink}>Copy link</button>
+            </div>
+            <p style={{ margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6, color: OB.muted }}>
+              Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
+            </p>
+          </>
+        ) : null}
+
+        <Actions style={{ marginBlockStart: 18 }}>
+          <OBButton variant="tertiary" onClick={() => go(14)}>{AFTER_KEEP.continue}</OBButton>
+        </Actions>
+      </PaperShell>
     );
   }
 
