@@ -3367,48 +3367,87 @@ const Onboarding = () => {
 
   /* 12 — WHITE, the shelf */
   if (screen === 12) {
-    /* THE ARRIVAL — the last beat before the reveal, shown once. */
-    if (arrival) {
-      const parts: JSX.Element[] = [];
-      const push = (n: number, tail: string) => {
-        parts.push(
-          <span key={tail}>
-            <span style={{ fontFamily: OB.mono, color: "#FFFFFF" }}>{n}</span>{" "}{tail}
-          </span>,
-        );
-      };
-      if (typeof arrival.answers === "number" && arrival.answers > 0) push(arrival.answers, arrival.answers === 1 ? "answer" : "answers");
-      if (typeof arrival.sliders === "number" && arrival.sliders > 0) push(arrival.sliders, arrival.sliders === 1 ? "placement" : "placements");
-      if (typeof arrival.captures === "number" && arrival.captures > 0) push(arrival.captures, arrival.captures === 1 ? "article you kept" : "articles you kept");
-      if (typeof arrival.minutes === "number") push(arrival.minutes, arrival.minutes === 1 ? "minute of your attention" : "minutes of your attention");
+    /* WHAT HE NOW OWNS — the case, made before the ask. Every row is drawn
+       from real state; a row with no value does not render at all. */
+    const anonRead = ((anonStateRef.current as any)?.read ?? null) as Record<string, any> | null;
+    const ownArchetype = String(reveal?.archetype || anonRead?.archetype || "").trim();
+    const ownSubjects = (reveal?.subjects?.length ?? 0) || (Array.isArray(anonRead?.themes) ? anonRead!.themes.length : 0);
+    const ownCapabilities = Object.keys(scores ?? {}).length;
+    const ccFindings = Array.isArray((cvCrosscheck as any)?.findings)
+      ? ((cvCrosscheck as any).findings as any[]).filter((f) => f && (f.what || f.do_this)).length
+      : 0;
+    const ownGap = String(readRaw?.honest_gap || anonRead?.honest_gap || "").trim();
+    const ownRows: Array<{ label: string; value: string }> = [];
+    if (ownArchetype) ownRows.push({ label: ENDING.rowArchetype, value: ownArchetype });
+    if (ownSubjects > 0) ownRows.push({ label: ENDING.rowSubjectsLabel, value: ENDING.rowSubjects(ownSubjects) });
+    if (ownCapabilities > 0) ownRows.push({ label: ENDING.rowCapabilitiesLabel, value: ENDING.rowCapabilities(ownCapabilities) });
+    if (ccFindings > 0) ownRows.push({ label: ENDING.rowCrosscheckLabel, value: ENDING.rowCrosscheck(ccFindings) });
+    if (ownGap) ownRows.push({ label: ENDING.rowGapLabel, value: ownGap });
+
+    if (arrival || (!userId && anonToken)) {
       content = (
-        <NightShell onExit={saveAndExit} footer={escapeFooter}>
-          <div style={{ textAlign: "center", paddingBlock: 28 }}>
-            <h1 style={{ ...h1Night }}>
-              {arrival.first_name ? `Thank you, ${arrival.first_name}.` : "Thank you."}
-            </h1>
-            {parts.length ? (
-              <p style={{
-                fontFamily: OB.ui, fontSize: 14, color: OB.mutedNight,
-                marginBlockStart: 22, lineHeight: 1.7,
-              }}>
-                {parts.map((p, i) => (
-                  <Fragment key={i}>{i > 0 ? <span style={{ opacity: 0.6 }}>{" · "}</span> : null}{p}</Fragment>
-                ))}
+        <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
+          <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>{ENDING.eyebrow}</p>
+          <h1 style={{ ...h1Light, marginBlockStart: 10 }}>{ENDING.headline}</h1>
+          <p style={{ ...bodyLight }}>{ENDING.body}</p>
+
+          {ownRows.length ? (
+            <div style={{ marginBlockStart: 22 }}>
+              <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+                {ENDING.yoursHead}
               </p>
-            ) : null}
-            <p style={{ ...bodyNight, marginBlockStart: 22, maxInlineSize: 460, marginInline: "auto" }}>
-              That is more than most people ever put into how they are seen. Here is what came back.
+              <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
+                {ownRows.map((r) => (
+                  <li key={r.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <span style={{ fontSize: "var(--ob-small)", color: OB.muted }}>{r.label}</span>
+                    <span style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, fontWeight: 600 }}>{r.value}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {/* The loss is true only while there is no account. */}
+          {!userId ? (
+            <p style={{
+              margin: "22px 0 0", paddingInlineStart: 14, borderInlineStart: "3px solid #E0A82E",
+              fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink,
+            }}>{ENDING.loss}</p>
+          ) : null}
+
+          <div style={{ marginBlockStart: 26, opacity: 0.72 }}>
+            <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+              {ENDING.tenthHead}
             </p>
-            <Actions style={{ marginBlockStart: 30 }}>
-              <OBButton onClick={() => {
-                try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
-                setArrival(null);
-                go(13);
-              }}>Show me my read</OBButton>
-            </Actions>
+            <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 9 }}>
+              {ENDING.tenth.map((line) => (
+                <li key={line} style={{ position: "relative", paddingInlineStart: 18, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+                  <span aria-hidden style={{
+                    position: "absolute", insetInlineStart: 0, insetBlockStart: 7,
+                    inlineSize: 7, blockSize: 7, borderRadius: 999, border: `1px solid ${OB.muted}`,
+                  }} />
+                  {line}
+                </li>
+              ))}
+            </ul>
           </div>
-        </NightShell>
+
+          <p style={{ ...bodyLight, marginBlockStart: 22 }}>{ENDING.closing}</p>
+
+          <Actions style={{ marginBlockStart: 22 }}>
+            <OBButton onClick={() => {
+              try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
+              setArrival(null);
+              go(13);
+            }}>{userId ? ENDING.ctaSignedIn : ENDING.cta}</OBButton>
+          </Actions>
+          <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+            {ENDING.ctaSub}
+          </p>
+          <Actions style={{ marginBlockStart: 10 }}>
+            <OBButton variant="tertiary" onClick={saveAndExit}>{ENDING.finishLater}</OBButton>
+          </Actions>
+        </PaperShell>
       );
     } else {
     /* Only the work that actually happened is shown. A member who captured
