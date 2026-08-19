@@ -588,6 +588,7 @@ const RA_CSS = `
 .ra-how li{font-size:14px;line-height:1.55;color:var(--n700);padding-left:16px;position:relative;}
 .ra-how li::before{content:'';position:absolute;left:0;top:9px;width:7px;height:1px;background:var(--act);}
 .ra-constraint{margin-top:18px;font-size:14px;line-height:1.6;color:var(--n900);max-width:44ch;}
+.ra-vs{margin-top:14px;font-size:14px;line-height:1.55;color:var(--n700);max-width:46ch;}
 
 /* Two doors — identical geometry, so the choice between them is real. */
 .ra-doors{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
