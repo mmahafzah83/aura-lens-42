@@ -16,7 +16,7 @@ export const SESSION_KEY = "aura_session_token";
 /** Shown only as a heading above the real queue form — never on its own. */
 export const QUEUE_MESSAGE = "Aura is reading at its limit for today.";
 export const ALREADY_RUN_MESSAGE =
-  "You have already run this once. Sign in to see your report.";
+  "That's all three reads on this session. Sign in to keep them and run more.";
 const GENERIC = "Something failed on our side. Nothing is lost — try once more.";
 
 export type AssessmentState = {
