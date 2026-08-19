@@ -387,11 +387,27 @@ export default function CvUploadControl({
 
       {failure ? (
         <div style={{ marginBlockStart: 12 }}>
-          <p style={{ fontSize: 14, color: INK, margin: 0, lineHeight: 1.55 }}>{FAILURE_TEXT[failure.kind]}</p>
-          {failure.kind === "unparseable" || failure.kind === "server" ? (
-            <button type="button" onClick={() => void runCrosscheck()} disabled={comparing} style={{ ...ghostStyle, marginBlockStart: 6 }}>
-              {comparing ? "Trying again…" : "Try again"}
-            </button>
+          <p style={{ fontSize: 14, color: INK, margin: 0, lineHeight: 1.55 }}>{failureText(failure.kind, !!userId)}</p>
+          {failure.kind === "unparseable" || failure.kind === "server" || failure.kind === "gate_failed" ? (
+            userId ? (
+              <button type="button" onClick={() => void runCrosscheck()} disabled={comparing} style={{ ...ghostStyle, marginBlockStart: 6 }}>
+                {comparing ? "Trying again…" : "Try again"}
+              </button>
+            ) : lastFileRef.current ? (
+              /* Anonymous: the retry re-sends the very file and token it had. */
+              <button
+                type="button"
+                onClick={() => { const f = lastFileRef.current; if (f) void transientCompare(f); }}
+                disabled={comparing}
+                style={{ ...ghostStyle, marginBlockStart: 6 }}
+              >
+                {comparing ? "Trying again…" : "Try again"}
+              </button>
+            ) : (
+              <button type="button" onClick={pick} disabled={comparing} style={{ ...ghostStyle, marginBlockStart: 6 }}>
+                Choose the file again
+              </button>
+            )
           ) : null}
           {failure.kind === "no_cv" && fileName ? (
             <button type="button" onClick={pick} style={{ ...ghostStyle, marginBlockStart: 6 }}>Add your CV</button>
