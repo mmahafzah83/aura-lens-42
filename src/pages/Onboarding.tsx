@@ -2858,10 +2858,14 @@ const Onboarding = () => {
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>That one didn't come through.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Aura couldn't reach that link. Try another one, or carry on — you can add it later.
+          {linkFailedOurs
+            ? "That's ours, not your link. Try once more, or carry on — you can add it later."
+            : "Aura couldn't reach that link. Try another one, or carry on — you can add it later."}
         </p>
         <Actions style={{ marginBlockStart: 22 }}>
-          <OBButton onClick={() => { setLinkFailed(false); go(5); }}>Try a different link</OBButton>
+          <OBButton onClick={() => { setLinkFailed(false); go(5); }}>
+            {linkFailedOurs ? "Try once more" : "Try a different link"}
+          </OBButton>
           <OBButton variant="tertiary" onClick={() => { setLinkFailed(false); go(8); }}>Carry on</OBButton>
         </Actions>
       </NightShell>
