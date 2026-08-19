@@ -2658,6 +2658,12 @@ const Onboarding = () => {
       }
       go(5);
     };
+    /* The fork is decided from what the session already holds — the function
+       is never called to find out. */
+    const anonHasRead = Boolean(
+      (anonStateRef.current as any)?.read || (anonStateRef.current as any)?.headline,
+    );
+    const needsForkChoice = !userId && !anonHasRead && cvFork === null;
     content = (
       <PaperShell onExit={saveAndExit} bead={0} subProgress={1} footer={escapeFooter}>
         <h1 style={h1Light}>Have a CV handy?</h1>
@@ -2666,10 +2672,27 @@ const Onboarding = () => {
           A CV says what you actually did — the numbers, the programmes, the things nobody posted
           about. Aura reads it against your profile and shows you the difference.
         </p>
+        {needsForkChoice ? (
+          <div style={{ marginBlockStart: 20 }}>
+            <h2 style={{ fontFamily: OB.ui, fontSize: 20, fontWeight: 700, color: OB.ink, margin: 0 }}>
+              We can read your CV on its own.
+            </h2>
+            <p style={{ ...bodyLight, marginBlockStart: 8 }}>
+              But the part worth having is what your CV says that your profile doesn't — and that
+              needs both. The read takes about two minutes and brings you straight back here.
+            </p>
+            <Actions style={{ marginBlockStart: 16 }}>
+              <OBButton onClick={() => go(1)}>Read my profile first</OBButton>
+              <OBButton variant="tertiary" onClick={() => setCvFork("cv_only")}>Read my CV on its own</OBButton>
+            </Actions>
+          </div>
+        ) : (
+        <>
         <div style={{ marginBlockStart: 20 }}>
           <CvUploadControl
             userId={userId}
             anonToken={anonToken}
+            cvOnly={cvFork === "cv_only"}
             onUploaded={() => setCvUploads((n) => n + 1)}
             onCvContact={(c) => { if (c.email && !wallEmail) setWallEmail(c.email); }}
             onCrosscheck={(cc) => {
@@ -2682,6 +2705,13 @@ const Onboarding = () => {
             }}
           />
         </div>
+        {/* A lesser read never pretends to be the full one. */}
+        {cvFork === "cv_only" && cvCrosscheck ? (
+          <p style={{ ...bodyLight, marginBlockStart: 20, fontWeight: 600 }}>
+            Read without your profile. The comparison — what your CV says that your profile
+            doesn't — is missing.
+          </p>
+        ) : null}
         {/* Shows only once the comparison comes back; absent, it renders nothing. */}
         <CvCrosscheck
           data={cvCrosscheck}
@@ -2705,6 +2735,8 @@ const Onboarding = () => {
             {cvUploads > 0 ? "Read it" : "Continue"}
           </OBButton>
         </Actions>
+        </>
+        )}
       </PaperShell>
     );
   }
