@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
-import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_PROMISE, SEAT_SOLD_OUT_NOTE, SEAT_CONSTRAINT, waveFrom } from "@/lib/seatCopy";
+import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_PROMISE, SEAT_SOLD_OUT_NOTE, SEAT_CONSTRAINT, SEAT_VS_TOOLS, waveFrom } from "@/lib/seatCopy";
 import { PRODUCT_DESCRIPTOR, FIRST_READ_LINE, FULL_PICTURE_LINE, ASSESSMENT_QUESTIONS_PHRASE } from "@/lib/brand";
 
 /* ────────────────────────────────────────────────────────────────
