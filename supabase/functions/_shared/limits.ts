@@ -7,7 +7,7 @@
 
 export const LIMITS = {
   /** Accounts that may be created from one address fingerprint per rolling 24h. */
-  SIGNUPS_PER_IP_PER_DAY: 3,
+  SIGNUPS_PER_IP_PER_DAY: 100,
   /** Full instrument runs allowed per account, ever. */
   INSTRUMENT_RUNS_PER_ACCOUNT: 1,
   /** Full instrument runs allowed across the whole product per calendar day (UTC). */
@@ -24,10 +24,19 @@ export async function hashIp(ip: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * The caller's address, or an empty string when no address header is present.
+ *
+ * An empty string is deliberate: a literal placeholder string pools every
+ * header-less caller on earth into one bucket, so the last of them globally is
+ * refused for reasons that have nothing to do with them. Callers must treat an
+ * empty value as no fingerprint and skip the limit check entirely rather than
+ * count the request against a shared bucket.
+ */
 export function clientIp(req: Request): string {
   return (
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("cf-connecting-ip") ||
-    "unknown"
+    ""
   );
 }

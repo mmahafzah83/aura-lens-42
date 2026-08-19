@@ -14,6 +14,64 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+/** Every refusal leaves a row. A refusal with no evidence is a second bug. */
+async function recordRefusal(admin: any, ip_hash: string | null, code: string) {
+  try {
+    await admin.from("signup_refusals").insert({ ip_hash, code });
+  } catch (e) {
+    console.error("refusal trace failed", (e as Error)?.message);
+  }
+}
+
+/**
+ * Tells the founder when a network hits the ceiling. At most one email per
+ * fingerprint per hour, and a failure here never fails the signup.
+ */
+async function alertFounder(admin: any, ip_hash: string, attempts: number, shown: string) {
+  try {
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { data: last } = await admin
+      .from("signup_ceiling_alerts")
+      .select("last_sent_at")
+      .eq("ip_hash", ip_hash)
+      .maybeSingle();
+    if (last?.last_sent_at && last.last_sent_at > hourAgo) return;
+
+    const RESEND_KEY = Deno.env.get("RESEND_API_KEY") || "";
+    if (!RESEND_KEY) return;
+
+    const html = renderEmail({
+      preheader: "A network has reached the signup ceiling.",
+      body: [
+        heading("The signup ceiling was reached."),
+        paragraph(`${attempts} accounts have been opened from this address fingerprint in the last 24 hours.`),
+        paragraph(`The ceiling is ${LIMITS.SIGNUPS_PER_IP_PER_DAY} accounts per fingerprint per 24 hours.`),
+        paragraph(`Address fingerprint: ${ip_hash}`),
+        paragraph(`The person on the other end just read: "${shown}"`),
+      ].join(""),
+    });
+    const resp = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "Aura <invites@aura-intel.org>",
+        to: ["mmahafzah8386@gmail.com"],
+        subject: "Aura — signup ceiling reached",
+        html,
+      }),
+    });
+    if (!resp.ok) {
+      console.error(`ceiling alert failed [${resp.status}]: ${await resp.text()}`);
+      return;
+    }
+    await admin
+      .from("signup_ceiling_alerts")
+      .upsert({ ip_hash, last_sent_at: new Date().toISOString() }, { onConflict: "ip_hash" });
+  } catch (e) {
+    console.error("ceiling alert threw", (e as Error)?.message);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -42,6 +100,8 @@ serve(async (req) => {
       });
       if (usersError) {
         console.error("existing-account lookup failed", usersError);
+        const fp = clientIp(req);
+        await recordRefusal(admin, fp ? await hashIp(fp) : null, "temporarily_unavailable");
         return json({ ok: false, code: "temporarily_unavailable", error: "Account lookup failed. Try again." });
       }
       existing = usersPage.users.some((user) => user.email?.toLowerCase() === addr);
@@ -49,24 +109,31 @@ serve(async (req) => {
     }
     if (existing) return json({ ok: true, existing: true });
 
-    const ip_hash = await hashIp(clientIp(req));
+    // No address header means no fingerprint. Such a caller is not counted
+    // against any bucket — pooling them all together would refuse strangers
+    // for someone else's traffic.
+    const rawIp = clientIp(req);
+    const ip_hash = rawIp ? await hashIp(rawIp) : null;
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count } = await admin
-      .from("signup_attempts")
-      .select("id", { count: "exact", head: true })
-      .eq("ip_hash", ip_hash)
-      .gte("created_at", since);
+    let count = 0;
+    if (ip_hash) {
+      const { count: c } = await admin
+        .from("signup_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_hash", ip_hash)
+        .gte("created_at", since);
+      count = c ?? 0;
+    }
 
-    if ((count ?? 0) >= LIMITS.SIGNUPS_PER_IP_PER_DAY) {
+    if (ip_hash && count >= LIMITS.SIGNUPS_PER_IP_PER_DAY) {
       // This is an expected product state, not a crashed function. Keeping the
       // HTTP response successful prevents the client runtime from treating the
       // limit as an uncaught Edge Function error while preserving the block.
-      return json({
-        ok: false,
-        code: "signup_limit",
-        error:
-          "That is as many accounts as can be opened from here today. Write to support@aura-intel.org and it is sorted by hand.",
-      });
+      const shown =
+        "That is as many accounts as can be opened from this network today. It lifts in 24 hours. Write to support@aura-intel.org and it is sorted by hand in the meantime.";
+      await recordRefusal(admin, ip_hash, "signup_limit");
+      await alertFounder(admin, ip_hash, count, shown);
+      return json({ ok: false, code: "signup_limit", error: shown });
     }
 
     // The account is created already confirmed. A verification round-trip used
@@ -78,9 +145,12 @@ serve(async (req) => {
       email_confirm: true,
       user_metadata: { password_set: true },
     });
-    if (error) return json({ error: error.message }, 400);
+    if (error) {
+      await recordRefusal(admin, ip_hash, "create_user_rejected");
+      return json({ error: error.message }, 400);
+    }
 
-    await admin.from("signup_attempts").insert({ ip_hash });
+    if (ip_hash) await admin.from("signup_attempts").insert({ ip_hash });
 
     // Record the consent against the profile row. A ticked box that leaves no
     // record proves nothing later.

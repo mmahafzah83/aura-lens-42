@@ -416,6 +416,8 @@ const Onboarding = () => {
   const [wallConsent, setWallConsent] = useState(false);
   const [wallBusy, setWallBusy] = useState(false);
   const [wallError, setWallError] = useState<string | null>(null);
+  const [wallEmailError, setWallEmailError] = useState<string | null>(null);
+  const [wallPasswordError, setWallPasswordError] = useState<string | null>(null);
   const [wallDone, setWallDone] = useState<string | null>(null);
   // The morning promise is only made when the system has actually been
   // delivering. Reads public.morning_promise_state; fails to the honest line.
@@ -3260,10 +3262,12 @@ const Onboarding = () => {
       e.preventDefault();
       if (wallBusy) return;
       setWallError(null);
+      setWallEmailError(null);
+      setWallPasswordError(null);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(wallEmail.trim())) {
-        setWallError("That doesn't look like an email address. Check it and try again."); return;
+        setWallEmailError("That doesn't look like an email address. Check it and try again."); return;
       }
-      if (wallPassword.length < 8) { setWallError("Use eight characters or more."); return; }
+      if (wallPassword.length < 8) { setWallPasswordError("Use eight characters or more."); return; }
       if (!wallConsent) return;
       setWallBusy(true);
       try {
@@ -3273,14 +3277,33 @@ const Onboarding = () => {
             origin: window.location.origin, consent_version: CONSENT_VERSION,
           },
         });
-        const result = data as { ok?: boolean; existing?: boolean; error?: string } | null;
+        type SignupResult = { ok?: boolean; existing?: boolean; code?: string; error?: string };
+        let result = data as SignupResult | null;
+        /* A non-2xx from the function arrives as an error with the body still
+           attached. The specific complaint lives there — read it, never bin it. */
+        if (!result && error) {
+          try { result = (await (error as any)?.context?.json?.()) as SignupResult; } catch { /* not JSON */ }
+        }
         if (result?.existing) {
           setWallError("You already have an account with that address. Sign in and your report is waiting.");
           return;
         }
+        if (result?.code === "signup_limit") {
+          setWallError("That is as many accounts as can be opened from this network today. It lifts in 24 hours. Write to support@aura-intel.org and it is sorted by hand in the meantime.");
+          return;
+        }
+        if (result?.code === "temporarily_unavailable") {
+          setWallError("Our end didn't answer. That's ours, not yours. Nothing you entered is lost — press once more.");
+          return;
+        }
         const msg = result?.error || error?.message;
         if (msg) {
-          setWallError("Couldn't open the account just now. Nothing is lost — try again in a moment.");
+          /* A 400 from account creation carries a real complaint about one of
+             the two fields. It belongs under that field, not in a block. */
+          const lower = msg.toLowerCase();
+          if (lower.includes("password")) { setWallPasswordError(msg); return; }
+          if (lower.includes("email") || lower.includes("address")) { setWallEmailError(msg); return; }
+          setWallError(msg);
           return;
         }
         const { data: signedIn } = await supabase.auth.signInWithPassword({
@@ -3303,7 +3326,7 @@ const Onboarding = () => {
         }
         setWallDone("Your account is open. Sign in and everything you just answered is waiting.");
       } catch {
-        setWallError("Couldn't open the account just now. Nothing is lost — try again in a moment.");
+        setWallError("We couldn't reach Aura just now. Check your connection — nothing you entered is lost.");
       } finally {
         setWallBusy(false);
       }
@@ -3331,10 +3354,16 @@ const Onboarding = () => {
             <label htmlFor="ob-wall-email" style={{ display: "block", fontSize: 13, color: OB.muted, marginBlockEnd: 6 }}>Your email</label>
             <input id="ob-wall-email" type="email" autoComplete="email" value={wallEmail}
               onChange={(e) => setWallEmail(e.target.value)} style={fieldStyle} />
+            <div aria-live="polite">
+              {wallEmailError && <p style={{ fontSize: 13, color: OB.err, marginBlockStart: 6 }}>{wallEmailError}</p>}
+            </div>
             <label htmlFor="ob-wall-pwd" style={{ display: "block", fontSize: 13, color: OB.muted, margin: "16px 0 6px" }}>A password</label>
             <input id="ob-wall-pwd" type="password" autoComplete="new-password" value={wallPassword}
               onChange={(e) => setWallPassword(e.target.value)} style={fieldStyle} />
             <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>Eight characters or more.</p>
+            <div aria-live="polite">
+              {wallPasswordError && <p style={{ fontSize: 13, color: OB.err, marginBlockStart: 6 }}>{wallPasswordError}</p>}
+            </div>
             <div aria-live="polite">
               {wallError && <p style={{ fontSize: 13, color: OB.err, marginBlockStart: 10 }}>{wallError}</p>}
             </div>
