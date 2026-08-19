@@ -3714,6 +3714,126 @@ const Onboarding = () => {
     );
   }
 
+  /* 13.5 — AFTER HE HAS KEPT IT. Sharing is offered here and nowhere earlier. */
+  if (screen === SHARE_SCREEN) {
+    const caption = suggestedCaption(postsRead ?? 0);
+    const liveCaption = captionDraft.trim() || caption;
+    const shareFooter = { posts: postsRead ?? 0, saved: claims.length };
+    const busy = sharing || posting || buildingReport || savingDraft;
+
+    const downloadCard = async () => {
+      if (!shareRef.current || busy) return;
+      setSharing(true);
+      try {
+        const how = await shareRevealCard(shareRef.current, { caption: liveCaption });
+        toast.success(how === "shared"
+          ? "Sent to your share sheet."
+          : "Image saved — the caption is on your clipboard, ready to paste.");
+      } catch (err) {
+        console.error("[reveal] share failed", err);
+        toast.error("Couldn't build the image. Your read is safe — it's on your Home.");
+      } finally {
+        setSharing(false);
+      }
+    };
+
+    const mintShare = async () => {
+      if (!userId || !reveal || shareUrl || minting) return;
+      setMinting(true);
+      try {
+        const token = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+        const isArabic = /[\u0600-\u06FF]/.test(`${reveal.archetype} ${reveal.marketRead || ""}`);
+        const { error } = await (supabase.from("report_shares") as any).insert({
+          token,
+          user_id: userId,
+          headline: reveal.archetype,
+          archetype: reveal.archetype,
+          market_read: reveal.marketRead || null,
+          subjects: reveal.subjects ?? [],
+          own_words: reveal.ownWordsQuote || null,
+          display_name: firstName.trim() || null,
+          lang: isArabic ? "ar" : "en",
+        });
+        if (error) throw error;
+        setShareUrl(`${window.location.origin}/r/${token}`);
+      } catch (err) {
+        console.error("[reveal] share link failed", err);
+        toast.error("Couldn't make the link just now. Try again in a moment.");
+      } finally {
+        setMinting(false);
+      }
+    };
+
+    const shareText = shareUrl ? `${liveCaption}\n\n${shareUrl}` : liveCaption;
+    const copyShareLink = async () => {
+      if (!shareUrl) return;
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success("Link copied.");
+      } catch {
+        toast.error("Couldn't copy that. Long-press the link to copy it.");
+      }
+    };
+
+    content = (
+      <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
+        <h1 style={{ ...h1Light }}>{AFTER_KEEP.heading}</h1>
+        <p style={{ ...bodyLight }}>{AFTER_KEEP.body}</p>
+
+        {reveal ? (
+          <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
+            <div style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
+              <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+            </div>
+          </div>
+        ) : null}
+
+        <div style={{ marginBlockStart: 18 }}>
+          <label htmlFor="ob-caption" style={{ display: "block", fontSize: 12.5, color: OB.muted, marginBlockEnd: 6 }}>
+            {AFTER_KEEP.captionLabel}
+          </label>
+          <textarea
+            id="ob-caption"
+            dir="auto"
+            value={captionDraft}
+            onChange={(e) => setCaptionDraft(e.target.value)}
+            rows={4}
+            style={{ ...fieldStyle, resize: "vertical" }}
+          />
+        </div>
+
+        <Actions style={{ marginBlockStart: 18 }}>
+          {!shareUrl ? (
+            <OBButton variant="secondary" disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
+              onClick={() => void mintShare()}>{AFTER_KEEP.share}</OBButton>
+          ) : null}
+          <OBButton variant="tertiary" disabled={!reveal || busy} onClick={() => void downloadCard()}>
+            {sharing ? "Building…" : AFTER_KEEP.download}
+          </OBButton>
+        </Actions>
+
+        {shareUrl ? (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBlockStart: 14 }}>
+              <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                target="_blank" rel="noopener noreferrer" style={quietLink}>WhatsApp</a>
+              <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
+                target="_blank" rel="noopener noreferrer" style={quietLink}>LinkedIn</a>
+              <button type="button" onClick={() => void copyShareLink()} style={quietLink}>Copy link</button>
+            </div>
+            <p style={{ margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6, color: OB.muted }}>
+              Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
+            </p>
+          </>
+        ) : null}
+
+        <Actions style={{ marginBlockStart: 18 }}>
+          <OBButton variant="tertiary" onClick={() => go(14)}>{AFTER_KEEP.continue}</OBButton>
+        </Actions>
+      </PaperShell>
+    );
+  }
+
   /* 13b — WHITE, and only after 13 */
   if (screen === 14) {
     content = (
