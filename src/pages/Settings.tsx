@@ -470,6 +470,15 @@ const handleDeleteAccount = async () => {
         />
         <div className="mb-8">
           <AuraCard variant="default" hover="none">
+            {/* They compared a CV before they had an account: it was read and
+                discarded, so we never imply we still hold the file. */}
+            {(() => {
+              try { return localStorage.getItem("aura_cv_was_transient") === "1"; } catch { return false; }
+            })() ? (
+              <p className="mb-4 text-sm text-muted-foreground">
+                Your comparison is saved. Add your CV again from Settings if you'd like Aura to keep it.
+              </p>
+            ) : null}
             <CvUploadControl userId={authUser?.id ?? null} />
           </AuraCard>
         </div>

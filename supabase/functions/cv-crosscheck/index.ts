@@ -97,7 +97,13 @@ serve(withObserve("cv-crosscheck", async (req) => {
      no write to `diagnostic_profiles`. The result is returned to the browser
      and held on the anonymous session by the caller. */
   const anonToken: string = typeof body?.anon_token === "string" ? body.anon_token.trim() : "";
-  let inlineCvText: string = typeof body?.cv_text === "string" ? body.cv_text.trim() : "";
+  /* `cvText` is the documented parameter name; `cv_text` is accepted as an
+     alias so either spelling works. When present the `documents` lookup is
+     skipped entirely and nothing about this CV is ever written down. */
+  let inlineCvText: string =
+    typeof body?.cvText === "string" ? body.cvText.trim()
+    : typeof body?.cv_text === "string" ? body.cv_text.trim()
+    : "";
   const cvFile: { mime?: string; name?: string; base64?: string } | null =
     body?.cv_file && typeof body.cv_file === "object" ? body.cv_file : null;
 
@@ -112,10 +118,23 @@ serve(withObserve("cv-crosscheck", async (req) => {
     const name = String(file.name ?? "").toLowerCase();
     const isDocx = mime.includes("word") || mime.includes("officedocument") || name.endsWith(".docx") || name.endsWith(".doc");
     if (isDocx) {
+      /* DOCX is a zip: unpack in memory and read the paragraph text out of
+         word/document.xml. No temp file, no library that wants a filesystem. */
       // @ts-ignore dynamic esm import
-      const mammoth = await import("https://esm.sh/mammoth@1.8.0?target=deno");
-      const res = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
-      return String(res?.value ?? "");
+      const { unzipSync, strFromU8 } = await import("https://esm.sh/fflate@0.8.2");
+      const files: Record<string, Uint8Array> = unzipSync(bytes);
+      const parts = Object.keys(files).filter((k) => /^word\/(document|header\d*|footer\d*)\.xml$/.test(k));
+      let out = "";
+      for (const p of parts) {
+        const xml = strFromU8(files[p]);
+        out += xml
+          .replace(/<\/w:p>/g, "\n")
+          .replace(/<w:tab[^>]*\/>/g, "\t")
+          .replace(/<[^>]+>/g, "")
+          .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+        out += "\n";
+      }
+      return out;
     }
     // @ts-ignore dynamic esm import
     const { extractText, getDocumentProxy } = await import("https://esm.sh/unpdf@0.12.1");
@@ -158,7 +177,10 @@ serve(withObserve("cv-crosscheck", async (req) => {
     targetId = undefined;
     if (!inlineCvText && cvFile) {
       try { inlineCvText = (await extractInMemory(cvFile)).trim(); }
-      catch (_e) { return json({ ok: false, pending: true, reason: "unparseable" }); }
+      catch (e) {
+        console.error("[cv-crosscheck] transient extraction failed", String((e as Error)?.message ?? e));
+        return json({ ok: false, pending: true, reason: "unparseable" });
+      }
     }
     if (inlineCvText.length < 200) return json({ ok: false, pending: true, reason: "no_cv" });
   } else if (!targetId && email) {
@@ -171,9 +193,11 @@ serve(withObserve("cv-crosscheck", async (req) => {
     if (targetId !== callerId && !callerIsAdmin) return json({ error: "Forbidden" }, 403);
   }
   const transient = !targetId;
+  /* Inline text wins over anything on file: the documents lookup is skipped. */
+  const inlineMode = transient || inlineCvText.length >= 200;
 
   // --- evidence ------------------------------------------------------------
-  const { data: storedCvs, error: cvErr } = transient
+  const { data: storedCvs, error: cvErr } = inlineMode
     ? { data: [] as any[], error: null }
     : await admin
     .from("documents")
@@ -186,7 +210,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
   if (cvErr) return json({ error: cvErr.message }, 500);
   const cvs = storedCvs ?? [];
 
-  if (!transient && !cvs.length) return json({ ok: false, pending: true, reason: "no_cv" });
+  if (!inlineMode && !cvs.length) return json({ ok: false, pending: true, reason: "no_cv" });
 
   const { data: snapRows } = transient
     ? { data: [] as any[] }
@@ -199,7 +223,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
   const snap: any = snapRows?.[0] ?? null;
   if (!transient && !snap) return json({ ok: false, pending: true, reason: "no_snapshot" });
 
-  const { data: chunks } = transient
+  const { data: chunks } = inlineMode
     ? { data: [] as any[] }
     : await admin
     .from("document_chunks")
@@ -215,7 +239,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
     byDoc.set((c as any).document_id, arr);
   }
 
-  let cvText = transient ? inlineCvText : cvs.map((d: any) => {
+  let cvText = inlineMode ? inlineCvText : cvs.map((d: any) => {
     const label = d.cv_label ? ` [${d.cv_label} CV]` : "";
     const title = d.display_title || d.filename || "CV";
     const summary = d.summary ? `Summary: ${String(d.summary)}` : "";
@@ -299,7 +323,7 @@ Certifications: ${cut(snap.certifications, 1200)}`;
     ? `There are ${peerCount} comparable reads on file for this market. You may make a peer comparison ONLY where the material above supports it; otherwise still return null.`
     : `PEER DATA IS THIN (${peerCount} reads on file). Return null for peer_comparison. Do not fabricate a comparison.`;
 
-  const docCount = transient ? 1 : cvs.length;
+  const docCount = inlineMode ? 1 : cvs.length;
   const userPrompt = `THEIR CV MATERIAL (${docCount} document${docCount === 1 ? "" : "s"})
 ${cvText}
 

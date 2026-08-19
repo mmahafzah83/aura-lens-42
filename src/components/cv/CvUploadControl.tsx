@@ -4,12 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * The one place a member adds a CV.
  *
- * Every upload path here sets document_type='cv' and cv_label='latest'.
- * A CV without that label is invisible to cv-crosscheck, so the two values
- * are written inline, in one insert, and nowhere else.
+ * SIGNED IN — the file is stored. Every stored path here sets
+ * document_type='cv' and cv_label='latest'. A CV without that label is
+ * invisible to cv-crosscheck, so the two values are written inline, in one
+ * insert, and nowhere else.
  *
- * A CV is never stored against an anonymous session: with no session the
- * control routes to the account step and comes straight back here.
+ * ANONYMOUS — nothing is stored. The bytes go straight to cv-crosscheck,
+ * which extracts the text in memory, compares, and returns. No storage
+ * object, no `documents` row, no `document_chunks` row. There is no wall:
+ * an anonymous visitor gets the whole comparison with no account.
  */
 
 export const CV_PURPOSES = [
@@ -68,16 +71,18 @@ const FAILURE_TEXT: Record<Failure["kind"], string> = {
 
 interface Props {
   userId: string | null;
-  /** Anonymous click: send them to the account step and back to this screen. */
-  onNeedAccount?: () => void;
+  /** Anonymous run: the token the transient comparison is attributed to. */
+  anonToken?: string | null;
   onUploaded?: (documentId: string) => void;
   onCrosscheck?: (crosscheck: unknown) => void;
+  /** Anything the CV gave us that can pre-fill the account form. */
+  onCvContact?: (contact: { email?: string; name?: string }) => void;
   /** Hide the purpose question where it does not belong (Settings shows it too). */
   showPurpose?: boolean;
 }
 
 export default function CvUploadControl({
-  userId, onNeedAccount, onUploaded, onCrosscheck, showPurpose = true,
+  userId, anonToken, onUploaded, onCrosscheck, onCvContact, showPurpose = true,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [purpose, setPurpose] = useState<string>(readCvPurpose);
@@ -130,15 +135,76 @@ export default function CvUploadControl({
 
   const pick = () => {
     if (busy) return;
-    if (!userId) { onNeedAccount?.(); return; }
     inputRef.current?.click();
   };
 
+  /* ── the anonymous path: read, compare, discard ──────────────────────
+     The bytes never touch storage and no `documents` row is created. They
+     are base64'd in the tab, posted once to cv-crosscheck, extracted in
+     memory there, and dropped when the response returns. */
+  const toBase64 = (buf: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buf);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin);
+  };
+
+  const transientCompare = async (file: File) => {
+    if (!anonToken) { setUploadError("Aura needs to read your profile first."); return; }
+    setUploadError(null);
+    setFailure(null);
+    setBusy(true);
+    setComparing(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const base64 = toBase64(buf);
+      /* Best-effort contact pull for the account form. Held in this tab only. */
+      try {
+        const raw = new TextDecoder("latin1").decode(new Uint8Array(buf).subarray(0, 400000));
+        const hit = raw.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+        if (hit) onCvContact?.({ email: hit[0] });
+      } catch { /* nothing lost if the pull fails */ }
+
+      /* `cvText` is sent when the file is already text; otherwise the bytes
+         are extracted in memory server-side and never written down. */
+      const isPlainText = file.type.startsWith("text/");
+      const cvText = isPlainText ? new TextDecoder().decode(buf) : undefined;
+
+      const { data, error } = await supabase.functions.invoke("cv-crosscheck", {
+        body: {
+          anon_token: anonToken,
+          purpose,
+          ...(cvText ? { cvText } : { cv_file: { mime: file.type, name: file.name, base64 } }),
+        },
+      });
+      if (error) { setFailure({ kind: "server" }); return; }
+      const res = data as { ok?: boolean; crosscheck?: unknown; reason?: string } | null;
+      if (res?.crosscheck) {
+        setFileName(file.name);
+        onCrosscheck?.(res.crosscheck);
+        return;
+      }
+      const reason = res?.reason;
+      if (reason === "no_cv") setFailure({ kind: "no_cv" });
+      else if (reason === "no_snapshot") setFailure({ kind: "no_snapshot" });
+      else if (reason === "unparseable") setFailure({ kind: "unparseable" });
+      else setFailure({ kind: "server" });
+    } catch {
+      setFailure({ kind: "server" });
+    } finally {
+      setComparing(false);
+      setBusy(false);
+    }
+  };
+
   const upload = async (file: File) => {
-    if (!userId) return;
     const fileType = ACCEPTED[file.type] || (/\.docx?$/i.test(file.name) ? "docx" : /\.pdf$/i.test(file.name) ? "pdf" : null);
     if (!fileType) { setUploadError("That file type isn't supported. Add a PDF or a Word document."); return; }
     if (file.size > 50 * 1024 * 1024) { setUploadError("That file is over 50MB. Try a smaller one."); return; }
+    /* No session: read it, compare it, throw it away. Never a login gate. */
+    if (!userId) { await transientCompare(file); return; }
     setUploadError(null);
     setFailure(null);
     setBusy(true);
@@ -193,7 +259,11 @@ export default function CvUploadControl({
           <div style={{ flex: "1 1 200px", minInlineSize: 0 }}>
             <div style={{ fontSize: 14, color: INK, overflowWrap: "anywhere" }}>{fileName}</div>
             <div style={{ fontSize: 12.5, color: MUTED, marginBlockStart: 2 }}>
-              {comparing ? "Aura is reading it against your profile." : "On file. Only you can see it."}
+              {comparing
+                ? "Aura is reading it against your profile."
+                : userId
+                  ? "On file. Only you can see it."
+                  : "Read and discarded. Aura kept the comparison, not the file."}
             </div>
           </div>
           <button type="button" onClick={pick} style={{ ...ghostStyle, minInlineSize: 44 }}>Replace</button>
@@ -201,9 +271,13 @@ export default function CvUploadControl({
       ) : (
         <>
           <button type="button" onClick={pick} disabled={busy} style={{ ...primaryStyle, opacity: busy ? 0.7 : 1 }}>
-            {busy ? "Adding your CV…" : "Add your CV"}
+            {busy ? (userId ? "Adding your CV…" : "Reading your CV…") : "Add your CV"}
           </button>
-          <p style={helpStyle}>PDF or Word. Only you can see it.</p>
+          <p style={helpStyle}>
+            {userId
+              ? "PDF or Word. Only you can see it."
+              : "Aura reads your CV and discards it. It is never stored unless you save your report."}
+          </p>
         </>
       )}
 
