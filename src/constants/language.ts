@@ -41,6 +41,16 @@
  */
 
 // ════════════════════════════════════
+// BRAND — the one headline. D126: this file owns it.
+// index.html and public/llms.txt are declared MANUAL MIRRORS —
+// if you change this string you must update both by hand.
+// ════════════════════════════════════
+export const BRAND = {
+  headline: "Your experience is worth more than your profile shows.",
+  descriptor: "AI Professional Identity Platform",
+} as const;
+
+// ════════════════════════════════════
 // LOADING STATES
 // ════════════════════════════════════
 export const LOADING = {
