@@ -2083,31 +2083,36 @@ const Onboarding = () => {
   if (screen === 0) {
     content = (
       <PaperShell onExit={saveAndExit} bead={0} subProgress={readDone ? 0.5 : undefined} footer={escapeFooter}>
-        <h1 style={h1Light}>By the end of this, Aura knows how you work.</h1>
-        <p style={bodyLight}>
-          Then it writes like you — and helps you be known better on LinkedIn and in the professional circles that matter to you.
-        </p>
+        <h1 style={h1Light}>{BRAND.headline}</h1>
+        <p style={bodyLight}>{ONBOARDING_INTRO.lede}</p>
         <p style={bodyLight}>
           {ASSESSMENT_STEPS_WORD.charAt(0).toUpperCase() + ASSESSMENT_STEPS_WORD.slice(1)} short steps,{" "}
-          {FULL_PICTURE_LINE.toLowerCase()}. You can stop anywhere — everything saves as you go.
+          {FULL_PICTURE_LINE.toLowerCase()}. You can stop anywhere — everything saves as you go. Free, and it stays free.
         </p>
         <p style={{
-          margin: "26px 0 10px", fontFamily: OB.mono, fontSize: 9.5, letterSpacing: "0.12em",
-          color: OB.muted,
+          margin: "26px 0 8px", fontFamily: OB.ui, fontSize: 11, letterSpacing: "0.12em",
+          color: OB.muted, fontWeight: 600,
         }}>
-          What you'll have when you're done
+          {ONBOARDING_INTRO.rowHead}
         </p>
-        <div style={{
-          display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          gap: 8, justifyItems: "center", alignItems: "start", maxWidth: 420, margin: "0 auto 6px",
-        }}>
-          {SHELF.map((s, i) => (
-            <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
-              tone={s.tone} icon={SHELF_ICON[i]} hint={SHELF_HINT[i]}
-              unlocked={shelfState[i].unlocked} figure={shelfState[i].figure} />
+        <p style={{ margin: "0 0 18px", fontSize: 13.5, lineHeight: 1.55, color: OB.muted }}>
+          {ONBOARDING_INTRO.rowSub}
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, margin: "0 0 6px" }}>
+          {ONBOARDING_INTRO.outputs.map((o) => (
+            <div key={o.label} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: 999, background: OB.line, marginTop: 7 }} />
+              <div>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.35, color: OB.ink }}>{o.label}</p>
+                <p style={{ margin: "3px 0 0", fontSize: 13.5, lineHeight: 1.55, color: OB.muted }}>{o.detail}</p>
+              </div>
+            </div>
           ))}
         </div>
         <Actions style={{ marginBlockStart: 22 }}><OBButton onClick={() => go(1)}>Start</OBButton></Actions>
+        <p style={{ margin: "18px 0 0", fontSize: 14, lineHeight: 1.55, color: OB.ink }}>
+          {ONBOARDING_INTRO.loss}
+        </p>
         <p style={footnote}>{REPORT_FREE_LINE}</p>
       </PaperShell>
     );
