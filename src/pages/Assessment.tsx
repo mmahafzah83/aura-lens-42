@@ -273,6 +273,17 @@ const Assessment = () => {
           onExit={finishLater}
           name={state.name ?? null}
           beat={stage === "read" || stage === "resume" ? 2 : 1}
+          onBack={
+            stage === "address" ? () => setStage("gate")
+            : stage === "read" ? () => setStage("address")
+            : stage === "resume" ? () => setStage("gate")
+            : undefined
+          }
+          sub={
+            stage === "address" ? { n: 1, total: 2, label: "Your read" }
+            : stage === "reading" ? { n: 2, total: 2, label: "Your read" }
+            : null
+          }
         />
         <main id="journey-main" tabIndex={-1} className="asg-wrap asg-flow">
           {stage === "read" || stage === "resume" ? (
@@ -351,6 +362,9 @@ const Assessment = () => {
                 <h2>This read is anonymous.</h2>
                 <p>It lives in this browser only. Clear your history or switch to your phone and it is gone.</p>
               </section>
+              <button type="button" className="asg-textbtn" onClick={() => void startNewRead()}>
+                This isn't me — read a different profile
+              </button>
               <button className="asg-btn asg-bp asg-full" onClick={() => void continueToOnboarding()}>
                 Continue — your CV and {ASSESSMENT_QUESTIONS_PHRASE} <span className="asg-a">↗</span>
               </button>

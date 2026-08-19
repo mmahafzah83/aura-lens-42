@@ -6,7 +6,7 @@
  *
  * Four slots, fixed order, reserved width even when empty (an element that
  * mounts after first paint costs layout shift):
- *   [back] · ✳ Aura · … · [identity] · Finish later
+ *   [back] · [mark] Aura · … · [identity] · Finish later
  *
  * PROGRESS IS FLAT. One connected three-segment bar, labelled, no counts
  * anywhere in the chrome: this journey is conditional (CV, sector and purpose
@@ -15,6 +15,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { AuraLogo } from "@/components/brand/AuraLogo";
 
 const CARD = "#FFFFFF";
 const LINE = "#E2E7EE";
@@ -154,7 +155,7 @@ const JourneyBar = ({ onBack, onExit, name }: {
           letterSpacing: "0.14em", color: INK, whiteSpace: "nowrap",
         }}
       >
-        <span aria-hidden style={{ color: CYAN_TEXT, fontSize: 13 }}>✳</span>
+        <AuraLogo size={22} density="compact" variant="light" ink={INK} tick={CYAN_TEXT} title="" />
         AURA
       </span>
 
