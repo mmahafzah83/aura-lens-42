@@ -6,7 +6,7 @@
  *
  * Four slots, fixed order, reserved width even when empty (an element that
  * mounts after first paint costs layout shift):
- *   [back] · ✳ Aura · … · [identity] · Finish later
+ *   [back] · [mark] Aura · … · [identity] · Finish later
  *
  * PROGRESS IS FLAT. One connected three-segment bar, labelled, no counts
  * anywhere in the chrome: this journey is conditional (CV, sector and purpose
