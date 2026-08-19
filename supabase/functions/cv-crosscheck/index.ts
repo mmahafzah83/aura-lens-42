@@ -307,7 +307,7 @@ Certifications: ${cut(snap.certifications, 1200)}`;
     ? `There are ${peerCount} comparable reads on file for this market. You may make a peer comparison ONLY where the material above supports it; otherwise still return null.`
     : `PEER DATA IS THIN (${peerCount} reads on file). Return null for peer_comparison. Do not fabricate a comparison.`;
 
-  const docCount = transient ? 1 : cvs.length;
+  const docCount = inlineMode ? 1 : cvs.length;
   const userPrompt = `THEIR CV MATERIAL (${docCount} document${docCount === 1 ? "" : "s"})
 ${cvText}
 
