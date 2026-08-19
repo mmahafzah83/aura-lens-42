@@ -883,12 +883,10 @@ const Onboarding = () => {
         sliders: Object.keys((pf.skill_ratings ?? {}) as Record<string, unknown>).length,
         captures: Array.isArray((st as any).pending_captures) ? (st as any).pending_captures.length : 0,
       };
-      const startedAt = opts.startedAt ?? null;
-      if (startedAt) {
-        const mins = Math.round((Date.now() - new Date(startedAt).getTime()) / 60000);
-        /* A duration is only honest if it is positive and plausible. */
-        if (Number.isFinite(mins) && mins >= 1 && mins <= 240) entry.minutes = mins;
-      }
+      /* NO DURATION. The only clock we hold is the session's created_at, which
+         is wall-clock — it counts the hours the browser sat closed. A number
+         nobody earned may not ship, and engaged time is not recorded anywhere,
+         so the figure is deleted rather than approximated. */
       localStorage.setItem("aura_just_joined", JSON.stringify(entry));
     } catch { /* private mode — the arrival is a grace, not a gate */ }
     clearToken();
