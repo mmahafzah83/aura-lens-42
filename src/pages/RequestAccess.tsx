@@ -68,6 +68,11 @@ export default function RequestAccess() {
   const [position, setPosition] = useState<number | null>(null);
   const [seats, setSeats] = useState<{ claimed: number; cap: number } | null>(null);
   const [intent, setIntent] = useState<SeatIntent>(INTENT_RESERVE);
+  // Arriving from the seat panel already carries which door was pressed there.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("intent");
+    if (q === INTENT_KEEP_POSTED || q === INTENT_RESERVE) setIntent(q);
+  }, []);
   const [worth, setWorth] = useState("");
   const [worthState, setWorthState] = useState<"idle" | "sending" | "sent" | "skipped">("idle");
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string; sector?: string }>({});
