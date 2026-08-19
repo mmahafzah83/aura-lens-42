@@ -574,6 +574,32 @@ const RA_CSS = `
 .ra-price{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;margin-top:4px;}
 .ra-price-n{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--n900);}
 .ra-price-s{font-size:12.5px;color:var(--n500);line-height:1.5;}
+
+.ra-onejob{margin-top:20px;font-size:17px;line-height:1.55;font-weight:600;color:var(--n900);max-width:44ch;}
+.ra-howlb{margin-top:24px;font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--n400);}
+.ra-how{margin-top:10px;display:flex;flex-direction:column;gap:8px;max-width:46ch;}
+.ra-how li{font-size:14px;line-height:1.55;color:var(--n700);padding-left:16px;position:relative;}
+.ra-how li::before{content:'';position:absolute;left:0;top:9px;width:7px;height:1px;background:var(--act);}
+.ra-constraint{margin-top:18px;font-size:14px;line-height:1.6;color:var(--n900);max-width:44ch;}
+
+/* Two doors — identical geometry, so the choice between them is real. */
+.ra-doors{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
+.ra-door{display:inline-flex;align-items:center;justify-content:center;text-align:center;
+  min-height:52px;padding:12px 14px;width:100%;border-radius:999px;font-family:inherit;
+  font-size:15px;font-weight:600;line-height:1.25;cursor:pointer;
+  transition:background .2s ease,color .2s ease,box-shadow .25s ease;}
+.ra-door:disabled{cursor:default;opacity:.85;}
+.ra-door-fill{background:var(--act);color:#fff;border:1.5px solid var(--act);}
+.ra-door-fill:hover:not(:disabled){background:#04477C;border-color:#04477C;}
+.ra-door-line{background:var(--n0);color:var(--act);border:1.5px solid var(--act);}
+.ra-door-line:hover:not(:disabled){background:var(--act-50);}
+.ra-reservenote{margin-top:12px;font-size:12.5px;line-height:1.6;color:var(--n500);text-align:center;}
+.ra-worth{margin-top:22px;text-align:left;}
+.ra-worth label{margin-bottom:9px;text-transform:none;letter-spacing:0;font-family:var(--ui);
+  font-size:14px;line-height:1.55;color:var(--n700);}
+.ra-worth textarea{resize:vertical;}
+@media (max-width:520px){.ra-doors{grid-template-columns:1fr;}}
 .ra-signin{text-align:center;margin-top:22px;padding-top:20px;border-top:1px solid var(--n200);
   font-size:14.5px;color:var(--n500);}
 .ra-signin a{color:var(--act);font-weight:600;}
