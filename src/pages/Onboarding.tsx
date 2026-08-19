@@ -852,6 +852,25 @@ const Onboarding = () => {
   }, [persistScreen]);
   const canBack = backStack.current.length > 0;
 
+  /**
+   * Screen 0 back — the member came here from their read on /assessment.
+   * Assessment's boot effect bounces `step === "onboarding"` straight back
+   * here, so the saved step is REWOUND to "read" first (STEP_TO_STAGE maps
+   * "read" → the "resume" stage) and only then do we navigate. Nothing else
+   * on the session is touched, and a failed write means no navigation.
+   */
+  const backToRead = useCallback(async () => {
+    if (!anonToken) return;
+    const found = await loadSession(anonToken);
+    const base = (found?.state ?? anonStateRef.current ?? {}) as AssessmentState & Record<string, any>;
+    if (!base?.read) return;
+    const next = { ...base, step: "read" };
+    const ok = await saveSession(anonToken, next);
+    if (!ok) return;                       // never send them somewhere that bounces
+    anonStateRef.current = next as any;
+    navigate("/assessment");
+  }, [anonToken, navigate]);
+
   /* ── boot ── */
   useEffect(() => {
     (async () => {
