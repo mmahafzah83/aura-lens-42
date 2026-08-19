@@ -1419,9 +1419,11 @@ const Onboarding = () => {
     const startIso = new Date(Date.now() - 10000).toISOString();
     setReadStep(0);
     setLinkFailed(false);
+    setLinkFailedOurs(false);
     go(6);
     let sent = false;
     let deferred = false;
+    let ours = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -1438,6 +1440,13 @@ const Onboarding = () => {
             signal: ctrl.signal,
           });
           sent = res.ok;
+          if (!res.ok) {
+            /* Read the body: a failure of ours must not be blamed on their link. */
+            const payload = await res.json().catch(() => ({} as any));
+            const reason = String((payload as any)?.error ?? (payload as any)?.reason ?? "");
+            ours = res.status === 401 || res.status === 429 || res.status >= 500
+              || /timeout|unavailable|not_configured|rate/i.test(reason);
+          }
         } finally { window.clearTimeout(to); }
       } else if (anonToken) {
         /* No session is our gap, not their bad link — keep it and replay at hand-off. */
@@ -1451,7 +1460,7 @@ const Onboarding = () => {
         await saveSession(anonToken, anonStateRef.current);
         deferred = true;
       }
-    } catch { sent = false; /* aborted or offline — nothing was written */ }
+    } catch { sent = false; ours = true; /* aborted, timed out or offline — ours */ }
     sendingLinkRef.current = false;
     setSendingLink(false);
     if (deferred) {
@@ -1460,6 +1469,7 @@ const Onboarding = () => {
     }
     if (!sent) {
       /* nothing will ever land — don't make them watch a 120s ceiling for it */
+      setLinkFailedOurs(ours);
       setLinkFailed(true);
       return;
     }
