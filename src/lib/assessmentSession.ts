@@ -13,8 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const SESSION_KEY = "aura_session_token";
 
-export const QUEUE_MESSAGE =
-  "Aura is at today's limit. Leave your email and you are first in tomorrow — no place is lost.";
+/** Shown only as a heading above the real queue form — never on its own. */
+export const QUEUE_MESSAGE = "Aura is reading at its limit for today.";
 export const ALREADY_RUN_MESSAGE =
   "You have already run this once. Sign in to see your report.";
 const GENERIC = "Something failed on our side. Nothing is lost — try once more.";
@@ -93,10 +93,38 @@ export async function saveSession(token: string, state: AssessmentState): Promis
   return !error && data === true;
 }
 
-export async function startRun(token: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function startRun(
+  token: string,
+): Promise<{ ok: true } | { ok: false; error: string; code: string }> {
   const { error } = await supabase.rpc("start_assessment_run", { p_token: token });
-  if (error) return { ok: false, error: messageFor(codeOf(error)) };
+  if (error) {
+    const code = codeOf(error);
+    return { ok: false, error: messageFor(code), code };
+  }
   return { ok: true };
+}
+
+/**
+ * The queue is real: one row, one place in line. The position comes back from
+ * the database, so the number a person is shown is the number they hold.
+ */
+export async function joinReadQueue(
+  email: string,
+  operation = "linkedin_read",
+  anonToken?: string | null,
+): Promise<{ ok: true; position: number } | { ok: false; error: string }> {
+  const { data, error } = await (supabase.rpc as any)("join_read_queue", {
+    p_email: email,
+    p_operation: operation,
+    p_anon_token: anonToken ?? null,
+    p_fingerprint_hash: null,
+  });
+  if (error) {
+    const raw = String((error as { message?: string })?.message ?? "");
+    if (raw.includes("INVALID_EMAIL")) return { ok: false, error: "That doesn't look like an email address." };
+    return { ok: false, error: GENERIC };
+  }
+  return { ok: true, position: Number(data ?? 1) };
 }
 
 /**

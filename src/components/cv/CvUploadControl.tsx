@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { OB, reducedMotion } from "@/components/onboarding/tokens";
+import {
+  OVER_P95_LINE, mmss, useElapsed, useWaitEstimate, waitCopy,
+} from "@/lib/waitEstimate";
 
 /**
  * The one place a member adds a CV.
@@ -59,8 +62,9 @@ const helpStyle: React.CSSProperties = { fontSize: 12.5, color: MUTED, marginBlo
 
 /* ── the honest wait ──────────────────────────────────────────────────
    The client knows two facts: the request left, and the answer came back.
-   So there is no percentage and no tick. There is a looping bar, the four
-   things the function actually does, and a counter that is genuinely true. */
+   So there is no percentage and no tick — none of these four steps has an
+   event of its own, so none of them claims to be finished. What is real is
+   the counter, and an estimate measured from finished cross-checks. */
 
 const WAIT_STEPS = [
   "Reading your CV",
@@ -69,20 +73,11 @@ const WAIT_STEPS = [
   "Checking every number and every claim",
 ] as const;
 
-/** Time estimate only — stated as such in the copy above the list. */
-const STEP_AT = [0, 15, 35, 55];
-
 function WaitingPanel() {
-  const [secs, setSecs] = useState(0);
   const reduced = reducedMotion();
-  useEffect(() => {
-    const id = window.setInterval(() => setSecs((s) => s + 1), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-  let current = 0;
-  for (let i = 0; i < STEP_AT.length; i++) if (secs >= STEP_AT[i]) current = i;
-  const mm = Math.floor(secs / 60);
-  const ss = String(secs % 60).padStart(2, "0");
+  const secs = useElapsed(true);
+  const est = useWaitEstimate("cv_crosscheck");
+  const over = est.known && secs > est.p95;
 
   return (
     <div
@@ -108,18 +103,18 @@ function WaitingPanel() {
       ) : null}
 
       <p style={{ fontSize: 13.5, color: MUTED, margin: "12px 0 0", lineHeight: 1.55 }}>
-        Aura is working through four things. This usually takes about a minute.
+        Aura is working through four things. {waitCopy(est)}
       </p>
 
       <ul style={{ listStyle: "none", margin: "10px 0 0", padding: 0, display: "grid", gap: 6 }}>
-        {WAIT_STEPS.map((s, i) => (
+        {WAIT_STEPS.map((s) => (
           <li
             key={s}
             style={{
               fontSize: 14,
               lineHeight: 1.5,
-              color: i === current ? INK : MUTED,
-              fontWeight: i === current ? 600 : 400,
+              color: MUTED,
+              fontWeight: 400,
             }}
           >
             {s}
@@ -127,14 +122,12 @@ function WaitingPanel() {
         ))}
       </ul>
 
-      <p aria-hidden style={{ fontFamily: OB.mono, fontSize: 13, color: MUTED, margin: "12px 0 0" }}>
-        {mm}:{ss}
+      <p style={{ fontFamily: OB.mono, fontSize: 13, color: MUTED, margin: "12px 0 0", fontVariantNumeric: "tabular-nums" }}>
+        {mmss(secs)}
       </p>
 
-      {secs >= 150 ? (
-        <p style={{ ...helpStyle, marginBlockStart: 6 }}>This is slower than usual — it is still running.</p>
-      ) : secs >= 90 ? (
-        <p style={{ ...helpStyle, marginBlockStart: 6 }}>Still going. Longer CVs take more reading.</p>
+      {over ? (
+        <p style={{ ...helpStyle, marginBlockStart: 6 }}>{OVER_P95_LINE}</p>
       ) : null}
     </div>
   );

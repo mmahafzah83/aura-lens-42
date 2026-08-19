@@ -3949,6 +3949,36 @@ export type Database = {
         }
         Relationships: []
       }
+      read_queue: {
+        Row: {
+          anon_token: string | null
+          email: string
+          fingerprint_hash: string | null
+          id: string
+          notified_at: string | null
+          operation: string
+          requested_at: string
+        }
+        Insert: {
+          anon_token?: string | null
+          email: string
+          fingerprint_hash?: string | null
+          id?: string
+          notified_at?: string | null
+          operation?: string
+          requested_at?: string
+        }
+        Update: {
+          anon_token?: string | null
+          email?: string
+          fingerprint_hash?: string | null
+          id?: string
+          notified_at?: string | null
+          operation?: string
+          requested_at?: string
+        }
+        Relationships: []
+      }
       recommended_moves_retired_20260718: {
         Row: {
           created_at: string
@@ -6188,6 +6218,15 @@ export type Database = {
       identity_kind: { Args: { p_user_id: string }; Returns: string }
       is_current_user_admin: { Args: never; Returns: boolean }
       is_customer: { Args: { p_user_id: string }; Returns: boolean }
+      join_read_queue: {
+        Args: {
+          p_anon_token?: string
+          p_email: string
+          p_fingerprint_hash?: string
+          p_operation?: string
+        }
+        Returns: number
+      }
       linkedin_handle_valid: { Args: { h: string }; Returns: boolean }
       momentum_funnel: {
         Args: never
