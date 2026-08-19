@@ -198,6 +198,7 @@ export default function RequestAccess() {
           <ul className="ra-how">
             {SEAT_HOW.map((row) => <li key={row}>{row}</li>)}
           </ul>
+          <p className="ra-vs">{SEAT_VS_TOOLS}</p>
           <p className="ra-constraint">{SEAT_CONSTRAINT}</p>
 
           {seats && (
