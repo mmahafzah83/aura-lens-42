@@ -704,6 +704,15 @@ const Onboarding = () => {
       if (pf[k] !== undefined && pf[k] !== null) patch[k] = pf[k];
     }
     if (Object.keys(patch).length) await upsertProfile(uid, patch, "journey anon handoff");
+    /* The transient CV comparison moves onto the profile. The CV itself was
+       discarded when it was read, so only the result travels. */
+    try {
+      const cc = (st as any).cv_crosscheck;
+      if (cc) {
+        await upsertProfile(uid, { cv_crosscheck: cc, cv_crosscheck_at: new Date().toISOString() }, "journey anon cv crosscheck");
+        try { localStorage.setItem("aura_cv_was_transient", "1"); } catch { /* private mode */ }
+      }
+    } catch (e) { console.error("[journey] cv crosscheck handoff failed", e); }
     await upsertProfile(
       uid,
       { onboarding_step: 3, identity_intelligence: { journey_screen: 12, read_done: true } },
