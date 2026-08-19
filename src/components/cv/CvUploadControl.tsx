@@ -135,15 +135,76 @@ export default function CvUploadControl({
 
   const pick = () => {
     if (busy) return;
-    if (!userId) { onNeedAccount?.(); return; }
     inputRef.current?.click();
   };
 
+  /* ── the anonymous path: read, compare, discard ──────────────────────
+     The bytes never touch storage and no `documents` row is created. They
+     are base64'd in the tab, posted once to cv-crosscheck, extracted in
+     memory there, and dropped when the response returns. */
+  const toBase64 = (buf: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buf);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin);
+  };
+
+  const transientCompare = async (file: File) => {
+    if (!anonToken) { setUploadError("Aura needs to read your profile first."); return; }
+    setUploadError(null);
+    setFailure(null);
+    setBusy(true);
+    setComparing(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const base64 = toBase64(buf);
+      /* Best-effort contact pull for the account form. Held in this tab only. */
+      try {
+        const raw = new TextDecoder("latin1").decode(new Uint8Array(buf).subarray(0, 400000));
+        const hit = raw.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+        if (hit) onCvContact?.({ email: hit[0] });
+      } catch { /* nothing lost if the pull fails */ }
+
+      /* `cvText` is sent when the file is already text; otherwise the bytes
+         are extracted in memory server-side and never written down. */
+      const isPlainText = file.type.startsWith("text/");
+      const cvText = isPlainText ? new TextDecoder().decode(buf) : undefined;
+
+      const { data, error } = await supabase.functions.invoke("cv-crosscheck", {
+        body: {
+          anon_token: anonToken,
+          purpose,
+          ...(cvText ? { cvText } : { cv_file: { mime: file.type, name: file.name, base64 } }),
+        },
+      });
+      if (error) { setFailure({ kind: "server" }); return; }
+      const res = data as { ok?: boolean; crosscheck?: unknown; reason?: string } | null;
+      if (res?.crosscheck) {
+        setFileName(file.name);
+        onCrosscheck?.(res.crosscheck);
+        return;
+      }
+      const reason = res?.reason;
+      if (reason === "no_cv") setFailure({ kind: "no_cv" });
+      else if (reason === "no_snapshot") setFailure({ kind: "no_snapshot" });
+      else if (reason === "unparseable") setFailure({ kind: "unparseable" });
+      else setFailure({ kind: "server" });
+    } catch {
+      setFailure({ kind: "server" });
+    } finally {
+      setComparing(false);
+      setBusy(false);
+    }
+  };
+
   const upload = async (file: File) => {
-    if (!userId) return;
     const fileType = ACCEPTED[file.type] || (/\.docx?$/i.test(file.name) ? "docx" : /\.pdf$/i.test(file.name) ? "pdf" : null);
     if (!fileType) { setUploadError("That file type isn't supported. Add a PDF or a Word document."); return; }
     if (file.size > 50 * 1024 * 1024) { setUploadError("That file is over 50MB. Try a smaller one."); return; }
+    /* No session: read it, compare it, throw it away. Never a login gate. */
+    if (!userId) { await transientCompare(file); return; }
     setUploadError(null);
     setFailure(null);
     setBusy(true);
