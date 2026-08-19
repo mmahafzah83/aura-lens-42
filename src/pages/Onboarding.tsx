@@ -482,6 +482,8 @@ const Onboarding = () => {
   const sendingLinkRef = useRef(false);
   /* the read never left the building — never make them watch for nothing */
   const [linkFailed, setLinkFailed] = useState(false);
+  /* Whose failure it was: ours (auth, limit, 5xx, timeout, offline) or the link's. */
+  const [linkFailedOurs, setLinkFailedOurs] = useState(false);
   const [capturePending, setCapturePending] = useState(false);
   const [suggested, setSuggested] = useState<{ url: string; title: string; summary?: string; source?: string; published_at?: string | null } | null>(null);
   const [suggestDead, setSuggestDead] = useState(false);
