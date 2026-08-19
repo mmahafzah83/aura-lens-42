@@ -342,7 +342,7 @@ export const EMAIL = {
     step3: "Save one article",
     step4: "Watch your first signal appear",
     defaultNote: "I built Aura because I kept meeting brilliant professionals whose market didn't know they existed. Not because they lacked expertise — but because no one had built them a system to make it visible. Aura is that system. I hope it changes the way your work is seen.",
-    footer: "Strategic Intelligence · Private Beta",
+    footer: "Aura · AI Professional Identity Platform",
   },
   weeklyBrief: {
     subject: "What moved in your sector this week",
