@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import {
   createSession, loadSession, saveSession, startRun,
-  readToken, clearToken, type AssessmentState,
+  readToken, clearToken, joinReadQueue, type AssessmentState,
 } from "@/lib/assessmentSession";
+import {
+  OVER_P95_LINE, mmss, useElapsed, useWaitEstimate, waitCopy,
+} from "@/lib/waitEstimate";
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
@@ -21,46 +24,93 @@ import {
  */
 type Stage = "gate" | "address" | "reading" | "read" | "resume";
 
-const READING_LINES = [
-  "Opening the profile…",
-  "Reading recent posts…",
-  "Finding what only you have…",
-  "Writing your read…",
-  "Still going — some profiles take longer.",
+/** The four things Aura does. None of them ticks: none has an event of its own. */
+const READING_STEPS = [
+  "Opening the profile",
+  "Reading recent posts",
+  "Finding what only you have",
+  "Writing your read",
 ];
 
-/** The wait has to look like it is moving, because it is. */
-const ReadingProgress = () => {
-  const reduced = typeof window !== "undefined"
-    && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  const [pct, setPct] = useState(reduced ? 40 : 0);
-  useEffect(() => {
-    if (reduced) return;
-    const started = Date.now();
-    const id = window.setInterval(() => {
-      const t = (Date.now() - started) / 25_000;
-      setPct(Math.min(92, Math.round(t * 92)));
-    }, 200);
-    return () => window.clearInterval(id);
-  }, [reduced]);
+/**
+ * The honest wait: named steps that never pretend to finish, a counter of real
+ * elapsed time, and an estimate measured from finished reads. No percentage.
+ * Reduced motion changes nothing — the same words, the same real counter.
+ */
+const ReadingWait = () => {
+  const secs = useElapsed(true);
+  const est = useWaitEstimate("linkedin_read");
+  const over = est.known && secs > est.p95;
   return (
-    <div
-      role="progressbar"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={pct}
-      aria-label="Reading your profile"
-      style={{
-        marginBlockStart: 18, blockSize: 3, borderRadius: 999,
-        background: "#E2E7EE", overflow: "hidden",
-      }}
-    >
-      <div style={{
-        blockSize: "100%", inlineSize: `${pct}%`, borderRadius: 999,
-        background: "#0670C4",
-        transition: reduced ? "none" : "inline-size 200ms linear",
-      }} />
+    <div role="status" aria-live="polite" style={{ marginBlockStart: 18 }}>
+      <p className="asg-pp">{waitCopy(est)}</p>
+      <ul style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "grid", gap: 6 }}>
+        {READING_STEPS.map((s) => (
+          <li key={s} style={{ fontSize: 14, lineHeight: 1.5, color: "#5B6673" }}>{s}</li>
+        ))}
+      </ul>
+      <p style={{
+        fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)", fontSize: 13,
+        color: "#5B6673", margin: "12px 0 0", fontVariantNumeric: "tabular-nums",
+      }}>
+        {mmss(secs)}
+      </p>
+      {over ? (
+        <p style={{ fontSize: 12.5, lineHeight: 1.5, color: "#5B6673", margin: "6px 0 0" }}>{OVER_P95_LINE}</p>
+      ) : null}
     </div>
+  );
+};
+
+/**
+ * WHEN WE ARE FULL — a real capture, not a consolation line. The email is
+ * written to `read_queue` and the position shown is the position held.
+ */
+const QueueCapture = ({ anonToken }: { anonToken: string | null }) => {
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [position, setPosition] = useState<number | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const submit = async () => {
+    setErr(null);
+    setBusy(true);
+    const res = await joinReadQueue(email.trim(), "linkedin_read", anonToken);
+    setBusy(false);
+    if (!res.ok) { setErr(res.error); return; }
+    setPosition(res.position);
+  };
+
+  if (position !== null) {
+    return (
+      <section className="asg-panel" role="status">
+        <p className="asg-pp">
+          Aura is reading at its limit for today. You are number {position} in line. It opens again at
+          {" "}03:00 Riyadh time and we will email you the moment yours is ready. Nothing you have entered is lost.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="asg-panel">
+      <h1 className="asg-ph">Aura is reading at its limit for today.</h1>
+      <p className="asg-pp">
+        It opens again at 03:00 Riyadh time. Leave your email and we will write to you the moment yours is ready.
+        Nothing you have entered is lost.
+      </p>
+      <label className="asg-lbl" htmlFor="asg-queue-email">Your email</label>
+      <input
+        id="asg-queue-email" className="asg-in" type="email" value={email}
+        placeholder="you@company.com"
+        onChange={(e) => setEmail(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") void submit(); }}
+      />
+      <div aria-live="polite">{err && <p className="asg-err">{err}</p>}</div>
+      <button className="asg-btn asg-bp asg-full" disabled={busy || !email.trim()} onClick={() => void submit()}>
+        {busy ? "Saving your place…" : "Hold my place"}
+      </button>
+    </section>
   );
 };
 
@@ -98,6 +148,7 @@ const Assessment = () => {
   const [addr, setAddr] = useState("");
   const [addrError, setAddrError] = useState<string | null>(null);
   const [line, setLine] = useState(0);
+  const [queued, setQueued] = useState(false);
   const insideRef = useRef<HTMLElement | null>(null);
   const autoRan = useRef(false);
   const [postsRead, setPostsRead] = useState(0);
@@ -157,15 +208,6 @@ const Assessment = () => {
     window.scrollTo({ top, behavior: "smooth" });
   };
 
-  /* ── the read ── */
-  useEffect(() => {
-    if (stage !== "reading") return;
-    setLine(0);
-    const t = [4_000, 9_000, 15_000, 26_000].map((d, i) =>
-      window.setTimeout(() => setLine(i + 1), d));
-    return () => t.forEach(window.clearTimeout);
-  }, [stage]);
-
   const runRead = async (urlArg?: string) => {
     // An error that outlived its own fix is a lie — clear it before retrying.
     setNotice(null);
@@ -189,7 +231,12 @@ const Assessment = () => {
     }
 
     const gate = await startRun(t);
-    if (gate.ok !== true) { setNotice(gate.error); return; }
+    if (gate.ok !== true) {
+      /* At the ceiling we do not console anyone — we take their place in line. */
+      if (gate.code === "DAILY_CEILING" || gate.code === "RATE_LIMIT_IP") { setQueued(true); return; }
+      setNotice(gate.error);
+      return;
+    }
 
     setStage("reading");
     try {
@@ -296,7 +343,9 @@ const Assessment = () => {
           ) : null}
           {notice && <div className="asg-notice" role="status">{notice}</div>}
 
-          {stage === "address" && (
+          {queued ? <QueueCapture anonToken={token} /> : null}
+
+          {stage === "address" && !queued && (
             <section className="asg-panel">
               <span className="asg-k">STEP ONE · THE QUICK READ</span>
               <h1 className="asg-ph">What's your LinkedIn?</h1>
@@ -319,9 +368,8 @@ const Assessment = () => {
           {stage === "reading" && (
             <section className="asg-panel asg-center">
               <span className="asg-k">READING</span>
-              <h1 className="asg-ph">{READING_LINES[Math.min(line, READING_LINES.length - 1)]}</h1>
-              <p className="asg-pp">This takes a moment. Leave the tab open.</p>
-              <ReadingProgress />
+              <h1 className="asg-ph">Aura is reading your profile.</h1>
+              <ReadingWait />
             </section>
           )}
 
