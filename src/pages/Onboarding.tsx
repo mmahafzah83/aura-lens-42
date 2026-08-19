@@ -2328,7 +2328,7 @@ const Onboarding = () => {
         {/* The read happens here, in place. Nothing moves while it lands. */}
         {step1Phase === "reading" ? (
           <div style={{ marginBlockStart: 22 }}>
-            <WorkProgress done={rows.filter((r) => r.done).length} total={rows.length || 1} />
+            <WorkProgress operation="linkedin_read" />
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 14 }}>
               {rows.map((r) => (
                 <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
@@ -2831,7 +2831,7 @@ const Onboarding = () => {
         {settled ? null : (
           <>
             <div style={{ marginBlockStart: 22 }}>
-              <WorkProgress onNight slowAfterMs={20000} done={steps.filter((s) => s.done).length} total={steps.length} />
+              <WorkProgress onNight operation="linkedin_read" />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {steps.map((s) => (
@@ -3480,16 +3480,16 @@ const Onboarding = () => {
         </PaperShell>
       );
     } else {
-    /* Only the work that actually happened is shown. A member who captured
-       nothing never sees Aura claim it read their captures. The wall-clock
-       pacing stays for the steps that genuinely apply. */
+    /* Only the work that actually happened is shown, and a step only ticks on a
+       real event. The three reading steps have no event of their own, so they
+       stay plain named lines until the read itself lands. */
     const genSteps = [
-      { key: "posts", label: "Reading your posts", done: !revealPending || genElapsed > 2000 },
+      { key: "posts", label: "Reading your posts", done: !revealPending },
       ...(claims.length > 0
-        ? [{ key: "saved", label: "Reading what you captured", done: !revealPending || genElapsed > 6000 }]
+        ? [{ key: "saved", label: "Reading what you captured", done: !revealPending }]
         : []),
       ...(Object.keys(answers).length > 0
-        ? [{ key: "answers", label: "Weighing your answers", done: !revealPending || genElapsed > 11000 }]
+        ? [{ key: "answers", label: "Weighing your answers", done: !revealPending }]
         : []),
       { key: "write", label: "Writing your read", done: !revealPending },
     ];
@@ -3498,8 +3498,7 @@ const Onboarding = () => {
         {!revealPending ? <Confetti /> : null}
         {revealPending ? (
           <div style={{ marginBlockEnd: 4 }}>
-            <WorkProgress slowAfterMs={20000}
-              done={genSteps.filter((s) => s.done).length} total={genSteps.length} />
+            <WorkProgress operation="market_read" />
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockEnd: 22 }}>
               {genSteps.map((s) => (
                 <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
