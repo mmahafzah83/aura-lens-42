@@ -259,6 +259,23 @@ export const ONBOARDING = {
 } as const;
 
 // ════════════════════════════════════
+// ONBOARDING — screen 0, the intro. Reached AFTER the /assessment read.
+// ════════════════════════════════════
+export const ONBOARDING_INTRO = {
+  lede: "Aura has read your profile. What's left is the part a profile can't carry — your CV, one thing you read this week, and a few answers only you can give.",
+  rowHead: "Inside your Aura Paper",
+  rowSub: "Five things you don't have anywhere today.",
+  outputs: [
+    { label: "How you're seen", detail: "The role you actually read as, named in one concrete phrase — not an adjective." },
+    { label: "Your themes", detail: "The subjects your profile and your writing already put you in." },
+    { label: "Your capability map", detail: "Ten dimensions of senior work, placed by you — so you can see which you'd struggle to prove." },
+    { label: "Your CV against your LinkedIn", detail: "What your CV says you've done that your public profile never mentions." },
+    { label: "The gap", detail: "The one thing your read says is missing." },
+  ],
+  loss: "Right now, anyone judging you is reading a profile you didn't write for them.",
+} as const;
+
+// ════════════════════════════════════
 // EMAIL TEMPLATES
 // ════════════════════════════════════
 export const EMAIL = {
