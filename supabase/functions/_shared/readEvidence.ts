@@ -7,7 +7,7 @@ export async function buildReadEvidence(
   admin: SupabaseClient,
   userId: string,
   input: { answers: any; auditScores: any; sector?: string | null; band?: string | null },
-): Promise<{ floorMet: boolean; userPrompt: string; counts: { frags: number; posts: number; snaps: number } }> {
+): Promise<{ floorMet: boolean; userPrompt: string; counts: { frags: number; posts: number; snaps: number; mirror: number } }> {
   const { answers, auditScores, sector, band } = input;
   const uid = userId;
 
@@ -43,9 +43,31 @@ export async function buildReadEvidence(
   const posts: any[] = (postRes.data ?? []).filter((p: any) => String(p?.post_text || "").trim());
   const allPosts: any[] = ((allPostsRes as any).data ?? []).filter((p: any) => String(p?.post_text || "").trim());
 
+  // The anonymous free journey writes only the global mirror_reads cache, keyed
+  // by handle. Without this the floor refuses every free-journey member.
+  // linkedin_connections.handle is the source of truth; the deprecated column
+  // on diagnostic_profiles is never read here — nothing writes it.
+  let mirrorRead: any = null;
+  {
+    const { data: conn } = await admin
+      .from("linkedin_connections")
+      .select("handle")
+      .eq("user_id", uid)
+      .maybeSingle();
+    const handle = String((conn as any)?.handle ?? "").trim().toLowerCase();
+    if (handle) {
+      const { data: mr } = await admin
+        .from("mirror_reads")
+        .select("read, sparse, name, headline, posts_read, generated_at")
+        .eq("handle", handle)
+        .maybeSingle();
+      mirrorRead = mr ?? null;
+    }
+  }
+
   // EVIDENCE FLOOR — never write a read for a member we know nothing about.
-  const floorMet = (frags.length > 0) || (allPosts.length > 0) || (snap !== null);
-  const counts = { frags: frags.length, posts: allPosts.length, snaps: snap ? 1 : 0 };
+  const floorMet = (frags.length > 0) || (allPosts.length > 0) || (snap !== null) || (mirrorRead !== null);
+  const counts = { frags: frags.length, posts: allPosts.length, snaps: snap ? 1 : 0, mirror: mirrorRead ? 1 : 0 };
   if (!floorMet) return { floorMet: false, userPrompt: "", counts };
 
   const resolvedSector = sector || prof.sector_focus || null;
@@ -229,6 +251,30 @@ Use the CAREER SHAPE as evidence: how long they stayed in each role, the moves b
 where they have stayed put, what they stopped doing. That shape is standing, and their answers cannot show it.`
     : "THEIR LINKEDIN PROFILE\nNothing on file.";
 
+  // A previous model's read of the same person. Second-hand by construction —
+  // labelled as such so a hypothesis is never laundered into fact.
+  let mirrorBlock = "AN EARLIER READ OF THEIR PUBLIC PROFILE\nNone on file.";
+  if (mirrorRead) {
+    const r: any = (mirrorRead.read && typeof mirrorRead.read === "object") ? mirrorRead.read : {};
+    const mLines: string[] = [];
+    const put = (label: string, v: unknown) => {
+      const s = typeof v === "string" ? v.trim() : "";
+      if (s) mLines.push(`${label}: ${s}`);
+    };
+    put("Read at the time", r.archetype);
+    put("How the market saw them", r.market_read);
+    const themes = Array.isArray(r.themes) ? r.themes.map((t: any) => String(t ?? "").trim()).filter(Boolean) : [];
+    if (themes.length) mLines.push(`Themes read from their material: ${themes.join(" · ")}`);
+    put("Uncontested space", r.uncontested_space);
+    put("Honest gap", r.honest_gap);
+    put("A line from their own writing", r.own_words_quote);
+    put("What that showed", r.own_words_read);
+    const when = mirrorRead.generated_at ? String(mirrorRead.generated_at).slice(0, 10) : "at an earlier date";
+    mirrorBlock = `AN EARLIER READ OF THEIR PUBLIC PROFILE
+This is a previous model's read of this person's public LinkedIn profile and recent posts, generated ${when}. It is SECOND-HAND: it is an interpretation, not source evidence. Treat every line as a hypothesis to test against the primary evidence above, not as fact. Where the primary evidence is silent, you may carry a theme forward but must not add detail to it. Never quote a figure, employer, date or achievement that appears ONLY here.
+${mLines.join("\n")}${mirrorRead.sparse ? "\nTheir public material was thin when this was read — say so rather than compensating." : ""}`;
+  }
+
   // Other people describing this member in their own words — the only external
   // evidence of market perception the product ever gets.
   const recs = rawArr("receivedRecommendations");
@@ -282,20 +328,46 @@ Compare that claim against their actual posts above and their captured claims. I
 
   // Documented evidence from their CV that their public profile does not show.
   const cc: any = (prof?.cv_crosscheck && typeof prof.cv_crosscheck === "object") ? prof.cv_crosscheck : null;
-  const cvBlock = cc
-    ? `WHAT THEIR CV SHOWS THAT THEIR PUBLIC PROFILE DOES NOT
-In their CV, absent from their profile: ${JSON.stringify(cc.in_cv_not_on_profile ?? [])}
-On their profile, absent from the CV: ${JSON.stringify(cc.on_profile_not_in_cv ?? [])}
-Strongest proof invisible publicly: ${cc.strongest_unused_proof ?? "none stated"}
-What their CV emphasises: ${cc.direction_signal ?? "none stated"}
+  let cvBlock = "WHAT THEIR CV SHOWS\nNo CV on file.";
+  if (cc) {
+    const cvLines: string[] = [];
+    const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+    const list = (v: unknown) =>
+      (Array.isArray(v) ? v.map((x: any) => String(x ?? "").trim()).filter(Boolean) : []);
+    if (str(cc.headline_finding)) cvLines.push(`Headline finding: ${str(cc.headline_finding)}`);
+    if (str(cc.the_hard_truth)) cvLines.push(`The hard truth from their CV: ${str(cc.the_hard_truth)}`);
+    const def = list(cc.defensibility);
+    if (def.length) cvLines.push(`What their CV proves they can defend: ${def.join(" · ")}`);
+    const behind = list(cc.cv_is_behind);
+    if (behind.length) cvLines.push(`Where their CV is behind their actual work: ${behind.join(" · ")}`);
+    const findings = Array.isArray(cc.findings) ? cc.findings : [];
+    const fLines = findings.map((f: any) => {
+      const what = str(f?.what);
+      if (!what) return "";
+      const parts: string[] = [what];
+      if (str(f?.why_it_matters)) parts.push(` — matters because ${str(f.why_it_matters)}`);
+      parts.push(".");
+      if (str(f?.evidence?.cv_line)) parts.push(` In the CV: ${str(f.evidence.cv_line)}.`);
+      if (str(f?.evidence?.profile_line)) parts.push(` On the profile: ${str(f.evidence.profile_line)}.`);
+      return `${f?.do_first ? "PRIORITY: " : ""}${parts.join("")}`;
+    }).filter(Boolean);
+    if (fLines.length) {
+      cvLines.push(`Findings (the one marked PRIORITY is the most important):\n${fLines.map((l: string) => `- ${l}`).join("\n")}`);
+    }
+    if (cvLines.length) {
+      cvBlock = `WHAT THEIR CV SHOWS THAT THEIR PUBLIC PROFILE DOES NOT
+${cvLines.join("\n")}
 
-This is documented evidence they have not made public. Treat it as fact. Where it supports a claim they make, say so and name it. Where it contradicts how they present publicly, name that gap plainly — it is one of the most useful things in the read.`
-    : "WHAT THEIR CV SHOWS\nNo CV on file.";
+This is documented evidence they have not made public. Treat it as fact. Where it supports a claim they make, say so and name it. Where it contradicts how they present publicly, name that gap plainly — it is one of the most useful things in the read.`;
+    }
+  }
 
   const userPrompt = `User's sector: ${resolvedSector || "Not stated — infer it from the headline and captured claims and name it explicitly."}
 Their seniority: ${resolvedBand || "Not stated"}. ${bandLine}
 
 ${profileBlock}
+
+${mirrorBlock}
 
 ${recsBlock}
 
