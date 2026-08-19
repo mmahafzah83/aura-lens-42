@@ -177,9 +177,11 @@ serve(withObserve("cv-crosscheck", async (req) => {
     if (targetId !== callerId && !callerIsAdmin) return json({ error: "Forbidden" }, 403);
   }
   const transient = !targetId;
+  /* Inline text wins over anything on file: the documents lookup is skipped. */
+  const inlineMode = transient || inlineCvText.length >= 200;
 
   // --- evidence ------------------------------------------------------------
-  const { data: storedCvs, error: cvErr } = transient
+  const { data: storedCvs, error: cvErr } = inlineMode
     ? { data: [] as any[], error: null }
     : await admin
     .from("documents")
@@ -192,7 +194,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
   if (cvErr) return json({ error: cvErr.message }, 500);
   const cvs = storedCvs ?? [];
 
-  if (!transient && !cvs.length) return json({ ok: false, pending: true, reason: "no_cv" });
+  if (!inlineMode && !cvs.length) return json({ ok: false, pending: true, reason: "no_cv" });
 
   const { data: snapRows } = transient
     ? { data: [] as any[] }
@@ -205,7 +207,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
   const snap: any = snapRows?.[0] ?? null;
   if (!transient && !snap) return json({ ok: false, pending: true, reason: "no_snapshot" });
 
-  const { data: chunks } = transient
+  const { data: chunks } = inlineMode
     ? { data: [] as any[] }
     : await admin
     .from("document_chunks")
@@ -221,7 +223,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
     byDoc.set((c as any).document_id, arr);
   }
 
-  let cvText = transient ? inlineCvText : cvs.map((d: any) => {
+  let cvText = inlineMode ? inlineCvText : cvs.map((d: any) => {
     const label = d.cv_label ? ` [${d.cv_label} CV]` : "";
     const title = d.display_title || d.filename || "CV";
     const summary = d.summary ? `Summary: ${String(d.summary)}` : "";
