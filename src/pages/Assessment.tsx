@@ -153,6 +153,8 @@ const Assessment = () => {
   const [postsRead, setPostsRead] = useState(0);
   const [sparse, setSparse] = useState(false);
   const [ageNote, setAgeNote] = useState<string | null>(null);
+  /* Three reads to a session. After the second we say so, before the refusal. */
+  const [runsUsed, setRunsUsed] = useState(0);
 
   /* ── on every load: if a token is held, pick the visitor back up ── */
   useEffect(() => {
@@ -166,6 +168,7 @@ const Assessment = () => {
       if (!found) { clearToken(); return; }   // expired, claimed or unknown — start fresh
       setToken(held);
       setState({ answers: {}, ...found.state });
+      setRunsUsed(found.runs_started ?? 0);
       if (!arriving) setAddr(found.state.profile_url ?? "");
       if (arriving) return;                   // a link with an address wins over the old step
       /* Past the read, the journey is the real onboarding — go back to it. */
@@ -236,6 +239,7 @@ const Assessment = () => {
       setNotice(gate.error);
       return;
     }
+    setRunsUsed((n) => n + 1);
 
     setStage("reading");
     try {
