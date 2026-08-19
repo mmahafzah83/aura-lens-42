@@ -53,7 +53,7 @@ function usePositionCount(target: number, start: boolean, duration = 800) {
 
 export default function RequestAccess() {
   usePageMeta({
-    title: "Aura — Take a founding seat",
+    title: "Aura — Reserve a founding seat",
     description:
       "The founding fifty is for the weekly loop. Thirty seconds to ask. Read personally, answered within 24 hours.",
     path: "/request-access",
