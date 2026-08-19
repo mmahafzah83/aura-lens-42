@@ -5,6 +5,15 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
 import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_PROMISE, SEAT_SOLD_OUT_NOTE, SEAT_CONSTRAINT, SEAT_VS_TOOLS, waveFrom } from "@/lib/seatCopy";
 import { PRODUCT_DESCRIPTOR, FIRST_READ_LINE, FULL_PICTURE_LINE, ASSESSMENT_QUESTIONS_PHRASE } from "@/lib/brand";
+import { BRAND } from "@/constants/language";
+
+/* D126 — the headline is single-sourced from BRAND.headline. The hero splits it
+   at a known pivot so the second half can carry the gradient treatment. */
+const HEAD_PIVOT = "than your profile shows.";
+const HEAD_LEAD = BRAND.headline.endsWith(HEAD_PIVOT)
+  ? BRAND.headline.slice(0, -HEAD_PIVOT.length).trim()
+  : BRAND.headline;
+const HEAD_TAIL = BRAND.headline.endsWith(HEAD_PIVOT) ? HEAD_PIVOT : "";
 
 /* ────────────────────────────────────────────────────────────────
    LandingV2 — six tabbed pages, one at a time.
@@ -333,7 +342,7 @@ const LANDING_V2_HTML = `
   <div class="hero">
     <div>
       <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> ${PRODUCT_DESCRIPTOR}</span>
-      <h1>Your experience is worth more<br><span class="grad">than your profile shows.</span></h1>
+      <h1>${HEAD_LEAD}<br><span class="grad">${HEAD_TAIL}</span></h1>
       <p class="sub">Aura reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
       <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
       <div class="acts">
@@ -1031,7 +1040,7 @@ const LandingV2 = () => {
   const [mounted, setMounted] = useState(false);
 
   usePageMeta({
-    title: "Aura — Your experience is worth more than your profile shows",
+    title: `Aura — ${BRAND.headline.replace(/\.$/, "")}`,
     description:
       "Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof. The assessment is free and yours to keep.",
     path: "/",
@@ -1249,12 +1258,14 @@ const LandingV2 = () => {
     let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase.rpc("founding_seats");
+        const { data, error } = await (supabase as any).rpc("founding_reservations");
         if (cancelled || error || !data) return;
         const row: any = Array.isArray(data) ? (data as any)[0] : data;
         const claimed = Number(row?.claimed);
         const cap = Number(row?.cap);
         if (!Number.isFinite(claimed) || !Number.isFinite(cap) || cap <= 0) return;
+        // Nothing true to say yet — the chip and card stay hidden on zero.
+        if (claimed <= 0) return;
         const root = rootRef.current;
         if (!root) return;
         const w = waveFrom(claimed, cap || SEAT_CAP);
