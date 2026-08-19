@@ -147,7 +147,6 @@ const Assessment = () => {
   const [busy, setBusy] = useState(false);
   const [addr, setAddr] = useState("");
   const [addrError, setAddrError] = useState<string | null>(null);
-  const [line, setLine] = useState(0);
   const [queued, setQueued] = useState(false);
   const insideRef = useRef<HTMLElement | null>(null);
   const autoRan = useRef(false);
