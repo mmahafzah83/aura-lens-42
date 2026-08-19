@@ -2543,7 +2543,7 @@ const Onboarding = () => {
         <CvCrosscheck data={cvCrosscheck} style={{ marginBlockStart: 20 }} />
         {/* The ask comes after the whole comparison, and it is loss-framed. */}
         {!userId && cvCrosscheck ? (
-          <div style={{ marginBlockStart: 24, borderTop: `1px solid ${OB.rule}`, paddingBlockStart: 20 }}>
+          <div style={{ marginBlockStart: 24, borderTop: `1px solid ${OB.line}`, paddingBlockStart: 20 }}>
             <h2 style={{ fontFamily: OB.ui, fontSize: 20, fontWeight: 700, color: OB.ink, margin: 0 }}>Keep this.</h2>
             <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 8 }}>
               This comparison lives in this browser only. Save your report and it's yours.
