@@ -41,6 +41,16 @@
  */
 
 // ════════════════════════════════════
+// BRAND — the one headline. D126: this file owns it.
+// index.html and public/llms.txt are declared MANUAL MIRRORS —
+// if you change this string you must update both by hand.
+// ════════════════════════════════════
+export const BRAND = {
+  headline: "Your experience is worth more than your profile shows.",
+  descriptor: "AI Professional Identity Platform",
+} as const;
+
+// ════════════════════════════════════
 // LOADING STATES
 // ════════════════════════════════════
 export const LOADING = {
@@ -246,6 +256,23 @@ export const ONBOARDING = {
   assessmentCtaButton: "Show me who I am in this market →",
   assessmentIntro: "Your expertise deserves a frame. Not a CV — a market position. Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.",
   assessmentSubtitle: "This shapes everything Aura does for you — from what it reads between the lines to how it writes in your voice. The more honest you are, the more powerful the result.",
+} as const;
+
+// ════════════════════════════════════
+// ONBOARDING — screen 0, the intro. Reached AFTER the /assessment read.
+// ════════════════════════════════════
+export const ONBOARDING_INTRO = {
+  lede: "Aura has read your profile. What's left is the part a profile can't carry — your CV, one thing you read this week, and a few answers only you can give.",
+  rowHead: "Inside your Aura Paper",
+  rowSub: "Five things you don't have anywhere today.",
+  outputs: [
+    { label: "How you're seen", detail: "The role you actually read as, named in one concrete phrase — not an adjective." },
+    { label: "Your themes", detail: "The subjects your profile and your writing already put you in." },
+    { label: "Your capability map", detail: "Ten dimensions of senior work, placed by you — so you can see which you'd struggle to prove." },
+    { label: "Your CV against your LinkedIn", detail: "What your CV says you've done that your public profile never mentions." },
+    { label: "The gap", detail: "The one thing your read says is missing." },
+  ],
+  loss: "Right now, anyone judging you is reading a profile you didn't write for them.",
 } as const;
 
 // ════════════════════════════════════
