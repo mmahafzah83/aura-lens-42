@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
-import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_LIST_PRICE, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_PROMISE, SEAT_SOLD_OUT_NOTE, waveFrom } from "@/lib/seatCopy";
+import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_PROMISE, SEAT_SOLD_OUT_NOTE, SEAT_CONSTRAINT, waveFrom } from "@/lib/seatCopy";
 import { PRODUCT_DESCRIPTOR, FIRST_READ_LINE, FULL_PICTURE_LINE, ASSESSMENT_QUESTIONS_PHRASE } from "@/lib/brand";
 
 /* ────────────────────────────────────────────────────────────────
@@ -799,7 +799,7 @@ const LANDING_V2_HTML = `
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A posting tool</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:26%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–100</span></div>
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">An AI writing tool</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:18%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–40</span></div>
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center"><span style="font-size:13.5px;color:#0F1519;font-weight:600">Aura, all of it</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:100%;border-radius:7px;background:linear-gradient(90deg,#7FD3B4,#12805C)"></i></span><span class="mi" style="text-align:right;color:#12805C;font-weight:700">${SEAT_PRICE.split(" ")[0]}</span></div>
-    <p style="margin-top:16px;font-size:13.5px;color:var(--ink3);line-height:1.7">Your report is free and stays free. The part that runs every night is ${SEAT_PRICE} — locked for as long as you stay, while the founding seats last.</p>
+    <p style="margin-top:16px;font-size:13.5px;color:var(--ink3);line-height:1.7">Your report is free and stays free. The part that runs every night is ${SEAT_PRICE} — and a founding seat locks that price for as long as you keep it.</p>
     <p class="mi" style="margin-top:12px;line-height:1.7">EXAMPLE FIGURES, ADJUSTABLE TO YOUR OWN HOURS AND RATE. WE DO NOT PROMISE FOLLOWERS OR LIKES.</p>
   </div>
 </section>
@@ -874,7 +874,7 @@ const LANDING_V2_HTML = `
     <details><summary>Will the posts really sound like me?</summary><p>Aura learns from your own posts: how you open, how you explain, how you finish. And you read every word before anything goes out.</p></details>
     <details><summary>Does it work in Arabic?</summary><p>Yes. Arabic is written as Arabic and English as English. One is never a translation of the other.</p></details>
     <details><summary>Who owns what I save?</summary><p>You do. Your articles, your notes, your posts. We never use your work to help anyone else.</p></details>
-    <details><summary>What does “free” mean exactly?</summary><p>Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. Founding members keep that rate for as long as they stay. ${SEAT_NO_CARD}</p></details>
+    <details><summary>What does “free” mean exactly?</summary><p>Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. A founding seat locks that price for as long as you keep it, and I onboard you personally. ${SEAT_NO_CARD}</p></details>
     <details><summary>What if I stop using it?</summary><p>Everything you saved stays yours and you can take it with you. Nothing is locked.</p></details>
   </div>
 
@@ -946,8 +946,8 @@ const LANDING_V2_HTML = `
       <span class="kick"><span class="cdot"></span>03 · THE LOOP</span>
       <h3>Be seen every week, without writing</h3>
       <p class="one">Your identity stops being a document and starts being a weekly presence.</p>
-      <div class="prc"><span class="p" style="color:#fff">${SEAT_PRICE}</span><span class="u">/MONTH · LOCKED FOR LIFE</span></div>
-      <p class="pn" data-wave="pricenote">Becomes ${SEAT_LIST_PRICE} when the fifty seats are gone. You keep ${SEAT_PRICE.split(" ")[0]}.</p>
+      <div class="prc"><span class="p" style="color:#fff">${SEAT_PRICE}</span><span class="u">/MONTH · LOCKED WHILE YOU KEEP THE SEAT</span></div>
+      <p class="pn" data-wave="pricenote">${SEAT_CONSTRAINT}</p>
       <div class="blk">
         <span class="bl do">WHAT YOU DO</span>
         <ul><li>One tap on anything worth keeping</li><li>Two minutes to read and approve</li></ul>
@@ -970,10 +970,10 @@ const LANDING_V2_HTML = `
     <div class="pnight">
       <span class="kick">THE LOOP · FOUNDING RATE</span>
       <div class="amt"><span class="n">${SEAT_PRICE.split(" ")[0]}</span><span class="u">PER MONTH</span></div>
-      <span class="cypill">YOURS FOR AS LONG AS YOU STAY</span>
+      <span class="cypill">LOCKED FOR AS LONG AS YOU KEEP THE SEAT</span>
       <div class="tl">
-        <div class="tli"><span class="bead"></span><div><div class="tt">Now — seats 1 to 50</div><div class="tb">${SEAT_PRICE}. The rate is attached to you, not to the date you joined.</div></div></div>
-        <div class="tli"><span class="bead hollow"></span><div><div class="tt">From seat 51</div><div class="tb">${SEAT_LIST_PRICE} a month for everyone who comes after. The founding fifty are not moved.</div></div></div>
+        <div class="tli"><span class="bead"></span><div><div class="tt">Now — seats 1 to 50</div><div class="tb">${SEAT_PRICE}, and I onboard you myself. ${SEAT_CONSTRAINT}</div></div></div>
+        <div class="tli"><span class="bead hollow"></span><div><div class="tt">The lock</div><div class="tb">The price is attached to your seat, not to the date you joined. Keep the seat, keep the price.</div></div></div>
         <div class="tli"><span class="bead hollow"></span><div><div class="tt">Every year after that</div><div class="tb">You are still paying ${SEAT_PRICE.split(" ")[0]}. That is the entire promise, and it is in writing.</div></div></div>
       </div>
     </div>
@@ -991,7 +991,7 @@ const LANDING_V2_HTML = `
         <div class="pips" data-wave="pips"></div>
         <p class="wavenote" data-wave="note"></p>
       </div>
-      <a class="btn bnight" href="${SEAT_PATH}">Take a founding seat — ${SEAT_PRICE.split(" ")[0]} locked</a>
+      <a class="btn bnight" href="${SEAT_PATH}">${SEAT_CTA}</a>
     </div>
   </div>
   <div class="founder">

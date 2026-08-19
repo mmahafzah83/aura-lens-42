@@ -21,6 +21,7 @@ import {
   SEAT_ROWS,
   SEAT_PRICE,
   SEAT_PRICE_SUBLINE,
+  SEAT_ONE_JOB,
   SEAT_CTA,
   SEAT_PATH,
 } from "@/lib/seatCopy";
