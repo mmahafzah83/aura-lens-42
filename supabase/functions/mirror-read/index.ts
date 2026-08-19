@@ -8,6 +8,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
+import { startRun, type RunHandle } from "../_shared/operationRun.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -264,6 +265,12 @@ Deno.serve(async (req) => {
   const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   let refund: () => Promise<void> = async () => {};
+  /* One run row per fresh read. Cached reads cost nothing and are not runs. */
+  let run: RunHandle | null = null;
+  const finish = async (outcome: "ok" | "refused" | "failed", reason_code?: string) => {
+    try { await run?.finish({ outcome, reason_code: reason_code ?? null }); }
+    catch (e) { console.error("[mirror-read] run finish failed:", (e as Error)?.message); }
+  };
 
   try {
     let body: any = {};
@@ -351,18 +358,39 @@ Deno.serve(async (req) => {
       .eq("ip_hash", ip_hash)
       .gte("created_at", since);
     if ((count ?? 0) >= 5) return serveStale() ?? json({ error: "rate_limited" }, 429);
+
+    run = await startRun(admin, {
+      operation: "linkedin_read",
+      fingerprint_hash: ip_hash,
+      meta: { handle, force, regenerating: !!cached },
+    });
+
     const { data: metered } = await admin
       .from("mirror_requests")
       .insert({ ip_hash, handle, email, ref })
       .select("id")
       .maybeSingle();
-    /** A failure on our side must not cost the visitor an attempt. */
+    /**
+     * A failure on our side must not cost the visitor an attempt. The row is
+     * marked, never deleted: it is the only record the attempt happened.
+     */
     refund = async () => {
-      if (metered?.id) await admin.from("mirror_requests").delete().eq("id", metered.id);
+      if (metered?.id) {
+        await admin.from("mirror_requests")
+          .update({ status: "refunded_failure" })
+          .eq("id", metered.id);
+      }
     };
 
     const APIFY_TOKEN = Deno.env.get("APIFY_TOKEN");
-    if (!APIFY_TOKEN) { await refund(); return serveStale() ?? json({ error: "not_configured" }, 400); }
+    if (!APIFY_TOKEN) {
+      await refund();
+      await logError("mirror-read", new Error("APIFY_TOKEN is not configured"), {
+        user_id: null, severity: "high", context: { handle, path: "not_configured" },
+      });
+      await finish("failed", "not_configured");
+      return serveStale() ?? json({ error: "not_configured" }, 400);
+    }
 
     // --- d) Fetch profile and posts in parallel ---
     const [profile, postTexts] = await Promise.all([
@@ -372,11 +400,23 @@ Deno.serve(async (req) => {
     const item = profile.item;
     if (!item) {
       // The provider cap is ours, not theirs — give the attempt back.
-      if (profile.reason === "provider_limit") await refund();
+      if (profile.reason === "provider_limit") {
+        await refund();
+        await logError("mirror-read", new Error("Apify scraping plan is capped — reads cannot be produced"), {
+          user_id: null, severity: "high", context: { handle, path: "provider_limit" },
+        });
+      }
       const fallback = serveStale();
-      if (fallback) return fallback;
-      if (profile.reason === "provider_limit") return json({ error: "provider_limit" }, 503);
+      if (fallback) {
+        await finish("failed", profile.reason === "provider_limit" ? "provider_limit" : "profile_unreadable");
+        return fallback;
+      }
+      if (profile.reason === "provider_limit") {
+        await finish("failed", "provider_limit");
+        return json({ error: "provider_limit" }, 503);
+      }
       await refund();
+      await finish("failed", "profile_unreadable");
       return json({ error: "profile_unreadable" }, 502);
     }
 
@@ -430,7 +470,14 @@ Deno.serve(async (req) => {
     ].join("\n");
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) { await refund(); return serveStale() ?? json({ error: "not_configured" }, 400); }
+    if (!ANTHROPIC_API_KEY) {
+      await refund();
+      await logError("mirror-read", new Error("ANTHROPIC_API_KEY is not configured"), {
+        user_id: null, severity: "high", context: { handle, path: "not_configured" },
+      });
+      await finish("failed", "not_configured");
+      return serveStale() ?? json({ error: "not_configured" }, 400);
+    }
 
     async function callModel(messages: { role: string; content: string }[]) {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -492,6 +539,7 @@ Deno.serve(async (req) => {
         context: { handle, sparse },
       });
       await refund();
+      await finish("failed", "unreadable");
       return serveStale() ?? json({ error: "unreadable" }, 502);
     }
 
@@ -517,6 +565,7 @@ Deno.serve(async (req) => {
       );
     if (upErr) console.error("[mirror-read] cache write failed:", upErr.message);
 
+    await finish("ok");
     return json({
       ok: true, cached: false, sparse, handle, read,
       name: full_name ?? null, headline: headline ?? null, avatar_url,
@@ -525,6 +574,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     await refund();
     await logError("mirror-read", e, { user_id: null, severity: "high" });
+    await finish("failed", "exception");
     return json({ error: "unreadable" }, 502);
   }
 });
