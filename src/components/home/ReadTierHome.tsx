@@ -21,6 +21,7 @@ import {
   SEAT_ROWS,
   SEAT_PRICE,
   SEAT_PRICE_SUBLINE,
+  SEAT_ONE_JOB,
   SEAT_CTA,
   SEAT_PATH,
 } from "@/lib/seatCopy";
@@ -201,6 +202,9 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
         }}>
           {SEAT_HEADING}
         </h2>
+        <p style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.6, color: "var(--text-inverse)" }}>
+          {SEAT_ONE_JOB}
+        </p>
         <div style={{ display: "grid", gap: 6, margin: "14px 0 16px" }}>
           {SEAT_ROWS.map((row) => (
             <p key={row} style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--v23-on-night, rgba(255,255,255,.78))" }}>

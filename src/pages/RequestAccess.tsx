@@ -5,7 +5,13 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import AuraLogo from "@/components/brand/AuraLogo";
-import { SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, waveFrom } from "@/lib/seatCopy";
+import {
+  SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, SEAT_CTA_SECONDARY, SEAT_HEADING, SEAT_LEAD,
+  SEAT_ONE_JOB, SEAT_HOW, SEAT_HOW_LABEL, SEAT_CONSTRAINT, SEAT_RESERVE_NOTE, SEAT_RACK_LABEL,
+  INTENT_RESERVE, INTENT_KEEP_POSTED, RESERVED_TITLE, RESERVED_BODY, POSTED_TITLE,
+  WORTH_QUESTION, WORTH_PLACEHOLDER, WORTH_SEND, WORTH_SKIP, WORTH_THANKS,
+  type SeatIntent,
+} from "@/lib/seatCopy";
 
 /* ────────────────────────────────────────────────────────────────
    /request-access — "The Door".
@@ -61,17 +67,26 @@ export default function RequestAccess() {
   const [submittedName, setSubmittedName] = useState("");
   const [position, setPosition] = useState<number | null>(null);
   const [seats, setSeats] = useState<{ claimed: number; cap: number } | null>(null);
+  const [intent, setIntent] = useState<SeatIntent>(INTENT_RESERVE);
+  // Arriving from the seat panel already carries which door was pressed there.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("intent");
+    if (q === INTENT_KEEP_POSTED || q === INTENT_RESERVE) setIntent(q);
+  }, []);
+  const [worth, setWorth] = useState("");
+  const [worthState, setWorthState] = useState<"idle" | "sending" | "sent" | "skipped">("idle");
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string; sector?: string }>({});
   const [validationMessage, setValidationMessage] = useState("");
 
   const isDone = status === "success" || status === "duplicate";
 
-  /* ── founding seats — the only source is the RPC ── */
+  /* ── founding seats — reservations only. The rack counts people who said
+     yes at $69, nothing else. If the RPC is silent, the rack does not render. ── */
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { data, error } = await supabase.rpc("founding_seats");
+        const { data, error } = await (supabase as any).rpc("founding_reservations");
         if (cancelled || error || !data) return;
         const row: any = Array.isArray(data) ? (data as any)[0] : data;
         const claimed = Number(row?.claimed);
@@ -96,13 +111,14 @@ export default function RequestAccess() {
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, chosen: SeatIntent = intent) => {
     e.preventDefault();
+    setIntent(chosen);
     if (!validate()) return;
     setStatus("loading");
     try {
       const { data, error } = await supabase.functions.invoke("submit-waitlist", {
-        body: { name: name.trim(), email: email.trim(), seniority, sector },
+        body: { name: name.trim(), email: email.trim(), seniority, sector, intent: chosen },
       });
       if (error) {
         // FunctionsHttpError exposes the EF response body via error.context;
@@ -127,13 +143,33 @@ export default function RequestAccess() {
       } else {
         if (typeof data?.position === "number") setPosition(data.position);
         setStatus("success");
-        // the seat you just took is counted immediately
-        setSeats((s) => (s ? { ...s, claimed: Math.min(s.claimed + 1, s.cap) } : s));
+        // only a reservation moves the reservation count
+        if (chosen === INTENT_RESERVE) {
+          setSeats((s) => (s ? { ...s, claimed: Math.min(s.claimed + 1, s.cap) } : s));
+        }
       }
     } catch (err) {
       console.error("submit-waitlist failed:", err);
       setStatus("error");
     }
+  };
+
+  /* The optional three-month question, stored with the same rule as the intent. */
+  const sendWorth = async () => {
+    const answer = worth.trim();
+    if (!answer) { setWorthState("skipped"); return; }
+    setWorthState("sending");
+    try {
+      await supabase.functions.invoke("submit-waitlist", {
+        body: {
+          name: name.trim(), email: email.trim(), seniority, sector,
+          intent: INTENT_RESERVE, answer,
+        },
+      });
+    } catch (err) {
+      console.error("worth answer failed:", err);
+    }
+    setWorthState("sent");
   };
 
   return (
@@ -155,25 +191,20 @@ export default function RequestAccess() {
         {/* ── LEFT · the door ── */}
         <div>
           <div className="ra-eyebrow"><span>The door</span></div>
-          <h1 className="ra-h1">
-            One seat.<br /><em>Then the assessment.</em>
-          </h1>
-          <p className="ra-lede">
-            The report is open to anyone. The founding fifty is for the weekly loop — the part
-            that writes while you sleep. Tell me who you are — it takes thirty seconds, and I
-            read every one myself.
-          </p>
+          <h1 className="ra-h1">{SEAT_HEADING}</h1>
+          <p className="ra-lede">{SEAT_LEAD}</p>
+          <p className="ra-onejob">{SEAT_ONE_JOB}</p>
+          <p className="ra-howlb">{SEAT_HOW_LABEL}</p>
+          <ul className="ra-how">
+            {SEAT_HOW.map((row) => <li key={row}>{row}</li>)}
+          </ul>
+          <p className="ra-constraint">{SEAT_CONSTRAINT}</p>
 
           {seats && (
             <div className="ra-rack">
               <div className="ra-rackhead">
                 <span className="ra-n">
-                  {(() => {
-                    const w = waveFrom(seats.claimed, seats.cap);
-                    return w
-                      ? <>Wave <b>{w.wave}</b> · <b>{w.leftWave}</b> left at {SEAT_PRICE.split(" ")[0]}</>
-                      : <>The founding fifty are taken</>;
-                  })()}
+                  {SEAT_RACK_LABEL(seats.claimed, seats.cap)}
                 </span>
                 <span className="ra-lb">Founding circle</span>
               </div>
@@ -265,13 +296,30 @@ export default function RequestAccess() {
                   <span className="ra-price-s">{SEAT_PRICE_SUBLINE}</span>
                 </div>
 
-                <button type="submit" disabled={status === "loading"} className="ra-btn">
-                  {status === "loading" ? (
-                    <span className="ra-pulse">Sending…</span>
-                  ) : (
-                    <>{SEAT_CTA} <span className="ra-a">↗</span></>
-                  )}
-                </button>
+                {/* Two doors, same size and shape — the split between them is the measurement. */}
+                <div className="ra-doors">
+                  <button
+                    type="submit"
+                    disabled={status === "loading"}
+                    className="ra-door ra-door-fill"
+                    onClick={() => setIntent(INTENT_RESERVE)}
+                  >
+                    {status === "loading" && intent === INTENT_RESERVE
+                      ? <span className="ra-pulse">Sending…</span>
+                      : SEAT_CTA}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={status === "loading"}
+                    className="ra-door ra-door-line"
+                    onClick={(e) => void handleSubmit(e, INTENT_KEEP_POSTED)}
+                  >
+                    {status === "loading" && intent === INTENT_KEEP_POSTED
+                      ? <span className="ra-pulse">Sending…</span>
+                      : SEAT_CTA_SECONDARY}
+                  </button>
+                </div>
+                <p className="ra-reservenote">{SEAT_RESERVE_NOTE}</p>
               </form>
 
               <p className="ra-legal">
@@ -288,14 +336,39 @@ export default function RequestAccess() {
             </>
           )}
 
-          {status === "success" && (
+          {status === "success" && intent === INTENT_RESERVE && (
             <Ceremony
               position={position}
-              title={`It's with me, ${submittedName}.`}
-              body="I read every application myself. If Aura is right for you, you'll hear from me within twenty-four hours — from a person, not a system."
-              quiet="In the meantime, keep reading what matters in your sector. That's the raw material Aura turns into presence."
+              seatTag={seats ? `Seat ${seats.claimed} of ${seats.cap} · reserved` : "Reserved"}
+              title={RESERVED_TITLE}
+              body={RESERVED_BODY}
               withSignature
-            />
+            >
+              {worthState === "sent" || worthState === "skipped" ? (
+                <p className="ra-quiet" role="status">{WORTH_THANKS}</p>
+              ) : (
+                <div className="ra-worth">
+                  <label htmlFor="ra-worth">{WORTH_QUESTION}</label>
+                  <textarea
+                    id="ra-worth" className="ra-field" rows={3} maxLength={1000}
+                    placeholder={WORTH_PLACEHOLDER}
+                    value={worth} onChange={(e) => setWorth(e.target.value)}
+                  />
+                  <div className="ra-doors">
+                    <button type="button" className="ra-door ra-door-fill"
+                      disabled={worthState === "sending"} onClick={() => void sendWorth()}>
+                      {worthState === "sending" ? <span className="ra-pulse">Sending…</span> : WORTH_SEND}
+                    </button>
+                    <button type="button" className="ra-door ra-door-line"
+                      onClick={() => setWorthState("skipped")}>{WORTH_SKIP}</button>
+                  </div>
+                </div>
+              )}
+            </Ceremony>
+          )}
+
+          {status === "success" && intent === INTENT_KEEP_POSTED && (
+            <Ceremony position={null} title={POSTED_TITLE} body={`Thank you, ${submittedName}.`} />
           )}
 
           {status === "duplicate" && (
@@ -364,21 +437,25 @@ function Select({
 }
 
 function Ceremony({
-  title, body, quiet, withSignature, position,
+  title, body, quiet, withSignature, position, seatTag, children,
 }: {
   title: string; body: string; quiet?: string;
-  withSignature?: boolean; position: number | null;
+  withSignature?: boolean; position: number | null; seatTag?: string;
+  children?: React.ReactNode;
 }) {
   const counted = usePositionCount(position ?? 0, position != null);
   return (
     <div className="ra-ceremony">
       <div className="ra-mk"><AuraLogo size={44} variant="auto" /></div>
-      {position != null && position > 0 && (
+      {seatTag ? (
+        <span className="ra-pos"><i className="ra-d" />{seatTag}</span>
+      ) : position != null && position > 0 && (
         <span className="ra-pos"><i className="ra-d" />Number {counted} on the list</span>
       )}
       <h2 className="ra-h2">{title}</h2>
       <p className="ra-cbody">{body}</p>
       {quiet && <p className="ra-quiet">{quiet}</p>}
+      {children}
       <p className="ra-inbox">Check your inbox — and your spam folder — for a note from Aura.</p>
       {withSignature && (
         <div className="ra-sig">
@@ -502,6 +579,32 @@ const RA_CSS = `
 .ra-price{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;margin-top:4px;}
 .ra-price-n{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--n900);}
 .ra-price-s{font-size:12.5px;color:var(--n500);line-height:1.5;}
+
+.ra-onejob{margin-top:20px;font-size:17px;line-height:1.55;font-weight:600;color:var(--n900);max-width:44ch;}
+.ra-howlb{margin-top:24px;font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--n400);}
+.ra-how{margin-top:10px;display:flex;flex-direction:column;gap:8px;max-width:46ch;}
+.ra-how li{font-size:14px;line-height:1.55;color:var(--n700);padding-left:16px;position:relative;}
+.ra-how li::before{content:'';position:absolute;left:0;top:9px;width:7px;height:1px;background:var(--act);}
+.ra-constraint{margin-top:18px;font-size:14px;line-height:1.6;color:var(--n900);max-width:44ch;}
+
+/* Two doors — identical geometry, so the choice between them is real. */
+.ra-doors{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
+.ra-door{display:inline-flex;align-items:center;justify-content:center;text-align:center;
+  min-height:52px;padding:12px 14px;width:100%;border-radius:999px;font-family:inherit;
+  font-size:15px;font-weight:600;line-height:1.25;cursor:pointer;
+  transition:background .2s ease,color .2s ease,box-shadow .25s ease;}
+.ra-door:disabled{cursor:default;opacity:.85;}
+.ra-door-fill{background:var(--act);color:#fff;border:1.5px solid var(--act);}
+.ra-door-fill:hover:not(:disabled){background:#04477C;border-color:#04477C;}
+.ra-door-line{background:var(--n0);color:var(--act);border:1.5px solid var(--act);}
+.ra-door-line:hover:not(:disabled){background:var(--act-50);}
+.ra-reservenote{margin-top:12px;font-size:12.5px;line-height:1.6;color:var(--n500);text-align:center;}
+.ra-worth{margin-top:22px;text-align:left;}
+.ra-worth label{margin-bottom:9px;text-transform:none;letter-spacing:0;font-family:var(--ui);
+  font-size:14px;line-height:1.55;color:var(--n700);}
+.ra-worth textarea{resize:vertical;}
+@media (max-width:520px){.ra-doors{grid-template-columns:1fr;}}
 .ra-signin{text-align:center;margin-top:22px;padding-top:20px;border-top:1px solid var(--n200);
   font-size:14.5px;color:var(--n500);}
 .ra-signin a{color:var(--act);font-weight:600;}

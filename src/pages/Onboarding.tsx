@@ -63,7 +63,8 @@ import {
   ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stepLabel,
 } from "@/lib/brand";
 import {
-  SEAT_HEADING, SEAT_ROWS, SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_NO_CARD, SEAT_CTA, SEAT_PATH,
+  SEAT_HEADING, SEAT_ROWS, SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, SEAT_PATH,
+  SEAT_ONE_JOB, SEAT_HOW_LABEL, SEAT_CONSTRAINT, SEAT_CTA_SECONDARY, SEAT_RESERVE_NOTE,
 } from "@/lib/seatCopy";
 import { BRAND, ONBOARDING_INTRO, ENDING, WALL, AFTER_KEEP } from "@/constants/language";
 
@@ -3847,12 +3848,18 @@ const Onboarding = () => {
 
         {/* 2 · What a seat adds, and what stays out of reach */}
         <div style={{ marginBlockStart: 28, padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
-          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
+          <p style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", fontWeight: 700, color: OB.ink }}>
             {SEAT_HEADING}
+          </p>
+          <p style={{ margin: "10px 0 0", fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", fontWeight: 600, color: OB.ink }}>
+            {SEAT_ONE_JOB}
+          </p>
+          <p style={{ margin: "18px 0 0", fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
+            {SEAT_HOW_LABEL}
           </p>
           <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
             {SEAT_ROWS.map((row, i) => (
-              <li key={i} style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, paddingInlineStart: 18, position: "relative" }}>
+              <li key={i} style={{ fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted, paddingInlineStart: 18, position: "relative" }}>
                 <span style={{ position: "absolute", insetInlineStart: 0, color: OB.blue }}>—</span>
                 {row}
               </li>
@@ -3871,10 +3878,17 @@ const Onboarding = () => {
           </ul>
           <p style={{ margin: "16px 0 0", fontSize: "var(--ob-body)", fontWeight: 600, color: OB.ink }}>{SEAT_PRICE}</p>
           <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_PRICE_SUBLINE}</p>
-          <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_NO_CARD}</p>
+          <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.ink }}>{SEAT_CONSTRAINT}</p>
           <Actions style={{ marginBlockStart: 16 }}>
-            {/* One primary per view, and it is the decision — not the exit. */}
-            <OBButton onClick={() => navigate(SEAT_PATH)}>{SEAT_CTA}</OBButton>
+            {/* Two doors, equal weight: the split between them is the measurement. */}
+            <OBButton onClick={() => navigate(`${SEAT_PATH}?intent=reserve_69`)}>{SEAT_CTA}</OBButton>
+            <OBButton
+              variant="secondary"
+              style={{ borderColor: OB.blue, color: OB.blue, background: "#FFFFFF" }}
+              onClick={() => navigate(`${SEAT_PATH}?intent=keep_posted`)}
+            >
+              {SEAT_CTA_SECONDARY}
+            </OBButton>
             {connected || !userId ? null : (
               /* A settings action, dressed as one: quiet, in the same row. */
               <OBButton variant="tertiary" onClick={() => void connectLinkedIn({ allowRedirect: true })}
@@ -3884,6 +3898,9 @@ const Onboarding = () => {
             )}
             <OBButton variant="tertiary" onClick={() => void finish()}>Take me in</OBButton>
           </Actions>
+          <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+            {SEAT_RESERVE_NOTE}
+          </p>
           {connected || !userId ? null : (
             <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
               {connectNote || "Connect LinkedIn and you find out which of the signals in your read your audience already rewards."}

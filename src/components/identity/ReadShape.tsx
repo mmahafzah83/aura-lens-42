@@ -14,6 +14,7 @@ import {
   SEAT_ROWS,
   SEAT_PRICE,
   SEAT_PRICE_SUBLINE,
+  SEAT_ONE_JOB,
   SEAT_CTA,
   SEAT_PATH,
 } from "@/lib/seatCopy";
@@ -200,6 +201,9 @@ const ReadShape: React.FC = () => {
           >
             {SEAT_HEADING}
           </h2>
+          <p style={{ margin: "10px 0 0", fontSize: 14, lineHeight: 1.6, color: "var(--text-inverse)" }}>
+            {SEAT_ONE_JOB}
+          </p>
           <div style={{ display: "grid", gap: 6, margin: "14px 0 16px" }}>
             {SEAT_ROWS.map((row) => (
               <p

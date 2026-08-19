@@ -6047,6 +6047,13 @@ export type Database = {
         }[]
       }
       founder_brief_verify: { Args: never; Returns: Json }
+      founding_reservations: {
+        Args: never
+        Returns: {
+          cap: number
+          claimed: number
+        }[]
+      }
       founding_seats: {
         Args: never
         Returns: {
