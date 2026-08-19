@@ -3250,9 +3250,9 @@ const Onboarding = () => {
     }
   }
 
-  /* The wall — asked once, and only here. An anonymous run reaches the reveal
-     and stops: the account is opened, then the run is claimed onto it. */
-  if (!userId && anonToken && screen >= 12) {
+  /* The wall — asked once, and only here, and only AFTER screen 12 has made the
+     case. The ask never precedes the inventory of what he now owns. */
+  if (!userId && anonToken && screen >= 13) {
     const openAccount = async (e: React.FormEvent) => {
       e.preventDefault();
       if (wallBusy) return;
@@ -3310,14 +3310,11 @@ const Onboarding = () => {
       <style>{PAGE_CSS}</style>
       <JourneyNav.Provider value={{ onBack: undefined, banner: null }}>
       <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
-        <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
-          Your report is ready
-        </p>
-        <h1 style={{ fontFamily: OB.ui, fontSize: 28, fontWeight: 700, color: OB.ink, marginBlockStart: 10 }}>
-          Where should we send it?
+        <h1 style={{ fontFamily: OB.ui, fontSize: 28, fontWeight: 700, color: OB.ink }}>
+          {WALL.heading}
         </h1>
         <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 10 }}>
-          It is yours either way. An account keeps it, lets you come back, and sends you the PDF.
+          {WALL.body}
         </p>
         {wallDone ? (
           <>
@@ -3353,10 +3350,11 @@ const Onboarding = () => {
             <Actions style={{ marginBlockStart: 18 }}>
               <OBButton disabled={wallBusy || !wallConsent} aria-describedby={!wallConsent ? "ob-wall-why" : undefined}
                 onClick={() => undefined} type="submit">
-                {wallBusy ? "Saving your report…" : "Save my report"}
+                {wallBusy ? WALL.ctaBusy : WALL.cta}
               </OBButton>
               {!wallConsent && !wallBusy ? whyLine("ob-wall-why", "Tick the box above to enable this.", true) : null}
             </Actions>
+            <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted }}>{WALL.sub}</p>
           </form>
         )}
       </PaperShell>
