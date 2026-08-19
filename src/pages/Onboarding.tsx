@@ -3576,47 +3576,8 @@ const Onboarding = () => {
       }
     };
 
-    /* One share row per member: once a token exists in state it is reused, never re-minted. */
-    const mintShare = async () => {
-      if (!userId || !reveal || shareUrl || minting) return;
-      setMinting(true);
-      try {
-        const token = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-        const isArabic = /[\u0600-\u06FF]/.test(`${reveal.archetype} ${reveal.marketRead || ""}`);
-        const { error } = await (supabase.from("report_shares") as any).insert({
-          token,
-          user_id: userId,
-          headline: reveal.archetype,
-          archetype: reveal.archetype,
-          market_read: reveal.marketRead || null,
-          subjects: reveal.subjects ?? [],
-          own_words: reveal.ownWordsQuote || null,
-          display_name: firstName.trim() || null,
-          lang: isArabic ? "ar" : "en",
-        });
-        if (error) throw error;
-        setShareUrl(`${window.location.origin}/r/${token}`);
-      } catch (err) {
-        console.error("[reveal] share link failed", err);
-        toast.error("Couldn't make the link just now. Try again in a moment.");
-      } finally {
-        setMinting(false);
-      }
-    };
-
-    const shareCaption = liveCaption || `${reveal?.archetype ?? "My read"} — my read from Aura.`;
-    const shareText = shareUrl ? `${shareCaption}\n\n${shareUrl}` : shareCaption;
-
-    const copyShareLink = async () => {
-      if (!shareUrl) return;
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success("Link copied.");
-      } catch {
-        toast.error("Couldn't copy that. Long-press the link to copy it.");
-      }
-    };
-
+    /* Minting the share link and copying it live on the after-keep screen —
+       nothing on the reveal competes with the one decision. */
     content = (
       <div className="obc" style={{
         minBlockSize: "100dvh",
