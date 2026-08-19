@@ -398,7 +398,7 @@ const Onboarding = () => {
   /* THE ARRIVAL — read once, on mount. Stale or absent means the journey
      behaves exactly as it always has. */
   const [arrival, setArrival] = useState<
-    null | { first_name?: string | null; answers?: number; sliders?: number; captures?: number; minutes?: number }
+    null | { first_name?: string | null; answers?: number; sliders?: number; captures?: number }
   >(() => {
     try {
       const raw = localStorage.getItem("aura_just_joined");
