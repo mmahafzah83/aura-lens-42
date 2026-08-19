@@ -162,6 +162,20 @@ serve(withObserve("submit-waitlist", async (req) => {
     }
 
     if (existing) {
+      // A follow-up answer to the three-month question lands on the same row.
+      if (note) {
+        const patch: Record<string, unknown> = { personal_note: note };
+        if (intent) patch.ref = refValue;
+        const { error: upErr } = await supabase
+          .from("beta_allowlist")
+          .update(patch)
+          .eq("id", (existing as any).id);
+        if (upErr) console.error("Answer update failed (non-fatal):", upErr);
+        return new Response(
+          JSON.stringify({ success: true, updated: true, message: "Noted" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       return new Response(
         JSON.stringify({ duplicate: true, message: "You're already on the list" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

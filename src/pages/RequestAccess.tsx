@@ -186,25 +186,20 @@ export default function RequestAccess() {
         {/* ── LEFT · the door ── */}
         <div>
           <div className="ra-eyebrow"><span>The door</span></div>
-          <h1 className="ra-h1">
-            One seat.<br /><em>Then the assessment.</em>
-          </h1>
-          <p className="ra-lede">
-            The report is open to anyone. The founding fifty is for the weekly loop — the part
-            that writes while you sleep. Tell me who you are — it takes thirty seconds, and I
-            read every one myself.
-          </p>
+          <h1 className="ra-h1">{SEAT_HEADING}</h1>
+          <p className="ra-lede">{SEAT_LEAD}</p>
+          <p className="ra-onejob">{SEAT_ONE_JOB}</p>
+          <p className="ra-howlb">{SEAT_HOW_LABEL}</p>
+          <ul className="ra-how">
+            {SEAT_HOW.map((row) => <li key={row}>{row}</li>)}
+          </ul>
+          <p className="ra-constraint">{SEAT_CONSTRAINT}</p>
 
           {seats && (
             <div className="ra-rack">
               <div className="ra-rackhead">
                 <span className="ra-n">
-                  {(() => {
-                    const w = waveFrom(seats.claimed, seats.cap);
-                    return w
-                      ? <>Wave <b>{w.wave}</b> · <b>{w.leftWave}</b> left at {SEAT_PRICE.split(" ")[0]}</>
-                      : <>The founding fifty are taken</>;
-                  })()}
+                  {SEAT_RACK_LABEL(seats.claimed, seats.cap)}
                 </span>
                 <span className="ra-lb">Founding circle</span>
               </div>
@@ -296,13 +291,30 @@ export default function RequestAccess() {
                   <span className="ra-price-s">{SEAT_PRICE_SUBLINE}</span>
                 </div>
 
-                <button type="submit" disabled={status === "loading"} className="ra-btn">
-                  {status === "loading" ? (
-                    <span className="ra-pulse">Sending…</span>
-                  ) : (
-                    <>{SEAT_CTA} <span className="ra-a">↗</span></>
-                  )}
-                </button>
+                {/* Two doors, same size and shape — the split between them is the measurement. */}
+                <div className="ra-doors">
+                  <button
+                    type="submit"
+                    disabled={status === "loading"}
+                    className="ra-door ra-door-fill"
+                    onClick={() => setIntent(INTENT_RESERVE)}
+                  >
+                    {status === "loading" && intent === INTENT_RESERVE
+                      ? <span className="ra-pulse">Sending…</span>
+                      : SEAT_CTA}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={status === "loading"}
+                    className="ra-door ra-door-line"
+                    onClick={(e) => void handleSubmit(e, INTENT_KEEP_POSTED)}
+                  >
+                    {status === "loading" && intent === INTENT_KEEP_POSTED
+                      ? <span className="ra-pulse">Sending…</span>
+                      : SEAT_CTA_SECONDARY}
+                  </button>
+                </div>
+                <p className="ra-reservenote">{SEAT_RESERVE_NOTE}</p>
               </form>
 
               <p className="ra-legal">
@@ -319,14 +331,39 @@ export default function RequestAccess() {
             </>
           )}
 
-          {status === "success" && (
+          {status === "success" && intent === INTENT_RESERVE && (
             <Ceremony
               position={position}
-              title={`It's with me, ${submittedName}.`}
-              body="I read every application myself. If Aura is right for you, you'll hear from me within twenty-four hours — from a person, not a system."
-              quiet="In the meantime, keep reading what matters in your sector. That's the raw material Aura turns into presence."
+              seatTag={seats ? `Seat ${seats.claimed} of ${seats.cap} · reserved` : "Reserved"}
+              title={RESERVED_TITLE}
+              body={RESERVED_BODY}
               withSignature
-            />
+            >
+              {worthState === "sent" || worthState === "skipped" ? (
+                <p className="ra-quiet" role="status">{WORTH_THANKS}</p>
+              ) : (
+                <div className="ra-worth">
+                  <label htmlFor="ra-worth">{WORTH_QUESTION}</label>
+                  <textarea
+                    id="ra-worth" className="ra-field" rows={3} maxLength={1000}
+                    placeholder={WORTH_PLACEHOLDER}
+                    value={worth} onChange={(e) => setWorth(e.target.value)}
+                  />
+                  <div className="ra-doors">
+                    <button type="button" className="ra-door ra-door-fill"
+                      disabled={worthState === "sending"} onClick={() => void sendWorth()}>
+                      {worthState === "sending" ? <span className="ra-pulse">Sending…</span> : WORTH_SEND}
+                    </button>
+                    <button type="button" className="ra-door ra-door-line"
+                      onClick={() => setWorthState("skipped")}>{WORTH_SKIP}</button>
+                  </div>
+                </div>
+              )}
+            </Ceremony>
+          )}
+
+          {status === "success" && intent === INTENT_KEEP_POSTED && (
+            <Ceremony position={null} title={POSTED_TITLE} body={`Thank you, ${submittedName}.`} />
           )}
 
           {status === "duplicate" && (
@@ -395,21 +432,25 @@ function Select({
 }
 
 function Ceremony({
-  title, body, quiet, withSignature, position,
+  title, body, quiet, withSignature, position, seatTag, children,
 }: {
   title: string; body: string; quiet?: string;
-  withSignature?: boolean; position: number | null;
+  withSignature?: boolean; position: number | null; seatTag?: string;
+  children?: React.ReactNode;
 }) {
   const counted = usePositionCount(position ?? 0, position != null);
   return (
     <div className="ra-ceremony">
       <div className="ra-mk"><AuraLogo size={44} variant="auto" /></div>
-      {position != null && position > 0 && (
+      {seatTag ? (
+        <span className="ra-pos"><i className="ra-d" />{seatTag}</span>
+      ) : position != null && position > 0 && (
         <span className="ra-pos"><i className="ra-d" />Number {counted} on the list</span>
       )}
       <h2 className="ra-h2">{title}</h2>
       <p className="ra-cbody">{body}</p>
       {quiet && <p className="ra-quiet">{quiet}</p>}
+      {children}
       <p className="ra-inbox">Check your inbox — and your spam folder — for a note from Aura.</p>
       {withSignature && (
         <div className="ra-sig">
