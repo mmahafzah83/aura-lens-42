@@ -48,7 +48,7 @@ import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyShell, { STAGE_NAMES, type Beat, type JourneySub } from "@/components/journey/JourneyShell";
 import { CONSENT_VERSION } from "@/pages/Auth";
-import DocumentUpload from "@/components/DocumentUpload";
+import CvUploadControl, { readCvPurpose } from "@/components/cv/CvUploadControl";
 import CvCrosscheck from "@/components/report/CvCrosscheck";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
@@ -594,7 +594,9 @@ const Onboarding = () => {
     if (cvRunRef.current) return;
     cvRunRef.current = true;
     try {
-      const { data, error } = await supabase.functions.invoke("cv-crosscheck", { body: {} });
+      const { data, error } = await supabase.functions.invoke("cv-crosscheck", {
+        body: { purpose: readCvPurpose() },
+      });
       if (error) return;
       const cc = (data as { ok?: boolean; crosscheck?: unknown } | null)?.crosscheck;
       if (cc) setCvCrosscheck(cc);
