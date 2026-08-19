@@ -2663,7 +2663,11 @@ const Onboarding = () => {
           />
         </div>
         {/* Shows only once the comparison comes back; absent, it renders nothing. */}
-        <CvCrosscheck data={cvCrosscheck} style={{ marginBlockStart: 20 }} />
+        <CvCrosscheck
+          data={cvCrosscheck}
+          style={{ marginBlockStart: 20 }}
+          onAuraAction={(kind, ctx) => (kind === "capture_evidence" ? keepCvEvidence(ctx) : false)}
+        />
         {/* The ask comes after the whole comparison, and it is loss-framed. */}
         {!userId && cvCrosscheck ? (
           <div style={{ marginBlockStart: 24, borderTop: `1px solid ${OB.line}`, paddingBlockStart: 20 }}>
