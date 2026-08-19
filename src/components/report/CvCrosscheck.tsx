@@ -459,6 +459,8 @@ export default function CvCrosscheck({
     if (!kind) return null; /* a null offer is no control at all */
     /* Not built yet — a button that does nothing is worse than no button. */
     if (kind === "draft_post" || kind === "track_signal") return null;
+    /* No handler wired on this surface — render nothing rather than a dead button. */
+    if (kind === "capture_evidence" && !onAuraAction) return null;
     if (kind === "suggest_headline" && !headlineSuggestion) return null;
     const key = `${kind}:${text(ctx.finding?.what) || text(ctx.recommendation?.action)}`;
     if (kept[key]) {
