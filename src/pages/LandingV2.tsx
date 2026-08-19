@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
-import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_PROMISE, SEAT_SOLD_OUT_NOTE, SEAT_CONSTRAINT, waveFrom } from "@/lib/seatCopy";
+import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_PROMISE, SEAT_SOLD_OUT_NOTE, SEAT_CONSTRAINT, SEAT_VS_TOOLS, waveFrom } from "@/lib/seatCopy";
 import { PRODUCT_DESCRIPTOR, FIRST_READ_LINE, FULL_PICTURE_LINE, ASSESSMENT_QUESTIONS_PHRASE } from "@/lib/brand";
 
 /* ────────────────────────────────────────────────────────────────
@@ -334,7 +334,7 @@ const LANDING_V2_HTML = `
     <div>
       <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> ${PRODUCT_DESCRIPTOR}</span>
       <h1>Your experience is worth more<br><span class="grad">than your profile shows.</span></h1>
-      <p class="sub">Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof you can put in front of anyone.</p>
+      <p class="sub">Aura reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
       <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
       <div class="acts">
         <a class="btn bp" id="heropri" href="/assessment">Discover my professional position</a>
@@ -810,6 +810,8 @@ const LANDING_V2_HTML = `
     <h2>They give everyone<br>the same template.<br><span class="grad">We start with you.</span></h2>
     <p class="sub">Other tools hand every person the same shapes and the same words. Aura learns your experience and your reading first — then writes from them.</p>
   </div>
+
+  <p class="sub" style="margin-top:18px;max-width:680px">${SEAT_VS_TOOLS}</p>
 
   <div class="eyebrow">Side by side</div>
   <div class="cmp rv">

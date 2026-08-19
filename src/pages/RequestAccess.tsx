@@ -7,7 +7,7 @@ import { SENIORITY_LEVELS } from "@/constants/seniority";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
   SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, SEAT_CTA_SECONDARY, SEAT_HEADING, SEAT_LEAD,
-  SEAT_ONE_JOB, SEAT_HOW, SEAT_HOW_LABEL, SEAT_CONSTRAINT, SEAT_RESERVE_NOTE, SEAT_RACK_LABEL,
+  SEAT_ONE_JOB, SEAT_HOW, SEAT_HOW_LABEL, SEAT_VS_TOOLS, SEAT_CONSTRAINT, SEAT_RESERVE_NOTE, SEAT_RACK_LABEL,
   INTENT_RESERVE, INTENT_KEEP_POSTED, RESERVED_TITLE, RESERVED_BODY, POSTED_TITLE,
   WORTH_QUESTION, WORTH_PLACEHOLDER, WORTH_SEND, WORTH_SKIP, WORTH_THANKS,
   type SeatIntent,
@@ -198,6 +198,7 @@ export default function RequestAccess() {
           <ul className="ra-how">
             {SEAT_HOW.map((row) => <li key={row}>{row}</li>)}
           </ul>
+          <p className="ra-vs">{SEAT_VS_TOOLS}</p>
           <p className="ra-constraint">{SEAT_CONSTRAINT}</p>
 
           {seats && (
@@ -587,6 +588,7 @@ const RA_CSS = `
 .ra-how li{font-size:14px;line-height:1.55;color:var(--n700);padding-left:16px;position:relative;}
 .ra-how li::before{content:'';position:absolute;left:0;top:9px;width:7px;height:1px;background:var(--act);}
 .ra-constraint{margin-top:18px;font-size:14px;line-height:1.6;color:var(--n900);max-width:44ch;}
+.ra-vs{margin-top:14px;font-size:14px;line-height:1.55;color:var(--n700);max-width:46ch;}
 
 /* Two doors — identical geometry, so the choice between them is real. */
 .ra-doors{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
