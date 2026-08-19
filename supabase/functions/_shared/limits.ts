@@ -27,11 +27,11 @@ export async function hashIp(ip: string): Promise<string> {
 /**
  * The caller's address, or an empty string when no address header is present.
  *
- * An empty string is deliberate: a literal placeholder such as "unknown" pools
- * every header-less caller on earth into one bucket, so the 100th of them
- * globally is refused for reasons that have nothing to do with them. Callers
- * must treat "" as "no fingerprint" and skip the limit check entirely rather
- * than count the request against a shared bucket.
+ * An empty string is deliberate: a literal placeholder string pools every
+ * header-less caller on earth into one bucket, so the last of them globally is
+ * refused for reasons that have nothing to do with them. Callers must treat an
+ * empty value as no fingerprint and skip the limit check entirely rather than
+ * count the request against a shared bucket.
  */
 export function clientIp(req: Request): string {
   return (
