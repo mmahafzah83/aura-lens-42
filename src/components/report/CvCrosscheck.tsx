@@ -355,10 +355,16 @@ export default function CvCrosscheck({
   onRunAgain?: () => void;
   /** The upload control, rendered when there is no CV on file. */
   uploadSlot?: React.ReactNode;
-  onAuraAction?: (kind: AuraCan, context: { finding?: CvFinding; recommendation?: CvRecommendation }) => void;
+  onAuraAction?: (
+    kind: AuraCan,
+    context: { finding?: CvFinding; recommendation?: CvRecommendation },
+  ) => void | boolean | Promise<void | boolean>;
 }) {
   const [fetched, setFetched] = useState<unknown>(null);
   const [headlineOpen, setHeadlineOpen] = useState(0);
+  /* One "Kept ✓" per thing kept — pressing twice cannot write twice. */
+  const [kept, setKept] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState<string | null>(null);
 
   useEffect(() => {
     if (data || !userId) return;
@@ -454,13 +460,30 @@ export default function CvCrosscheck({
     /* Not built yet — a button that does nothing is worse than no button. */
     if (kind === "draft_post" || kind === "track_signal") return null;
     if (kind === "suggest_headline" && !headlineSuggestion) return null;
+    const key = `${kind}:${text(ctx.finding?.what) || text(ctx.recommendation?.action)}`;
+    if (kept[key]) {
+      return (
+        <p style={{ ...body, fontSize: 14, fontWeight: 600, color: "#12805C", marginBlockStart: 10 }}>Kept ✓</p>
+      );
+    }
     return (
       <button
         type="button"
+        disabled={saving === key}
         style={{ ...outlineBtn, marginBlockStart: 10 }}
-        onClick={() => (kind === "suggest_headline" ? jumpTo("cvx-headline") : onAuraAction?.(kind, ctx))}
+        onClick={async () => {
+          if (kind === "suggest_headline") { jumpTo("cvx-headline"); return; }
+          if (!onAuraAction) return;
+          setSaving(key);
+          try {
+            const ok = await onAuraAction(kind, ctx);
+            if (ok !== false) setKept((k) => ({ ...k, [key]: true }));
+          } finally {
+            setSaving(null);
+          }
+        }}
       >
-        {AURA_CAN_LABEL[kind]}
+        {saving === key ? "Keeping…" : AURA_CAN_LABEL[kind]}
       </button>
     );
   };
