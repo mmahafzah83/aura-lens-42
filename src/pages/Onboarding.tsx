@@ -65,7 +65,7 @@ import {
 import {
   SEAT_HEADING, SEAT_ROWS, SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_NO_CARD, SEAT_CTA, SEAT_PATH,
 } from "@/lib/seatCopy";
-import { BRAND, ONBOARDING_INTRO } from "@/constants/language";
+import { BRAND, ONBOARDING_INTRO, ENDING, WALL, AFTER_KEEP } from "@/constants/language";
 
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */
