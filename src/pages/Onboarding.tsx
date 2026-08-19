@@ -145,6 +145,8 @@ const CONNECT_AFTER_ACCOUNT =
 const TRUST_SLIDERS_SCREEN = 8.5;
 /** A white CV step between screen 3 and screen 4 — fractional so nothing renumbers. */
 const CV_SCREEN = 3.5;
+/** The after-keep share screen — offered only once the report is his. */
+const SHARE_SCREEN = 13.5;
 
 /** Plain text buttons inside the screen-13 "Save it" row. */
 const quietLink: React.CSSProperties = {
