@@ -1328,12 +1328,17 @@ const Onboarding = () => {
       }
       setReadDone(true);
     } catch (e: any) {
-      const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "";
-      /* the read failing never moves them: the field, the error and the manual path all stay here */
+      /* the read failing never moves them: the field, the error and the manual
+         path all stay here. Whose failure it was decides what we say. */
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+      const msg = typeof e?.message === "string" ? e.message.toLowerCase() : "";
+      const badAddress = /invalid_url|not a linkedin|profile_unreadable/.test(msg);
       returnToAddress(
-        msg && msg.length < 120
-          ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
-          : "Aura couldn't open that page. Check it matches what you see in your browser on your own profile.",
+        offline
+          ? "We couldn't reach Aura just now. Check your connection — nothing you entered is lost."
+          : badAddress
+            ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
+            : "Our reader didn't come back. That's ours, not your address. Nothing you entered is lost — press once more.",
       );
     } finally {
       setLiBusy(false);
