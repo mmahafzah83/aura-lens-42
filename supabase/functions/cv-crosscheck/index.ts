@@ -118,10 +118,23 @@ serve(withObserve("cv-crosscheck", async (req) => {
     const name = String(file.name ?? "").toLowerCase();
     const isDocx = mime.includes("word") || mime.includes("officedocument") || name.endsWith(".docx") || name.endsWith(".doc");
     if (isDocx) {
+      /* DOCX is a zip: unpack in memory and read the paragraph text out of
+         word/document.xml. No temp file, no library that wants a filesystem. */
       // @ts-ignore dynamic esm import
-      const mammoth = await import("https://esm.sh/mammoth@1.8.0?target=deno");
-      const res = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
-      return String(res?.value ?? "");
+      const { unzipSync, strFromU8 } = await import("https://esm.sh/fflate@0.8.2");
+      const files: Record<string, Uint8Array> = unzipSync(bytes);
+      const parts = Object.keys(files).filter((k) => /^word\/(document|header\d*|footer\d*)\.xml$/.test(k));
+      let out = "";
+      for (const p of parts) {
+        const xml = strFromU8(files[p]);
+        out += xml
+          .replace(/<\/w:p>/g, "\n")
+          .replace(/<w:tab[^>]*\/>/g, "\t")
+          .replace(/<[^>]+>/g, "")
+          .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+        out += "\n";
+      }
+      return out;
     }
     // @ts-ignore dynamic esm import
     const { extractText, getDocumentProxy } = await import("https://esm.sh/unpdf@0.12.1");
