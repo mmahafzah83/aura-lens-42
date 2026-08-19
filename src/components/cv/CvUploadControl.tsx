@@ -71,16 +71,18 @@ const FAILURE_TEXT: Record<Failure["kind"], string> = {
 
 interface Props {
   userId: string | null;
-  /** Anonymous click: send them to the account step and back to this screen. */
-  onNeedAccount?: () => void;
+  /** Anonymous run: the token the transient comparison is attributed to. */
+  anonToken?: string | null;
   onUploaded?: (documentId: string) => void;
   onCrosscheck?: (crosscheck: unknown) => void;
+  /** Anything the CV gave us that can pre-fill the account form. */
+  onCvContact?: (contact: { email?: string; name?: string }) => void;
   /** Hide the purpose question where it does not belong (Settings shows it too). */
   showPurpose?: boolean;
 }
 
 export default function CvUploadControl({
-  userId, onNeedAccount, onUploaded, onCrosscheck, showPurpose = true,
+  userId, anonToken, onUploaded, onCrosscheck, onCvContact, showPurpose = true,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [purpose, setPurpose] = useState<string>(readCvPurpose);
