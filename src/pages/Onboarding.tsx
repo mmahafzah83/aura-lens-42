@@ -48,7 +48,7 @@ import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyShell, { STAGE_NAMES, type Beat, type JourneySub } from "@/components/journey/JourneyShell";
 import { CONSENT_VERSION } from "@/pages/Auth";
-import DocumentUpload from "@/components/DocumentUpload";
+import CvUploadControl, { readCvPurpose } from "@/components/cv/CvUploadControl";
 import CvCrosscheck from "@/components/report/CvCrosscheck";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
@@ -594,7 +594,9 @@ const Onboarding = () => {
     if (cvRunRef.current) return;
     cvRunRef.current = true;
     try {
-      const { data, error } = await supabase.functions.invoke("cv-crosscheck", { body: {} });
+      const { data, error } = await supabase.functions.invoke("cv-crosscheck", {
+        body: { purpose: readCvPurpose() },
+      });
       if (error) return;
       const cc = (data as { ok?: boolean; crosscheck?: unknown } | null)?.crosscheck;
       if (cc) setCvCrosscheck(cc);
@@ -803,6 +805,18 @@ const Onboarding = () => {
     try { window.history.pushState({ obScreen: next }, ""); } catch { /* ignore */ }
     try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
   }, [persistScreen]);
+
+  /* Back from the account step with a CV still to add: land on the CV screen. */
+  const cvReturnRef = useRef(false);
+  useEffect(() => {
+    if (checking || !userId || cvReturnRef.current) return;
+    let wanted = false;
+    try { wanted = new URLSearchParams(window.location.search).get("cv") === "1"; } catch { /* ignore */ }
+    if (!wanted) return;
+    cvReturnRef.current = true;
+    go(CV_SCREEN);
+    try { window.history.replaceState({}, "", "/onboarding"); } catch { /* ignore */ }
+  }, [checking, userId, go]);
 
   /**
    * Back — one step, with everything the member typed still in state. Nothing
@@ -2503,21 +2517,24 @@ const Onboarding = () => {
     };
     content = (
       <PaperShell onExit={saveAndExit} bead={0} subProgress={1} footer={escapeFooter}>
-        <h1 style={h1Light}>{userId ? "Have a CV handy?" : "Your CV comes next."}</h1>
+        <h1 style={h1Light}>Have a CV handy?</h1>
         <p style={bodyLight}>
-          {userId
-            ? "Your profile says what the world can see. A CV says what you actually did — the numbers, the programmes, the things nobody posted about. Aura reads it against your profile and shows you the difference."
-            : "Your profile says what the world can see. A CV says what you actually did — the numbers, the scale, the things you led. Aura reads it against your profile and shows you where the two disagree. You'll add it the moment your report is saved."}
+          Your CV and your profile are read together. Your profile says what the world can see.
+          A CV says what you actually did — the numbers, the programmes, the things nobody posted
+          about. Aura reads it against your profile and shows you the difference.
         </p>
-        {userId ? (
-          <div style={{ marginBlockStart: 20 }}>
-            <DocumentUpload
-              documentType="cv"
-              cvLabel="latest"
-              onUploaded={(id) => { if (id) { setCvUploads((n) => n + 1); void runCvCrosscheck(); } }}
-            />
-          </div>
-        ) : null}
+        <div style={{ marginBlockStart: 20 }}>
+          <CvUploadControl
+            userId={userId}
+            onNeedAccount={() => {
+              /* No bytes are held for an anonymous visitor. They open the
+                 account, then land straight back on this screen. */
+              window.location.assign(`/auth?next=${encodeURIComponent("/onboarding?cv=1")}`);
+            }}
+            onUploaded={() => setCvUploads((n) => n + 1)}
+            onCrosscheck={(cc) => setCvCrosscheck(cc)}
+          />
+        </div>
         {/* Shows only once the comparison comes back; absent, it renders nothing. */}
         <CvCrosscheck data={cvCrosscheck} style={{ marginBlockStart: 20 }} />
         <Actions style={{ marginBlockStart: 20 }}>

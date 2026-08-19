@@ -21,6 +21,7 @@ import CountryPicker from "@/components/CountryPicker";
 import PreferencesPanel from "@/components/PreferencesPanel";
 import EditProfileModal, { type EditProfileField } from "@/components/EditProfileModal";
 import AccountPanel from "@/components/settings/AccountPanel";
+import CvUploadControl from "@/components/cv/CvUploadControl";
 import SlideDefaultsCard from "@/components/settings/SlideDefaultsCard";
 import WhatsAppPairingCard from "@/components/settings/WhatsAppPairingCard";
 import { WHATSAPP_PAIRING_ADMIN_ONLY } from "@/config/whatsapp";
@@ -461,6 +462,17 @@ const handleDeleteAccount = async () => {
         <>
 
         <AccountPanel userId={authUser?.id ?? null} email={authUser?.email} />
+
+        {/* Your CV — the door stays open after the journey ends. */}
+        <SectionHeader
+          label="Your CV"
+          subtitle="Aura reads it against your profile and shows you the difference."
+        />
+        <div className="mb-8">
+          <AuraCard variant="default" hover="none">
+            <CvUploadControl userId={authUser?.id ?? null} />
+          </AuraCard>
+        </div>
 
         {/* Your data — trust statement */}
         <SectionHeader
