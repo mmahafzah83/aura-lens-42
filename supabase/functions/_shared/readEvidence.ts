@@ -45,8 +45,8 @@ export async function buildReadEvidence(
 
   // The anonymous free journey writes only the global mirror_reads cache, keyed
   // by handle. Without this the floor refuses every free-journey member.
-  // linkedin_connections.handle is the source of truth; diagnostic_profiles
-  // .linkedin_handle is deprecated and nothing writes it.
+  // linkedin_connections.handle is the source of truth; the deprecated column
+  // on diagnostic_profiles is never read here — nothing writes it.
   let mirrorRead: any = null;
   {
     const { data: conn } = await admin
