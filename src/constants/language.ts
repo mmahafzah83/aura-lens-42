@@ -279,6 +279,7 @@ export const ONBOARDING_INTRO = {
 // EMAIL TEMPLATES
 // ════════════════════════════════════
 export const EMAIL = {
+  _unused: undefined as undefined,
   invite: {
     subject: "Your expertise deserves to be seen",
     preheader: "Your Aura beta access is approved. Here's everything you need to get started — and why it matters.",
