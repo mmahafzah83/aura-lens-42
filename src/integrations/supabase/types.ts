@@ -4213,6 +4213,42 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_ceiling_alerts: {
+        Row: {
+          ip_hash: string
+          last_sent_at: string
+        }
+        Insert: {
+          ip_hash: string
+          last_sent_at?: string
+        }
+        Update: {
+          ip_hash?: string
+          last_sent_at?: string
+        }
+        Relationships: []
+      }
+      signup_refusals: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          ip_hash: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+        }
+        Relationships: []
+      }
       skill_targets: {
         Row: {
           created_at: string
