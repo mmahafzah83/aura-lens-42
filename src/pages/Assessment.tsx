@@ -416,6 +416,9 @@ const Assessment = () => {
                 <h2>This read is anonymous.</h2>
                 <p>It lives in this browser only. Clear your history or switch to your phone and it is gone.</p>
               </section>
+              {runsUsed === 2 ? (
+                <p className="asg-trust">That's two of your three reads.</p>
+              ) : null}
               <button type="button" className="asg-textbtn" onClick={() => void startNewRead()}>
                 This isn't me — read a different profile
               </button>
