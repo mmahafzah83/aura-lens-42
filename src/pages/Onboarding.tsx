@@ -826,6 +826,33 @@ const Onboarding = () => {
     } catch (e) {
       console.error("[journey] capture replay failed", e);
     }
+    /* Replay anything they asked Aura to keep from the CV cross-check. */
+    try {
+      const keptItems = ((st as any).pending_evidence ?? []) as Array<{ title: string; content: string }>;
+      if (keptItems.length) {
+        const { data: reg } = await (supabase.from("source_registry") as any)
+          .upsert(
+            { user_id: uid, source_type: "cv_crosscheck", source_id: `cv-crosscheck:${uid}`, title: "Your CV against your profile", processed: true },
+            { onConflict: "user_id,source_type,source_id" },
+          )
+          .select("id")
+          .single();
+        if (reg?.id) {
+          await (supabase.from("evidence_fragments") as any).insert(
+            keptItems.filter((k) => k?.title && k?.content).map((k) => ({
+              user_id: uid,
+              source_registry_id: reg.id,
+              fragment_type: "insight",
+              title: k.title,
+              content: k.content,
+              metadata: { source: "cv_crosscheck", source_title: "Your CV against your profile" },
+            })),
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[journey] kept evidence replay failed", e);
+    }
     /* Replay the optional reveal feedback collected while anonymous. */
     try {
       const fb = (st as any).reveal_feedback;
