@@ -4,12 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * The one place a member adds a CV.
  *
- * Every upload path here sets document_type='cv' and cv_label='latest'.
- * A CV without that label is invisible to cv-crosscheck, so the two values
- * are written inline, in one insert, and nowhere else.
+ * SIGNED IN — the file is stored. Every stored path here sets
+ * document_type='cv' and cv_label='latest'. A CV without that label is
+ * invisible to cv-crosscheck, so the two values are written inline, in one
+ * insert, and nowhere else.
  *
- * A CV is never stored against an anonymous session: with no session the
- * control routes to the account step and comes straight back here.
+ * ANONYMOUS — nothing is stored. The bytes go straight to cv-crosscheck,
+ * which extracts the text in memory, compares, and returns. No storage
+ * object, no `documents` row, no `document_chunks` row. There is no wall:
+ * an anonymous visitor gets the whole comparison with no account.
  */
 
 export const CV_PURPOSES = [
