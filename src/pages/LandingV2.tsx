@@ -334,7 +334,7 @@ const LANDING_V2_HTML = `
     <div>
       <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> ${PRODUCT_DESCRIPTOR}</span>
       <h1>Your experience is worth more<br><span class="grad">than your profile shows.</span></h1>
-      <p class="sub">Aura finds what makes you credible, organises the evidence behind it, and turns it into positioning, content and proof you can put in front of anyone.</p>
+      <p class="sub">Aura reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
       <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
       <div class="acts">
         <a class="btn bp" id="heropri" href="/assessment">Discover my professional position</a>
