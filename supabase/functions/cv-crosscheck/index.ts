@@ -177,7 +177,10 @@ serve(withObserve("cv-crosscheck", async (req) => {
     targetId = undefined;
     if (!inlineCvText && cvFile) {
       try { inlineCvText = (await extractInMemory(cvFile)).trim(); }
-      catch (_e) { return json({ ok: false, pending: true, reason: "unparseable" }); }
+      catch (e) {
+        console.error("[cv-crosscheck] transient extraction failed", String((e as Error)?.message ?? e));
+        return json({ ok: false, pending: true, reason: "unparseable" });
+      }
     }
     if (inlineCvText.length < 200) return json({ ok: false, pending: true, reason: "no_cv" });
   } else if (!targetId && email) {
