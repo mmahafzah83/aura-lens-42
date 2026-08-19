@@ -97,7 +97,13 @@ serve(withObserve("cv-crosscheck", async (req) => {
      no write to `diagnostic_profiles`. The result is returned to the browser
      and held on the anonymous session by the caller. */
   const anonToken: string = typeof body?.anon_token === "string" ? body.anon_token.trim() : "";
-  let inlineCvText: string = typeof body?.cv_text === "string" ? body.cv_text.trim() : "";
+  /* `cvText` is the documented parameter name; `cv_text` is accepted as an
+     alias so either spelling works. When present the `documents` lookup is
+     skipped entirely and nothing about this CV is ever written down. */
+  let inlineCvText: string =
+    typeof body?.cvText === "string" ? body.cvText.trim()
+    : typeof body?.cv_text === "string" ? body.cv_text.trim()
+    : "";
   const cvFile: { mime?: string; name?: string; base64?: string } | null =
     body?.cv_file && typeof body.cv_file === "object" ? body.cv_file : null;
 
