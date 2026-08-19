@@ -259,7 +259,11 @@ export default function CvUploadControl({
           <div style={{ flex: "1 1 200px", minInlineSize: 0 }}>
             <div style={{ fontSize: 14, color: INK, overflowWrap: "anywhere" }}>{fileName}</div>
             <div style={{ fontSize: 12.5, color: MUTED, marginBlockStart: 2 }}>
-              {comparing ? "Aura is reading it against your profile." : "On file. Only you can see it."}
+              {comparing
+                ? "Aura is reading it against your profile."
+                : userId
+                  ? "On file. Only you can see it."
+                  : "Read and discarded. Aura kept the comparison, not the file."}
             </div>
           </div>
           <button type="button" onClick={pick} style={{ ...ghostStyle, minInlineSize: 44 }}>Replace</button>
@@ -267,9 +271,13 @@ export default function CvUploadControl({
       ) : (
         <>
           <button type="button" onClick={pick} disabled={busy} style={{ ...primaryStyle, opacity: busy ? 0.7 : 1 }}>
-            {busy ? "Adding your CV…" : "Add your CV"}
+            {busy ? (userId ? "Adding your CV…" : "Reading your CV…") : "Add your CV"}
           </button>
-          <p style={helpStyle}>PDF or Word. Only you can see it.</p>
+          <p style={helpStyle}>
+            {userId
+              ? "PDF or Word. Only you can see it."
+              : "Aura reads your CV and discards it. It is never stored unless you save your report."}
+          </p>
         </>
       )}
 
