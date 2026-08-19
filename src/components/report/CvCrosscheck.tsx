@@ -252,11 +252,84 @@ function EvidenceToggle({ cv, profile }: { cv: string; profile: string }) {
 }
 
 const AURA_CAN_LABEL: Record<AuraCan, string> = {
-  capture_evidence: "Capture the evidence",
+  capture_evidence: "Keep this for me",
   draft_post: "Draft a post about this",
   suggest_headline: "See the suggested headline",
   track_signal: "Track this as a signal",
 };
+
+/* First sentence of the section's own content, cut at a word boundary. */
+function preview(source: string, limit = 96): string {
+  const s = source.replace(/\s+/g, " ").trim();
+  if (!s) return "";
+  const stop = s.search(/[.!?](\s|$)/);
+  const first = stop > 0 ? s.slice(0, stop + 1) : s;
+  if (first.length <= limit) return first;
+  const cut = first.slice(0, limit);
+  return `${cut.slice(0, cut.lastIndexOf(" ") > 0 ? cut.lastIndexOf(" ") : limit)}…`;
+}
+
+/**
+ * One collapsed section. Native <details> so it survives no-JS, keyboard and
+ * find-in-page. `openSignal` lets jumpTo force a row open.
+ */
+function Disclosure({
+  id, label, count, previewText, openSignal, children,
+}: {
+  id: string;
+  label: string;
+  count?: number;
+  previewText: string;
+  openSignal?: number;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (openSignal && ref.current) { ref.current.open = true; setOpen(true); }
+  }, [openSignal]);
+
+  return (
+    <details
+      ref={ref}
+      id={id}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+      style={{ ...card, padding: 0, scrollMarginTop: SCROLL_MARGIN }}
+    >
+      <summary
+        style={{
+          listStyle: "none", cursor: "pointer", minBlockSize: 44,
+          padding: "14px 18px", display: "flex", gap: 12, alignItems: "center",
+        }}
+      >
+        <span style={{ flex: 1, minInlineSize: 0 }}>
+          <span style={{ ...body, fontWeight: 600, display: "block" }}>
+            {label}
+            {typeof count === "number" && count > 0 ? (
+              <span style={{ ...mono, display: "inline", marginInlineStart: 8, fontSize: 12 }}>{count}</span>
+            ) : null}
+          </span>
+          {!open && previewText ? (
+            <span style={{ ...body, fontSize: 14, color: OB.muted, display: "block", marginBlockStart: 2 }}>
+              {previewText}
+            </span>
+          ) : null}
+        </span>
+        <span
+          aria-hidden
+          style={{
+            flex: "0 0 auto", color: OB.muted, fontSize: 14,
+            transform: open ? "rotate(90deg)" : "none", transition: "transform 160ms ease",
+          }}
+        >
+          ›
+        </span>
+      </summary>
+      <div style={{ padding: "0 18px 18px" }}>{children}</div>
+    </details>
+  );
+}
 
 /* ------------------------------------------------------------------ main -- */
 
@@ -285,6 +358,7 @@ export default function CvCrosscheck({
   onAuraAction?: (kind: AuraCan, context: { finding?: CvFinding; recommendation?: CvRecommendation }) => void;
 }) {
   const [fetched, setFetched] = useState<unknown>(null);
+  const [headlineOpen, setHeadlineOpen] = useState(0);
 
   useEffect(() => {
     if (data || !userId) return;
@@ -363,26 +437,22 @@ export default function CvCrosscheck({
   const peer = text(d.peer_comparison);
   const voice = text(d.profile_vs_voice);
 
-  const jumps: { id: string; label: string }[] = [
-    findings.length ? { id: "cvx-findings", label: "Where the two disagree" } : null,
-    behind.length ? { id: "cvx-missing", label: "What your CV is missing" } : null,
-    proof.length ? { id: "cvx-defensibility", label: "What a CFO will ask" } : null,
-    headlineSuggestion ? { id: "cvx-headline", label: "A headline built from this" } : null,
-    shape ? { id: "cvx-shape", label: "The shape of your career" } : null,
-    hardTruth ? { id: "cvx-truth", label: "The hard truth" } : null,
-    recs.length ? { id: "cvx-now", label: "What now" } : null,
-  ].filter(Boolean) as { id: string; label: string }[];
+  const lead = findings[0] ?? null;
+  const rest = findings.slice(1);
 
   const jumpTo = (id: string) => {
+    if (id === "cvx-headline") setHeadlineOpen((n) => n + 1);
     const el = document.getElementById(id);
     if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
     el.setAttribute("tabindex", "-1");
     (el as HTMLElement).focus({ preventScroll: true });
   };
 
   const auraControl = (kind: AuraCan | null | undefined, ctx: { finding?: CvFinding; recommendation?: CvRecommendation }) => {
     if (!kind) return null; /* a null offer is no control at all */
+    /* Not built yet — a button that does nothing is worse than no button. */
+    if (kind === "draft_post" || kind === "track_signal") return null;
     if (kind === "suggest_headline" && !headlineSuggestion) return null;
     return (
       <button
@@ -392,6 +462,35 @@ export default function CvCrosscheck({
       >
         {AURA_CAN_LABEL[kind]}
       </button>
+    );
+  };
+
+  const Finding = ({ f, first }: { f: CvFinding; first: boolean }) => {
+    const rewrite = text(f.rewrite);
+    const ev = f.evidence || {};
+    const cvLine = text(ev.cv_line) === "Absent" ? "" : text(ev.cv_line);
+    const profileLine = text(ev.profile_line) === "Absent" ? "" : text(ev.profile_line);
+    return (
+      <article style={{ display: "grid", gap: 10 }}>
+        {first && f.do_first === true ? <p style={{ ...mono, color: OB.cyanText }}>Do this first</p> : null}
+        {text(f.what) ? <h3 style={h3}>{f.what}</h3> : null}
+        {text(f.what_you_lose) ? <p style={body}>{f.what_you_lose}</p> : null}
+        {rewrite ? (
+          <div style={boxed}>
+            <p style={mono}>Use this line</p>
+            <p style={{ ...body, marginBlockStart: 8 }}>{rewrite}</p>
+            <div style={{ marginBlockStart: 12 }}>
+              <CopyButton value={rewrite} label="Copy rewrite" />
+            </div>
+          </div>
+        ) : null}
+        {text(f.why_it_matters) ? (
+          <p style={{ ...body, fontSize: 15, color: OB.muted }}>{f.why_it_matters}</p>
+        ) : null}
+        {text(f.do_this) ? <p style={{ ...body, fontSize: 15, color: OB.blue }}>{f.do_this}</p> : null}
+        <EvidenceToggle cv={cvLine} profile={profileLine} />
+        {auraControl(f.aura_can, { finding: f })}
+      </article>
     );
   };
 
@@ -432,117 +531,79 @@ export default function CvCrosscheck({
         </div>
       ) : null}
 
-      {/* 2 · On this page */}
-      {jumps.length > 1 ? (
-        <nav aria-label="On this page" style={{ ...card, padding: 16 }}>
-          <p style={mono}>On this page</p>
-          <ul style={{ listStyle: "none", margin: "6px 0 0", padding: 0 }}>
-            {jumps.map((j) => (
-              <li key={j.id}>
-                <a
-                  href={`#${j.id}`}
-                  onClick={(e) => { e.preventDefault(); jumpTo(j.id); }}
-                  style={{ ...linkBtn, display: "block", textDecoration: "none" }}
-                >
-                  {j.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      ) : null}
-
-      {/* 3 · The findings — all open, never an accordion */}
-      {findings.length > 0 ? (
+      {/* 2 · The one thing to fix first — always open, in full */}
+      {lead ? (
         <Section id="cvx-findings" title="Where the two disagree">
+          <Finding f={lead} first />
+        </Section>
+      ) : null}
+
+      {/* 3 · Everything else — labelled, one tap away */}
+      {rest.length > 0 ? (
+        <Disclosure
+          id="cvx-findings-rest"
+          label="The other disagreements"
+          count={rest.length}
+          previewText={preview(text(rest[0].what) || text(rest[0].what_you_lose))}
+        >
           <div style={{ display: "grid", gap: 26 }}>
-            {findings.map((f, i) => {
-              const rewrite = text(f.rewrite);
-              const ev = f.evidence || {};
-              const cvLine = text(ev.cv_line) === "Absent" ? "" : text(ev.cv_line);
-              const profileLine = text(ev.profile_line) === "Absent" ? "" : text(ev.profile_line);
-              return (
-                <article key={i} style={{ display: "grid", gap: 10 }}>
-                  {i === 0 && f.do_first === true ? <p style={{ ...mono, color: OB.cyanText }}>Do this first</p> : null}
-                  {text(f.what) ? <h3 style={h3}>{f.what}</h3> : null}
-                  {text(f.what_you_lose) ? <p style={body}>{f.what_you_lose}</p> : null}
-                  {rewrite ? (
-                    <div style={boxed}>
-                      <p style={mono}>Use this line</p>
-                      <p style={{ ...body, marginBlockStart: 8 }}>{rewrite}</p>
-                      <div style={{ marginBlockStart: 12 }}>
-                        <CopyButton value={rewrite} label="Copy rewrite" />
-                      </div>
-                    </div>
-                  ) : null}
-                  {text(f.why_it_matters) ? (
-                    <p style={{ ...body, fontSize: 15, color: OB.muted }}>{f.why_it_matters}</p>
-                  ) : null}
-                  {text(f.do_this) ? <p style={{ ...body, fontSize: 15, color: OB.blue }}>{f.do_this}</p> : null}
-                  <EvidenceToggle cv={cvLine} profile={profileLine} />
-                  {auraControl(f.aura_can, { finding: f })}
-                </article>
-              );
-            })}
+            {rest.map((f, i) => <Finding key={i} f={f} first={false} />)}
           </div>
-        </Section>
+        </Disclosure>
       ) : null}
 
-      {/* 4 */}
       {behind.length > 0 ? (
-        <Section id="cvx-missing" title="What your CV is missing">
+        <Disclosure id="cvx-missing" label="What your CV is missing" count={behind.length} previewText={preview(behind[0])}>
           <PlainList items={behind} />
-        </Section>
+        </Disclosure>
       ) : null}
 
-      {/* 5 */}
       {proof.length > 0 ? (
-        <Section id="cvx-defensibility" title="What a CFO will ask in the first ten minutes">
+        <Disclosure id="cvx-defensibility" label="What a CFO will ask" count={proof.length} previewText={preview(proof[0])}>
           <div style={{ display: "grid", gap: 12 }}>
             {proof.map((s, i) => (
               <div key={i} style={boxed}><p style={body}>{s}</p></div>
             ))}
           </div>
-        </Section>
+        </Disclosure>
       ) : null}
 
-      {/* 7 */}
       {headlineSuggestion ? (
-        <Section id="cvx-headline" title="A headline built from this">
+        <Disclosure
+          id="cvx-headline"
+          label="A headline built from this"
+          previewText={preview(headlineSuggestion)}
+          openSignal={headlineOpen}
+        >
           <div style={boxed}>
             <p style={body}>{headlineSuggestion}</p>
             <div style={{ marginBlockStart: 12 }}>
               <CopyButton value={headlineSuggestion} label="Copy suggested headline" />
             </div>
           </div>
-        </Section>
+        </Disclosure>
       ) : null}
 
-      {/* 8 */}
       {shape ? (
-        <Section id="cvx-shape" title="The shape of your career">
+        <Disclosure id="cvx-shape" label="The shape of your career" previewText={preview(shape)}>
           <p style={body}>{shape}</p>
-        </Section>
+        </Disclosure>
       ) : null}
 
-      {/* profile_vs_voice — kept, and named */}
       {voice ? (
-        <Section id="cvx-voice" title="What you sound like next to what you claim">
+        <Disclosure id="cvx-voice" label="What you sound like next to what you claim" previewText={preview(voice)}>
           <p style={body}>{voice}</p>
-        </Section>
+        </Disclosure>
       ) : null}
 
-      {/* 9 · The hard truth — alone, no colour, no icon */}
       {hardTruth ? (
-        <section id="cvx-truth" style={{ ...card, padding: 32, scrollMarginTop: SCROLL_MARGIN }}>
-          <p style={mono}>The hard truth</p>
-          <p style={{ ...body, fontSize: 20, fontWeight: 700, lineHeight: 1.45, marginBlockStart: 14 }}>{hardTruth}</p>
-        </section>
+        <Disclosure id="cvx-truth" label="The hard truth" previewText={preview(hardTruth)}>
+          <p style={{ ...body, fontSize: 20, fontWeight: 700, lineHeight: 1.45 }}>{hardTruth}</p>
+        </Disclosure>
       ) : null}
 
-      {/* 10 */}
       {recs.length > 0 ? (
-        <Section id="cvx-now" title="What now">
+        <Disclosure id="cvx-now" label="What now" count={recs.length} previewText={preview(text(recs[0].action))}>
           <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 18 }}>
             {recs.map((r, i) => (
               <li key={i}>
@@ -552,14 +613,13 @@ export default function CvCrosscheck({
               </li>
             ))}
           </ol>
-        </Section>
+        </Disclosure>
       ) : null}
 
-      {/* 11 */}
       {peer ? (
-        <Section id="cvx-peers" title="How others in your field describe this work">
+        <Disclosure id="cvx-peers" label="How others in your field describe this work" previewText={preview(peer)}>
           <p style={body}>{peer}</p>
-        </Section>
+        </Disclosure>
       ) : null}
     </div>
   );
