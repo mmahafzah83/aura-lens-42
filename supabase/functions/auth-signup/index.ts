@@ -49,24 +49,31 @@ serve(async (req) => {
     }
     if (existing) return json({ ok: true, existing: true });
 
-    const ip_hash = await hashIp(clientIp(req));
+    // No address header means no fingerprint. Such a caller is not counted
+    // against any bucket — pooling them all together would refuse strangers
+    // for someone else's traffic.
+    const rawIp = clientIp(req);
+    const ip_hash = rawIp ? await hashIp(rawIp) : null;
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count } = await admin
-      .from("signup_attempts")
-      .select("id", { count: "exact", head: true })
-      .eq("ip_hash", ip_hash)
-      .gte("created_at", since);
+    let count = 0;
+    if (ip_hash) {
+      const { count: c } = await admin
+        .from("signup_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_hash", ip_hash)
+        .gte("created_at", since);
+      count = c ?? 0;
+    }
 
-    if ((count ?? 0) >= LIMITS.SIGNUPS_PER_IP_PER_DAY) {
+    if (ip_hash && count >= LIMITS.SIGNUPS_PER_IP_PER_DAY) {
       // This is an expected product state, not a crashed function. Keeping the
       // HTTP response successful prevents the client runtime from treating the
       // limit as an uncaught Edge Function error while preserving the block.
-      return json({
-        ok: false,
-        code: "signup_limit",
-        error:
-          "That is as many accounts as can be opened from here today. Write to support@aura-intel.org and it is sorted by hand.",
-      });
+      const shown =
+        "That is as many accounts as can be opened from this network today. It lifts in 24 hours. Write to support@aura-intel.org and it is sorted by hand in the meantime.";
+      await recordRefusal(admin, ip_hash, "signup_limit");
+      await alertFounder(admin, ip_hash, count, shown);
+      return json({ ok: false, code: "signup_limit", error: shown });
     }
 
     // The account is created already confirmed. A verification round-trip used
@@ -78,7 +85,10 @@ serve(async (req) => {
       email_confirm: true,
       user_metadata: { password_set: true },
     });
-    if (error) return json({ error: error.message }, 400);
+    if (error) {
+      await recordRefusal(admin, ip_hash, "create_user_rejected");
+      return json({ error: error.message }, 400);
+    }
 
     await admin.from("signup_attempts").insert({ ip_hash });
 
