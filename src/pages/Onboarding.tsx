@@ -1649,14 +1649,6 @@ const Onboarding = () => {
     return () => window.clearTimeout(t);
   }, [screen, revealPending]);
 
-  /* the report wait has four steps; the clock drives the first three */
-  useEffect(() => {
-    if (screen !== 12 || !revealPending) { setGenElapsed(0); return; }
-    const started = Date.now();
-    const i = window.setInterval(() => setGenElapsed(Date.now() - started), 500);
-    return () => window.clearInterval(i);
-  }, [screen, revealPending]);
-
   useEffect(() => {
     if (screen !== 13 || readRaw || !userId) return;
     setRevealLoading(true);
