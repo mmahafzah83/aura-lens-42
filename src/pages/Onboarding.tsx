@@ -2526,17 +2526,33 @@ const Onboarding = () => {
         <div style={{ marginBlockStart: 20 }}>
           <CvUploadControl
             userId={userId}
-            onNeedAccount={() => {
-              /* No bytes are held for an anonymous visitor. They open the
-                 account, then land straight back on this screen. */
-              window.location.assign(`/auth?next=${encodeURIComponent("/onboarding?cv=1")}`);
-            }}
+            anonToken={anonToken}
             onUploaded={() => setCvUploads((n) => n + 1)}
-            onCrosscheck={(cc) => setCvCrosscheck(cc)}
+            onCvContact={(c) => { if (c.email && !wallEmail) setWallEmail(c.email); }}
+            onCrosscheck={(cc) => {
+              setCvCrosscheck(cc);
+              /* Anonymous: the result lives on the session, the CV does not. */
+              if (!userId && anonToken) {
+                anonStateRef.current = { ...anonStateRef.current, cv_crosscheck: cc } as any;
+                void saveSession(anonToken, anonStateRef.current);
+              }
+            }}
           />
         </div>
         {/* Shows only once the comparison comes back; absent, it renders nothing. */}
         <CvCrosscheck data={cvCrosscheck} style={{ marginBlockStart: 20 }} />
+        {/* The ask comes after the whole comparison, and it is loss-framed. */}
+        {!userId && cvCrosscheck ? (
+          <div style={{ marginBlockStart: 24, borderTop: `1px solid ${OB.rule}`, paddingBlockStart: 20 }}>
+            <h2 style={{ fontFamily: OB.ui, fontSize: 20, fontWeight: 700, color: OB.ink, margin: 0 }}>Keep this.</h2>
+            <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 8 }}>
+              This comparison lives in this browser only. Save your report and it's yours.
+            </p>
+            <Actions style={{ marginBlockStart: 16 }}>
+              <OBButton onClick={() => go(12)}>Save my report</OBButton>
+            </Actions>
+          </div>
+        ) : null}
         <Actions style={{ marginBlockStart: 20 }}>
           <OBButton onClick={leaveCv}>
             {cvUploads > 0 ? "Read it" : "Continue"}
