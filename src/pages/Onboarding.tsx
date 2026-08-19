@@ -416,6 +416,8 @@ const Onboarding = () => {
   const [wallConsent, setWallConsent] = useState(false);
   const [wallBusy, setWallBusy] = useState(false);
   const [wallError, setWallError] = useState<string | null>(null);
+  const [wallEmailError, setWallEmailError] = useState<string | null>(null);
+  const [wallPasswordError, setWallPasswordError] = useState<string | null>(null);
   const [wallDone, setWallDone] = useState<string | null>(null);
   // The morning promise is only made when the system has actually been
   // delivering. Reads public.morning_promise_state; fails to the honest line.
@@ -3352,10 +3354,16 @@ const Onboarding = () => {
             <label htmlFor="ob-wall-email" style={{ display: "block", fontSize: 13, color: OB.muted, marginBlockEnd: 6 }}>Your email</label>
             <input id="ob-wall-email" type="email" autoComplete="email" value={wallEmail}
               onChange={(e) => setWallEmail(e.target.value)} style={fieldStyle} />
+            <div aria-live="polite">
+              {wallEmailError && <p style={{ fontSize: 13, color: OB.err, marginBlockStart: 6 }}>{wallEmailError}</p>}
+            </div>
             <label htmlFor="ob-wall-pwd" style={{ display: "block", fontSize: 13, color: OB.muted, margin: "16px 0 6px" }}>A password</label>
             <input id="ob-wall-pwd" type="password" autoComplete="new-password" value={wallPassword}
               onChange={(e) => setWallPassword(e.target.value)} style={fieldStyle} />
             <p style={{ fontSize: 12, color: OB.muted, marginBlockStart: 6 }}>Eight characters or more.</p>
+            <div aria-live="polite">
+              {wallPasswordError && <p style={{ fontSize: 13, color: OB.err, marginBlockStart: 6 }}>{wallPasswordError}</p>}
+            </div>
             <div aria-live="polite">
               {wallError && <p style={{ fontSize: 13, color: OB.err, marginBlockStart: 10 }}>{wallError}</p>}
             </div>
