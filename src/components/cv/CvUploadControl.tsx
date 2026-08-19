@@ -269,6 +269,7 @@ export default function CvUploadControl({
         body: {
           anon_token: anonToken,
           purpose,
+          ...(cvOnly ? { cv_only: true } : {}),
           ...(cvText ? { cvText } : { cv_file: { mime: file.type, name: file.name, base64 } }),
         },
       });
@@ -282,6 +283,7 @@ export default function CvUploadControl({
       if (reason === "no_cv") setFailure({ kind: "no_cv" });
       else if (reason === "no_snapshot") setFailure({ kind: "no_snapshot" });
       else if (reason === "unparseable") setFailure({ kind: "unparseable" });
+      else if (reason === "gate_failed") setFailure({ kind: "gate_failed" });
       else setFailure({ kind: "server" });
     } catch {
       setFailure({ kind: "server" });
@@ -295,6 +297,7 @@ export default function CvUploadControl({
     const fileType = ACCEPTED[file.type] || (/\.docx?$/i.test(file.name) ? "docx" : /\.pdf$/i.test(file.name) ? "pdf" : null);
     if (!fileType) { setUploadError("That file type isn't supported. Add a PDF or a Word document."); return; }
     if (file.size > 50 * 1024 * 1024) { setUploadError("That file is over 50MB. Try a smaller one."); return; }
+    lastFileRef.current = file;
     /* No session: read it, compare it, throw it away. Never a login gate. */
     if (!userId) { await transientCompare(file); return; }
     setUploadError(null);
