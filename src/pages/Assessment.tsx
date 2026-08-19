@@ -67,6 +67,9 @@ const ReadingProgress = () => {
 const STEP_TO_STAGE: Record<string, Stage> = {
   /* A finished read is never restored silently — the visitor is asked first. */
   address: "address", read: "resume",
+  /* ...unless they pressed Back from onboarding: that returns them to the
+     exact screen they left, the read itself, with no intermediate menu. */
+  read_open: "read",
 };
 
 /** "18 AUG 2026" — the one date shape on this page. */
