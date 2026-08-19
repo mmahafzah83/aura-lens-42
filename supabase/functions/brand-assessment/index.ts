@@ -6,6 +6,7 @@ import { logError } from "../_shared/logError.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { buildReadEvidence } from "../_shared/readEvidence.ts";
 import { LIMITS, QUEUE_MESSAGE } from "../_shared/limits.ts";
+import { startRun, type RunHandle } from "../_shared/operationRun.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,8 +39,21 @@ serve(withObserve("brand-assessment", async (req) => {
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const uid = userData.user.id;
 
+    /* One run row per report generation. Today a failed report leaves no
+       record anywhere; this is that record. */
+    const run: RunHandle = await startRun(admin, {
+      operation: "market_read",
+      user_id: uid,
+      meta: { sector: sector ?? null, band: band ?? null },
+    });
+    const finish = async (outcome: "ok" | "refused" | "failed", reason_code?: string) => {
+      try { await run.finish({ outcome, reason_code: reason_code ?? null }); }
+      catch (e) { console.error("[brand-assessment] run finish failed:", (e as Error)?.message); }
+    };
+
     /* ── cost controls · enforced here, never in the UI ── */
     if (LIMITS.REQUIRE_VERIFIED_EMAIL && !userData.user.email_confirmed_at) {
+      await finish("refused", "email_unconfirmed");
       return new Response(
         JSON.stringify({ error: "Confirm your email first — the link is in your inbox. Then this starts." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -51,6 +65,7 @@ serve(withObserve("brand-assessment", async (req) => {
       .select("id", { count: "exact", head: true })
       .eq("user_id", uid);
     if ((ownRuns ?? 0) >= LIMITS.INSTRUMENT_RUNS_PER_ACCOUNT) {
+      await finish("refused", "already_written");
       return new Response(
         JSON.stringify({ error: "Your report has already been written. Open it from My Story." }),
         { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -63,6 +78,7 @@ serve(withObserve("brand-assessment", async (req) => {
       .select("id", { count: "exact", head: true })
       .gte("created_at", dayStart.toISOString());
     if ((today ?? 0) >= LIMITS.DAILY_INSTRUMENT_RUN_CEILING) {
+      await finish("refused", "daily_ceiling");
       return new Response(
         JSON.stringify({ queued: true, error: QUEUE_MESSAGE }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -78,6 +94,7 @@ serve(withObserve("brand-assessment", async (req) => {
         severity: "high",
         context: { path: "evidence_floor" },
       }));
+      await finish("refused", "evidence_floor");
       return new Response(
         JSON.stringify({
           interpretation: "",
@@ -90,7 +107,10 @@ serve(withObserve("brand-assessment", async (req) => {
 
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    if (!ANTHROPIC_API_KEY) {
+      await finish("failed", "not_configured");
+      throw new Error("ANTHROPIC_API_KEY not configured");
+    }
 
     // Claim the run now that the evidence floor is met and the spend is about to happen.
     await admin.from("instrument_runs").insert({ user_id: uid, kind: "assessment" });
@@ -146,6 +166,14 @@ serve(withObserve("brand-assessment", async (req) => {
         severity: "high",
         context: { path: "retries_exhausted", anthropic_status: lastStatus, body: lastBody },
       }));
+      try {
+        EdgeRuntime.waitUntil(logAIUsage({
+          user_id: uid, function_name: "brand-assessment", provider: "anthropic",
+          model: "claude-sonnet-4-5-20250929", success: false,
+          error_code: lastStatus ? `http_${lastStatus}` : "unreachable",
+        }));
+      } catch (_) { /* non-blocking */ }
+      await finish("failed", "provider_unreachable");
       return new Response(
         JSON.stringify({
           interpretation: "",
@@ -162,18 +190,28 @@ serve(withObserve("brand-assessment", async (req) => {
         severity: "high",
         context: { path: "non_ok_status", anthropic_status: response.status, body: lastBody },
       }));
+      try {
+        EdgeRuntime.waitUntil(logAIUsage({
+          user_id: uid, function_name: "brand-assessment", provider: "anthropic",
+          model: "claude-sonnet-4-5-20250929", success: false,
+          error_code: `http_${response.status}`,
+        }));
+      } catch (_) { /* non-blocking */ }
       if (response.status === 429) {
+        await finish("failed", "provider_limit");
         return new Response(JSON.stringify({ error: "Rate limited — please try again shortly." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
+        await finish("failed", "credits_exhausted");
         return new Response(JSON.stringify({ error: "Credits exhausted — please add funds." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      await finish("failed", `http_${response.status}`);
     }
 
     const data = await response.json();
@@ -221,6 +259,7 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
           severity: "high",
           context: { path: "placeholder_guard" },
         }));
+        await finish("failed", "placeholder_guard");
         return pendingResponse();
       }
     }
@@ -232,9 +271,11 @@ CORRECTION — your previous attempt contained a bracketed placeholder, the word
         severity: "high",
         context: { path: "empty_interpretation", anthropic_status: response.status, body: JSON.stringify(data ?? {}).slice(0, 800) },
       }));
+      await finish("failed", "empty_interpretation");
       return pendingResponse();
     }
 
+    await finish("ok");
     return new Response(JSON.stringify({ interpretation, pending: false }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
