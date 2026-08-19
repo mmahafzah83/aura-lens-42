@@ -3638,8 +3638,8 @@ const Onboarding = () => {
                   : "Aura is still writing your read. It'll be on your Home the moment it's done."}
               </p>
               <Actions style={{ marginBlockStart: 20 }}>
-                <OBButton onClick={() => go(14)}
-                  style={{ background: "var(--ob-white)", color: "var(--ob-blue)" }}>Take me in</OBButton>
+                <OBButton onClick={() => go(SHARE_SCREEN)}
+                  style={{ background: "var(--ob-white)", color: "var(--ob-blue)" }}>{ENDING.cta}</OBButton>
               </Actions>
             </div>
           )}
@@ -3665,39 +3665,20 @@ const Onboarding = () => {
               </div>
             </div>
           ) : null}
-          {reveal && !postedUrl ? (
-            <div style={{ marginBlockStart: 18 }}>
-              <label htmlFor="ob-caption" style={{
-                display: "block", fontSize: 12.5, color: "rgba(255,255,255,.85)", marginBlockEnd: 6,
-              }}>What it will say</label>
-              <textarea
-                id="ob-caption"
-                dir="auto"
-                value={captionDraft}
-                onChange={(e) => setCaptionDraft(e.target.value)}
-                rows={4}
-                style={{
-                  inlineSize: "100%", padding: "10px 12px", borderRadius: RADIUS.chip,
-                  border: "1px solid rgba(255,255,255,.35)", background: "rgba(255,255,255,.12)",
-                  color: "#FFFFFF", fontFamily: OB.ui, fontSize: 14, lineHeight: 1.55, resize: "vertical",
-                }}
-              />
-            </div>
-          ) : null}
+          {/* Share copy is not edited before the decision to share — it lives on
+             the after-keep screen. */}
           <Actions style={{ marginBlockStart: 20 }}>
+          {/* ONE primary. Every other option moved after the decision. */}
+          <OBButton disabled={busy} loading={buildingReport} loadingLabel="Building your read…"
+            onClick={async () => { if (brandPaper) await downloadFullReport(); go(SHARE_SCREEN); }}
+            style={{ background: "#FFFFFF", color: OB.blue }}>{ENDING.cta}</OBButton>
           {brandPaper ? (
-            <>
-              <OBButton disabled={busy} loading={buildingReport} loadingLabel="Building your read…"
-                onClick={() => void downloadFullReport()}
-                style={{ background: "#FFFFFF", color: OB.blue }}>Keep the full read</OBButton>
-              {/* Promise the gap only when the gap exists. */}
-              {brandPaper.the_gap || brandPaper.own_words_quote ? (
-                <p style={{
-                  margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
-                  color: "rgba(255,255,255,.80)", textAlign: "center",
-                }}>The full read includes the gap. The card doesn't.</p>
-              ) : null}
-            </>
+            brandPaper.the_gap || brandPaper.own_words_quote ? (
+              <p style={{
+                margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55,
+                color: "rgba(255,255,255,.80)", textAlign: "center",
+              }}>The full read includes the gap. The card doesn't.</p>
+            ) : null
           ) : (
             /* A promised deliverable never vanishes in silence. */
             <p style={{
@@ -3711,68 +3692,8 @@ const Onboarding = () => {
               textDecoration: "underline", padding: "10px 0",
             }}>View it on LinkedIn</a>
           ) : null}
-          {/* The share surface — open on arrival. */}
-          <div style={{ marginBlockStart: 4 }}>
-            <p style={{
-              margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em",
-              textTransform: "uppercase", color: "rgba(255,255,255,.82)", textAlign: "center",
-            }}>Share the card</p>
-
-            {!userId ? (
-              <p style={{
-                margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6,
-                color: "rgba(255,255,255,.85)", textAlign: "center",
-              }}>Available after you save your report.</p>
-            ) : (
-              <>
-                {!shareUrl ? (
-                  <Actions style={{ marginBlockStart: 12 }}>
-                    <OBButton disabled={!reveal || minting} loading={minting} loadingLabel="Making your link…"
-                      onClick={() => void mintShare()}
-                      style={{ background: "#FFFFFF", color: OB.blue }}>Share my read</OBButton>
-                    {!reveal ? (
-                      <p style={{ margin: "-2px 0 0", fontSize: 12.5, lineHeight: 1.55, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
-                        Your read is still being written — this opens the moment it lands.
-                      </p>
-                    ) : null}
-                  </Actions>
-                ) : (
-                  <>
-                    <div style={{
-                      display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                      gap: 10, marginBlockStart: 12,
-                    }}>
-                      <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-                        target="_blank" rel="noopener noreferrer" style={shareAction}>WhatsApp</a>
-                      <a href={`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(shareText)}`}
-                        target="_blank" rel="noopener noreferrer" style={shareAction}>LinkedIn</a>
-                      <button type="button" onClick={() => void copyShareLink()} style={shareAction}>Copy link</button>
-                    </div>
-                    <p style={{
-                      margin: "12px 0 0", fontFamily: OB.mono, fontSize: 11.5, lineHeight: 1.6,
-                      color: "rgba(255,255,255,.78)", textAlign: "center",
-                    }}>
-                      Anyone with this link sees your read. Nothing else — no email, no captures, no drafts.
-                    </p>
-                  </>
-                )}
-                {/* Keeping your own card is a private act — never gated behind a public link. */}
-                <div style={{ marginBlockStart: 10 }}>
-                  <button type="button" disabled={!reveal || busy} onClick={() => void downloadRead()}
-                    style={{ ...shareAction, inlineSize: "100%", opacity: busy ? 0.6 : 1 }}>
-                    {sharing ? "Building…" : "Download the image"}
-                  </button>
-                  {!reveal ? (
-                    <p style={{ margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.55, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
-                      Your read is still being written — this opens the moment it lands.
-                    </p>
-                  ) : null}
-                </div>
-              </>
-            )}
-          </div>
-          <OBButton variant="tertiary" onClick={() => go(14)}
-            style={{ color: "rgba(255,255,255,.72)" }}>Take me in</OBButton>
+          <OBButton variant="tertiary" onClick={() => go(SHARE_SCREEN)}
+            style={{ color: "rgba(255,255,255,.72)" }}>Continue without downloading</OBButton>
           </Actions>
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
             {REPORT_FREE_LINE}
