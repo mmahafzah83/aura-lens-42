@@ -32,6 +32,8 @@ function checkRateLimit(ip: string): boolean {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Where the signup came from. Nothing wider than these two is accepted.
 const ALLOWED_SOURCE = ["waitlist", "mirror"];
+// The two doors. The recorded difference between them is the price signal.
+const ALLOWED_INTENT = ["reserve_69", "keep_posted"];
 // MUST mirror src/constants/seniority.ts (SENIORITY_LEVELS) — keep byte-identical.
 const ALLOWED_SENIORITY = [
   "C-Suite",
@@ -102,6 +104,14 @@ serve(withObserve("submit-waitlist", async (req) => {
       .replace(/[^A-Za-z0-9_-]/g, "")
       .slice(0, 60);
     const ref = refClean || null;
+    // The price signal rides on `ref` (machine provenance) so it stays
+    // countable, and never collides with the human note the admin writes.
+    const rawIntent = typeof body.intent === "string" ? body.intent.trim() : "";
+    const intent = ALLOWED_INTENT.includes(rawIntent) ? rawIntent : null;
+    const refValue = intent ? (ref ? `${intent}-${ref}` : intent) : ref;
+    // The optional "what would have to be true" answer, stored with the row.
+    const worth = (typeof body.answer === "string" ? body.answer : "").trim().slice(0, 1000);
+    const note = worth ? `Worth-it answer: ${worth}` : null;
     // The Mirror already knows who the person is; level is a nicety there, not a gate.
     const seniorityOptional = source === "mirror";
 
@@ -166,7 +176,8 @@ serve(withObserve("submit-waitlist", async (req) => {
       sector,
       status: "pending",
       source,
-      ref,
+      ref: refValue,
+      personal_note: note,
     });
 
     if (insertErr) {
