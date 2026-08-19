@@ -471,6 +471,8 @@ const Onboarding = () => {
   const [bandPicker, setBandPicker] = useState(false);
   const [cvUploads, setCvUploads] = useState(0);
   const [cvCrosscheck, setCvCrosscheck] = useState<unknown>(null);
+  /* Anonymous with no read: null until they choose, then the lesser read. */
+  const [cvFork, setCvFork] = useState<"cv_only" | null>(null);
 
   /* screen 5–7 */
   const [linkInput, setLinkInput] = useState("");
