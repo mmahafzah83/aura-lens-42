@@ -855,8 +855,9 @@ const Onboarding = () => {
   /**
    * Screen 0 back — the member came here from their read on /assessment.
    * Assessment's boot effect bounces `step === "onboarding"` straight back
-   * here, so the saved step is REWOUND to "read" first (STEP_TO_STAGE maps
-   * "read" → the "resume" stage) and only then do we navigate. Nothing else
+   * here, so the saved step is REWOUND to "read_open" first (STEP_TO_STAGE
+   * maps "read_open" → the "read" stage, landing them straight on the read
+   * card with no extra click) and only then do we navigate. Nothing else
    * on the session is touched, and a failed write means no navigation.
    */
   const backToRead = useCallback(async () => {
@@ -864,7 +865,7 @@ const Onboarding = () => {
     const found = await loadSession(anonToken);
     const base = (found?.state ?? anonStateRef.current ?? {}) as AssessmentState & Record<string, any>;
     if (!base?.read) return;
-    const next = { ...base, step: "read" };
+    const next = { ...base, step: "read_open" };
     const ok = await saveSession(anonToken, next);
     if (!ok) return;                       // never send them somewhere that bounces
     anonStateRef.current = next as any;
