@@ -23,6 +23,10 @@ export const SEAT_HOW = [
   "One honest number for whether your standing is growing",
 ] as const;
 
+/** The shopper's answer: why Aura is not another creator tool. */
+export const SEAT_VS_TOOLS =
+  "The creator tools give you posts. Aura reads you first — then keeps your position true.";
+
 /** Kept for the surfaces that render the "how" as a plain row list. */
 export const SEAT_ROWS = SEAT_HOW;
 
