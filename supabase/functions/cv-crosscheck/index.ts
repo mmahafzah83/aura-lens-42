@@ -299,7 +299,8 @@ Certifications: ${cut(snap.certifications, 1200)}`;
     ? `There are ${peerCount} comparable reads on file for this market. You may make a peer comparison ONLY where the material above supports it; otherwise still return null.`
     : `PEER DATA IS THIN (${peerCount} reads on file). Return null for peer_comparison. Do not fabricate a comparison.`;
 
-  const userPrompt = `THEIR CV MATERIAL (${cvs.length} document${cvs.length === 1 ? "" : "s"})
+  const docCount = transient ? 1 : cvs.length;
+  const userPrompt = `THEIR CV MATERIAL (${docCount} document${docCount === 1 ? "" : "s"})
 ${cvText}
 
 THEIR PUBLIC LINKEDIN PROFILE
@@ -414,7 +415,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
         function_name: "cv-crosscheck",
         error: `Anthropic HTTP ${resp.status}: ${rawBody.slice(0, 800)}`,
         severity: "high",
-        user_id: targetId,
+        user_id: targetId ?? undefined,
         context: { anthropic_status: resp.status },
       });
       return { data: null as any, text: "" };
@@ -426,7 +427,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     const toolInput = toolUse && typeof toolUse.input === "object" ? toolUse.input : null;
     try {
       EdgeRuntime.waitUntil(logAIUsage({
-        user_id: targetId,
+        user_id: targetId ?? undefined,
         function_name: "cv-crosscheck",
         provider: "anthropic",
         model: data.model,
@@ -549,7 +550,7 @@ CORRECTION — your previous attempt was not a single valid JSON object, or cont
         function_name: "cv-crosscheck",
         error: "Unparseable crosscheck after retry — nothing saved",
         severity: "high",
-        user_id: targetId,
+        user_id: targetId ?? undefined,
         context: { path: "unparseable", raw: String(retry.text || retry.rawBody || "").slice(0, 2000) },
       });
       return json({ ok: false, pending: true, reason: "unparseable" });
@@ -598,7 +599,7 @@ CORRECTION — your previous answer failed the assertion "${failure}". Answer ag
         function_name: "cv-crosscheck",
         error: `Crosscheck failed the gate twice — nothing saved (${failure} then ${retryFailure})`,
         severity: "high",
-        user_id: targetId,
+        user_id: targetId ?? undefined,
         context: { path: "gate_failed", first_assertion: failure, retry_assertion: retryFailure, purpose },
       });
       return json({ ok: false, pending: true, reason: "gate_failed", assertion: retryFailure });
@@ -608,17 +609,21 @@ CORRECTION — your previous answer failed the assertion "${failure}". Answer ag
   const crosscheck = {
     ...parsed,
     purpose,
-    cv_count: cvs.length,
+    cv_count: docCount,
     model: data?.model ?? null,
     /* The model's own text alongside the parsed object, so nothing is lost. */
     cv_crosscheck_raw: String(text || rawBody || "").slice(0, 20000),
   };
 
-  const { error: writeErr } = await admin
-    .from("diagnostic_profiles")
-    .update({ cv_crosscheck: crosscheck, cv_crosscheck_at: new Date().toISOString() })
-    .eq("user_id", targetId);
-  if (writeErr) return json({ error: writeErr.message }, 500);
+  /* Transient reads are never persisted server-side: the anonymous browser
+     holds the result on its session, and it moves to the profile at signup. */
+  if (!transient) {
+    const { error: writeErr } = await admin
+      .from("diagnostic_profiles")
+      .update({ cv_crosscheck: crosscheck, cv_crosscheck_at: new Date().toISOString() })
+      .eq("user_id", targetId!);
+    if (writeErr) return json({ error: writeErr.message }, 500);
+  }
 
-  return json({ ok: true, cv_count: cvs.length, crosscheck });
+  return json({ ok: true, cv_count: docCount, crosscheck });
 }));
