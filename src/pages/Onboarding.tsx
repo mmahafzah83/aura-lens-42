@@ -604,6 +604,84 @@ const Onboarding = () => {
     } catch { /* the journey continues regardless */ }
   }, []);
 
+  /**
+   * "Keep this for me" — the only wired Aura action on the cross-check.
+   *
+   * Signed in: one `evidence_fragments` row, parented by a `source_registry`
+   * row upserted on (user_id, source_type, source_id) — the same shape
+   * extract-evidence writes. No new columns.
+   * Anonymous: held on the session exactly like `pending_captures` and
+   * replayed once the account exists.
+   */
+  const keepCvEvidence = useCallback(async (
+    ctx: { finding?: any; recommendation?: any },
+  ): Promise<boolean> => {
+    const f = ctx.finding;
+    const r = ctx.recommendation;
+    const title = String(f?.what || r?.action || "").trim();
+    const content = String(f?.rewrite || f?.why_it_matters || r?.why_now || f?.what_you_lose || title).trim();
+    if (!title || !content) {
+      toast.error("That didn't save. Nothing else is lost — try again.");
+      return false;
+    }
+    try {
+      if (userId) {
+        const sourceId = `cv-crosscheck:${userId}`;
+        const { data: reg, error: regErr } = await (supabase.from("source_registry") as any)
+          .upsert(
+            {
+              user_id: userId,
+              source_type: "cv_crosscheck",
+              source_id: sourceId,
+              title: "Your CV against your profile",
+              processed: true,
+            },
+            { onConflict: "user_id,source_type,source_id" },
+          )
+          .select("id")
+          .single();
+        if (regErr || !reg?.id) throw regErr ?? new Error("no registry row");
+
+        /* Idempotent: the same finding never lands twice. */
+        const { data: existing } = await (supabase.from("evidence_fragments") as any)
+          .select("id")
+          .eq("user_id", userId)
+          .eq("source_registry_id", reg.id)
+          .eq("title", title)
+          .maybeSingle();
+        if (!existing) {
+          const { error: insErr } = await (supabase.from("evidence_fragments") as any).insert({
+            user_id: userId,
+            source_registry_id: reg.id,
+            fragment_type: "insight",
+            title,
+            content,
+            metadata: { source: "cv_crosscheck", source_title: "Your CV against your profile" },
+          });
+          if (insErr) throw insErr;
+        }
+      } else if (anonToken) {
+        const held = ((anonStateRef.current as any).pending_evidence ?? []) as any[];
+        if (!held.some((e) => e?.title === title)) {
+          anonStateRef.current = {
+            ...anonStateRef.current,
+            pending_evidence: [...held, { title, content, source: "cv_crosscheck", at: new Date().toISOString() }],
+          } as any;
+          const ok = await saveSession(anonToken, anonStateRef.current);
+          if (!ok) throw new Error("session save failed");
+        }
+      } else {
+        throw new Error("nowhere to keep this");
+      }
+      toast.success("Kept. Aura will use this when it writes for you.");
+      return true;
+    } catch (e) {
+      console.error("[journey] keep cv evidence failed", e);
+      toast.error("That didn't save. Nothing else is lost — try again.");
+      return false;
+    }
+  }, [userId, anonToken]);
+
   /* loop safety valve — kept from the previous journey */
   const [visits, setVisits] = useState(0);
   /* step 1 never navigates: it reads in place, then becomes the result card */
@@ -747,6 +825,33 @@ const Onboarding = () => {
       }
     } catch (e) {
       console.error("[journey] capture replay failed", e);
+    }
+    /* Replay anything they asked Aura to keep from the CV cross-check. */
+    try {
+      const keptItems = ((st as any).pending_evidence ?? []) as Array<{ title: string; content: string }>;
+      if (keptItems.length) {
+        const { data: reg } = await (supabase.from("source_registry") as any)
+          .upsert(
+            { user_id: uid, source_type: "cv_crosscheck", source_id: `cv-crosscheck:${uid}`, title: "Your CV against your profile", processed: true },
+            { onConflict: "user_id,source_type,source_id" },
+          )
+          .select("id")
+          .single();
+        if (reg?.id) {
+          await (supabase.from("evidence_fragments") as any).insert(
+            keptItems.filter((k) => k?.title && k?.content).map((k) => ({
+              user_id: uid,
+              source_registry_id: reg.id,
+              fragment_type: "insight",
+              title: k.title,
+              content: k.content,
+              metadata: { source: "cv_crosscheck", source_title: "Your CV against your profile" },
+            })),
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[journey] kept evidence replay failed", e);
     }
     /* Replay the optional reveal feedback collected while anonymous. */
     try {
@@ -2585,7 +2690,11 @@ const Onboarding = () => {
           />
         </div>
         {/* Shows only once the comparison comes back; absent, it renders nothing. */}
-        <CvCrosscheck data={cvCrosscheck} style={{ marginBlockStart: 20 }} />
+        <CvCrosscheck
+          data={cvCrosscheck}
+          style={{ marginBlockStart: 20 }}
+          onAuraAction={(kind, ctx) => (kind === "capture_evidence" ? keepCvEvidence(ctx) : false)}
+        />
         {/* The ask comes after the whole comparison, and it is loss-framed. */}
         {!userId && cvCrosscheck ? (
           <div style={{ marginBlockStart: 24, borderTop: `1px solid ${OB.line}`, paddingBlockStart: 20 }}>

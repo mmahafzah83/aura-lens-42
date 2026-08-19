@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { OB, reducedMotion } from "@/components/onboarding/tokens";
 
 /**
  * The one place a member adds a CV.
@@ -55,6 +56,89 @@ const ghostStyle: React.CSSProperties = {
 };
 
 const helpStyle: React.CSSProperties = { fontSize: 12.5, color: MUTED, marginBlockStart: 8, lineHeight: 1.55 };
+
+/* ── the honest wait ──────────────────────────────────────────────────
+   The client knows two facts: the request left, and the answer came back.
+   So there is no percentage and no tick. There is a looping bar, the four
+   things the function actually does, and a counter that is genuinely true. */
+
+const WAIT_STEPS = [
+  "Reading your CV",
+  "Pulling your profile and your posts",
+  "Comparing the two",
+  "Checking every number and every claim",
+] as const;
+
+/** Time estimate only — stated as such in the copy above the list. */
+const STEP_AT = [0, 15, 35, 55];
+
+function WaitingPanel() {
+  const [secs, setSecs] = useState(0);
+  const reduced = reducedMotion();
+  useEffect(() => {
+    const id = window.setInterval(() => setSecs((s) => s + 1), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  let current = 0;
+  for (let i = 0; i < STEP_AT.length; i++) if (secs >= STEP_AT[i]) current = i;
+  const mm = Math.floor(secs / 60);
+  const ss = String(secs % 60).padStart(2, "0");
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        marginBlockStart: 12, border: `1px solid ${RULE}`, borderRadius: 12, padding: 16,
+      }}
+    >
+      {!reduced ? (
+        <>
+          <style>{`@keyframes auraCvSlide{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}`}</style>
+          <div
+            aria-hidden
+            style={{ blockSize: 4, borderRadius: 999, background: "#EAF9F8", overflow: "hidden" }}
+          >
+            <div style={{
+              blockSize: "100%", inlineSize: "34%", borderRadius: 999, background: OB.cyan,
+              animation: "auraCvSlide 1.5s ease-in-out infinite",
+            }} />
+          </div>
+        </>
+      ) : null}
+
+      <p style={{ fontSize: 13.5, color: MUTED, margin: "12px 0 0", lineHeight: 1.55 }}>
+        Aura is working through four things. This usually takes about a minute.
+      </p>
+
+      <ul style={{ listStyle: "none", margin: "10px 0 0", padding: 0, display: "grid", gap: 6 }}>
+        {WAIT_STEPS.map((s, i) => (
+          <li
+            key={s}
+            style={{
+              fontSize: 14,
+              lineHeight: 1.5,
+              color: i === current ? INK : MUTED,
+              fontWeight: i === current ? 600 : 400,
+            }}
+          >
+            {s}
+          </li>
+        ))}
+      </ul>
+
+      <p aria-hidden style={{ fontFamily: OB.mono, fontSize: 13, color: MUTED, margin: "12px 0 0" }}>
+        {mm}:{ss}
+      </p>
+
+      {secs >= 150 ? (
+        <p style={{ ...helpStyle, marginBlockStart: 6 }}>This is slower than usual — it is still running.</p>
+      ) : secs >= 90 ? (
+        <p style={{ ...helpStyle, marginBlockStart: 6 }}>Still going. Longer CVs take more reading.</p>
+      ) : null}
+    </div>
+  );
+}
 
 type Failure =
   | { kind: "no_cv" }
@@ -155,6 +239,8 @@ export default function CvUploadControl({
     if (!anonToken) { setUploadError("Aura needs to read your profile first."); return; }
     setUploadError(null);
     setFailure(null);
+    /* The accepted-file row must be on screen for the whole wait, not after it. */
+    setFileName(file.name);
     setBusy(true);
     setComparing(true);
     try {
@@ -182,7 +268,6 @@ export default function CvUploadControl({
       if (error) { setFailure({ kind: "server" }); return; }
       const res = data as { ok?: boolean; crosscheck?: unknown; reason?: string } | null;
       if (res?.crosscheck) {
-        setFileName(file.name);
         onCrosscheck?.(res.crosscheck);
         return;
       }
@@ -251,7 +336,8 @@ export default function CvUploadControl({
         }}
       />
 
-      {fileName && !busy ? (
+      {fileName ? (
+        <>
         <div style={{
           border: `1px solid ${RULE}`, borderRadius: 12, padding: 16,
           display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
@@ -266,8 +352,12 @@ export default function CvUploadControl({
                   : "Read and discarded. Aura kept the comparison, not the file."}
             </div>
           </div>
-          <button type="button" onClick={pick} style={{ ...ghostStyle, minInlineSize: 44 }}>Replace</button>
+          {!busy && !comparing ? (
+            <button type="button" onClick={pick} style={{ ...ghostStyle, minInlineSize: 44 }}>Replace</button>
+          ) : null}
         </div>
+        {comparing ? <WaitingPanel /> : null}
+        </>
       ) : (
         <>
           <button type="button" onClick={pick} disabled={busy} style={{ ...primaryStyle, opacity: busy ? 0.7 : 1 }}>
