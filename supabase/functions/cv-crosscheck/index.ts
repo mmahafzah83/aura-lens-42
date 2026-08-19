@@ -90,54 +90,118 @@ serve(withObserve("cv-crosscheck", async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  // --- auth: signed-in member acting on themselves, or an admin on anyone ----
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
-
-  const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
-  const { data: userData, error: userErr } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
-  if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
-
-  const callerId = userData.user.id;
-  const callerIsAdmin = await isAdmin(admin, callerId);
-
   const body = await req.json().catch(() => ({}));
+
+  /* TRANSIENT MODE — an anonymous visitor's CV is read in memory and thrown
+     away. No storage object, no `documents` row, no `document_chunks` row,
+     no write to `diagnostic_profiles`. The result is returned to the browser
+     and held on the anonymous session by the caller. */
+  const anonToken: string = typeof body?.anon_token === "string" ? body.anon_token.trim() : "";
+  let inlineCvText: string = typeof body?.cv_text === "string" ? body.cv_text.trim() : "";
+  const cvFile: { mime?: string; name?: string; base64?: string } | null =
+    body?.cv_file && typeof body.cv_file === "object" ? body.cv_file : null;
+
+  /** Extract text from the uploaded bytes without ever persisting them. */
+  async function extractInMemory(file: { mime?: string; name?: string; base64?: string }): Promise<string> {
+    const b64 = String(file.base64 ?? "");
+    if (!b64) return "";
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const mime = String(file.mime ?? "").toLowerCase();
+    const name = String(file.name ?? "").toLowerCase();
+    const isDocx = mime.includes("word") || mime.includes("officedocument") || name.endsWith(".docx") || name.endsWith(".doc");
+    if (isDocx) {
+      // @ts-ignore dynamic esm import
+      const mammoth = await import("https://esm.sh/mammoth@1.8.0?target=deno");
+      const res = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
+      return String(res?.value ?? "");
+    }
+    // @ts-ignore dynamic esm import
+    const { extractText, getDocumentProxy } = await import("https://esm.sh/unpdf@0.12.1");
+    const pdf: any = await getDocumentProxy(bytes);
+    const all: any = await extractText(pdf, { mergePages: true });
+    return Array.isArray(all?.text) ? all.text.join("\n") : String(all?.text ?? "");
+  }
+
+  let anonState: any = null;
+  let callerId = "";
+  let callerIsAdmin = false;
+
+  if (anonToken) {
+    const { data: sess } = await admin
+      .from("assessment_sessions")
+      .select("state, expires_at")
+      .eq("token", anonToken)
+      .maybeSingle();
+    if (!sess) return json({ error: "Unauthorized" }, 401);
+    anonState = (sess as any).state ?? {};
+  } else {
+    // --- auth: signed-in member acting on themselves, or an admin on anyone ----
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+
+    const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+    const { data: userData, error: userErr } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
+
+    callerId = userData.user.id;
+    callerIsAdmin = await isAdmin(admin, callerId);
+  }
+
   const email: string | undefined = typeof body?.email === "string" ? body.email.trim() : undefined;
   let targetId: string | undefined = typeof body?.user_id === "string" ? body.user_id.trim() : undefined;
   const rawPurpose = typeof body?.purpose === "string" ? body.purpose.trim() : "";
   const purpose = (PURPOSES as readonly string[]).includes(rawPurpose) ? rawPurpose : "unknown";
 
-  if (!targetId && email) {
+  if (anonToken) {
+    targetId = undefined;
+    if (!inlineCvText && cvFile) {
+      try { inlineCvText = (await extractInMemory(cvFile)).trim(); }
+      catch (_e) { return json({ ok: false, pending: true, reason: "unparseable" }); }
+    }
+    if (inlineCvText.length < 200) return json({ ok: false, pending: true, reason: "no_cv" });
+  } else if (!targetId && email) {
     if (!callerIsAdmin) return json({ error: "Forbidden" }, 403);
     targetId = (await findUserIdByEmail(admin, email)) ?? undefined;
     if (!targetId) return json({ error: `No account found for ${email.trim()}` }, 404);
   }
-  if (!targetId) targetId = callerId;
-  if (targetId !== callerId && !callerIsAdmin) return json({ error: "Forbidden" }, 403);
+  if (!anonToken) {
+    if (!targetId) targetId = callerId;
+    if (targetId !== callerId && !callerIsAdmin) return json({ error: "Forbidden" }, 403);
+  }
+  const transient = !targetId;
 
   // --- evidence ------------------------------------------------------------
-  const { data: cvs, error: cvErr } = await admin
+  const { data: storedCvs, error: cvErr } = transient
+    ? { data: [] as any[], error: null }
+    : await admin
     .from("documents")
     .select("id, filename, display_title, summary, cv_label, created_at")
-    .eq("user_id", targetId)
+    .eq("user_id", targetId!)
     .eq("document_type", "cv")
     .eq("status", "completed")
     .order("created_at", { ascending: false })
     .limit(3);
   if (cvErr) return json({ error: cvErr.message }, 500);
+  const cvs = storedCvs ?? [];
 
-  if (!cvs?.length) return json({ ok: false, pending: true, reason: "no_cv" });
+  if (!transient && !cvs.length) return json({ ok: false, pending: true, reason: "no_cv" });
 
-  const { data: snapRows } = await admin
-    .from("linkedin_profile_snapshots")
-    .select("headline, about, experience, education, skills, certifications, raw")
-    .eq("user_id", targetId)
-    .order("created_at", { ascending: false })
-    .limit(1);
+  const { data: snapRows } = transient
+    ? { data: [] as any[] }
+    : await admin
+      .from("linkedin_profile_snapshots")
+      .select("headline, about, experience, education, skills, certifications, raw")
+      .eq("user_id", targetId!)
+      .order("created_at", { ascending: false })
+      .limit(1);
   const snap: any = snapRows?.[0] ?? null;
-  if (!snap) return json({ ok: false, pending: true, reason: "no_snapshot" });
+  if (!transient && !snap) return json({ ok: false, pending: true, reason: "no_snapshot" });
 
-  const { data: chunks } = await admin
+  const { data: chunks } = transient
+    ? { data: [] as any[] }
+    : await admin
     .from("document_chunks")
     .select("document_id, content, chunk_index")
     .in("document_id", cvs.map((d: any) => d.id))
@@ -151,7 +215,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
     byDoc.set((c as any).document_id, arr);
   }
 
-  let cvText = cvs.map((d: any) => {
+  let cvText = transient ? inlineCvText : cvs.map((d: any) => {
     const label = d.cv_label ? ` [${d.cv_label} CV]` : "";
     const title = d.display_title || d.filename || "CV";
     const summary = d.summary ? `Summary: ${String(d.summary)}` : "";
@@ -161,25 +225,38 @@ serve(withObserve("cv-crosscheck", async (req) => {
   cvText = cvText.slice(0, 12000);
 
   const cut = (v: unknown, n: number) => JSON.stringify(v ?? []).slice(0, n);
-  const profileText = `Headline: ${snap.headline ?? "Not on file"}
+  const anonRead = anonState ? (anonState.read ?? null) : null;
+  const profileText = transient
+    ? `Headline: ${anonState?.headline ?? "Not on file"}
+Public profile: ${anonState?.profile_url ?? "Not on file"}
+Name: ${anonState?.name ?? "Not on file"}
+What Aura already read from their public profile: ${anonRead ? JSON.stringify(anonRead).slice(0, 6000) : "Not on file"}`
+    : `Headline: ${snap.headline ?? "Not on file"}
 About: ${typeof snap.about === "string" ? snap.about.slice(0, 2000) : "Not on file"}
 Experience: ${cut(snap.experience, 5000)}
 Education: ${cut(snap.education, 1200)}
 Skills: ${cut(snap.skills, 1200)}
 Certifications: ${cut(snap.certifications, 1200)}`;
+  if (transient && !anonRead && !anonState?.headline) {
+    return json({ ok: false, pending: true, reason: "no_snapshot" });
+  }
 
   // --- extra evidence: fragments, posts, recommendations --------------------
-  const { data: fragments } = await admin
+  const { data: fragments } = transient
+    ? { data: [] as any[] }
+    : await admin
     .from("evidence_fragments")
     .select("title, content, confidence")
-    .eq("user_id", targetId)
+    .eq("user_id", targetId!)
     .order("confidence", { ascending: false })
     .limit(24);
 
-  const { data: posts } = await admin
+  const { data: posts } = transient
+    ? { data: [] as any[] }
+    : await admin
     .from("linkedin_posts")
     .select("post_text, like_count, published_at")
-    .eq("user_id", targetId)
+    .eq("user_id", targetId!)
     .not("post_text", "is", null)
     .order("like_count", { ascending: false, nullsFirst: false })
     .limit(15);
@@ -197,7 +274,7 @@ Certifications: ${cut(snap.certifications, 1200)}`;
       ).join("\n")
     : "None on file.";
 
-  const rawRecs = Array.isArray(snap.raw?.receivedRecommendations) ? snap.raw.receivedRecommendations : [];
+  const rawRecs = Array.isArray(snap?.raw?.receivedRecommendations) ? snap.raw.receivedRecommendations : [];
   const recsText = rawRecs.length
     ? rawRecs.slice(0, 12).map((r: any) =>
         `· From ${String(r?.givenBy ?? "unknown")}: ${String(r?.description ?? "").slice(0, 500)}`
