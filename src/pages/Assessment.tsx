@@ -77,8 +77,8 @@ const QueueCapture = ({ anonToken }: { anonToken: string | null }) => {
     setBusy(true);
     const res = await joinReadQueue(email.trim(), "linkedin_read", anonToken);
     setBusy(false);
-    if (!res.ok) { setErr(res.error); return; }
-    setPosition(res.position);
+    if (res.ok === true) { setPosition(res.position); return; }
+    setErr(res.error);
   };
 
   if (position !== null) {
