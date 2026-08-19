@@ -3767,7 +3767,13 @@ const Onboarding = () => {
         </div>
       ) : null}
       <JourneyNav.Provider value={{
-        onBack: screen === 1 && step1Phase === "result" ? () => returnToAddress() : canBack ? goBack : undefined,
+        onBack: screen === 1 && step1Phase === "result"
+          ? () => returnToAddress()
+          : canBack
+            ? goBack
+            : screen === 0 && anonToken && (anonStateRef.current as any)?.read
+              ? () => { void backToRead(); }
+              : undefined,
         banner: resumeBanner,
         bead: stageOf(screen) - 1,
         name: firstName || null,
