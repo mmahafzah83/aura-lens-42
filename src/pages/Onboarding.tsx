@@ -704,6 +704,16 @@ const Onboarding = () => {
       if (pf[k] !== undefined && pf[k] !== null) patch[k] = pf[k];
     }
     if (Object.keys(patch).length) await upsertProfile(uid, patch, "journey anon handoff");
+    /* THE ADDRESS SURVIVES THE WALL. The address typed on screen 1 lived only
+       on the anonymous session row; without this write the read has no handle
+       to find the mirror read on, and the reveal comes back empty. One writer
+       owns that table — the same helper the signed-in path uses — and it
+       upserts, so a member who already has a row is unaffected. Awaited before
+       the read, and never allowed to break the hand-off. */
+    try {
+      const addr = (st as any).profile_url ?? pf.profile_url ?? null;
+      if (addr) await saveLinkedInAddress(uid, String(addr));
+    } catch (e) { console.error("[journey] linkedin address handoff failed", e); }
     /* The transient CV comparison moves onto the profile. The CV itself was
        discarded when it was read, so only the result travels. */
     try {
