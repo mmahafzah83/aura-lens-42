@@ -564,6 +564,30 @@ export default function AdminPeople() {
             <div style={card}><div style={kpiLabel}>New this week</div><div style={{ ...kpiValue, color: STATUS_COLOR.new }}>{totals.newWeek}</div></div>
           </div>
 
+          <div style={{ ...card, marginBottom: 24 }}>
+            <div style={kpiLabel}>Who wrote what</div>
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--glass)", margin: 0 }}>
+              {attribution
+                ? (
+                  <>
+                    Of <Num n={attribution.total} /> posts:{" "}
+                    <Num n={attribution.member} /> written by members,{" "}
+                    <Num n={attribution.aura} /> drafted by Aura,{" "}
+                    <Num n={attribution.unknown} /> unattributed.
+                  </>
+                )
+                : "Counting…"}
+            </p>
+            {attribution && attribution.unknown > 0 && (
+              <p style={{ fontSize: 12.5, lineHeight: 1.6, color: "var(--glass-2)", margin: "6px 0 0" }}>
+                Unattributed means we do not know who wrote it. It is shown, not hidden,
+                and it is never guessed.
+              </p>
+            )}
+          </div>
+
+
+
           <div style={{ ...card, padding: 0, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
               <thead>
