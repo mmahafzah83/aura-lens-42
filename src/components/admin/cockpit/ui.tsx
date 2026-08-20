@@ -1,21 +1,27 @@
 import { ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-/** System-A cockpit tokens — bone paper, ink, four signal colours. */
+/** System-B "Signal" console tokens — light canvas, ink, four signal colours. */
 export const C = {
   paper: "#F2F5F9",
   card: "#FFFFFF",
-  ink: "#1B1712",
-  rule: "#E2DACB",
-  muted: "#6B6255",
-  teal: "#36C5B0",
-  amber: "#D6A748",
-  damber: "#B5762A",
+  ink: "#0F1519",
+  rule: "#E2E7EE",
+  muted: "#5B6673",
+  teal: "#00CEC9",
+  tealText: "#00807B",
+  amber: "#E0A82E",
+  damber: "#9A6F12",
   ox: "#0670C4",
 };
 
-export const SERIF = "'Newsreader','Inter',Georgia,serif";
+export const SERIF = "'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif";
 export const MONO = "'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace";
+
+/** Cyan is a dot/bar colour only — text in the cyan family uses #00807B. */
+export function textTone(colour: string) {
+  return colour === C.teal ? C.tealText : colour;
+}
 
 export function Label({ children }: { children: ReactNode }) {
   return (
@@ -132,21 +138,26 @@ export function Btn({
   disabled?: boolean;
   title?: string;
 }) {
-  const bg = tone === "ox" ? C.ox : tone === "quiet" ? "transparent" : C.ink;
-  const fg = tone === "quiet" ? C.ink : C.paper;
+  const [hover, setHover] = useState(false);
+  const oxBg = hover && !disabled ? "#04477C" : C.ox;
+  const bg = tone === "ox" ? oxBg : tone === "quiet" ? "transparent" : C.ink;
+  const fg = tone === "quiet" ? C.ink : "#FFFFFF";
   return (
     <button
       type="button"
       title={title}
       disabled={disabled}
       onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
         fontFamily: MONO,
         fontSize: 11,
         textTransform: "uppercase",
         letterSpacing: ".1em",
-        padding: "8px 14px",
-        borderRadius: 3,
+        padding: "11px 16px",
+        minHeight: 44,
+        borderRadius: 8,
         background: bg,
         color: fg,
         border: `1px solid ${tone === "quiet" ? C.rule : bg}`,
@@ -185,7 +196,7 @@ export function Stat({
       }}
     >
       <Label>{label}</Label>
-      <div style={{ fontFamily: MONO, fontSize: 30, color: colour, marginTop: 6, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontFamily: MONO, fontSize: 30, fontVariantNumeric: "tabular-nums", color: textTone(colour), marginTop: 6, lineHeight: 1 }}>{value}</div>
       {sub && <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 6 }}>{sub}</div>}
     </div>
   );
@@ -214,7 +225,7 @@ export function Bar({
     >
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
         <span style={{ fontFamily: MONO, fontSize: 12, color: C.ink }}>{label}</span>
-        <span style={{ fontFamily: MONO, fontSize: 12, color: C.ink }}>
+        <span style={{ fontFamily: MONO, fontSize: 12, fontVariantNumeric: "tabular-nums", color: C.ink }}>
           {value === null ? "?" : value}
           <span style={{ color: C.muted }}> / {total}</span>
         </span>
@@ -449,7 +460,7 @@ export function Modal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(27,23,18,.55)",
+        background: "rgba(15,21,25,.55)",
         zIndex: 200,
         display: "flex",
         alignItems: "center",
