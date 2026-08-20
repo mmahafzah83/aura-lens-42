@@ -167,7 +167,7 @@ export default function AdminShell({ title, subtitle, children, bleed = false }:
                 whiteSpace: "nowrap",
               }}
             >
-              {SHA ? `${SHA} · ${BRANCH}` : BRANCH}
+              {BUILD_ID}
             </span>
           </div>
 
