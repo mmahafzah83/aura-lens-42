@@ -248,7 +248,7 @@ function PreviewCard({ tokens, theme }: { tokens: DesignTokens; theme: Theme }) 
         </button>
         <button
           style={{
-            background: get("signal", "#F97316"),
+            background: get("signal", "#E0A82E"),
             color: "#fff",
             border: "none",
             padding: "8px 16px",

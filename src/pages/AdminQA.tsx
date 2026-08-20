@@ -1451,7 +1451,7 @@ function ResultRowView({ r, onCopyFix, onMarkKnown }: {
   const [open, setOpen] = useState(r.status !== "pass");
   const d = r.details || {};
   const severity = (d.severity as string) || (r.status === "fail" ? "high" : r.status === "warn" ? "medium" : "low");
-  const sevColor = severity === "critical" ? "#C0392B" : severity === "high" ? "#ea580c" : severity === "medium" ? "#9A6F12" : "#12805C";
+  const sevColor = severity === "critical" ? "#C0392B" : severity === "high" ? "#9A6F12" : severity === "medium" ? "#9A6F12" : "#12805C";
   const isColor = r.category === "colors" || r.category === "accessibility";
   const fg: string | undefined = (d as any).fg;
   const bg: string | undefined = (d as any).bg;

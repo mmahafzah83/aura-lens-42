@@ -483,7 +483,7 @@ export default function AdminPeople() {
               style={{
                 ...card,
                 marginBottom: 20,
-                borderLeft: "4px solid #F97316",
+                borderLeft: "4px solid #5B6673",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
