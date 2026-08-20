@@ -15,7 +15,12 @@ export type OperationName =
   | "linkedin_read"
   | "cv_crosscheck"
   | "market_read"
+  | "capture_ingest"
+  | "studio_generate"
+  | "studio_slides"
+  | "studio_export"
   | "article_ingest";
+
 
 export type Outcome = "ok" | "refused" | "failed";
 
