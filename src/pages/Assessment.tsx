@@ -11,7 +11,7 @@ import {
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
-import { JourneyChrome } from "@/components/journey/JourneyShell";
+import { JourneyChrome, readStageFraction } from "@/components/journey/JourneyShell";
 import {
   ASSESSMENT_MINUTES, FIRST_READ_LINE, FULL_PICTURE_LINE,
   FIRST_READ_SHORT, ASSESSMENT_QUESTIONS_PHRASE,
@@ -321,7 +321,12 @@ const Assessment = () => {
         <JourneyChrome
           onExit={finishLater}
           name={state.name ?? null}
-          beat={stage === "read" || stage === "resume" ? 2 : 1}
+          /* The read is beat 1 on both routes — it IS the read, so it is never
+             labelled evidence, and Continue never steps the label backwards. */
+          beat={1}
+          fraction={readStageFraction(
+            stage === "address" ? "address" : stage === "reading" ? "reading" : "held",
+          )}
           onBack={
             stage === "address" ? () => setStage("gate")
             : stage === "read" ? () => setStage("address")

@@ -62,7 +62,7 @@ import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 import { ensureTimezone, browserTimezone } from "@/lib/ensureTimezone";
 import {
-  ASSESSMENT_STEPS, ASSESSMENT_STEPS_WORD, FULL_PICTURE_LINE,
+  ASSESSMENT_STEPS_WORD, FULL_PICTURE_LINE,
   ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stageName,
 } from "@/lib/brand";
 import {
@@ -1692,14 +1692,14 @@ const Onboarding = () => {
   /* one sentence of their own, quoted back on the confirm screen */
   useEffect(() => {
     if (!userId || ownLine) return;
-    if (screen !== 2 && screen !== 3) return;
+    if (screen !== 1) return;
     loadOwnSentence(userId).then((s) => { if (s) setOwnLine(s); }).catch(() => {});
   }, [userId, screen, ownLine]);
 
   /* everything else Aura already read — the whole profile, not three numbers */
   useEffect(() => {
     if (!userId || facts) return;
-    if (screen !== 2 && screen !== 3) return;
+    if (screen !== 1) return;
     loadProfileFacts(userId).then((f) => { if (f) setFacts(f); }).catch(() => {});
   }, [userId, screen, facts]);
 
@@ -2898,7 +2898,7 @@ const Onboarding = () => {
       go(5);
     };
     content = (
-      <PaperShell onExit={saveAndExit} subProgress={0.5} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} subProgress={0.5} footer={escapeFooter} backFallback={() => go(1)}>
         <h1 style={h1Light}>Have a CV handy?</h1>
         <p style={bodyLight}>
           Your CV and your profile are read together. Your profile says what the world can see.
@@ -4221,7 +4221,10 @@ const Onboarding = () => {
       ) : null}
       <JourneyNav.Provider value={{
         onBack: screen === 1 && step1Phase === "result"
-          ? () => returnToAddress()
+          /* Anonymous members do not own the read here — /assessment does.
+             Dropping them into the address form would claim their read is
+             lost while it is sitting on the session. */
+          ? (!userId ? () => { void backToRead(); } : () => returnToAddress())
           : canBack
             ? goBack
             : screen === 0 && anonToken && (anonStateRef.current as any)?.read
