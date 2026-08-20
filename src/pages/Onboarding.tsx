@@ -1895,25 +1895,42 @@ const Onboarding = () => {
       /* Start over clears the answers, not the read. The read already exists
          server-side, and re-asking for an address we hold is a lie about it. */
       const keep = anonStateRef.current as any;
-      const preserved: Record<string, any> = { answers: {} };
+      /* Place in the instrument goes with the answers — otherwise a reload
+         drops a restarted member back where the old run stopped. */
+      const preserved: Record<string, any> = { answers: {}, q_idx: 0, dim_idx: 0 };
       for (const k of ["read", "posts_read", "profile_url", "name"]) {
         if (keep?.[k] !== undefined && keep?.[k] !== null) preserved[k] = keep[k];
       }
       anonStateRef.current = preserved as any;
       await saveSession(anonToken, preserved);
-      try { localStorage.removeItem("aura_ob_screen_anon"); } catch { /* ignore */ }
+      try {
+        localStorage.removeItem("aura_ob_screen_anon");
+        localStorage.removeItem("aura_ob_q_anon");
+        localStorage.removeItem("aura_ob_dim_anon");
+      } catch { /* ignore */ }
     }
     if (userId) {
       try {
         const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
           .select("identity_intelligence").eq("user_id", userId).maybeSingle();
         const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+        /* The answers must leave the row, not just memory. `saveAnswers` merges,
+           so anything left here would be un-removable by the new run. The
+           sliders go with them — the in-memory reset already clears both. */
         await writeProfile({
           identity_intelligence: { ...ii, journey_screen: 0, journey_paused: false },
           onboarding_step: 0,
+          brand_assessment_answers: null,
+          skill_ratings: null,
+          audit_results: null,
+          answered_band: null,
         }, "start over");
       } catch (e) { console.error("[journey] start over save threw", e); }
-      try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
+      try {
+        localStorage.removeItem(`aura_ob_screen_${userId}`);
+        localStorage.removeItem(`aura_ob_q_${userId}`);
+        localStorage.removeItem(`aura_ob_dim_${userId}`);
+      } catch { /* ignore */ }
     }
     setAnswers({});
     setScores({});
