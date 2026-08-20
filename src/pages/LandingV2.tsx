@@ -382,7 +382,6 @@ const LANDING_V2_HTML = `
       <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> AI Professional Identity Platform</span>
       <h1>${HEAD_LEAD}<br><span class="grad">${HEAD_TAIL}</span></h1>
       <p class="sub">Aura reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
-      <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
       <div class="acts">
         <a class="btn bp" id="heropri" href="/assessment">Discover my professional position</a>
         <button class="btn bg2" data-p="how">See how it works</button>
@@ -562,8 +561,8 @@ const LANDING_V2_HTML = `
 <section class="pg" id="how">
   <div class="hdr">
     <span class="tag">It refuses to write first</span>
-    <h2>Four stages.<br>You are only in <span class="grad">two of them.</span></h2>
-    <p class="sub">Other tools start writing on day one. Aura will not write a word until it knows what you are good at.</p>
+    <h2>Four stages.<br><span class="grad">You are only in two of them.</span></h2>
+    <p class="sub">Every other tool writes on day one. Aura will not write until it knows you.</p>
   </div>
 
   <div class="eyebrow">The pipeline, end to end</div>
@@ -651,7 +650,7 @@ const LANDING_V2_HTML = `
 <section class="pg" id="get">
   <div class="hdr">
     <span class="tag">Free first, paid after</span>
-    <h2>See yourself.<br>Then <span class="grad">be seen.</span></h2>
+    <h2>See yourself.<br><span class="grad">Then be seen.</span></h2>
     <p class="sub">Two things. First you understand yourself — then the market understands you.</p>
   </div>
 
@@ -768,10 +767,9 @@ const LANDING_V2_HTML = `
   <div class="hdr">
     <span class="tag">The cost of one more quiet year</span>
     <h2>You read a lot.<br><span class="grad">Nobody ever sees it.</span></h2>
-    <p class="sub">You read about five hours a week. You never write about it, and you never talk about it. So the market never learns what you know.</p>
+    <p class="sub">Five hours a week of reading, and none of it reaches the people who decide about you.</p>
   </div>
 
-  <p class="ledger-lead">Not with money. With hours — the most expensive thing you own. Here is where it went.</p>
   <div class="ledger rv">
     <div class="head"><span>YOUR WEEK, AS A LEDGER</span><span>MON – FRI</span></div>
     <div class="row">
@@ -898,11 +896,10 @@ const LANDING_V2_HTML = `
 <section class="pg" id="cmp">
   <div class="hdr">
     <span class="tag">Against every other option</span>
-    <h2>They give everyone<br>the same template.<br><span class="grad">We start with you.</span></h2>
-    <p class="sub">Other tools hand every person the same shapes and the same words. Aura learns your experience and your reading first — then writes from them.</p>
+    <h2>They hand out templates.<br><span class="grad">We start with you.</span></h2>
+    <p class="sub">Every other tool gives all its customers the same shapes. Aura learns you first.</p>
   </div>
 
-  <p class="sub" style="margin-top:18px;max-width:680px">${SEAT_VS_TOOLS}</p>
 
   <div class="eyebrow">Side by side</div>
   <div class="cmp rv">
@@ -969,7 +966,8 @@ const LANDING_V2_HTML = `
 <section class="pg" id="faq">
   <div class="hdr">
     <span class="tag">Answered straight</span>
-    <h2>What people ask<br>before joining.</h2>
+    <h2>What people ask<br><span class="grad">before joining.</span></h2>
+    <p class="sub">No hedging and no small print. Where the answer is no, it says no.</p>
   </div>
   <div style="max-width:760px;margin:0 auto">
     <details open><summary>How much of my time does this take?</summary><p>${ASSESSMENT_QUESTIONS_PHRASE.replace(/^./, (c) => c.toUpperCase())} once at the start. After that, one tap when you read something good, and about two minutes to approve a post. Nothing more.</p></details>
@@ -998,8 +996,8 @@ const LANDING_V2_HTML = `
 <section class="pg" id="price">
   <div class="hdr">
     <span class="tag">Three ways in</span>
-    <p class="promise">${SEAT_PROMISE}</p>
-    <h2>Seeing yourself is free.<br><span class="grad">Being seen every week is the paid part.</span></h2>
+    <h2>Seeing yourself is free.<br><span class="grad">Being seen is not.</span></h2>
+    <p class="sub">Take a seat only if what you saw is worth keeping true.</p>
   </div>
 
   <div class="rungs rv">
