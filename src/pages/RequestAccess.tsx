@@ -263,6 +263,10 @@ export default function RequestAccess() {
             </div>
           </div>
 
+          <p className="ra-readfree">
+            Not ready for a seat? <Link to="/read">Read yourself free</Link> — no account,
+            ninety seconds.
+          </p>
           <p className="ra-ar" dir="rtl">
             حتى السوق يعرفك قبل ما يشوفك <span aria-hidden="true">✦</span>
           </p>
