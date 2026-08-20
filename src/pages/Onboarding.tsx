@@ -629,6 +629,8 @@ const Onboarding = () => {
   /* The read is on its way from the database. Until it answers, the reveal
      screen shows a wait — never a claim about where the read is. */
   const [revealLoading, setRevealLoading] = useState(false);
+  /** Bumped on every attempt to open the read, so the wait counter restarts. */
+  const [revealOpenRunId, setRevealOpenRunId] = useState(0);
   const [buildingReport, setBuildingReport] = useState(false);
   /* posting to LinkedIn — offered only where it can actually work */
   const [canPostToLinkedIn, setCanPostToLinkedIn] = useState(false);
