@@ -589,8 +589,16 @@ const RA_CSS = `
 .ra-btn:hover:not(:disabled) .ra-a{transform:translate(2px,-2px);}
 .ra-pulse{animation:ra-pulse 1.4s ease-in-out infinite;}
 @keyframes ra-pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
-.ra-legal{font-size:11.5px;color:var(--n400);text-align:center;margin-top:14px;line-height:1.6;}
-.ra-legal a{color:var(--act);}
+.ra-soft{text-align:center;margin-top:14px;font-size:14px;line-height:1.5;}
+.ra-soft-q{color:var(--n500);}
+.ra-soft-a{background:none;border:none;padding:0;color:var(--act);font-size:inherit;font-family:inherit;
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+.ra-soft-a:hover{color:#04477C;}
+.ra-fine{text-align:center;color:var(--n500);line-height:1.6;margin-top:16px;}
+.ra-fine--small{font-size:13px;}
+.ra-fine a{color:var(--act);text-decoration:none;}
+.ra-fine a:hover{text-decoration:underline;text-underline-offset:3px;}
+
 .ra-price{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;margin-top:4px;}
 .ra-price-n{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--n900);}
 .ra-price-s{font-size:12.5px;color:var(--n500);line-height:1.5;}
