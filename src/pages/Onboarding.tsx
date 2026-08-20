@@ -1910,12 +1910,12 @@ const Onboarding = () => {
      the member who reserves a seat is still a finished member. */
   /** `stay: true` finishes the journey without leaving — the seat beat runs
       after the member is already a finished member, never instead of it. */
-  const finish = async (opts?: { destination?: string; stay?: boolean }) => {
+  const finish = async (opts?: { destination?: string; stay?: boolean }): Promise<boolean> => {
     /* Exactly once per session. 14.5 is reachable and Back-able, so a second
        pass would email the read twice and re-write the finish row. */
     if (finishedRef.current) {
       if (!opts?.stay) navigate(opts?.destination ?? "/home", { replace: true });
-      return;
+      return true;
     }
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
@@ -1983,14 +1983,15 @@ const Onboarding = () => {
     if (!saved) {
       console.error("[journey] finish did not save — the member can retry");
       toast.error("That didn't save. Tap once more.");
-      return;
+      return false;
     }
     finishedRef.current = true;
     try { localStorage.setItem("aura_onboarding_complete", "true"); } catch { /* ignore */ }
     try { sessionStorage.removeItem("aura_onboarding_visits"); } catch { /* ignore */ }
     supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
-    if (opts?.stay) return;
+    if (opts?.stay) return true;
     navigate(opts?.destination ?? "/home", { replace: true });
+    return true;
   };
 
   /* The seat beat may only be seen by a finished member. Today the one route
@@ -4216,16 +4217,19 @@ const Onboarding = () => {
             onClick={async () => {
               if (finishing) return;
               setFinishing(true);
+              let ok = false;
               try {
                 /* Finished first, and staying — the seat beat is a postscript,
                    never a toll gate in front of Home. */
-                await finish({ stay: true });
+                ok = await finish({ stay: true });
               } catch (e) {
                 console.error("[journey] finish threw", e);
               } finally {
                 setFinishing(false);
               }
-              go(SEAT_SCREEN);
+              /* The seat beat belongs to a finished member. A write that failed
+                 keeps them here, where the button can be pressed again. */
+              if (ok) go(SEAT_SCREEN);
             }}
           >
             Take me in
