@@ -393,6 +393,8 @@ Deno.serve(async (req) => {
     }
 
     // --- d) Fetch profile and posts in parallel ---
+    /* Stage one opens: everything until the provider answers. */
+    run?.mark("fetch");
     const [profile, postTexts] = await Promise.all([
       fetchProfile(canonical_url, APIFY_TOKEN),
       fetchPosts(canonical_url, handle, APIFY_TOKEN).catch(() => [] as string[]),
@@ -419,9 +421,6 @@ Deno.serve(async (req) => {
       await finish("failed", "profile_unreadable");
       return json({ error: "profile_unreadable" }, 502);
     }
-
-    /* Stage one closed: the provider gave us the profile and the posts. */
-    try { await run?.mark("fetch"); } catch { /* recording never fails the read */ }
 
     const firstName = pickText(item, ["firstName", "first_name", "givenName"]);
     const lastName = pickText(item, ["lastName", "last_name", "familyName"]);
@@ -516,6 +515,8 @@ Deno.serve(async (req) => {
     }
 
     const messages = [{ role: "user", content: userPrompt }];
+    /* Stage two opens: the model writing the read. */
+    run?.mark("write");
     let raw = await callModel(messages);
     let read = parseJsonLoose(raw);
     if (read && hasPlaceholderInValues(read)) read = null;
@@ -568,7 +569,6 @@ Deno.serve(async (req) => {
       );
     if (upErr) console.error("[mirror-read] cache write failed:", upErr.message);
 
-    try { await run?.mark("write"); } catch { /* recording never fails the read */ }
     await finish("ok");
     return json({
       ok: true, cached: false, sparse, handle, read,

@@ -462,6 +462,8 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     }),
   });
 
+  /* Stage two opens: the model comparing the CV against the profile. */
+  run?.mark("compare");
   const runOnce = async (prompt: string) => {
     const resp = await callAnthropic(prompt);
     const rawBody = await resp.text();
@@ -694,7 +696,6 @@ CORRECTION — your previous answer failed the assertion "${failure}". Answer ag
     if (writeErr) { await finish("failed", "write_failed"); return json({ error: writeErr.message }, 500); }
   }
 
-  try { await run?.mark("compare"); } catch { /* recording never fails the check */ }
   await finish("ok");
   return json({ ok: true, cv_count: docCount, crosscheck });
 }));
