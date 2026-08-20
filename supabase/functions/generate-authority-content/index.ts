@@ -4,6 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY, DEFAULT_REGISTER_EN, DEFAULT_REGISTER_AR } from "../_shared/contentDNA.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
+import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR, endingShapeOk } from "../_shared/voiceStyle.ts";
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
 import { findUnsourcedEntities } from "../_shared/entityGuard.ts";
@@ -392,6 +394,15 @@ IDENTITY:
 serve(withObserve("generate-authority-content", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  /* One run row per drafting request, with the two stages the studio draws. */
+  const [GATHER, WRITE] = OPERATION_STAGES.studio_generate;
+  let run: RunHandle | null = null;
+  const closeRun = async (outcome: "ok" | "refused" | "failed", reason?: string) => {
+    try { await run?.finish({ outcome, reason_code: reason ?? null }); }
+    catch (e) { console.error("[generate-authority-content] run finish failed:", (e as Error)?.message); }
+    run = null;
+  };
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -476,6 +487,8 @@ serve(withObserve("generate-authority-content", async (req) => {
       : (storedRegister && !registerIsArabic ? storedRegister : DEFAULT_REGISTER_EN);
 
     if (action === "generate_content") {
+      run = await startRun(undefined, { operation: "studio_generate", user_id: effectiveUserId });
+      run.mark(GATHER);
       const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme, signal_id, post_id } = params;
       // A verdict must be joinable to the post it judged, whenever the caller
       // already has one.
@@ -799,9 +812,11 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         return lines.join("\n");
       })();
 
+      run?.mark(WRITE);
       const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
       if (!ANTHROPIC_API_KEY) {
         console.error("ANTHROPIC_API_KEY not configured");
+        await closeRun("failed", "not_configured");
         return new Response(JSON.stringify({ success: false, error: "ANTHROPIC_API_KEY not configured" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -852,6 +867,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
 
       const firstPass = await callModel();
       if (firstPass === null) {
+        await closeRun("failed", "ai_error");
         return new Response(JSON.stringify({ success: false, error: "AI error" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1691,6 +1707,7 @@ ${insightsSummary}`
 
     throw new Error(`Unknown action: ${action}`);
   } catch (e) {
+    await closeRun("failed", "exception");
     console.error("Authority content error:", e);
     EdgeRuntime.waitUntil(logError("generate-authority-content", e, { user_id: null }));
     return new Response(JSON.stringify({ error: e.message }), {
