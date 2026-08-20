@@ -1479,7 +1479,8 @@ const Onboarding = () => {
           sent = res.ok;
         } finally { window.clearTimeout(to); }
       } else if (anonToken) {
-        /* No session is our gap, not their bad link — keep it and replay at hand-off. */
+        /* No account is our gap, not their bad link — keep it and replay it at
+           hand-off, which is what writes the durable evidence rows. */
         anonStateRef.current = {
           ...anonStateRef.current,
           pending_captures: [
@@ -1488,16 +1489,41 @@ const Onboarding = () => {
           ],
         };
         await saveSession(anonToken, anonStateRef.current);
-        deferred = true;
+        /* D-12: an anonymous member gets the same payoff as a signed-in one.
+           The link is read here and now, and what came out of it is shown. */
+        setCaptureRunId((n) => n + 1);
+        setReadStep(1);
+        anonRead = true;
       }
     } catch { sent = false; /* aborted or offline — nothing was written */ }
     sendingLinkRef.current = false;
     setSendingLink(false);
-    if (deferred) {
-      setCaptureRunId((n) => n + 1);
-      setCapturePending(true);
+
+    if (anonRead && anonToken) {
+      let got: Claim[] = [];
+      try {
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/onboarding-read-link`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: anonToken, url: v, title: meta?.title, summary: meta?.summary }),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (out?.ok && Array.isArray(out.fragments)) {
+          got = (out.fragments as Claim[]).filter((f) => f?.title);
+        }
+      } catch { /* handled below — never a dead end */ }
+      if (got.length) {
+        anonStateRef.current = { ...anonStateRef.current, capture_fragments: got } as any;
+        setClaims(got);
+        setReadStep(2);
+        go(7);
+      } else {
+        /* Nothing could be pulled out here. Say so — never skip the beat. */
+        setCapturePending(true);
+      }
       return;
     }
+
     if (!sent) {
       /* nothing will ever land — don't make them watch a 120s ceiling for it */
       setLinkFailed(true);
