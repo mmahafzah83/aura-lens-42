@@ -768,10 +768,9 @@ const LANDING_V2_HTML = `
   <div class="hdr">
     <span class="tag">The cost of one more quiet year</span>
     <h2>You read a lot.<br><span class="grad">Nobody ever sees it.</span></h2>
-    <p class="sub">You read about five hours a week. You never write about it, and you never talk about it. So the market never learns what you know.</p>
+    <p class="sub">Five hours a week of reading, and none of it reaches the people who decide about you.</p>
   </div>
 
-  <p class="ledger-lead">Not with money. With hours — the most expensive thing you own. Here is where it went.</p>
   <div class="ledger rv">
     <div class="head"><span>YOUR WEEK, AS A LEDGER</span><span>MON – FRI</span></div>
     <div class="row">
