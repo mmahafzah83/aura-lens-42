@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Compass, Paperclip, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Compass, Paperclip, X, ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NAV_GROUPS, isGroupActive, type NavGroup } from "@/components/nav/navGroups";
 import AuraLogo from "@/components/brand/AuraLogo";
+import { useIsAdmin } from "@/lib/isAdmin";
 import { TooltipPanel } from "@/components/systemb/Tooltip";
 import Avatar from "@/components/systemb/Avatar";
 import AuraRing from "@/components/systemb/AuraRing";
@@ -46,6 +47,8 @@ export default function AuraRail({
   activeTab, onSelect, onOpenAsk, onOpenCapture, newSignalCount = 0,
 }: AuraRailProps) {
   const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { isAdmin } = useIsAdmin();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uid, setUid] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
@@ -399,6 +402,25 @@ export default function AuraRail({
             {DOORS.map((g) => expandedRow(g))}
           </nav>
 
+          {isAdmin === true && (
+            <div style={{ borderTop: "1px solid var(--v23-night-line)", paddingTop: 10, marginTop: 4 }}>
+              <button
+                type="button"
+                aria-label="Admin console"
+                data-testid="nav-admin"
+                data-active="false"
+                className="cursor-pointer v23-focus"
+                onClick={() => { setFlyout(null); navigate("/admin"); }}
+                onMouseEnter={hoverOn}
+                onMouseLeave={hoverOff}
+                style={rowStyle(false)}
+              >
+                <ShieldCheck size={15} strokeWidth={1.75} />
+                <span>Admin</span>
+              </button>
+            </div>
+          )}
+
           <div style={{ borderTop: "1px solid var(--v23-night-line)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 8, padding: "10px 14px 0" }}>
             {/* Ask Aura lives in the top bar only — it stays reachable when the
                 rail is collapsed. The onOpenAsk handler is still accepted here
@@ -536,6 +558,24 @@ export default function AuraRail({
         </nav>
 
         <div className="flex flex-col items-center" style={{ gap: 6, paddingTop: 10, borderTop: "1px solid var(--v23-night-line)", width: 62 }}>
+          {isAdmin === true && (
+            <button
+              type="button"
+              aria-label="Admin console"
+              data-testid="nav-admin"
+              data-active="false"
+              className="cursor-pointer"
+              onClick={() => { setFlyout(null); navigate("/admin"); }}
+              onMouseEnter={(e) => { hoverOn(e); showTip("Admin", "The Aura console.")(e); }}
+              onMouseLeave={(e) => { hoverOff(e); hideTip(); }}
+              onFocus={showTip("Admin", "The Aura console.")}
+              onBlur={hideTip}
+              style={railBtn(false)}
+            >
+              <ShieldCheck size={18} strokeWidth={1.75} />
+              <span style={labelStyle(false)}>Admin</span>
+            </button>
+          )}
           {(() => {
             const you = DOORS.find((g) => g.key === "you")!;
             const active = isGroupActive(you, activeTab);
