@@ -2617,8 +2617,8 @@ export default function StudioPanel({
         {step === 3 && subLink("build", T.subBuild[lang])}
         {step === 3 && subLink("look", T.subLook[lang])}
         <span style={{ flex: 1 }} />
-        {/* In flight state lives in the BusyBar only — message, bar, percent
-            and countdown in one place. No mirrored header line. */}
+        {/* In flight state lives in the working panel only — one place for the
+            steps, the counter and the measured copy. No mirrored header line. */}
         <span
           role="status"
           aria-live="polite"
