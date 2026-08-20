@@ -382,7 +382,6 @@ const LANDING_V2_HTML = `
       <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> AI Professional Identity Platform</span>
       <h1>${HEAD_LEAD}<br><span class="grad">${HEAD_TAIL}</span></h1>
       <p class="sub">Aura reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
-      <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
       <div class="acts">
         <a class="btn bp" id="heropri" href="/assessment">Discover my professional position</a>
         <button class="btn bg2" data-p="how">See how it works</button>
