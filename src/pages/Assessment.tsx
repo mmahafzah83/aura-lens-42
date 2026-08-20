@@ -292,7 +292,9 @@ const Assessment = () => {
 
   /** The read is step one. Everything after it lives in the real onboarding. */
   const continueToOnboarding = async () => {
-    await persist({ ...state, step: "onboarding" });
+    /* The read is complete work. Start Onboarding at its confirmation screen,
+       rather than reopening screen 0 at half of the same work unit. */
+    await persist({ ...state, step: "onboarding", journey_screen: 1 });
     navigate("/onboarding");
   };
 
@@ -332,11 +334,6 @@ const Assessment = () => {
             : stage === "read" ? () => setStage("address")
             : stage === "resume" ? () => setStage("gate")
             : undefined
-          }
-          sub={
-            stage === "address" ? { n: 1, total: 2, label: "Your read" }
-            : stage === "reading" ? { n: 2, total: 2, label: "Your read" }
-            : null
           }
         />
         <main id="journey-main" tabIndex={-1} className="asg-wrap asg-flow">
