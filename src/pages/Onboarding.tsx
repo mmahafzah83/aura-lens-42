@@ -2941,12 +2941,13 @@ const Onboarding = () => {
     const settled = claimsSlow && claims.length === 0;
     content = capturePending ? (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>Saved.</h1>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>Kept.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Aura files this against your account the moment you save your report — nothing is lost.
+          Aura couldn't pull anything usable out of this one here — some pages don't open to it.
+          The link is on your record and Aura reads it again when your report is saved.
         </p>
         <Actions style={{ marginBlockStart: 22 }}>
-          <OBButton onClick={() => { setCapturePending(false); go(8); }}>Carry on</OBButton>
+          <OBButton onClick={() => { setCapturePending(false); go(7); }}>Carry on</OBButton>
         </Actions>
       </NightShell>
     ) : linkFailed ? (
