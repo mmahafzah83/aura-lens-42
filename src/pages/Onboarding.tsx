@@ -3160,7 +3160,12 @@ const Onboarding = () => {
         setTextAnswer("");
         setMultiPicked([]);
         setSinglePicked(null);
-        if (userId) void saveAnswers(userId, next);
+        if (userId) {
+          void saveAnswers(userId, next);
+          /* Stamp the band that produced these answers, so a later band change
+             discards them instead of merging two prompt sets. */
+          if (band) void upsertProfile(userId, { answered_band: band }, "answered band stamp");
+        }
         persistQuestionProgress(next, last ? qIdx : qIdx + 1);
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
