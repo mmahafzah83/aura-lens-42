@@ -315,29 +315,49 @@ const strings = (value: unknown): string[] => (Array.isArray(value)
   ? value.map((item) => typeof item === "string" ? item.trim() : String((item as any)?.name ?? "").trim()).filter(Boolean)
   : []);
 
-/** The public read carries a useful subset of the signed-in profile snapshot. */
+/** The record behind a public read — `mirror-read` returns it under `raw`. */
+const anonRecord = (read: Record<string, any> | null | undefined): Record<string, any> =>
+  (read && typeof read.raw === "object" && read.raw) ? read.raw as Record<string, any> : (read ?? {});
+
+/**
+ * The public read carries the same record the signed-in path reads out of the
+ * profile snapshot. Every count is taken from the record; anything the public
+ * scrape did not carry is left undefined and never rendered as a zero.
+ */
 const factsFromAnonymousRead = (read: Record<string, any>): ProfileFacts | null => {
-  const raw = (read.raw && typeof read.raw === "object") ? read.raw : read;
+  const raw = anonRecord(read);
   const experience = Array.isArray(raw.experience) ? raw.experience : [];
   const topSkills = strings(raw.topSkills ?? raw.top_skills ?? raw.skills).slice(0, 5);
   const about = String(raw.about ?? raw.summary ?? "").trim();
   const joined = String(raw.registeredAt ?? raw.registered_at ?? "").trim();
   const joinedDate = joined ? new Date(joined) : null;
   const joinedYear = joinedDate && !Number.isNaN(joinedDate.getTime()) ? joinedDate.getFullYear() : undefined;
+  const yearsOn = joinedDate && !Number.isNaN(joinedDate.getTime())
+    ? Math.max(0, Math.floor((Date.now() - joinedDate.getTime()) / 31557600000))
+    : undefined;
+  const count = (n: unknown, list: unknown): number | undefined =>
+    (typeof n === "number" && n > 0 ? n : (Array.isArray(list) && list.length ? list.length : undefined));
+  const quote = raw.recommendation_quote;
   const facts: ProfileFacts = {
     location: String(raw.location?.linkedinText ?? raw.location?.parsed?.text ?? raw.location ?? "").trim() || undefined,
     role: String(experience[0]?.position ?? experience[0]?.title ?? "").trim() || undefined,
     company: String(experience[0]?.companyName ?? experience[0]?.company ?? "").trim() || undefined,
-    roles: experience.length || undefined,
-    certifications: Array.isArray(raw.certifications) ? raw.certifications.length || undefined : undefined,
-    skills: Array.isArray(raw.skills) ? raw.skills.length || undefined : topSkills.length || undefined,
-    projects: Array.isArray(raw.projects) ? raw.projects.length || undefined : undefined,
+    roles: count(raw.roles_count, experience),
+    certifications: count(raw.certifications_count, raw.certifications),
+    skills: count(raw.skills_count, raw.skills) ?? (topSkills.length || undefined),
+    projects: count(raw.projects_count, raw.projects),
+    recommendations: count(raw.recommendations_count, raw.recommendations),
+    recQuote: quote && typeof quote === "object" && quote.text && quote.title
+      ? { text: String(quote.text), title: String(quote.title) }
+      : undefined,
     joinedYear,
+    yearsOn: yearsOn && yearsOn > 0 ? yearsOn : undefined,
     topSkills,
     aboutFirstLine: about ? trimToSentence(about, 180) : undefined,
   };
   return Object.values(facts).some((value) => Array.isArray(value) ? value.length > 0 : value !== undefined) ? facts : null;
 };
+
 
 /** Which of the five named stages a screen belongs to. One definition, used
  *  by the resume banner and by Finish later. */
