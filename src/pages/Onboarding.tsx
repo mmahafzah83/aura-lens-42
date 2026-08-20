@@ -3882,7 +3882,6 @@ const Onboarding = () => {
             loadingLabel="Writing your read…"
             onClick={() => {
               try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
-              setArrival(null);
               go(13);
             }}
           >
