@@ -1928,6 +1928,39 @@ export type Database = {
           },
         ]
       }
+      freshness_checks: {
+        Row: {
+          check_key: string
+          claim: string
+          enabled: boolean
+          error_after_hours: number
+          filter_sql: string | null
+          table_name: string
+          timestamp_column: string
+          warn_after_hours: number
+        }
+        Insert: {
+          check_key: string
+          claim: string
+          enabled?: boolean
+          error_after_hours: number
+          filter_sql?: string | null
+          table_name: string
+          timestamp_column: string
+          warn_after_hours: number
+        }
+        Update: {
+          check_key?: string
+          claim?: string
+          enabled?: boolean
+          error_after_hours?: number
+          filter_sql?: string | null
+          table_name?: string
+          timestamp_column?: string
+          warn_after_hours?: number
+        }
+        Relationships: []
+      }
       funnel_daily_ratio: {
         Row: {
           created_at: string
@@ -4120,6 +4153,39 @@ export type Database = {
         }
         Relationships: []
       }
+      request_snapshots: {
+        Row: {
+          captured_at: string
+          error_msg: string | null
+          failure_kind: string | null
+          id: number
+          requested_at: string | null
+          response_id: number | null
+          status_code: number | null
+          url: string | null
+        }
+        Insert: {
+          captured_at?: string
+          error_msg?: string | null
+          failure_kind?: string | null
+          id?: number
+          requested_at?: string | null
+          response_id?: number | null
+          status_code?: number | null
+          url?: string | null
+        }
+        Update: {
+          captured_at?: string
+          error_msg?: string | null
+          failure_kind?: string | null
+          id?: number
+          requested_at?: string | null
+          response_id?: number | null
+          status_code?: number | null
+          url?: string | null
+        }
+        Relationships: []
+      }
       score_snapshots: {
         Row: {
           components: Json
@@ -6080,6 +6146,7 @@ export type Database = {
         Args: { p_signal_id: string }
         Returns: undefined
       }
+      capture_request_snapshots: { Args: never; Returns: number }
       check_invite_token: { Args: { p_token: string }; Returns: Json }
       claim_assessment_session: { Args: { p_token: string }; Returns: string }
       claim_job: {
@@ -6106,6 +6173,16 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      cockpit_freshness: {
+        Args: never
+        Returns: {
+          check_key: string
+          claim: string
+          hours_stale: number
+          last_row_at: string
+          state: string
+        }[]
       }
       complete_job: {
         Args: { p_error?: string; p_id: string; p_success: boolean }
