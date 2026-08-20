@@ -38,8 +38,21 @@ export const ASSESSMENT_MINUTES_SHORT = `${ASSESSMENT_MINUTES} min`;
 export const FULL_PICTURE_LINE = `The full picture in about ${ASSESSMENT_MINUTES_WORD} minutes`;
 /** "nine questions" */
 export const ASSESSMENT_QUESTIONS_PHRASE = `${ASSESSMENT_QUESTIONS_WORD} questions`;
-/** "Step 3 of 5" */
-export const stepLabel = (n: number) => `Step ${n} of ${ASSESSMENT_STEPS}`;
+/**
+ * THE FIVE NAMED STAGES — the journey is conditional, so a count ("step 3 of
+ * 5") is never true of anyone's path. The stage has a name; use the name.
+ */
+export const STAGE_NAMES = [
+  "Know you",
+  "What you read",
+  "Your strengths",
+  "A few questions",
+  "Your read",
+] as const;
+
+/** "Your strengths" — the 1-based stage, named. Never counted. */
+export const stageName = (n: number) =>
+  STAGE_NAMES[Math.max(0, Math.min(STAGE_NAMES.length - 1, Math.round(n) - 1))];
 
 /** The price truth, said the same way on every surface. */
 export const REPORT_FREE_LINE =

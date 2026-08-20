@@ -63,7 +63,7 @@ import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 import { ensureTimezone, browserTimezone } from "@/lib/ensureTimezone";
 import {
   ASSESSMENT_STEPS, ASSESSMENT_STEPS_WORD, FULL_PICTURE_LINE,
-  ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stepLabel,
+  ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stageName,
 } from "@/lib/brand";
 import {
   SEAT_HEADING, SEAT_ROWS, SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, SEAT_PATH,
@@ -302,34 +302,63 @@ const wordsIn = (rows: { post_text?: string | null }[]): number =>
  * reveal. `JourneyNav` carries the back control so no screen has to pass it.
  */
 const JourneyNav = createContext<{
-  onBack?: () => void; banner?: React.ReactNode; bead?: number; name?: string | null;
+  onBack?: () => void; banner?: React.ReactNode; name?: string | null; screen?: number;
 }>({});
 
 /**
- * ONE PROGRESS SYSTEM. The five named steps are nested inside the three beats
- * of the whole journey: steps 1–4 sit inside "Your evidence", step 5 — the
- * read itself — is "Your position". The quick read on /assessment is beat 1,
- * so the sequence only ever moves forward.
+ * ONE PROGRESS SYSTEM, AND IT TELLS THE TRUTH.
+ *
+ * The read is beat 1 — it is the read, so it cannot be labelled evidence.
+ * Evidence starts where evidence actually starts (the CV, the capture, the
+ * strengths, the questions) and the position is the last four screens.
  */
-const beatOf = (bead: number): Beat => (bead >= 4 ? 3 : 2);
-const subOf = (bead: number): JourneySub => {
-  const i = Math.max(0, Math.min(4, bead));
-  return { n: i + 1, total: 5, label: STAGE_NAMES[i] };
+const beatOf = (screen: number): Beat =>
+  screen >= 12 ? 3 : screen <= 1 || screen === MANUAL_SCREEN ? 1 : 2;
+
+/**
+ * THE WORK EACH SCREEN REALLY CARRIES, in arbitrary units. Eight sliders and
+ * nine questions are the bulk of the journey and therefore own the bulk of the
+ * bar; the old arithmetic gave 85% of the work 7% of the fill.
+ */
+const SCREEN_WORK: ReadonlyArray<readonly [number, number]> = [
+  [0, 1], [1, 2],
+  [CV_SCREEN, 2], [5, 3], [6, 1], [7, 2], [8, 1], [TRUST_SLIDERS_SCREEN, 1], [9, 16], [10, 1], [11, 18],
+  [12, 2], [13, 2], [SHARE_SCREEN, 1], [14, 0.5],
+] as const;
+const WORK_TOTAL = SCREEN_WORK.reduce((a, [, w]) => a + w, 0);
+
+/** Global 0–1 fill for a screen, plus however far through that screen we are. */
+const journeyFraction = (screen: number, sub?: number): number => {
+  const key = screen === MANUAL_SCREEN ? 1 : screen;
+  let before = 0;
+  let mine = 0;
+  for (const [s, w] of SCREEN_WORK) {
+    if (s < key) before += w;
+    else if (s === key) mine = w;
+  }
+  const inner = typeof sub === "number" ? Math.max(0, Math.min(1, sub)) : 0;
+  return Math.max(0, Math.min(1, (before + mine * inner) / WORK_TOTAL));
 };
 
 /** Which of the five named stages a screen belongs to. One definition, used
  *  by the resume banner and by Finish later. */
 const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
+const subOf = (screen: number): JourneySub => {
+  const i = Math.max(0, Math.min(4, stageOf(screen) - 1));
+  return { n: i + 1, total: 5, label: STAGE_NAMES[i] };
+};
 
-const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => {
-  const { onBack, bead = 0, name } = useContext(JourneyNav);
+
+const NightShell = ({ children, face, footer, onExit, subProgress }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void; subProgress?: number }) => {
+  const { onBack, name, screen = 0 } = useContext(JourneyNav);
   return (
   <JourneyShell
     onBack={onBack}
     onExit={onExit ?? (() => {})}
     name={name}
-    beat={beatOf(bead)}
-    sub={subOf(bead)}
+    beat={beatOf(screen)}
+    sub={subOf(screen)}
+    fraction={journeyFraction(screen, subProgress)}
     background={OB.night}
     className="obc"
   >
@@ -342,20 +371,28 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
   );
 };
 
+/**
+ * `showProgress={false}` is for the two screens that are NOT the journey —
+ * confirming who you are, and setting a password. They are the door, not a
+ * third of the walk.
+ */
 const PaperShell = ({
-  children, bead, footer, onExit, face = false, subProgress,
-}: { children: React.ReactNode; bead: number; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number }) => {
-  const { onBack, banner, name } = useContext(JourneyNav);
+  children, footer, onExit, face = false, subProgress, showProgress = true,
+}: { children: React.ReactNode; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number; showProgress?: boolean }) => {
+  const { onBack, banner, name, screen = 0 } = useContext(JourneyNav);
   return (
   <JourneyShell
     onBack={onBack}
     onExit={onExit ?? (() => {})}
     name={name}
-    beat={beatOf(bead)}
-    sub={subOf(bead)}
+    beat={beatOf(screen)}
+    sub={subOf(screen)}
+    fraction={journeyFraction(screen, subProgress)}
+    showProgress={showProgress}
     background={OB.canvas}
     className="obc"
   >
+
     <div style={{ inlineSize: "100%" }}>
       {banner}
       <div className="obc-in" style={{
@@ -494,6 +531,9 @@ const Onboarding = () => {
 
   /* screen 9 */
   const [dims, setDims] = useState<Dimension[] | null>(null);
+  /** The profile the work in state was built from. A different subject makes
+   *  every downstream answer someone else's. */
+  const subjectRef = useRef<string | null>(null);
   const [dimIdx, setDimIdx] = useState(0);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [contentError, setContentError] = useState(false);
@@ -691,7 +731,6 @@ const Onboarding = () => {
      from a local boolean. The signed-in LinkedIn read is two uninstrumented
      readers, so that surface renders ONE stage rather than a list that cannot
      tick (see screen 1). */
-  const anonReadRun = useRunStages("linkedin_read", userId ? null : readRunId, { anonToken });
   const captureRun = useRunStages("capture_ingest", captureRunId, { anonToken });
   const marketRun = useRunStages("market_read", revealRunId, { anonToken });
   /* the inline confirmation shown for a moment when they choose Finish later */
@@ -926,6 +965,11 @@ const Onboarding = () => {
     } catch (e) { console.error("[journey] progress save threw", e); }
   }, [userId, anonToken, writeProfile]);
 
+  /** How many history entries this journey has pushed. Never go below zero. */
+  const pushed = useRef(0);
+  /** The screen behind this one when the stack is empty, handed to `popstate`. */
+  const pendingFallback = useRef<number | undefined>(undefined);
+
   const go = useCallback((next: number) => {
     if (next !== screenRef.current) backStack.current.push(screenRef.current);
     setScreen(next);
@@ -933,7 +977,7 @@ const Onboarding = () => {
     void track("onboarding_step", { step: `screen_${next}`, step_index: next });
     void persistScreen(next);
     /* The browser's own back button moves one STEP, never out of the flow. */
-    try { window.history.pushState({ obScreen: next }, ""); } catch { /* ignore */ }
+    try { window.history.pushState({ obScreen: next }, ""); pushed.current += 1; } catch { /* ignore */ }
     try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
   }, [persistScreen]);
 
@@ -950,10 +994,13 @@ const Onboarding = () => {
   }, [checking, userId, go]);
 
   /**
-   * Back — one step, with everything the member typed still in state. Nothing
-   * is re-fetched and nothing is cleared; only the screen number moves.
+   * THE ONE MOVER. Whoever asks to go back — the in-page control or the
+   * browser — the position changes in exactly one place, `applyBack`, and the
+   * history stack is consumed at the same time. In-page Back used to move the
+   * screen WITHOUT consuming its history entry, so one browser Back afterwards
+   * moved two screens and the N+1th ejected the member from the site.
    */
-  const goBack = useCallback((fallback?: number) => {
+  const applyBack = useCallback((fallback?: number) => {
     /* An empty stack is a deep link or a resume — never a dead button. The
        caller names the screen that sits behind this one. */
     const popped = backStack.current.pop();
@@ -964,7 +1011,23 @@ const Onboarding = () => {
     void persistScreen(prev);
     try { window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); } catch { /* ignore */ }
   }, [persistScreen]);
+
+  /**
+   * Back — one step, with everything the member typed still in state. Nothing
+   * is re-fetched and nothing is cleared; only the screen number moves. When
+   * this journey owns a history entry we hand the move to the browser and let
+   * `popstate` do it, so the two can never disagree.
+   */
+  const goBack = useCallback((fallback?: number) => {
+    if (pushed.current > 0) {
+      pendingFallback.current = fallback;
+      try { window.history.back(); return; } catch { /* fall through */ }
+      pendingFallback.current = undefined;
+    }
+    applyBack(fallback);
+  }, [applyBack]);
   const canBack = backStack.current.length > 0;
+
 
   /**
    * Screen 0 back — the member came here from their read on /assessment.
@@ -1024,7 +1087,7 @@ const Onboarding = () => {
         if (Array.isArray(st.capture_fragments) && st.capture_fragments.length) {
           setClaims(st.capture_fragments as Claim[]);
         }
-        if (st.profile_url) setLiInput(st.profile_url);
+        if (st.profile_url) { setLiInput(st.profile_url); subjectRef.current = normaliseLinkedIn(st.profile_url); }
         /* The quick read already happened at /assessment — never ask twice. */
         if (st.read) {
           setStep1Phase("result");
@@ -1041,7 +1104,9 @@ const Onboarding = () => {
           const local = Number(localStorage.getItem("aura_ob_screen_anon") ?? "0");
           if (local > back) back = local;
         } catch { /* ignore */ }
-        if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
+        /* CV_SCREEN is its own resume target — a member who paused on the CV
+           step must not be sent back to the address card they finished. */
+        if (back === 2 || back === 3) back = 1;
         if (back === TRUST_SLIDERS_SCREEN) back = 8; /* retired gate */
         if (back === 4) back = 5; /* the interstitial is gone */
         /* A reload mid-read goes back to the link step — unless the payoff
@@ -1176,13 +1241,15 @@ const Onboarding = () => {
       } catch { /* ignore */ }
       /* screens 2 and 3 folded into step 1 — a resume there lands on the address
          card with the address already filled, so nothing Aura read is lost. */
-      if (resume === 2 || resume === 3 || resume === CV_SCREEN) resume = 1;
+      /* CV_SCREEN keeps its own place: pausing on the CV step and coming back
+         to the address card is a step the member already finished. */
+      if (resume === 2 || resume === 3) resume = 1;
       if (resume === TRUST_SLIDERS_SCREEN) resume = 8; /* retired gate */
       if (resume === 4) resume = 5; /* the interstitial is gone */
-      if (resume <= 3) {
+      if (resume <= CV_SCREEN) {
         try {
           const addr = await loadLinkedInAddress(uid);
-          if (addr.profileUrl) setLiInput(addr.profileUrl);
+          if (addr.profileUrl) { setLiInput(addr.profileUrl); subjectRef.current = normaliseLinkedIn(addr.profileUrl); }
           /* NEVER ASK TWICE. read_done is the one readiness flag in the flow;
              a mirror_reads row for the same address proves the same thing when
              the flag predates it. Pre-filling the field was not enough — a
@@ -1257,64 +1324,15 @@ const Onboarding = () => {
     setStep1Phase("reading");
     try {
       /**
-       * A visitor with no account cannot call the member-only readers — they
-       * answer 401 and the card dies. The public read engine is the same read,
-       * open to anyone, and it is what step one of the journey already uses.
+       * ONE READ, ONE PLACE. `/assessment` owns the public read — the address
+       * card, the error copy, the retry. Onboarding screen 1 is a read-only
+       * confirmation of what that read found, so a visitor without an account
+       * is sent back to the surface that does the job.
        */
       if (!userId) {
-        const base = import.meta.env.VITE_SUPABASE_URL as string;
-        const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
-        const res = await fetch(`${base}/functions/v1/mirror-read`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-          body: JSON.stringify({
-            profile_url, run_id: liRunId, ...(anonToken ? { anon_token: anonToken } : {}),
-            ...(force ? { force: true } : {}),
-          }),
-        });
-        const payload = await res.json().catch(() => ({} as any));
-        if (!res.ok || !payload?.ok || !payload?.read) {
-          const READ_ERRORS: Record<string, string> = {
-            invalid_url: "That doesn't look like a LinkedIn profile address. It should look like linkedin.com/in/yourname.",
-            profile_unreadable: "LinkedIn didn't return that profile. If it's set to private, Aura can't see it either.",
-            provider_limit: "Aura has hit today's reading limit with our LinkedIn provider. Nothing is wrong with your profile — try again shortly.",
-            rate_limited: "That's as many reads as can come from here this hour. Nothing is lost — try again shortly.",
-            not_configured: "Reading is briefly unavailable on our side. Nothing is lost — try again shortly.",
-          };
-          returnToAddress(
-            READ_ERRORS[String(payload?.error ?? "")] ??
-            "The read didn't come back clean. Nothing is lost — try once more.",
-          );
-          setLiBusy(false);
-          return;
-        }
-        const full = String(payload.name ?? "").trim();
-        if (full && !firstName.trim()) {
-          const parts = full.split(/\s+/);
-          setFirstName(parts[0] || "");
-          if (parts.length > 1) setLastName(parts.slice(1).join(" "));
-        }
-        setLiProfile({ full_name: full || null, read: payload.read } as any);
-        setReadCache(
-          payload.cached && payload.generated_at
-            ? { generated_at: String(payload.generated_at), notice: payload.stale ? String(payload.notice ?? "") || null : null }
-            : null,
-        );
-        setStep1Phase("result");
         setLiBusy(false);
-        setPostsRead(Number(payload.posts_read ?? 0));
-        setOwnWords(0);
-        setReadDone(true);
-        if (anonToken) {
-          anonStateRef.current = {
-            ...anonStateRef.current,
-            profile_url,
-            name: full || null,
-            read: payload.read,
-            posts_read: Number(payload.posts_read ?? 0),
-          } as any;
-          void saveSession(anonToken, anonStateRef.current);
-        }
+        setStep1Phase(((anonStateRef.current as any)?.read) ? "result" : "ask");
+        await backToRead();
         return;
       }
       if (userId) { try { await saveLinkedInAddress(userId, profile_url); } catch { /* saved again later */ } }
@@ -1328,6 +1346,22 @@ const Onboarding = () => {
       if ((data as any)?.error) throw new Error(String((data as any).error));
       const prof: any = (data as any)?.profile ?? data;
       setLiProfile(prof);
+
+      /* A DIFFERENT SUBJECT MAKES THE OLD WORK SOMEONE ELSE'S. Reading a new
+         profile mid-journey used to leave the previous person's strengths,
+         answers and read sitting in state and on the row. */
+      if (subjectRef.current && subjectRef.current !== profile_url) {
+        const hadWork = Object.keys(scores).length > 0 || Object.keys(answers).length > 0 || !!reveal;
+        setScores({}); setAnswers({}); setReveal(null); setDimIdx(0); setQIdx(0);
+        setClaims([]);
+        try { localStorage.removeItem(`aura_ob_dim_${userId}`); localStorage.removeItem(`aura_ob_q_${userId}`); } catch { /* ignore */ }
+        await writeProfile({
+          brand_assessment_answers: null, answered_band: null,
+          skill_ratings: null, audit_results: null,
+        }, "subject change reset");
+        if (hadWork) toast("That's a different profile — Aura has cleared the strengths and answers from the last one.");
+      }
+      subjectRef.current = profile_url;
 
       const readSector = String(prof?.sector || prof?.industry || "").trim();
       // The read first; failing that, what the headline, skills and about say.
@@ -1947,7 +1981,7 @@ const Onboarding = () => {
   /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
     const stage = stageOf(screen);
-    setExitNote(`Saved at ${stepLabel(stage).toLowerCase()}. Pick it up any time.`);
+    setExitNote(`Saved at "${stageName(stage)}". Pick it up any time.`);
     void (async () => {
       await persistScreen(screen);
       if (userId) {
@@ -2057,8 +2091,8 @@ const Onboarding = () => {
         {resumeAsking
           ? "This clears your answers so far."
           : resumedAt.readDone
-            ? `Welcome back — your read is done. You were on ${stepLabel(resumedAt.stage)}.`
-            : `Welcome back — you were on ${stepLabel(resumedAt.stage)}.`}
+            ? `Welcome back — your read is done. You were on "${stageName(resumedAt.stage)}".`
+            : `Welcome back — you were on "${stageName(resumedAt.stage)}".`}
       </span>
       {resumeAsking ? (
         <>
@@ -2126,7 +2160,14 @@ const Onboarding = () => {
 
   /* The browser's back button walks the journey, and Escape is Finish later. */
   useEffect(() => {
-    const onPop = () => { goBack(); };
+    /* popstate is the SINGLE mover: the entry is already consumed by the
+       browser, so we only apply the position change. */
+    const onPop = () => {
+      pushed.current = Math.max(0, pushed.current - 1);
+      const fb = pendingFallback.current;
+      pendingFallback.current = undefined;
+      applyBack(fb);
+    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       const el = document.activeElement as HTMLElement | null;
@@ -2141,7 +2182,7 @@ const Onboarding = () => {
       window.removeEventListener("popstate", onPop);
       window.removeEventListener("keydown", onKey);
     };
-  }, [goBack, saveAndExit]);
+  }, [applyBack, saveAndExit]);
 
   /** One writer for the level, wherever it is picked. */
   const chooseTitle = async (title: string, b: Band) => {
@@ -2192,7 +2233,7 @@ const Onboarding = () => {
      rather than sitting on a loader or a retry that can never succeed. */
   /* Rendered inside the shell of whichever screen it interrupts — a white card
      in the middle of the dark run would break the surface law. */
-  const bandPrompt = (bead: number, night = false) => {
+  const bandPrompt = (night = false) => {
     const inner = (
       <>
         <h1 style={night ? h1Night : h1Light}>One thing first — which of these is closest to your title?</h1>
@@ -2202,14 +2243,14 @@ const Onboarding = () => {
     return night ? (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>{inner}</NightShell>
     ) : (
-      <PaperShell onExit={saveAndExit} bead={bead} footer={escapeFooter}>{inner}</PaperShell>
+      <PaperShell onExit={saveAndExit} footer={escapeFooter}>{inner}</PaperShell>
     );
   };
 
   /* Answering the band prompt clears dims/questions while they reload. That is
      a wait, not a failure — the failure panel belongs to contentError alone. */
-  const quietLoadPanel = (bead: number) => (
-    <PaperShell onExit={saveAndExit} bead={bead} footer={escapeFooter}>
+  const quietLoadPanel = () => (
+    <PaperShell onExit={saveAndExit} footer={escapeFooter}>
       <h1 style={h1Light}>One moment.</h1>
       <p style={bodyLight}>Aura is picking the right set for you.</p>
     </PaperShell>
@@ -2278,7 +2319,7 @@ const Onboarding = () => {
     return (
       <>
         <style>{PAGE_CSS}</style>
-        <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} showProgress={false} footer={escapeFooter}>
           <h1 style={h1Light}>Is this you?</h1>
           <p style={{ ...bodyLight, fontFamily: OB.mono, fontSize: 14, color: OB.ink, wordBreak: "break-all" }}>
             {userEmail || "—"}
@@ -2317,7 +2358,7 @@ const Onboarding = () => {
     return (
       <>
         <style>{PAGE_CSS}</style>
-        <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} showProgress={false} footer={escapeFooter}>
           <h1 style={h1Light}>Set your password.</h1>
           <p style={bodyLight}>One password, and your read is yours to keep.</p>
           <div style={{ position: "relative", marginBlockStart: 18 }}>
@@ -2370,7 +2411,7 @@ const Onboarding = () => {
   /* 0 — CREAM */
   if (screen === 0) {
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} subProgress={readDone ? 0.5 : undefined} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} subProgress={readDone ? 0.5 : undefined} footer={escapeFooter}>
         <h1 style={h1Light}>{BRAND.headline}</h1>
         <p style={bodyLight}>{ONBOARDING_INTRO.lede}</p>
         <p style={bodyLight}>
@@ -2429,7 +2470,7 @@ const Onboarding = () => {
     ].filter(Boolean).join(" · ");
 
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} subProgress={step1Phase === "result" ? 0.6 : 0.25} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} subProgress={step1Phase === "result" ? 0.6 : 0.25} footer={escapeFooter}>
         {step1Phase === "result" ? (
           <h1 style={h1Light}>This is what Aura can see.</h1>
         ) : (
@@ -2442,7 +2483,20 @@ const Onboarding = () => {
           </>
         )}
 
-        {step1Phase === "ask" ? (
+        {step1Phase === "ask" && !userId ? (
+          <>
+            <p style={bodyLight}>
+              Your read was done before you got here. Aura can't find it on this device — open it again and it
+              comes straight back.
+            </p>
+            <Actions style={{ marginBlockStart: 16 }}>
+              <OBButton onClick={() => { void backToRead(); }}>Open my read</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
+            </Actions>
+          </>
+        ) : null}
+
+        {step1Phase === "ask" && userId ? (
           <>
             <input
               value={liInput}
@@ -2492,11 +2546,7 @@ const Onboarding = () => {
               operation="linkedin_read"
               runId={readRunId}
               title="Reading what LinkedIn shows"
-              stages={
-                userId
-                  ? [{ key: "read", label: "Reading your profile and your posts", state: readDone ? "done" : "active" }]
-                  : anonReadRun.stages
-              }
+              stages={[{ key: "read", label: "Reading your profile and your posts", state: readDone ? "done" : "active" }]}
               onCarryOn={{ label: "Carry on — I'll pick this up later", action: () => go(5) }}
             />
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 14 }}>
@@ -2758,7 +2808,7 @@ const Onboarding = () => {
                   {" · "}
                   <button
                     type="button"
-                    onClick={() => void readProfile(true)}
+                    onClick={() => { if (!userId) { void backToRead(); return; } void readProfile(true); }}
                     style={{
                       background: "none", border: 0, padding: "10px 6px", fontSize: 13,
                       color: OB.blue, cursor: "pointer", textDecoration: "underline",
@@ -2773,7 +2823,7 @@ const Onboarding = () => {
             {/* Mono is for numbers. This is a control, so it is set as one. */}
             <button
               type="button"
-              onClick={() => void returnToAddress()}
+              onClick={() => { if (!userId) { void backToRead(); return; } void returnToAddress(); }}
               style={{
                 background: "none", border: 0, padding: "11px 0", marginBlockStart: 4,
                 fontFamily: OB.ui, fontSize: 13.5, color: OB.muted, cursor: "pointer",
@@ -2798,7 +2848,7 @@ const Onboarding = () => {
   if (screen === MANUAL_SCREEN) {
     const ready = !!firstName.trim() && !!firm.trim() && !!sector && !!band && !!levelTitle;
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={h1Light}>Aura couldn't read it — tell it the basics.</h1>
         <p style={bodyLight}>Four things, and Aura works from these until you point it at your profile.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockStart: 20 }}>
@@ -2836,7 +2886,7 @@ const Onboarding = () => {
       go(5);
     };
     content = (
-      <PaperShell onExit={saveAndExit} bead={0} subProgress={1} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} subProgress={0.5} footer={escapeFooter}>
         <h1 style={h1Light}>Have a CV handy?</h1>
         <p style={bodyLight}>
           Your CV and your profile are read together. Your profile says what the world can see.
@@ -2892,7 +2942,7 @@ const Onboarding = () => {
   /* 5 — WHITE, the first link */
   if (screen === 5) {
     content = (
-      <PaperShell onExit={saveAndExit} bead={1} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={h1Light}>Something you read this week.</h1>
         <p style={bodyLight}>
           Your profile says what you've done. It doesn't say what you think. One link is enough to start.
@@ -3075,7 +3125,7 @@ const Onboarding = () => {
 
   /* 8 — WHITE, before the sliders */
   if (screen === 8) {
-    if (!band) { content = bandPrompt(2); } else {
+    if (!band) { content = bandPrompt(); } else {
     const sliderCount = dims?.length ?? 0;
     // Sector rows do not exist yet — every member gets the band set, so the
     // copy may only promise the level.
@@ -3083,7 +3133,7 @@ const Onboarding = () => {
       ? `${sliderCount} sliders. Under a minute. Picked for ${bandLabel}.`
       : null;
     content = (
-      <PaperShell onExit={saveAndExit} bead={2} face footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadDimensions()) : (
           <>
             <h1 style={{ ...h1Light, textAlign: "center" }}>Now your own read.</h1>
@@ -3111,23 +3161,23 @@ const Onboarding = () => {
   /* 9 — WHITE ×8, the sliders */
   if (screen === 9) {
     if (!band) {
-      content = bandPrompt(2);
+      content = bandPrompt();
     } else if (contentError) {
       content = (
-        <PaperShell onExit={saveAndExit} bead={2} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadDimensions()}>Try again</OBButton></Actions>
         </PaperShell>
       );
     } else if (!dims) {
-      content = quietLoadPanel(2);
+      content = quietLoadPanel();
     } else {
       const d = dims[Math.min(dimIdx, dims.length - 1)];
       const value = scores[d.name] ?? 50;
       const last = dimIdx >= dims.length - 1;
       content = (
-        <PaperShell onExit={saveAndExit} bead={2} subProgress={(dimIdx + 1) / dims.length} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} subProgress={(dimIdx + 1) / dims.length} footer={escapeFooter}>
           {flatWarn ? (
             <>
               <h1 style={{ ...h1Light, fontSize: "clamp(22px,6vw,28px)" }}>Can I check something?</h1>
@@ -3217,9 +3267,9 @@ const Onboarding = () => {
 
   /* 10 — WHITE, before the questions */
   if (screen === 10) {
-    if (!band) { content = bandPrompt(3); } else {
+    if (!band) { content = bandPrompt(); } else {
     content = (
-      <PaperShell onExit={saveAndExit} bead={3} face footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} face footer={escapeFooter}>
         {contentError ? retryPanel(() => void loadQuestions()) : (
           <>
             <h1 style={{ ...h1Light, textAlign: "center" }}>This next bit is what makes it yours.</h1>
@@ -3247,17 +3297,17 @@ const Onboarding = () => {
   /* 11 — WHITE, the nine questions */
   if (screen === 11) {
     if (!band) {
-      content = bandPrompt(3);
+      content = bandPrompt();
     } else if (contentError) {
       content = (
-        <PaperShell onExit={saveAndExit} bead={3} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} footer={escapeFooter}>
           <h1 style={h1Light}>Give that one more go.</h1>
           <p style={bodyLight}>Aura couldn't reach the shelf for a second. Nothing is lost.</p>
           <Actions style={{ marginBlockStart: 20 }}><OBButton onClick={() => void loadQuestions()}>Try again</OBButton></Actions>
         </PaperShell>
       );
     } else if (!questions) {
-      content = quietLoadPanel(3);
+      content = quietLoadPanel();
     } else {
       const q = questions[Math.min(qIdx, questions.length - 1)];
       const last = qIdx >= questions.length - 1;
@@ -3310,7 +3360,7 @@ const Onboarding = () => {
 
 
       content = (
-        <PaperShell onExit={saveAndExit} bead={3} subProgress={(qIdx + 1) / questions.length} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} subProgress={(qIdx + 1) / questions.length} footer={escapeFooter}>
           <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>
             Question {qIdx + 1} of {questions.length}
           </p>
@@ -3534,8 +3584,8 @@ const Onboarding = () => {
     return (
       <>
       <style>{PAGE_CSS}</style>
-      <JourneyNav.Provider value={{ onBack: undefined, banner: null }}>
-      <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
+      <JourneyNav.Provider value={{ onBack: undefined, banner: null, screen, name: firstName || null }}>
+      <PaperShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ fontFamily: OB.ui, fontSize: 28, fontWeight: 700, color: OB.ink }}>
           {WALL.heading}
         </h1>
@@ -3616,7 +3666,7 @@ const Onboarding = () => {
 
     if (arrival || (!userId && anonToken)) {
       content = (
-        <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
+        <PaperShell onExit={saveAndExit} footer={escapeFooter}>
           <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>{ENDING.eyebrow}</p>
           <h1 style={{ ...h1Light, marginBlockStart: 10 }}>{ENDING.headline}</h1>
           <p style={{ ...bodyLight }}>{ENDING.body}</p>
@@ -3687,7 +3737,7 @@ const Onboarding = () => {
       ? marketRun.stages
       : buildStages("market_read", { completed: ["gather", "write"], active: null });
     content = (
-      <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} footer={escapeFooter}>
         {!revealPending ? <Confetti /> : null}
         {revealPending ? (
           <div style={{ marginBlockEnd: 22 }}>
@@ -3959,7 +4009,7 @@ const Onboarding = () => {
     };
 
     content = (
-      <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ ...h1Light }}>{AFTER_KEEP.heading}</h1>
         <p style={{ ...bodyLight }}>{AFTER_KEEP.body}</p>
 
@@ -4020,7 +4070,7 @@ const Onboarding = () => {
   /* 13b — WHITE, and only after 13 */
   if (screen === 14) {
     content = (
-      <PaperShell onExit={saveAndExit} bead={4} face footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} face footer={escapeFooter}>
         <h1 style={{ ...h1Light, textAlign: "center" }}>When should I bring it to you?</h1>
         <p style={{ ...bodyLight, textAlign: "center" }}>
           I read overnight. Tell me when your day starts and that's when it's waiting.
@@ -4166,8 +4216,9 @@ const Onboarding = () => {
               ? () => { void backToRead(); }
               : undefined,
         banner: resumeBanner,
-        bead: stageOf(screen) - 1,
+        screen,
         name: firstName || null,
+
       }}>
         {content}
       </JourneyNav.Provider>
