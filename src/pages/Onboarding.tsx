@@ -48,7 +48,7 @@ import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyShell, { STAGE_NAMES, type Beat, type JourneySub } from "@/components/journey/JourneyShell";
 import { CONSENT_VERSION } from "@/pages/Auth";
-import CvUploadControl, { readCvPurpose } from "@/components/cv/CvUploadControl";
+import CvUploadControl from "@/components/cv/CvUploadControl";
 import CvCrosscheck from "@/components/report/CvCrosscheck";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
@@ -3142,11 +3142,11 @@ const Onboarding = () => {
         setTextAnswer("");
         setMultiPicked([]);
         setSinglePicked(null);
-        setQIdx((i) => {
-          const nextIdx = Math.max(0, i - 1);
-          persistQuestionProgress(answers, nextIdx);
-          return nextIdx;
-        });
+        /* The write lives outside the updater — a state updater must be pure,
+           and StrictMode double-invokes them. */
+        const nextIdx = Math.max(0, qIdx - 1);
+        persistQuestionProgress(answers, nextIdx);
+        setQIdx(nextIdx);
       };
       const cap = q.kind === "multi" ? (q.max_choices ?? (q.options?.length || 99)) : 1;
       const atCap = multiPicked.length >= cap;
