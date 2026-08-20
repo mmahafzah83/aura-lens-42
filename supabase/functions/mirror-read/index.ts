@@ -363,6 +363,10 @@ Deno.serve(async (req) => {
     run = await startRun(admin, {
       id: runIdFrom(body),
       operation: "linkedin_read",
+      /* The tab watching this run needs a claim on it: a signed-in member has
+         none here (this is the public engine), so the anonymous session token
+         is what the tick channel reads by. */
+      anon_token: typeof body?.anon_token === "string" ? body.anon_token : null,
       fingerprint_hash: ip_hash,
       meta: { handle, force, regenerating: !!cached },
     });
