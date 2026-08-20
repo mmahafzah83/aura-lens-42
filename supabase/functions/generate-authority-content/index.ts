@@ -502,7 +502,7 @@ serve(withObserve("generate-authority-content", async (req) => {
           if (evidenceIds.length > 0) {
             // Ground on THIS signal's own evidence chain, strongest first.
             const { data: fragData } = await supabase.from("evidence_fragments")
-              .select("title, content, metadata, confidence")
+              .select("id, title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .in("id", evidenceIds)
               .order("confidence", { ascending: false })
@@ -511,7 +511,7 @@ serve(withObserve("generate-authority-content", async (req) => {
             // Provenance needs the WHOLE chain, not the six shown to the model.
             for (let i = 0; i < evidenceIds.length; i += 100) {
               const { data: batch } = await supabase.from("evidence_fragments")
-                .select("title, content, metadata")
+                .select("id, title, content, metadata")
                 .eq("user_id", effectiveUserId)
                 .in("id", evidenceIds.slice(i, i + 100));
               if (batch) provenanceRows.push(...batch);
@@ -519,7 +519,7 @@ serve(withObserve("generate-authority-content", async (req) => {
           } else {
             // Fallback ONLY when the signal has no linked evidence: most recent fragments.
             const { data: fragData } = await supabase.from("evidence_fragments")
-              .select("title, content, metadata, confidence")
+              .select("id, title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .order("created_at", { ascending: false })
               .limit(5);
@@ -1462,7 +1462,7 @@ Return ONLY a JSON object matching this exact schema:
             groundingFragments = fragData || [];
           } else {
             const { data: fragData } = await supabase.from("evidence_fragments")
-              .select("title, content, metadata, confidence")
+              .select("id, title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .order("created_at", { ascending: false })
               .limit(5);
