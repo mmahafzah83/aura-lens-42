@@ -15,6 +15,7 @@ import { callAI } from "../_shared/ai-router.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
+import { hasBanned, loadBannedWords } from "../_shared/bannedWords.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
