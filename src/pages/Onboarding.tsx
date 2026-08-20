@@ -829,8 +829,9 @@ const Onboarding = () => {
     const clean: Record<string, any> = {};
     for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
     for (const k of clears) clean[k] = null;
-    return upsertProfile(id, clean, `journey ${label}`);
+    return upsertProfile(id, clean, `journey ${label}`, opts);
   }, [userId, anonToken]);
+
 
   /* The accuracy question no longer sits on the last screen — it is asked in
      the read email, where a reply costs the member nothing. */
