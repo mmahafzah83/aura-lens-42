@@ -409,6 +409,14 @@ export default function StudioPanel({
   const [status, setStatus] = useState<string | null>(null);
   /** In flight. Never a tick — the action has not finished. */
   const [busyMessage, setBusyMessage] = useState<string | null>(null);
+  /* Every new wait is a new run: the monotonic floor and the elapsed counter
+     must start from nothing rather than carry over from the last one. */
+  const [busyRunId, setBusyRunId] = useState(0);
+  const busyWasRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (busyMessage && busyMessage !== busyWasRef.current) setBusyRunId((n) => n + 1);
+    busyWasRef.current = busyMessage;
+  }, [busyMessage]);
   /** Failures. Never a tick, never overwritten by an autosave. */
   /** Set when a draft came back, rendered once the language is known. */
   const [restoredFlag, setRestoredFlag] = useState(false);
