@@ -38,36 +38,20 @@ export { STAGE_NAMES } from "@/lib/brand";
 
 /** The three beats of the one journey. Always all three, always visible. */
 export const BEATS = ["Your read", "Your evidence", "Your position"] as const;
-export type Beat = 1 | 2 | 3;
 
 /**
  * THE BAR IS WEIGHTED BY REAL EFFORT, NOT BY BEAT COUNT.
  *
  * Three equal thirds put 85% of the work — eight sliders and nine questions —
- * inside 7% of the fill. These are the measured shares of the journey's work,
- * and the caller's global fraction is computed against the same numbers, so a
- * fill can never land outside the segment its label claims.
+ * inside 7% of the fill. The shares, the total and the caller's global fraction
+ * all come from ONE module (`@/lib/journeyWork`), so a fill can never land
+ * outside the segment its label claims and the two files cannot drift apart.
  */
-export const BEAT_WEIGHTS: [number, number, number] = [3 / 53.5, 45 / 53.5, 5.5 / 53.5];
-/** Cumulative boundaries: [0, end of beat 1, end of beat 2, 1]. */
-export const BEAT_BOUNDS: [number, number, number, number] = [
-  0,
-  BEAT_WEIGHTS[0],
-  BEAT_WEIGHTS[0] + BEAT_WEIGHTS[1],
-  1,
-];
+export {
+  BEAT_WEIGHTS, BEAT_BOUNDS, JOURNEY_WORK_TOTAL, readStageFraction,
+} from "@/lib/journeyWork";
+export type { Beat } from "@/lib/journeyWork";
 
-/**
- * THE READ, in the same units the rest of the journey is measured in.
- *
- * `/assessment` owns the read and `/onboarding` owns everything after it, but
- * they draw ONE bar. The read is the first work unit of 53.5 (mirroring
- * `SCREEN_WORK` in Onboarding), so the hand-off between the two routes is
- * continuous and the number can never go down at the moment of commitment.
- */
-export const JOURNEY_WORK_TOTAL = 53.5;
-export const readStageFraction = (phase: "address" | "reading" | "held"): number =>
-  ({ address: 0.3, reading: 0.6, held: 1 }[phase] * 1) / JOURNEY_WORK_TOTAL;
 
 export interface JourneySub {
   /** 1-based step inside the beat currently in progress. Drives partial fill only. */
