@@ -29,6 +29,7 @@ type Status = "idle" | "loading" | "success" | "duplicate" | "error" | "validati
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SENIORITY: string[] = [...SENIORITY_LEVELS];
 const SECTOR: string[] = [...SECTORS];
+const COUNTER_REVEAL_THRESHOLD = 7;
 
 function usePositionCount(target: number, start: boolean, duration = 800) {
   const [value, setValue] = useState(0);
