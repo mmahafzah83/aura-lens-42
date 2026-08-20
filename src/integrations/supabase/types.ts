@@ -6437,6 +6437,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      posts_attribution: {
+        Args: never
+        Returns: {
+          aura: number
+          machine: number
+          member: number
+          total: number
+          unknown: number
+        }[]
+      }
       publish_invariants: { Args: never; Returns: Json }
       purge_expired_assessment_sessions: { Args: never; Returns: number }
       qa_cron_success_jobs: {
