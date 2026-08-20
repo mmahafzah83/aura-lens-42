@@ -87,16 +87,32 @@ export async function startRun(
   }
 
   let done = false;
+  const stages: { key: string; ms: number }[] = [];
+  let openKey: string | null = null;
+  let openAt = Date.now();
+  const closeOpen = () => {
+    if (openKey === null) return;
+    stages.push({ key: openKey, ms: Math.max(1, Date.now() - openAt) });
+    openKey = null;
+  };
+
   return {
     get id() { return id; },
+    mark(stageKey: string) {
+      closeOpen();
+      openKey = stageKey;
+      openAt = Date.now();
+    },
     async finish(end: RunEnd) {
       if (done || !id) return;
       done = true;
+      closeOpen();
       try {
         const patch: Record<string, unknown> = {
           finished_at: new Date().toISOString(),
           outcome: end.outcome,
           reason_code: end.outcome === "ok" ? null : (end.reason_code ?? null),
+          stages,
         };
         if (end.cost_usd !== undefined) patch.cost_usd = end.cost_usd;
         if (end.meta) patch.meta = end.meta;
@@ -105,6 +121,7 @@ export async function startRun(
       } catch (e) {
         console.error("[operation_runs] finish failed (non-blocking):", (e as Error)?.message ?? e);
       }
+
     },
   } as RunHandle;
 }
