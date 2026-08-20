@@ -252,7 +252,6 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
               <p style={NOTE_BODY}>You can close this and come back — the counter below is real.</p>
               <div style={{ marginBlockStart: 10 }}>
                 <WorkingInline
-                  runId={phase}
                   verb={phase === "reading" ? "Reading your posts" : "Writing three options"}
                 />
               </div>
