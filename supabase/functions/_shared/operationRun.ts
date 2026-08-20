@@ -43,8 +43,15 @@ export interface RunEnd {
 /** A handle that finishes exactly one run, at most once. */
 export interface RunHandle {
   id: string | null;
+  /**
+   * Close the stage that was running and open this one. The last open stage
+   * is closed by `finish`. Stage durations are what the waiting screens weight
+   * their percentage by, so they are measured here and nowhere else.
+   */
+  mark: (stageKey: string) => void;
   finish: (end: RunEnd) => Promise<void>;
 }
+
 
 function adminClient(client?: SupabaseClient): SupabaseClient {
   return client ?? createClient(
