@@ -4134,7 +4134,8 @@ const Onboarding = () => {
         ) : null}
 
         <Actions style={{ marginBlockStart: 18 }}>
-          <OBButton variant="tertiary" onClick={() => go(14)}>{AFTER_KEEP.continue}</OBButton>
+          {/* ONE primary on this screen too — sharing is the option, continuing is the path. */}
+          <OBButton onClick={() => go(14)}>{AFTER_KEEP.continue}</OBButton>
         </Actions>
       </PaperShell>
     );
