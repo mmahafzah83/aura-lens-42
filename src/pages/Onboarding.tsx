@@ -151,6 +151,8 @@ const TRUST_SLIDERS_SCREEN = 8.5;
 const CV_SCREEN = 3.5;
 /** The after-keep share screen — offered only once the report is his. */
 const SHARE_SCREEN = 13.5;
+/** The seat offer — its own beat, after the journey is already finished. */
+const SEAT_SCREEN = 14.5;
 
 /** Plain text buttons inside the screen-13 "Save it" row. */
 const quietLink: React.CSSProperties = {
