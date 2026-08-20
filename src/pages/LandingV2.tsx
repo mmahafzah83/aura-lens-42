@@ -998,8 +998,8 @@ const LANDING_V2_HTML = `
 <section class="pg" id="price">
   <div class="hdr">
     <span class="tag">Three ways in</span>
-    <p class="promise">${SEAT_PROMISE}</p>
-    <h2>Seeing yourself is free.<br><span class="grad">Being seen every week is the paid part.</span></h2>
+    <h2>Seeing yourself is free.<br><span class="grad">Being seen is not.</span></h2>
+    <p class="sub">Take a seat only if what you saw is worth keeping true.</p>
   </div>
 
   <div class="rungs rv">
