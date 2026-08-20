@@ -1031,7 +1031,11 @@ const Onboarding = () => {
         if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
         if (back === TRUST_SLIDERS_SCREEN) back = 8; /* retired gate */
         if (back === 4) back = 5; /* the interstitial is gone */
-        if (back === 6 || back === 7) back = 5;
+        /* A reload mid-read goes back to the link step — unless the payoff
+           already exists, in which case they land on it. */
+        if (back === 6 || back === 7) {
+          back = (Array.isArray(st.capture_fragments) && st.capture_fragments.length) ? 7 : 5;
+        }
         /* Back to the question they were on, not to question one. */
         {
           let qi = Number(st.q_idx ?? 0);
