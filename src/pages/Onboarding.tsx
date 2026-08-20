@@ -1895,16 +1895,18 @@ const Onboarding = () => {
     setRevealLoading(true);
     setRevealOpenRunId((n) => n + 1);
     /* A read that never answers must not hold the payoff screen for ever. At
-       45 seconds we stop waiting and say the honest thing instead. */
-    let done = false;
+       75 seconds we stop waiting and say the honest thing instead — clear of
+       the 60-second door in WorkingPanel, so the door is always reachable
+       first. A timeout changes what is SHOWN; it never discards work: a read
+       that lands late still replaces the fallback. */
+    let cancelled = false;
     const timeout = window.setTimeout(() => {
-      if (done) return;
-      done = true;
+      if (cancelled) return;
       console.warn("[reveal] loadMarketRead timed out");
       setRevealLoading(false);
-    }, 45000);
+    }, 75000);
     loadMarketRead(userId).then((r) => {
-      if (done) return;
+      if (cancelled) return;
       if (r) setReadRaw(r);
       const d = toRevealData(r, {
         figures: [],
@@ -1926,12 +1928,11 @@ const Onboarding = () => {
         setReveal({ ...d, figures });
       }
     }).finally(() => {
-      if (done) return;
-      done = true;
+      if (cancelled) return;
       window.clearTimeout(timeout);
       setRevealLoading(false);
     });
-    return () => { done = true; window.clearTimeout(timeout); };
+    return () => { cancelled = true; window.clearTimeout(timeout); };
   }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
 
 
