@@ -1716,5 +1716,11 @@ ${insightsSummary}`
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  } finally {
+    /* STRUCTURE, NOT DISCIPLINE. Every exit closes the run; `finish()` is
+       idempotent, so a run already closed above pays nothing here, and an exit
+       nobody thought of can no longer leave a run open forever. */
+    await closeRun("failed", "unclosed");
   }
 }));
+
