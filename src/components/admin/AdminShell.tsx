@@ -108,7 +108,7 @@ export default function AdminShell({ title, subtitle, children, bleed = false }:
             <div style={{ marginBottom: 28 }}>
               <h1
                 style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
                   fontSize: 36,
                   letterSpacing: "0.01em",
                   margin: 0,

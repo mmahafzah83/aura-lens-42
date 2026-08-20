@@ -94,7 +94,7 @@ export default function SendTestEmailPanel() {
           }}
         >
           <div style={{ marginBottom: 6 }}>
-            <span style={{ color: result.ok ? "#10b981" : "#dc2626" }}>
+            <span style={{ color: result.ok ? "#12805C" : "#C0392B" }}>
               {result.ok ? "OK" : "FAIL"}
             </span>
             {typeof result.status === "number" && <> · HTTP {result.status}</>}

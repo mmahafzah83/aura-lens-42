@@ -3,18 +3,18 @@ import { createPortal } from "react-dom";
 
 /** System-A cockpit tokens — bone paper, ink, four signal colours. */
 export const C = {
-  paper: "#F1ECE1",
-  card: "#FBF8F1",
+  paper: "#F2F5F9",
+  card: "#FFFFFF",
   ink: "#1B1712",
   rule: "#E2DACB",
   muted: "#6B6255",
   teal: "#36C5B0",
   amber: "#D6A748",
   damber: "#B5762A",
-  ox: "#6E2A26",
+  ox: "#0670C4",
 };
 
-export const SERIF = "'Newsreader','Cormorant Garamond',Georgia,serif";
+export const SERIF = "'Newsreader','Inter',Georgia,serif";
 export const MONO = "'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace";
 
 export function Label({ children }: { children: ReactNode }) {

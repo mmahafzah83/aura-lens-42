@@ -167,7 +167,7 @@ export default function CvCrosscheckPanel() {
       </div>
 
       {docsError && (
-        <div style={{ fontFamily: MONO, fontSize: 12, color: "#dc2626", marginBottom: 12 }}>{docsError}</div>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: "#C0392B", marginBottom: 12 }}>{docsError}</div>
       )}
 
       {docs && (
@@ -221,7 +221,7 @@ export default function CvCrosscheckPanel() {
                 ))}
               </select>
               {saved[d.id] && (
-                <span style={{ fontFamily: MONO, fontSize: 11, color: saved[d.id] === "saved" ? "#10b981" : "#dc2626" }}>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: saved[d.id] === "saved" ? "#12805C" : "#C0392B" }}>
                   {saved[d.id]}
                 </span>
               )}
@@ -245,7 +245,7 @@ export default function CvCrosscheckPanel() {
           }}
         >
           <div style={{ marginBottom: 6 }}>
-            <span style={{ color: result.ok ? "#10b981" : "#dc2626" }}>{result.ok ? "OK" : "FAIL"}</span>
+            <span style={{ color: result.ok ? "#12805C" : "#C0392B" }}>{result.ok ? "OK" : "FAIL"}</span>
             {result.ok && typeof result.cv_count === "number" && <> · {result.cv_count} CV(s)</>}
           </div>
           {result.ok ? (

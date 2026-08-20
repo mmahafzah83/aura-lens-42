@@ -54,11 +54,11 @@ function relativeTime(iso: string | null): string {
 
 function statusBadge(status: string | null) {
   const s = (status || "").toLowerCase();
-  let color = "#d97706"; // amber
+  let color = "#9A6F12"; // amber
   let bg = "rgba(217,119,6,0.12)";
   let label = status || "no runs";
-  if (s === "succeeded") { color = "#16a34a"; bg = "rgba(22,163,74,0.14)"; }
-  else if (s === "failed") { color = "#dc2626"; bg = "rgba(220,38,38,0.14)"; }
+  if (s === "succeeded") { color = "#12805C"; bg = "rgba(22,163,74,0.14)"; }
+  else if (s === "failed") { color = "#C0392B"; bg = "rgba(220,38,38,0.14)"; }
   return (
     <span
       style={{
@@ -134,15 +134,15 @@ export default function AdminCrons() {
           <div className="flex items-center flex-wrap gap-6">
             <div>
               <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)" }}>Total</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 28, color: "var(--glass)", fontWeight: 500, lineHeight: 1, marginTop: 4 }}>{total}</div>
+              <div style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", fontSize: 28, color: "var(--glass)", fontWeight: 500, lineHeight: 1, marginTop: 4 }}>{total}</div>
             </div>
             <div>
               <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)" }}>Healthy</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 28, color: "#16a34a", fontWeight: 500, lineHeight: 1, marginTop: 4 }}>{healthy}</div>
+              <div style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", fontSize: 28, color: "#12805C", fontWeight: 500, lineHeight: 1, marginTop: 4 }}>{healthy}</div>
             </div>
             <div>
               <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--glass-2)" }}>Not healthy</div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 28, color: notHealthy > 0 ? "#dc2626" : "var(--glass)", fontWeight: 500, lineHeight: 1, marginTop: 4 }}>{notHealthy}</div>
+              <div style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", fontSize: 28, color: notHealthy > 0 ? "#C0392B" : "var(--glass)", fontWeight: 500, lineHeight: 1, marginTop: 4 }}>{notHealthy}</div>
             </div>
             <div style={{ marginLeft: "auto" }}>
               <button
@@ -175,7 +175,7 @@ export default function AdminCrons() {
             </div>
           )}
           {!loading && error && (
-            <div className="flex items-start gap-2" style={{ color: "#F87171", fontSize: 13 }}>
+            <div className="flex items-start gap-2" style={{ color: "#C0392B", fontSize: 13 }}>
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>

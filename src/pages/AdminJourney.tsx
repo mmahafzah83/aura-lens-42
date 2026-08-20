@@ -33,8 +33,8 @@ type Payload = {
 };
 
 /** Oxblood — the only accent this page uses. */
-const ACCENT = "#6E2A26";
-const RISK_COLOR: Record<string, string> = { high: "#6E2A26", med: "#d97706", low: "#16a34a" };
+const ACCENT = "#0670C4";
+const RISK_COLOR: Record<string, string> = { high: "#0670C4", med: "#9A6F12", low: "#12805C" };
 
 const card: React.CSSProperties = {
   background: "var(--ob-panel)",
