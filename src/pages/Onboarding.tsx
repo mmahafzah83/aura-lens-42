@@ -49,7 +49,12 @@ import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleB
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
-import JourneyShell, { STAGE_NAMES, type Beat, type JourneySub } from "@/components/journey/JourneyShell";
+import JourneyShell, { STAGE_NAMES, type JourneySub } from "@/components/journey/JourneyShell";
+import {
+  MANUAL_SCREEN, TRUST_SLIDERS_SCREEN, CV_SCREEN, SHARE_SCREEN, SEAT_SCREEN,
+  beatOf, journeyFraction,
+} from "@/lib/journeyWork";
+
 import { CONSENT_VERSION } from "@/pages/Auth";
 import CvUploadControl from "@/components/cv/CvUploadControl";
 import CvCrosscheck from "@/components/report/CvCrosscheck";
