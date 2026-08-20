@@ -495,19 +495,6 @@ const Onboarding = () => {
   const anonStateRef = useRef<AssessmentState & Record<string, any>>({ answers: {} });
   /* The genuine start of the anonymous run, when the session gave us one. */
   const sessionStartedAtRef = useRef<string | null>(null);
-  /* THE ARRIVAL — read once, on mount. Stale or absent means the journey
-     behaves exactly as it always has. */
-  const [arrival, setArrival] = useState<
-    null | { first_name?: string | null; answers?: number; sliders?: number; captures?: number }
-  >(() => {
-    try {
-      const raw = localStorage.getItem("aura_just_joined");
-      if (!raw) return null;
-      const e = JSON.parse(raw);
-      if (!e || typeof e.at !== "number" || Date.now() - e.at > 10 * 60 * 1000) return null;
-      return e;
-    } catch { return null; }
-  });
   const [wallEmail, setWallEmail] = useState("");
   const [wallPassword, setWallPassword] = useState("");
   const [wallConsent, setWallConsent] = useState(false);
@@ -1908,16 +1895,18 @@ const Onboarding = () => {
     setRevealLoading(true);
     setRevealOpenRunId((n) => n + 1);
     /* A read that never answers must not hold the payoff screen for ever. At
-       45 seconds we stop waiting and say the honest thing instead. */
-    let done = false;
+       75 seconds we stop waiting and say the honest thing instead — clear of
+       the 60-second door in WorkingPanel, so the door is always reachable
+       first. A timeout changes what is SHOWN; it never discards work: a read
+       that lands late still replaces the fallback. */
+    let cancelled = false;
     const timeout = window.setTimeout(() => {
-      if (done) return;
-      done = true;
+      if (cancelled) return;
       console.warn("[reveal] loadMarketRead timed out");
       setRevealLoading(false);
-    }, 45000);
+    }, 75000);
     loadMarketRead(userId).then((r) => {
-      if (done) return;
+      if (cancelled) return;
       if (r) setReadRaw(r);
       const d = toRevealData(r, {
         figures: [],
@@ -1939,21 +1928,29 @@ const Onboarding = () => {
         setReveal({ ...d, figures });
       }
     }).finally(() => {
-      if (done) return;
-      done = true;
+      if (cancelled) return;
       window.clearTimeout(timeout);
       setRevealLoading(false);
     });
-    return () => { done = true; window.clearTimeout(timeout); };
+    return () => { cancelled = true; window.clearTimeout(timeout); };
   }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
 
 
   /* ── finishing ── */
+  /* One finish per session — the side effects are not idempotent. */
+  const finishedRef = useRef(false);
   /* `destination` lets the seat doors complete the journey before they leave:
      the member who reserves a seat is still a finished member. */
   /** `stay: true` finishes the journey without leaving — the seat beat runs
       after the member is already a finished member, never instead of it. */
   const finish = async (opts?: { destination?: string; stay?: boolean }) => {
+    /* Exactly once per session. 14.5 is reachable and Back-able, so a second
+       pass would email the read twice and re-write the finish row. */
+    if (finishedRef.current) {
+      if (!opts?.stay) navigate(opts?.destination ?? "/home", { replace: true });
+      return;
+    }
+    finishedRef.current = true;
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
       if (reveal) {
@@ -2019,6 +2016,16 @@ const Onboarding = () => {
     if (opts?.stay) return;
     navigate(opts?.destination ?? "/home", { replace: true });
   };
+
+  /* The seat beat may only be seen by a finished member. Today the one route
+     in awaits finish() first; this makes that a property of the screen rather
+     than of the caller, so a new route in can never skip the finish. */
+  useEffect(() => {
+    if (screen !== SEAT_SCREEN || finishedRef.current) return;
+    console.warn("[journey] reached the seat beat unfinished — finishing now");
+    void finish({ stay: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
 
   /**
    * Connect in a popup. A full-page redirect from inside the flow throws the
@@ -3882,7 +3889,6 @@ const Onboarding = () => {
             loadingLabel="Writing your read…"
             onClick={() => {
               try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
-              setArrival(null);
               go(13);
             }}
           >
@@ -4245,19 +4251,16 @@ const Onboarding = () => {
           I'll email your read. If it got you wrong, reply to that email and tell me — that's how I learn you.
         </p>
 
-        {connected || userId ? null : (
-          <p style={{ ...bodyLight, textAlign: "center" }}>{CONNECT_AFTER_ACCOUNT}</p>
-        )}
-
         <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
       </PaperShell>
     );
   }
 
-  /* 14.5 — THE SEAT. Its own beat, and the journey is already complete. */
+  /* 14.5 — THE SEAT. Its own beat, and the journey is already complete.
+     No escape footer: "finish later" would un-finish a finished journey. */
   if (screen === SEAT_SCREEN) {
     content = (
-      <PaperShell onExit={() => navigate("/home", { replace: true })} footer={escapeFooter}>
+      <PaperShell onExit={() => navigate("/home", { replace: true })} footer={null}>
         <div style={{ padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
           <p style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", fontWeight: 700, color: OB.ink }}>
             {SEAT_HEADING}
