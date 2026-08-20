@@ -1155,7 +1155,7 @@ const Onboarding = () => {
             headline: st.headline ?? anonRead.headline ?? pf.headline ?? null,
             photo_url: st.avatar_url ?? anonRead.photo_url ?? anonRead.avatar_url ?? anonRead.profile_picture ?? anonRead.photo ?? null,
             followers: anonRead.followers ?? anonRead.follower_count ?? null,
-            skills_count: anonRead.skills_count ?? anonRead.skillsCount ?? strings(anonRead.skills ?? anonRead.topSkills ?? anonRead.top_skills).length || null,
+            skills_count: anonRead.skills_count ?? anonRead.skillsCount ?? (strings(anonRead.skills ?? anonRead.topSkills ?? anonRead.top_skills).length || null),
             read: st.read,
           });
           const anonFacts = factsFromAnonymousRead(anonRead);
