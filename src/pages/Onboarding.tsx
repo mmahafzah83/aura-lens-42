@@ -2886,7 +2886,7 @@ const Onboarding = () => {
       go(5);
     };
     content = (
-      <PaperShell onExit={saveAndExit} subProgress={1} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} subProgress={0.5} footer={escapeFooter}>
         <h1 style={h1Light}>Have a CV handy?</h1>
         <p style={bodyLight}>
           Your CV and your profile are read together. Your profile says what the world can see.
