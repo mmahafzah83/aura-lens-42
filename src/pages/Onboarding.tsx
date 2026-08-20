@@ -151,6 +151,8 @@ const TRUST_SLIDERS_SCREEN = 8.5;
 const CV_SCREEN = 3.5;
 /** The after-keep share screen — offered only once the report is his. */
 const SHARE_SCREEN = 13.5;
+/** The seat offer — its own beat, after the journey is already finished. */
+const SEAT_SCREEN = 14.5;
 
 /** Plain text buttons inside the screen-13 "Save it" row. */
 const quietLink: React.CSSProperties = {
@@ -323,7 +325,7 @@ const beatOf = (screen: number): Beat =>
 const SCREEN_WORK: ReadonlyArray<readonly [number, number]> = [
   [0, 1], [1, 2],
   [CV_SCREEN, 2], [5, 3], [6, 1], [7, 2], [8, 1], [TRUST_SLIDERS_SCREEN, 1], [9, 16], [10, 1], [11, 18],
-  [12, 2], [13, 2], [SHARE_SCREEN, 1], [14, 0.5],
+  [12, 2], [13, 2], [SHARE_SCREEN, 1], [14, 0.5], [SEAT_SCREEN, 0.5],
 ] as const;
 const WORK_TOTAL = SCREEN_WORK.reduce((a, [, w]) => a + w, 0);
 
@@ -370,6 +372,31 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
   </JourneyShell>
   );
 };
+
+/**
+ * THE REVEAL SURFACE. Full-bleed blue, and inside the same chrome as every
+ * other journey screen — a payoff screen with no Back and no Finish later is
+ * the one place a hung read becomes a trap.
+ */
+const BlueShell = ({ children, onExit }: { children: React.ReactNode; onExit?: () => void }) => {
+  const { onBack, name, screen = 0 } = useContext(JourneyNav);
+  return (
+    <JourneyShell
+      onBack={onBack}
+      onExit={onExit ?? (() => {})}
+      name={name}
+      beat={beatOf(screen)}
+      sub={subOf(screen)}
+      fraction={journeyFraction(screen)}
+      background="linear-gradient(170deg, var(--ob-blue), var(--ob-blue-light))"
+      className="obc"
+    >
+      <div className="obc-in" style={{ inlineSize: "100%" }}>{children}</div>
+    </JourneyShell>
+  );
+};
+
+
 
 /**
  * `showProgress={false}` is for the two screens that are NOT the journey —
@@ -485,9 +512,6 @@ const Onboarding = () => {
    */
   const [resumedAt, setResumedAt] = useState<{ stage: number; readDone: boolean } | null>(null);
   const [resumeAsking, setResumeAsking] = useState(false);
-  /** The reveal-endgame feedback question: rating + optional message. */
-  const [revealRating, setRevealRating] = useState<number | null>(null);
-  const [revealMessage, setRevealMessage] = useState("");
 
 
   /* member facts */
@@ -602,6 +626,10 @@ const Onboarding = () => {
   /* The read is on its way from the database. Until it answers, the reveal
      screen shows a wait — never a claim about where the read is. */
   const [revealLoading, setRevealLoading] = useState(false);
+  /** The finishing write is in flight — the last primary says so. */
+  const [finishing, setFinishing] = useState(false);
+  /** Bumped on every attempt to open the read, so the wait counter restarts. */
+  const [revealOpenRunId, setRevealOpenRunId] = useState(0);
   const [buildingReport, setBuildingReport] = useState(false);
   /* posting to LinkedIn — offered only where it can actually work */
   const [canPostToLinkedIn, setCanPostToLinkedIn] = useState(false);
@@ -797,25 +825,9 @@ const Onboarding = () => {
     return upsertProfile(id, clean, `journey ${label}`);
   }, [userId, anonToken]);
 
-  /**
-   * The one reveal feedback question. Optional, never blocks the journey.
-   * Anonymous runs keep it on the session row and replay it at hand-off.
-   */
-  const handleRevealFeedback = useCallback(async (rating: number, message: string) => {
-    setRevealRating(rating);
-    if (!userId) {
-      anonStateRef.current.reveal_feedback = { rating, message };
-      if (anonToken) await saveSession(anonToken, anonStateRef.current);
-      return;
-    }
-    await supabase.from("beta_feedback").upsert({
-      user_id: userId,
-      feedback_type: "reveal",
-      rating,
-      message: message || null,
-      page: "/onboarding",
-    });
-  }, [userId, anonToken]);
+  /* The accuracy question no longer sits on the last screen — it is asked in
+     the read email, where a reply costs the member nothing. */
+
 
   /**
    * THE HAND-OFF — the anonymous run becomes the account's run.
@@ -1851,7 +1863,18 @@ const Onboarding = () => {
   useEffect(() => {
     if (screen !== 13 || readRaw || !userId) return;
     setRevealLoading(true);
+    setRevealOpenRunId((n) => n + 1);
+    /* A read that never answers must not hold the payoff screen for ever. At
+       45 seconds we stop waiting and say the honest thing instead. */
+    let done = false;
+    const timeout = window.setTimeout(() => {
+      if (done) return;
+      done = true;
+      console.warn("[reveal] loadMarketRead timed out");
+      setRevealLoading(false);
+    }, 45000);
     loadMarketRead(userId).then((r) => {
+      if (done) return;
       if (r) setReadRaw(r);
       const d = toRevealData(r, {
         figures: [],
@@ -1872,13 +1895,22 @@ const Onboarding = () => {
         ];
         setReveal({ ...d, figures });
       }
-    }).finally(() => setRevealLoading(false));
+    }).finally(() => {
+      if (done) return;
+      done = true;
+      window.clearTimeout(timeout);
+      setRevealLoading(false);
+    });
+    return () => { done = true; window.clearTimeout(timeout); };
   }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
+
 
   /* ── finishing ── */
   /* `destination` lets the seat doors complete the journey before they leave:
      the member who reserves a seat is still a finished member. */
-  const finish = async (opts?: { destination?: string }) => {
+  /** `stay: true` finishes the journey without leaving — the seat beat runs
+      after the member is already a finished member, never instead of it. */
+  const finish = async (opts?: { destination?: string; stay?: boolean }) => {
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
       if (reveal) {
@@ -1941,6 +1973,7 @@ const Onboarding = () => {
     try { localStorage.setItem("aura_onboarding_complete", "true"); } catch { /* ignore */ }
     try { sessionStorage.removeItem("aura_onboarding_visits"); } catch { /* ignore */ }
     supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
+    if (opts?.stay) return;
     navigate(opts?.destination ?? "/home", { replace: true });
   };
 
@@ -2158,17 +2191,9 @@ const Onboarding = () => {
     } catch { /* they can change it in Settings */ }
   }, [userId, timeZone, writeProfile]);
 
-  /* Both seat doors: finish first, then leave. A failed finish never traps
-     the member — it is logged and the door still opens. */
-  const leaveForSeat = async (intent: "reserve_69" | "keep_posted") => {
-    const destination = `${SEAT_PATH}?intent=${intent}`;
-    try {
-      await finish({ destination });
-    } catch (e) {
-      console.error("[journey] finish before seat threw", e);
-      navigate(destination);
-    }
-  };
+  /* The seat beat runs AFTER the journey is finished, so its doors are plain
+     navigation — there is nothing left to complete first. */
+
 
   /* Pausing is not finishing. The old escape hatch flagged the member as fully
    * onboarded with an empty profile and locked them out of the journey for
@@ -3692,78 +3717,21 @@ const Onboarding = () => {
     if (ccFindings > 0) ownRows.push({ label: ENDING.rowCrosscheckLabel, value: ENDING.rowCrosscheck(ccFindings) });
     if (ownGap) ownRows.push({ label: ENDING.rowGapLabel, value: ownGap });
 
-    if (arrival || (!userId && anonToken)) {
-      content = (
-        <PaperShell onExit={saveAndExit} footer={escapeFooter}>
-          <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>{ENDING.eyebrow}</p>
-          <h1 style={{ ...h1Light, marginBlockStart: 10 }}>{ENDING.headline}</h1>
-          <p style={{ ...bodyLight }}>{ENDING.body}</p>
-
-          {ownRows.length ? (
-            <div style={{ marginBlockStart: 22 }}>
-              <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-                {ENDING.yoursHead}
-              </p>
-              <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
-                {ownRows.map((r) => (
-                  <li key={r.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <span style={{ fontSize: "var(--ob-small)", color: OB.muted }}>{r.label}</span>
-                    <span style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, fontWeight: 600 }}>{r.value}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {/* The loss is true only while there is no account. */}
-          {!userId ? (
-            <p style={{
-              margin: "22px 0 0", paddingInlineStart: 14, borderInlineStart: "3px solid #E0A82E",
-              fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink,
-            }}>{ENDING.loss}</p>
-          ) : null}
-
-          <div style={{ marginBlockStart: 26, opacity: 0.72 }}>
-            <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-              {ENDING.tenthHead}
-            </p>
-            <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 9 }}>
-              {ENDING.tenth.map((line) => (
-                <li key={line} style={{ position: "relative", paddingInlineStart: 18, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
-                  <span aria-hidden style={{
-                    position: "absolute", insetInlineStart: 0, insetBlockStart: 7,
-                    inlineSize: 7, blockSize: 7, borderRadius: 999, border: `1px solid ${OB.muted}`,
-                  }} />
-                  {line}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <p style={{ ...bodyLight, marginBlockStart: 22 }}>{ENDING.closing}</p>
-
-          <Actions style={{ marginBlockStart: 22 }}>
-            <OBButton onClick={() => {
-              try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
-              setArrival(null);
-              go(13);
-            }}>{userId ? ENDING.ctaSignedIn : ENDING.cta}</OBButton>
-          </Actions>
-          <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
-            {ENDING.ctaSub}
-          </p>
-          <Actions style={{ marginBlockStart: 10 }}>
-            <OBButton variant="tertiary" onClick={saveAndExit}>{ENDING.finishLater}</OBButton>
-          </Actions>
-        </PaperShell>
-      );
-    } else {
-    /* Only the work that actually happened is shown, and a step only ticks on a
-       real event. The three reading steps have no event of their own, so they
-       stay plain named lines until the read itself lands. */
+    /**
+     * ONE ENDING, FOR EVERY MEMBER WHO GETS HERE.
+     *
+     * Reaching screen 12 IS journey completion — nothing else routes here. So
+     * the inventory of what they built, the shelf, the proof sentence and the
+     * "tenth of" ladder are shown to everyone. Only two blocks are genuinely
+     * anonymous-only, and both are gated on `!userId`: the loss line (nothing
+     * is lost once there is an account to hold it) and the make-an-account
+     * wording of the primary. Confetti and the shelf are folded in here; there
+     * is no longer a second screen 12.
+     */
     const genStages: WorkingStage[] = revealPending
       ? marketRun.stages
       : buildStages("market_read", { completed: ["gather", "write"], active: null });
+
     content = (
       <PaperShell onExit={saveAndExit} footer={escapeFooter}>
         {!revealPending ? <Confetti /> : null}
@@ -3777,10 +3745,15 @@ const Onboarding = () => {
             />
           </div>
         ) : null}
-        <h1 style={{ ...h1Light, textAlign: "center" }}>Here's what Aura now knows about you.</h1>
+
+        <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>{ENDING.eyebrow}</p>
+        <h1 style={{ ...h1Light, marginBlockStart: 10 }}>{ENDING.headline}</h1>
+        <p style={{ ...bodyLight }}>{ENDING.body}</p>
+
+        {/* the shelf — what was actually collected, for everyone */}
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          gap: 8, justifyItems: "center", maxWidth: 420, margin: "26px auto 6px",
+          gap: 8, justifyItems: "center", maxWidth: 420, margin: "24px auto 6px",
         }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
@@ -3789,7 +3762,25 @@ const Onboarding = () => {
               unlocked={shelfState[i].unlocked} figure={shelfState[i].figure} />
           ))}
         </div>
-        <p style={{ ...bodyLight, textAlign: "center" }}>
+
+        {ownRows.length ? (
+          <div style={{ marginBlockStart: 22 }}>
+            <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+              {ENDING.yoursHead}
+            </p>
+            <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
+              {ownRows.map((r) => (
+                <li key={r.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={{ fontSize: "var(--ob-small)", color: OB.muted }}>{r.label}</span>
+                  <span style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, fontWeight: 600 }}>{r.value}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {/* what Aura writes from — true of everyone who got here */}
+        <p style={{ ...bodyLight, marginBlockStart: 20 }}>
           {proof && proof.posts > 0 ? (
             <>
               I have {num(proof.posts)} of your posts and {num(proof.words)} words in your own voice
@@ -3804,23 +3795,69 @@ const Onboarding = () => {
             </>
           )}
         </p>
-        <p style={{ ...bodyLight, textAlign: "center" }}>
+        <p style={{ ...bodyLight }}>
           {mayPromiseMorning
             ? "Tonight I read for the signals in your read. Tomorrow morning there's something waiting."
             : "I'll keep reading for the signals in your read. When something is worth your name on it, you'll hear — not before."}
         </p>
+
+        {/* ANONYMOUS ONLY — the loss is only true while there is no account. */}
+        {!userId ? (
+          <p style={{
+            margin: "22px 0 0", paddingInlineStart: 14, borderInlineStart: "3px solid #E0A82E",
+            fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink,
+          }}>{ENDING.loss}</p>
+        ) : null}
+
+        <div style={{ marginBlockStart: 26, opacity: 0.72 }}>
+          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+            {ENDING.tenthHead}
+          </p>
+          <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 9 }}>
+            {ENDING.tenth.map((line) => (
+              <li key={line} style={{ position: "relative", paddingInlineStart: 18, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+                <span aria-hidden style={{
+                  position: "absolute", insetInlineStart: 0, insetBlockStart: 7,
+                  inlineSize: 7, blockSize: 7, borderRadius: 999, border: `1px solid ${OB.muted}`,
+                }} />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p style={{ ...bodyLight, marginBlockStart: 22 }}>{ENDING.closing}</p>
+
         {revealPending && proof && proof.lines.length > 0 ? (
           <WaitProof lines={proof.lines} startAt={3} howLong="Writing your read. About a minute." />
         ) : null}
-        <Actions style={{ marginBlockStart: 24 }}>
-          <OBButton onClick={() => go(13)} loading={revealPending && !revealSlow} loadingLabel="Writing your read…">
-            {revealPending && revealSlow ? "See what I have so far" : "See how people see me"}
+
+        {/* ONE primary. */}
+        <Actions style={{ marginBlockStart: 22 }}>
+          <OBButton
+            loading={revealPending && !revealSlow}
+            loadingLabel="Writing your read…"
+            onClick={() => {
+              try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
+              setArrival(null);
+              go(13);
+            }}
+          >
+            {revealPending && revealSlow
+              ? "See what I have so far"
+              : userId ? ENDING.ctaSignedIn : ENDING.cta}
           </OBButton>
+        </Actions>
+        <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+          {ENDING.ctaSub}
+        </p>
+        <Actions style={{ marginBlockStart: 10 }}>
+          <OBButton variant="tertiary" onClick={saveAndExit}>{ENDING.finishLater}</OBButton>
         </Actions>
       </PaperShell>
     );
-    }
   }
+
 
   /* 13 — FULL-BLEED BLUE */
   if (screen === 13) {
@@ -3879,20 +3916,20 @@ const Onboarding = () => {
     /* Minting the share link and copying it live on the after-keep screen —
        nothing on the reveal competes with the one decision. */
     content = (
-      <div className="obc" style={{
-        minBlockSize: "100dvh",
-        overflow: "clip",
-        /* Blue, and only blue. Cyan is decoration — never a fill. */
-        background: "linear-gradient(170deg, var(--ob-blue), var(--ob-blue-light))",
-        display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
-      }}>
-        <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+      <BlueShell onExit={saveAndExit}>
+        <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)", marginInline: "auto" }}>
           {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : revealLoading ? (
-            /* The read may already be finished and sitting in the database.
-               While we are still asking, say nothing about where it is. */
-            <div role="status" style={{ textAlign: "center", color: "var(--ob-white)" }}>
-              <p style={{ fontSize: 16, lineHeight: 1.6 }}>Opening your read…</p>
-            </div>
+            /* A wait like any other: named stage, real counter, and a door
+               after a minute. The read may already be in the database — while
+               we are still asking, we say nothing about where it is. */
+            <WorkingPanel
+              operation="market_read"
+              title="Opening your read"
+              onNight
+              runId={revealOpenRunId}
+              stages={[{ key: "open", label: "Fetching the read Aura wrote for you", state: "active" }]}
+              onCarryOn={{ label: "Carry on without it", action: () => go(SHARE_SCREEN) }}
+            />
           ) : (
             <div style={{ textAlign: "center", color: "var(--ob-white)" }}>
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>
@@ -3931,10 +3968,19 @@ const Onboarding = () => {
           {/* Share copy is not edited before the decision to share — it lives on
              the after-keep screen. */}
           <Actions style={{ marginBlockStart: 20 }}>
-          {/* ONE primary. Every other option moved after the decision. */}
-          <OBButton disabled={busy} loading={buildingReport} loadingLabel="Building your read…"
-            onClick={async () => { if (brandPaper) await downloadFullReport(); go(SHARE_SCREEN); }}
-            style={{ background: "#FFFFFF", color: OB.blue }}>{ENDING.cta}</OBButton>
+          {/* ONE primary, and it only continues. A button labelled "keep" does
+             not start a ten-second file download by surprise: downloading is
+             its own control, with its own busy state. */}
+          <OBButton disabled={busy} onClick={() => go(SHARE_SCREEN)}
+            style={{ background: "#FFFFFF", color: OB.blue }}>Continue</OBButton>
+          {brandPaper ? (
+            <OBButton variant="secondary" disabled={busy} loading={buildingReport}
+              loadingLabel="Building your report…"
+              onClick={() => void downloadFullReport()}
+              style={{ borderColor: "rgba(255,255,255,.6)", color: "#FFFFFF", background: "transparent" }}>
+              Download my full report (PDF)
+            </OBButton>
+          ) : null}
           {brandPaper ? (
             brandPaper.the_gap || brandPaper.own_words_quote ? (
               <p style={{
@@ -3955,8 +4001,6 @@ const Onboarding = () => {
               textDecoration: "underline", padding: "10px 0",
             }}>View it on LinkedIn</a>
           ) : null}
-          <OBButton variant="tertiary" onClick={() => go(SHARE_SCREEN)}
-            style={{ color: "rgba(255,255,255,.72)" }}>Continue without downloading</OBButton>
           </Actions>
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
             {REPORT_FREE_LINE}
@@ -3971,9 +4015,10 @@ const Onboarding = () => {
           </>
           ) : null}
         </div>
-      </div>
+      </BlueShell>
     );
   }
+
 
   /* 13.5 — AFTER HE HAS KEPT IT. Sharing is offered here and nowhere earlier. */
   if (screen === SHARE_SCREEN) {
@@ -4089,13 +4134,24 @@ const Onboarding = () => {
         ) : null}
 
         <Actions style={{ marginBlockStart: 18 }}>
-          <OBButton variant="tertiary" onClick={() => go(14)}>{AFTER_KEEP.continue}</OBButton>
+          {/* ONE primary on this screen too — sharing is the option, continuing is the path. */}
+          <OBButton onClick={() => go(14)}>{AFTER_KEEP.continue}</OBButton>
         </Actions>
       </PaperShell>
     );
   }
 
-  /* 13b — WHITE, and only after 13 */
+  /**
+   * 14 — THE LAST MOMENT, AND IT ASKS FOR ONE THING.
+   *
+   * It used to ask four: the daily slot, the accuracy question, the seat, and
+   * the exit. Peak-end says the last moment is half of what is remembered, and
+   * a form is a poor last moment. So: the slot and the exit stay here; the
+   * accuracy question moves to the follow-up email (the read is emailed by
+   * `finish()`, which is a better place to ask whether it was right); the seat
+   * offer gets its own beat, AFTER the journey is already finished, so it can
+   * never compete with finishing.
+   */
   if (screen === 14) {
     content = (
       <PaperShell onExit={saveAndExit} face footer={escapeFooter}>
@@ -4119,34 +4175,47 @@ const Onboarding = () => {
           Your time zone · {timeZone}
         </p>
 
-        {/* 1 · One feedback question */}
-        <div style={{ marginBlockStart: 24 }}>
-          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-            One question
-          </p>
-          <p style={{ margin: "8px 0 0", fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink }}>
-            Was that read accurate about you?
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 14 }}>
-            {optionButton("reveal-yes", "Yes, close", () => void handleRevealFeedback(5, revealMessage), revealRating === 5)}
-            {optionButton("reveal-partly", "Partly", () => void handleRevealFeedback(3, revealMessage), revealRating === 3)}
-            {optionButton("reveal-no", "Not really", () => void handleRevealFeedback(1, revealMessage), revealRating === 1)}
-          </div>
-          {revealRating !== null ? (
-            <textarea
-              aria-label="What did it miss? (optional)"
-              value={revealMessage}
-              onChange={(e) => setRevealMessage(e.target.value)}
-              onBlur={() => { if (revealRating !== null && revealMessage.trim()) void handleRevealFeedback(revealRating, revealMessage.trim()); }}
-              placeholder="What did it miss? (optional)"
-              rows={3}
-              style={{ ...fieldStyle, marginBlockStart: 14, resize: "vertical" }}
-            />
-          ) : null}
-        </div>
+        {/* ONE primary. Finishing happens here; nothing is sold beside it. */}
+        <Actions style={{ marginBlockStart: 26 }}>
+          <OBButton
+            loading={finishing}
+            loadingLabel="Finishing…"
+            onClick={async () => {
+              if (finishing) return;
+              setFinishing(true);
+              try {
+                /* Finished first, and staying — the seat beat is a postscript,
+                   never a toll gate in front of Home. */
+                await finish({ stay: true });
+              } catch (e) {
+                console.error("[journey] finish threw", e);
+              } finally {
+                setFinishing(false);
+              }
+              go(SEAT_SCREEN);
+            }}
+          >
+            Take me in
+          </OBButton>
+        </Actions>
+        <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+          I'll email your read. If it got you wrong, reply to that email and tell me — that's how I learn you.
+        </p>
 
-        {/* 2 · What a seat adds, and what stays out of reach */}
-        <div style={{ marginBlockStart: 28, padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
+        {connected || userId ? null : (
+          <p style={{ ...bodyLight, textAlign: "center" }}>{CONNECT_AFTER_ACCOUNT}</p>
+        )}
+
+        <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
+      </PaperShell>
+    );
+  }
+
+  /* 14.5 — THE SEAT. Its own beat, and the journey is already complete. */
+  if (screen === SEAT_SCREEN) {
+    content = (
+      <PaperShell onExit={() => navigate("/home", { replace: true })} footer={escapeFooter}>
+        <div style={{ padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
           <p style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", fontWeight: 700, color: OB.ink }}>
             {SEAT_HEADING}
           </p>
@@ -4179,19 +4248,14 @@ const Onboarding = () => {
           <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_PRICE_SUBLINE}</p>
           <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.ink }}>{SEAT_CONSTRAINT}</p>
           <Actions style={{ marginBlockStart: 16 }}>
-            {/* One primary. Both seat doors complete the journey before they
-                leave — a reserved seat used to strand the member on screen 14
-                with no read email and onboarding_step stuck at 3. */}
-            <OBButton onClick={() => void finish()}>Take me in</OBButton>
-            <OBButton
-              variant="secondary"
-              style={{ borderColor: OB.blue, color: OB.blue, background: "#FFFFFF" }}
-              onClick={() => void leaveForSeat("reserve_69")}
-            >
-              {SEAT_CTA}
-            </OBButton>
-            <OBButton variant="tertiary" onClick={() => void leaveForSeat("keep_posted")}>
+            {/* ONE primary — the seat, because the journey is already saved and
+                Home is one quiet control away. */}
+            <OBButton onClick={() => navigate(`${SEAT_PATH}?intent=reserve_69`)}>{SEAT_CTA}</OBButton>
+            <OBButton variant="tertiary" onClick={() => navigate(`${SEAT_PATH}?intent=keep_posted`)}>
               {SEAT_CTA_SECONDARY}
+            </OBButton>
+            <OBButton variant="tertiary" onClick={() => navigate("/home", { replace: true })}>
+              Not now — take me in
             </OBButton>
             {connected || !userId ? null : (
               /* A settings action, dressed as one: quiet, in the same row. */
@@ -4210,16 +4274,11 @@ const Onboarding = () => {
             </p>
           )}
         </div>
-
-
-        {connected || userId ? null : (
-          <p style={{ ...bodyLight, textAlign: "center" }}>{CONNECT_AFTER_ACCOUNT}</p>
-        )}
-
-        <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
+        <p style={footnote}>You're already in. Your read is saved and your morning is set.</p>
       </PaperShell>
     );
   }
+
 
   return (
     <>
