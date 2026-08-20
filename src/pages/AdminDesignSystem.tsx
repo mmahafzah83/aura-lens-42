@@ -195,7 +195,7 @@ function ColorEditor({
           fontSize: 12,
           textTransform: "uppercase",
           letterSpacing: "0.06em",
-          color: themed ? "var(--brand, #B08D3A)" : "var(--ink-5, #777)",
+          color: themed ? "var(--brand, #0670C4)" : "var(--ink-5, #777)",
           minWidth: 50,
           textAlign: "right",
         }}
@@ -219,13 +219,13 @@ function PreviewCard({ tokens, theme }: { tokens: DesignTokens; theme: Theme }) 
         padding: 24,
         borderRadius: 12,
         border: `1px solid ${get("brand_line", "rgba(6,112,196,0.28)")}`,
-        fontFamily: String(t.body || "DM Sans") + ", sans-serif",
+        fontFamily: String(t.body || "Inter") + ", sans-serif",
       }}
     >
-      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em", color: get("brand", "#B08D3A"), marginBottom: 8, fontWeight: 600 }}>
+      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em", color: get("brand", "#0670C4"), marginBottom: 8, fontWeight: 600 }}>
         Preview · live
       </div>
-      <div style={{ fontFamily: String(t.display || "Cormorant Garamond") + ", serif", fontSize: 28, fontWeight: 600, marginBottom: 8 }}>
+      <div style={{ fontFamily: String(t.display || "Inter") + ", serif", fontSize: 28, fontWeight: 600, marginBottom: 8 }}>
         Sample Card Heading
       </div>
       <div style={{ fontSize: 14, lineHeight: 1.625, marginBottom: 16, opacity: 0.85 }}>
@@ -234,7 +234,7 @@ function PreviewCard({ tokens, theme }: { tokens: DesignTokens; theme: Theme }) 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <button
           style={{
-            background: get("brand", "#B08D3A"),
+            background: get("brand", "#0670C4"),
             color: get("paper", "#14110C"),
             border: "none",
             padding: "8px 16px",
@@ -248,7 +248,7 @@ function PreviewCard({ tokens, theme }: { tokens: DesignTokens; theme: Theme }) 
         </button>
         <button
           style={{
-            background: get("signal", "#F97316"),
+            background: get("signal", "#E0A82E"),
             color: "#fff",
             border: "none",
             padding: "8px 16px",
@@ -263,7 +263,7 @@ function PreviewCard({ tokens, theme }: { tokens: DesignTokens; theme: Theme }) 
         <button
           style={{
             background: "transparent",
-            color: get("brand", "#B08D3A"),
+            color: get("brand", "#0670C4"),
             border: `0.5px solid ${get("brand_line", "rgba(6,112,196,0.28)")}`,
             padding: "8px 16px",
             borderRadius: 6,

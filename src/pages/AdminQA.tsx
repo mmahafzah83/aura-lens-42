@@ -41,9 +41,9 @@ type IframeStatus = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  pass: "#16a34a",
-  warn: "#d97706",
-  fail: "#dc2626",
+  pass: "#12805C",
+  warn: "#9A6F12",
+  fail: "#C0392B",
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -673,7 +673,7 @@ const AdminQA = () => {
           <div style={{ marginTop: 16 }}>
             <div style={{ fontSize: 14, color: "#D4CCBC" }}>{progress}</div>
             <div style={{ marginTop: 6, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: running ? "60%" : "100%", background: "var(--brand,#B08D3A)", transition: "width 0.4s" }} />
+              <div style={{ height: "100%", width: running ? "60%" : "100%", background: "var(--brand,#0670C4)", transition: "width 0.4s" }} />
             </div>
           </div>
         )}
@@ -981,7 +981,7 @@ const AdminQA = () => {
         <div onClick={() => setBatchModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: "#15140f", border: "1px solid rgba(197,165,90,0.4)", borderRadius: 10, padding: 20, width: "min(900px, 100%)", maxHeight: "85vh", display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h3 style={{ margin: 0, fontFamily: "'Cormorant Garamond', serif", fontSize: 24, color: "#F4EFE6" }}>{batchModal.title}</h3>
+              <h3 style={{ margin: 0, fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", fontSize: 24, color: "#F4EFE6" }}>{batchModal.title}</h3>
               <button onClick={() => setBatchModal(null)} style={{ background: "transparent", border: "none", color: "#F4EFE6", cursor: "pointer" }}><X size={18} /></button>
             </div>
             <textarea readOnly value={batchModal.text} style={{ width: "100%", flex: 1, minHeight: 360, background: "var(--paper)", color: "#F4EFE6", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: 12, fontFamily: "var(--font-mono, monospace)", fontSize: 14, lineHeight: 1.5 }} />
@@ -1007,17 +1007,17 @@ const cardStyle: React.CSSProperties = {
 
 const thStyle: React.CSSProperties = { padding: "10px 12px", fontWeight: 600 };
 const tdStyle: React.CSSProperties = { padding: "10px 12px", color: "#F4EFE6" };
-const linkBtn: React.CSSProperties = { background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#F4EFE6", padding: "5px 12px", borderRadius: 4, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'DM Sans', sans-serif)" };
+const linkBtn: React.CSSProperties = { background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#F4EFE6", padding: "5px 12px", borderRadius: 4, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'Inter', sans-serif)" };
 
 const primaryBtnStyle: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
-  background: "var(--brand,#B08D3A)", color: "var(--paper)", border: "none",
-  padding: "11px 20px", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
+  background: "var(--brand,#0670C4)", color: "var(--paper)", border: "none",
+  padding: "11px 20px", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'Inter', sans-serif)",
 };
 const secondaryBtnStyle: React.CSSProperties = {
   background: "transparent", color: "#F4EFE6",
   border: "1px solid rgba(255,255,255,0.2)", padding: "10px 16px",
-  borderRadius: 6, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
+  borderRadius: 6, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'Inter', sans-serif)",
 };
 
 function PrimaryBtn(p: React.ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -1030,7 +1030,7 @@ function SecondaryBtn(p: React.ButtonHTMLAttributes<HTMLButtonElement>) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section style={{ marginTop: 32 }}>
-      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 500, margin: "0 0 14px", borderBottom: "1px solid rgba(255,255,255,0.12)", paddingBottom: 10, color: "#F4EFE6", letterSpacing: 0.2 }}>{title}</h2>
+      <h2 style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 500, margin: "0 0 14px", borderBottom: "1px solid rgba(255,255,255,0.12)", paddingBottom: 10, color: "#F4EFE6", letterSpacing: 0.2 }}>{title}</h2>
       {children}
     </section>
   );
@@ -1039,7 +1039,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Stat({ label, value, color, emphasis }: { label: string; value: number; color?: string; emphasis?: boolean }) {
   return (
     <div style={{ ...cardStyle, ...(emphasis ? { background: "rgba(197,165,90,0.08)", border: "1px solid rgba(197,165,90,0.4)" } : null) }}>
-      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "var(--brand, #B08D3A)" : "#B8B0A2", fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "var(--brand, #0670C4)" : "#B8B0A2", fontWeight: 600 }}>{label}</div>
       <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: emphasis ? 40 : 30, marginTop: 6, color: color || "#F4EFE6", fontWeight: emphasis ? 700 : 500 }}>{value}</div>
     </div>
   );
@@ -1306,7 +1306,7 @@ function TestingPanel() {
         </select>
 
         {selectedIsFounder && (
-          <div style={{ marginTop: 10, fontSize: 14, color: "#dc2626", border: "1px solid rgba(220,38,38,0.5)", background: "rgba(220,38,38,0.08)", borderRadius: 6, padding: "10px 12px" }}>
+          <div style={{ marginTop: 10, fontSize: 14, color: "#C0392B", border: "1px solid rgba(220,38,38,0.5)", background: "rgba(220,38,38,0.08)", borderRadius: 6, padding: "10px 12px" }}>
             This account holds 182 captures and 6 reports. Reset only a test member.
           </div>
         )}
@@ -1335,7 +1335,7 @@ function TestingPanel() {
         />
 
         <div style={{ marginTop: 12 }}>
-          <PrimaryBtn onClick={runReset} disabled={!canReset} style={{ background: "#dc2626", color: "#fff", minHeight: 44 }}>
+          <PrimaryBtn onClick={runReset} disabled={!canReset} style={{ background: "#C0392B", color: "#fff", minHeight: 44 }}>
             {resetting ? <Loader2 size={14} className="animate-spin" /> : null} Reset this journey
           </PrimaryBtn>
         </div>
@@ -1451,7 +1451,7 @@ function ResultRowView({ r, onCopyFix, onMarkKnown }: {
   const [open, setOpen] = useState(r.status !== "pass");
   const d = r.details || {};
   const severity = (d.severity as string) || (r.status === "fail" ? "high" : r.status === "warn" ? "medium" : "low");
-  const sevColor = severity === "critical" ? "#dc2626" : severity === "high" ? "#ea580c" : severity === "medium" ? "#d97706" : "#65a30d";
+  const sevColor = severity === "critical" ? "#C0392B" : severity === "high" ? "#9A6F12" : severity === "medium" ? "#9A6F12" : "#12805C";
   const isColor = r.category === "colors" || r.category === "accessibility";
   const fg: string | undefined = (d as any).fg;
   const bg: string | undefined = (d as any).bg;

@@ -13,8 +13,8 @@ type Finding = {
 };
 
 const SEV_COLOR: Record<Finding["severity"], string> = {
-  critical: "#dc2626",
-  warn: "#d97706",
+  critical: "#C0392B",
+  warn: "#9A6F12",
   info: "#0891b2",
 };
 
@@ -98,10 +98,10 @@ export default function HealthFindingsPanel() {
           <Loader2 className="w-4 h-4 animate-spin" /> Loading findings…
         </div>
       ) : error ? (
-        <div style={{ color: "#F87171", fontSize: 13 }}>{error}</div>
+        <div style={{ color: "#C0392B", fontSize: 13 }}>{error}</div>
       ) : rows.length === 0 ? (
         <div className="flex items-center gap-2" style={{ color: "var(--glass-2, #8a8a95)", fontSize: 13 }}>
-          <CheckCircle2 size={14} style={{ color: "#10b981" }} />
+          <CheckCircle2 size={14} style={{ color: "#12805C" }} />
           {showResolved ? "No findings recorded." : "No open findings — all checks passing."}
         </div>
       ) : (
@@ -128,7 +128,7 @@ export default function HealthFindingsPanel() {
                       color: SEV_COLOR[r.severity], textTransform: "uppercase",
                     }}>{r.severity}</span>
                     <code style={{ fontSize: 11, color: "var(--glass, #eaeaf0)" }}>{r.code}</code>
-                    {resolved && <span style={{ fontSize: 10, color: "#10b981" }}>resolved</span>}
+                    {resolved && <span style={{ fontSize: 10, color: "#12805C" }}>resolved</span>}
                   </div>
                   <div style={{ fontSize: 13, color: "var(--glass, #eaeaf0)", marginTop: 3, lineHeight: 1.4 }}>
                     {r.detail}

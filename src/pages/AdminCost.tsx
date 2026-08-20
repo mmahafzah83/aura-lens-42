@@ -44,7 +44,7 @@ const card: React.CSSProperties = {
   padding: 20,
 };
 const h2: React.CSSProperties = {
-  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
   fontSize: 22,
   color: "var(--glass)",
   margin: "0 0 12px 0",
@@ -58,7 +58,7 @@ const kpiLabel: React.CSSProperties = {
   marginBottom: 8,
 };
 const kpiValue: React.CSSProperties = {
-  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
   fontSize: 32,
   color: "var(--glass)",
   fontWeight: 500,
@@ -83,7 +83,7 @@ const td: React.CSSProperties = {
 
 function BudgetBar({ spend, budget }: { spend: number; budget: number }) {
   const ratio = budget > 0 ? spend / budget : 0;
-  const color = ratio > 1 ? "#dc2626" : ratio > 0.7 ? "#d97706" : "#16a34a";
+  const color = ratio > 1 ? "#C0392B" : ratio > 0.7 ? "#9A6F12" : "#12805C";
   return (
     <div style={{ marginTop: 12 }}>
       <div
@@ -509,7 +509,7 @@ export default function AdminCost() {
                     {" — "}{money(Number(s.amount_usd) || 0)} / {s.cycle}
                     {s.renews_on && <> · renews {s.renews_on}</>}
                     {soon && (
-                      <div style={{ color: "#d97706", fontSize: 12, marginTop: 2 }}>
+                      <div style={{ color: "#9A6F12", fontSize: 12, marginTop: 2 }}>
                         renews in {d} day{d === 1 ? "" : "s"} — confirm you still use it.
                       </div>
                     )}
@@ -545,7 +545,7 @@ export default function AdminCost() {
                       onClick={() => toggleSub(s)}
                       style={{
                         background: "transparent",
-                        color: s.status === "active" ? "#16a34a" : "var(--glass-2)",
+                        color: s.status === "active" ? "#12805C" : "var(--glass-2)",
                         border: "1px solid var(--hair)",
                         borderRadius: 4,
                         padding: "2px 8px",
@@ -781,7 +781,7 @@ export default function AdminCost() {
                     }}
                     formatter={(v: any) => [`$${Number(v).toFixed(4)}`, "spend"]}
                   />
-                  <Bar dataKey="spend" fill="#C5A55A" />
+                  <Bar dataKey="spend" fill="#0670C4" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

@@ -79,14 +79,14 @@ export default function AdminGuideHealth() {
   }, [articles]);
 
   const sectionTitle: React.CSSProperties = {
-    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
     fontSize: 24,
     letterSpacing: "0.02em",
     color: "var(--ink)",
     margin: "32px 0 12px",
   };
   const card: React.CSSProperties = {
-    background: "var(--vellum, #FBF8F1)",
+    background: "var(--vellum, #FFFFFF)",
     border: "1px solid var(--brand-line)",
     borderRadius: 10,
     padding: "18px 20px",
@@ -115,7 +115,7 @@ export default function AdminGuideHealth() {
       subtitle="Read-only view of corpus coverage and tooltip/hint slug gaps."
     >
         {error && (
-          <div style={{ ...card, borderColor: "#dc2626", color: "#dc2626", marginTop: 16 }}>
+          <div style={{ ...card, borderColor: "#C0392B", color: "#C0392B", marginTop: 16 }}>
             {error}
           </div>
         )}
@@ -127,7 +127,7 @@ export default function AdminGuideHealth() {
             <div style={{ color: "var(--ink-3)", fontSize: 13 }}>Loading…</div>
           ) : misses.length === 0 ? (
             <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink-3)", fontSize: 14 }}>
-              <span style={{ color: "#16a34a", fontSize: 18 }}>✓</span>
+              <span style={{ color: "#12805C", fontSize: 18 }}>✓</span>
               No gaps — every slug the app requests has a matching article.
             </div>
           ) : (
@@ -143,7 +143,7 @@ export default function AdminGuideHealth() {
               <tbody>
                 {misses.map((m) => (
                   <tr key={`${m.slug}:${m.surface}`}>
-                    <td style={{ ...cellTd, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 12 }}>{m.slug}</td>
+                    <td style={{ ...cellTd, fontFamily: "'IBM Plex Mono', ui-monospace, monospace", fontSize: 12 }}>{m.slug}</td>
                     <td style={cellTd}>{m.surface}</td>
                     <td style={{ ...cellTd, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{m.count}</td>
                     <td style={{ ...cellTd, color: "var(--ink-3)" }}>{new Date(m.last_seen).toLocaleString()}</td>
@@ -162,7 +162,7 @@ export default function AdminGuideHealth() {
           ) : (
             <>
               <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 14 }}>
-                <div style={{ fontSize: 32, fontFamily: "'Cormorant Garamond', Georgia, serif", color: "var(--brand)" }}>{total}</div>
+                <div style={{ fontSize: 32, fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", color: "var(--brand)" }}>{total}</div>
                 <div style={{ color: "var(--ink-3)", fontSize: 13 }}>total articles</div>
               </div>
 
@@ -231,7 +231,7 @@ export default function AdminGuideHealth() {
                   {open && (
                     <ul style={{ margin: 0, padding: "0 0 10px 22px", listStyle: "disc", color: "var(--ink-3)" }}>
                       {byCategory[cat].map((a) => (
-                        <li key={a.slug} style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 12, padding: "2px 0" }}>
+                        <li key={a.slug} style={{ fontFamily: "'IBM Plex Mono', ui-monospace, monospace", fontSize: 12, padding: "2px 0" }}>
                           {a.slug}
                           <span style={{ color: "var(--ink-4)", marginLeft: 8 }}>
                             [{(a.surfaces || []).join(", ") || "—"}]

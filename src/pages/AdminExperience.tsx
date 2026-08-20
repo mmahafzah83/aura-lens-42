@@ -56,7 +56,7 @@ const SectionTitle = ({ title, subtitle }: { title: string; subtitle: string }) 
   <div className="mb-4">
     <h2
       className="text-2xl mb-1"
-      style={{ fontFamily: "Cormorant Garamond, serif", color: "var(--brand)", letterSpacing: "0.02em" }}
+      style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif", color: "var(--brand)", letterSpacing: "0.02em" }}
     >
       {title}
     </h2>
@@ -232,7 +232,7 @@ const AdminExperience = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h3
                     className="text-lg"
-                    style={{ fontFamily: "Cormorant Garamond, serif", color: "var(--ink-7)" }}
+                    style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif", color: "var(--ink-7)" }}
                   >
                     {cap(bg.page_key)}
                   </h3>
@@ -517,7 +517,7 @@ const ColorRow = ({
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="#B08D3A or rgba(...)"
+        placeholder="#0670C4 or rgba(...)"
         className="text-xs h-9"
         style={{ backgroundColor: "var(--ink)", borderColor: "var(--ink-3)", color: "var(--ink-7)" }}
       />

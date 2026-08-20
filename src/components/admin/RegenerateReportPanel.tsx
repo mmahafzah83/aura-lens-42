@@ -124,7 +124,7 @@ export default function RegenerateReportPanel() {
           }}
         >
           <div style={{ marginBottom: 6 }}>
-            <span style={{ color: result.ok ? "#10b981" : "#dc2626" }}>{result.ok ? "OK" : "FAIL"}</span>
+            <span style={{ color: result.ok ? "#12805C" : "#C0392B" }}>{result.ok ? "OK" : "FAIL"}</span>
             {typeof result.anthropic_status === "number" && <> · anthropic {result.anthropic_status}</>}
             {typeof result.result_keys === "number" && <> · {result.result_keys} keys</>}
             {result.wrote && <> · written</>}

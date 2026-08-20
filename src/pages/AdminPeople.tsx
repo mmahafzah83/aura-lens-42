@@ -52,9 +52,9 @@ const statusOf = (r: Row): Status => {
 };
 
 const STATUS_COLOR: Record<Status, string> = {
-  activated: "#16a34a",
-  stalled: "#d97706",
-  "at-risk": "#dc2626",
+  activated: "#12805C",
+  stalled: "#9A6F12",
+  "at-risk": "#C0392B",
   new: "#3b82f6",
 };
 
@@ -72,7 +72,7 @@ const kpiLabel: React.CSSProperties = {
   marginBottom: 6,
 };
 const kpiValue: React.CSSProperties = {
-  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif",
   fontSize: 28,
   color: "var(--glass)",
   fontWeight: 500,
@@ -184,7 +184,7 @@ function Drilldown({
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 16 }}>
           <div>
-            <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 24 }}>
+            <div style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", fontSize: 24 }}>
               {row.first_name || row.email || row.user_id.slice(0, 8)}
             </div>
             <div style={{ fontSize: 12, color: "var(--glass-2)", marginTop: 4 }}>
@@ -469,7 +469,7 @@ export default function AdminPeople() {
           <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> Loading people…
         </div>
       ) : error ? (
-        <div style={{ ...card, textAlign: "center", padding: 32, color: "#fca5a5" }}>
+        <div style={{ ...card, textAlign: "center", padding: 32, color: "#C0392B" }}>
           {error}
         </div>
       ) : !filtered[0] ? (
@@ -483,7 +483,7 @@ export default function AdminPeople() {
               style={{
                 ...card,
                 marginBottom: 20,
-                borderLeft: "4px solid #F97316",
+                borderLeft: "4px solid #5B6673",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>

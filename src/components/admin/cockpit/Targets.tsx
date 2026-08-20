@@ -91,7 +91,7 @@ export function TargetLine({
   const t = targetFor(state.rows, metricKey);
   const line = targetGapLine(t, current);
   return (
-    <div style={{ fontFamily: MONO, fontSize: 10, color: line.met ? C.teal : C.muted, marginTop: 2 }}>
+    <div style={{ fontFamily: MONO, fontSize: 10, color: line.met ? C.tealText : C.muted, marginTop: 2 }}>
       ↳ {line.text}
       {!line.hasTarget && onSet && (
         <>

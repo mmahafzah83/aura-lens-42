@@ -526,7 +526,7 @@ export default function Admin() {
         <Label>Is anything on fire?</Label>
         <div style={{ height: 14 }} />
         {needs.length === 0 ? (
-          <div style={{ fontFamily: SERIF, fontSize: 22, color: C.teal }}>Nothing needs you today.</div>
+          <div style={{ fontFamily: SERIF, fontSize: 22, color: C.tealText }}>Nothing needs you today.</div>
         ) : (
           needsFindings
         )}
@@ -706,7 +706,7 @@ export default function Admin() {
               r.first_name,
               r.captures,
               r.drafts,
-              <span key="li" style={{ color: r.linkedin === "live" ? C.teal : r.linkedin === "dropped" ? C.ox : C.muted }}>
+              <span key="li" style={{ color: r.linkedin === "live" ? C.tealText : r.linkedin === "dropped" ? C.ox : C.muted }}>
                 {r.linkedin}
               </span>,
               r.days_since_capture === null || r.days_since_capture === undefined ? (
@@ -908,7 +908,7 @@ export default function Admin() {
               head={["Person", "Score", "Date", "What they wrote"]}
               rows={feedback.map((f: any) => [
                 f.first_name ?? "Someone",
-                <span key="r" style={{ color: Number(f.rating) >= 9 ? C.teal : Number(f.rating) >= 7 ? C.amber : C.ox }}>
+                <span key="r" style={{ color: Number(f.rating) >= 9 ? C.tealText : Number(f.rating) >= 7 ? C.amber : C.ox }}>
                   {f.rating}
                 </span>,
                 f.date,
@@ -1023,7 +1023,7 @@ export default function Admin() {
             rows={[
               ...(p.jobs?.failed ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.ox }}>{dot(C.ox)}failed in 24h</span>, j.schedule, j.last_run ?? "never"]),
               ...(p.jobs?.dead ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.ox }}>{dot(C.ox)}missed its window</span>, j.schedule, j.last_run ?? "never"]),
-              ...(p.jobs?.ok ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.teal }}>{dot(C.teal)}ran clean</span>, j.schedule, j.last_run ?? "never"]),
+              ...(p.jobs?.ok ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.tealText }}>{dot(C.teal)}ran clean</span>, j.schedule, j.last_run ?? "never"]),
               ...(p.jobs?.not_due ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.muted }}>{dot(C.muted)}not due yet</span>, j.schedule, j.last_run ?? "never"]),
             ]}
           />
@@ -1213,7 +1213,7 @@ export default function Admin() {
               <Chip tone={liveliness.tone} title={liveliness.note}>
                 {liveliness.text} · {liveliness.note}
               </Chip>
-              <Btn onClick={refresh} disabled={refreshing}>
+              <Btn tone="ox" onClick={refresh} disabled={refreshing}>
                 {refreshing ? "Refreshing…" : "Refresh now"}
               </Btn>
             </div>
@@ -1381,7 +1381,7 @@ function auditTable(pairs: any[], verify: any) {
           x.route_a,
           x.route_b,
           `${x.a ?? "?"} / ${x.b ?? "?"}`,
-          <span key="ag" style={{ color: x.agree ? C.teal : C.ox }}>
+          <span key="ag" style={{ color: x.agree ? C.tealText : C.ox }}>
             {x.agree ? "✓" : "✗"}
           </span>,
           verify === null ? (
@@ -1389,7 +1389,7 @@ function auditTable(pairs: any[], verify: any) {
           ) : live === null ? (
             <span key="l" style={{ color: C.muted }}>not covered</span>
           ) : (
-            <span key="l" style={{ color: live === N(x.a) ? C.teal : C.ox }}>
+            <span key="l" style={{ color: live === N(x.a) ? C.tealText : C.ox }}>
               {live} {live === N(x.a) ? "pass" : "FAIL"}
             </span>
           ),
