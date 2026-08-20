@@ -522,10 +522,10 @@ serve(async (req) => {
     if (!user) return json({ error: "unauthorized" }, 401);
     userRef = user.id;
 
-    run = await startRun(undefined, { operation: "studio_slides", user_id: user.id });
+    const body = await req.json().catch(() => ({}));
+    run = await startRun(undefined, { id: runIdFrom(body), operation: "studio_slides", user_id: user.id });
     run.mark(OPERATION_STAGES.studio_slides[0]);
 
-    const body = await req.json().catch(() => ({}));
     // Family first: a colourway is only meaningful inside its template.
     const template = resolveTemplate(body.template);
     const theme = resolveTheme(body.theme, template);
