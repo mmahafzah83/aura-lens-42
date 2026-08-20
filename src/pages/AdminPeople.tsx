@@ -333,6 +333,20 @@ export default function AdminPeople() {
     } catch {
       setMetrics(null);
     }
+    try {
+      const { data: attr } = await supabase.rpc("posts_attribution");
+      const a = Array.isArray(attr) ? attr[0] : attr;
+      setAttribution(a ? {
+        total: Number(a.total ?? 0),
+        member: Number(a.member ?? 0),
+        aura: Number(a.aura ?? 0),
+        machine: Number(a.machine ?? 0),
+        unknown: Number(a.unknown ?? 0),
+      } : null);
+    } catch {
+      setAttribution(null);
+    }
+
     setLoading(false);
   };
 
