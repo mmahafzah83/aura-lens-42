@@ -4241,19 +4241,16 @@ const Onboarding = () => {
           I'll email your read. If it got you wrong, reply to that email and tell me — that's how I learn you.
         </p>
 
-        {connected || userId ? null : (
-          <p style={{ ...bodyLight, textAlign: "center" }}>{CONNECT_AFTER_ACCOUNT}</p>
-        )}
-
         <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
       </PaperShell>
     );
   }
 
-  /* 14.5 — THE SEAT. Its own beat, and the journey is already complete. */
+  /* 14.5 — THE SEAT. Its own beat, and the journey is already complete.
+     No escape footer: "finish later" would un-finish a finished journey. */
   if (screen === SEAT_SCREEN) {
     content = (
-      <PaperShell onExit={() => navigate("/home", { replace: true })} footer={escapeFooter}>
+      <PaperShell onExit={() => navigate("/home", { replace: true })} footer={null}>
         <div style={{ padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
           <p style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", fontWeight: 700, color: OB.ink }}>
             {SEAT_HEADING}
