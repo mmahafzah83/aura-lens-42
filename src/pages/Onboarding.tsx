@@ -3941,20 +3941,20 @@ const Onboarding = () => {
     /* Minting the share link and copying it live on the after-keep screen —
        nothing on the reveal competes with the one decision. */
     content = (
-      <div className="obc" style={{
-        minBlockSize: "100dvh",
-        overflow: "clip",
-        /* Blue, and only blue. Cyan is decoration — never a fill. */
-        background: "linear-gradient(170deg, var(--ob-blue), var(--ob-blue-light))",
-        display: "flex", alignItems: "center", justifyContent: "center", padding: "28px 16px",
-      }}>
-        <div className="obc-in" style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)" }}>
+      <BlueShell onExit={saveAndExit}>
+        <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)", marginInline: "auto" }}>
           {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : revealLoading ? (
-            /* The read may already be finished and sitting in the database.
-               While we are still asking, say nothing about where it is. */
-            <div role="status" style={{ textAlign: "center", color: "var(--ob-white)" }}>
-              <p style={{ fontSize: 16, lineHeight: 1.6 }}>Opening your read…</p>
-            </div>
+            /* A wait like any other: named stage, real counter, and a door
+               after a minute. The read may already be in the database — while
+               we are still asking, we say nothing about where it is. */
+            <WorkingPanel
+              operation="market_read"
+              title="Opening your read"
+              onNight
+              runId={revealOpenRunId}
+              stages={[{ key: "open", label: "Fetching the read Aura wrote for you", state: "active" }]}
+              onCarryOn={{ label: "Carry on without it", action: () => go(SHARE_SCREEN) }}
+            />
           ) : (
             <div style={{ textAlign: "center", color: "var(--ob-white)" }}>
               <p style={{ fontSize: 16, lineHeight: 1.6 }}>
@@ -3993,10 +3993,19 @@ const Onboarding = () => {
           {/* Share copy is not edited before the decision to share — it lives on
              the after-keep screen. */}
           <Actions style={{ marginBlockStart: 20 }}>
-          {/* ONE primary. Every other option moved after the decision. */}
-          <OBButton disabled={busy} loading={buildingReport} loadingLabel="Building your read…"
-            onClick={async () => { if (brandPaper) await downloadFullReport(); go(SHARE_SCREEN); }}
-            style={{ background: "#FFFFFF", color: OB.blue }}>{ENDING.cta}</OBButton>
+          {/* ONE primary, and it only continues. A button labelled "keep" does
+             not start a ten-second file download by surprise: downloading is
+             its own control, with its own busy state. */}
+          <OBButton disabled={busy} onClick={() => go(SHARE_SCREEN)}
+            style={{ background: "#FFFFFF", color: OB.blue }}>Continue</OBButton>
+          {brandPaper ? (
+            <OBButton variant="secondary" disabled={busy} loading={buildingReport}
+              loadingLabel="Building your report…"
+              onClick={() => void downloadFullReport()}
+              style={{ borderColor: "rgba(255,255,255,.6)", color: "#FFFFFF", background: "transparent" }}>
+              Download my full report (PDF)
+            </OBButton>
+          ) : null}
           {brandPaper ? (
             brandPaper.the_gap || brandPaper.own_words_quote ? (
               <p style={{
@@ -4017,8 +4026,6 @@ const Onboarding = () => {
               textDecoration: "underline", padding: "10px 0",
             }}>View it on LinkedIn</a>
           ) : null}
-          <OBButton variant="tertiary" onClick={() => go(SHARE_SCREEN)}
-            style={{ color: "rgba(255,255,255,.72)" }}>Continue without downloading</OBButton>
           </Actions>
           <p style={{ margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "rgba(255,255,255,.85)", textAlign: "center" }}>
             {REPORT_FREE_LINE}
@@ -4033,9 +4040,10 @@ const Onboarding = () => {
           </>
           ) : null}
         </div>
-      </div>
+      </BlueShell>
     );
   }
+
 
   /* 13.5 — AFTER HE HAS KEPT IT. Sharing is offered here and nowhere earlier. */
   if (screen === SHARE_SCREEN) {
