@@ -315,42 +315,34 @@ export default function RequestAccess() {
                   <span className="ra-price-s">{SEAT_PRICE_SUBLINE}</span>
                 </div>
 
-                {/* Two doors, same size and shape — the split between them is the measurement. */}
-                <div className="ra-doors">
-                  <button
-                    type="submit"
-                    disabled={status === "loading"}
-                    className="ra-door ra-door-fill"
-                    onClick={() => setIntent(INTENT_RESERVE)}
-                  >
-                    {status === "loading" && intent === INTENT_RESERVE
-                      ? <span className="ra-pulse">Sending…</span>
-                      : SEAT_CTA}
-                  </button>
+                <button
+                  type="submit"
+                  disabled={status === "loading"}
+                  className="ra-door ra-door-fill"
+                  onClick={() => setIntent(INTENT_RESERVE)}
+                >
+                  {status === "loading" && intent === INTENT_RESERVE
+                    ? <span className="ra-pulse">Sending…</span>
+                    : "Reserve my seat"}
+                </button>
+                <p className="ra-soft">
+                  <span className="ra-soft-q">Not ready to commit?</span>{" "}
                   <button
                     type="button"
+                    className="ra-soft-a"
                     disabled={status === "loading"}
-                    className="ra-door ra-door-line"
                     onClick={(e) => void handleSubmit(e, INTENT_KEEP_POSTED)}
                   >
-                    {status === "loading" && intent === INTENT_KEEP_POSTED
-                      ? <span className="ra-pulse">Sending…</span>
-                      : SEAT_CTA_SECONDARY}
+                    Just keep me posted
                   </button>
-                </div>
-                <p className="ra-reservenote">{SEAT_RESERVE_NOTE}</p>
+                </p>
               </form>
 
-              <p className="ra-legal">
-                Your data is protected under Saudi PDPL. See our{" "}
-                <Link to="/privacy">Privacy Policy</Link>.
+              <p className="ra-fine">
+                No card, nothing charged. You're telling me you want in at this price — I'll come to you when it opens.
               </p>
-              <p className="ra-legal">
-                Not ready for a seat? <Link to="/read">Read yourself free</Link> — no account,
-                ninety seconds.
-              </p>
-              <p className="ra-signin">
-                Already have a seat? <Link to="/auth">Sign in →</Link>
+              <p className="ra-fine ra-fine--small">
+                Protected under Saudi PDPL · <Link to="/privacy">Privacy Policy</Link> · Already have a seat? <Link to="/auth">Sign in →</Link>
               </p>
             </>
           )}
