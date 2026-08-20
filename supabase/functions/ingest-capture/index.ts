@@ -92,10 +92,10 @@ Deno.serve(withObserve("ingest-capture", async (req) => {
       });
     }
 
-    run = await startRun(supabase, { operation: "capture_ingest", user_id: user.id });
+    const body = await req.json();
+    run = await startRun(supabase, { id: runIdFrom(body), operation: "capture_ingest", user_id: user.id });
     run.mark(FETCH);
 
-    const body = await req.json();
     const { type, content, metadata, source_url } = body;
 
     if (!type || !content) {
