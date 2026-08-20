@@ -1905,7 +1905,9 @@ const Onboarding = () => {
   /* ── finishing ── */
   /* `destination` lets the seat doors complete the journey before they leave:
      the member who reserves a seat is still a finished member. */
-  const finish = async (opts?: { destination?: string }) => {
+  /** `stay: true` finishes the journey without leaving — the seat beat runs
+      after the member is already a finished member, never instead of it. */
+  const finish = async (opts?: { destination?: string; stay?: boolean }) => {
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
       if (reveal) {
