@@ -2017,6 +2017,16 @@ const Onboarding = () => {
     navigate(opts?.destination ?? "/home", { replace: true });
   };
 
+  /* The seat beat may only be seen by a finished member. Today the one route
+     in awaits finish() first; this makes that a property of the screen rather
+     than of the caller, so a new route in can never skip the finish. */
+  useEffect(() => {
+    if (screen !== SEAT_SCREEN || finishedRef.current) return;
+    console.warn("[journey] reached the seat beat unfinished — finishing now");
+    void finish({ stay: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
+
   /**
    * Connect in a popup. A full-page redirect from inside the flow throws the
    * member out at its most fragile moment, so the redirect is only the
