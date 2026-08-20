@@ -2994,19 +2994,30 @@ const Onboarding = () => {
     );
   }
 
-  /* 7 — NIGHT, three claims */
+  /* 7 — NIGHT, the capture payoff: real fragments, then what they become */
   if (screen === 7) {
+    const shown = claims.slice(0, 5);
     content = (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>Here's what Aura found in it.</h1>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
-          {claims.slice(0, 3).map((c, i) => (
-            <ClaimCard key={`${c.title}-${i}`} index={i} title={c.title} content={c.content} />
-          ))}
-        </div>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>
+          {shown.length ? "Here's what Aura found in it." : "Nothing came out of that one."}
+        </h1>
+        {shown.length ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
+            {shown.map((c, i) => (
+              <ClaimCard key={`${c.title}-${i}`} index={i} title={c.title} content={c.content} />
+            ))}
+          </div>
+        ) : (
+          <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 18 }}>
+            Some pages don't open to a reader. The link is kept against your record, and Aura
+            reads it again when your report is saved.
+          </p>
+        )}
         <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 22 }}>
           You'll know when something moves these — without going looking.
         </p>
+        <NextStrip count={shown.length} onNight />
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           gap: 8, justifyItems: "center", maxWidth: 420, margin: "22px auto 4px",
