@@ -3,7 +3,7 @@ import { Loader2, RefreshCw, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
-import { buildStages } from "@/lib/operationStages";
+import { useRunStages, newRunId } from "@/lib/useRunStages";
 import {
   PERSONA_LABELS,
   type RankBucket,
@@ -45,7 +45,8 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
   const [tab, setTab] = useState<TabKey>("headhunter");
   const genAbortRef = useRef<AbortController | null>(null);
   /* Every generate is a new run: the bar and the counter start from nothing. */
-  const [genRunId, setGenRunId] = useState(0);
+  /* Minted here, handed to the function, watched by the panel. */
+  const [genRunId, setGenRunId] = useState<string | null>(null);
 
   const load = async () => {
     if (!userId) return;
@@ -63,7 +64,8 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
 
   const generate = async () => {
     if (!userId || generating) return;
-    setGenRunId((n) => n + 1);
+    const id = newRunId();
+    setGenRunId(id);
     setGenerating(true);
     /* A hung function must have an exit. */
     genAbortRef.current?.abort();
@@ -72,7 +74,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
     const ceiling = window.setTimeout(() => ctrl.abort(), 4 * 60 * 1000);
     try {
       await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke("generate-market-mirror", { signal: ctrl.signal });
+      const { data, error } = await supabase.functions.invoke("generate-market-mirror", { body: { run_id: id }, signal: ctrl.signal });
       if (error) {
         const msg = (error as any)?.context?.error || error.message || "Generation failed";
         if (String(msg).includes("rate_limit") || (error as any)?.context?.status === 429) {
@@ -114,13 +116,15 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
   const text = row ? (row as any)[`${tab}_text`] as string | null : null;
   const gap = row?.gaps?.[`${tab}_gap` as keyof MirrorRow["gaps"]] as string | undefined;
 
+  const genRun = useRunStages("market_read", genRunId, { active: generating });
+
   const panelForRun = (
     <WorkingPanel
       onNight
       operation="market_read"
       runId={genRunId}
       title="Reading how the market sees you"
-      stages={buildStages("market_read", { completed: [], active: "gather" })}
+      stages={genRun.stages}
     />
   );
 
