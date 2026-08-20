@@ -374,6 +374,31 @@ const NightShell = ({ children, face, footer, onExit }: { children: React.ReactN
 };
 
 /**
+ * THE REVEAL SURFACE. Full-bleed blue, and inside the same chrome as every
+ * other journey screen — a payoff screen with no Back and no Finish later is
+ * the one place a hung read becomes a trap.
+ */
+const BlueShell = ({ children, onExit }: { children: React.ReactNode; onExit?: () => void }) => {
+  const { onBack, name, screen = 0 } = useContext(JourneyNav);
+  return (
+    <JourneyShell
+      onBack={onBack}
+      onExit={onExit ?? (() => {})}
+      name={name}
+      beat={beatOf(screen)}
+      sub={subOf(screen)}
+      fraction={journeyFraction(screen)}
+      background="linear-gradient(170deg, var(--ob-blue), var(--ob-blue-light))"
+      className="obc"
+    >
+      <div className="obc-in" style={{ inlineSize: "100%" }}>{children}</div>
+    </JourneyShell>
+  );
+};
+
+
+
+/**
  * `showProgress={false}` is for the two screens that are NOT the journey —
  * confirming who you are, and setting a password. They are the door, not a
  * third of the walk.
