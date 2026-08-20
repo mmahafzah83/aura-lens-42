@@ -528,6 +528,7 @@ export function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
                   key={j}
                   style={{
                     fontFamily: j === 0 ? SERIF : MONO,
+                    fontVariantNumeric: "tabular-nums",
                     fontSize: j === 0 ? 15 : 12,
                     color: C.ink,
                     padding: "9px 10px 9px 0",
