@@ -1329,7 +1329,7 @@ const Onboarding = () => {
        */
       if (!userId) {
         setLiBusy(false);
-        setStep1Phase(state0Read ? "result" : "ask");
+        setStep1Phase(((anonStateRef.current as any)?.read) ? "result" : "ask");
         await backToRead();
         return;
       }
