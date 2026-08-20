@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { detectLang } from "../_shared/lang.ts";
+import { writeLineage, type Contribution } from "../_shared/provenance.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -298,30 +300,53 @@ Deno.serve(async (req) => {
               continue;
             }
 
-            const { error: insErr } = await admin.from("content_items").insert({
-              user_id: userId,
-              type: "linkedin_post",
-              title: signal.signal_title,
-              body: content,
-              language: draftLang,
-              status: "draft",
-              signal_id: signal.id,
-              generation_params: {
-                source: "weekly_ready",
-                week: weekTag,
-                source_signal_id: signal.id,
+            const prov = json?.provenance ?? null;
+            const { data: created, error: insErr } = await admin
+              .from("content_items")
+              .insert({
+                user_id: userId,
+                type: "linkedin_post",
+                title: signal.signal_title,
+                body: content,
                 language: draftLang,
-                generated_at: new Date().toISOString(),
-              },
-            });
-            if (insErr) {
+                status: "draft",
+                signal_id: signal.id,
+                // Where this came from, as columns — not buried in JSON.
+                made_by: "aura",
+                produced_by: "weekly_drafts",
+                arrived_by: "generated_in_place",
+                confidence: "confirmed",
+                prompt_version: prov?.prompt_version ?? null,
+                model_used: prov?.model_used ?? null,
+                generation_params: {
+                  source: "weekly_ready",
+                  week: weekTag,
+                  source_signal_id: signal.id,
+                  language: draftLang,
+                  generated_at: new Date().toISOString(),
+                },
+              })
+              .select("id")
+              .single();
+            if (insErr || !created) {
               console.error(
                 `[prepare-weekly-drafts] insert failed user=${userId} signal=${signal.id}`,
-                insErr.message,
+                insErr?.message,
               );
               continue;
             }
+
+            // Nothing is created without its lineage.
+            const contributions: Contribution[] = Array.isArray(prov?.contributions)
+              ? [...prov.contributions]
+              : [];
+            if (!contributions.some((c) => c.kind === "signal")) {
+              contributions.push({ kind: "signal", id: signal.id, role: "topic" });
+            }
+            await writeLineage(admin, "content_items", created.id, contributions);
+
             draftsCreated++;
+
           } catch (e) {
             console.error(
               `[prepare-weekly-drafts] draft error user=${userId} signal=${signal.id}`,

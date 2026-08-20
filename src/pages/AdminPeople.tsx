@@ -295,6 +295,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     </div>
   );
 }
+type Attribution = { total: number; member: number; aura: number; machine: number; unknown: number };
+
+/** Counts read as numbers, not decoration: tabular mono, never colour-only. */
+const Num = ({ n }: { n: number }) => (
+  <span style={{ fontFamily: "'IBM Plex Mono', ui-monospace, monospace", fontVariantNumeric: "tabular-nums" }}>
+    {n.toLocaleString()}
+  </span>
+);
+
 
 export default function AdminPeople() {
   const [loading, setLoading] = useState(true);
@@ -304,6 +313,8 @@ export default function AdminPeople() {
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [selected, setSelected] = useState<Row | null>(null);
   const [copiedUid, setCopiedUid] = useState<string | null>(null);
+  const [attribution, setAttribution] = useState<Attribution | null>(null);
+
 
   const load = async () => {
     setLoading(true);
@@ -322,6 +333,20 @@ export default function AdminPeople() {
     } catch {
       setMetrics(null);
     }
+    try {
+      const { data: attr } = await supabase.rpc("posts_attribution");
+      const a = Array.isArray(attr) ? attr[0] : attr;
+      setAttribution(a ? {
+        total: Number(a.total ?? 0),
+        member: Number(a.member ?? 0),
+        aura: Number(a.aura ?? 0),
+        machine: Number(a.machine ?? 0),
+        unknown: Number(a.unknown ?? 0),
+      } : null);
+    } catch {
+      setAttribution(null);
+    }
+
     setLoading(false);
   };
 
@@ -563,6 +588,30 @@ export default function AdminPeople() {
             <div style={card}><div style={kpiLabel}>At-risk</div><div style={{ ...kpiValue, color: STATUS_COLOR["at-risk"] }}>{totals.atRisk}</div></div>
             <div style={card}><div style={kpiLabel}>New this week</div><div style={{ ...kpiValue, color: STATUS_COLOR.new }}>{totals.newWeek}</div></div>
           </div>
+
+          <div style={{ ...card, marginBottom: 24 }}>
+            <div style={kpiLabel}>Who wrote what</div>
+            <p style={{ fontSize: 13, lineHeight: 1.6, color: "var(--glass)", margin: 0 }}>
+              {attribution
+                ? (
+                  <>
+                    Of <Num n={attribution.total} /> posts:{" "}
+                    <Num n={attribution.member} /> written by members,{" "}
+                    <Num n={attribution.aura} /> drafted by Aura,{" "}
+                    <Num n={attribution.unknown} /> unattributed.
+                  </>
+                )
+                : "Counting…"}
+            </p>
+            {attribution && attribution.unknown > 0 && (
+              <p style={{ fontSize: 12.5, lineHeight: 1.6, color: "var(--glass-2)", margin: "6px 0 0" }}>
+                Unattributed means we do not know who wrote it. It is shown, not hidden,
+                and it is never guessed.
+              </p>
+            )}
+          </div>
+
+
 
           <div style={{ ...card, padding: 0, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>

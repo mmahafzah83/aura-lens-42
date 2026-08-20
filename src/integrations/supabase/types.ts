@@ -846,11 +846,17 @@ export type Database = {
       }
       content_items: {
         Row: {
+          arrived_by: string
           body: string
+          confidence: string
           created_at: string
           generation_params: Json
           id: string
           language: string
+          made_by: string
+          model_used: string | null
+          produced_by: string | null
+          prompt_version: string | null
           signal_id: string | null
           status: string
           title: string
@@ -859,11 +865,17 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          arrived_by?: string
           body?: string
+          confidence?: string
           created_at?: string
           generation_params?: Json
           id?: string
           language?: string
+          made_by?: string
+          model_used?: string | null
+          produced_by?: string | null
+          prompt_version?: string | null
           signal_id?: string | null
           status?: string
           title?: string
@@ -872,11 +884,17 @@ export type Database = {
           user_id: string
         }
         Update: {
+          arrived_by?: string
           body?: string
+          confidence?: string
           created_at?: string
           generation_params?: Json
           id?: string
           language?: string
+          made_by?: string
+          model_used?: string | null
+          produced_by?: string | null
+          prompt_version?: string | null
           signal_id?: string | null
           status?: string
           title?: string
@@ -893,6 +911,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      content_lineage: {
+        Row: {
+          content_id: string
+          content_table: string
+          contributor_id: string | null
+          contributor_kind: string
+          created_at: string
+          id: number
+          note: string | null
+          role: string
+        }
+        Insert: {
+          content_id: string
+          content_table: string
+          contributor_id?: string | null
+          contributor_kind: string
+          created_at?: string
+          id?: number
+          note?: string | null
+          role: string
+        }
+        Update: {
+          content_id?: string
+          content_table?: string
+          contributor_id?: string | null
+          contributor_kind?: string
+          created_at?: string
+          id?: number
+          note?: string | null
+          role?: string
+        }
+        Relationships: []
       }
       daily_brief_snapshots: {
         Row: {
@@ -1935,6 +1986,7 @@ export type Database = {
           enabled: boolean
           error_after_hours: number
           filter_sql: string | null
+          owning_job: string | null
           table_name: string
           timestamp_column: string
           warn_after_hours: number
@@ -1945,6 +1997,7 @@ export type Database = {
           enabled?: boolean
           error_after_hours: number
           filter_sql?: string | null
+          owning_job?: string | null
           table_name: string
           timestamp_column: string
           warn_after_hours: number
@@ -1955,6 +2008,7 @@ export type Database = {
           enabled?: boolean
           error_after_hours?: number
           filter_sql?: string | null
+          owning_job?: string | null
           table_name?: string
           timestamp_column?: string
           warn_after_hours?: number
@@ -2950,10 +3004,12 @@ export type Database = {
       linkedin_posts: {
         Row: {
           acquisition: string
+          arrived_by: string
           authorship: string
           carousel_structure_type: string | null
           claimed_at: string | null
           comment_count: number
+          confidence: string
           content_engine_output_type: string | null
           content_type: string | null
           created_at: string
@@ -2971,11 +3027,15 @@ export type Database = {
           like_count: number
           linkedin_post_id: string | null
           linkedin_url: string | null
+          made_by: string
           media_type: string | null
+          model_used: string | null
           moment_id: string | null
           original_generated_text: string | null
           post_text: string | null
           post_url: string | null
+          produced_by: string | null
+          prompt_version: string | null
           publish_attempted_at: string | null
           published_at: string | null
           published_confirmed_at: string | null
@@ -3004,10 +3064,12 @@ export type Database = {
         }
         Insert: {
           acquisition?: string
+          arrived_by?: string
           authorship?: string
           carousel_structure_type?: string | null
           claimed_at?: string | null
           comment_count?: number
+          confidence?: string
           content_engine_output_type?: string | null
           content_type?: string | null
           created_at?: string
@@ -3025,11 +3087,15 @@ export type Database = {
           like_count?: number
           linkedin_post_id?: string | null
           linkedin_url?: string | null
+          made_by?: string
           media_type?: string | null
+          model_used?: string | null
           moment_id?: string | null
           original_generated_text?: string | null
           post_text?: string | null
           post_url?: string | null
+          produced_by?: string | null
+          prompt_version?: string | null
           publish_attempted_at?: string | null
           published_at?: string | null
           published_confirmed_at?: string | null
@@ -3058,10 +3124,12 @@ export type Database = {
         }
         Update: {
           acquisition?: string
+          arrived_by?: string
           authorship?: string
           carousel_structure_type?: string | null
           claimed_at?: string | null
           comment_count?: number
+          confidence?: string
           content_engine_output_type?: string | null
           content_type?: string | null
           created_at?: string
@@ -3079,11 +3147,15 @@ export type Database = {
           like_count?: number
           linkedin_post_id?: string | null
           linkedin_url?: string | null
+          made_by?: string
           media_type?: string | null
+          model_used?: string | null
           moment_id?: string | null
           original_generated_text?: string | null
           post_text?: string | null
           post_url?: string | null
+          produced_by?: string | null
+          prompt_version?: string | null
           publish_attempted_at?: string | null
           published_at?: string | null
           published_confirmed_at?: string | null
@@ -5608,6 +5680,14 @@ export type Database = {
         }
         Relationships: []
       }
+      jobs_without_outcome_checks: {
+        Row: {
+          jobid: number | null
+          jobname: string | null
+          schedule: string | null
+        }
+        Relationships: []
+      }
       linkedin_connections_safe: {
         Row: {
           connected_at: string | null
@@ -6357,6 +6437,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      posts_attribution: {
+        Args: never
+        Returns: {
+          aura: number
+          machine: number
+          member: number
+          total: number
+          unknown: number
+        }[]
+      }
       publish_invariants: { Args: never; Returns: Json }
       purge_expired_assessment_sessions: { Args: never; Returns: number }
       qa_cron_success_jobs: {
@@ -6438,6 +6528,14 @@ export type Database = {
         Returns: boolean
       }
       tier_rank: { Args: { t: string }; Returns: number }
+      undeclared_jobs: {
+        Args: never
+        Returns: {
+          jobid: number
+          jobname: string
+          schedule: string
+        }[]
+      }
       voice_corpus_stats: {
         Args: { p_user_id: string }
         Returns: {

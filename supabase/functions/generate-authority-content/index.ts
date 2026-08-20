@@ -8,6 +8,7 @@ import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
 import { findUnsourcedEntities } from "../_shared/entityGuard.ts";
 import { splitForPrompt, enforcedRuleTexts } from "../_shared/voiceRules.ts";
+import { PROMPT_VERSION, type Contribution, type GenerationProvenance } from "../_shared/provenance.ts";
 import { loadActiveMemberRules, memberRulesBlock } from "../_shared/memberRules.ts";
 import { endingTypeOf, hookStyleOf } from "../_shared/fingerprint.ts";
 import {
@@ -502,7 +503,7 @@ serve(withObserve("generate-authority-content", async (req) => {
           if (evidenceIds.length > 0) {
             // Ground on THIS signal's own evidence chain, strongest first.
             const { data: fragData } = await supabase.from("evidence_fragments")
-              .select("title, content, metadata, confidence")
+              .select("id, title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .in("id", evidenceIds)
               .order("confidence", { ascending: false })
@@ -511,7 +512,7 @@ serve(withObserve("generate-authority-content", async (req) => {
             // Provenance needs the WHOLE chain, not the six shown to the model.
             for (let i = 0; i < evidenceIds.length; i += 100) {
               const { data: batch } = await supabase.from("evidence_fragments")
-                .select("title, content, metadata")
+                .select("id, title, content, metadata")
                 .eq("user_id", effectiveUserId)
                 .in("id", evidenceIds.slice(i, i + 100));
               if (batch) provenanceRows.push(...batch);
@@ -519,7 +520,7 @@ serve(withObserve("generate-authority-content", async (req) => {
           } else {
             // Fallback ONLY when the signal has no linked evidence: most recent fragments.
             const { data: fragData } = await supabase.from("evidence_fragments")
-              .select("title, content, metadata, confidence")
+              .select("id, title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .order("created_at", { ascending: false })
               .limit(5);
@@ -809,6 +810,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
 
       // One place the model is called, so a corrective regeneration runs the
       // exact same prompt with an added directive.
+      const MODEL_USED = "claude-sonnet-4-5-20250929";
       const callModel = async (extraDirective = ""): Promise<string | null> => {
         const response = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
@@ -818,7 +820,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
             "content-type": "application/json",
           },
           body: JSON.stringify({
-            model: "claude-sonnet-4-5-20250929",
+            model: MODEL_USED,
             // A member-set length ceiling also sizes the call (~4 chars/token).
             max_tokens: memberPrefs.length_max
               ? Math.max(512, Math.min(4096, Math.ceil(memberPrefs.length_max / 3) + 256))
@@ -1222,9 +1224,29 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         });
       }
 
+      // What went into this draft, handed back so whoever stores the row can
+      // record its lineage. The generator knows the material; only the caller
+      // knows the row id.
+      const contributions: Contribution[] = [];
+      if (signal_id) contributions.push({ kind: "signal", id: signal_id, role: "topic" });
+      for (const f of (provenanceRows || [])) {
+        if (f?.id) contributions.push({ kind: "evidence_fragment", id: f.id, role: "evidence" });
+      }
+      if (rawVoiceProfile?.id) {
+        contributions.push({ kind: "voice_profile", id: rawVoiceProfile.id, role: "voice" });
+      }
+      const provenance: GenerationProvenance = {
+        made_by: "aura",
+        produced_by: "composer",
+        prompt_version: PROMPT_VERSION,
+        model_used: MODEL_USED,
+        contributions,
+      };
+
       return new Response(JSON.stringify({
         content,
         success: true,
+        provenance,
         framework_used: (framework && FRAMEWORK_PROMPTS[framework]) ? framework : null,
         quality_gate: gatePayload,
         blocked: gateBlocked,
@@ -1462,7 +1484,7 @@ Return ONLY a JSON object matching this exact schema:
             groundingFragments = fragData || [];
           } else {
             const { data: fragData } = await supabase.from("evidence_fragments")
-              .select("title, content, metadata, confidence")
+              .select("id, title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .order("created_at", { ascending: false })
               .limit(5);
