@@ -190,6 +190,9 @@ export async function generateMarketRead(
   answers: Record<string, string>,
   sector: string | null,
   band: string | null,
+  /* The run the tab is already watching. Passing it is what lets the waiting
+     panel tick against real stage marks instead of guessing. */
+  runId?: string | null,
 ): Promise<Record<string, any> | null> {
   try {
     const { data: prof } = await (supabase.from("diagnostic_profiles" as any) as any)
@@ -202,6 +205,7 @@ export async function generateMarketRead(
 
     const { data, error } = await supabase.functions.invoke("brand-assessment", {
       body: {
+        ...(runId ? { run_id: runId } : {}),
         answers,
         auditScores: scores || "No scores on file yet",
         sector: sector || null,
