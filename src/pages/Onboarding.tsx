@@ -49,7 +49,12 @@ import { useSeniorityTitles, BAND_LABEL as TITLE_BAND_LABEL, type Band as TitleB
 import { OB, SPRING, EASE, RADIUS, reducedMotion } from "@/components/onboarding/tokens";
 import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
-import JourneyShell, { STAGE_NAMES, type Beat, type JourneySub } from "@/components/journey/JourneyShell";
+import JourneyShell, { STAGE_NAMES, type JourneySub } from "@/components/journey/JourneyShell";
+import {
+  MANUAL_SCREEN, TRUST_SLIDERS_SCREEN, CV_SCREEN, SHARE_SCREEN, SEAT_SCREEN,
+  beatOf, journeyFraction,
+} from "@/lib/journeyWork";
+
 import { CONSENT_VERSION } from "@/pages/Auth";
 import CvUploadControl from "@/components/cv/CvUploadControl";
 import CvCrosscheck from "@/components/report/CvCrosscheck";
@@ -126,7 +131,6 @@ const sourceLine = (a: { url: string; source?: string; published_at?: string | n
   return domain ? `${domain} · ${age}` : age;
 };
 
-const MANUAL_SCREEN = 15;
 /** Shown wherever a post or word count would otherwise read zero. */
 const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you capture.";
 /** The same truth, in the first person, because the dark screens are Aura speaking. */
@@ -145,14 +149,6 @@ const LOSS_LINES = [
  */
 const CONNECT_AFTER_ACCOUNT =
   "Available after you save your report — Aura reads your public posts either way.";
-/** A short dark panel that sits between screen 8 and the sliders. */
-const TRUST_SLIDERS_SCREEN = 8.5;
-/** A white CV step between screen 3 and screen 4 — fractional so nothing renumbers. */
-const CV_SCREEN = 3.5;
-/** The after-keep share screen — offered only once the report is his. */
-const SHARE_SCREEN = 13.5;
-/** The seat offer — its own beat, after the journey is already finished. */
-const SEAT_SCREEN = 14.5;
 
 /** Plain text buttons inside the screen-13 "Save it" row. */
 const quietLink: React.CSSProperties = {
@@ -310,65 +306,58 @@ const JourneyNav = createContext<{
 /**
  * ONE PROGRESS SYSTEM, AND IT TELLS THE TRUTH.
  *
- * The read is beat 1 — it is the read, so it cannot be labelled evidence.
- * Evidence starts where evidence actually starts (the CV, the capture, the
- * strengths, the questions) and the position is the last four screens.
+ * The weights, the total and the beat shares live in `@/lib/journeyWork` and
+ * are imported by both this page and `JourneyShell`, so the two can never
+ * disagree about the denominator again.
  */
-const beatOf = (screen: number): Beat =>
-  screen >= 12 ? 3 : screen <= 1 || screen === MANUAL_SCREEN ? 1 : 2;
-
-/**
- * THE WORK EACH SCREEN REALLY CARRIES, in arbitrary units. Eight sliders and
- * nine questions are the bulk of the journey and therefore own the bulk of the
- * bar; the old arithmetic gave 85% of the work 7% of the fill.
- */
-const SCREEN_WORK: ReadonlyArray<readonly [number, number]> = [
-  [0, 1], [1, 2],
-  [CV_SCREEN, 2], [5, 3], [6, 1], [7, 2], [8, 1], [TRUST_SLIDERS_SCREEN, 1], [9, 16], [10, 1], [11, 18],
-  [12, 2], [13, 2], [SHARE_SCREEN, 1], [14, 0.5], [SEAT_SCREEN, 0.5],
-] as const;
-const WORK_TOTAL = SCREEN_WORK.reduce((a, [, w]) => a + w, 0);
-
-/** Global 0–1 fill for a screen, plus however far through that screen we are. */
-const journeyFraction = (screen: number, sub?: number): number => {
-  const key = screen === MANUAL_SCREEN ? 1 : screen;
-  let before = 0;
-  let mine = 0;
-  for (const [s, w] of SCREEN_WORK) {
-    if (s < key) before += w;
-    else if (s === key) mine = w;
-  }
-  const inner = typeof sub === "number" ? Math.max(0, Math.min(1, sub)) : 0;
-  return Math.max(0, Math.min(1, (before + mine * inner) / WORK_TOTAL));
-};
 
 const strings = (value: unknown): string[] => (Array.isArray(value)
   ? value.map((item) => typeof item === "string" ? item.trim() : String((item as any)?.name ?? "").trim()).filter(Boolean)
   : []);
 
-/** The public read carries a useful subset of the signed-in profile snapshot. */
+/** The record behind a public read — `mirror-read` returns it under `raw`. */
+const anonRecord = (read: Record<string, any> | null | undefined): Record<string, any> =>
+  (read && typeof read.raw === "object" && read.raw) ? read.raw as Record<string, any> : (read ?? {});
+
+/**
+ * The public read carries the same record the signed-in path reads out of the
+ * profile snapshot. Every count is taken from the record; anything the public
+ * scrape did not carry is left undefined and never rendered as a zero.
+ */
 const factsFromAnonymousRead = (read: Record<string, any>): ProfileFacts | null => {
-  const raw = (read.raw && typeof read.raw === "object") ? read.raw : read;
+  const raw = anonRecord(read);
   const experience = Array.isArray(raw.experience) ? raw.experience : [];
   const topSkills = strings(raw.topSkills ?? raw.top_skills ?? raw.skills).slice(0, 5);
   const about = String(raw.about ?? raw.summary ?? "").trim();
   const joined = String(raw.registeredAt ?? raw.registered_at ?? "").trim();
   const joinedDate = joined ? new Date(joined) : null;
   const joinedYear = joinedDate && !Number.isNaN(joinedDate.getTime()) ? joinedDate.getFullYear() : undefined;
+  const yearsOn = joinedDate && !Number.isNaN(joinedDate.getTime())
+    ? Math.max(0, Math.floor((Date.now() - joinedDate.getTime()) / 31557600000))
+    : undefined;
+  const count = (n: unknown, list: unknown): number | undefined =>
+    (typeof n === "number" && n > 0 ? n : (Array.isArray(list) && list.length ? list.length : undefined));
+  const quote = raw.recommendation_quote;
   const facts: ProfileFacts = {
     location: String(raw.location?.linkedinText ?? raw.location?.parsed?.text ?? raw.location ?? "").trim() || undefined,
     role: String(experience[0]?.position ?? experience[0]?.title ?? "").trim() || undefined,
     company: String(experience[0]?.companyName ?? experience[0]?.company ?? "").trim() || undefined,
-    roles: experience.length || undefined,
-    certifications: Array.isArray(raw.certifications) ? raw.certifications.length || undefined : undefined,
-    skills: Array.isArray(raw.skills) ? raw.skills.length || undefined : topSkills.length || undefined,
-    projects: Array.isArray(raw.projects) ? raw.projects.length || undefined : undefined,
+    roles: count(raw.roles_count, experience),
+    certifications: count(raw.certifications_count, raw.certifications),
+    skills: count(raw.skills_count, raw.skills) ?? (topSkills.length || undefined),
+    projects: count(raw.projects_count, raw.projects),
+    recommendations: count(raw.recommendations_count, raw.recommendations),
+    recQuote: quote && typeof quote === "object" && quote.text && quote.title
+      ? { text: String(quote.text), title: String(quote.title) }
+      : undefined,
     joinedYear,
+    yearsOn: yearsOn && yearsOn > 0 ? yearsOn : undefined,
     topSkills,
     aboutFirstLine: about ? trimToSentence(about, 180) : undefined,
   };
   return Object.values(facts).some((value) => Array.isArray(value) ? value.length > 0 : value !== undefined) ? facts : null;
 };
+
 
 /** Which of the five named stages a screen belongs to. One definition, used
  *  by the resume banner and by Finish later. */
@@ -653,7 +642,7 @@ const Onboarding = () => {
   const [postedUrl, setPostedUrl] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   /** The "Save it" row on screen 13 — collapsed until asked for. */
-  /* The growth loop is not a secondary action — the share row is open on arrival. */
+  /* The growth loop is not a secondary action — the share row is open from the start. */
   const [saveOpen, setSaveOpen] = useState(true);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [minting, setMinting] = useState(false);
@@ -939,42 +928,11 @@ const Onboarding = () => {
     } catch (e) {
       console.error("[journey] kept evidence replay failed", e);
     }
-    /* Replay the optional reveal feedback collected while anonymous. */
-    try {
-      const fb = (st as any).reveal_feedback;
-      if (fb?.rating != null) {
-        await supabase.from("beta_feedback").upsert({
-          user_id: uid,
-          feedback_type: "reveal",
-          rating: fb.rating,
-          message: fb.message || null,
-          page: "/onboarding",
-        });
-      }
-    } catch (e) {
-      console.error("[journey] reveal feedback handoff failed", e);
-    }
     try {
       await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null));
     } catch (e) {
       console.error("[journey] handoff read failed", e);
     }
-    /* THE ARRIVAL — record only what they genuinely gave us. Written before
-       the token goes, because the token is what proves the run. */
-    try {
-      const entry: Record<string, unknown> = {
-        at: Date.now(),
-        first_name: pf.first_name ?? null,
-        answers: Object.keys(st.answers ?? {}).length,
-        sliders: Object.keys((pf.skill_ratings ?? {}) as Record<string, unknown>).length,
-        captures: Array.isArray((st as any).pending_captures) ? (st as any).pending_captures.length : 0,
-      };
-      /* NO DURATION. The only clock we hold is the session's created_at, which
-         is wall-clock — it counts the hours the browser sat closed. A number
-         nobody earned may not ship, and engaged time is not recorded anywhere,
-         so the figure is deleted rather than approximated. */
-      localStorage.setItem("aura_just_joined", JSON.stringify(entry));
-    } catch { /* private mode — the arrival is a grace, not a gate */ }
     clearToken();
     return { ok: true };
   }, []);
@@ -1137,14 +1095,19 @@ const Onboarding = () => {
           /* The confirmation card is as rich for an anonymous member as it is
              for a signed-in one: photo, headline and figures come off the read
              that /assessment already did. */
+          const anonRaw = anonRecord(anonRead);
           setLiProfile({
             full_name: st.name ?? anonRead.full_name ?? ([pf.first_name, pf.last_name].filter(Boolean).join(" ") || null),
             headline: st.headline ?? anonRead.headline ?? pf.headline ?? null,
             photo_url: st.avatar_url ?? anonRead.photo_url ?? anonRead.avatar_url ?? anonRead.profile_picture ?? anonRead.photo ?? null,
-            followers: anonRead.followers ?? anonRead.follower_count ?? null,
-            skills_count: anonRead.skills_count ?? anonRead.skillsCount ?? (strings(anonRead.skills ?? anonRead.topSkills ?? anonRead.top_skills).length || null),
+            followers: anonRaw.followers ?? anonRead.followers ?? anonRead.follower_count ?? null,
+            skills_count: anonRaw.skills_count
+              ?? anonRead.skills_count ?? anonRead.skillsCount
+              ?? (strings(anonRaw.topSkills ?? anonRead.skills ?? anonRead.topSkills ?? anonRead.top_skills).length || null),
             read: st.read,
           });
+          if (typeof anonRaw.own_words === "number") setOwnWords(anonRaw.own_words);
+
           const anonFacts = factsFromAnonymousRead(anonRead);
           if (anonFacts) setFacts(anonFacts);
           const ownQuote = String(anonRead.own_words_quote ?? "").trim();
@@ -1939,21 +1902,25 @@ const Onboarding = () => {
   /* ── finishing ── */
   /* One finish per session — the side effects are not idempotent. */
   const finishedRef = useRef(false);
+  /* The email is the only non-idempotent side effect, so it carries its own
+     guard. The finished flag is set after the profile write actually lands —
+     a failed write must leave a retry possible. */
+  const readEmailedRef = useRef(false);
   /* `destination` lets the seat doors complete the journey before they leave:
      the member who reserves a seat is still a finished member. */
   /** `stay: true` finishes the journey without leaving — the seat beat runs
       after the member is already a finished member, never instead of it. */
-  const finish = async (opts?: { destination?: string; stay?: boolean }) => {
+  const finish = async (opts?: { destination?: string; stay?: boolean }): Promise<boolean> => {
     /* Exactly once per session. 14.5 is reachable and Back-able, so a second
        pass would email the read twice and re-write the finish row. */
     if (finishedRef.current) {
       if (!opts?.stay) navigate(opts?.destination ?? "/home", { replace: true });
-      return;
+      return true;
     }
-    finishedRef.current = true;
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
-      if (reveal) {
+      if (reveal && !readEmailedRef.current) {
+        readEmailedRef.current = true;
         const { data: mail, error: mailErr } = await supabase.functions.invoke("send-read-email", {
           body: {
             archetype: reveal.archetype,
@@ -1974,6 +1941,7 @@ const Onboarding = () => {
       console.error("[reveal] send-read-email threw", err);
       toast.error("We couldn't email your read just now — it's saved on your Home page.");
     }
+    let saved = !userId;
     if (userId) {
       try {
         /* Merges — writeProfile drops every null, so finishing can never blank
@@ -1997,7 +1965,7 @@ const Onboarding = () => {
           completed: true,
           instrument_version: 2,
           ...(band ? { answered_band: band } : {}),
-        }, "finish save");
+        }, "finish save") && (saved = true);
         /* finished means no longer paused — Home must stop offering the resume card */
         try {
           const { data: cur } = await (supabase.from("diagnostic_profiles" as any) as any)
@@ -2010,11 +1978,20 @@ const Onboarding = () => {
       } catch (e) { console.error("[journey] finish save threw", e); }
       try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
     }
+    /* Only a real write makes a member finished. If it failed, the flag stays
+       down so the next attempt — the button, or the 14.5 assertion — retries. */
+    if (!saved) {
+      console.error("[journey] finish did not save — the member can retry");
+      toast.error("That didn't save. Tap once more.");
+      return false;
+    }
+    finishedRef.current = true;
     try { localStorage.setItem("aura_onboarding_complete", "true"); } catch { /* ignore */ }
     try { sessionStorage.removeItem("aura_onboarding_visits"); } catch { /* ignore */ }
     supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
-    if (opts?.stay) return;
+    if (opts?.stay) return true;
     navigate(opts?.destination ?? "/home", { replace: true });
+    return true;
   };
 
   /* The seat beat may only be seen by a finished member. Today the one route
@@ -2089,6 +2066,15 @@ const Onboarding = () => {
 
   /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
+    /* A FINISHED JOURNEY CANNOT BE PAUSED. Escape, the footer button and any
+       future door all land here, so the guard lives in the function rather
+       than on one of its callers: pausing at the end would write
+       journey_paused, email a resume note to someone who just finished, and
+       store a screen the resume path rejects. */
+    if (finishedRef.current || screen === SEAT_SCREEN) {
+      navigate("/home", { replace: true });
+      return;
+    }
     const stage = stageOf(screen);
     setExitNote(`Saved at "${stageName(stage)}". Pick it up any time.`);
     void (async () => {
@@ -3888,7 +3874,6 @@ const Onboarding = () => {
             loading={revealPending && !revealSlow}
             loadingLabel="Writing your read…"
             onClick={() => {
-              try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
               go(13);
             }}
           >
@@ -4232,23 +4217,26 @@ const Onboarding = () => {
             onClick={async () => {
               if (finishing) return;
               setFinishing(true);
+              let ok = false;
               try {
                 /* Finished first, and staying — the seat beat is a postscript,
                    never a toll gate in front of Home. */
-                await finish({ stay: true });
+                ok = await finish({ stay: true });
               } catch (e) {
                 console.error("[journey] finish threw", e);
               } finally {
                 setFinishing(false);
               }
-              go(SEAT_SCREEN);
+              /* The seat beat belongs to a finished member. A write that failed
+                 keeps them here, where the button can be pressed again. */
+              if (ok) go(SEAT_SCREEN);
             }}
           >
             Take me in
           </OBButton>
         </Actions>
         <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
-          I'll email your read. If it got you wrong, reply to that email and tell me — that's how I learn you.
+          I'll email your read from an inbox I read myself. If it got you wrong, just reply and tell me — that's how I learn you.
         </p>
 
         <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
