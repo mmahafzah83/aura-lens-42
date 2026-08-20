@@ -799,8 +799,11 @@ const Onboarding = () => {
      * caller that must actually empty the row.
      */
     clearKeys?: string[],
+    /** Start over is the ONE writer allowed to lower `onboarding_step`. */
+    opts?: { allowStepDecrease?: boolean },
   ): Promise<boolean> => {
     const id = uid ?? userId;
+
     const clears = (clearKeys ?? []).filter(Boolean);
     if (!id) {
       // Anonymous run: the same facts are kept on the session row and written
@@ -826,8 +829,9 @@ const Onboarding = () => {
     const clean: Record<string, any> = {};
     for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
     for (const k of clears) clean[k] = null;
-    return upsertProfile(id, clean, `journey ${label}`);
+    return upsertProfile(id, clean, `journey ${label}`, opts);
   }, [userId, anonToken]);
+
 
   /* The accuracy question no longer sits on the last screen — it is asked in
      the read email, where a reply costs the member nothing. */
@@ -955,10 +959,16 @@ const Onboarding = () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("identity_intelligence").eq("user_id", userId).maybeSingle();
       const fresh = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+      /* THE COUNTER IS NOT A POSITION. A finished member sits at 4; a screen
+         save must never derive a smaller number and push them back to 3 —
+         that is what sent every finished member round the journey again.
+         The shared writer refuses a decrease as well; this is the near guard. */
+      const derived = Math.min(3, Math.max(0, Math.floor(next / 4)));
       await writeProfile({
         identity_intelligence: { ...fresh, journey_screen: next },
-        onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
+        ...(finishedRef.current || next >= 14 ? {} : { onboarding_step: derived }),
       }, "progress save");
+
     } catch (e) { console.error("[journey] progress save threw", e); }
   }, [userId, anonToken, writeProfile]);
 
@@ -1311,7 +1321,10 @@ const Onboarding = () => {
         const ld = Number(localStorage.getItem(`aura_ob_dim_${uid}`) ?? "0");
         setDimIdx(hasScores && Number.isFinite(ld) && ld > 0 ? ld : 0);
       } catch { /* ignore */ }
-      if (resume > 0 && (resume <= 14 || resume === MANUAL_SCREEN)) {
+      /* SEAT_SCREEN (14.5) is a real position — a member who finished and came
+         back must land on the seat beat, not be rejected into screen 0. */
+      if (resume > 0 && (resume <= SEAT_SCREEN || resume === MANUAL_SCREEN)) {
+
         setScreen(resume); screenRef.current = resume;
         if (stageOf(resume) > 1) {
           setResumedAt({
@@ -2146,7 +2159,7 @@ const Onboarding = () => {
           skill_ratings: null,
           audit_results: null,
           answered_band: null,
-        }, "start over");
+        }, "start over", undefined, ["brand_assessment_answers", "skill_ratings", "audit_results", "answered_band"], { allowStepDecrease: true });
       } catch (e) { console.error("[journey] start over save threw", e); }
       try {
         localStorage.removeItem(`aura_ob_screen_${userId}`);
