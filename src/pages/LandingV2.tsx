@@ -258,6 +258,42 @@ const LANDING_V2_CSS = `
 .aura-v2 .bnight{background:var(--ink);color:#fff;display:block;text-align:center;width:100%;margin-top:18px}
 .aura-v2 .bnight:hover{background:#000}
 @media(max-width:900px){.aura-v2 .rungs{grid-template-columns:1fr}}
+.aura-v2 .ptwo{display:grid;grid-template-columns:1.08fr .92fr;gap:20px;margin-top:24px;align-items:stretch}
+@media(max-width:900px){.aura-v2 .ptwo{grid-template-columns:1fr}}
+.aura-v2 .pcard{background:var(--white);border:1px solid var(--line);border-radius:22px;padding:28px 24px;display:flex;flex-direction:column}
+.aura-v2 .pcard.night{background:var(--ink);border-color:#28313A;color:#fff}
+.aura-v2 .pcard .ptop{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.aura-v2 .pcard .plab{font-family:var(--mono);font-size:12.5px;letter-spacing:.11em;color:var(--ink4)}
+.aura-v2 .pcard.night .plab{color:var(--cyan)}
+.aura-v2 .pcard .pchip{font-family:var(--mono);font-size:12.5px;letter-spacing:.09em;padding:6px 10px;border-radius:999px;background:var(--cyantint);color:var(--cyanT)}
+.aura-v2 .pcard.night .pchip{background:rgba(0,206,201,.16);color:var(--cyan)}
+.aura-v2 .pcard h3{font-size:22px;font-weight:700;letter-spacing:-.024em;line-height:1.25;margin-top:16px;max-width:20ch}
+.aura-v2 .pcard .who{font-size:13.5px;color:#A7B0BC;line-height:1.6;margin-top:10px}
+.aura-v2 .pcard .prc{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.aura-v2 .pcard.night .prc{border-top-color:rgba(255,255,255,.14)}
+.aura-v2 .pcard .prc .p{font-family:var(--mono);font-size:28px;font-weight:600;letter-spacing:-.03em;color:var(--ink)}
+.aura-v2 .pcard.night .prc .p{color:#fff;font-size:44px}
+.aura-v2 .pcard .prc .u{font-size:12.5px;color:var(--ink4);line-height:1.5}
+.aura-v2 .road .stops{margin-top:22px;display:grid;gap:18px}
+.aura-v2 .road .stop{display:grid;grid-template-columns:16px 1fr;gap:14px;position:relative}
+.aura-v2 .road .stop::after{content:"";position:absolute;left:7px;top:20px;bottom:-18px;width:2px;background:var(--line)}
+.aura-v2 .road .stop:last-child::after{display:none}
+.aura-v2 .road .pin{width:16px;height:16px;border-radius:999px;border:2px solid var(--cyan);background:var(--white);margin-top:3px}
+.aura-v2 .road .stop.last .pin{background:var(--ink);border-color:var(--ink)}
+.aura-v2 .road .st{font-family:var(--mono);font-size:12.5px;letter-spacing:.09em;color:var(--cyanT)}
+.aura-v2 .road .stop.last .st{color:var(--ink)}
+.aura-v2 .road .sh{font-size:14.5px;font-weight:650;color:var(--ink);margin-top:5px;line-height:1.35}
+.aura-v2 .road .sb{font-size:13px;color:var(--ink3);line-height:1.6;margin-top:5px}
+.aura-v2 .pcard .pcta{margin-top:auto;padding-top:22px}
+.aura-v2 .pcard .pcta .btn{display:block;text-align:center;width:100%}
+.aura-v2 .pcard .undr{font-size:12.5px;color:var(--ink3);text-align:center;line-height:1.55;margin-top:10px}
+.aura-v2 .pcard.night .undr{color:#8E99A6}
+.aura-v2 .seat .ticks{display:grid;gap:11px;margin-top:20px;list-style:none}
+.aura-v2 .seat .ticks li{display:grid;grid-template-columns:20px 1fr;gap:11px;font-size:13.5px;color:#C7CFD8;line-height:1.55}
+.aura-v2 .seat .tk{width:18px;height:18px;border-radius:999px;border:1.5px solid var(--cyan);display:grid;place-items:center;margin-top:1px}
+.aura-v2 .seat .lock{margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.14);font-size:12.5px;color:#8E99A6;line-height:1.7}
+.aura-v2 .seat .lock b{color:#fff;font-weight:650}
+.aura-v2 .bridge{max-width:600px;margin:22px auto 0;text-align:center;background:var(--white);border:1px solid var(--line);border-radius:999px;padding:14px 24px;font-size:13px;color:var(--ink3);line-height:1.6}
 @media(max-width:860px){.aura-v2 .pricegrid{grid-template-columns:1fr}}
 .aura-v2 .founder img{width:48px;height:48px;border-radius:999px;object-fit:cover;flex-shrink:0}
 .aura-v2 .founder .t{font-size:14px;color:var(--ink3);line-height:1.55}
@@ -367,7 +403,6 @@ const LANDING_V2_HTML = `
       <button data-p="why">Why now</button>
       <button data-p="cmp">Compare</button>
       <button data-p="price">Pricing</button>
-      <button data-p="faq">Questions</button>
     </div>
     <a class="navalt" id="navalt" href="/auth">Sign in</a>
     <a class="navcta" id="navcta" href="/assessment">Show me free <span class="a">↗</span></a>
@@ -963,22 +998,81 @@ const LANDING_V2_HTML = `
   </div>
 </section>
 
-<section class="pg" id="faq">
+<section class="pg" id="price">
   <div class="hdr">
+    <span class="tag">One road, one seat</span>
+    <h2>Seeing yourself is free.<br><span class="grad">Being seen is not.</span></h2>
+    <p class="sub">One free road, walked in one sitting. One seat, if what you saw is worth keeping true.</p>
+  </div>
+
+  <div class="ptwo rv">
+    <div class="pcard road">
+      <div class="ptop"><span class="plab">THE ROAD · FREE</span><span class="pchip">STARTS WITHOUT AN ACCOUNT</span></div>
+      <h3>See yourself the way the market does.</h3>
+      <div class="prc"><span class="p">Free</span><span class="u">all of it, forever — not a trial</span></div>
+      <div class="stops">
+        <div class="stop">
+          <span class="pin"></span>
+          <div><div class="st">MINUTE 1</div><div class="sh">Paste your LinkedIn address</div><div class="sb">That&rsquo;s all it asks to begin. No account, no card, no email.</div></div>
+        </div>
+        <div class="stop">
+          <span class="pin"></span>
+          <div><div class="st">MINUTE 3 · THE QUICK READ</div><div class="sh">How you come across, in plain words</div><div class="sb">Most people stop here and just look for a while.</div></div>
+        </div>
+        <div class="stop">
+          <span class="pin"></span>
+          <div><div class="st">MINUTE 8 · IF YOU KEEP GOING</div><div class="sh">Your CV against what&rsquo;s public</div><div class="sb">Where the two disagree — and what each one is hiding.</div></div>
+        </div>
+        <div class="stop">
+          <span class="pin"></span>
+          <div><div class="st">MINUTE 15 · THE FULL PICTURE</div><div class="sh">Your capability map, your position, your three subjects</div><div class="sb">How a headhunter, a client and a peer each read you.</div></div>
+        </div>
+        <div class="stop last">
+          <span class="pin"></span>
+          <div><div class="st">AT THE END — THE ONLY THING WE ASK</div><div class="sh">Your email, so the report is kept</div><div class="sb">Asked once, at the end, when there&rsquo;s something worth keeping. The full report arrives as a PDF, and it&rsquo;s yours for good.</div></div>
+        </div>
+      </div>
+      <div class="pcta"><a class="btn bp" href="/assessment">Start the free road</a><p class="undr">Stop anywhere. Everything to that point still happens.</p></div>
+    </div>
+
+    <div class="pcard seat night">
+      <div class="ptop"><span class="plab">THE SEAT · THE LOOP</span><span class="pchip">FOUNDING · WAVES OF TEN</span></div>
+      <h3>Then make sure people find out. Every week.</h3>
+      <p class="who">The road tells you who you are. The seat is who you become, week after week — without adding work to your week.</p>
+      <div class="prc"><span class="p">${SEAT_PRICE.split(" ")[0]}</span><span class="u">a month · locked while you keep the seat</span></div>
+      <ul class="ticks">
+        <li><span class="tk"><svg width="9" height="9" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#00CEC9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Everything you read, kept and searchable for good</span></li>
+        <li><span class="tk"><svg width="9" height="9" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#00CEC9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Posts and carousels written by dawn, in your voice</span></li>
+        <li><span class="tk"><svg width="9" height="9" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#00CEC9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>The source shown behind every claim</span></li>
+        <li><span class="tk"><svg width="9" height="9" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#00CEC9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>English or Arabic — written, not translated</span></li>
+        <li><span class="tk"><svg width="9" height="9" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#00CEC9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Your identity rewritten every quarter, as you move</span></li>
+      </ul>
+      <p class="lock"><b>Fifty founding seats, ten at a time</b> — because one founder sets each person up himself, properly. <b>The price belongs to your seat, not to a date.</b> Wave two opens when wave one members are publishing.</p>
+      <div class="pcta"><a class="btn bwhite" href="${SEAT_PATH}">${SEAT_CTA}</a><p class="undr">${SEAT_NO_CARD}</p></div>
+    </div>
+  </div>
+
+  <p class="bridge">Walk the road first. The seat will still be here — and you&rsquo;ll know exactly what you&rsquo;re paying to keep alive.</p>
+
+  <div class="founder">
+    <img src="/aura-founder.jpg" alt="Mohammad Mahafdhah">
+    <div class="t"><b>Mohammad Mahafdhah</b> — I built Aura from my own reading, because I had the same problem. Write to me directly and I will answer.</div>
+  </div>
+
+  <div class="hdr" style="margin-top:56px">
     <span class="tag">Answered straight</span>
     <h2>What people ask<br><span class="grad">before joining.</span></h2>
     <p class="sub">No hedging and no small print. Where the answer is no, it says no.</p>
   </div>
   <div style="max-width:760px;margin:0 auto">
-    <details open><summary>How much of my time does this take?</summary><p>${ASSESSMENT_QUESTIONS_PHRASE.replace(/^./, (c) => c.toUpperCase())} once at the start. After that, one tap when you read something good, and about two minutes to approve a post. Nothing more.</p></details>
+    <details open><summary>What does &ldquo;free&rdquo; mean exactly?</summary><p>Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. A founding seat locks that price for as long as you keep it, and I onboard you personally. ${SEAT_NO_CARD}</p></details>
+    <details><summary>Can I stop?</summary><p>Any month. Everything you kept and everything you wrote stays yours.</p></details>
     <details><summary>Will it sound like AI?</summary><p>It learns from what you have already written — how you open, how long your sentences run, how you land a point. And it deletes its own drafts that do not pass as you, before you ever see them. If one still gets through, you say so, and it learns.</p></details>
+    <details><summary>How much of my time does this take?</summary><p>${ASSESSMENT_QUESTIONS_PHRASE.replace(/^./, (c) => c.toUpperCase())} once at the start. After that, one tap when you read something good, and about two minutes to approve a post. Nothing more.</p></details>
     <details><summary>How many posts will I get?</summary><p>As many as you want. There is no weekly quota. Save two articles and you can publish two posts; save ten and you can publish ten. It follows your reading, not a calendar.</p></details>
     <details><summary>Do I need a designer for the carousels?</summary><p>No. Aura designs them for you, ready to post — no design tool, no design skill, no fee.</p></details>
-    
     <details><summary>Does it work in Arabic?</summary><p>Yes. Arabic is written as Arabic and English as English. One is never a translation of the other.</p></details>
     <details><summary>Who owns what I save?</summary><p>You do. Your articles, your notes, your posts. We never use your work to help anyone else.</p></details>
-    <details><summary>What does “free” mean exactly?</summary><p>Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. A founding seat locks that price for as long as you keep it, and I onboard you personally. ${SEAT_NO_CARD}</p></details>
-    <details><summary>What if I stop using it?</summary><p>Everything you saved stays yours and you can take it with you. Nothing is locked.</p></details>
   </div>
 
   <div class="dark rv"><div class="dark-in" style="grid-template-columns:1fr;text-align:center">
@@ -987,122 +1081,9 @@ const LANDING_V2_HTML = `
       <p style="max-width:460px;margin:12px auto 0">It is yours whether you ever pay us or not. If it shows you something you did not know about yourself, the seat will still be here.</p>
       <div style="margin-top:22px;display:flex;gap:11px;justify-content:center;flex-wrap:wrap">
         <a class="btn bp" href="/assessment">Get my report — free</a>
-        <a class="btn bg2" href="#price" data-p="price">See the founding seat</a>
       </div>
     </div>
   </div></div>
-</section>
-
-<section class="pg" id="price">
-  <div class="hdr">
-    <span class="tag">Three ways in</span>
-    <h2>Seeing yourself is free.<br><span class="grad">Being seen is not.</span></h2>
-    <p class="sub">Take a seat only if what you saw is worth keeping true.</p>
-  </div>
-
-  <div class="rungs rv">
-    <div class="rung">
-      <span class="chip">NO ACCOUNT</span>
-      <span class="kick">01 · THE QUICK READ</span>
-      <h3>See yourself as the market does</h3>
-      <p class="one">The fastest honest look at how you currently come across.</p>
-      <div class="prc"><span class="p">Free</span><span class="u">FOREVER</span></div>
-      <p class="pn">No account, no card, no email required.</p>
-      <div class="blk">
-        <span class="bl do">WHAT YOU DO</span>
-        <ul><li>Paste your LinkedIn address</li><li>Wait while Aura reads it</li></ul>
-      </div>
-      <div class="blk">
-        <span class="bl get">WHAT YOU GET</span>
-        <ul><li>How the market reads you today, in plain words</li><li>The one thing your profile is not saying about you</li><li>A card you can keep or send to someone</li></ul>
-      </div>
-      <div class="cta"><a class="btn bout" href="/assessment">Show me the quick read</a><p class="time">THE QUICK READ</p></div>
-    </div>
-
-    <div class="rung">
-      <span class="chip">FREE ACCOUNT</span>
-      <span class="kick">02 · YOUR PROFESSIONAL IDENTITY</span>
-      <h3>The full picture, and it stays yours</h3>
-      <p class="one">The complete assessment. Most people have never seen this much about themselves in one place.</p>
-      <div class="prc"><span class="p">Free</span><span class="u">YOURS TO KEEP</span></div>
-      <p class="pn">Free permanently — not a trial, not thirty days.</p>
-      <div class="blk">
-        <span class="bl do">WHAT YOU DO</span>
-        <ul><li>Connect your LinkedIn profile</li><li>Upload your CV once your report is saved</li><li>Answer ${ASSESSMENT_QUESTIONS_PHRASE} about your work</li><li>Rate yourself on eight capability statements</li></ul>
-      </div>
-      <div class="blk">
-        <span class="bl get">WHAT YOU GET</span>
-        <ul>
-          <li><b>A capability and skills map</b> — what is proven, what is real but invisible, what is not there yet</li>
-          <li><b>CV against LinkedIn</b> — where the two disagree, and what each one is hiding</li>
-          <li><b>The space nobody else holds</b> — the position that is yours</li>
-          <li><b>Your three subjects</b> — instead of writing about ten</li>
-          <li><b>How three people read you</b> — a headhunter, a client, a peer</li>
-          <li><b>The full report as a PDF</b>, and a card to share</li>
-        </ul>
-      </div>
-      <div class="cta"><a class="btn bp" href="/assessment">Discover my professional position</a><p class="time">${FIRST_READ_LINE.toUpperCase()} · ${FULL_PICTURE_LINE.toUpperCase()} · SAVE AND RETURN</p></div>
-    </div>
-
-    <div class="rung night">
-      <span class="chip" data-wave="chip" style="display:none"></span>
-      <span class="kick"><span class="cdot"></span>03 · THE LOOP</span>
-      <h3>Be seen every week, without writing</h3>
-      <p class="one">Your identity stops being a document and starts being a weekly presence.</p>
-      <div class="prc"><span class="p" style="color:#fff">${SEAT_PRICE}</span><span class="u">/MONTH · LOCKED WHILE YOU KEEP THE SEAT</span></div>
-      <p class="pn" data-wave="pricenote">${SEAT_CONSTRAINT}</p>
-      <div class="blk">
-        <span class="bl do">WHAT YOU DO</span>
-        <ul><li>One tap on anything worth keeping</li><li>Two minutes to read and approve</li></ul>
-      </div>
-      <div class="blk">
-        <span class="bl get">WHAT YOU GET</span>
-        <ul>
-          <li><b>Everything you read, kept</b> — broken into pieces you can still use in November</li>
-          <li><b>Posts and carousels written by dawn</b> — in your voice, designed, ready</li>
-          <li><b>The source shown</b> — when someone asks where this came from, you have the answer</li>
-          <li><b>English or Arabic</b> — neither a translation of the other</li>
-          <li><b>Your identity rewritten every quarter</b> — it moves as you do</li>
-        </ul>
-      </div>
-      <div class="cta"><a class="btn bwhite" href="${SEAT_PATH}">${SEAT_CTA}</a><p class="time">≈ 2 MINUTES A DAY</p></div>
-    </div>
-  </div>
-
-  <div class="pricegrid rv">
-    <div class="pnight">
-      <span class="kick">THE LOOP · FOUNDING RATE</span>
-      <div class="amt"><span class="n">${SEAT_PRICE.split(" ")[0]}</span><span class="u">PER MONTH</span></div>
-      <span class="cypill">LOCKED FOR AS LONG AS YOU KEEP THE SEAT</span>
-      <div class="tl">
-        <div class="tli"><span class="bead"></span><div><div class="tt">Now — seats 1 to 50</div><div class="tb">${SEAT_PRICE}, and I onboard you myself. ${SEAT_CONSTRAINT}</div></div></div>
-        <div class="tli"><span class="bead hollow"></span><div><div class="tt">The lock</div><div class="tb">The price is attached to your seat, not to the date you joined. Keep the seat, keep the price.</div></div></div>
-        <div class="tli"><span class="bead hollow"></span><div><div class="tt">Every year after that</div><div class="tb">You are still paying ${SEAT_PRICE.split(" ")[0]}. That is the entire promise, and it is in writing.</div></div></div>
-        <div class="tli"><span class="bead hollow"></span><div><div class="tt">And the part you actually want</div><div class="tb">Around month two, someone you respect says: I have been seeing your posts. That is the whole return, and it is the reason the rest of this exists.</div></div></div>
-      </div>
-    </div>
-    <div>
-      <ul class="terms">
-        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>${SEAT_NO_CARD} You are told before anything is ever charged.</span></li>
-        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Your report is free either way. The seat buys the weekly loop. The assessment was always yours to keep.</span></li>
-        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Locked for as long as you stay — not twelve months, not “introductory”.</span></li>
-        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Leave and take everything. Every capture, draft and report exports. Nothing is held back.</span></li>
-        <li><span class="tick"><svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M2.4 5.6l2.2 2.4 4.2-5" stroke="#12805C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Signed by the founder, with his name and his face, and he answers you himself.</span></li>
-      </ul>
-      <div class="wavecard" data-wave="card" style="display:none">
-        <h4>Seats open in waves of ten</h4>
-        <span class="wavechip" data-wave="chip2"></span>
-        <div class="pips" data-wave="pips"></div>
-        <p class="wavenote" data-wave="note"></p>
-      </div>
-      <a class="btn bnight" href="${SEAT_PATH}">${SEAT_CTA}</a>
-    </div>
-  </div>
-  <div class="founder">
-    <img src="/aura-founder.jpg" alt="Mohammad Mahafdhah">
-    <div class="t"><b>Mohammad Mahafdhah</b> — I built Aura from my own reading, because I had the same problem. Write to me directly and I will answer.</div>
-  </div>
-  <p style="max-width:640px;margin:14px auto 0;text-align:center;font-size:13px;color:var(--ink3);line-height:1.6">Not ready for a seat? <a href="/assessment" style="color:var(--blue);font-weight:600">Read yourself free</a> — it starts free, no card.</p>
 </section>
 
 <div class="foot">
