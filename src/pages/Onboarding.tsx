@@ -2210,17 +2210,9 @@ const Onboarding = () => {
     } catch { /* they can change it in Settings */ }
   }, [userId, timeZone, writeProfile]);
 
-  /* Both seat doors: finish first, then leave. A failed finish never traps
-     the member — it is logged and the door still opens. */
-  const leaveForSeat = async (intent: "reserve_69" | "keep_posted") => {
-    const destination = `${SEAT_PATH}?intent=${intent}`;
-    try {
-      await finish({ destination });
-    } catch (e) {
-      console.error("[journey] finish before seat threw", e);
-      navigate(destination);
-    }
-  };
+  /* The seat beat runs AFTER the journey is finished, so its doors are plain
+     navigation — there is nothing left to complete first. */
+
 
   /* Pausing is not finishing. The old escape hatch flagged the member as fully
    * onboarded with an empty profile and locked them out of the journey for
