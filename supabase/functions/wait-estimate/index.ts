@@ -23,7 +23,8 @@ const corsHeaders = {
    estimated, and cannot silently drift from what the recorder writes. */
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
-const OPERATIONS = new Set(Object.keys(OPERATION_STAGES));const MIN_SAMPLE = 10;
+const OPERATIONS = new Set(Object.keys(OPERATION_STAGES));
+const MIN_SAMPLE = 10;
 const TTL_MS = 10 * 60 * 1000;
 
 interface StageOut {
