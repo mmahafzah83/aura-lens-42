@@ -1942,6 +1942,13 @@ const Onboarding = () => {
   /** `stay: true` finishes the journey without leaving — the seat beat runs
       after the member is already a finished member, never instead of it. */
   const finish = async (opts?: { destination?: string; stay?: boolean }) => {
+    /* Exactly once per session. 14.5 is reachable and Back-able, so a second
+       pass would email the read twice and re-write the finish row. */
+    if (finishedRef.current) {
+      if (!opts?.stay) navigate(opts?.destination ?? "/home", { replace: true });
+      return;
+    }
+    finishedRef.current = true;
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
       if (reveal) {
