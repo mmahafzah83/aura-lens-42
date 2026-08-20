@@ -1485,6 +1485,7 @@ const Onboarding = () => {
     sendingLinkRef.current = false;
     setSendingLink(false);
     if (deferred) {
+      setCaptureRunId((n) => n + 1);
       setCapturePending(true);
       return;
     }
@@ -1667,6 +1668,7 @@ const Onboarding = () => {
 
   /* ── the six questions, then the read ── */
   const finishQuestions = async (finalAnswers: Record<string, string>) => {
+    setRevealRunId((n) => n + 1);
     setRevealPending(true);
     go(12);
     if (!userId) {

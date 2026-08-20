@@ -33,6 +33,7 @@ import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEd
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
 import JourneyMap from "@/components/studio/JourneyMap";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
+import { buildStages } from "@/lib/operationStages";
 import type { WaitOperation } from "@/lib/waitEstimate";
 import StageCard from "@/components/studio/StageCard";
 import AdvisorCard, { type GatePayload } from "@/components/studio/AdvisorCard";
@@ -144,10 +145,15 @@ function gateSentence(category: unknown, lang: Lang): string {
  * countdown: the panel prints a percentage only when finished runs of this
  * operation can defend one, and an em dash otherwise.
  */
-function operationFor(message: string, lang: Lang): WaitOperation {
+/**
+ * Only an operation that actually records its stages may be named to a panel.
+ * Export and publish record nothing, so they get no name and no percentage —
+ * steps and a real counter only.
+ */
+function operationFor(message: string, lang: Lang): WaitOperation | null {
   if (message === T.makingSlides[lang] || message === T.makingSlidesHonest[lang]) return "studio_slides";
-  if (message === T.exporting[lang] || message === T.exportSettling[lang]) return "studio_export";
-  if (message === T.posting[lang]) return "studio_publish";
+  if (message === T.exporting[lang] || message === T.exportSettling[lang]) return null;
+  if (message === T.posting[lang]) return null;
   return "studio_generate";
 }
 
@@ -2676,8 +2682,15 @@ export default function StudioPanel({
         <div style={{ marginBlockEnd: 12 }}>
           <WorkingPanel
             operation={operationFor(busyMessage, lang)}
+            runId={busyRunId}
             title={busyMessage}
-            stages={[{ key: "work", label: busyMessage, state: "active" }]}
+            stages={
+              operationFor(busyMessage, lang) === "studio_generate"
+                ? buildStages("studio_generate", { completed: [], active: "gather" })
+                : operationFor(busyMessage, lang) === "studio_slides"
+                  ? buildStages("studio_slides", { completed: [], active: "plan" })
+                  : [{ key: "work", label: busyMessage, state: "active" }]
+            }
             rtl={rtlShell}
           />
         </div>
@@ -3463,8 +3476,9 @@ export default function StudioPanel({
                   <div style={{ width: "100%", maxWidth: 360 }}>
                     <WorkingPanel
                       operation="studio_slides"
+                      runId={busyRunId}
                       title={T.makingSlidesHonest[lang]}
-                      stages={[{ key: "slides", label: T.makingSlidesHonest[lang], state: "active" }]}
+                      stages={buildStages("studio_slides", { completed: [], active: "plan" })}
                       rtl={rtlShell}
                     />
                   </div>
@@ -3624,7 +3638,7 @@ export default function StudioPanel({
                       so the member's attention never has to travel. */}
                   {busy === "post" ? (
                     <WorkingPanel
-                      operation="studio_publish"
+                      runId={busyRunId}
                       title={busyMessage || T.posting[lang]}
                       stages={[{ key: "publish", label: busyMessage || T.posting[lang], state: "active" }]}
                       rtl={rtlShell}
