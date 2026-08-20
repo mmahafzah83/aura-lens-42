@@ -1937,6 +1937,8 @@ const Onboarding = () => {
 
 
   /* ── finishing ── */
+  /* One finish per session — the side effects are not idempotent. */
+  const finishedRef = useRef(false);
   /* `destination` lets the seat doors complete the journey before they leave:
      the member who reserves a seat is still a finished member. */
   /** `stay: true` finishes the journey without leaving — the seat beat runs
