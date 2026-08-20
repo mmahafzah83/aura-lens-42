@@ -38,7 +38,6 @@ import { loadOwnSentence, type OwnSentence } from "@/lib/ownSentence";
 import MethodNote from "@/components/onboarding/MethodNote";
 import Confetti from "@/components/onboarding/Confetti";
 import WaitProof from "@/components/onboarding/WaitProof";
-import WorkProgress from "@/components/onboarding/WorkProgress";
 import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
 import { loadProfileFacts, type ProfileFacts } from "@/lib/profileFacts";
@@ -2406,7 +2405,16 @@ const Onboarding = () => {
         {/* The read happens here, in place. Nothing moves while it lands. */}
         {step1Phase === "reading" ? (
           <div style={{ marginBlockStart: 22 }}>
-            <WorkProgress operation="linkedin_read" />
+            <WorkingPanel
+              operation="linkedin_read"
+              runId={readRunId}
+              title="Reading what LinkedIn shows"
+              stages={buildStages("linkedin_read", {
+                completed: readDone ? ["fetch"] : [],
+                active: readDone ? "write" : "fetch",
+              })}
+              onCarryOn={() => go(5)}
+            />
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 14 }}>
               {rows.map((r) => (
                 <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
