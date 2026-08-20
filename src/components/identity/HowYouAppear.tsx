@@ -338,7 +338,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
             Read from LinkedIn on{" "}
             <span style={dashStyle}>{readDate ?? EM_DASH}</span>
           </span>
-          <button type="button" style={{ ...quietLinkStyle, marginBlockStart: 0 }} onClick={readProfile} disabled={stage !== null}>
+          <button type="button" style={{ ...quietLinkStyle, marginBlockStart: 0 }} onClick={() => void readProfile()} disabled={stage !== null}>
             {stage === "profile" ? "Reading your profile…" : stage === "posts" ? "Reading your posts…" : "Read again"}
           </button>
         </div>
