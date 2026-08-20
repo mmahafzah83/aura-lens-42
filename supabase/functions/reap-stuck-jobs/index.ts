@@ -88,21 +88,26 @@ Deno.serve(async (req) => {
       )
     : 0;
 
-  // ALWAYS write heartbeat
-  await admin.from("ef_error_log").insert({
-    function_name: "reap-stuck-jobs",
-    severity: "info",
-    error_message:
-      `JOB_QUEUE_HEALTH pending=${pending ?? 0} claimed=${claimed ?? 0} dead=${dead ?? 0} reclaimed=${reclaimedCount} oldest_pending_age_min=${oldestAgeMin}`,
-    context: {
-      pending: pending ?? 0,
-      claimed: claimed ?? 0,
-      dead: dead ?? 0,
-      reclaimed: reclaimedCount,
-      oldest_pending_age_min: oldestAgeMin,
-      dead_logged: deadRows?.length ?? 0,
-    },
-  });
+  // The healthy-path heartbeat write to ef_error_log was removed intentionally:
+  // it wrote a "nothing is wrong" row every 5 minutes and drowned the error log.
+  // Dead jobs (above) and genuine errors are still logged; reclaims are logged here.
+  if (reclaimedCount > 0) {
+    await admin.from("ef_error_log").insert({
+      function_name: "reap-stuck-jobs",
+      severity: "warn",
+      error_message:
+        `JOB_RECLAIMED reclaimed=${reclaimedCount} pending=${pending ?? 0} claimed=${claimed ?? 0} dead=${dead ?? 0} oldest_pending_age_min=${oldestAgeMin}`,
+      context: {
+        pending: pending ?? 0,
+        claimed: claimed ?? 0,
+        dead: dead ?? 0,
+        reclaimed: reclaimedCount,
+        oldest_pending_age_min: oldestAgeMin,
+        dead_logged: deadRows?.length ?? 0,
+      },
+    });
+  }
+
 
   return new Response(
     JSON.stringify({
