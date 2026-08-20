@@ -152,9 +152,10 @@ export async function fetchWaitEstimate(operation: WaitOperation): Promise<WaitE
 }
 
 /** Never blocks a render: it starts unknown and improves if the answer arrives. */
-export function useWaitEstimate(operation: WaitOperation): WaitEstimate {
-  const [est, setEst] = useState<WaitEstimate>(() => cache.get(operation)?.value ?? UNKNOWN);
+export function useWaitEstimate(operation: WaitOperation | null | undefined): WaitEstimate {
+  const [est, setEst] = useState<WaitEstimate>(() => (operation ? cache.get(operation)?.value ?? UNKNOWN : UNKNOWN));
   useEffect(() => {
+    if (!operation) { setEst(UNKNOWN); return; }
     let alive = true;
     void fetchWaitEstimate(operation).then((v) => { if (alive) setEst(v); });
     return () => { alive = false; };
@@ -172,21 +173,26 @@ export function useWeightedProgress(args: {
   activeKey: string | null;
   /** epoch ms the active stage began. */
   activeSince: number | null;
-  runKey: string;
+  /**
+   * A run boundary is an EVENT, not something to infer. Call sites change this
+   * on every new run; the monotonic floor resets with it and nothing leaks
+   * from the last run into this one.
+   */
+  runId: string | number;
   /** The completion event, and the only thing that reads 100%. */
   complete?: boolean;
 }): number | null {
-  const { stages, completedKeys, activeKey, activeSince, runKey, complete } = args;
-  const floorRef = useRef<{ runKey: string; value: number | null }>({ runKey, value: null });
+  const { stages, completedKeys, activeKey, activeSince, runId, complete } = args;
+  const floorRef = useRef<{ runId: string | number; value: number | null }>({ runId, value: null });
   const [, tick] = useState(0);
 
   useEffect(() => {
     if (!activeKey || complete) return;
     const id = window.setInterval(() => tick((n) => n + 1), 1000);
     return () => window.clearInterval(id);
-  }, [activeKey, complete, runKey]);
+  }, [activeKey, complete, runId]);
 
-  if (floorRef.current.runKey !== runKey) floorRef.current = { runKey, value: null };
+  if (floorRef.current.runId !== runId) floorRef.current = { runId, value: null };
 
   if (complete) { floorRef.current.value = 1; return 1; }
 
@@ -198,15 +204,15 @@ export function useWeightedProgress(args: {
 }
 
 /** mm:ss of real elapsed time. Nothing else. */
-export function useElapsed(active = true): number {
+export function useElapsed(active = true, runId: string | number = 0): number {
   const [secs, setSecs] = useState(0);
   useEffect(() => {
+    setSecs(0);
     if (!active) return;
     const started = Date.now();
-    setSecs(0);
     const id = window.setInterval(() => setSecs(Math.floor((Date.now() - started) / 1000)), 1000);
     return () => window.clearInterval(id);
-  }, [active]);
+  }, [active, runId]);
   return secs;
 }
 
