@@ -26,8 +26,6 @@ interface MirrorRow {
 
 type TabKey = "headhunter" | "client_cio" | "curator";
 
-const ORANGE = "var(--bronze)"; // bronze — was orange; restricted to signal/status only
-
 function relTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diff / (24 * 60 * 60 * 1000));
@@ -148,7 +146,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
         </div>
         {row && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 12, color: "var(--ink-muted, rgba(245,239,225,0.6))" }}>
+            <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>
               Last updated: {relTime(row.generated_at)}
             </span>
             <button
@@ -210,7 +208,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
       {row && (
         <>
           {!hideHeader && (
-            <p style={{ fontSize: 12, color: "var(--ink-muted, rgba(245,239,225,0.65))", lineHeight: 1.625, margin: "0 0 12px" }}>
+            <p style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.625, margin: "0 0 12px" }}>
               Three perspectives on your digital footprint — refreshed from your latest intelligence.
             </p>
           )}
