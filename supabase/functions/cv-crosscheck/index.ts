@@ -694,6 +694,7 @@ CORRECTION — your previous answer failed the assertion "${failure}". Answer ag
     if (writeErr) { await finish("failed", "write_failed"); return json({ error: writeErr.message }, 500); }
   }
 
+  try { await run?.mark("compare"); } catch { /* recording never fails the check */ }
   await finish("ok");
   return json({ ok: true, cv_count: docCount, crosscheck });
 }));

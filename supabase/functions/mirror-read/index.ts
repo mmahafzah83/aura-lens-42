@@ -420,6 +420,9 @@ Deno.serve(async (req) => {
       return json({ error: "profile_unreadable" }, 502);
     }
 
+    /* Stage one closed: the provider gave us the profile and the posts. */
+    try { await run?.mark("fetch"); } catch { /* recording never fails the read */ }
+
     const firstName = pickText(item, ["firstName", "first_name", "givenName"]);
     const lastName = pickText(item, ["lastName", "last_name", "familyName"]);
     const joined = [firstName, lastName].filter(Boolean).join(" ").trim();
@@ -565,6 +568,7 @@ Deno.serve(async (req) => {
       );
     if (upErr) console.error("[mirror-read] cache write failed:", upErr.message);
 
+    try { await run?.mark("write"); } catch { /* recording never fails the read */ }
     await finish("ok");
     return json({
       ok: true, cached: false, sparse, handle, read,
