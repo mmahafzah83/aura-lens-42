@@ -651,7 +651,7 @@ const LANDING_V2_HTML = `
 <section class="pg" id="get">
   <div class="hdr">
     <span class="tag">Free first, paid after</span>
-    <h2>See yourself.<br>Then <span class="grad">be seen.</span></h2>
+    <h2>See yourself.<br><span class="grad">Then be seen.</span></h2>
     <p class="sub">Two things. First you understand yourself — then the market understands you.</p>
   </div>
 
