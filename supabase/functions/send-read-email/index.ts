@@ -50,7 +50,7 @@ serve(async (req) => {
         marketRead ? `<p style="font-size:15px;line-height:1.7;color:${INK_SOFT}">${esc(marketRead)}</p>` : "",
         subjects.length ? `<p style="font-size:13px;color:${INK_SOFT};margin:22px 0 0">The subjects you own</p>${list(subjects)}` : "",
         thin.length ? `<p style="font-size:13px;color:${INK_SOFT};margin:22px 0 0">Where you're thinnest</p>${list(thin)}` : "",
-        `<p style="font-size:13px;line-height:1.6;color:${INK_SOFT};margin:24px 0 0">This is a read, not a verdict. If it's wrong, tell Aura and it will change.</p>`,
+        `<p style="font-size:13px;line-height:1.6;color:${INK_SOFT};margin:24px 0 0">This is a read, not a verdict. If it got you wrong, reply to this email and tell me what it missed — I read every reply myself, and the read changes.</p>`,
       ].join(""),
       cta: { href: "https://www.aura-intel.org/home", label: "Open Aura" },
     });
@@ -72,7 +72,14 @@ serve(async (req) => {
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: [user.email], subject: "Your read from Aura", html }),
+      body: JSON.stringify({
+        from: FROM,
+        to: [user.email],
+        // The ask has to land somewhere a person reads.
+        reply_to: "Mohammad.Mahafdhah@aura-intel.org",
+        subject: "Your read from Aura",
+        html,
+      }),
     });
     if (!resp.ok) {
       const detail = await resp.text();
