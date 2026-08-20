@@ -1970,6 +1970,7 @@ const Onboarding = () => {
     try { localStorage.setItem("aura_onboarding_complete", "true"); } catch { /* ignore */ }
     try { sessionStorage.removeItem("aura_onboarding_visits"); } catch { /* ignore */ }
     supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
+    if (opts?.stay) return;
     navigate(opts?.destination ?? "/home", { replace: true });
   };
 
