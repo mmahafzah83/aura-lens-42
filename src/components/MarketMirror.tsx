@@ -3,6 +3,7 @@ import { Loader2, RefreshCw, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
+import { buildStages } from "@/lib/operationStages";
 import {
   PERSONA_LABELS,
   type RankBucket,
@@ -43,6 +44,8 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
   const [generating, setGenerating] = useState(false);
   const [tab, setTab] = useState<TabKey>("headhunter");
   const genAbortRef = useRef<AbortController | null>(null);
+  /* Every generate is a new run: the bar and the counter start from nothing. */
+  const [genRunId, setGenRunId] = useState(0);
 
   const load = async () => {
     if (!userId) return;
@@ -60,6 +63,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
 
   const generate = async () => {
     if (!userId || generating) return;
+    setGenRunId((n) => n + 1);
     setGenerating(true);
     /* A hung function must have an exit. */
     genAbortRef.current?.abort();
@@ -110,21 +114,31 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
   const text = row ? (row as any)[`${tab}_text`] as string | null : null;
   const gap = row?.gaps?.[`${tab}_gap` as keyof MirrorRow["gaps"]] as string | undefined;
 
+  const panelForRun = (
+    <WorkingPanel
+      onNight
+      operation="market_read"
+      runId={genRunId}
+      title="Reading how the market sees you"
+      stages={buildStages("market_read", { completed: [], active: "gather" })}
+    />
+  );
+
   return (
     <div
       style={{
-        background: "var(--surface-ink-raised, rgba(255,255,255,0.02))",
-        border: "1px solid var(--brand-line, rgba(197,165,90,0.2))",
+        background: "#FFFFFF",
+        border: "1px solid #E2E7EE",
         borderRadius: 14,
         padding: 20,
-        color: "var(--ink)",
+        color: "#0F1519",
       }}
     >
       {!hideHeader && (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Eye size={16} style={{ color: "var(--bronze)" }} />
-          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 20, margin: 0 }}>
+          <Eye size={16} style={{ color: "#0670C4" }} />
+          <h3 style={{ fontFamily: "var(--font-body)", fontSize: 20, margin: 0, fontWeight: 600 }}>
             Market Mirror
           </h3>
         </div>
@@ -142,7 +156,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
                 padding: "6px 10px", borderRadius: 8,
                 background: "transparent",
                 border: "1px solid var(--brand-line, rgba(197,165,90,0.3))",
-                color: canRefresh ? "var(--bronze-text)" : "var(--ink-muted)",
+                color: canRefresh ? "#0670C4" : "var(--ink-muted)",
                 fontSize: 12, cursor: canRefresh && !generating ? "pointer" : "not-allowed",
               }}
             >
@@ -162,12 +176,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
 
       {!loading && !row && generating && (
         <div style={{ padding: "8px 0" }}>
-          <WorkingPanel
-            onNight
-            operation="market_read"
-            title="Reading how the market sees you"
-            stages={[{ key: "mirror", label: "Writing the three perspectives", state: "active" }]}
-          />
+          {panelForRun}
         </div>
       )}
 
@@ -181,8 +190,8 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
             disabled={generating || !userId}
             style={{
               padding: "10px 18px", borderRadius: 8,
-              background: "var(--bronze)",
-              color: "var(--ink-on-brand)",
+              background: "#0670C4",
+              color: "#FFFFFF",
               border: "none", fontWeight: 600, fontSize: 14,
               cursor: generating ? "wait" : "pointer",
               display: "inline-flex", alignItems: "center", gap: 8,
@@ -215,7 +224,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
                   width: 24, height: 24, borderRadius: 6,
                   background: "transparent", border: 0,
-                  color: canRefresh ? "var(--bronze-text)" : "var(--ink-muted)",
+                  color: canRefresh ? "#0670C4" : "var(--ink-muted)",
                   cursor: canRefresh && !generating ? "pointer" : "not-allowed",
                 }}
               >
@@ -223,7 +232,12 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
               </button>
             </div>
           )}
-          <div style={{ display: "flex", gap: 6, marginBottom: 14, borderBottom: "1px solid var(--brand-line, rgba(197,165,90,0.18))" }}>
+          {generating && (
+            <div style={{ padding: "8px 0 14px" }}>
+              {panelForRun}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 6, marginBottom: 14, borderBottom: "1px solid #E2E7EE" }}>
             {TABS.map((t) => {
               const active = tab === t.key;
               return (
@@ -241,7 +255,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
                     background: "transparent",
                     border: "none",
                     borderBottom: active ? "2px solid var(--bronze)" : "2px solid transparent",
-                    color: active ? "var(--bronze-text)" : "var(--ink)",
+                    color: active ? "#0670C4" : "var(--ink)",
                     fontSize: 14, fontWeight: active ? 600 : 600,
                     opacity: active ? 1 : 0.85,
                     cursor: "pointer",
