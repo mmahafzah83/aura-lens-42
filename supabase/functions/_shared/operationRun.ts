@@ -11,22 +11,26 @@
  */
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 
-export type OperationName =
-  | "linkedin_read"
-  | "cv_crosscheck"
-  | "market_read"
-  | "capture_ingest"
-  | "studio_generate"
-  | "studio_slides"
-  | "studio_export"
-  | "studio_publish"
-  | "article_ingest";
+import { OPERATION_STAGES, type InstrumentedOperation } from "./stageKeys.ts";
 
+/**
+ * The ONE list of operation names. Derived from the stage definition so a name
+ * that has no measurable stages cannot be recorded at all.
+ */
+export type OperationName = InstrumentedOperation;
+
+export const OPERATION_NAMES = Object.keys(OPERATION_STAGES) as OperationName[];
 
 export type Outcome = "ok" | "refused" | "failed";
 
 export interface RunStart {
   operation: OperationName;
+  /**
+   * The run id, minted by the CLIENT and passed in the request, so the tab can
+   * subscribe to its own run BEFORE the work starts. Omitted (server-minted)
+   * for background work nobody is watching.
+   */
+  id?: string | null;
   attempt?: number;
   user_id?: string | null;
   anon_token?: string | null;
@@ -45,13 +49,15 @@ export interface RunEnd {
 export interface RunHandle {
   id: string | null;
   /**
-   * Close the stage that was running and open this one. The last open stage
-   * is closed by `finish`. Stage durations are what the waiting screens weight
-   * their percentage by, so they are measured here and nowhere else.
+   * Close the stage that was running and open this one — AND WRITE IT DOWN.
+   * The row is updated on every boundary, because a stage list that only
+   * materialises at `finish()` cannot be watched while the work is happening,
+   * and is lost entirely if the function is killed by the wall clock.
    */
   mark: (stageKey: string) => void;
   finish: (end: RunEnd) => Promise<void>;
 }
+
 
 
 function adminClient(client?: SupabaseClient): SupabaseClient {
