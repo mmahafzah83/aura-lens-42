@@ -948,8 +948,11 @@ const Onboarding = () => {
    * Back — one step, with everything the member typed still in state. Nothing
    * is re-fetched and nothing is cleared; only the screen number moves.
    */
-  const goBack = useCallback(() => {
-    const prev = backStack.current.pop();
+  const goBack = useCallback((fallback?: number) => {
+    /* An empty stack is a deep link or a resume — never a dead button. The
+       caller names the screen that sits behind this one. */
+    const popped = backStack.current.pop();
+    const prev = popped ?? fallback;
     if (prev === undefined) return;
     setScreen(prev);
     screenRef.current = prev;
