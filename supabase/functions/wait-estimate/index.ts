@@ -19,17 +19,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const OPERATIONS = new Set([
-  "linkedin_read",
-  "cv_crosscheck",
-  "market_read",
-  "capture_ingest",
-  "studio_generate",
-  "studio_slides",
-  "studio_export",
-  "studio_publish",
-]);
-const MIN_SAMPLE = 10;
+/* One list, derived — an operation with no measurable stages cannot be
+   estimated, and cannot silently drift from what the recorder writes. */
+import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
+
+const OPERATIONS = new Set(Object.keys(OPERATION_STAGES));const MIN_SAMPLE = 10;
 const TTL_MS = 10 * 60 * 1000;
 
 interface StageOut {
