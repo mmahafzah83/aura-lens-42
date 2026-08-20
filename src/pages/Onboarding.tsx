@@ -62,7 +62,7 @@ import { useMayPromiseMorning } from "@/hooks/useMorningPromise";
 import { writeProfile as upsertProfile } from "@/lib/profileWrite";
 import { ensureTimezone, browserTimezone } from "@/lib/ensureTimezone";
 import {
-  ASSESSMENT_STEPS, ASSESSMENT_STEPS_WORD, FULL_PICTURE_LINE,
+  ASSESSMENT_STEPS_WORD, FULL_PICTURE_LINE,
   ASSESSMENT_QUESTIONS, ASSESSMENT_QUESTIONS_WORD, REPORT_FREE_LINE, stageName,
 } from "@/lib/brand";
 import {
@@ -349,7 +349,7 @@ const subOf = (screen: number): JourneySub => {
 };
 
 
-const NightShell = ({ children, face, footer, onExit, subProgress }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void; subProgress?: number }) => {
+const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => {
   const { onBack, name, screen = 0 } = useContext(JourneyNav);
   return (
   <JourneyShell
@@ -358,7 +358,7 @@ const NightShell = ({ children, face, footer, onExit, subProgress }: { children:
     name={name}
     beat={beatOf(screen)}
     sub={subOf(screen)}
-    fraction={journeyFraction(screen, subProgress)}
+    fraction={journeyFraction(screen)}
     background={OB.night}
     className="obc"
   >
@@ -377,12 +377,14 @@ const NightShell = ({ children, face, footer, onExit, subProgress }: { children:
  * third of the walk.
  */
 const PaperShell = ({
-  children, footer, onExit, face = false, subProgress, showProgress = true,
-}: { children: React.ReactNode; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number; showProgress?: boolean }) => {
+  children, footer, onExit, face = false, subProgress, showProgress = true, backFallback,
+}: { children: React.ReactNode; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number; showProgress?: boolean;
+  /** Where Back goes on a screen the member RESUMED onto, with an empty stack. */
+  backFallback?: () => void }) => {
   const { onBack, banner, name, screen = 0 } = useContext(JourneyNav);
   return (
   <JourneyShell
-    onBack={onBack}
+    onBack={onBack ?? backFallback}
     onExit={onExit ?? (() => {})}
     name={name}
     beat={beatOf(screen)}
@@ -758,14 +760,23 @@ const Onboarding = () => {
     patch: Record<string, any>,
     label: string,
     uid?: string | null,
+    /**
+     * THE ONLY WAY TO NULL A COLUMN. A null inside `patch` is dropped, so a
+     * partial write can never blank a column it does not mean to. A column
+     * named here is cleared deliberately — the subject-change reset is the one
+     * caller that must actually empty the row.
+     */
+    clearKeys?: string[],
   ): Promise<boolean> => {
     const id = uid ?? userId;
+    const clears = (clearKeys ?? []).filter(Boolean);
     if (!id) {
       // Anonymous run: the same facts are kept on the session row and written
       // to diagnostic_profiles once the account exists and claims the run.
       if (!anonToken) return false;
       const clean: Record<string, any> = {};
       for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
+      for (const k of clears) clean[k] = null;
       anonStateRef.current = {
         ...anonStateRef.current,
         /* Stamped with the address this run is about, so a later run against a
@@ -779,9 +790,10 @@ const Onboarding = () => {
       return saveSession(anonToken, anonStateRef.current);
     }
     // The journey never clears a column it does not name, so nulls are dropped
-    // before the shared writer sees them.
+    // before the shared writer sees them — except the ones named in clearKeys.
     const clean: Record<string, any> = {};
     for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
+    for (const k of clears) clean[k] = null;
     return upsertProfile(id, clean, `journey ${label}`);
   }, [userId, anonToken]);
 
@@ -1041,8 +1053,9 @@ const Onboarding = () => {
     if (!anonToken) return;
     const found = await loadSession(anonToken);
     const base = (found?.state ?? anonStateRef.current ?? {}) as AssessmentState & Record<string, any>;
-    if (!base?.read) return;
-    const next = { ...base, step: "read_open" };
+    /* No read to open is not a dead button: /assessment owns the read, so send
+       them there to do it rather than silently doing nothing. */
+    const next = { ...base, step: base?.read ? "read_open" : "address" };
     const ok = await saveSession(anonToken, next);
     if (!ok) return;                       // never send them somewhere that bounces
     anonStateRef.current = next as any;
@@ -1093,6 +1106,17 @@ const Onboarding = () => {
           setStep1Phase("result");
           setReadDone(true);
           setPostsRead(Number(st.posts_read ?? 0));
+          /* The confirmation card is as rich for an anonymous member as it is
+             for a signed-in one: photo, headline and figures come off the read
+             that /assessment already did. */
+          setLiProfile({
+            full_name: st.name ?? ([pf.first_name, pf.last_name].filter(Boolean).join(" ") || null),
+            headline: (st.read as any)?.headline ?? pf.headline ?? null,
+            profile_picture: (st.read as any)?.profile_picture ?? (st.read as any)?.photo ?? null,
+            followers: (st.read as any)?.followers ?? null,
+            connections: (st.read as any)?.connections ?? null,
+            read: st.read,
+          });
         }
         if (st.name && !firstName) {
           const parts = String(st.name).split(/\s+/);
@@ -1355,10 +1379,12 @@ const Onboarding = () => {
         setScores({}); setAnswers({}); setReveal(null); setDimIdx(0); setQIdx(0);
         setClaims([]);
         try { localStorage.removeItem(`aura_ob_dim_${userId}`); localStorage.removeItem(`aura_ob_q_${userId}`); } catch { /* ignore */ }
-        await writeProfile({
-          brand_assessment_answers: null, answered_band: null,
-          skill_ratings: null, audit_results: null,
-        }, "subject change reset");
+        /* These four columns must actually be emptied on the row, not merely in
+           state — otherwise the next resume hydrates the last subject's work
+           straight back in. `clearKeys` is the deliberate null. */
+        await writeProfile({}, "subject change reset", undefined, [
+          "brand_assessment_answers", "answered_band", "skill_ratings", "audit_results",
+        ]);
         if (hadWork) toast("That's a different profile — Aura has cleared the strengths and answers from the last one.");
       }
       subjectRef.current = profile_url;
@@ -1680,14 +1706,14 @@ const Onboarding = () => {
   /* one sentence of their own, quoted back on the confirm screen */
   useEffect(() => {
     if (!userId || ownLine) return;
-    if (screen !== 2 && screen !== 3) return;
+    if (screen !== 1) return;
     loadOwnSentence(userId).then((s) => { if (s) setOwnLine(s); }).catch(() => {});
   }, [userId, screen, ownLine]);
 
   /* everything else Aura already read — the whole profile, not three numbers */
   useEffect(() => {
     if (!userId || facts) return;
-    if (screen !== 2 && screen !== 3) return;
+    if (screen !== 1) return;
     loadProfileFacts(userId).then((f) => { if (f) setFacts(f); }).catch(() => {});
   }, [userId, screen, facts]);
 
@@ -2490,7 +2516,9 @@ const Onboarding = () => {
               comes straight back.
             </p>
             <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton onClick={() => { void backToRead(); }}>Open my read</OBButton>
+              <OBButton onClick={() => { void backToRead(); }}>
+                {(anonStateRef.current as any)?.read ? "Open my read" : "Read my profile"}
+              </OBButton>
               <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
             </Actions>
           </>
@@ -2886,7 +2914,7 @@ const Onboarding = () => {
       go(5);
     };
     content = (
-      <PaperShell onExit={saveAndExit} subProgress={0.5} footer={escapeFooter}>
+      <PaperShell onExit={saveAndExit} subProgress={0.5} footer={escapeFooter} backFallback={() => go(1)}>
         <h1 style={h1Light}>Have a CV handy?</h1>
         <p style={bodyLight}>
           Your CV and your profile are read together. Your profile says what the world can see.
@@ -4209,7 +4237,10 @@ const Onboarding = () => {
       ) : null}
       <JourneyNav.Provider value={{
         onBack: screen === 1 && step1Phase === "result"
-          ? () => returnToAddress()
+          /* Anonymous members do not own the read here — /assessment does.
+             Dropping them into the address form would claim their read is
+             lost while it is sitting on the session. */
+          ? (!userId ? () => { void backToRead(); } : () => returnToAddress())
           : canBack
             ? goBack
             : screen === 0 && anonToken && (anonStateRef.current as any)?.read

@@ -11,9 +11,11 @@
  * PROGRESS IS FLAT. One connected three-segment bar, labelled, no counts
  * anywhere in the chrome: this journey is conditional (CV, sector and purpose
  * are all optional), so "step n of 5" is not true of anyone's journey. The
- * fill is continuous and monotonic — it may never move backwards.
+ * fill moves WITH the member — forwards on Continue and backwards on Back. A
+ * fill that refuses to regress while the labels regress is two widgets telling
+ * two different stories.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 import { AuraLogo } from "@/components/brand/AuraLogo";
 
@@ -54,6 +56,18 @@ export const BEAT_BOUNDS: [number, number, number, number] = [
   BEAT_WEIGHTS[0] + BEAT_WEIGHTS[1],
   1,
 ];
+
+/**
+ * THE READ, in the same units the rest of the journey is measured in.
+ *
+ * `/assessment` owns the read and `/onboarding` owns everything after it, but
+ * they draw ONE bar. The read is the first work unit of 53.5 (mirroring
+ * `SCREEN_WORK` in Onboarding), so the hand-off between the two routes is
+ * continuous and the number can never go down at the moment of commitment.
+ */
+export const JOURNEY_WORK_TOTAL = 53.5;
+export const readStageFraction = (phase: "address" | "reading" | "held"): number =>
+  ({ address: 0.3, reading: 0.6, held: 1 }[phase] * 1) / JOURNEY_WORK_TOTAL;
 
 export interface JourneySub {
   /** 1-based step inside the beat currently in progress. Drives partial fill only. */
