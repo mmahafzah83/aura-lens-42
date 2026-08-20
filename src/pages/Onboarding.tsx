@@ -593,19 +593,6 @@ const Onboarding = () => {
   /* 3.5 — the cross-check runs exactly once, and we keep what it says.
      It never blocks progression: the member walks on, and if it fails or
      times out they simply see nothing. */
-  const cvRunRef = useRef(false);
-  const runCvCrosscheck = useCallback(async () => {
-    if (cvRunRef.current) return;
-    cvRunRef.current = true;
-    try {
-      const { data, error } = await supabase.functions.invoke("cv-crosscheck", {
-        body: { purpose: readCvPurpose() },
-      });
-      if (error) return;
-      const cc = (data as { ok?: boolean; crosscheck?: unknown } | null)?.crosscheck;
-      if (cc) setCvCrosscheck(cc);
-    } catch { /* the journey continues regardless */ }
-  }, []);
 
   /**
    * "Keep this for me" — the only wired Aura action on the cross-check.
@@ -1105,7 +1092,7 @@ const Onboarding = () => {
       else if (!passwordSet) setNeedsPassword(true);
 
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, level, seniority_band, onboarding_step, skill_ratings, identity_intelligence, journey_reset_at")
+        .select("first_name, last_name, firm, sector_focus, level, seniority_band, onboarding_step, skill_ratings, brand_assessment_answers, identity_intelligence, journey_reset_at")
         .eq("user_id", uid)
         .maybeSingle();
       const p: any = profile || {};
@@ -1135,6 +1122,15 @@ const Onboarding = () => {
       if (p.level) setLevelTitle(p.level);
       if (p.seniority_band) setBand(p.seniority_band as Band);
       if (p.skill_ratings && typeof p.skill_ratings === "object") setScores(p.skill_ratings as Record<string, number>);
+      /* P1 — answers must be in hand before any resume into the instrument.
+         Without this, `advance` rebuilds the set from {} and the save wipes
+         everything answered before the reload. */
+      const hydratedAnswers = (p.brand_assessment_answers && typeof p.brand_assessment_answers === "object")
+        ? (p.brand_assessment_answers as Record<string, string>) : {};
+      setAnswers(hydratedAnswers);
+      const hasAnswers = Object.keys(hydratedAnswers).length > 0;
+      const hasScores = Boolean(p.skill_ratings && typeof p.skill_ratings === "object"
+        && Object.keys(p.skill_ratings as Record<string, number>).length > 0);
 
       let resume = Number((p.identity_intelligence as any)?.journey_screen ?? 0);
       try {
@@ -1185,10 +1181,12 @@ const Onboarding = () => {
         } catch { resume = 5; }
       }
       try {
+        /* The saved value is authoritative — a member who stepped back must not
+           be thrown forward past the question they went back to. */
         const lq = Number(localStorage.getItem(`aura_ob_q_${uid}`) ?? "0");
-        if (Number.isFinite(lq) && lq > 0) setQIdx(lq);
+        setQIdx(hasAnswers && Number.isFinite(lq) && lq > 0 ? lq : 0);
         const ld = Number(localStorage.getItem(`aura_ob_dim_${uid}`) ?? "0");
-        if (Number.isFinite(ld) && ld > 0) setDimIdx(ld);
+        setDimIdx(hasScores && Number.isFinite(ld) && ld > 0 ? ld : 0);
       } catch { /* ignore */ }
       if (resume > 0 && (resume <= 14 || resume === MANUAL_SCREEN)) {
         setScreen(resume); screenRef.current = resume;
@@ -3144,7 +3142,11 @@ const Onboarding = () => {
         setTextAnswer("");
         setMultiPicked([]);
         setSinglePicked(null);
-        setQIdx((i) => Math.max(0, i - 1));
+        setQIdx((i) => {
+          const nextIdx = Math.max(0, i - 1);
+          persistQuestionProgress(answers, nextIdx);
+          return nextIdx;
+        });
       };
       const cap = q.kind === "multi" ? (q.max_choices ?? (q.options?.length || 99)) : 1;
       const atCap = multiPicked.length >= cap;
