@@ -1725,7 +1725,9 @@ const Onboarding = () => {
   }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
 
   /* ── finishing ── */
-  const finish = async () => {
+  /* `destination` lets the seat doors complete the journey before they leave:
+     the member who reserves a seat is still a finished member. */
+  const finish = async (opts?: { destination?: string }) => {
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
       if (reveal) {
@@ -1788,7 +1790,7 @@ const Onboarding = () => {
     try { localStorage.setItem("aura_onboarding_complete", "true"); } catch { /* ignore */ }
     try { sessionStorage.removeItem("aura_onboarding_visits"); } catch { /* ignore */ }
     supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
-    navigate("/home", { replace: true });
+    navigate(opts?.destination ?? "/home", { replace: true });
   };
 
   /**
@@ -1987,6 +1989,18 @@ const Onboarding = () => {
       await writeProfile({ ui_dismissals: { ...existing, daily_time: { slot, time_zone: timeZone, at: new Date().toISOString() } } }, "daily time save");
     } catch { /* they can change it in Settings */ }
   }, [userId, timeZone, writeProfile]);
+
+  /* Both seat doors: finish first, then leave. A failed finish never traps
+     the member — it is logged and the door still opens. */
+  const leaveForSeat = async (intent: "reserve_69" | "keep_posted") => {
+    const destination = `${SEAT_PATH}?intent=${intent}`;
+    try {
+      await finish({ destination });
+    } catch (e) {
+      console.error("[journey] finish before seat threw", e);
+      navigate(destination);
+    }
+  };
 
   /* Pausing is not finishing. The old escape hatch flagged the member as fully
    * onboarded with an empty profile and locked them out of the journey for
@@ -3949,13 +3963,18 @@ const Onboarding = () => {
           <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_PRICE_SUBLINE}</p>
           <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.ink }}>{SEAT_CONSTRAINT}</p>
           <Actions style={{ marginBlockStart: 16 }}>
-            {/* Two doors, equal weight: the split between them is the measurement. */}
-            <OBButton onClick={() => navigate(`${SEAT_PATH}?intent=reserve_69`)}>{SEAT_CTA}</OBButton>
+            {/* One primary. Both seat doors complete the journey before they
+                leave — a reserved seat used to strand the member on screen 14
+                with no read email and onboarding_step stuck at 3. */}
+            <OBButton onClick={() => void finish()}>Take me in</OBButton>
             <OBButton
               variant="secondary"
               style={{ borderColor: OB.blue, color: OB.blue, background: "#FFFFFF" }}
-              onClick={() => navigate(`${SEAT_PATH}?intent=keep_posted`)}
+              onClick={() => void leaveForSeat("reserve_69")}
             >
+              {SEAT_CTA}
+            </OBButton>
+            <OBButton variant="tertiary" onClick={() => void leaveForSeat("keep_posted")}>
               {SEAT_CTA_SECONDARY}
             </OBButton>
             {connected || !userId ? null : (
@@ -3965,7 +3984,6 @@ const Onboarding = () => {
                 Connect LinkedIn
               </OBButton>
             )}
-            <OBButton variant="tertiary" onClick={() => void finish()}>Take me in</OBButton>
           </Actions>
           <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
             {SEAT_RESERVE_NOTE}
