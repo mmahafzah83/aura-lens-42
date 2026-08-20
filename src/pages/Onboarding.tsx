@@ -799,8 +799,11 @@ const Onboarding = () => {
      * caller that must actually empty the row.
      */
     clearKeys?: string[],
+    /** Start over is the ONE writer allowed to lower `onboarding_step`. */
+    opts?: { allowStepDecrease?: boolean },
   ): Promise<boolean> => {
     const id = uid ?? userId;
+
     const clears = (clearKeys ?? []).filter(Boolean);
     if (!id) {
       // Anonymous run: the same facts are kept on the session row and written
