@@ -1126,6 +1126,20 @@ const LandingV2 = () => {
 
   useEffect(() => setMounted(true), []);
 
+  /* ── the pill tightens once you are past the fold ── */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const nav = root.querySelector<HTMLElement>(".nav");
+    if (!nav) return;
+    const onScroll = () => nav.classList.toggle("shrink", window.scrollY > 120);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [mounted]);
+
+
+
   /* ── the page knows who is looking at it ── */
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   useEffect(() => {
