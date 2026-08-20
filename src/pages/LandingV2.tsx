@@ -898,11 +898,10 @@ const LANDING_V2_HTML = `
 <section class="pg" id="cmp">
   <div class="hdr">
     <span class="tag">Against every other option</span>
-    <h2>They give everyone<br>the same template.<br><span class="grad">We start with you.</span></h2>
-    <p class="sub">Other tools hand every person the same shapes and the same words. Aura learns your experience and your reading first — then writes from them.</p>
+    <h2>They hand out templates.<br><span class="grad">We start with you.</span></h2>
+    <p class="sub">Every other tool gives all its customers the same shapes. Aura learns you first.</p>
   </div>
 
-  <p class="sub" style="margin-top:18px;max-width:680px">${SEAT_VS_TOOLS}</p>
 
   <div class="eyebrow">Side by side</div>
   <div class="cmp rv">
