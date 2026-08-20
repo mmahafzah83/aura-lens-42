@@ -1053,8 +1053,9 @@ const Onboarding = () => {
     if (!anonToken) return;
     const found = await loadSession(anonToken);
     const base = (found?.state ?? anonStateRef.current ?? {}) as AssessmentState & Record<string, any>;
-    if (!base?.read) return;
-    const next = { ...base, step: "read_open" };
+    /* No read to open is not a dead button: /assessment owns the read, so send
+       them there to do it rather than silently doing nothing. */
+    const next = { ...base, step: base?.read ? "read_open" : "address" };
     const ok = await saveSession(anonToken, next);
     if (!ok) return;                       // never send them somewhere that bounces
     anonStateRef.current = next as any;
@@ -2504,7 +2505,9 @@ const Onboarding = () => {
               comes straight back.
             </p>
             <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton onClick={() => { void backToRead(); }}>Open my read</OBButton>
+              <OBButton onClick={() => { void backToRead(); }}>
+                {(anonStateRef.current as any)?.read ? "Open my read" : "Read my profile"}
+              </OBButton>
               <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
             </Actions>
           </>
