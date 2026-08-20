@@ -973,6 +973,7 @@ const LANDING_V2_HTML = `
   </div>
   <div style="max-width:760px;margin:0 auto">
     <details open><summary>How much of my time does this take?</summary><p>${ASSESSMENT_QUESTIONS_PHRASE.replace(/^./, (c) => c.toUpperCase())} once at the start. After that, one tap when you read something good, and about two minutes to approve a post. Nothing more.</p></details>
+    <details><summary>Will it sound like AI?</summary><p>It learns from what you have already written — how you open, how long your sentences run, how you land a point. And it deletes its own drafts that do not pass as you, before you ever see them. If one still gets through, you say so, and it learns.</p></details>
     <details><summary>How many posts will I get?</summary><p>As many as you want. There is no weekly quota. Save two articles and you can publish two posts; save ten and you can publish ten. It follows your reading, not a calendar.</p></details>
     <details><summary>Do I need a designer for the carousels?</summary><p>No. Aura designs them for you, ready to post — no design tool, no design skill, no fee.</p></details>
     <details><summary>Will the posts really sound like me?</summary><p>Aura learns from your own posts: how you open, how you explain, how you finish. And you read every word before anything goes out.</p></details>
@@ -1079,6 +1080,7 @@ const LANDING_V2_HTML = `
         <div class="tli"><span class="bead"></span><div><div class="tt">Now — seats 1 to 50</div><div class="tb">${SEAT_PRICE}, and I onboard you myself. ${SEAT_CONSTRAINT}</div></div></div>
         <div class="tli"><span class="bead hollow"></span><div><div class="tt">The lock</div><div class="tb">The price is attached to your seat, not to the date you joined. Keep the seat, keep the price.</div></div></div>
         <div class="tli"><span class="bead hollow"></span><div><div class="tt">Every year after that</div><div class="tb">You are still paying ${SEAT_PRICE.split(" ")[0]}. That is the entire promise, and it is in writing.</div></div></div>
+        <div class="tli"><span class="bead hollow"></span><div><div class="tt">And the part you actually want</div><div class="tb">Around month two, someone you respect says: I have been seeing your posts. That is the whole return, and it is the reason the rest of this exists.</div></div></div>
       </div>
     </div>
     <div>
