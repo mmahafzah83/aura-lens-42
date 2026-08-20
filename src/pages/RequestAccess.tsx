@@ -619,7 +619,7 @@ const RA_CSS = `
   font-size:15px;font-weight:600;line-height:1.25;cursor:pointer;
   transition:background .2s ease,color .2s ease,box-shadow .25s ease;}
 .ra-door:disabled{cursor:default;opacity:.85;}
-.ra-door-fill{background:var(--act);color:#fff;border:1.5px solid var(--act);}
+.ra-door-fill{background:var(--act);color:#fff;border:1.5px solid var(--act);border-radius:8px;}
 .ra-door-fill:hover:not(:disabled){background:#04477C;border-color:#04477C;}
 .ra-door-line{background:var(--n0);color:var(--act);border:1.5px solid var(--act);}
 .ra-door-line:hover:not(:disabled){background:var(--act-50);}
