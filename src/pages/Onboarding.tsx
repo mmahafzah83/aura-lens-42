@@ -959,10 +959,16 @@ const Onboarding = () => {
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("identity_intelligence").eq("user_id", userId).maybeSingle();
       const fresh = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+      /* THE COUNTER IS NOT A POSITION. A finished member sits at 4; a screen
+         save must never derive a smaller number and push them back to 3 —
+         that is what sent every finished member round the journey again.
+         The shared writer refuses a decrease as well; this is the near guard. */
+      const derived = Math.min(3, Math.max(0, Math.floor(next / 4)));
       await writeProfile({
         identity_intelligence: { ...fresh, journey_screen: next },
-        onboarding_step: Math.min(3, Math.max(0, Math.floor(next / 4))),
+        ...(finishedRef.current || next >= 14 ? {} : { onboarding_step: derived }),
       }, "progress save");
+
     } catch (e) { console.error("[journey] progress save threw", e); }
   }, [userId, anonToken, writeProfile]);
 
