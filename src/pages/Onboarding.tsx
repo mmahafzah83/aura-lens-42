@@ -31,6 +31,7 @@ import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@
 import AuraFace from "@/components/onboarding/AuraFace";
 import ShelfBadge, { type ShelfBadgeTone } from "@/components/onboarding/ShelfBadge";
 import ClaimCard from "@/components/onboarding/ClaimCard";
+import NextStrip from "@/components/onboarding/NextStrip";
 import RevealCard, { type RevealData, shareRevealCard, rasteriseRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import StatusRow from "@/components/onboarding/StatusRow";
@@ -1006,6 +1007,11 @@ const Onboarding = () => {
         if (pf.skill_ratings && typeof pf.skill_ratings === "object") setScores(pf.skill_ratings);
         }
         if (st.answers && typeof st.answers === "object") setAnswers(st.answers);
+        /* The capture payoff survives a reload: the fragments Aura pulled out
+           of their link are held on the session, not only in memory. */
+        if (Array.isArray(st.capture_fragments) && st.capture_fragments.length) {
+          setClaims(st.capture_fragments as Claim[]);
+        }
         if (st.profile_url) setLiInput(st.profile_url);
         /* The quick read already happened at /assessment — never ask twice. */
         if (st.read) {
@@ -1026,7 +1032,11 @@ const Onboarding = () => {
         if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
         if (back === TRUST_SLIDERS_SCREEN) back = 8; /* retired gate */
         if (back === 4) back = 5; /* the interstitial is gone */
-        if (back === 6 || back === 7) back = 5;
+        /* A reload mid-read goes back to the link step — unless the payoff
+           already exists, in which case they land on it. */
+        if (back === 6 || back === 7) {
+          back = (Array.isArray(st.capture_fragments) && st.capture_fragments.length) ? 7 : 5;
+        }
         /* Back to the question they were on, not to question one. */
         {
           let qi = Number(st.q_idx ?? 0);
@@ -1451,7 +1461,7 @@ const Onboarding = () => {
     setLinkFailed(false);
     go(6);
     let sent = false;
-    let deferred = false;
+    let anonRead = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -1470,7 +1480,8 @@ const Onboarding = () => {
           sent = res.ok;
         } finally { window.clearTimeout(to); }
       } else if (anonToken) {
-        /* No session is our gap, not their bad link — keep it and replay at hand-off. */
+        /* No account is our gap, not their bad link — keep it and replay it at
+           hand-off, which is what writes the durable evidence rows. */
         anonStateRef.current = {
           ...anonStateRef.current,
           pending_captures: [
@@ -1479,16 +1490,41 @@ const Onboarding = () => {
           ],
         };
         await saveSession(anonToken, anonStateRef.current);
-        deferred = true;
+        /* D-12: an anonymous member gets the same payoff as a signed-in one.
+           The link is read here and now, and what came out of it is shown. */
+        setCaptureRunId((n) => n + 1);
+        setReadStep(1);
+        anonRead = true;
       }
     } catch { sent = false; /* aborted or offline — nothing was written */ }
     sendingLinkRef.current = false;
     setSendingLink(false);
-    if (deferred) {
-      setCaptureRunId((n) => n + 1);
-      setCapturePending(true);
+
+    if (anonRead && anonToken) {
+      let got: Claim[] = [];
+      try {
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/onboarding-read-link`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: anonToken, url: v, title: meta?.title, summary: meta?.summary }),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (out?.ok && Array.isArray(out.fragments)) {
+          got = (out.fragments as Claim[]).filter((f) => f?.title);
+        }
+      } catch { /* handled below — never a dead end */ }
+      if (got.length) {
+        anonStateRef.current = { ...anonStateRef.current, capture_fragments: got } as any;
+        setClaims(got);
+        setReadStep(2);
+        go(7);
+      } else {
+        /* Nothing could be pulled out here. Say so — never skip the beat. */
+        setCapturePending(true);
+      }
       return;
     }
+
     if (!sent) {
       /* nothing will ever land — don't make them watch a 120s ceiling for it */
       setLinkFailed(true);
@@ -2906,12 +2942,13 @@ const Onboarding = () => {
     const settled = claimsSlow && claims.length === 0;
     content = capturePending ? (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>Saved.</h1>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>Kept.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          Aura files this against your account the moment you save your report — nothing is lost.
+          Aura couldn't pull anything usable out of this one here — some pages don't open to it.
+          The link is on your record and Aura reads it again when your report is saved.
         </p>
         <Actions style={{ marginBlockStart: 22 }}>
-          <OBButton onClick={() => { setCapturePending(false); go(8); }}>Carry on</OBButton>
+          <OBButton onClick={() => { setCapturePending(false); go(7); }}>Carry on</OBButton>
         </Actions>
       </NightShell>
     ) : linkFailed ? (
@@ -2958,19 +2995,30 @@ const Onboarding = () => {
     );
   }
 
-  /* 7 — NIGHT, three claims */
+  /* 7 — NIGHT, the capture payoff: real fragments, then what they become */
   if (screen === 7) {
+    const shown = claims.slice(0, 5);
     content = (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
-        <h1 style={{ ...h1Night, textAlign: "center" }}>Here's what Aura found in it.</h1>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
-          {claims.slice(0, 3).map((c, i) => (
-            <ClaimCard key={`${c.title}-${i}`} index={i} title={c.title} content={c.content} />
-          ))}
-        </div>
+        <h1 style={{ ...h1Night, textAlign: "center" }}>
+          {shown.length ? "Here's what Aura found in it." : "Nothing came out of that one."}
+        </h1>
+        {shown.length ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 24 }}>
+            {shown.map((c, i) => (
+              <ClaimCard key={`${c.title}-${i}`} index={i} title={c.title} content={c.content} />
+            ))}
+          </div>
+        ) : (
+          <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 18 }}>
+            Some pages don't open to a reader. The link is kept against your record, and Aura
+            reads it again when your report is saved.
+          </p>
+        )}
         <p style={{ ...bodyNight, textAlign: "center", marginBlockStart: 22 }}>
           You'll know when something moves these — without going looking.
         </p>
+        <NextStrip count={shown.length} onNight />
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
           gap: 8, justifyItems: "center", maxWidth: 420, margin: "22px auto 4px",
