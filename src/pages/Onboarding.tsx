@@ -1092,7 +1092,7 @@ const Onboarding = () => {
       else if (!passwordSet) setNeedsPassword(true);
 
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, level, seniority_band, onboarding_step, skill_ratings, brand_assessment_answers, identity_intelligence, journey_reset_at")
+        .select("first_name, last_name, firm, sector_focus, level, seniority_band, answered_band, onboarding_step, skill_ratings, brand_assessment_answers, identity_intelligence, journey_reset_at")
         .eq("user_id", uid)
         .maybeSingle();
       const p: any = profile || {};
