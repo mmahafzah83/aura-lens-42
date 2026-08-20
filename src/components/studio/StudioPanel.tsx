@@ -1725,6 +1725,11 @@ export default function StudioPanel({
     if (content.trim().length < SLIDES_MIN_CHARS) { setProblem(T.slidesTooShort[lang]); return; }
     if (!choice?.id) { setProblem(T.typedTopicNoSlides[lang]); return; }
     const runId = ++deckRunId.current;
+    /* The run the slides panel watches — minted before the call, so the first
+       stage mark cannot land before the channel is open. */
+    const slidesRunId = newRunId();
+    pendingRunIdRef.current = slidesRunId;
+    setBusyRunId(slidesRunId);
     const builtFrom = content;
     setStep(3);
     setSub("build");
@@ -1747,7 +1752,7 @@ export default function StudioPanel({
       const { id: rowId } = await saveDraft({ silent: true });
       const call = supabase.functions.invoke("generate-deck", {
         body: {
-          run_id: deckRunId,
+          run_id: slidesRunId,
           signal_id: choice.id,
           length: lengthOverride ?? deckLength,
           theme,
