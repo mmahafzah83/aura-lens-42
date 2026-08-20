@@ -77,6 +77,7 @@ export async function startRun(
     const { data, error } = await admin
       .from("operation_runs")
       .insert({
+        ...(start.id ? { id: start.id } : {}),
         operation: start.operation,
         started_at: new Date().toISOString(),
         attempt: start.attempt ?? 1,
@@ -94,13 +95,36 @@ export async function startRun(
   }
 
   let done = false;
-  const stages: { key: string; ms: number }[] = [];
+  /** A closed stage carries its milliseconds; the OPEN stage carries null. */
+  const stages: { key: string; ms: number | null }[] = [];
   let openKey: string | null = null;
   let openAt = Date.now();
   const closeOpen = () => {
     if (openKey === null) return;
-    stages.push({ key: openKey, ms: Math.max(1, Date.now() - openAt) });
+    const row = stages[stages.length - 1];
+    if (row && row.key === openKey && row.ms === null) row.ms = Math.max(1, Date.now() - openAt);
+    else stages.push({ key: openKey, ms: Math.max(1, Date.now() - openAt) });
     openKey = null;
+  };
+
+  /* Writes are chained so two marks in the same tick cannot land out of order.
+     A failed write is logged and never propagated: recording must not break
+     the thing it records. */
+  let chain: Promise<void> = Promise.resolve();
+  const persistStages = () => {
+    if (!id) return;
+    const snapshot = stages.map((s) => ({ ...s }));
+    chain = chain.then(async () => {
+      try {
+        const { error } = await admin
+          .from("operation_runs")
+          .update({ stages: snapshot })
+          .eq("id", id);
+        if (error) throw error;
+      } catch (e) {
+        console.error("[operation_runs] mark failed (non-blocking):", (e as Error)?.message ?? e);
+      }
+    });
   };
 
   return {
@@ -109,12 +133,17 @@ export async function startRun(
       closeOpen();
       openKey = stageKey;
       openAt = Date.now();
+      stages.push({ key: stageKey, ms: null });
+      /* THE WRITE. Every boundary lands in the row, mid-run, so the tab
+         watching this operation sees the tick the moment it happens. */
+      persistStages();
     },
     async finish(end: RunEnd) {
       if (done || !id) return;
       done = true;
       closeOpen();
       try {
+        await chain;
         const patch: Record<string, unknown> = {
           finished_at: new Date().toISOString(),
           outcome: end.outcome,
@@ -130,5 +159,6 @@ export async function startRun(
       }
 
     },
+
   } as RunHandle;
 }
