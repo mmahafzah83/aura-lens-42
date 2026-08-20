@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { WorkingInline } from "@/components/ui/WorkingPanel";
 import { supabase } from "@/integrations/supabase/client";
 
 const INK = "#0F1519";
@@ -85,18 +86,6 @@ const NOTE_HEAD: React.CSSProperties = { fontSize: 15, fontWeight: 700, margin: 
 const NOTE_BODY: React.CSSProperties = { fontSize: 13.5, color: MUTED, lineHeight: 1.6, margin: "8px 0 0" };
 const ERROR_LINE: React.CSSProperties = { fontSize: 13, color: ERROR, lineHeight: 1.5 };
 const HONEST_LINE: React.CSSProperties = { fontSize: 13, color: MUTED, lineHeight: 1.6 };
-const PROGRESS_TRACK: React.CSSProperties = {
-  height: 4, borderRadius: 999, background: LINE, overflow: "hidden", marginBlockStart: 10,
-};
-const PROGRESS_FILL: React.CSSProperties = {
-  height: "100%", borderRadius: 999, background: "#00CEC9",
-  animation: "aura-draft-progress 2.4s ease-in-out infinite",
-};
-const KEYFRAMES = `@keyframes aura-draft-progress {
-  0% { margin-inline-start: 0%; width: 18%; }
-  50% { margin-inline-start: 60%; width: 40%; }
-  100% { margin-inline-start: 0%; width: 18%; }
-}`;
 
 export type DraftTarget = "headline" | "about";
 
@@ -238,7 +227,6 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
       aria-label={target === "headline" ? "Draft a headline" : "Draft an About section"}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <style>{KEYFRAMES}</style>
       <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
         <div style={HEAD}>
           <h2 style={TITLE}>
@@ -260,9 +248,14 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
         <div style={BODY}>
           {busy && (
             <div style={NOTE_CARD}>
-              <p style={NOTE_HEAD}>{phase === "reading" ? "Reading your posts…" : "Writing three options…"}</p>
-              <p style={NOTE_BODY}>This takes up to a minute. You can close this and come back.</p>
-              <div style={PROGRESS_TRACK}><div style={PROGRESS_FILL} /></div>
+              <p style={NOTE_HEAD}>{phase === "reading" ? "Reading your posts" : "Writing three options"}</p>
+              <p style={NOTE_BODY}>You can close this and come back — the counter below is real.</p>
+              <div style={{ marginBlockStart: 10 }}>
+                <WorkingInline
+                  runId={phase}
+                  verb={phase === "reading" ? "Reading your posts" : "Writing three options"}
+                />
+              </div>
             </div>
           )}
 
