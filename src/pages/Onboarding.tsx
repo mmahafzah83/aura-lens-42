@@ -31,6 +31,7 @@ import { generateMarketRead, loadMarketRead, saveAnswers, toRevealData } from "@
 import AuraFace from "@/components/onboarding/AuraFace";
 import ShelfBadge, { type ShelfBadgeTone } from "@/components/onboarding/ShelfBadge";
 import ClaimCard from "@/components/onboarding/ClaimCard";
+import NextStrip from "@/components/onboarding/NextStrip";
 import RevealCard, { type RevealData, shareRevealCard, rasteriseRevealCard, suggestedCaption } from "@/components/onboarding/RevealCard";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import StatusRow from "@/components/onboarding/StatusRow";
