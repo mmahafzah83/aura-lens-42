@@ -2159,7 +2159,7 @@ const Onboarding = () => {
           skill_ratings: null,
           audit_results: null,
           answered_band: null,
-        }, "start over");
+        }, "start over", undefined, ["brand_assessment_answers", "skill_ratings", "audit_results", "answered_band"], { allowStepDecrease: true });
       } catch (e) { console.error("[journey] start over save threw", e); }
       try {
         localStorage.removeItem(`aura_ob_screen_${userId}`);
