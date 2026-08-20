@@ -162,3 +162,14 @@ export async function startRun(
 
   } as RunHandle;
 }
+
+/**
+ * The run id the CLIENT minted, if it sent one. A tab that mints its own id can
+ * subscribe to the run before invoking, so the first mark is never missed.
+ */
+export const runIdFrom = (body: unknown): string | null => {
+  const v = (body as { run_id?: unknown } | null | undefined)?.run_id;
+  return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+    ? v
+    : null;
+};

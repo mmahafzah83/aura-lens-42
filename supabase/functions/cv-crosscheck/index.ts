@@ -180,6 +180,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
   let run: RunHandle | null = null;
   try {
     run = await startRun(admin, {
+      id: runIdFrom(body),
       operation: "cv_crosscheck",
       user_id: callerId || null,
       anon_token: anonToken || null,

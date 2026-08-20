@@ -361,6 +361,7 @@ Deno.serve(async (req) => {
     if ((count ?? 0) >= 5) return serveStale() ?? json({ error: "rate_limited" }, 429);
 
     run = await startRun(admin, {
+      id: runIdFrom(body),
       operation: "linkedin_read",
       fingerprint_hash: ip_hash,
       meta: { handle, force, regenerating: !!cached },

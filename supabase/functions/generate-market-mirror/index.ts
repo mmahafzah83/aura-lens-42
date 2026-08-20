@@ -38,7 +38,8 @@ serve(async (req) => {
     }
     const userId = user.id;
     const admin = createClient(supabaseUrl, serviceKey);
-    run = await startRun(admin, { operation: "market_read", user_id: userId });
+    const body = await req.json().catch(() => ({}));
+    run = await startRun(admin, { id: runIdFrom(body), operation: "market_read", user_id: userId });
     run.mark(GATHER);
 
     // Rate limit: once per 7 days
