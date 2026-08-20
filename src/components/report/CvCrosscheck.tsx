@@ -424,7 +424,7 @@ export default function CvCrosscheck({
   if (state === "error") {
     return (
       <section style={{ ...card, ...style }}>
-        <p style={body}>Aura couldn't finish the comparison this time. Nothing you entered is lost — try once more.</p>
+        <p style={body}>Aura couldn't finish the comparison this time. Your CV is saved — try again.</p>
         {onRetry ? (
           <button type="button" onClick={onRetry} style={{ ...filledBtn, marginBlockStart: 14 }}>Try again</button>
         ) : null}

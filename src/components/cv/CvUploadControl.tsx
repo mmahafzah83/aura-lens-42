@@ -137,22 +137,13 @@ type Failure =
   | { kind: "no_cv" }
   | { kind: "no_snapshot" }
   | { kind: "unparseable" }
-  | { kind: "gate_failed" }
   | { kind: "server" };
 
-/* The copy has to be true on the path it is shown: signed in, the file is on
-   file; anonymous, nothing was written down at all. */
-const failureText = (kind: Failure["kind"], signedIn: boolean): string => {
-  const tail = signedIn
-    ? "Your CV is saved — try again."
-    : "Nothing was stored, so you'll need to pick the file again. Your read and your answers are safe.";
-  switch (kind) {
-    case "no_cv": return "Aura hasn't got a CV to read yet.";
-    case "no_snapshot": return "Aura needs to read your profile first. Nothing you've added is lost.";
-    case "gate_failed": return "We couldn't get this to a standard worth showing you. Try once more — it usually works second time.";
-    case "unparseable": return `Aura couldn't finish the comparison this time. ${tail}`;
-    default: return `Something went wrong on our side. ${tail}`;
-  }
+const FAILURE_TEXT: Record<Failure["kind"], string> = {
+  no_cv: "Aura hasn't got a CV to read yet.",
+  no_snapshot: "Aura needs to read your profile first. Nothing you've added is lost.",
+  unparseable: "Aura couldn't finish the comparison this time. Your CV is saved — try again.",
+  server: "Something went wrong on our side. Your CV is saved.",
 };
 
 interface Props {
@@ -165,16 +156,12 @@ interface Props {
   onCvContact?: (contact: { email?: string; name?: string }) => void;
   /** Hide the purpose question where it does not belong (Settings shows it too). */
   showPurpose?: boolean;
-  /** Anonymous, with no read on the session: a lesser, honest comparison. */
-  cvOnly?: boolean;
 }
 
 export default function CvUploadControl({
-  userId, anonToken, onUploaded, onCrosscheck, onCvContact, showPurpose = true, cvOnly = false,
+  userId, anonToken, onUploaded, onCrosscheck, onCvContact, showPurpose = true,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  /* Held so an anonymous retry can re-send the very file it already had. */
-  const lastFileRef = useRef<File | null>(null);
   const [purpose, setPurpose] = useState<string>(readCvPurpose);
   const [busy, setBusy] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -215,7 +202,6 @@ export default function CvUploadControl({
       if (reason === "no_cv") setFailure({ kind: "no_cv" });
       else if (reason === "no_snapshot") setFailure({ kind: "no_snapshot" });
       else if (reason === "unparseable") setFailure({ kind: "unparseable" });
-      else if (reason === "gate_failed") setFailure({ kind: "gate_failed" });
       else setFailure({ kind: "server" });
     } catch {
       setFailure({ kind: "server" });
@@ -269,7 +255,6 @@ export default function CvUploadControl({
         body: {
           anon_token: anonToken,
           purpose,
-          ...(cvOnly ? { cv_only: true } : {}),
           ...(cvText ? { cvText } : { cv_file: { mime: file.type, name: file.name, base64 } }),
         },
       });
@@ -283,7 +268,6 @@ export default function CvUploadControl({
       if (reason === "no_cv") setFailure({ kind: "no_cv" });
       else if (reason === "no_snapshot") setFailure({ kind: "no_snapshot" });
       else if (reason === "unparseable") setFailure({ kind: "unparseable" });
-      else if (reason === "gate_failed") setFailure({ kind: "gate_failed" });
       else setFailure({ kind: "server" });
     } catch {
       setFailure({ kind: "server" });
@@ -297,7 +281,6 @@ export default function CvUploadControl({
     const fileType = ACCEPTED[file.type] || (/\.docx?$/i.test(file.name) ? "docx" : /\.pdf$/i.test(file.name) ? "pdf" : null);
     if (!fileType) { setUploadError("That file type isn't supported. Add a PDF or a Word document."); return; }
     if (file.size > 50 * 1024 * 1024) { setUploadError("That file is over 50MB. Try a smaller one."); return; }
-    lastFileRef.current = file;
     /* No session: read it, compare it, throw it away. Never a login gate. */
     if (!userId) { await transientCompare(file); return; }
     setUploadError(null);
@@ -387,27 +370,11 @@ export default function CvUploadControl({
 
       {failure ? (
         <div style={{ marginBlockStart: 12 }}>
-          <p style={{ fontSize: 14, color: INK, margin: 0, lineHeight: 1.55 }}>{failureText(failure.kind, !!userId)}</p>
-          {failure.kind === "unparseable" || failure.kind === "server" || failure.kind === "gate_failed" ? (
-            userId ? (
-              <button type="button" onClick={() => void runCrosscheck()} disabled={comparing} style={{ ...ghostStyle, marginBlockStart: 6 }}>
-                {comparing ? "Trying again…" : "Try again"}
-              </button>
-            ) : lastFileRef.current ? (
-              /* Anonymous: the retry re-sends the very file and token it had. */
-              <button
-                type="button"
-                onClick={() => { const f = lastFileRef.current; if (f) void transientCompare(f); }}
-                disabled={comparing}
-                style={{ ...ghostStyle, marginBlockStart: 6 }}
-              >
-                {comparing ? "Trying again…" : "Try again"}
-              </button>
-            ) : (
-              <button type="button" onClick={pick} disabled={comparing} style={{ ...ghostStyle, marginBlockStart: 6 }}>
-                Choose the file again
-              </button>
-            )
+          <p style={{ fontSize: 14, color: INK, margin: 0, lineHeight: 1.55 }}>{FAILURE_TEXT[failure.kind]}</p>
+          {failure.kind === "unparseable" || failure.kind === "server" ? (
+            <button type="button" onClick={() => void runCrosscheck()} disabled={comparing} style={{ ...ghostStyle, marginBlockStart: 6 }}>
+              {comparing ? "Trying again…" : "Try again"}
+            </button>
           ) : null}
           {failure.kind === "no_cv" && fileName ? (
             <button type="button" onClick={pick} style={{ ...ghostStyle, marginBlockStart: 6 }}>Add your CV</button>

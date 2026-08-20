@@ -288,11 +288,7 @@ Experience: ${cut(snap.experience, 5000)}
 Education: ${cut(snap.education, 1200)}
 Skills: ${cut(snap.skills, 1200)}
 Certifications: ${cut(snap.certifications, 1200)}`;
-  /* A read on the session gives the real comparison. Without one, the member
-     may still ask for the lesser, honest CV-only read — never a refusal where
-     a lesser honest answer is available. */
-  const cvOnly = body?.cv_only === true;
-  if (transient && !anonRead && !anonState?.headline && !cvOnly) {
+  if (transient && !anonRead && !anonState?.headline) {
     await finish("refused", "no_snapshot");
     return json({ ok: false, pending: true, reason: "no_snapshot" });
   }

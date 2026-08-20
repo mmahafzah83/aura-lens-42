@@ -471,8 +471,6 @@ const Onboarding = () => {
   const [bandPicker, setBandPicker] = useState(false);
   const [cvUploads, setCvUploads] = useState(0);
   const [cvCrosscheck, setCvCrosscheck] = useState<unknown>(null);
-  /* Anonymous with no read: null until they choose, then the lesser read. */
-  const [cvFork, setCvFork] = useState<"cv_only" | null>(null);
 
   /* screen 5–7 */
   const [linkInput, setLinkInput] = useState("");
@@ -482,8 +480,6 @@ const Onboarding = () => {
   const sendingLinkRef = useRef(false);
   /* the read never left the building — never make them watch for nothing */
   const [linkFailed, setLinkFailed] = useState(false);
-  /* Whose failure it was: ours (auth, limit, 5xx, timeout, offline) or the link's. */
-  const [linkFailedOurs, setLinkFailedOurs] = useState(false);
   const [capturePending, setCapturePending] = useState(false);
   const [suggested, setSuggested] = useState<{ url: string; title: string; summary?: string; source?: string; published_at?: string | null } | null>(null);
   const [suggestDead, setSuggestDead] = useState(false);
@@ -1330,17 +1326,12 @@ const Onboarding = () => {
       }
       setReadDone(true);
     } catch (e: any) {
-      /* the read failing never moves them: the field, the error and the manual
-         path all stay here. Whose failure it was decides what we say. */
-      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
-      const msg = typeof e?.message === "string" ? e.message.toLowerCase() : "";
-      const badAddress = /invalid_url|not a linkedin|profile_unreadable/.test(msg);
+      const msg = typeof e?.message === "string" && e.message ? e.message.split("\n")[0] : "";
+      /* the read failing never moves them: the field, the error and the manual path all stay here */
       returnToAddress(
-        offline
-          ? "We couldn't reach Aura just now. Check your connection — nothing you entered is lost."
-          : badAddress
-            ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
-            : "Our reader didn't come back. That's ours, not your address. Nothing you entered is lost — press once more.",
+        msg && msg.length < 120
+          ? "Aura couldn't open that page. Check it matches what you see in your browser on your own profile."
+          : "Aura couldn't open that page. Check it matches what you see in your browser on your own profile.",
       );
     } finally {
       setLiBusy(false);
@@ -1419,11 +1410,9 @@ const Onboarding = () => {
     const startIso = new Date(Date.now() - 10000).toISOString();
     setReadStep(0);
     setLinkFailed(false);
-    setLinkFailedOurs(false);
     go(6);
     let sent = false;
     let deferred = false;
-    let ours = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -1440,13 +1429,6 @@ const Onboarding = () => {
             signal: ctrl.signal,
           });
           sent = res.ok;
-          if (!res.ok) {
-            /* Read the body: a failure of ours must not be blamed on their link. */
-            const payload = await res.json().catch(() => ({} as any));
-            const reason = String((payload as any)?.error ?? (payload as any)?.reason ?? "");
-            ours = res.status === 401 || res.status === 429 || res.status >= 500
-              || /timeout|unavailable|not_configured|rate/i.test(reason);
-          }
         } finally { window.clearTimeout(to); }
       } else if (anonToken) {
         /* No session is our gap, not their bad link — keep it and replay at hand-off. */
@@ -1460,7 +1442,7 @@ const Onboarding = () => {
         await saveSession(anonToken, anonStateRef.current);
         deferred = true;
       }
-    } catch { sent = false; ours = true; /* aborted, timed out or offline — ours */ }
+    } catch { sent = false; /* aborted or offline — nothing was written */ }
     sendingLinkRef.current = false;
     setSendingLink(false);
     if (deferred) {
@@ -1469,7 +1451,6 @@ const Onboarding = () => {
     }
     if (!sent) {
       /* nothing will ever land — don't make them watch a 120s ceiling for it */
-      setLinkFailedOurs(ours);
       setLinkFailed(true);
       return;
     }
@@ -2677,12 +2658,6 @@ const Onboarding = () => {
       }
       go(5);
     };
-    /* The fork is decided from what the session already holds — the function
-       is never called to find out. */
-    const anonHasRead = Boolean(
-      (anonStateRef.current as any)?.read || (anonStateRef.current as any)?.headline,
-    );
-    const needsForkChoice = !userId && !anonHasRead && cvFork === null;
     content = (
       <PaperShell onExit={saveAndExit} bead={0} subProgress={1} footer={escapeFooter}>
         <h1 style={h1Light}>Have a CV handy?</h1>
@@ -2691,27 +2666,10 @@ const Onboarding = () => {
           A CV says what you actually did — the numbers, the programmes, the things nobody posted
           about. Aura reads it against your profile and shows you the difference.
         </p>
-        {needsForkChoice ? (
-          <div style={{ marginBlockStart: 20 }}>
-            <h2 style={{ fontFamily: OB.ui, fontSize: 20, fontWeight: 700, color: OB.ink, margin: 0 }}>
-              We can read your CV on its own.
-            </h2>
-            <p style={{ ...bodyLight, marginBlockStart: 8 }}>
-              But the part worth having is what your CV says that your profile doesn't — and that
-              needs both. The read takes about two minutes and brings you straight back here.
-            </p>
-            <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton onClick={() => go(1)}>Read my profile first</OBButton>
-              <OBButton variant="tertiary" onClick={() => setCvFork("cv_only")}>Read my CV on its own</OBButton>
-            </Actions>
-          </div>
-        ) : (
-        <>
         <div style={{ marginBlockStart: 20 }}>
           <CvUploadControl
             userId={userId}
             anonToken={anonToken}
-            cvOnly={cvFork === "cv_only"}
             onUploaded={() => setCvUploads((n) => n + 1)}
             onCvContact={(c) => { if (c.email && !wallEmail) setWallEmail(c.email); }}
             onCrosscheck={(cc) => {
@@ -2724,13 +2682,6 @@ const Onboarding = () => {
             }}
           />
         </div>
-        {/* A lesser read never pretends to be the full one. */}
-        {cvFork === "cv_only" && cvCrosscheck ? (
-          <p style={{ ...bodyLight, marginBlockStart: 20, fontWeight: 600 }}>
-            Read without your profile. The comparison — what your CV says that your profile
-            doesn't — is missing.
-          </p>
-        ) : null}
         {/* Shows only once the comparison comes back; absent, it renders nothing. */}
         <CvCrosscheck
           data={cvCrosscheck}
@@ -2754,8 +2705,6 @@ const Onboarding = () => {
             {cvUploads > 0 ? "Read it" : "Continue"}
           </OBButton>
         </Actions>
-        </>
-        )}
       </PaperShell>
     );
   }
@@ -2858,14 +2807,10 @@ const Onboarding = () => {
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
         <h1 style={{ ...h1Night, textAlign: "center" }}>That one didn't come through.</h1>
         <p style={{ ...bodyNight, textAlign: "center" }}>
-          {linkFailedOurs
-            ? "That's ours, not your link. Try once more, or carry on — you can add it later."
-            : "Aura couldn't reach that link. Try another one, or carry on — you can add it later."}
+          Aura couldn't reach that link. Try another one, or carry on — you can add it later.
         </p>
         <Actions style={{ marginBlockStart: 22 }}>
-          <OBButton onClick={() => { setLinkFailed(false); go(5); }}>
-            {linkFailedOurs ? "Try once more" : "Try a different link"}
-          </OBButton>
+          <OBButton onClick={() => { setLinkFailed(false); go(5); }}>Try a different link</OBButton>
           <OBButton variant="tertiary" onClick={() => { setLinkFailed(false); go(8); }}>Carry on</OBButton>
         </Actions>
       </NightShell>

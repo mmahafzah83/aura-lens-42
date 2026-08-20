@@ -81,7 +81,7 @@ export default function RequestAccess() {
   const isDone = status === "success" || status === "duplicate";
 
   /* ── founding seats — reservations only. The rack counts people who said
-     yes at $35, nothing else. If the RPC is silent, the rack does not render. ── */
+     yes at $69, nothing else. If the RPC is silent, the rack does not render. ── */
   useEffect(() => {
     let cancelled = false;
     (async () => {
