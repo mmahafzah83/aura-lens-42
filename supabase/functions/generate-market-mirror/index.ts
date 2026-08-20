@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
+import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +10,16 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  /* Stage keys come from the shared list, so the recorded keys and the keys the
+     waiting panel draws cannot drift apart. */
+  const [GATHER, WRITE] = OPERATION_STAGES.market_read;
+  let run: RunHandle | null = null;
+  const close = async (outcome: "ok" | "refused" | "failed", reason?: string) => {
+    try { await run?.finish({ outcome, reason_code: reason ?? null }); }
+    catch (e) { console.error("[market-mirror] run finish failed:", (e as Error)?.message); }
+    run = null;
+  };
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -26,6 +38,8 @@ serve(async (req) => {
     }
     const userId = user.id;
     const admin = createClient(supabaseUrl, serviceKey);
+    run = await startRun(admin, { operation: "market_read", user_id: userId });
+    run.mark(GATHER);
 
     // Rate limit: once per 7 days
     const { data: existing } = await admin
@@ -36,6 +50,7 @@ serve(async (req) => {
     if (existing) {
       const ageMs = Date.now() - new Date((existing as any).generated_at).getTime();
       if (ageMs < 7 * 24 * 60 * 60 * 1000) {
+        await close("refused", "rate_limited");
         return new Response(
           JSON.stringify({ error: "rate_limited", retry_in_days: Math.ceil((7 * 24 * 60 * 60 * 1000 - ageMs) / (24 * 60 * 60 * 1000)) }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -226,6 +241,7 @@ ${trendLines}`;
       }
     }
 
+    run?.mark(WRITE);
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
     const mirrorAbort = new AbortController();
@@ -249,6 +265,7 @@ ${trendLines}`;
     if (!aiRes.ok) {
       const txt = await aiRes.text();
       console.error("AI gateway error", aiRes.status, txt);
+      await close("failed", "ai_failed");
       return new Response(JSON.stringify({ error: "ai_failed", status: aiRes.status }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -288,16 +305,19 @@ ${trendLines}`;
       .maybeSingle();
     if (upErr) {
       console.error("upsert failed", upErr);
+      await close("failed", "save_failed");
       return new Response(JSON.stringify({ error: "save_failed" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    await close("ok");
     return new Response(JSON.stringify(upserted), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("generate-market-mirror error", e);
+    await close("failed", "exception");
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
