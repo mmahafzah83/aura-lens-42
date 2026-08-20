@@ -623,7 +623,6 @@ const RA_CSS = `
 .ra-door-fill:hover:not(:disabled){background:#04477C;border-color:#04477C;}
 .ra-door-line{background:var(--n0);color:var(--act);border:1.5px solid var(--act);}
 .ra-door-line:hover:not(:disabled){background:var(--act-50);}
-.ra-reservenote{margin-top:12px;font-size:12.5px;line-height:1.6;color:var(--n500);text-align:center;}
 .ra-worth{margin-top:22px;text-align:left;}
 .ra-worth label{margin-bottom:9px;text-transform:none;letter-spacing:0;font-family:var(--ui);
   font-size:14px;line-height:1.55;color:var(--n700);}
