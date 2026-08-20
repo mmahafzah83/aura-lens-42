@@ -642,7 +642,7 @@ const Onboarding = () => {
   const [postedUrl, setPostedUrl] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   /** The "Save it" row on screen 13 — collapsed until asked for. */
-  /* The growth loop is not a secondary action — the share row is open on arrival. */
+  /* The growth loop is not a secondary action — the share row is open from the start. */
   const [saveOpen, setSaveOpen] = useState(true);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [minting, setMinting] = useState(false);
@@ -928,42 +928,11 @@ const Onboarding = () => {
     } catch (e) {
       console.error("[journey] kept evidence replay failed", e);
     }
-    /* Replay the optional reveal feedback collected while anonymous. */
-    try {
-      const fb = (st as any).reveal_feedback;
-      if (fb?.rating != null) {
-        await supabase.from("beta_feedback").upsert({
-          user_id: uid,
-          feedback_type: "reveal",
-          rating: fb.rating,
-          message: fb.message || null,
-          page: "/onboarding",
-        });
-      }
-    } catch (e) {
-      console.error("[journey] reveal feedback handoff failed", e);
-    }
     try {
       await generateMarketRead(uid, (st.answers ?? {}), (pf.sector_focus ?? null), (pf.seniority_band ?? null));
     } catch (e) {
       console.error("[journey] handoff read failed", e);
     }
-    /* THE ARRIVAL — record only what they genuinely gave us. Written before
-       the token goes, because the token is what proves the run. */
-    try {
-      const entry: Record<string, unknown> = {
-        at: Date.now(),
-        first_name: pf.first_name ?? null,
-        answers: Object.keys(st.answers ?? {}).length,
-        sliders: Object.keys((pf.skill_ratings ?? {}) as Record<string, unknown>).length,
-        captures: Array.isArray((st as any).pending_captures) ? (st as any).pending_captures.length : 0,
-      };
-      /* NO DURATION. The only clock we hold is the session's created_at, which
-         is wall-clock — it counts the hours the browser sat closed. A number
-         nobody earned may not ship, and engaged time is not recorded anywhere,
-         so the figure is deleted rather than approximated. */
-      localStorage.setItem("aura_just_joined", JSON.stringify(entry));
-    } catch { /* private mode — the arrival is a grace, not a gate */ }
     clearToken();
     return { ok: true };
   }, []);
@@ -1137,6 +1106,7 @@ const Onboarding = () => {
               ?? (strings(anonRaw.topSkills ?? anonRead.skills ?? anonRead.topSkills ?? anonRead.top_skills).length || null),
             read: st.read,
           });
+          if (typeof anonRaw.own_words === "number") setOwnWords(anonRaw.own_words);
 
           const anonFacts = factsFromAnonymousRead(anonRead);
           if (anonFacts) setFacts(anonFacts);
@@ -1932,6 +1902,10 @@ const Onboarding = () => {
   /* ── finishing ── */
   /* One finish per session — the side effects are not idempotent. */
   const finishedRef = useRef(false);
+  /* The email is the only non-idempotent side effect, so it carries its own
+     guard. The finished flag is set after the profile write actually lands —
+     a failed write must leave a retry possible. */
+  const readEmailedRef = useRef(false);
   /* `destination` lets the seat doors complete the journey before they leave:
      the member who reserves a seat is still a finished member. */
   /** `stay: true` finishes the journey without leaving — the seat beat runs
@@ -1943,10 +1917,10 @@ const Onboarding = () => {
       if (!opts?.stay) navigate(opts?.destination ?? "/home", { replace: true });
       return;
     }
-    finishedRef.current = true;
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
-      if (reveal) {
+      if (reveal && !readEmailedRef.current) {
+        readEmailedRef.current = true;
         const { data: mail, error: mailErr } = await supabase.functions.invoke("send-read-email", {
           body: {
             archetype: reveal.archetype,
@@ -1967,6 +1941,7 @@ const Onboarding = () => {
       console.error("[reveal] send-read-email threw", err);
       toast.error("We couldn't email your read just now — it's saved on your Home page.");
     }
+    let saved = !userId;
     if (userId) {
       try {
         /* Merges — writeProfile drops every null, so finishing can never blank
@@ -1990,7 +1965,7 @@ const Onboarding = () => {
           completed: true,
           instrument_version: 2,
           ...(band ? { answered_band: band } : {}),
-        }, "finish save");
+        }, "finish save") && (saved = true);
         /* finished means no longer paused — Home must stop offering the resume card */
         try {
           const { data: cur } = await (supabase.from("diagnostic_profiles" as any) as any)
@@ -2003,6 +1978,14 @@ const Onboarding = () => {
       } catch (e) { console.error("[journey] finish save threw", e); }
       try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
     }
+    /* Only a real write makes a member finished. If it failed, the flag stays
+       down so the next attempt — the button, or the 14.5 assertion — retries. */
+    if (!saved) {
+      console.error("[journey] finish did not save — the member can retry");
+      toast.error("That didn't save. Tap once more.");
+      return;
+    }
+    finishedRef.current = true;
     try { localStorage.setItem("aura_onboarding_complete", "true"); } catch { /* ignore */ }
     try { sessionStorage.removeItem("aura_onboarding_visits"); } catch { /* ignore */ }
     supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
@@ -2082,6 +2065,15 @@ const Onboarding = () => {
 
   /** Finish later — the place is written down, and Home carries them back to it. */
   const saveAndExit = useCallback(() => {
+    /* A FINISHED JOURNEY CANNOT BE PAUSED. Escape, the footer button and any
+       future door all land here, so the guard lives in the function rather
+       than on one of its callers: pausing at the end would write
+       journey_paused, email a resume note to someone who just finished, and
+       store a screen the resume path rejects. */
+    if (finishedRef.current || screen === SEAT_SCREEN) {
+      navigate("/home", { replace: true });
+      return;
+    }
     const stage = stageOf(screen);
     setExitNote(`Saved at "${stageName(stage)}". Pick it up any time.`);
     void (async () => {
@@ -3881,7 +3873,6 @@ const Onboarding = () => {
             loading={revealPending && !revealSlow}
             loadingLabel="Writing your read…"
             onClick={() => {
-              try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
               go(13);
             }}
           >
@@ -4241,7 +4232,7 @@ const Onboarding = () => {
           </OBButton>
         </Actions>
         <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
-          I'll email your read. If it got you wrong, reply to that email and tell me — that's how I learn you.
+          I'll email your read from an inbox I read myself. If it got you wrong, just reply and tell me — that's how I learn you.
         </p>
 
         <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>

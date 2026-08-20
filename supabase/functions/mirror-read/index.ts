@@ -489,6 +489,8 @@ Deno.serve(async (req) => {
       projects_count: projects.length,
       recommendations_count: recommendations.length,
       recommendation_quote: recQuote,
+      /* Their own writing, counted — the same figure the signed-in card shows. */
+      own_words: postTexts.reduce((a, t) => a + t.split(/\s+/).filter(Boolean).length, 0),
     };
 
     // --- e) Sparse mode ---
