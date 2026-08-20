@@ -1231,6 +1231,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
 
       // The only failure a member may ever see is genuinely empty output.
       if (!content.trim()) {
+        await closeRun("failed", "empty_output");
         return new Response(JSON.stringify({
           success: false,
           error: "The model returned no text. Please try again.",
@@ -1259,6 +1260,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         contributions,
       };
 
+      await closeRun("ok");
       return new Response(JSON.stringify({
         content,
         success: true,
