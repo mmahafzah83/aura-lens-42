@@ -78,7 +78,12 @@ export interface WorkingStage {
 }
 
 export interface WorkingPanelProps {
-  operation: WaitOperation;
+  /**
+   * Only an operation we actually measure may be named. Pass nothing when the
+   * work is not instrumented: the panel then shows the steps and the real
+   * counter, and no percentage it cannot defend.
+   */
+  operation?: WaitOperation | null;
   title: string;
   stages: WorkingStage[];
   onNight?: boolean;
@@ -87,6 +92,11 @@ export interface WorkingPanelProps {
   onCarryOn?: { label: string; action: () => void } | null;
   onNotifyMe?: () => void;
   rtl?: boolean;
+  /**
+   * Changes on every new run. Resets the monotonic floor and the counter, so
+   * a retry never opens at the last run's percentage.
+   */
+  runId?: string | number;
 }
 
 const secsOf = (ms?: number) => (typeof ms === "number" && ms > 0 ? mmss(Math.floor(ms / 1000)) : "");
@@ -125,12 +135,16 @@ function StageIcon({ state }: { state: StageState }) {
 }
 
 export function WorkingPanel({
-  operation, title, stages, onNight = false, failure = null,
-  onRetryFromStage, onCarryOn = null, onNotifyMe, rtl = false,
+  operation = null, title, stages, onNight = false, failure = null,
+  onRetryFromStage, onCarryOn = null, onNotifyMe, rtl = false, runId = 0,
 }: WorkingPanelProps) {
   const est = useWaitEstimate(operation);
-  const secs = useElapsed(true);
+  const secs = useElapsed(true, runId);
   const reduced = useReducedMotion();
+  const [howLongOpen, setHowLongOpen] = useState(false);
+
+  /* A new run closes the disclosure with everything else. */
+  useEffect(() => { setHowLongOpen(false); }, [runId]);
 
   const completedKeys = useMemo(() => stages.filter((s) => s.state === "done").map((s) => s.key), [stages]);
   const active = stages.find((s) => s.state === "active") ?? null;
@@ -140,14 +154,13 @@ export function WorkingPanel({
   const sinceRef = useRef<{ key: string | null; at: number }>({ key: activeKey, at: Date.now() });
   if (sinceRef.current.key !== activeKey) sinceRef.current = { key: activeKey, at: Date.now() };
 
-  const runKey = `${operation}:${stages.map((s) => s.key).join(",")}`;
   const complete = stages.length > 0 && stages.every((s) => s.state === "done");
   const progress = useWeightedProgress({
     stages: est.stages,
     completedKeys,
     activeKey,
     activeSince: sinceRef.current.at,
-    runKey,
+    runId,
     complete,
   });
 
@@ -180,6 +193,7 @@ export function WorkingPanel({
     <div
       dir={rtl ? "rtl" : undefined}
       style={{
+        position: "relative",
         border: `1px solid ${hair}`, borderRadius: 16, padding: 16,
         background: onNight ? NIGHT : "#FFFFFF",
         backgroundImage: onNight ? NIGHT_WASH : undefined,
@@ -296,18 +310,60 @@ export function WorkingPanel({
         </span>
         {doors && !failed ? (
           <span style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-            <a
-              href="/guide/how-long-does-this-take"
-              style={{ ...linkStyle, textDecoration: "none" }}
+            {/* Never navigate away from a running operation. This opens in place. */}
+            <button
+              type="button"
+              onClick={() => setHowLongOpen((v) => !v)}
+              aria-expanded={howLongOpen}
+              aria-controls="wp-how-long"
+              style={linkStyle}
             >
               How long is this?
-            </a>
+            </button>
             {onNotifyMe ? (
               <button type="button" onClick={onNotifyMe} style={linkStyle}>Email me when it's ready</button>
             ) : null}
           </span>
         ) : null}
       </div>
+
+      {doors && howLongOpen ? (
+        <div
+          id="wp-how-long"
+          style={{
+            marginBlockStart: 12, padding: "12px 14px", borderRadius: 10,
+            border: `1px solid ${hair}`,
+            background: onNight ? "rgba(255,255,255,.04)" : "#F7F9FC",
+            fontSize: 12.5, color: muted, lineHeight: 1.6,
+          }}
+        >
+          {est.known ? (
+            <>
+              <div>
+                Measured from <span dir="ltr" style={{ fontFamily: MONO }}>{est.sample}</span> finished runs of this
+                same work: half finish inside{" "}
+                <span dir="ltr" style={{ fontFamily: MONO }}>{mmss(est.p50)}</span>, almost all inside{" "}
+                <span dir="ltr" style={{ fontFamily: MONO }}>{mmss(est.p95)}</span>.
+              </div>
+              <div style={{ marginBlockStart: 6 }}>
+                You are at <span dir="ltr" style={{ fontFamily: MONO }}>{mmss(secs)}</span>. Leaving this page does not
+                stop the work.
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                Aura has not finished enough runs of this to know how long it takes. Rather than invent a figure, it
+                says so.
+              </div>
+              <div style={{ marginBlockStart: 6 }}>
+                What is real: <span dir="ltr" style={{ fontFamily: MONO }}>{mmss(secs)}</span> elapsed. Leaving this
+                page does not stop the work.
+              </div>
+            </>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -317,10 +373,10 @@ export function WorkingPanel({
  * naming the work, and the real counter. Over twenty seconds this is not
  * permitted: it must be the panel.
  */
-export function WorkingInline({ verb, onNight = false, rtl = false }: {
-  verb: string; onNight?: boolean; rtl?: boolean;
+export function WorkingInline({ verb, onNight = false, rtl = false, runId = 0 }: {
+  verb: string; onNight?: boolean; rtl?: boolean; runId?: string | number;
 }) {
-  const secs = useElapsed(true);
+  const secs = useElapsed(true, runId);
   return (
     <span
       dir={rtl ? "rtl" : undefined}
