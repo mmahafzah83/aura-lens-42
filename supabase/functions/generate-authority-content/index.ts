@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY, DEFAULT_REGISTER_EN, DEFAULT_REGISTER_AR } from "../_shared/contentDNA.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR, endingShapeOk } from "../_shared/voiceStyle.ts";
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";

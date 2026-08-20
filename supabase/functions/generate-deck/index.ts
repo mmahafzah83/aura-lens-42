@@ -27,7 +27,7 @@ import {
 } from "./pipeline.ts";
 import { REQUIRED_SLOTS } from "./slots.ts";
 import { resolveIdentityFrom } from "../_shared/identity.ts";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {

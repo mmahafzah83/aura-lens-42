@@ -9,7 +9,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

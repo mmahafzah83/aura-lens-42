@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {

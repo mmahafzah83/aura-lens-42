@@ -6,7 +6,7 @@ import { logError } from "../_shared/logError.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { buildReadEvidence } from "../_shared/readEvidence.ts";
 import { LIMITS, QUEUE_MESSAGE } from "../_shared/limits.ts";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {
