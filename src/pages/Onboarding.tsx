@@ -342,6 +342,34 @@ const journeyFraction = (screen: number, sub?: number): number => {
   return Math.max(0, Math.min(1, (before + mine * inner) / WORK_TOTAL));
 };
 
+const strings = (value: unknown): string[] => (Array.isArray(value)
+  ? value.map((item) => typeof item === "string" ? item.trim() : String((item as any)?.name ?? "").trim()).filter(Boolean)
+  : []);
+
+/** The public read carries a useful subset of the signed-in profile snapshot. */
+const factsFromAnonymousRead = (read: Record<string, any>): ProfileFacts | null => {
+  const raw = (read.raw && typeof read.raw === "object") ? read.raw : read;
+  const experience = Array.isArray(raw.experience) ? raw.experience : [];
+  const topSkills = strings(raw.topSkills ?? raw.top_skills ?? raw.skills).slice(0, 5);
+  const about = String(raw.about ?? raw.summary ?? "").trim();
+  const joined = String(raw.registeredAt ?? raw.registered_at ?? "").trim();
+  const joinedDate = joined ? new Date(joined) : null;
+  const joinedYear = joinedDate && !Number.isNaN(joinedDate.getTime()) ? joinedDate.getFullYear() : undefined;
+  const facts: ProfileFacts = {
+    location: String(raw.location?.linkedinText ?? raw.location?.parsed?.text ?? raw.location ?? "").trim() || undefined,
+    role: String(experience[0]?.position ?? experience[0]?.title ?? "").trim() || undefined,
+    company: String(experience[0]?.companyName ?? experience[0]?.company ?? "").trim() || undefined,
+    roles: experience.length || undefined,
+    certifications: Array.isArray(raw.certifications) ? raw.certifications.length || undefined : undefined,
+    skills: Array.isArray(raw.skills) ? raw.skills.length || undefined : topSkills.length || undefined,
+    projects: Array.isArray(raw.projects) ? raw.projects.length || undefined : undefined,
+    joinedYear,
+    topSkills,
+    aboutFirstLine: about ? trimToSentence(about, 180) : undefined,
+  };
+  return Object.values(facts).some((value) => Array.isArray(value) ? value.length > 0 : value !== undefined) ? facts : null;
+};
+
 /** Which of the five named stages a screen belongs to. One definition, used
  *  by the resume banner and by Finish later. */
 const stageOf = (s: number) => (s <= 3 ? 1 : s <= 7 ? 2 : s <= 9 ? 3 : s <= 11 ? 4 : 5);
@@ -1062,7 +1090,7 @@ const Onboarding = () => {
    * on the session is touched, and a failed write means no navigation.
    */
   const backToRead = useCallback(async () => {
-    if (!anonToken) return;
+    if (!anonToken) { navigate("/assessment"); return; }
     const found = await loadSession(anonToken);
     const base = (found?.state ?? anonStateRef.current ?? {}) as AssessmentState & Record<string, any>;
     /* No read to open is not a dead button: /assessment owns the read, so send
@@ -1115,6 +1143,7 @@ const Onboarding = () => {
         if (st.profile_url) { setLiInput(st.profile_url); subjectRef.current = normaliseLinkedIn(st.profile_url); }
         /* The quick read already happened at /assessment — never ask twice. */
         if (st.read) {
+          const anonRead = st.read as Record<string, any>;
           setStep1Phase("result");
           setReadDone(true);
           setPostsRead(Number(st.posts_read ?? 0));
@@ -1122,13 +1151,17 @@ const Onboarding = () => {
              for a signed-in one: photo, headline and figures come off the read
              that /assessment already did. */
           setLiProfile({
-            full_name: st.name ?? ([pf.first_name, pf.last_name].filter(Boolean).join(" ") || null),
-            headline: (st.read as any)?.headline ?? pf.headline ?? null,
-            profile_picture: (st.read as any)?.profile_picture ?? (st.read as any)?.photo ?? null,
-            followers: (st.read as any)?.followers ?? null,
-            connections: (st.read as any)?.connections ?? null,
+            full_name: st.name ?? anonRead.full_name ?? ([pf.first_name, pf.last_name].filter(Boolean).join(" ") || null),
+            headline: st.headline ?? anonRead.headline ?? pf.headline ?? null,
+            photo_url: st.avatar_url ?? anonRead.photo_url ?? anonRead.avatar_url ?? anonRead.profile_picture ?? anonRead.photo ?? null,
+            followers: anonRead.followers ?? anonRead.follower_count ?? null,
+            skills_count: anonRead.skills_count ?? anonRead.skillsCount ?? strings(anonRead.skills ?? anonRead.topSkills ?? anonRead.top_skills).length || null,
             read: st.read,
           });
+          const anonFacts = factsFromAnonymousRead(anonRead);
+          if (anonFacts) setFacts(anonFacts);
+          const ownQuote = String(anonRead.own_words_quote ?? "").trim();
+          if (ownQuote) setOwnLine({ text: ownQuote, when: "" });
         }
         if (st.name && !firstName) {
           const parts = String(st.name).split(/\s+/);
@@ -1717,15 +1750,25 @@ const Onboarding = () => {
 
   /* one sentence of their own, quoted back on the confirm screen */
   useEffect(() => {
-    if (!userId || ownLine) return;
+    if (ownLine) return;
     if (screen !== 1) return;
+    if (!userId) {
+      const quote = String((anonStateRef.current.read as any)?.own_words_quote ?? "").trim();
+      if (quote) setOwnLine({ text: quote, when: "" });
+      return;
+    }
     loadOwnSentence(userId).then((s) => { if (s) setOwnLine(s); }).catch(() => {});
   }, [userId, screen, ownLine]);
 
   /* everything else Aura already read — the whole profile, not three numbers */
   useEffect(() => {
-    if (!userId || facts) return;
+    if (facts) return;
     if (screen !== 1) return;
+    if (!userId) {
+      const read = anonStateRef.current.read;
+      if (read) setFacts(factsFromAnonymousRead(read as Record<string, any>));
+      return;
+    }
     loadProfileFacts(userId).then((f) => { if (f) setFacts(f); }).catch(() => {});
   }, [userId, screen, facts]);
 

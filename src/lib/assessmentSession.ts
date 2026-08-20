@@ -21,6 +21,7 @@ const GENERIC = "Something failed on our side. Nothing is lost — try once more
 
 export type AssessmentState = {
   step?: string;
+  journey_screen?: number;
   profile_url?: string;
   name?: string | null;
   headline?: string | null;
