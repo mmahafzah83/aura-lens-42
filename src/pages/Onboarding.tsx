@@ -3742,78 +3742,21 @@ const Onboarding = () => {
     if (ccFindings > 0) ownRows.push({ label: ENDING.rowCrosscheckLabel, value: ENDING.rowCrosscheck(ccFindings) });
     if (ownGap) ownRows.push({ label: ENDING.rowGapLabel, value: ownGap });
 
-    if (arrival || (!userId && anonToken)) {
-      content = (
-        <PaperShell onExit={saveAndExit} footer={escapeFooter}>
-          <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>{ENDING.eyebrow}</p>
-          <h1 style={{ ...h1Light, marginBlockStart: 10 }}>{ENDING.headline}</h1>
-          <p style={{ ...bodyLight }}>{ENDING.body}</p>
-
-          {ownRows.length ? (
-            <div style={{ marginBlockStart: 22 }}>
-              <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-                {ENDING.yoursHead}
-              </p>
-              <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
-                {ownRows.map((r) => (
-                  <li key={r.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <span style={{ fontSize: "var(--ob-small)", color: OB.muted }}>{r.label}</span>
-                    <span style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, fontWeight: 600 }}>{r.value}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {/* The loss is true only while there is no account. */}
-          {!userId ? (
-            <p style={{
-              margin: "22px 0 0", paddingInlineStart: 14, borderInlineStart: "3px solid #E0A82E",
-              fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink,
-            }}>{ENDING.loss}</p>
-          ) : null}
-
-          <div style={{ marginBlockStart: 26, opacity: 0.72 }}>
-            <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-              {ENDING.tenthHead}
-            </p>
-            <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 9 }}>
-              {ENDING.tenth.map((line) => (
-                <li key={line} style={{ position: "relative", paddingInlineStart: 18, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
-                  <span aria-hidden style={{
-                    position: "absolute", insetInlineStart: 0, insetBlockStart: 7,
-                    inlineSize: 7, blockSize: 7, borderRadius: 999, border: `1px solid ${OB.muted}`,
-                  }} />
-                  {line}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <p style={{ ...bodyLight, marginBlockStart: 22 }}>{ENDING.closing}</p>
-
-          <Actions style={{ marginBlockStart: 22 }}>
-            <OBButton onClick={() => {
-              try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
-              setArrival(null);
-              go(13);
-            }}>{userId ? ENDING.ctaSignedIn : ENDING.cta}</OBButton>
-          </Actions>
-          <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
-            {ENDING.ctaSub}
-          </p>
-          <Actions style={{ marginBlockStart: 10 }}>
-            <OBButton variant="tertiary" onClick={saveAndExit}>{ENDING.finishLater}</OBButton>
-          </Actions>
-        </PaperShell>
-      );
-    } else {
-    /* Only the work that actually happened is shown, and a step only ticks on a
-       real event. The three reading steps have no event of their own, so they
-       stay plain named lines until the read itself lands. */
+    /**
+     * ONE ENDING, FOR EVERY MEMBER WHO GETS HERE.
+     *
+     * Reaching screen 12 IS journey completion — nothing else routes here. So
+     * the inventory of what they built, the shelf, the proof sentence and the
+     * "tenth of" ladder are shown to everyone. Only two blocks are genuinely
+     * anonymous-only, and both are gated on `!userId`: the loss line (nothing
+     * is lost once there is an account to hold it) and the make-an-account
+     * wording of the primary. Confetti and the shelf are folded in here; there
+     * is no longer a second screen 12.
+     */
     const genStages: WorkingStage[] = revealPending
       ? marketRun.stages
       : buildStages("market_read", { completed: ["gather", "write"], active: null });
+
     content = (
       <PaperShell onExit={saveAndExit} footer={escapeFooter}>
         {!revealPending ? <Confetti /> : null}
@@ -3827,10 +3770,15 @@ const Onboarding = () => {
             />
           </div>
         ) : null}
-        <h1 style={{ ...h1Light, textAlign: "center" }}>Here's what Aura now knows about you.</h1>
+
+        <p style={{ fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted }}>{ENDING.eyebrow}</p>
+        <h1 style={{ ...h1Light, marginBlockStart: 10 }}>{ENDING.headline}</h1>
+        <p style={{ ...bodyLight }}>{ENDING.body}</p>
+
+        {/* the shelf — what was actually collected, for everyone */}
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-          gap: 8, justifyItems: "center", maxWidth: 420, margin: "26px auto 6px",
+          gap: 8, justifyItems: "center", maxWidth: 420, margin: "24px auto 6px",
         }}>
           {SHELF.map((s, i) => (
             <ShelfBadge key={s.key} label={s.label} sublabel={SHELF_SUB[i]}
@@ -3839,7 +3787,25 @@ const Onboarding = () => {
               unlocked={shelfState[i].unlocked} figure={shelfState[i].figure} />
           ))}
         </div>
-        <p style={{ ...bodyLight, textAlign: "center" }}>
+
+        {ownRows.length ? (
+          <div style={{ marginBlockStart: 22 }}>
+            <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+              {ENDING.yoursHead}
+            </p>
+            <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
+              {ownRows.map((r) => (
+                <li key={r.label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span style={{ fontSize: "var(--ob-small)", color: OB.muted }}>{r.label}</span>
+                  <span style={{ fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink, fontWeight: 600 }}>{r.value}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {/* what Aura writes from — true of everyone who got here */}
+        <p style={{ ...bodyLight, marginBlockStart: 20 }}>
           {proof && proof.posts > 0 ? (
             <>
               I have {num(proof.posts)} of your posts and {num(proof.words)} words in your own voice
@@ -3854,23 +3820,69 @@ const Onboarding = () => {
             </>
           )}
         </p>
-        <p style={{ ...bodyLight, textAlign: "center" }}>
+        <p style={{ ...bodyLight }}>
           {mayPromiseMorning
             ? "Tonight I read for the signals in your read. Tomorrow morning there's something waiting."
             : "I'll keep reading for the signals in your read. When something is worth your name on it, you'll hear — not before."}
         </p>
+
+        {/* ANONYMOUS ONLY — the loss is only true while there is no account. */}
+        {!userId ? (
+          <p style={{
+            margin: "22px 0 0", paddingInlineStart: 14, borderInlineStart: "3px solid #E0A82E",
+            fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink,
+          }}>{ENDING.loss}</p>
+        ) : null}
+
+        <div style={{ marginBlockStart: 26, opacity: 0.72 }}>
+          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
+            {ENDING.tenthHead}
+          </p>
+          <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 9 }}>
+            {ENDING.tenth.map((line) => (
+              <li key={line} style={{ position: "relative", paddingInlineStart: 18, fontSize: "var(--ob-small)", lineHeight: 1.6, color: OB.muted }}>
+                <span aria-hidden style={{
+                  position: "absolute", insetInlineStart: 0, insetBlockStart: 7,
+                  inlineSize: 7, blockSize: 7, borderRadius: 999, border: `1px solid ${OB.muted}`,
+                }} />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p style={{ ...bodyLight, marginBlockStart: 22 }}>{ENDING.closing}</p>
+
         {revealPending && proof && proof.lines.length > 0 ? (
           <WaitProof lines={proof.lines} startAt={3} howLong="Writing your read. About a minute." />
         ) : null}
-        <Actions style={{ marginBlockStart: 24 }}>
-          <OBButton onClick={() => go(13)} loading={revealPending && !revealSlow} loadingLabel="Writing your read…">
-            {revealPending && revealSlow ? "See what I have so far" : "See how people see me"}
+
+        {/* ONE primary. */}
+        <Actions style={{ marginBlockStart: 22 }}>
+          <OBButton
+            loading={revealPending && !revealSlow}
+            loadingLabel="Writing your read…"
+            onClick={() => {
+              try { localStorage.removeItem("aura_just_joined"); } catch { /* private mode */ }
+              setArrival(null);
+              go(13);
+            }}
+          >
+            {revealPending && revealSlow
+              ? "See what I have so far"
+              : userId ? ENDING.ctaSignedIn : ENDING.cta}
           </OBButton>
+        </Actions>
+        <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+          {ENDING.ctaSub}
+        </p>
+        <Actions style={{ marginBlockStart: 10 }}>
+          <OBButton variant="tertiary" onClick={saveAndExit}>{ENDING.finishLater}</OBButton>
         </Actions>
       </PaperShell>
     );
-    }
   }
+
 
   /* 13 — FULL-BLEED BLUE */
   if (screen === 13) {
