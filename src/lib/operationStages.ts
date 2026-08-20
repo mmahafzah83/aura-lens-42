@@ -16,7 +16,7 @@ export {
 } from "../../supabase/functions/_shared/stageKeys";
 
 import { OPERATION_STAGES, STAGE_LABELS, type InstrumentedOperation } from "../../supabase/functions/_shared/stageKeys";
-import type { WorkingStage } from "@/components/ui/WorkingPanel";
+import type { WorkingStage, StageState } from "@/components/ui/WorkingPanel";
 
 /**
  * Build the step list for an instrumented operation from a record of what has
@@ -34,15 +34,15 @@ export function buildStages(
   },
 ): WorkingStage[] {
   const done = new Set(opts.completed);
-  return OPERATION_STAGES[operation].map((key) => ({
+  return OPERATION_STAGES[operation].map((key): WorkingStage => ({
     key,
     label: opts.labels?.[key] ?? STAGE_LABELS[operation][key] ?? key,
-    state: done.has(key)
+    state: (done.has(key)
       ? "done"
       : opts.failed === key
         ? "failed"
         : opts.active === key
           ? "active"
-          : "waiting",
+          : "waiting") as StageState,
   }));
 }
