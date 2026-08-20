@@ -347,7 +347,7 @@ export function DecisionsZone({ state }: { state: DecisionsState }) {
                 style={{
                   fontFamily: MONO,
                   fontSize: 11,
-                  color: d.status === "confirmed" ? C.teal : d.status === "refuted" ? C.ox : C.muted,
+                  color: d.status === "confirmed" ? C.tealText : d.status === "refuted" ? C.ox : C.muted,
                 }}
               >
                 {DECISION_STATUS_LABEL[d.status]}
