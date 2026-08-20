@@ -330,6 +330,28 @@ const LANDING_V2_CSS = `
  .aura-v2 .refuse .body{font-size:14px}
  .aura-v2 .refuse .close{font-size:14px}
 }
+.aura-v2 .ledger{margin-top:18px;background:var(--white);border:1px solid var(--line);border-radius:20px;padding:32px 28px}
+.aura-v2 .ledger-lead{font-size:16px;color:var(--ink3);line-height:1.6;max-width:560px;margin:0 auto 18px;text-align:center}
+.aura-v2 .ledger .head{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);padding-bottom:14px;border-bottom:1px solid var(--line)}
+.aura-v2 .ledger .row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:18px 0;border-bottom:1px solid var(--line)}
+.aura-v2 .ledger .row:last-of-type{border-bottom:none}
+.aura-v2 .ledger .row .main{font-size:15px;font-weight:650;color:var(--ink);line-height:1.35}
+.aura-v2 .ledger .row .sub{font-size:13px;color:var(--ink3);line-height:1.5;margin-top:3px;display:block}
+.aura-v2 .ledger .row .status{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.06em;color:var(--red);text-align:right;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.aura-v2 .ledger .total{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:6px;padding:16px 20px;background:#FBF1EF;border-radius:12px}
+.aura-v2 .ledger .total .q{font-size:15px;font-weight:700;color:var(--red);line-height:1.35}
+.aura-v2 .ledger .total .a{font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.06em;color:var(--red);text-align:right;white-space:nowrap}
+.aura-v2 .turn{background:#0F1519;border-radius:20px;padding:32px 28px;margin-top:22px;position:relative;overflow:hidden}
+.aura-v2 .turn h3{font-size:clamp(22px,2.5vw,30px);font-weight:700;letter-spacing:-.03em;color:#fff;line-height:1.15}
+.aura-v2 .turn p{font-size:15px;line-height:1.65;color:#9AA5B1;margin-top:12px;max-width:620px}
+.aura-v2 .turn .mono{margin-top:18px;font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;color:var(--cyan)}
+@media(max-width:700px){
+ .aura-v2 .ledger{padding:24px 18px}
+ .aura-v2 .ledger .row{flex-direction:column;gap:8px}
+ .aura-v2 .ledger .row .status{text-align:left}
+ .aura-v2 .ledger .total{flex-direction:column;align-items:flex-start;gap:6px}
+ .aura-v2 .turn{padding:24px 18px}
+}
 `;
 
 const LANDING_V2_HTML = `
@@ -749,6 +771,49 @@ const LANDING_V2_HTML = `
     <p class="sub">You read about five hours a week. You never write about it, and you never talk about it. So the market never learns what you know.</p>
   </div>
 
+  <p class="ledger-lead">Not with money. With hours — the most expensive thing you own. Here is where it went.</p>
+  <div class="ledger rv">
+    <div class="head"><span>YOUR WEEK, AS A LEDGER</span><span>MON – FRI</span></div>
+    <div class="row">
+      <div>
+        <span class="main">The report you read at 6am</span>
+        <span class="sub">Two sharp numbers you quoted all day</span>
+      </div>
+      <span class="status">GONE BY FRIDAY</span>
+    </div>
+    <div class="row">
+      <div>
+        <span class="main">The argument you won in a meeting</span>
+        <span class="sub">A position it took you years to be able to take</span>
+      </div>
+      <span class="status">NEVER WRITTEN</span>
+    </div>
+    <div class="row">
+      <div>
+        <span class="main">The article you sent to a colleague</span>
+        <span class="sub">With one line of your own on top — your best line that week</span>
+      </div>
+      <span class="status">LOST IN CHAT</span>
+    </div>
+    <div class="row">
+      <div>
+        <span class="main">The pattern you noticed before others</span>
+        <span class="sub">The thing that makes you worth calling</span>
+      </div>
+      <span class="status">IN YOUR HEAD ONLY</span>
+    </div>
+    <div class="total">
+      <span class="q">What your market saw of all this</span>
+      <span class="a">NOTHING</span>
+    </div>
+  </div>
+
+  <div class="turn rv">
+    <h3>Same week. One tap different.</h3>
+    <p>Everything above, kept the moment you touched it — with its source attached. By dawn the best of it is a draft in your voice: a post, a carousel, in English or Arabic. You read it over coffee and decide.</p>
+    <p class="mono">SAME READING · SAME HOURS · NOTHING EXTRA TO DO</p>
+  </div>
+
   <div class="eyebrow">A year of your reading</div>
   <div class="wide rv">
     <svg viewBox="0 0 900 250" fill="none">
@@ -783,6 +848,7 @@ const LANDING_V2_HTML = `
       <div class="srow"><label for="rt">An hour of your time is worth</label><output id="rt-o" for="rt">SAR 300</output></div>
       <input id="rt" type="range" min="50" max="900" step="25" value="300" aria-label="Value of an hour of your time">
       <p class="ct" style="margin:14px 0 0"><span id="own">260 hrs</span> a year · <span id="cost">SAR 78,000</span> of your own time</p>
+      <p class="ct" style="margin-top:10px">A ghostwriter charges SAR 1,000–3,000 a month — and writes from a briefing call, not from your actual reading.</p>
       <p class="ct" id="kick" style="margin-top:6px"></p>
     </div>
   </div>
