@@ -52,9 +52,9 @@ export default function AdminGate({ children }: { children: React.ReactNode }) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ background: "var(--paper)" }}
+        style={{ background: "#F2F5F9" }}
       >
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#0670C4" }} />
       </div>
     );
   }
@@ -63,23 +63,23 @@ export default function AdminGate({ children }: { children: React.ReactNode }) {
     return (
       <div
         className="min-h-screen flex items-center justify-center px-6"
-        style={{ background: "var(--paper)" }}
+        style={{ background: "#F2F5F9" }}
       >
         <div
           className="max-w-sm w-full text-center rounded-lg px-6 py-8"
           style={{
-            background: "var(--paper-2)",
-            border: "0.5px solid var(--rule)",
-            color: "var(--ink)",
+            background: "#FFFFFF",
+            border: "1px solid #E2E7EE",
+            color: "#0F1519",
           }}
         >
           <div
             className="text-base"
-            style={{ fontFamily: "var(--serif)", color: "var(--ink)" }}
+            style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif", fontWeight: 700, color: "#0F1519" }}
           >
             Not authorized.
           </div>
-          <p className="mt-2 text-sm" style={{ color: "var(--ink-3)" }}>
+          <p className="mt-2 text-sm" style={{ color: "#5B6673" }}>
             This page is restricted to administrators.
           </p>
         </div>
