@@ -1464,9 +1464,14 @@ const Onboarding = () => {
     sendingLinkRef.current = true;
     setSendingLink(true);
     const startIso = new Date(Date.now() - 10000).toISOString();
+    /* Minted before the work is asked for, so the tick channel is already open
+       when the first stage mark lands. */
+    const capRunId = newRunId();
+    setCaptureRunId(capRunId);
     setReadStep(0);
     setLinkFailed(false);
     go(6);
+
     let sent = false;
     let anonRead = false;
     try {
