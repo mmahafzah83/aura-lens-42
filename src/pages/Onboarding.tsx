@@ -1126,14 +1126,18 @@ const Onboarding = () => {
           /* The confirmation card is as rich for an anonymous member as it is
              for a signed-in one: photo, headline and figures come off the read
              that /assessment already did. */
+          const anonRaw = anonRecord(anonRead);
           setLiProfile({
             full_name: st.name ?? anonRead.full_name ?? ([pf.first_name, pf.last_name].filter(Boolean).join(" ") || null),
             headline: st.headline ?? anonRead.headline ?? pf.headline ?? null,
             photo_url: st.avatar_url ?? anonRead.photo_url ?? anonRead.avatar_url ?? anonRead.profile_picture ?? anonRead.photo ?? null,
-            followers: anonRead.followers ?? anonRead.follower_count ?? null,
-            skills_count: anonRead.skills_count ?? anonRead.skillsCount ?? (strings(anonRead.skills ?? anonRead.topSkills ?? anonRead.top_skills).length || null),
+            followers: anonRaw.followers ?? anonRead.followers ?? anonRead.follower_count ?? null,
+            skills_count: anonRaw.skills_count
+              ?? anonRead.skills_count ?? anonRead.skillsCount
+              ?? (strings(anonRaw.topSkills ?? anonRead.skills ?? anonRead.topSkills ?? anonRead.top_skills).length || null),
             read: st.read,
           });
+
           const anonFacts = factsFromAnonymousRead(anonRead);
           if (anonFacts) setFacts(anonFacts);
           const ownQuote = String(anonRead.own_words_quote ?? "").trim();
