@@ -758,14 +758,23 @@ const Onboarding = () => {
     patch: Record<string, any>,
     label: string,
     uid?: string | null,
+    /**
+     * THE ONLY WAY TO NULL A COLUMN. A null inside `patch` is dropped, so a
+     * partial write can never blank a column it does not mean to. A column
+     * named here is cleared deliberately — the subject-change reset is the one
+     * caller that must actually empty the row.
+     */
+    clearKeys?: string[],
   ): Promise<boolean> => {
     const id = uid ?? userId;
+    const clears = (clearKeys ?? []).filter(Boolean);
     if (!id) {
       // Anonymous run: the same facts are kept on the session row and written
       // to diagnostic_profiles once the account exists and claims the run.
       if (!anonToken) return false;
       const clean: Record<string, any> = {};
       for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
+      for (const k of clears) clean[k] = null;
       anonStateRef.current = {
         ...anonStateRef.current,
         /* Stamped with the address this run is about, so a later run against a
@@ -779,9 +788,10 @@ const Onboarding = () => {
       return saveSession(anonToken, anonStateRef.current);
     }
     // The journey never clears a column it does not name, so nulls are dropped
-    // before the shared writer sees them.
+    // before the shared writer sees them — except the ones named in clearKeys.
     const clean: Record<string, any> = {};
     for (const [k, v] of Object.entries(patch)) if (v !== undefined && v !== null) clean[k] = v;
+    for (const k of clears) clean[k] = null;
     return upsertProfile(id, clean, `journey ${label}`);
   }, [userId, anonToken]);
 
