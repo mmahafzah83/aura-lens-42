@@ -1125,8 +1125,18 @@ const Onboarding = () => {
       /* P1 — answers must be in hand before any resume into the instrument.
          Without this, `advance` rebuilds the set from {} and the save wipes
          everything answered before the reload. */
-      const hydratedAnswers = (p.brand_assessment_answers && typeof p.brand_assessment_answers === "object")
+      let hydratedAnswers = (p.brand_assessment_answers && typeof p.brand_assessment_answers === "object")
         ? (p.brand_assessment_answers as Record<string, string>) : {};
+      /* THE BAND GUARD. Answer keys carry the prompt, and the prompts differ by
+         band. A member who changes band would otherwise accumulate two sets and
+         feed the stale one to the read. The band that produced the answers is
+         stamped beside them, so a change discards the whole set. */
+      const answeredBand = (p as any).answered_band ?? null;
+      if (answeredBand && p.seniority_band && answeredBand !== p.seniority_band
+        && Object.keys(hydratedAnswers).length) {
+        hydratedAnswers = {};
+        void upsertProfile(uid, { brand_assessment_answers: null, answered_band: null }, "band change answer reset");
+      }
       setAnswers(hydratedAnswers);
       const hasAnswers = Object.keys(hydratedAnswers).length > 0;
       const hasScores = Boolean(p.skill_ratings && typeof p.skill_ratings === "object"
