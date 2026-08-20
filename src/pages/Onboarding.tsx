@@ -1110,7 +1110,7 @@ const Onboarding = () => {
              for a signed-in one: photo, headline and figures come off the read
              that /assessment already did. */
           setLiProfile({
-            full_name: st.name ?? [pf.first_name, pf.last_name].filter(Boolean).join(" ") || null,
+            full_name: st.name ?? ([pf.first_name, pf.last_name].filter(Boolean).join(" ") || null),
             headline: (st.read as any)?.headline ?? pf.headline ?? null,
             profile_picture: (st.read as any)?.profile_picture ?? (st.read as any)?.photo ?? null,
             followers: (st.read as any)?.followers ?? null,
