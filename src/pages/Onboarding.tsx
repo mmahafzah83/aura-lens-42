@@ -1878,7 +1878,18 @@ const Onboarding = () => {
   useEffect(() => {
     if (screen !== 13 || readRaw || !userId) return;
     setRevealLoading(true);
+    setRevealOpenRunId((n) => n + 1);
+    /* A read that never answers must not hold the payoff screen for ever. At
+       45 seconds we stop waiting and say the honest thing instead. */
+    let done = false;
+    const timeout = window.setTimeout(() => {
+      if (done) return;
+      done = true;
+      console.warn("[reveal] loadMarketRead timed out");
+      setRevealLoading(false);
+    }, 45000);
     loadMarketRead(userId).then((r) => {
+      if (done) return;
       if (r) setReadRaw(r);
       const d = toRevealData(r, {
         figures: [],
@@ -1899,8 +1910,15 @@ const Onboarding = () => {
         ];
         setReveal({ ...d, figures });
       }
-    }).finally(() => setRevealLoading(false));
+    }).finally(() => {
+      if (done) return;
+      done = true;
+      window.clearTimeout(timeout);
+      setRevealLoading(false);
+    });
+    return () => { done = true; window.clearTimeout(timeout); };
   }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
+
 
   /* ── finishing ── */
   /* `destination` lets the seat doors complete the journey before they leave:
