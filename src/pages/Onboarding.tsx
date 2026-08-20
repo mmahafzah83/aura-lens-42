@@ -349,7 +349,7 @@ const subOf = (screen: number): JourneySub => {
 };
 
 
-const NightShell = ({ children, face, footer, onExit, subProgress }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void; subProgress?: number }) => {
+const NightShell = ({ children, face, footer, onExit }: { children: React.ReactNode; face?: boolean; footer?: React.ReactNode; onExit?: () => void }) => {
   const { onBack, name, screen = 0 } = useContext(JourneyNav);
   return (
   <JourneyShell
@@ -358,7 +358,7 @@ const NightShell = ({ children, face, footer, onExit, subProgress }: { children:
     name={name}
     beat={beatOf(screen)}
     sub={subOf(screen)}
-    fraction={journeyFraction(screen, subProgress)}
+    fraction={journeyFraction(screen)}
     background={OB.night}
     className="obc"
   >
@@ -377,12 +377,14 @@ const NightShell = ({ children, face, footer, onExit, subProgress }: { children:
  * third of the walk.
  */
 const PaperShell = ({
-  children, footer, onExit, face = false, subProgress, showProgress = true,
-}: { children: React.ReactNode; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number; showProgress?: boolean }) => {
+  children, footer, onExit, face = false, subProgress, showProgress = true, backFallback,
+}: { children: React.ReactNode; footer?: React.ReactNode; onExit?: () => void; face?: boolean; subProgress?: number; showProgress?: boolean;
+  /** Where Back goes on a screen the member RESUMED onto, with an empty stack. */
+  backFallback?: () => void }) => {
   const { onBack, banner, name, screen = 0 } = useContext(JourneyNav);
   return (
   <JourneyShell
-    onBack={onBack}
+    onBack={onBack ?? backFallback}
     onExit={onExit ?? (() => {})}
     name={name}
     beat={beatOf(screen)}
