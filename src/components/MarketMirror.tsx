@@ -155,7 +155,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
                 display: "inline-flex", alignItems: "center", gap: 6,
                 padding: "6px 10px", borderRadius: 8,
                 background: "transparent",
-                border: "1px solid var(--brand-line, rgba(197,165,90,0.3))",
+                border: "1px solid #E2E7EE",
                 color: canRefresh ? "#0670C4" : "var(--ink-muted)",
                 fontSize: 12, cursor: canRefresh && !generating ? "pointer" : "not-allowed",
               }}
@@ -254,7 +254,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
                     padding: "8px 12px",
                     background: "transparent",
                     border: "none",
-                    borderBottom: active ? "2px solid var(--bronze)" : "2px solid transparent",
+                    borderBottom: active ? "2px solid #0670C4" : "2px solid transparent",
                     color: active ? "#0670C4" : "var(--ink)",
                     fontSize: 14, fontWeight: active ? 600 : 600,
                     opacity: active ? 1 : 0.85,

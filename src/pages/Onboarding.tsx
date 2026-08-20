@@ -2421,7 +2421,7 @@ const Onboarding = () => {
                 completed: readDone ? ["fetch"] : [],
                 active: readDone ? "write" : "fetch",
               })}
-              onCarryOn={() => go(5)}
+              onCarryOn={{ label: "Carry on — I'll pick this up later", action: () => go(5) }}
             />
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 14 }}>
               {rows.map((r) => (
