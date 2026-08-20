@@ -204,26 +204,39 @@ export default function RequestAccess() {
 
           {seats && (
             <div className="ra-rack">
-              <div className="ra-rackhead">
-                <span className="ra-n">
-                  {SEAT_RACK_LABEL(seats.claimed, seats.cap)}
-                </span>
-                <span className="ra-lb">Founding circle</span>
-              </div>
-              <div className="ra-ticks" aria-hidden="true">
-                {Array.from({ length: seats.cap }).map((_, i) => (
-                  <i
-                    key={i}
-                    className={
-                      i < seats.claimed ? "taken" : !isDone && i === seats.claimed ? "yours" : ""
-                    }
-                  />
-                ))}
-              </div>
-              <p className={`ra-rackfoot${isDone ? " counted" : ""}`}>
-                <span className="ra-sq" />
-                {isDone ? "Yours is counted" : "The next one is yours"}
-              </p>
+              {seats.claimed < COUNTER_REVEAL_THRESHOLD ? (
+                <>
+                  <div className="ra-rackhead">
+                    <span className="ra-lb">Founding circle</span>
+                  </div>
+                  <p className="ra-rackteaser">
+                    Fifty founding seats. I onboard each one personally.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="ra-rackhead">
+                    <span className="ra-n">
+                      {SEAT_RACK_LABEL(seats.claimed, seats.cap)}
+                    </span>
+                    <span className="ra-lb">Founding circle</span>
+                  </div>
+                  <div className="ra-ticks" aria-hidden="true">
+                    {Array.from({ length: seats.cap }).map((_, i) => (
+                      <i
+                        key={i}
+                        className={
+                          i < seats.claimed ? "taken" : !isDone && i === seats.claimed ? "yours" : ""
+                        }
+                      />
+                    ))}
+                  </div>
+                  <p className={`ra-rackfoot${isDone ? " counted" : ""}`}>
+                    <span className="ra-sq" />
+                    {isDone ? "Yours is counted" : "The next one is yours"}
+                  </p>
+                </>
+              )}
             </div>
           )}
 
