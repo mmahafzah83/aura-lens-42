@@ -31,12 +31,15 @@ export function buildStages(
     active?: string | null;
     failed?: string | null;
     labels?: Partial<Record<string, string>>;
+    /** Each finished stage's own measured duration, keyed by stage key. */
+    ms?: Record<string, number>;
   },
 ): WorkingStage[] {
   const done = new Set(opts.completed);
   return OPERATION_STAGES[operation].map((key): WorkingStage => ({
     key,
     label: opts.labels?.[key] ?? STAGE_LABELS[operation][key] ?? key,
+    ms: opts.ms?.[key],
     state: (done.has(key)
       ? "done"
       : opts.failed === key

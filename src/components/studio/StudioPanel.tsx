@@ -418,14 +418,18 @@ export default function StudioPanel({
   const pendingRunIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (busyMessage && busyMessage !== busyWasRef.current) {
-      setBusyRunId(pendingRunIdRef.current ?? newRunId());
+      /* NO id for work no edge function records: an invented id would poll a
+         row that never exists. The panel then shows its single honest stage. */
+      setBusyRunId(pendingRunIdRef.current);
       pendingRunIdRef.current = null;
     }
     busyWasRef.current = busyMessage;
   }, [busyMessage]);
-  /* What the studio's two recorded operations have actually finished. */
-  const writeRun = useRunStages("studio_generate", busyRunId);
-  const slidesRun = useRunStages("studio_slides", busyRunId);
+  /* What the studio's two recorded operations have actually finished.
+     Each hook watches only while ITS operation is the one in flight. */
+  const busyOperation = busyMessage ? operationFor(busyMessage, lang) : null;
+  const writeRun = useRunStages("studio_generate", busyRunId, { active: busyOperation === "studio_generate" });
+  const slidesRun = useRunStages("studio_slides", busyRunId, { active: busyOperation === "studio_slides" });
   /** Failures. Never a tick, never overwritten by an autosave. */
   /** Set when a draft came back, rendered once the language is known. */
   const [restoredFlag, setRestoredFlag] = useState(false);

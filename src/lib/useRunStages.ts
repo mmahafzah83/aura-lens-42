@@ -51,15 +51,23 @@ export function useRunStages(
   const [outcome, setOutcome] = useState<RunStages["outcome"]>(null);
   /* Finished stays finished: a late-arriving older snapshot may not un-tick. */
   const doneRef = useRef<Set<string>>(new Set());
+  /* Each finished stage's own duration, so the mono column can show it. */
+  const msRef = useRef<Record<string, number>>({});
+  const [durations, setDurations] = useState<Record<string, number>>({});
 
   useEffect(() => {
     doneRef.current = new Set();
-    setCompleted([]); setActive(null); setFailedAt(null); setOutcome(null);
+    msRef.current = {};
+    setCompleted([]); setActive(null); setFailedAt(null); setOutcome(null); setDurations({});
   }, [runId]);
 
   useEffect(() => {
     if (!watching || !runId) return;
     let alive = true;
+    let timer = 0;
+    /* A run with an outcome is OVER. Stop the poll here rather than trusting
+       every call site to drop its `active` prop. */
+    const stopPolling = () => { if (timer) { window.clearInterval(timer); timer = 0; } };
 
     const apply = (stages: unknown, runOutcome: unknown) => {
       if (!alive) return;
@@ -69,11 +77,12 @@ export function useRunStages(
         const key = String(s?.key ?? "").trim();
         if (!key) continue;
         const ms = Number(s?.ms);
-        if (Number.isFinite(ms) && ms > 0) doneRef.current.add(key);
+        if (Number.isFinite(ms) && ms > 0) { doneRef.current.add(key); msRef.current[key] = ms; }
         else open = key;
       }
       const out = (runOutcome as RunStages["outcome"]) ?? null;
       setCompleted(Array.from(doneRef.current));
+      setDurations({ ...msRef.current });
       setOutcome(out);
       if (out === "failed" || out === "refused") {
         setActive(null);
@@ -82,6 +91,7 @@ export function useRunStages(
         setFailedAt(null);
         setActive(open);
       }
+      if (out) stopPolling();
     };
 
     /* Backfill — and the anonymous path's only channel. Runs immediately, so a
@@ -95,7 +105,7 @@ export function useRunStages(
       if (row) apply(row.stages, row.outcome);
     };
     void read();
-    const timer = window.setInterval(() => { void read(); }, POLL_MS);
+    timer = window.setInterval(() => { void read(); }, POLL_MS);
 
     const channel = supabase
       .channel(`run-${runId}`)
@@ -111,7 +121,7 @@ export function useRunStages(
 
     return () => {
       alive = false;
-      window.clearInterval(timer);
+      stopPolling();
       void supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,6 +132,6 @@ export function useRunStages(
     active,
     failedAt,
     outcome,
-    stages: buildStages(operation, { completed, active, failed: failedAt }),
+    stages: buildStages(operation, { completed, active, failed: failedAt, ms: durations }),
   };
 }
