@@ -52,6 +52,8 @@ import type { Beat } from "@/lib/journeyWork";
 export {
   BEAT_WEIGHTS, BEAT_BOUNDS, JOURNEY_WORK_TOTAL, readStageFraction,
 } from "@/lib/journeyWork";
+export type { Beat } from "@/lib/journeyWork";
+
 
 
 
