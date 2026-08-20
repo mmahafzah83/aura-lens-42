@@ -41,6 +41,7 @@ import Confetti from "@/components/onboarding/Confetti";
 import WaitProof from "@/components/onboarding/WaitProof";
 import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
 import { buildStages } from "@/lib/operationStages";
+import { useRunStages, newRunId } from "@/lib/useRunStages";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
 import { loadProfileFacts, type ProfileFacts } from "@/lib/profileFacts";
 import { loadPostProof, type PostProof } from "@/lib/postProof";
@@ -679,9 +680,11 @@ const Onboarding = () => {
   /* step 1 never navigates: it reads in place, then becomes the result card */
   const [step1Phase, setStep1Phase] = useState<"ask" | "reading" | "result">("ask");
   /* A run boundary is an event, not something inferred from stage names. */
-  const [readRunId, setReadRunId] = useState(0);
-  const [captureRunId, setCaptureRunId] = useState(0);
-  const [revealRunId, setRevealRunId] = useState(0);
+  /* One id per run, minted HERE so the tab can watch the run before the work
+     starts. A new id is a new run: the panel's floor and counter reset with it. */
+  const [readRunId, setReadRunId] = useState<string | null>(null);
+  const [captureRunId, setCaptureRunId] = useState<string | null>(null);
+  const [revealRunId, setRevealRunId] = useState<string | null>(null);
   /* the inline confirmation shown for a moment when they choose Finish later */
   const [exitNote, setExitNote] = useState<string>("");
   useEffect(() => {
@@ -1240,7 +1243,8 @@ const Onboarding = () => {
       return;
     }
     setLiBusy(true);
-    setReadRunId((n) => n + 1);
+    const liRunId = newRunId();
+    setReadRunId(liRunId);
     setStep1Phase("reading");
     try {
       /**
@@ -1254,7 +1258,10 @@ const Onboarding = () => {
         const res = await fetch(`${base}/functions/v1/mirror-read`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-          body: JSON.stringify({ profile_url, ...(force ? { force: true } : {}) }),
+          body: JSON.stringify({
+            profile_url, run_id: liRunId, ...(anonToken ? { anon_token: anonToken } : {}),
+            ...(force ? { force: true } : {}),
+          }),
         });
         const payload = await res.json().catch(() => ({} as any));
         if (!res.ok || !payload?.ok || !payload?.read) {
@@ -1472,7 +1479,7 @@ const Onboarding = () => {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
             body: JSON.stringify({
-              type: "link", content: v, source_url: v,
+              type: "link", content: v, source_url: v, run_id: capRunId,
               metadata: { title: meta?.title, summary: meta?.summary, source: "onboarding_collection" },
             }),
             signal: ctrl.signal,
@@ -1492,7 +1499,6 @@ const Onboarding = () => {
         await saveSession(anonToken, anonStateRef.current);
         /* D-12: an anonymous member gets the same payoff as a signed-in one.
            The link is read here and now, and what came out of it is shown. */
-        setCaptureRunId((n) => n + 1);
         setReadStep(1);
         anonRead = true;
       }
@@ -1506,7 +1512,7 @@ const Onboarding = () => {
         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/onboarding-read-link`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: anonToken, url: v, title: meta?.title, summary: meta?.summary }),
+          body: JSON.stringify({ token: anonToken, url: v, title: meta?.title, summary: meta?.summary, run_id: capRunId }),
         });
         const out = await res.json().catch(() => ({}));
         if (out?.ok && Array.isArray(out.fragments)) {
@@ -1704,7 +1710,8 @@ const Onboarding = () => {
 
   /* ── the six questions, then the read ── */
   const finishQuestions = async (finalAnswers: Record<string, string>) => {
-    setRevealRunId((n) => n + 1);
+    const readRun = newRunId();
+    setRevealRunId(readRun);
     setRevealPending(true);
     go(12);
     if (!userId) {
@@ -1718,7 +1725,7 @@ const Onboarding = () => {
     try {
       await writeProfile({ instrument_version: 2, ...(band ? { answered_band: band } : {}) }, "instrument stamp");
     } catch (e) { console.error("[journey] stamp threw", e); }
-    const results = await generateMarketRead(userId, finalAnswers, sector || null, band);
+    const results = await generateMarketRead(userId, finalAnswers, sector || null, band, readRun);
     /* the report needs the raw read, not just the card built from it */
     if (results) setReadRaw(results);
     const built = toRevealData(results, {
