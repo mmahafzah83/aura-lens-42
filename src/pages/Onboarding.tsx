@@ -126,7 +126,6 @@ const sourceLine = (a: { url: string; source?: string; published_at?: string | n
   return domain ? `${domain} · ${age}` : age;
 };
 
-const MANUAL_SCREEN = 15;
 /** Shown wherever a post or word count would otherwise read zero. */
 const EMPTY_POSTS_LINE = "Nothing public yet — that's the point. Aura will build from what you capture.";
 /** The same truth, in the first person, because the dark screens are Aura speaking. */
@@ -145,14 +144,6 @@ const LOSS_LINES = [
  */
 const CONNECT_AFTER_ACCOUNT =
   "Available after you save your report — Aura reads your public posts either way.";
-/** A short dark panel that sits between screen 8 and the sliders. */
-const TRUST_SLIDERS_SCREEN = 8.5;
-/** A white CV step between screen 3 and screen 4 — fractional so nothing renumbers. */
-const CV_SCREEN = 3.5;
-/** The after-keep share screen — offered only once the report is his. */
-const SHARE_SCREEN = 13.5;
-/** The seat offer — its own beat, after the journey is already finished. */
-const SEAT_SCREEN = 14.5;
 
 /** Plain text buttons inside the screen-13 "Save it" row. */
 const quietLink: React.CSSProperties = {
@@ -310,37 +301,10 @@ const JourneyNav = createContext<{
 /**
  * ONE PROGRESS SYSTEM, AND IT TELLS THE TRUTH.
  *
- * The read is beat 1 — it is the read, so it cannot be labelled evidence.
- * Evidence starts where evidence actually starts (the CV, the capture, the
- * strengths, the questions) and the position is the last four screens.
+ * The weights, the total and the beat shares live in `@/lib/journeyWork` and
+ * are imported by both this page and `JourneyShell`, so the two can never
+ * disagree about the denominator again.
  */
-const beatOf = (screen: number): Beat =>
-  screen >= 12 ? 3 : screen <= 1 || screen === MANUAL_SCREEN ? 1 : 2;
-
-/**
- * THE WORK EACH SCREEN REALLY CARRIES, in arbitrary units. Eight sliders and
- * nine questions are the bulk of the journey and therefore own the bulk of the
- * bar; the old arithmetic gave 85% of the work 7% of the fill.
- */
-const SCREEN_WORK: ReadonlyArray<readonly [number, number]> = [
-  [0, 1], [1, 2],
-  [CV_SCREEN, 2], [5, 3], [6, 1], [7, 2], [8, 1], [TRUST_SLIDERS_SCREEN, 1], [9, 16], [10, 1], [11, 18],
-  [12, 2], [13, 2], [SHARE_SCREEN, 1], [14, 0.5], [SEAT_SCREEN, 0.5],
-] as const;
-const WORK_TOTAL = SCREEN_WORK.reduce((a, [, w]) => a + w, 0);
-
-/** Global 0–1 fill for a screen, plus however far through that screen we are. */
-const journeyFraction = (screen: number, sub?: number): number => {
-  const key = screen === MANUAL_SCREEN ? 1 : screen;
-  let before = 0;
-  let mine = 0;
-  for (const [s, w] of SCREEN_WORK) {
-    if (s < key) before += w;
-    else if (s === key) mine = w;
-  }
-  const inner = typeof sub === "number" ? Math.max(0, Math.min(1, sub)) : 0;
-  return Math.max(0, Math.min(1, (before + mine * inner) / WORK_TOTAL));
-};
 
 const strings = (value: unknown): string[] => (Array.isArray(value)
   ? value.map((item) => typeof item === "string" ? item.trim() : String((item as any)?.name ?? "").trim()).filter(Boolean)
