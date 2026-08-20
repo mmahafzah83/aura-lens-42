@@ -6174,6 +6174,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      classify_request_failure: {
+        Args: { p_error: string; p_status: number }
+        Returns: string
+      }
       cockpit_freshness: {
         Args: never
         Returns: {
