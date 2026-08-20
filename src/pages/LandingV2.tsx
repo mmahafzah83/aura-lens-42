@@ -312,7 +312,23 @@ const LANDING_V2_CSS = `
  .aura-v2 .jrail .rdial .n{font-family:var(--mono);font-size:40px;font-weight:600;color:#fff;line-height:1}
  .aura-v2 .jrail .rdial .p{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:#00CEC9;margin-top:8px}
  .aura-v2 .jrail .rdial .c{font-size:10.5px;color:#8E99A6;margin-top:6px}
- .aura-v2 .jrail .rbtn{display:block;width:100%;text-align:center;margin-top:14px}
+.aura-v2 .jrail .rbtn{display:block;width:100%;text-align:center;margin-top:14px}
+}
+.aura-v2 .refuse{background:#0F1519;border-radius:20px;padding:38px 36px;margin-top:26px;position:relative;overflow:hidden}
+.aura-v2 .refuse::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 12% 12%,rgba(0,206,201,.12),transparent 44%),radial-gradient(circle at 92% 92%,rgba(6,112,196,.16),transparent 48%)}
+.aura-v2 .refuse-in{position:relative}
+.aura-v2 .refuse .kick{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#00CEC9;margin-bottom:16px}
+.aura-v2 .refuse h2{color:#fff;margin-top:0;font-size:clamp(30px,4vw,48px)}
+.aura-v2 .refuse .body{font-size:15px;line-height:1.65;color:#9AA5B1;margin-top:14px;max-width:620px}
+.aura-v2 .refuse .bar{display:flex;gap:3px;margin-top:26px;height:7px}
+.aura-v2 .refuse .bar i{flex:1;height:7px;border-radius:2px;background:#39434C;display:block}
+.aura-v2 .refuse .bar i:last-child{background:#00CEC9}
+.aura-v2 .refuse .cap{font-size:13px;color:#8B96A2;margin-top:12px}
+.aura-v2 .refuse .close{font-size:15px;color:#fff;margin-top:18px}
+@media(max-width:700px){
+ .aura-v2 .refuse{padding:26px 20px}
+ .aura-v2 .refuse .body{font-size:14px}
+ .aura-v2 .refuse .close{font-size:14px}
 }
 `;
 
@@ -869,6 +885,17 @@ const LANDING_V2_HTML = `
       </svg></div>
       <div class="big b" style="font-size:28px">We learn<br>you first</div>
       <div class="det">Aura respects what you already know. It reads your experience and your reading, works out what only you can say — and only then writes. <b>Nobody else gets your version.</b></div>
+    </div>
+  </div>
+
+  <div class="refuse rv">
+    <div class="refuse-in">
+      <div class="kick">THE PART NOBODY ADVERTISES</div>
+      <h2>It throws away most of what it writes.</h2>
+      <p class="body">Every draft is judged before it ever reaches you — against what you actually said, in your own register, with a real ending. Most do not survive. You only meet the ones that did.</p>
+      <div class="bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <p class="cap">Written five times. Shown once. That is the point.</p>
+      <p class="close">Every other tool hands you everything it generates and lets you sort it out.</p>
     </div>
   </div>
 </section>
