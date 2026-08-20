@@ -543,7 +543,7 @@ const Onboarding = () => {
   }, [userId]);
 
   /* 13b — when their day starts, so the overnight read lands at the right hour */
-  const [dailyTime, setDailyTime] = useState<"Morning" | "Midday" | "Evening">("Morning");
+  const [dailyTime, setDailyTime] = useState<"Morning" | "Midday" | "Evening" | null>(null);
   const timeZone = useMemo(() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "your local time"; }
     catch { return "your local time"; }
@@ -1032,6 +1032,7 @@ const Onboarding = () => {
           if (local > back) back = local;
         } catch { /* ignore */ }
         if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
+        if (back === TRUST_SLIDERS_SCREEN) back = 8; /* retired gate */
         if (back === 4) back = 5; /* the interstitial is gone */
         if (back === 6 || back === 7) back = 5;
         if (back > 0 && (back <= 14 || back === MANUAL_SCREEN)) {
@@ -1130,6 +1131,7 @@ const Onboarding = () => {
       /* screens 2 and 3 folded into step 1 — a resume there lands on the address
          card with the address already filled, so nothing Aura read is lost. */
       if (resume === 2 || resume === 3 || resume === CV_SCREEN) resume = 1;
+      if (resume === TRUST_SLIDERS_SCREEN) resume = 8; /* retired gate */
       if (resume === 4) resume = 5; /* the interstitial is gone */
       if (resume <= 3) {
         try {
@@ -1524,8 +1526,6 @@ const Onboarding = () => {
     if (screen === 8 || screen === TRUST_SLIDERS_SCREEN || screen === 9) void loadDimensions();
   }, [screen, loadDimensions]);
   useEffect(() => { if (screen === 10 || screen === 11) void loadQuestions(); }, [screen, loadQuestions]);
-  // Retired gate: a saved resume position may still point at it — forward to 8.
-  useEffect(() => { if (screen === TRUST_SLIDERS_SCREEN) go(8); }, [screen]);
 
   /* the member's own figures, read once the posts are in */
   useEffect(() => {
@@ -2304,7 +2304,7 @@ const Onboarding = () => {
                 </p>
               ) : null}
               <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
-              <OBButton variant="tertiary" onClick={() => go(0)}>Back</OBButton>
+              <OBButton variant="tertiary" onClick={() => goBack(0)}>Back</OBButton>
             </Actions>
             <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
               Aura reads your profile and your public posts. You get drafts in your own words instead of generic ones.
@@ -2645,7 +2645,7 @@ const Onboarding = () => {
           go(5);
         }}>Save and carry on</OBButton>
         {!ready ? whyLine("ob-manual-why", "Fill in your name, where you work, your sector and your level to enable this.") : null}
-        <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
+        <OBButton variant="tertiary" onClick={() => goBack(1)}>Back</OBButton>
         </Actions>
       </PaperShell>
     );
@@ -2654,11 +2654,8 @@ const Onboarding = () => {
   /* 3.5 — WHITE. The member's turn: a CV, if they have one to hand. */
   if (screen === CV_SCREEN) {
     const leaveCv = () => {
-      if (cvUploads > 0) {
-        /* Awaited in the background: the result is held in state so the
-           journey can show it, but progression never waits on it. */
-        void runCvCrosscheck();
-      }
+      /* CvUploadControl owns the cross-check call. Firing it here too ran
+         cv-crosscheck twice on every signed-in upload. */
       go(5);
     };
     content = (
@@ -2696,7 +2693,7 @@ const Onboarding = () => {
           <div style={{ marginBlockStart: 24, borderTop: `1px solid ${OB.line}`, paddingBlockStart: 20 }}>
             <h2 style={{ fontFamily: OB.ui, fontSize: 20, fontWeight: 700, color: OB.ink, margin: 0 }}>Keep this.</h2>
             <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 8 }}>
-              This comparison lives in this browser only. Save your report and it's yours.
+              Only this browser can reach this comparison. Make an account and it's yours anywhere.
             </p>
             <Actions style={{ marginBlockStart: 16 }}>
               <OBButton onClick={() => go(12)}>Save my report</OBButton>
@@ -2996,7 +2993,7 @@ const Onboarding = () => {
             {/* Back always exists here, and the first slider steps back a stage
                 rather than off the beginning of the flow. */}
             <OBButton variant="tertiary" onClick={() => {
-              if (dimIdx > 0) setDimIdx((i) => Math.max(0, i - 1)); else go(8);
+              if (dimIdx > 0) setDimIdx((i) => Math.max(0, i - 1)); else goBack(8);
             }}>Back</OBButton>
           </Actions>
           {last && (
@@ -3228,7 +3225,7 @@ const Onboarding = () => {
             {showNone ? (
               <OBButton variant="tertiary" onClick={() => advance("None of these fit")}>None of these fit</OBButton>
             ) : null}
-            <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else go(10); }}>Back</OBButton>
+            <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else goBack(10); }}>Back</OBButton>
           </Actions>
 
           {/* Named once, on the last screen before the account wall — nowhere else. */}
