@@ -30,12 +30,12 @@ export const SEAT_VS_TOOLS =
 /** Kept for the surfaces that render the "how" as a plain row list. */
 export const SEAT_ROWS = SEAT_HOW;
 
-export const SEAT_PRICE = "$69 a month";
+export const SEAT_PRICE = "$35 a month";
 export const SEAT_PRICE_SUBLINE =
   "Founding seat: this price is locked for as long as you keep it, and I onboard you personally.";
 export const SEAT_CONSTRAINT = "I can personally onboard fifty people. That is the constraint.";
 
-export const SEAT_CTA = "Reserve my seat at $69";
+export const SEAT_CTA = "Reserve my seat at $35";
 export const SEAT_CTA_SECONDARY = "Just keep me posted";
 export const SEAT_PATH = "/request-access";
 
@@ -60,7 +60,7 @@ export const RESERVED_TITLE = "You're in. I'll come to you myself.";
 export const RESERVED_BODY =
   "Not an automated queue — I open seats in small waves and write to people individually.";
 export const WORTH_QUESTION =
-  "What would have to be true, in three months, for this to have been worth $69 a month?";
+  "What would have to be true, in three months, for this to have been worth $35 a month?";
 export const WORTH_PLACEHOLDER = "Optional. One or two lines is plenty.";
 export const WORTH_SEND = "Send";
 export const WORTH_SKIP = "Skip this";
