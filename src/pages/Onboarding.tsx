@@ -325,7 +325,7 @@ const beatOf = (screen: number): Beat =>
 const SCREEN_WORK: ReadonlyArray<readonly [number, number]> = [
   [0, 1], [1, 2],
   [CV_SCREEN, 2], [5, 3], [6, 1], [7, 2], [8, 1], [TRUST_SLIDERS_SCREEN, 1], [9, 16], [10, 1], [11, 18],
-  [12, 2], [13, 2], [SHARE_SCREEN, 1], [14, 0.5],
+  [12, 2], [13, 2], [SHARE_SCREEN, 1], [14, 0.5], [SEAT_SCREEN, 0.5],
 ] as const;
 const WORK_TOTAL = SCREEN_WORK.reduce((a, [, w]) => a + w, 0);
 
