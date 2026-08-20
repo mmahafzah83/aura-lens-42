@@ -6,8 +6,8 @@ import { SECTORS } from "@/constants/sectors";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
-  SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_CTA, SEAT_CTA_SECONDARY, SEAT_HEADING, SEAT_LEAD,
-  SEAT_ONE_JOB, SEAT_HOW, SEAT_HOW_LABEL, SEAT_VS_TOOLS, SEAT_CONSTRAINT, SEAT_RESERVE_NOTE, SEAT_RACK_LABEL,
+  SEAT_PRICE, SEAT_PRICE_SUBLINE, SEAT_HEADING, SEAT_LEAD,
+  SEAT_ONE_JOB, SEAT_HOW, SEAT_HOW_LABEL, SEAT_VS_TOOLS, SEAT_CONSTRAINT, SEAT_RACK_LABEL,
   INTENT_RESERVE, INTENT_KEEP_POSTED, RESERVED_TITLE, RESERVED_BODY, POSTED_TITLE,
   WORTH_QUESTION, WORTH_PLACEHOLDER, WORTH_SEND, WORTH_SKIP, WORTH_THANKS,
   type SeatIntent,
@@ -29,6 +29,7 @@ type Status = "idle" | "loading" | "success" | "duplicate" | "error" | "validati
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SENIORITY: string[] = [...SENIORITY_LEVELS];
 const SECTOR: string[] = [...SECTORS];
+const COUNTER_REVEAL_THRESHOLD = 7;
 
 function usePositionCount(target: number, start: boolean, duration = 800) {
   const [value, setValue] = useState(0);
@@ -203,26 +204,39 @@ export default function RequestAccess() {
 
           {seats && (
             <div className="ra-rack">
-              <div className="ra-rackhead">
-                <span className="ra-n">
-                  {SEAT_RACK_LABEL(seats.claimed, seats.cap)}
-                </span>
-                <span className="ra-lb">Founding circle</span>
-              </div>
-              <div className="ra-ticks" aria-hidden="true">
-                {Array.from({ length: seats.cap }).map((_, i) => (
-                  <i
-                    key={i}
-                    className={
-                      i < seats.claimed ? "taken" : !isDone && i === seats.claimed ? "yours" : ""
-                    }
-                  />
-                ))}
-              </div>
-              <p className={`ra-rackfoot${isDone ? " counted" : ""}`}>
-                <span className="ra-sq" />
-                {isDone ? "Yours is counted" : "The next one is yours"}
-              </p>
+              {seats.claimed < COUNTER_REVEAL_THRESHOLD ? (
+                <>
+                  <div className="ra-rackhead">
+                    <span className="ra-lb">Founding circle</span>
+                  </div>
+                  <p className="ra-rackteaser">
+                    Fifty founding seats. I onboard each one personally.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="ra-rackhead">
+                    <span className="ra-n">
+                      {SEAT_RACK_LABEL(seats.claimed, seats.cap)}
+                    </span>
+                    <span className="ra-lb">Founding circle</span>
+                  </div>
+                  <div className="ra-ticks" aria-hidden="true">
+                    {Array.from({ length: seats.cap }).map((_, i) => (
+                      <i
+                        key={i}
+                        className={
+                          i < seats.claimed ? "taken" : !isDone && i === seats.claimed ? "yours" : ""
+                        }
+                      />
+                    ))}
+                  </div>
+                  <p className={`ra-rackfoot${isDone ? " counted" : ""}`}>
+                    <span className="ra-sq" />
+                    {isDone ? "Yours is counted" : "The next one is yours"}
+                  </p>
+                </>
+              )}
             </div>
           )}
 
@@ -249,6 +263,10 @@ export default function RequestAccess() {
             </div>
           </div>
 
+          <p className="ra-readfree">
+            Not ready for a seat? <Link to="/read">Read yourself free</Link> — no account,
+            ninety seconds.
+          </p>
           <p className="ra-ar" dir="rtl">
             حتى السوق يعرفك قبل ما يشوفك <span aria-hidden="true">✦</span>
           </p>
@@ -297,42 +315,34 @@ export default function RequestAccess() {
                   <span className="ra-price-s">{SEAT_PRICE_SUBLINE}</span>
                 </div>
 
-                {/* Two doors, same size and shape — the split between them is the measurement. */}
-                <div className="ra-doors">
-                  <button
-                    type="submit"
-                    disabled={status === "loading"}
-                    className="ra-door ra-door-fill"
-                    onClick={() => setIntent(INTENT_RESERVE)}
-                  >
-                    {status === "loading" && intent === INTENT_RESERVE
-                      ? <span className="ra-pulse">Sending…</span>
-                      : SEAT_CTA}
-                  </button>
+                <button
+                  type="submit"
+                  disabled={status === "loading"}
+                  className="ra-door ra-door-fill"
+                  onClick={() => setIntent(INTENT_RESERVE)}
+                >
+                  {status === "loading" && intent === INTENT_RESERVE
+                    ? <span className="ra-pulse">Sending…</span>
+                    : "Reserve my seat"}
+                </button>
+                <p className="ra-soft">
+                  <span className="ra-soft-q">Not ready to commit?</span>{" "}
                   <button
                     type="button"
+                    className="ra-soft-a"
                     disabled={status === "loading"}
-                    className="ra-door ra-door-line"
                     onClick={(e) => void handleSubmit(e, INTENT_KEEP_POSTED)}
                   >
-                    {status === "loading" && intent === INTENT_KEEP_POSTED
-                      ? <span className="ra-pulse">Sending…</span>
-                      : SEAT_CTA_SECONDARY}
+                    Just keep me posted
                   </button>
-                </div>
-                <p className="ra-reservenote">{SEAT_RESERVE_NOTE}</p>
+                </p>
               </form>
 
-              <p className="ra-legal">
-                Your data is protected under Saudi PDPL. See our{" "}
-                <Link to="/privacy">Privacy Policy</Link>.
+              <p className="ra-fine">
+                No card, nothing charged. You're telling me you want in at this price — I'll come to you when it opens.
               </p>
-              <p className="ra-legal">
-                Not ready for a seat? <Link to="/read">Read yourself free</Link> — no account,
-                ninety seconds.
-              </p>
-              <p className="ra-signin">
-                Already have a seat? <Link to="/auth">Sign in →</Link>
+              <p className="ra-fine ra-fine--small">
+                Protected under Saudi PDPL · <Link to="/privacy">Privacy Policy</Link> · Already have a seat? <Link to="/auth">Sign in →</Link>
               </p>
             </>
           )}
@@ -532,6 +542,7 @@ const RA_CSS = `
 .ra-sq{width:8px;height:12px;border-radius:2px;background:var(--act);flex:0 0 8px;}
 .ra-rackfoot.counted{color:var(--cy-t);}
 .ra-rackfoot.counted .ra-sq{background:var(--cy);}
+.ra-rackteaser{font-size:16px;line-height:1.55;color:var(--n900);margin-top:8px;}
 
 .ra-ledger{margin-top:clamp(30px,4vw,44px);border-top:2px solid var(--n900);}
 .ra-lrow{display:flex;align-items:baseline;gap:12px;padding:15px 0;border-bottom:1px solid var(--n200);}
@@ -545,6 +556,9 @@ const RA_CSS = `
 .ra-v.cy{color:var(--cy-t);}
 .ra-v.act{color:var(--act);}
 .ra-ar{font-family:var(--ar);direction:rtl;line-height:1.9;margin-top:30px;font-size:19px;color:var(--cy-t);}
+.ra-readfree{margin-top:22px;font-size:14px;line-height:1.6;color:var(--n500);max-width:46ch;}
+.ra-readfree a{color:var(--act);text-decoration:underline;text-underline-offset:3px;}
+.ra-readfree a:hover{color:#04477C;}
 
 .ra-sheet{background:var(--n0);border:1px solid var(--n200);border-radius:24px;
   padding:clamp(24px,3vw,36px);box-shadow:0 30px 64px -40px rgba(15,21,25,.28);}
@@ -575,8 +589,16 @@ const RA_CSS = `
 .ra-btn:hover:not(:disabled) .ra-a{transform:translate(2px,-2px);}
 .ra-pulse{animation:ra-pulse 1.4s ease-in-out infinite;}
 @keyframes ra-pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
-.ra-legal{font-size:11.5px;color:var(--n400);text-align:center;margin-top:14px;line-height:1.6;}
-.ra-legal a{color:var(--act);}
+.ra-soft{text-align:center;margin-top:14px;font-size:14px;line-height:1.5;}
+.ra-soft-q{color:var(--n500);}
+.ra-soft-a{background:none;border:none;padding:0;color:var(--act);font-size:inherit;font-family:inherit;
+  text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+.ra-soft-a:hover{color:#04477C;}
+.ra-fine{text-align:center;color:var(--n500);line-height:1.6;margin-top:16px;}
+.ra-fine--small{font-size:13px;}
+.ra-fine a{color:var(--act);text-decoration:none;}
+.ra-fine a:hover{text-decoration:underline;text-underline-offset:3px;}
+
 .ra-price{display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;margin-top:4px;}
 .ra-price-n{font-family:var(--mono);font-size:20px;font-weight:600;letter-spacing:-.02em;color:var(--n900);}
 .ra-price-s{font-size:12.5px;color:var(--n500);line-height:1.5;}
@@ -597,19 +619,15 @@ const RA_CSS = `
   font-size:15px;font-weight:600;line-height:1.25;cursor:pointer;
   transition:background .2s ease,color .2s ease,box-shadow .25s ease;}
 .ra-door:disabled{cursor:default;opacity:.85;}
-.ra-door-fill{background:var(--act);color:#fff;border:1.5px solid var(--act);}
+.ra-door-fill{background:var(--act);color:#fff;border:1.5px solid var(--act);border-radius:8px;}
 .ra-door-fill:hover:not(:disabled){background:#04477C;border-color:#04477C;}
 .ra-door-line{background:var(--n0);color:var(--act);border:1.5px solid var(--act);}
 .ra-door-line:hover:not(:disabled){background:var(--act-50);}
-.ra-reservenote{margin-top:12px;font-size:12.5px;line-height:1.6;color:var(--n500);text-align:center;}
 .ra-worth{margin-top:22px;text-align:left;}
 .ra-worth label{margin-bottom:9px;text-transform:none;letter-spacing:0;font-family:var(--ui);
   font-size:14px;line-height:1.55;color:var(--n700);}
 .ra-worth textarea{resize:vertical;}
 @media (max-width:520px){.ra-doors{grid-template-columns:1fr;}}
-.ra-signin{text-align:center;margin-top:22px;padding-top:20px;border-top:1px solid var(--n200);
-  font-size:14.5px;color:var(--n500);}
-.ra-signin a{color:var(--act);font-weight:600;}
 
 .ra-ceremony{text-align:center;padding:8px 0;}
 .ra-mk{display:flex;justify-content:center;margin-bottom:22px;}
