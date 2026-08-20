@@ -40,8 +40,20 @@ const INTER = "Inter, ui-sans-serif, system-ui, -apple-system, sans-serif";
 const MONO = "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
 
 const env = (import.meta as any).env ?? {};
-const SHA = String(env.VITE_COMMIT_SHA ?? env.VITE_GIT_SHA ?? "").slice(0, 7);
+const injectedSha = typeof __BUILD_SHA__ !== "undefined" ? __BUILD_SHA__ : "";
+const injectedTime = typeof __BUILD_TIME__ !== "undefined" ? __BUILD_TIME__ : "";
+const SHA = String(env.VITE_COMMIT_SHA ?? env.VITE_GIT_SHA ?? injectedSha ?? "").slice(0, 7);
 const BRANCH = String(env.VITE_GIT_BRANCH ?? (env.DEV ? "local" : "main"));
+function buildStamp(): string {
+  const iso = String(injectedTime || "");
+  const d = iso ? new Date(iso) : new Date();
+  if (isNaN(d.getTime())) return "built just now";
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const day = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return `built ${time} · ${day}`;
+}
+const BUILD_ID = SHA ? `${SHA} · ${BRANCH}` : buildStamp();
+
 
 const SHELL_CSS = `
 .ac-shell a:focus-visible, .ac-shell button:focus-visible {
@@ -155,7 +167,7 @@ export default function AdminShell({ title, subtitle, children, bleed = false }:
                 whiteSpace: "nowrap",
               }}
             >
-              {SHA ? `${SHA} · ${BRANCH}` : BRANCH}
+              {BUILD_ID}
             </span>
           </div>
 
