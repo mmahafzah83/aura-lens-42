@@ -543,7 +543,7 @@ const Onboarding = () => {
   }, [userId]);
 
   /* 13b — when their day starts, so the overnight read lands at the right hour */
-  const [dailyTime, setDailyTime] = useState<"Morning" | "Midday" | "Evening">("Morning");
+  const [dailyTime, setDailyTime] = useState<"Morning" | "Midday" | "Evening" | null>(null);
   const timeZone = useMemo(() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "your local time"; }
     catch { return "your local time"; }
@@ -948,8 +948,11 @@ const Onboarding = () => {
    * Back — one step, with everything the member typed still in state. Nothing
    * is re-fetched and nothing is cleared; only the screen number moves.
    */
-  const goBack = useCallback(() => {
-    const prev = backStack.current.pop();
+  const goBack = useCallback((fallback?: number) => {
+    /* An empty stack is a deep link or a resume — never a dead button. The
+       caller names the screen that sits behind this one. */
+    const popped = backStack.current.pop();
+    const prev = popped ?? fallback;
     if (prev === undefined) return;
     setScreen(prev);
     screenRef.current = prev;
@@ -1029,8 +1032,22 @@ const Onboarding = () => {
           if (local > back) back = local;
         } catch { /* ignore */ }
         if (back === 2 || back === 3 || back === CV_SCREEN) back = 1;
+        if (back === TRUST_SLIDERS_SCREEN) back = 8; /* retired gate */
         if (back === 4) back = 5; /* the interstitial is gone */
         if (back === 6 || back === 7) back = 5;
+        /* Back to the question they were on, not to question one. */
+        {
+          let qi = Number(st.q_idx ?? 0);
+          let di = Number(st.dim_idx ?? 0);
+          try {
+            const lq = Number(localStorage.getItem("aura_ob_q_anon") ?? "0");
+            if (lq > qi) qi = lq;
+            const ld = Number(localStorage.getItem("aura_ob_dim_anon") ?? "0");
+            if (ld > di) di = ld;
+          } catch { /* ignore */ }
+          if (Number.isFinite(qi) && qi > 0) setQIdx(qi);
+          if (Number.isFinite(di) && di > 0) setDimIdx(di);
+        }
         if (back > 0 && (back <= 14 || back === MANUAL_SCREEN)) {
           setScreen(back); screenRef.current = back;
           if (stageOf(back) > 1) setResumedAt({ stage: stageOf(back), readDone: Boolean(st.read) });
@@ -1127,6 +1144,7 @@ const Onboarding = () => {
       /* screens 2 and 3 folded into step 1 — a resume there lands on the address
          card with the address already filled, so nothing Aura read is lost. */
       if (resume === 2 || resume === 3 || resume === CV_SCREEN) resume = 1;
+      if (resume === TRUST_SLIDERS_SCREEN) resume = 8; /* retired gate */
       if (resume === 4) resume = 5; /* the interstitial is gone */
       if (resume <= 3) {
         try {
@@ -1166,6 +1184,12 @@ const Onboarding = () => {
           if (data?.length) { setClaims(data as any); resume = 7; } else { resume = 5; }
         } catch { resume = 5; }
       }
+      try {
+        const lq = Number(localStorage.getItem(`aura_ob_q_${uid}`) ?? "0");
+        if (Number.isFinite(lq) && lq > 0) setQIdx(lq);
+        const ld = Number(localStorage.getItem(`aura_ob_dim_${uid}`) ?? "0");
+        if (Number.isFinite(ld) && ld > 0) setDimIdx(ld);
+      } catch { /* ignore */ }
       if (resume > 0 && (resume <= 14 || resume === MANUAL_SCREEN)) {
         setScreen(resume); screenRef.current = resume;
         if (stageOf(resume) > 1) {
@@ -1359,9 +1383,9 @@ const Onboarding = () => {
   const suggestRan = useRef(false);
   useEffect(() => {
     if (screen < 4 || suggestRan.current) return;
-    /* The suggested read needs an account — an anonymous visitor is offered
-       nothing rather than a 401 and a dead promise on screen. */
-    if (!userId) { suggestRan.current = true; setSuggestDead(true); return; }
+    /* An anonymous visitor gets the same suggestion: the session token stands
+       in for the account, exactly as onboarding-proposals already does. */
+    if (!userId && !anonToken) return;
     suggestRan.current = true;
     let settled = false;
     // A promise left hanging on screen is worse than no promise at all.
@@ -1373,6 +1397,7 @@ const Onboarding = () => {
         headline: String(liProfile?.headline || "").trim() || null,
         firm,
         level: band ? BAND_TO_LEVEL[band] : "",
+        ...(userId ? {} : { token: anonToken }),
       },
     }).then(({ data }) => {
       if (settled) return;
@@ -1386,7 +1411,7 @@ const Onboarding = () => {
       window.clearTimeout(giveUp);
       setSuggestDead(true);
     });
-  }, [screen, sector, firm, band, liProfile, userId]);
+  }, [screen, sector, firm, band, liProfile, userId, anonToken]);
 
   /* ── screen 5/6: send the link, then watch for what came out of it ── */
   const submitLink = () => {
@@ -1521,8 +1546,6 @@ const Onboarding = () => {
     if (screen === 8 || screen === TRUST_SLIDERS_SCREEN || screen === 9) void loadDimensions();
   }, [screen, loadDimensions]);
   useEffect(() => { if (screen === 10 || screen === 11) void loadQuestions(); }, [screen, loadQuestions]);
-  // Retired gate: a saved resume position may still point at it — forward to 8.
-  useEffect(() => { if (screen === TRUST_SLIDERS_SCREEN) go(8); }, [screen]);
 
   /* the member's own figures, read once the posts are in */
   useEffect(() => {
@@ -1603,6 +1626,31 @@ const Onboarding = () => {
     setScores((prev) => ({ ...prev, [name]: value }));
   };
 
+  /* ── FIX 3 · a refresh must not cost the member their answers ──
+     Answers used to be written once, at the very end. Anyone who reloaded
+     mid-instrument started again from question one with nothing kept. Every
+     commit is now persisted, along with the place in the queue. Fire and
+     forget: the UI never waits on the write. */
+  const persistQuestionProgress = useCallback((ans: Record<string, string>, idx: number) => {
+    if (!userId && anonToken) {
+      anonStateRef.current = { ...anonStateRef.current, answers: ans, q_idx: idx };
+      void saveSession(anonToken, anonStateRef.current);
+    }
+    try {
+      localStorage.setItem(userId ? `aura_ob_q_${userId}` : "aura_ob_q_anon", String(idx));
+    } catch { /* private mode */ }
+  }, [userId, anonToken]);
+
+  const persistDimProgress = useCallback((idx: number) => {
+    if (!userId && anonToken) {
+      anonStateRef.current = { ...anonStateRef.current, dim_idx: idx };
+      void saveSession(anonToken, anonStateRef.current);
+    }
+    try {
+      localStorage.setItem(userId ? `aura_ob_dim_${userId}` : "aura_ob_dim_anon", String(idx));
+    } catch { /* private mode */ }
+  }, [userId, anonToken]);
+
   /* ── the six questions, then the read ── */
   const finishQuestions = async (finalAnswers: Record<string, string>) => {
     setRevealPending(true);
@@ -1677,7 +1725,9 @@ const Onboarding = () => {
   }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
 
   /* ── finishing ── */
-  const finish = async () => {
+  /* `destination` lets the seat doors complete the journey before they leave:
+     the member who reserves a seat is still a finished member. */
+  const finish = async (opts?: { destination?: string }) => {
     // The read is emailed once, at the end, so it lives somewhere permanent.
     try {
       if (reveal) {
@@ -1740,7 +1790,7 @@ const Onboarding = () => {
     try { localStorage.setItem("aura_onboarding_complete", "true"); } catch { /* ignore */ }
     try { sessionStorage.removeItem("aura_onboarding_visits"); } catch { /* ignore */ }
     supabase.functions.invoke("compute-imprint", { body: {} }).catch(() => {});
-    navigate("/home", { replace: true });
+    navigate(opts?.destination ?? "/home", { replace: true });
   };
 
   /**
@@ -1939,6 +1989,18 @@ const Onboarding = () => {
       await writeProfile({ ui_dismissals: { ...existing, daily_time: { slot, time_zone: timeZone, at: new Date().toISOString() } } }, "daily time save");
     } catch { /* they can change it in Settings */ }
   }, [userId, timeZone, writeProfile]);
+
+  /* Both seat doors: finish first, then leave. A failed finish never traps
+     the member — it is logged and the door still opens. */
+  const leaveForSeat = async (intent: "reserve_69" | "keep_posted") => {
+    const destination = `${SEAT_PATH}?intent=${intent}`;
+    try {
+      await finish({ destination });
+    } catch (e) {
+      console.error("[journey] finish before seat threw", e);
+      navigate(destination);
+    }
+  };
 
   /* Pausing is not finishing. The old escape hatch flagged the member as fully
    * onboarded with an empty profile and locked them out of the journey for
@@ -2301,7 +2363,7 @@ const Onboarding = () => {
                 </p>
               ) : null}
               <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
-              <OBButton variant="tertiary" onClick={() => go(0)}>Back</OBButton>
+              <OBButton variant="tertiary" onClick={() => goBack(0)}>Back</OBButton>
             </Actions>
             <p style={{ margin: "14px 0 0", fontSize: 12, lineHeight: 1.6, color: OB.muted }}>
               Aura reads your profile and your public posts. You get drafts in your own words instead of generic ones.
@@ -2642,7 +2704,7 @@ const Onboarding = () => {
           go(5);
         }}>Save and carry on</OBButton>
         {!ready ? whyLine("ob-manual-why", "Fill in your name, where you work, your sector and your level to enable this.") : null}
-        <OBButton variant="tertiary" onClick={() => go(1)}>Back</OBButton>
+        <OBButton variant="tertiary" onClick={() => goBack(1)}>Back</OBButton>
         </Actions>
       </PaperShell>
     );
@@ -2651,11 +2713,8 @@ const Onboarding = () => {
   /* 3.5 — WHITE. The member's turn: a CV, if they have one to hand. */
   if (screen === CV_SCREEN) {
     const leaveCv = () => {
-      if (cvUploads > 0) {
-        /* Awaited in the background: the result is held in state so the
-           journey can show it, but progression never waits on it. */
-        void runCvCrosscheck();
-      }
+      /* CvUploadControl owns the cross-check call. Firing it here too ran
+         cv-crosscheck twice on every signed-in upload. */
       go(5);
     };
     content = (
@@ -2693,10 +2752,13 @@ const Onboarding = () => {
           <div style={{ marginBlockStart: 24, borderTop: `1px solid ${OB.line}`, paddingBlockStart: 20 }}>
             <h2 style={{ fontFamily: OB.ui, fontSize: 20, fontWeight: 700, color: OB.ink, margin: 0 }}>Keep this.</h2>
             <p style={{ fontFamily: OB.ui, fontSize: 15, color: OB.muted, marginBlockStart: 8 }}>
-              This comparison lives in this browser only. Save your report and it's yours.
+              Only this browser can reach this comparison. Make an account and it's yours anywhere.
             </p>
             <Actions style={{ marginBlockStart: 16 }}>
-              <OBButton onClick={() => go(12)}>Save my report</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(12)}>Skip ahead to my report</OBButton>
+              <p style={{ margin: "-4px 0 0", fontSize: 12.5, lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+                You'll skip the questions — your report will be thinner.
+              </p>
             </Actions>
           </div>
         ) : null}
@@ -2742,6 +2804,8 @@ const Onboarding = () => {
             aria-describedby={!linkInput.trim() ? "ob-add-why" : undefined}
             onClick={() => void submitLink()}>Add it</OBButton>
           {!linkInput.trim() ? whyLine("ob-add-why", "Paste a link to enable this.", true) : null}
+          {/* Nobody is held here for want of an article. */}
+          <OBButton variant="tertiary" onClick={() => go(8)}>I'll add one later</OBButton>
         </Actions>
 
         {suggested || !suggestDead ? (
@@ -2985,7 +3049,7 @@ const Onboarding = () => {
               const committed = { ...scores, [d.name]: value };
               if (!scores[d.name]) setScore(d.name, value);
               void saveScores(committed);
-              if (!last) { setDimIdx((i) => i + 1); return; }
+              if (!last) { persistDimProgress(dimIdx + 1); setDimIdx((i) => i + 1); return; }
               const finalValues = dims.map((x) => committed[x.name] ?? value);
               const flatNow = Math.max(...finalValues) - Math.min(...finalValues) <= 15;
               if (flatNow && !flatAck) setFlatWarn(true); else go(10);
@@ -2993,7 +3057,7 @@ const Onboarding = () => {
             {/* Back always exists here, and the first slider steps back a stage
                 rather than off the beginning of the flow. */}
             <OBButton variant="tertiary" onClick={() => {
-              if (dimIdx > 0) setDimIdx((i) => Math.max(0, i - 1)); else go(8);
+              if (dimIdx > 0) setDimIdx((i) => Math.max(0, i - 1)); else goBack(8);
             }}>Back</OBButton>
           </Actions>
           {last && (
@@ -3072,6 +3136,7 @@ const Onboarding = () => {
         setMultiPicked([]);
         setSinglePicked(null);
         if (userId) void saveAnswers(userId, next);
+        persistQuestionProgress(next, last ? qIdx : qIdx + 1);
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
       const back = () => {
@@ -3225,7 +3290,7 @@ const Onboarding = () => {
             {showNone ? (
               <OBButton variant="tertiary" onClick={() => advance("None of these fit")}>None of these fit</OBButton>
             ) : null}
-            <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else go(10); }}>Back</OBButton>
+            <OBButton variant="tertiary" onClick={() => { if (qIdx > 0) back(); else goBack(10); }}>Back</OBButton>
           </Actions>
 
           {/* Named once, on the last screen before the account wall — nowhere else. */}
@@ -3898,13 +3963,18 @@ const Onboarding = () => {
           <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_PRICE_SUBLINE}</p>
           <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.ink }}>{SEAT_CONSTRAINT}</p>
           <Actions style={{ marginBlockStart: 16 }}>
-            {/* Two doors, equal weight: the split between them is the measurement. */}
-            <OBButton onClick={() => navigate(`${SEAT_PATH}?intent=reserve_69`)}>{SEAT_CTA}</OBButton>
+            {/* One primary. Both seat doors complete the journey before they
+                leave — a reserved seat used to strand the member on screen 14
+                with no read email and onboarding_step stuck at 3. */}
+            <OBButton onClick={() => void finish()}>Take me in</OBButton>
             <OBButton
               variant="secondary"
               style={{ borderColor: OB.blue, color: OB.blue, background: "#FFFFFF" }}
-              onClick={() => navigate(`${SEAT_PATH}?intent=keep_posted`)}
+              onClick={() => void leaveForSeat("reserve_69")}
             >
+              {SEAT_CTA}
+            </OBButton>
+            <OBButton variant="tertiary" onClick={() => void leaveForSeat("keep_posted")}>
               {SEAT_CTA_SECONDARY}
             </OBButton>
             {connected || !userId ? null : (
@@ -3914,7 +3984,6 @@ const Onboarding = () => {
                 Connect LinkedIn
               </OBButton>
             )}
-            <OBButton variant="tertiary" onClick={() => void finish()}>Take me in</OBButton>
           </Actions>
           <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
             {SEAT_RESERVE_NOTE}
