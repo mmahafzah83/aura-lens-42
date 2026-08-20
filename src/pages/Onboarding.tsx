@@ -1106,6 +1106,17 @@ const Onboarding = () => {
           setStep1Phase("result");
           setReadDone(true);
           setPostsRead(Number(st.posts_read ?? 0));
+          /* The confirmation card is as rich for an anonymous member as it is
+             for a signed-in one: photo, headline and figures come off the read
+             that /assessment already did. */
+          setLiProfile({
+            full_name: st.name ?? [pf.first_name, pf.last_name].filter(Boolean).join(" ") || null,
+            headline: (st.read as any)?.headline ?? pf.headline ?? null,
+            profile_picture: (st.read as any)?.profile_picture ?? (st.read as any)?.photo ?? null,
+            followers: (st.read as any)?.followers ?? null,
+            connections: (st.read as any)?.connections ?? null,
+            read: st.read,
+          });
         }
         if (st.name && !firstName) {
           const parts = String(st.name).split(/\s+/);
