@@ -1321,7 +1321,10 @@ const Onboarding = () => {
         const ld = Number(localStorage.getItem(`aura_ob_dim_${uid}`) ?? "0");
         setDimIdx(hasScores && Number.isFinite(ld) && ld > 0 ? ld : 0);
       } catch { /* ignore */ }
-      if (resume > 0 && (resume <= 14 || resume === MANUAL_SCREEN)) {
+      /* SEAT_SCREEN (14.5) is a real position — a member who finished and came
+         back must land on the seat beat, not be rejected into screen 0. */
+      if (resume > 0 && (resume <= SEAT_SCREEN || resume === MANUAL_SCREEN)) {
+
         setScreen(resume); screenRef.current = resume;
         if (stageOf(resume) > 1) {
           setResumedAt({
