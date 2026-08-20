@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, RefreshCw, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { WorkingPanel } from "@/components/ui/WorkingPanel";
 import {
   PERSONA_LABELS,
   type RankBucket,
@@ -41,6 +42,7 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [tab, setTab] = useState<TabKey>("headhunter");
+  const genAbortRef = useRef<AbortController | null>(null);
 
   const load = async () => {
     if (!userId) return;
@@ -57,11 +59,16 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [userId]);
 
   const generate = async () => {
-    if (!userId) return;
+    if (!userId || generating) return;
     setGenerating(true);
+    /* A hung function must have an exit. */
+    genAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    genAbortRef.current = ctrl;
+    const ceiling = window.setTimeout(() => ctrl.abort(), 4 * 60 * 1000);
     try {
       await supabase.auth.getSession();
-      const { data, error } = await supabase.functions.invoke("generate-market-mirror");
+      const { data, error } = await supabase.functions.invoke("generate-market-mirror", { signal: ctrl.signal });
       if (error) {
         const msg = (error as any)?.context?.error || error.message || "Generation failed";
         if (String(msg).includes("rate_limit") || (error as any)?.context?.status === 429) {
@@ -74,11 +81,17 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
       if (data) setRow(data as MirrorRow);
       toast.success("Market Mirror updated");
     } catch (e: any) {
-      toast.error(e?.message || "Generation failed");
+      toast.error(ctrl.signal.aborted
+        ? "That read didn't come back in time. Nothing is lost — try again."
+        : e?.message || "Generation failed");
     } finally {
+      window.clearTimeout(ceiling);
+      genAbortRef.current = null;
       setGenerating(false);
     }
   };
+
+  useEffect(() => () => genAbortRef.current?.abort(), []);
 
   const canRefresh = useMemo(() => {
     if (!row) return true;
@@ -147,7 +160,18 @@ export default function MarketMirror({ userId, hideHeader = false }: { userId: s
         </div>
       )}
 
-      {!loading && !row && (
+      {!loading && !row && generating && (
+        <div style={{ padding: "8px 0" }}>
+          <WorkingPanel
+            onNight
+            operation="market_read"
+            title="Reading how the market sees you"
+            stages={[{ key: "mirror", label: "Writing the three perspectives", state: "active" }]}
+          />
+        </div>
+      )}
+
+      {!loading && !row && !generating && (
         <div style={{ padding: "24px 8px", textAlign: "center" }}>
           <p style={{ color: "var(--ink-2)", fontSize: 14, marginBottom: 16 }}>
             See your positioning through three market-facing perspectives — and the gaps each one would call out.
