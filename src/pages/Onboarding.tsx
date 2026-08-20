@@ -2900,7 +2900,7 @@ const Onboarding = () => {
         <p style={bodyLight}>
           {userId
             ? "Paste a link to an article or a post. Aura reads it and shows you what it found."
-            : "Paste a link to an article or a post. Aura keeps it, and reads it the moment your report is saved."}
+            : "Paste a link to an article or a post. Aura reads it now and shows you what it found."}
         </p>
         <label htmlFor="ob-link" style={{
           display: "block", margin: "20px 0 6px", fontSize: 12.5, fontWeight: 600, color: OB.ink,
