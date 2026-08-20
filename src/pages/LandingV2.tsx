@@ -1086,8 +1086,6 @@ const LANDING_V2_HTML = `
         <a class="btn bp" href="/assessment">${FREE_CTA}</a>
       </div>
       <p class="closing-note">Ninety seconds, free, and yours to keep.</p>
-      <div style="display:none">
-      </div>
     </div>
   </div></div>
 </section>
