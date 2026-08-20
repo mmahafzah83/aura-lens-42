@@ -1522,19 +1522,37 @@ const Onboarding = () => {
 
     if (anonRead && anonToken) {
       let got: Claim[] = [];
+      let src: { url: string; title: string | null } | null = null;
       try {
-        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/onboarding-read-link`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: anonToken, url: v, title: meta?.title, summary: meta?.summary, run_id: capRunId }),
-        });
-        const out = await res.json().catch(() => ({}));
-        if (out?.ok && Array.isArray(out.fragments)) {
-          got = (out.fragments as Claim[]).filter((f) => f?.title);
-        }
+        /* verify_jwt = false removes JWT verification, not the gateway's
+           apikey requirement. Without these two headers every anonymous
+           read 401s and the member never sees a fragment. */
+        const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+        const ctrl = new AbortController();
+        const to = window.setTimeout(() => ctrl.abort(), 25000);
+        try {
+          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/onboarding-read-link`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
+            body: JSON.stringify({ token: anonToken, url: v, title: meta?.title, summary: meta?.summary, run_id: capRunId }),
+            signal: ctrl.signal,
+          });
+          const out = await res.json().catch(() => ({}));
+          if (res.ok && out?.ok && Array.isArray(out.fragments)) {
+            got = (out.fragments as Claim[]).filter((f) => f?.title);
+            src = { url: v, title: (out.title as string) ?? meta?.title ?? null };
+          }
+        } finally { window.clearTimeout(to); }
       } catch { /* handled below — never a dead end */ }
       if (got.length) {
-        anonStateRef.current = { ...anonStateRef.current, capture_fragments: got } as any;
+        /* The function writes both keys server-side; carry both here so the
+           next client saveSession cannot drop capture_source. */
+        anonStateRef.current = {
+          ...anonStateRef.current,
+          capture_fragments: got,
+          ...(src ? { capture_source: src } : {}),
+        } as any;
+        await saveSession(anonToken, anonStateRef.current);
         setClaims(got);
         setReadStep(2);
         go(7);
@@ -2882,7 +2900,7 @@ const Onboarding = () => {
         <p style={bodyLight}>
           {userId
             ? "Paste a link to an article or a post. Aura reads it and shows you what it found."
-            : "Paste a link to an article or a post. Aura keeps it, and reads it the moment your report is saved."}
+            : "Paste a link to an article or a post. Aura reads it now and shows you what it found."}
         </p>
         <label htmlFor="ob-link" style={{
           display: "block", margin: "20px 0 6px", fontSize: 12.5, fontWeight: 600, color: OB.ink,

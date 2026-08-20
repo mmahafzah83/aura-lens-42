@@ -15,6 +15,7 @@ import { callAI } from "../_shared/ai-router.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
+import { hasBanned, loadBannedWords } from "../_shared/bannedWords.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -154,6 +155,16 @@ Deno.serve(withObserve("onboarding-read-link", async (req) => {
         }))
         .filter((f: any) => f.title)
         .slice(0, 5);
+
+      /* The prompt bans the vocabulary; nothing enforced it on the way back.
+         A fragment that carries a banned word is dropped, not rewritten —
+         the rest of the read still lands. */
+      const banned = await loadBannedWords(svc);
+      const clean = fragments.filter((f) => !hasBanned(`${f.title} ${f.content}`, banned));
+      if (clean.length !== fragments.length) {
+        console.info(`[onboarding-read-link] dropped ${fragments.length - clean.length} fragment(s) on banned vocabulary`);
+      }
+      fragments = clean;
     } catch (e) {
       console.error("[onboarding-read-link] extraction failed:", (e as Error)?.message);
     }

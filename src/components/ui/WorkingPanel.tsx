@@ -320,6 +320,11 @@ export function WorkingPanel({
             >
               How long is this?
             </button>
+            {/* A carry-on door is for a slow run, not only a failed one:
+                past a minute there is always a way out. */}
+            {onCarryOn ? (
+              <button type="button" onClick={onCarryOn.action} style={linkStyle}>{onCarryOn.label}</button>
+            ) : null}
             {onNotifyMe ? (
               <button type="button" onClick={onNotifyMe} style={linkStyle}>Email me when it's ready</button>
             ) : null}
