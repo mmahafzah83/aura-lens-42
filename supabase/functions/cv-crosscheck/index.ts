@@ -185,6 +185,8 @@ serve(withObserve("cv-crosscheck", async (req) => {
       meta: { purpose, anonymous: !!anonToken },
     });
   } catch (e) { console.error("[cv-crosscheck] run start failed:", (e as Error)?.message); }
+  /* Stage one opens: reading the file and the profile snapshot. */
+  run?.mark("extract");
   const finish = async (outcome: "ok" | "refused" | "failed", reason_code?: string) => {
     try { await run?.finish({ outcome, reason_code: reason_code ?? null }); }
     catch (e) { console.error("[cv-crosscheck] run finish failed:", (e as Error)?.message); }
@@ -462,6 +464,8 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
     }),
   });
 
+  /* Stage two opens: the model comparing the CV against the profile. */
+  run?.mark("compare");
   const runOnce = async (prompt: string) => {
     const resp = await callAnthropic(prompt);
     const rawBody = await resp.text();

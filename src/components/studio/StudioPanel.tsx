@@ -32,7 +32,8 @@ import { plainFailure } from "@/carousel/studio/slotLabels";
 import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEdit";
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
 import JourneyMap from "@/components/studio/JourneyMap";
-import BusyBar from "@/components/studio/BusyBar";
+import { WorkingPanel } from "@/components/ui/WorkingPanel";
+import type { WaitOperation } from "@/lib/waitEstimate";
 import StageCard from "@/components/studio/StageCard";
 import AdvisorCard, { type GatePayload } from "@/components/studio/AdvisorCard";
 import ZonePiece from "@/components/studio/ZonePiece";
@@ -139,18 +140,15 @@ function gateSentence(category: unknown, lang: Lang): string {
 }
 
 /**
- * P3 — how long each kind of work normally takes, in seconds. The bar fills
- * toward this and the countdown reads from it. A guess that ends beats a
- * decoration that loops.
+ * Which measured operation each piece of work belongs to. No constants, no
+ * countdown: the panel prints a percentage only when finished runs of this
+ * operation can defend one, and an em dash otherwise.
  */
-function etaFor(message: string, lang: Lang): number {
-  // W10 — the number and the words must agree. `T.writing` says 20 seconds.
-  if (message === T.writing[lang]) return 20;
-  if (message === T.makingSlides[lang]) return 45;
-  if (message === T.posting[lang]) return 20;
-  if (message === T.exporting[lang] || message === T.exportSettling[lang]) return 15;
-  if (message === T.changingLine[lang]) return 15;
-  return 12;
+function operationFor(message: string, lang: Lang): WaitOperation {
+  if (message === T.makingSlides[lang] || message === T.makingSlidesHonest[lang]) return "studio_slides";
+  if (message === T.exporting[lang] || message === T.exportSettling[lang]) return "studio_export";
+  if (message === T.posting[lang]) return "studio_publish";
+  return "studio_generate";
 }
 
 /** A relative "saved …" stamp that never leaks English into the Arabic shell. */
@@ -2619,8 +2617,8 @@ export default function StudioPanel({
         {step === 3 && subLink("build", T.subBuild[lang])}
         {step === 3 && subLink("look", T.subLook[lang])}
         <span style={{ flex: 1 }} />
-        {/* In flight state lives in the BusyBar only — message, bar, percent
-            and countdown in one place. No mirrored header line. */}
+        {/* In flight state lives in the working panel only — one place for the
+            steps, the counter and the measured copy. No mirrored header line. */}
         <span
           role="status"
           aria-live="polite"
@@ -2675,12 +2673,14 @@ export default function StudioPanel({
       {/* Motion for anything in flight. W10 — publishing is shown AT the
           trigger the member is looking at, not up here in the strip. */}
       {busyMessage && busy !== "post" && (
-        <BusyBar
-          message={busyMessage}
-          etaSeconds={etaFor(busyMessage, lang)}
-          remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
-          rtlShell={rtlShell}
-        />
+        <div style={{ marginBlockEnd: 12 }}>
+          <WorkingPanel
+            operation={operationFor(busyMessage, lang)}
+            title={busyMessage}
+            stages={[{ key: "work", label: busyMessage, state: "active" }]}
+            rtl={rtlShell}
+          />
+        </div>
       )}
 
       {step === 1 && (
@@ -3461,10 +3461,11 @@ export default function StudioPanel({
               empty={
                 deckBusy ? (
                   <div style={{ width: "100%", maxWidth: 360 }}>
-                    <BusyBar
-                      message={T.makingSlidesHonest[lang]}
-                      indeterminate
-                      rtlShell={rtlShell}
+                    <WorkingPanel
+                      operation="studio_slides"
+                      title={T.makingSlidesHonest[lang]}
+                      stages={[{ key: "slides", label: T.makingSlidesHonest[lang], state: "active" }]}
+                      rtl={rtlShell}
                     />
                   </div>
                 ) : (
@@ -3622,11 +3623,11 @@ export default function StudioPanel({
                       button in place, and the progress bar takes the same slot,
                       so the member's attention never has to travel. */}
                   {busy === "post" ? (
-                    <BusyBar
-                      message={busyMessage || T.posting[lang]}
-                      etaSeconds={etaFor(busyMessage || T.posting[lang], lang)}
-                      remainingLabel={(n) => T.aboutSecondsLeft[lang].replace("{n}", String(n))}
-                      rtlShell={rtlShell}
+                    <WorkingPanel
+                      operation="studio_publish"
+                      title={busyMessage || T.posting[lang]}
+                      stages={[{ key: "publish", label: busyMessage || T.posting[lang], state: "active" }]}
+                      rtl={rtlShell}
                     />
                   ) : confirmingPost ? (
                     confirmPanel

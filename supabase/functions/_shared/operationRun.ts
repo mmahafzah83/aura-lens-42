@@ -15,7 +15,13 @@ export type OperationName =
   | "linkedin_read"
   | "cv_crosscheck"
   | "market_read"
+  | "capture_ingest"
+  | "studio_generate"
+  | "studio_slides"
+  | "studio_export"
+  | "studio_publish"
   | "article_ingest";
+
 
 export type Outcome = "ok" | "refused" | "failed";
 
@@ -38,8 +44,15 @@ export interface RunEnd {
 /** A handle that finishes exactly one run, at most once. */
 export interface RunHandle {
   id: string | null;
+  /**
+   * Close the stage that was running and open this one. The last open stage
+   * is closed by `finish`. Stage durations are what the waiting screens weight
+   * their percentage by, so they are measured here and nowhere else.
+   */
+  mark: (stageKey: string) => void;
   finish: (end: RunEnd) => Promise<void>;
 }
+
 
 function adminClient(client?: SupabaseClient): SupabaseClient {
   return client ?? createClient(
@@ -75,16 +88,32 @@ export async function startRun(
   }
 
   let done = false;
+  const stages: { key: string; ms: number }[] = [];
+  let openKey: string | null = null;
+  let openAt = Date.now();
+  const closeOpen = () => {
+    if (openKey === null) return;
+    stages.push({ key: openKey, ms: Math.max(1, Date.now() - openAt) });
+    openKey = null;
+  };
+
   return {
     get id() { return id; },
+    mark(stageKey: string) {
+      closeOpen();
+      openKey = stageKey;
+      openAt = Date.now();
+    },
     async finish(end: RunEnd) {
       if (done || !id) return;
       done = true;
+      closeOpen();
       try {
         const patch: Record<string, unknown> = {
           finished_at: new Date().toISOString(),
           outcome: end.outcome,
           reason_code: end.outcome === "ok" ? null : (end.reason_code ?? null),
+          stages,
         };
         if (end.cost_usd !== undefined) patch.cost_usd = end.cost_usd;
         if (end.meta) patch.meta = end.meta;
@@ -93,6 +122,7 @@ export async function startRun(
       } catch (e) {
         console.error("[operation_runs] finish failed (non-blocking):", (e as Error)?.message ?? e);
       }
+
     },
   } as RunHandle;
 }

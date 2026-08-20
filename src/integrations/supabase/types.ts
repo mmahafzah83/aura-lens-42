@@ -3608,6 +3608,7 @@ export type Database = {
           operation: string
           outcome: string | null
           reason_code: string | null
+          stages: Json
           started_at: string
           user_id: string | null
         }
@@ -3622,6 +3623,7 @@ export type Database = {
           operation: string
           outcome?: string | null
           reason_code?: string | null
+          stages?: Json
           started_at?: string
           user_id?: string | null
         }
@@ -3636,6 +3638,7 @@ export type Database = {
           operation?: string
           outcome?: string | null
           reason_code?: string | null
+          stages?: Json
           started_at?: string
           user_id?: string | null
         }

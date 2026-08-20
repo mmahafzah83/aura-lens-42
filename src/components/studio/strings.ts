@@ -169,7 +169,7 @@ export const T = {
     en: "What you see here is what goes out. Change any word.",
     ar: "ما تراه هنا هو ما سيُنشر. غيّر أي كلمة.",
   },
-  writing: { en: "Writing your post — about 20 seconds.", ar: "نكتب منشورك — حوالي 20 ثانية." },
+  writing: { en: "Writing your post", ar: "نكتب منشورك" },
   writeFailed: {
     en: "Something went wrong on our side. Please try once more.",
     ar: "حدث خطأ من جهتنا. جرّب مرة أخرى من فضلك.",
@@ -184,7 +184,7 @@ export const T = {
   tooLong: { en: "This is long for LinkedIn. Shorter posts are read more.", ar: "هذا طويل للينكدإن. المنشورات الأقصر تُقرأ أكثر." },
 
   // Step 3 — slides
-  makingSlides: { en: "Making your slides — this takes up to a minute.", ar: "نصنع شرائحك — قد يستغرق حتى دقيقة." },
+  makingSlides: { en: "Making your slides", ar: "نصنع شرائحك" },
   slidesFailedHead: { en: "Aura could not finish the slides", ar: "لم تستطع أورا إنهاء الشرائح" },
   makeSlides: { en: "Make the slides", ar: "اصنع الشرائح" },
   slidesNeedPost: { en: "Write the post first — the slides are made from your words.", ar: "اكتب المنشور أولاً — الشرائح تُصنع من كلماتك." },
@@ -279,7 +279,7 @@ export const T = {
   exportFailed: { en: "The file could not be made. Try once more.", ar: "تعذّر إنشاء الملف. جرّب مرة أخرى." },
 
   // Publish — text
-  posting: { en: "Posting to LinkedIn — this takes a few seconds.", ar: "جارٍ النشر على لينكدإن — بضع ثوانٍ." },
+  posting: { en: "Posting to LinkedIn", ar: "جارٍ النشر على لينكدإن" },
   postedHead: { en: "Posted.", ar: "تم النشر." },
   postedHelp: { en: "It is live on your LinkedIn now.", ar: "إنه منشور على لينكدإن الآن." },
   seeOnLinkedIn: { en: "See it on LinkedIn", ar: "شاهده على لينكدإن" },

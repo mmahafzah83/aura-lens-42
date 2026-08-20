@@ -6,7 +6,7 @@
  * Every figure here traces to a stored value; anything missing renders as an
  * em dash rather than a zero.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { scorePresence, earliestExperienceYear, type PresenceRow, type PresenceKey } from "@/lib/presenceHealth";
 import { loadLinkedInAddress } from "@/lib/linkedinAddress";
 import DraftProfileCopy, { type DraftTarget } from "@/components/identity/DraftProfileCopy";
+import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
 
 /* ── System-B "Signal" values. Module scope, always. ─────────────────────── */
 const INK = "#0F1519";
@@ -130,6 +131,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const [profileUrl, setProfileUrl] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [stage, setStage] = useState<"profile" | "posts" | null>(null);
+  const [readFailure, setReadFailure] = useState<{ stageKey: string; message: string } | null>(null);
+  const readAbortRef = useRef<AbortController | null>(null);
   const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
 
   const load = useCallback(async () => {
@@ -188,22 +191,48 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const topIsMissing = themeRows.length > 0 && !themeRows[0].carried;
 
   /** Profile first, then posts. Each call can take two minutes. */
-  const readProfile = useCallback(async () => {
+  const readProfile = useCallback(async (from: "profile" | "posts" = "profile") => {
     if (!profileUrl) { navigate("/settings?tab=connections"); return; }
+    /* A hung function must have an exit. Five minutes is the ceiling. */
+    readAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    readAbortRef.current = ctrl;
+    const ceiling = window.setTimeout(() => ctrl.abort(), 5 * 60 * 1000);
+    setReadFailure(null);
     try {
-      setStage("profile");
-      const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", { body: { profile_url: profileUrl } });
-      if (error) throw error;
-      if ((data as { error?: string } | null)?.error) throw new Error(String((data as { error?: string }).error));
+      if (from === "profile") {
+        setStage("profile");
+        const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", {
+          body: { profile_url: profileUrl }, signal: ctrl.signal,
+        });
+        if (error) throw error;
+        if ((data as { error?: string } | null)?.error) throw new Error(String((data as { error?: string }).error));
+      }
       setStage("posts");
-      await supabase.functions.invoke("linkedin-fetch-posts", { body: { profile_url: profileUrl, max_posts: 50 } });
+      const { error: postsError } = await supabase.functions.invoke("linkedin-fetch-posts", {
+        body: { profile_url: profileUrl, max_posts: 50 }, signal: ctrl.signal,
+      });
+      if (postsError) throw postsError;
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't read your profile just now.");
+      const message = ctrl.signal.aborted
+        ? "That read didn't come back in time. Nothing you had is lost."
+        : e instanceof Error ? e.message.split("\n")[0] : "Couldn't read your profile just now.";
+      setReadFailure({ stageKey: from === "profile" ? "profile" : "posts", message });
+      toast.error(message);
     } finally {
+      window.clearTimeout(ceiling);
+      readAbortRef.current = null;
       setStage(null);
     }
   }, [profileUrl, navigate, load]);
+
+  useEffect(() => () => readAbortRef.current?.abort(), []);
+
+  const readStages: WorkingStage[] = [
+    { key: "fetch", label: "Reading your profile", state: stage === "profile" ? "active" : stage === "posts" ? "done" : readFailure?.stageKey === "profile" ? "failed" : "waiting" },
+    { key: "write", label: "Reading your public posts", state: stage === "posts" ? "active" : readFailure?.stageKey === "posts" ? "failed" : "waiting" },
+  ];
 
   const useLinkedInPhoto = useCallback(async () => {
     if (!userId || !snapshot?.photo_url || avatarUrl) return;
@@ -224,9 +253,19 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         <p style={{ fontSize: 13.5, color: MUTED, margin: "8px 0 16px", lineHeight: 1.6 }}>
           One address, once. Then this fills in.
         </p>
-        <button type="button" style={primaryButtonStyle} onClick={readProfile} disabled={stage !== null}>
-          {stage === "profile" ? "Reading your profile…" : stage === "posts" ? "Reading your posts…" : "Read my profile"}
-        </button>
+        {stage !== null || readFailure ? (
+          <WorkingPanel
+            operation="linkedin_read"
+            title="Reading what LinkedIn shows"
+            stages={readStages}
+            failure={stage === null ? readFailure : null}
+            onRetryFromStage={(key) => void readProfile(key === "posts" ? "posts" : "profile")}
+          />
+        ) : (
+          <button type="button" style={primaryButtonStyle} onClick={() => void readProfile()}>
+            Read my profile
+          </button>
+        )}
       </section>
     );
   }

@@ -393,6 +393,8 @@ Deno.serve(async (req) => {
     }
 
     // --- d) Fetch profile and posts in parallel ---
+    /* Stage one opens: everything until the provider answers. */
+    run?.mark("fetch");
     const [profile, postTexts] = await Promise.all([
       fetchProfile(canonical_url, APIFY_TOKEN),
       fetchPosts(canonical_url, handle, APIFY_TOKEN).catch(() => [] as string[]),
@@ -513,6 +515,8 @@ Deno.serve(async (req) => {
     }
 
     const messages = [{ role: "user", content: userPrompt }];
+    /* Stage two opens: the model writing the read. */
+    run?.mark("write");
     let raw = await callModel(messages);
     let read = parseJsonLoose(raw);
     if (read && hasPlaceholderInValues(read)) read = null;

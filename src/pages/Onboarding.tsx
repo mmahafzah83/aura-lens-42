@@ -39,6 +39,7 @@ import MethodNote from "@/components/onboarding/MethodNote";
 import Confetti from "@/components/onboarding/Confetti";
 import WaitProof from "@/components/onboarding/WaitProof";
 import WorkProgress from "@/components/onboarding/WorkProgress";
+import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
 import { loadProfileFacts, type ProfileFacts } from "@/lib/profileFacts";
 import { loadPostProof, type PostProof } from "@/lib/postProof";
@@ -1499,9 +1500,9 @@ const Onboarding = () => {
     setWatching(false);
     /* If they've already moved on, take the claims quietly — never yank them back. */
     if (screenRef.current === 6) {
+      /* The claims landing IS the completion event. Nothing here is timed. */
       setReadStep(2);
-      const t = window.setTimeout(() => { setReadStep(3); go(7); }, 600);
-      return () => window.clearTimeout(t);
+      go(7);
     }
   }, [liveClaims]);
 
@@ -2876,10 +2877,14 @@ const Onboarding = () => {
 
   /* 6 — NIGHT, reading it */
   if (screen === 6) {
-    const steps = [
-      { key: "a", label: "Article fetched", done: readStep >= 1 },
-      { key: "b", label: "What Aura found", done: readStep >= 2 || claims.length > 0 },
-      { key: "c", label: "Matched to your sector", done: readStep >= 3 },
+    /* Two stages, because two events exist: the link left, and the claims
+       landed. Matching to the sector happens inside the second and has no
+       event of its own, so it is not a step of its own. */
+    const fetched = readStep >= 1;
+    const found = readStep >= 2 || claims.length > 0;
+    const captureStages: WorkingStage[] = [
+      { key: "fetch", label: "Article fetched", state: fetched ? "done" : "active" },
+      { key: "read", label: "What Aura found in it", state: found ? "done" : fetched ? "active" : "waiting" },
     ];
     const settled = claimsSlow && claims.length === 0;
     content = capturePending ? (
@@ -2910,12 +2915,13 @@ const Onboarding = () => {
         {settled ? null : (
           <>
             <div style={{ marginBlockStart: 22 }}>
-              <WorkProgress onNight operation="linkedin_read" />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {steps.map((s) => (
-                <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
-              ))}
+              <WorkingPanel
+                onNight
+                operation="capture_ingest"
+                title="Reading it"
+                stages={captureStages}
+                onCarryOn={{ label: "Carry on — I'll pick this up later", action: () => go(8) }}
+              />
             </div>
           </>
         )}
@@ -3572,27 +3578,19 @@ const Onboarding = () => {
     /* Only the work that actually happened is shown, and a step only ticks on a
        real event. The three reading steps have no event of their own, so they
        stay plain named lines until the read itself lands. */
-    const genSteps = [
-      { key: "posts", label: "Reading your posts", done: !revealPending },
-      ...(claims.length > 0
-        ? [{ key: "saved", label: "Reading what you captured", done: !revealPending }]
-        : []),
-      ...(Object.keys(answers).length > 0
-        ? [{ key: "answers", label: "Weighing your answers", done: !revealPending }]
-        : []),
-      { key: "write", label: "Writing your read", done: !revealPending },
+    const genStages: WorkingStage[] = [
+      { key: "read", label: "Writing your read", state: revealPending ? "active" : "done" },
     ];
     content = (
       <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
         {!revealPending ? <Confetti /> : null}
         {revealPending ? (
-          <div style={{ marginBlockEnd: 4 }}>
-            <WorkProgress operation="market_read" />
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBlockEnd: 22 }}>
-              {genSteps.map((s) => (
-                <StatusRow key={s.key} label={s.label} done={s.done}>{s.label}</StatusRow>
-              ))}
-            </div>
+          <div style={{ marginBlockEnd: 22 }}>
+            <WorkingPanel
+              operation="market_read"
+              title="Writing your read"
+              stages={genStages}
+            />
           </div>
         ) : null}
         <h1 style={{ ...h1Light, textAlign: "center" }}>Here's what Aura now knows about you.</h1>
