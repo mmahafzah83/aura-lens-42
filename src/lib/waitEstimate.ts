@@ -12,16 +12,13 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useRef, useState } from "react";
+import type { InstrumentedOperation } from "@/lib/operationStages";
 
-export type WaitOperation =
-  | "linkedin_read"
-  | "cv_crosscheck"
-  | "market_read"
-  | "capture_ingest"
-  | "studio_generate"
-  | "studio_slides"
-  | "studio_export"
-  | "studio_publish";
+/**
+ * DERIVED, not restated. The stage definition is the only list of operations;
+ * an operation with no measurable stages cannot be named on a waiting screen.
+ */
+export type WaitOperation = InstrumentedOperation;
 
 /** One measured stage of an operation. Milliseconds, from finished runs. */
 export interface StageTiming {
