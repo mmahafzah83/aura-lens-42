@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import AuraLogo from "@/components/brand/AuraLogo";
+import { FREE_CTA_SHORT_LABEL } from "@/lib/brand";
 
 export type MastheadCta = { label: string; href: string; variant: "primary" | "quiet" };
 
 /** The default door: the free assessment, never the paid seat. */
 export const DEFAULT_MASTHEAD_CTA: MastheadCta = {
-  label: "Start free",
+  label: FREE_CTA_SHORT_LABEL,
   href: "/assessment",
   variant: "primary",
 };
@@ -81,10 +82,10 @@ const PM_CSS = `
   color:var(--n500);padding:11px 13px;border-radius:999px;min-height:44px;
   display:inline-flex;align-items:center;transition:color .2s ease,background .2s ease;}
 .pm-link:hover{color:var(--n900);background:var(--n100);}
-.pm-cta{display:inline-flex;align-items:center;gap:8px;background:var(--n900);color:#fff;
+.pm-cta{display:inline-flex;align-items:center;gap:8px;background:var(--act);color:#fff;
   border-radius:999px;padding:10px 16px;font-size:13.5px;font-weight:600;white-space:nowrap;
   min-height:44px;transition:transform .2s ease,box-shadow .25s ease;}
-.pm-cta:hover{transform:translateY(-1px);box-shadow:0 10px 22px -10px rgba(15,21,25,.5);}
+.pm-cta:hover{background:#04477C;transform:translateY(-1px);box-shadow:0 10px 22px -10px rgba(6,112,196,.5);}
 .pm-a{display:grid;place-items:center;width:19px;height:19px;border-radius:50%;
   background:rgba(255,255,255,.16);font-size:10px;transition:transform .22s cubic-bezier(.2,.7,.3,1);}
 .pm-cta:hover .pm-a{transform:translate(2px,-2px);}

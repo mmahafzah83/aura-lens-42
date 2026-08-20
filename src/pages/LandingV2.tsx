@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
 import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_SOLD_OUT_NOTE, waveFrom } from "@/lib/seatCopy";
-import { PRODUCT_DESCRIPTOR, FIRST_READ_LINE, FULL_PICTURE_LINE, ASSESSMENT_QUESTIONS_PHRASE } from "@/lib/brand";
+import { PRODUCT_DESCRIPTOR, FIRST_READ_LINE, FULL_PICTURE_LINE, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA, FREE_CTA_LABEL, FREE_CTA_SHORT_LABEL, FREE_CTA_ARIA } from "@/lib/brand";
 import { BRAND } from "@/constants/language";
 
 /* D126 — the headline is single-sourced from BRAND.headline. The hero splits it
@@ -23,9 +23,10 @@ const HEAD_TAIL = BRAND.headline.endsWith(HEAD_PIVOT) ? HEAD_PIVOT : "";
 
 const LANDING_V2_CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
-.aura-v2{--ink:#0F1519;--ink2:#37424F;--ink3:#66707D;--ink4:#9AA4B0;--line:#E2E7EE;--line2:#D2D8E0;--white:#FFF;--canvas:#F2F5F9;--tint:#EFF4FA;--blue:#0670C4;--blue2:#04477C;--bluetint:#E7F1FB;--cyan:#00CEC9;--cyanT:#00807B;--cyantint:#E0F7F6;--amber:#E0A82E;--amberT:#9A6F12;--ambertint:#FDF3DF;--red:#C0392B;--green:#12805C;--greentint:#E4F6EC;--ui:"Inter",system-ui,sans-serif;--mono:"IBM Plex Mono",monospace;--sp:cubic-bezier(.16,1,.3,1);font-family:var(--ui);background:var(--canvas);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
+.aura-v2{--ink:#0F1519;--ink2:#37424F;--ink3:#66707D;--ink4:#9AA4B0;--line:#E2E7EE;--line2:#D2D8E0;--white:#FFF;--canvas:#F2F5F9;--tint:#EFF4FA;--blue:#0670C4;--blue2:#04477C;--bluetint:#E7F1FB;--cyan:#00CEC9;--cyanT:#00807B;--cyantint:#E0F7F6;--amber:#E0A82E;--amberT:#9A6F12;--ambertint:#FDF3DF;--red:#C0392B;--green:#12805C;--greentint:#E4F6EC;--ui:"Inter",system-ui,sans-serif;--mono:"IBM Plex Mono",monospace;--sp:cubic-bezier(.16,1,.3,1);font-family:var(--ui);background:var(--canvas);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:clip;min-height:100vh}
 .aura-v2 .navshell{position:sticky;top:0;z-index:60;padding:16px 20px;display:flex;justify-content:center;pointer-events:none;background:linear-gradient(var(--canvas) 55%,rgba(242,245,249,0))}
-.aura-v2 .nav{pointer-events:auto;display:flex;align-items:center;gap:2px;background:var(--ink);border-radius:999px;padding:7px 7px 7px 18px;box-shadow:0 20px 46px -20px rgba(15,21,25,.55);max-width:calc(100vw - 40px)}
+.aura-v2 .nav{pointer-events:auto;display:flex;align-items:center;gap:2px;background:var(--ink);border-radius:999px;padding:7px 7px 7px 18px;box-shadow:0 20px 46px -20px rgba(15,21,25,.55);max-width:calc(100vw - 40px);transition:padding .18s ease, box-shadow .18s ease}
+.aura-v2 .nav.shrink{padding:5px 5px 5px 16px;box-shadow:0 12px 28px -16px rgba(15,21,25,.5)}
 .aura-v2 .brand{display:flex;align-items:center;gap:9px;margin-right:16px;text-decoration:none;cursor:pointer}
 .aura-v2 .mark{width:24px;height:24px;flex:0 0 24px;color:#fff}
 .aura-v2 .bn{font-family:var(--ui);font-weight:700;color:#fff;font-size:19px;letter-spacing:-.02em;line-height:1}
@@ -302,6 +303,8 @@ const LANDING_V2_CSS = `
 .aura-v2 .foot span,.aura-v2 .foot a{font-family:var(--mono);font-size:10px;color:var(--ink4);letter-spacing:.09em;text-decoration:none}
 .aura-v2 .foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px}
 .aura-v2 .foot a:hover{color:var(--blue)}
+.aura-v2 .closing-note{font-size:14px;color:#8E99A6;margin-top:14px}
+.aura-v2 #price .dark.rv{margin-top:clamp(560px,72vh,760px)}
 .aura-v2 .rv{opacity:0;transform:translateY(16px);transition:750ms var(--sp)}
 .aura-v2 .rv.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.aura-v2 .rv{opacity:1;transform:none;transition:none}.aura-v2 .orb,.aura-v2 .pulse,.aura-v2 .dash{animation:none}.aura-v2 .pg.on{animation:none}}
@@ -405,7 +408,7 @@ const LANDING_V2_HTML = `
       <button data-p="price">Pricing</button>
     </div>
     <a class="navalt" id="navalt" href="/auth">Sign in</a>
-    <a class="navcta" id="navcta" href="/assessment">Show me free <span class="a">↗</span></a>
+    <a class="navcta" id="navcta" href="/assessment">${FREE_CTA_SHORT_LABEL} <span class="a">↗</span></a>
   </nav>
 </div>
 
@@ -418,7 +421,7 @@ const LANDING_V2_HTML = `
       <h1>${HEAD_LEAD}<br><span class="grad">${HEAD_TAIL}</span></h1>
       <p class="sub">Aura reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
       <div class="acts">
-        <a class="btn bp" id="heropri" href="/assessment">Discover my professional position</a>
+        <a class="btn bp" id="heropri" href="/assessment">${FREE_CTA}</a>
         <button class="btn bg2" data-p="how">See how it works</button>
       </div>
       <p class="support">${FIRST_READ_LINE}. ${FULL_PICTURE_LINE}. Free, and yours to keep.</p>
@@ -456,7 +459,7 @@ const LANDING_V2_HTML = `
 
         <text x="300" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" letter-spacing="1.7" fill="#00807B">▼ YOU START HERE · FREE</text>
 
-        <a href="/assessment" aria-label="Start step one — your free assessment">
+        <a href="/assessment" aria-label="${FREE_CTA_ARIA}">
           <circle cx="300" cy="100" r="15" fill="#FFFFFF" stroke="#00CEC9" stroke-width="2.5"/>
           <text x="300" y="104.5" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="600" fill="#00807B">1</text>
           <text x="300" y="52" text-anchor="middle" font-family="Inter, sans-serif" font-size="12.5" font-weight="600" fill="#0F1519">Your assessment</text>
@@ -520,7 +523,7 @@ const LANDING_V2_HTML = `
         <div class="rrow rd"><span class="rbead"><i></i><u></u></span><span><span class="rt">You publish</span><span class="rs" style="display:block">one click</span></span></div>
         <div class="rrow rd"><span class="rbead"><i></i></span><span><span class="rt">The outcome</span><span class="rs" style="display:block">your standing moves</span></span></div>
         <div class="rdial"><div class="n">85</div><div class="p">YOUR STANDING</div><div class="c">step 9 feeds this</div></div>
-        <a class="btn bp rbtn" href="/assessment">Start at step 1 — free</a>
+        <a class="btn bp rbtn" href="/assessment">${FREE_CTA}</a>
       </div>
     </div>
   </div>
@@ -1032,7 +1035,7 @@ const LANDING_V2_HTML = `
           <div><div class="st">AT THE END — THE ONLY THING WE ASK</div><div class="sh">Your email, so the report is kept</div><div class="sb">Asked once, at the end, when there&rsquo;s something worth keeping. The full report arrives as a PDF, and it&rsquo;s yours for good.</div></div>
         </div>
       </div>
-      <div class="pcta"><a class="btn bp" href="/assessment">Start the free road</a><p class="undr">Stop anywhere. Everything to that point still happens.</p></div>
+      <div class="pcta"><a class="btn bp" href="/assessment">${FREE_CTA}</a><p class="undr">Stop anywhere. Everything to that point still happens.</p></div>
     </div>
 
     <div class="pcard seat night">
@@ -1080,8 +1083,9 @@ const LANDING_V2_HTML = `
       <h3 style="max-width:none;margin:0 auto">Still deciding?<br><em style="font-style:italic;color:var(--ink4)">Then just take the free report.</em></h3>
       <p style="max-width:460px;margin:12px auto 0">It is yours whether you ever pay us or not. If it shows you something you did not know about yourself, the seat will still be here.</p>
       <div style="margin-top:22px;display:flex;gap:11px;justify-content:center;flex-wrap:wrap">
-        <a class="btn bp" href="/assessment">Get my report — free</a>
+        <a class="btn bp" href="/assessment">${FREE_CTA}</a>
       </div>
+      <p class="closing-note">Ninety seconds, free, and yours to keep.</p>
     </div>
   </div></div>
 </section>
@@ -1122,6 +1126,20 @@ const LandingV2 = () => {
 
   useEffect(() => setMounted(true), []);
 
+  /* ── the pill tightens once you are past the fold ── */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const nav = root.querySelector<HTMLElement>(".nav");
+    if (!nav) return;
+    const onScroll = () => nav.classList.toggle("shrink", window.scrollY > 120);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [mounted]);
+
+
+
   /* ── the page knows who is looking at it ── */
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   useEffect(() => {
@@ -1148,11 +1166,11 @@ const LandingV2 = () => {
       else delete alt.dataset.signout;
     }
     if (cta) {
-      cta.innerHTML = `${signedIn ? "Open Aura" : "Show me free"} <span class="a">↗</span>`;
+      cta.innerHTML = `${signedIn ? "Open Aura" : FREE_CTA_SHORT_LABEL} <span class="a">↗</span>`;
       cta.setAttribute("href", signedIn ? "/home" : "/assessment");
     }
     if (hero) {
-      hero.textContent = signedIn ? "Open Aura" : "Discover my professional position";
+      hero.textContent = signedIn ? "Open Aura" : FREE_CTA;
       hero.setAttribute("href", signedIn ? "/home" : "/assessment");
     }
   }, [signedIn, mounted]);

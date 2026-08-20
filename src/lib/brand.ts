@@ -44,3 +44,16 @@ export const stepLabel = (n: number) => `Step ${n} of ${ASSESSMENT_STEPS}`;
 /** The price truth, said the same way on every surface. */
 export const REPORT_FREE_LINE =
   "Your report is free, and stays free. Private — only you can see it unless you share it.";
+
+/**
+ * THE FREE DOOR — one verb, one label, everywhere.
+ * Nine different labels used to resolve to /assessment. Never inline these.
+ */
+export const FREE_CTA_LABEL = "Start with my LinkedIn";
+export const FREE_CTA_SHORT_LABEL = "Start free";
+/** "Start with my LinkedIn ↗" */
+export const FREE_CTA = `${FREE_CTA_LABEL} ↗`;
+/** "Start free ↗" — nav-width short form. */
+export const FREE_CTA_SHORT = `${FREE_CTA_SHORT_LABEL} ↗`;
+/** Screen-reader label for the step-1 hotspot in the journey diagram. */
+export const FREE_CTA_ARIA = `${FREE_CTA_LABEL} — your free assessment`;

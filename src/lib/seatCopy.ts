@@ -35,7 +35,7 @@ export const SEAT_PRICE_SUBLINE =
   "Founding seat: this price is locked for as long as you keep it, and I onboard you personally.";
 export const SEAT_CONSTRAINT = "I can personally onboard fifty people. That is the constraint.";
 
-export const SEAT_CTA = "Reserve my seat at $35";
+export const SEAT_CTA = "Reserve my seat";
 export const SEAT_CTA_SECONDARY = "Just keep me posted";
 export const SEAT_PATH = "/request-access";
 
