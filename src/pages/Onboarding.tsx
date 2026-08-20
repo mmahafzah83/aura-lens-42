@@ -495,19 +495,6 @@ const Onboarding = () => {
   const anonStateRef = useRef<AssessmentState & Record<string, any>>({ answers: {} });
   /* The genuine start of the anonymous run, when the session gave us one. */
   const sessionStartedAtRef = useRef<string | null>(null);
-  /* THE ARRIVAL — read once, on mount. Stale or absent means the journey
-     behaves exactly as it always has. */
-  const [arrival, setArrival] = useState<
-    null | { first_name?: string | null; answers?: number; sliders?: number; captures?: number }
-  >(() => {
-    try {
-      const raw = localStorage.getItem("aura_just_joined");
-      if (!raw) return null;
-      const e = JSON.parse(raw);
-      if (!e || typeof e.at !== "number" || Date.now() - e.at > 10 * 60 * 1000) return null;
-      return e;
-    } catch { return null; }
-  });
   const [wallEmail, setWallEmail] = useState("");
   const [wallPassword, setWallPassword] = useState("");
   const [wallConsent, setWallConsent] = useState(false);
