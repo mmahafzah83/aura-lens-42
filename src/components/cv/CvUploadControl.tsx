@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { OB, reducedMotion } from "@/components/onboarding/tokens";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
 import { buildStages } from "@/lib/operationStages";
 
