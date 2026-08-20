@@ -728,7 +728,6 @@ const Onboarding = () => {
      from a local boolean. The signed-in LinkedIn read is two uninstrumented
      readers, so that surface renders ONE stage rather than a list that cannot
      tick (see screen 1). */
-  const anonReadRun = useRunStages("linkedin_read", userId ? null : readRunId, { anonToken });
   const captureRun = useRunStages("capture_ingest", captureRunId, { anonToken });
   const marketRun = useRunStages("market_read", revealRunId, { anonToken });
   /* the inline confirmation shown for a moment when they choose Finish later */
@@ -2465,7 +2464,20 @@ const Onboarding = () => {
           </>
         )}
 
-        {step1Phase === "ask" ? (
+        {step1Phase === "ask" && !userId ? (
+          <>
+            <p style={bodyLight}>
+              Your read was done before you got here. Aura can't find it on this device — open it again and it
+              comes straight back.
+            </p>
+            <Actions style={{ marginBlockStart: 16 }}>
+              <OBButton onClick={() => { void backToRead(); }}>Open my read</OBButton>
+              <OBButton variant="tertiary" onClick={() => go(MANUAL_SCREEN)}>I'd rather type it in myself</OBButton>
+            </Actions>
+          </>
+        ) : null}
+
+        {step1Phase === "ask" && userId ? (
           <>
             <input
               value={liInput}
@@ -2515,11 +2527,7 @@ const Onboarding = () => {
               operation="linkedin_read"
               runId={readRunId}
               title="Reading what LinkedIn shows"
-              stages={
-                userId
-                  ? [{ key: "read", label: "Reading your profile and your posts", state: readDone ? "done" : "active" }]
-                  : anonReadRun.stages
-              }
+              stages={[{ key: "read", label: "Reading your profile and your posts", state: readDone ? "done" : "active" }]}
               onCarryOn={{ label: "Carry on — I'll pick this up later", action: () => go(5) }}
             />
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 14 }}>
@@ -2781,7 +2789,7 @@ const Onboarding = () => {
                   {" · "}
                   <button
                     type="button"
-                    onClick={() => void readProfile(true)}
+                    onClick={() => { if (!userId) { void backToRead(); return; } void readProfile(true); }}
                     style={{
                       background: "none", border: 0, padding: "10px 6px", fontSize: 13,
                       color: OB.blue, cursor: "pointer", textDecoration: "underline",
@@ -2796,7 +2804,7 @@ const Onboarding = () => {
             {/* Mono is for numbers. This is a control, so it is set as one. */}
             <button
               type="button"
-              onClick={() => void returnToAddress()}
+              onClick={() => { if (!userId) { void backToRead(); return; } void returnToAddress(); }}
               style={{
                 background: "none", border: 0, padding: "11px 0", marginBlockStart: 4,
                 fontFamily: OB.ui, fontSize: 13.5, color: OB.muted, cursor: "pointer",
