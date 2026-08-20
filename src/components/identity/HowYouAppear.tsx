@@ -230,8 +230,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   useEffect(() => () => readAbortRef.current?.abort(), []);
 
   const readStages: WorkingStage[] = [
-    { key: "profile", label: "Reading your profile", state: stage === "profile" ? "active" : stage === "posts" ? "done" : readFailure?.stageKey === "profile" ? "failed" : "waiting" },
-    { key: "posts", label: "Reading your public posts", state: stage === "posts" ? "active" : readFailure?.stageKey === "posts" ? "failed" : "waiting" },
+    { key: "fetch", label: "Reading your profile", state: stage === "profile" ? "active" : stage === "posts" ? "done" : readFailure?.stageKey === "profile" ? "failed" : "waiting" },
+    { key: "write", label: "Reading your public posts", state: stage === "posts" ? "active" : readFailure?.stageKey === "posts" ? "failed" : "waiting" },
   ];
 
   const useLinkedInPhoto = useCallback(async () => {
