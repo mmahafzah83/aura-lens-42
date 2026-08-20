@@ -25,18 +25,9 @@ Deno.serve(async (req) => {
   const runStartedAt = new Date();
   const cutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
-  // 1) Find rows that will transition to 'dead' due to this reap? No: reap only reclaims 'claimed'.
-  // Instead we look for rows that became 'dead' since the previous reap heartbeat.
-  const { data: lastHeartbeat } = await admin
-    .from("ef_error_log")
-    .select("created_at")
-    .eq("function_name", "reap-stuck-jobs")
-    .like("error_message", "JOB_QUEUE_HEALTH%")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const sinceIso = (lastHeartbeat?.created_at as string | undefined) ??
-    new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  // The reaper runs every 5 minutes; look back one window (plus slack) for newly dead jobs.
+  const sinceIso = new Date(Date.now() - 6 * 60 * 1000).toISOString();
+
 
   // Reclaim stuck 'claimed' rows
   const { data: reclaimed, error: reclaimErr } = await admin
