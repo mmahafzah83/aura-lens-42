@@ -542,6 +542,7 @@ const RA_CSS = `
 .ra-sq{width:8px;height:12px;border-radius:2px;background:var(--act);flex:0 0 8px;}
 .ra-rackfoot.counted{color:var(--cy-t);}
 .ra-rackfoot.counted .ra-sq{background:var(--cy);}
+.ra-rackteaser{font-size:16px;line-height:1.55;color:var(--n900);margin-top:8px;}
 
 .ra-ledger{margin-top:clamp(30px,4vw,44px);border-top:2px solid var(--n900);}
 .ra-lrow{display:flex;align-items:baseline;gap:12px;padding:15px 0;border-bottom:1px solid var(--n200);}
