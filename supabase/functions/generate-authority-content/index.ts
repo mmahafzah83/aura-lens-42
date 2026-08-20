@@ -8,6 +8,7 @@ import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
 import { findUnsourcedEntities } from "../_shared/entityGuard.ts";
 import { splitForPrompt, enforcedRuleTexts } from "../_shared/voiceRules.ts";
+import { PROMPT_VERSION, type Contribution, type GenerationProvenance } from "../_shared/provenance.ts";
 import { loadActiveMemberRules, memberRulesBlock } from "../_shared/memberRules.ts";
 import { endingTypeOf, hookStyleOf } from "../_shared/fingerprint.ts";
 import {
@@ -809,6 +810,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
 
       // One place the model is called, so a corrective regeneration runs the
       // exact same prompt with an added directive.
+      const MODEL_USED = "claude-sonnet-4-5-20250929";
       const callModel = async (extraDirective = ""): Promise<string | null> => {
         const response = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
@@ -818,7 +820,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
             "content-type": "application/json",
           },
           body: JSON.stringify({
-            model: "claude-sonnet-4-5-20250929",
+            model: MODEL_USED,
             // A member-set length ceiling also sizes the call (~4 chars/token).
             max_tokens: memberPrefs.length_max
               ? Math.max(512, Math.min(4096, Math.ceil(memberPrefs.length_max / 3) + 256))
@@ -1222,9 +1224,29 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         });
       }
 
+      // What went into this draft, handed back so whoever stores the row can
+      // record its lineage. The generator knows the material; only the caller
+      // knows the row id.
+      const contributions: Contribution[] = [];
+      if (signal_id) contributions.push({ kind: "signal", id: signal_id, role: "topic" });
+      for (const f of (provenanceRows || [])) {
+        if (f?.id) contributions.push({ kind: "evidence_fragment", id: f.id, role: "evidence" });
+      }
+      if (rawVoiceProfile?.id) {
+        contributions.push({ kind: "voice_profile", id: rawVoiceProfile.id, role: "voice" });
+      }
+      const provenance: GenerationProvenance = {
+        made_by: "aura",
+        produced_by: "composer",
+        prompt_version: PROMPT_VERSION,
+        model_used: MODEL_USED,
+        contributions,
+      };
+
       return new Response(JSON.stringify({
         content,
         success: true,
+        provenance,
         framework_used: (framework && FRAMEWORK_PROMPTS[framework]) ? framework : null,
         quality_gate: gatePayload,
         blocked: gateBlocked,
