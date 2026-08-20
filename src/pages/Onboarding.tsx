@@ -1365,10 +1365,12 @@ const Onboarding = () => {
         setScores({}); setAnswers({}); setReveal(null); setDimIdx(0); setQIdx(0);
         setClaims([]);
         try { localStorage.removeItem(`aura_ob_dim_${userId}`); localStorage.removeItem(`aura_ob_q_${userId}`); } catch { /* ignore */ }
-        await writeProfile({
-          brand_assessment_answers: null, answered_band: null,
-          skill_ratings: null, audit_results: null,
-        }, "subject change reset");
+        /* These four columns must actually be emptied on the row, not merely in
+           state — otherwise the next resume hydrates the last subject's work
+           straight back in. `clearKeys` is the deliberate null. */
+        await writeProfile({}, "subject change reset", undefined, [
+          "brand_assessment_answers", "answered_band", "skill_ratings", "audit_results",
+        ]);
         if (hadWork) toast("That's a different profile — Aura has cleared the strengths and answers from the last one.");
       }
       subjectRef.current = profile_url;
