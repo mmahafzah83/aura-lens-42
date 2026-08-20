@@ -121,7 +121,7 @@ export function useRunStages(
 
     return () => {
       alive = false;
-      window.clearInterval(timer);
+      stopPolling();
       void supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -132,6 +132,6 @@ export function useRunStages(
     active,
     failedAt,
     outcome,
-    stages: buildStages(operation, { completed, active, failed: failedAt }),
+    stages: buildStages(operation, { completed, active, failed: failedAt, ms: durations }),
   };
 }
