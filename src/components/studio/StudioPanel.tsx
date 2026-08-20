@@ -33,7 +33,7 @@ import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEd
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
 import JourneyMap from "@/components/studio/JourneyMap";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
-import { buildStages } from "@/lib/operationStages";
+import { useRunStages, newRunId } from "@/lib/useRunStages";
 import type { WaitOperation } from "@/lib/waitEstimate";
 import StageCard from "@/components/studio/StageCard";
 import AdvisorCard, { type GatePayload } from "@/components/studio/AdvisorCard";
@@ -423,6 +423,9 @@ export default function StudioPanel({
     }
     busyWasRef.current = busyMessage;
   }, [busyMessage]);
+  /* What the studio's two recorded operations have actually finished. */
+  const writeRun = useRunStages("studio_generate", busyRunId);
+  const slidesRun = useRunStages("studio_slides", busyRunId);
   /** Failures. Never a tick, never overwritten by an autosave. */
   /** Set when a draft came back, rendered once the language is known. */
   const [restoredFlag, setRestoredFlag] = useState(false);
