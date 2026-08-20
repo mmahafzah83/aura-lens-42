@@ -731,8 +731,8 @@ const Onboarding = () => {
      from a local boolean. The signed-in LinkedIn read is two uninstrumented
      readers, so that surface renders ONE stage rather than a list that cannot
      tick (see screen 1). */
-  const captureRun = useRunStages("capture_ingest", captureRunId, { anonToken });
-  const marketRun = useRunStages("market_read", revealRunId, { anonToken });
+  const captureRun = useRunStages("capture_ingest", captureRunId, { active: capturePending, anonToken });
+  const marketRun = useRunStages("market_read", revealRunId, { active: revealPending, anonToken });
   /* the inline confirmation shown for a moment when they choose Finish later */
   const [exitNote, setExitNote] = useState<string>("");
   useEffect(() => {
