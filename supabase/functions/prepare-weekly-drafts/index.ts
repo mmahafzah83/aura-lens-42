@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { detectLang } from "../_shared/lang.ts";
+import { writeLineage, type Contribution } from "../_shared/provenance.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
