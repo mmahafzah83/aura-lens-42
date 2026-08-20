@@ -32,17 +32,28 @@ export const PROGRESS_H = 44;
 export const CHROME_H = BAR_H + PROGRESS_H; // 100
 
 /** Kept for callers that still describe where they are; never rendered as a count. */
-export const STAGE_NAMES = [
-  "Know you",
-  "What you read",
-  "Your strengths",
-  "A few questions",
-  "Your read",
-] as const;
+export { STAGE_NAMES } from "@/lib/brand";
 
 /** The three beats of the one journey. Always all three, always visible. */
 export const BEATS = ["Your read", "Your evidence", "Your position"] as const;
 export type Beat = 1 | 2 | 3;
+
+/**
+ * THE BAR IS WEIGHTED BY REAL EFFORT, NOT BY BEAT COUNT.
+ *
+ * Three equal thirds put 85% of the work — eight sliders and nine questions —
+ * inside 7% of the fill. These are the measured shares of the journey's work,
+ * and the caller's global fraction is computed against the same numbers, so a
+ * fill can never land outside the segment its label claims.
+ */
+export const BEAT_WEIGHTS: [number, number, number] = [3 / 51, 44 / 51, 4 / 51];
+/** Cumulative boundaries: [0, end of beat 1, end of beat 2, 1]. */
+export const BEAT_BOUNDS: [number, number, number, number] = [
+  0,
+  BEAT_WEIGHTS[0],
+  BEAT_WEIGHTS[0] + BEAT_WEIGHTS[1],
+  1,
+];
 
 export interface JourneySub {
   /** 1-based step inside the beat currently in progress. Drives partial fill only. */
@@ -192,33 +203,31 @@ const JourneyBar = ({ onBack, onExit, name }: {
 
 /* ─────────────────────────────── progress ──────────────────────────────── */
 
-/** Where the fill should sit, 0–1 across the whole journey. */
-const fractionOf = (beat: Beat, sub?: JourneySub | null): number => {
-  const base = (beat - 1) / BEATS.length;
+/**
+ * Where the fill should sit, 0–1 across the whole journey, when the caller has
+ * nothing better. Segments are weighted by real effort (BEAT_WEIGHTS), so a
+ * beat that carries most of the work owns most of the bar.
+ */
+export const fractionOf = (beat: Beat, sub?: JourneySub | null): number => {
+  const start = BEAT_BOUNDS[beat - 1];
+  const end = BEAT_BOUNDS[beat];
   const inner = sub && sub.total > 0
     ? Math.max(0, Math.min(1, (sub.n - 1) / sub.total))
     : 0;
-  return Math.max(0, Math.min(1, base + inner / BEATS.length));
+  return Math.max(0, Math.min(1, start + (end - start) * inner));
 };
 
 /**
- * ONE CONNECTED BAR, THREE LABELLED SEGMENTS. No count, no blue, and the fill
- * is held rather than allowed to move backwards.
+ * ONE CONNECTED BAR, THREE LABELLED SEGMENTS, weighted by effort.
+ *
+ * The fill moves with the member — forwards on Continue and backwards on Back.
+ * A fill that refuses to regress while the labels do is two widgets telling
+ * two stories; one truth is better than one flattering half.
  */
-export const JourneyProgress = ({ beat, sub }: { beat: Beat; sub?: JourneySub | null }) => {
-  const want = fractionOf(beat, sub);
-  const held = useRef(0);
-  const [fill, setFill] = useState(want);
-
-  useEffect(() => {
-    if (want < held.current) {
-      // eslint-disable-next-line no-console
-      console.warn(`[JourneyProgress] refused to move backwards: held ${held.current.toFixed(3)}, asked ${want.toFixed(3)}`);
-      return;
-    }
-    held.current = want;
-    setFill(want);
-  }, [want]);
+export const JourneyProgress = ({ beat, sub, fraction }: {
+  beat: Beat; sub?: JourneySub | null; fraction?: number;
+}) => {
+  const fill = Math.max(0, Math.min(1, fraction ?? fractionOf(beat, sub)));
 
   return (
     <div
@@ -240,11 +249,11 @@ export const JourneyProgress = ({ beat, sub }: { beat: Beat; sub?: JourneySub | 
           background: LINE, overflow: "hidden",
         }}
       >
-        {/* the segment in progress, tinted */}
+        {/* the segment in progress, tinted — sized by its own weight */}
         <div aria-hidden style={{
           position: "absolute", insetBlock: 0,
-          insetInlineStart: `${((beat - 1) / BEATS.length) * 100}%`,
-          inlineSize: `${(1 / BEATS.length) * 100}%`,
+          insetInlineStart: `${BEAT_BOUNDS[beat - 1] * 100}%`,
+          inlineSize: `${BEAT_WEIGHTS[beat - 1] * 100}%`,
           background: CYAN_TINT,
         }} />
         {/* everything completed, solid */}
@@ -283,12 +292,19 @@ export const JourneyProgress = ({ beat, sub }: { beat: Beat; sub?: JourneySub | 
   );
 };
 
+
 /* ──────────────────────────────── chrome ───────────────────────────────── */
 
-/** Exactly one banner. Skip link is the first focusable element on the page. */
-export const JourneyChrome = ({ onBack, onExit, name, beat, sub }: {
+/**
+ * Exactly one banner. Skip link is the first focusable element on the page.
+ *
+ * `showProgress={false}` is for screens that are NOT part of the member's
+ * journey — identity confirmation, setting a password. Claiming a third of a
+ * journey the member has not begun is worse than showing nothing.
+ */
+export const JourneyChrome = ({ onBack, onExit, name, beat, sub, fraction, showProgress = true }: {
   onBack?: () => void; onExit: () => void; name?: string | null;
-  beat: Beat; sub?: JourneySub | null;
+  beat: Beat; sub?: JourneySub | null; fraction?: number; showProgress?: boolean;
 }) => {
   useShellCss();
   return (
@@ -302,7 +318,7 @@ export const JourneyChrome = ({ onBack, onExit, name, beat, sub }: {
     >
       <a className="jshell-skip" href="#journey-main">Skip to content</a>
       <JourneyBar onBack={onBack} onExit={onExit} name={name} />
-      <JourneyProgress beat={beat} sub={sub} />
+      {showProgress ? <JourneyProgress beat={beat} sub={sub} fraction={fraction} /> : null}
     </header>
   );
 };
@@ -311,11 +327,11 @@ export const JourneyChrome = ({ onBack, onExit, name, beat, sub }: {
 
 /** Chrome plus one main, one centred 640px stage. */
 const JourneyShell = ({
-  onBack, onExit, name, beat, sub, background = "#F2F5F9",
+  onBack, onExit, name, beat, sub, fraction, showProgress = true, background = "#F2F5F9",
   padding, className, children,
 }: {
   onBack?: () => void; onExit: () => void; name?: string | null;
-  beat: Beat; sub?: JourneySub | null;
+  beat: Beat; sub?: JourneySub | null; fraction?: number; showProgress?: boolean;
   background?: string; padding?: string; className?: string; children: React.ReactNode;
 }) => {
   useShellCss();
@@ -334,7 +350,9 @@ const JourneyShell = ({
       className={["jshell", className].filter(Boolean).join(" ")}
       style={{ minBlockSize: "100dvh", background, display: "flex", flexDirection: "column" }}
     >
-      <JourneyChrome onBack={onBack} onExit={onExit} name={name} beat={beat} sub={sub} />
+      <JourneyChrome onBack={onBack} onExit={onExit} name={name} beat={beat} sub={sub}
+        fraction={fraction} showProgress={showProgress} />
+
       <main
         id="journey-main"
         ref={mainRef as any}
