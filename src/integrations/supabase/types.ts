@@ -5686,16 +5686,6 @@ export type Database = {
           jobname: string | null
           schedule: string | null
         }
-        Insert: {
-          jobid?: number | null
-          jobname?: string | null
-          schedule?: string | null
-        }
-        Update: {
-          jobid?: number | null
-          jobname?: string | null
-          schedule?: string | null
-        }
         Relationships: []
       }
       linkedin_connections_safe: {
@@ -6528,6 +6518,14 @@ export type Database = {
         Returns: boolean
       }
       tier_rank: { Args: { t: string }; Returns: number }
+      undeclared_jobs: {
+        Args: never
+        Returns: {
+          jobid: number
+          jobname: string
+          schedule: string
+        }[]
+      }
       voice_corpus_stats: {
         Args: { p_user_id: string }
         Returns: {
