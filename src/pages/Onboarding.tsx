@@ -685,6 +685,15 @@ const Onboarding = () => {
   const [readRunId, setReadRunId] = useState<string | null>(null);
   const [captureRunId, setCaptureRunId] = useState<string | null>(null);
   const [revealRunId, setRevealRunId] = useState<string | null>(null);
+
+  /* THE TICK CHANNEL. What each panel draws is what the edge function has
+     actually recorded — subscribed live, backfilled on open, never guessed
+     from a local boolean. The signed-in LinkedIn read is two uninstrumented
+     readers, so that surface renders ONE stage rather than a list that cannot
+     tick (see screen 1). */
+  const anonReadRun = useRunStages("linkedin_read", userId ? null : readRunId, { anonToken });
+  const captureRun = useRunStages("capture_ingest", captureRunId, { anonToken });
+  const marketRun = useRunStages("market_read", revealRunId, { anonToken });
   /* the inline confirmation shown for a moment when they choose Finish later */
   const [exitNote, setExitNote] = useState<string>("");
   useEffect(() => {
@@ -2465,10 +2474,11 @@ const Onboarding = () => {
               operation="linkedin_read"
               runId={readRunId}
               title="Reading what LinkedIn shows"
-              stages={buildStages("linkedin_read", {
-                completed: readDone ? ["fetch"] : [],
-                active: readDone ? "write" : "fetch",
-              })}
+              stages={
+                userId
+                  ? [{ key: "read", label: "Reading your profile and your posts", state: readDone ? "done" : "active" }]
+                  : anonReadRun.stages
+              }
               onCarryOn={{ label: "Carry on — I'll pick this up later", action: () => go(5) }}
             />
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 14 }}>
@@ -2944,11 +2954,10 @@ const Onboarding = () => {
     /* Two stages, because two events exist: the link left, and the claims
        landed. Matching to the sector happens inside the second and has no
        event of its own, so it is not a step of its own. */
-    const fetched = readStep >= 1;
-    const found = readStep >= 2 || claims.length > 0;
     const captureStages: WorkingStage[] = buildStages("capture_ingest", {
-      completed: [...(fetched ? ["fetch"] : []), ...(found ? ["read"] : [])],
-      active: found ? null : fetched ? "read" : "fetch",
+      completed: captureRun.completed,
+      active: captureRun.active,
+      failed: captureRun.failedAt,
       labels: { fetch: "Article fetched", read: "What Aura found in it" },
     });
     const settled = claimsSlow && claims.length === 0;
@@ -3656,10 +3665,9 @@ const Onboarding = () => {
     /* Only the work that actually happened is shown, and a step only ticks on a
        real event. The three reading steps have no event of their own, so they
        stay plain named lines until the read itself lands. */
-    const genStages: WorkingStage[] = buildStages("market_read", {
-      completed: revealPending ? [] : ["gather", "write"],
-      active: revealPending ? "gather" : null,
-    });
+    const genStages: WorkingStage[] = revealPending
+      ? marketRun.stages
+      : buildStages("market_read", { completed: ["gather", "write"], active: null });
     content = (
       <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
         {!revealPending ? <Confetti /> : null}
