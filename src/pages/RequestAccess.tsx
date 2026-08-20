@@ -556,6 +556,9 @@ const RA_CSS = `
 .ra-v.cy{color:var(--cy-t);}
 .ra-v.act{color:var(--act);}
 .ra-ar{font-family:var(--ar);direction:rtl;line-height:1.9;margin-top:30px;font-size:19px;color:var(--cy-t);}
+.ra-readfree{margin-top:22px;font-size:14px;line-height:1.6;color:var(--n500);max-width:46ch;}
+.ra-readfree a{color:var(--act);text-decoration:underline;text-underline-offset:3px;}
+.ra-readfree a:hover{color:#04477C;}
 
 .ra-sheet{background:var(--n0);border:1px solid var(--n200);border-radius:24px;
   padding:clamp(24px,3vw,36px);box-shadow:0 30px 64px -40px rgba(15,21,25,.28);}
