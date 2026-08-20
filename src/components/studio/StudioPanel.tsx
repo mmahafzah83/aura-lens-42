@@ -411,10 +411,16 @@ export default function StudioPanel({
   const [busyMessage, setBusyMessage] = useState<string | null>(null);
   /* Every new wait is a new run: the monotonic floor and the elapsed counter
      must start from nothing rather than carry over from the last one. */
-  const [busyRunId, setBusyRunId] = useState(0);
+  const [busyRunId, setBusyRunId] = useState<string | null>(null);
   const busyWasRef = useRef<string | null>(null);
+  /* An operation that RECORDS its stages mints its id before it calls, and
+     leaves it here so the panel watches the same run the function writes. */
+  const pendingRunIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (busyMessage && busyMessage !== busyWasRef.current) setBusyRunId((n) => n + 1);
+    if (busyMessage && busyMessage !== busyWasRef.current) {
+      setBusyRunId(pendingRunIdRef.current ?? newRunId());
+      pendingRunIdRef.current = null;
+    }
     busyWasRef.current = busyMessage;
   }, [busyMessage]);
   /** Failures. Never a tick, never overwritten by an autosave. */
@@ -1191,6 +1197,8 @@ export default function StudioPanel({
     setPreparedDraft(null);
     setPendingRestore(null);
     setGenerating(true);
+    const writeRunId = newRunId();
+    pendingRunIdRef.current = writeRunId;
     setBusyMessage(T.writing[lang]);
     setStep(2);
     setSub("build");
@@ -1211,6 +1219,7 @@ export default function StudioPanel({
         signal: controller.signal,
         body: JSON.stringify({
           action: "generate_content",
+          run_id: writeRunId,
           content_type: "post",
           topic: target.title,
           context: target.insight || "",
@@ -1738,6 +1747,7 @@ export default function StudioPanel({
       const { id: rowId } = await saveDraft({ silent: true });
       const call = supabase.functions.invoke("generate-deck", {
         body: {
+          run_id: deckRunId,
           signal_id: choice.id,
           length: lengthOverride ?? deckLength,
           theme,
@@ -2694,9 +2704,9 @@ export default function StudioPanel({
             title={busyMessage}
             stages={
               operationFor(busyMessage, lang) === "studio_generate"
-                ? buildStages("studio_generate", { completed: [], active: "gather" })
+                ? writeRun.stages
                 : operationFor(busyMessage, lang) === "studio_slides"
-                  ? buildStages("studio_slides", { completed: [], active: "plan" })
+                  ? slidesRun.stages
                   : [{ key: "work", label: busyMessage, state: "active" }]
             }
             rtl={rtlShell}
@@ -3486,7 +3496,7 @@ export default function StudioPanel({
                       operation="studio_slides"
                       runId={busyRunId}
                       title={T.makingSlidesHonest[lang]}
-                      stages={buildStages("studio_slides", { completed: [], active: "plan" })}
+                      stages={slidesRun.stages}
                       rtl={rtlShell}
                     />
                   </div>
