@@ -1006,6 +1006,11 @@ const Onboarding = () => {
         if (pf.skill_ratings && typeof pf.skill_ratings === "object") setScores(pf.skill_ratings);
         }
         if (st.answers && typeof st.answers === "object") setAnswers(st.answers);
+        /* The capture payoff survives a reload: the fragments Aura pulled out
+           of their link are held on the session, not only in memory. */
+        if (Array.isArray(st.capture_fragments) && st.capture_fragments.length) {
+          setClaims(st.capture_fragments as Claim[]);
+        }
         if (st.profile_url) setLiInput(st.profile_url);
         /* The quick read already happened at /assessment — never ask twice. */
         if (st.read) {
