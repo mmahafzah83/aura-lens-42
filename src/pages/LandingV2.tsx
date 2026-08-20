@@ -562,8 +562,8 @@ const LANDING_V2_HTML = `
 <section class="pg" id="how">
   <div class="hdr">
     <span class="tag">It refuses to write first</span>
-    <h2>Four stages.<br>You are only in <span class="grad">two of them.</span></h2>
-    <p class="sub">Other tools start writing on day one. Aura will not write a word until it knows what you are good at.</p>
+    <h2>Four stages.<br><span class="grad">You are only in two of them.</span></h2>
+    <p class="sub">Every other tool writes on day one. Aura will not write until it knows you.</p>
   </div>
 
   <div class="eyebrow">The pipeline, end to end</div>
