@@ -7,6 +7,7 @@ import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt
 import { buildReadEvidence } from "../_shared/readEvidence.ts";
 import { LIMITS, QUEUE_MESSAGE } from "../_shared/limits.ts";
 import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,6 +47,8 @@ serve(withObserve("brand-assessment", async (req) => {
       user_id: uid,
       meta: { sector: sector ?? null, band: band ?? null },
     });
+    const [GATHER, WRITE] = OPERATION_STAGES.market_read;
+    run.mark(GATHER);
     const finish = async (outcome: "ok" | "refused" | "failed", reason_code?: string) => {
       try { await run.finish({ outcome, reason_code: reason_code ?? null }); }
       catch (e) { console.error("[brand-assessment] run finish failed:", (e as Error)?.message); }
@@ -112,6 +115,7 @@ serve(withObserve("brand-assessment", async (req) => {
       throw new Error("ANTHROPIC_API_KEY not configured");
     }
 
+    run.mark(WRITE);
     // Claim the run now that the evidence floor is met and the spend is about to happen.
     await admin.from("instrument_runs").insert({ user_id: uid, kind: "assessment" });
 
