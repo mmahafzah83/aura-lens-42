@@ -159,23 +159,55 @@ serve(withObserve("onboarding-find-article", async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return json({ error: "Not authenticated" }, 401);
-    }
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: { user }, error: authError } = await userClient.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) {
-      return json({ error: "Not authenticated" }, 401);
-    }
-    logUserId = user.id;
+    const body = await req.json().catch(() => ({} as any));
+    const token = typeof body?.token === "string" ? body.token : "";
 
-    const { sector_focus, core_practice, firm, level } = await req.json().catch(() => ({}));
+    let sector_focus = body?.sector_focus ?? null;
+    let core_practice = body?.core_practice ?? null;
+    let firm = body?.firm ?? null;
+    let level = body?.level ?? null;
+
+    if (token) {
+      /* Anonymous run — same session resolution onboarding-proposals uses. */
+      const svc = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        { auth: { persistSession: false } },
+      );
+      const { data: sess } = await svc
+        .from("assessment_sessions")
+        .select("state, expires_at")
+        .eq("token", token)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      const state = ((sess as any)?.state ?? {}) as Record<string, any>;
+      sector_focus = sector_focus || state.sector_focus || state.sector || null;
+      core_practice = core_practice || state.core_practice || null;
+      firm = firm || state.firm || null;
+      level = level || state.level || state.level_title || null;
+      if (!sector_focus && !core_practice) {
+        outcome = "error";
+        return json({ found: false });
+      }
+    } else {
+      if (!authHeader?.startsWith("Bearer ")) {
+        return json({ found: false });
+      }
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: { user }, error: authError } = await userClient.auth.getUser(authHeader.replace("Bearer ", ""));
+      if (authError || !user) {
+        return json({ found: false });
+      }
+      logUserId = user.id;
+    }
+
     logSector = sector_focus ?? null;
     logPractice = core_practice ?? null;
+
 
     if (!sector_focus && !core_practice) {
       // Only success-path guard that may return found:false.

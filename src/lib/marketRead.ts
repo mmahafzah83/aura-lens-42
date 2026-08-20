@@ -162,7 +162,20 @@ async function writeProfile(userId: string, patch: Record<string, any>, label: s
 /** Save the six answers immediately, so a failed generation never loses them. */
 export async function saveAnswers(userId: string, answers: Record<string, string>): Promise<void> {
   try {
-    await writeProfile(userId, { brand_assessment_answers: answers }, "answers save");
+    /* Merge, never overwrite. A stale client holding a partial set must not be
+       able to blank answers already kept for this member. */
+    let merged: Record<string, string> = answers;
+    try {
+      const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+        .select("brand_assessment_answers")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const existing = (data as any)?.brand_assessment_answers;
+      if (existing && typeof existing === "object") {
+        merged = { ...(existing as Record<string, string>), ...answers };
+      }
+    } catch { /* no read means write what we hold */ }
+    await writeProfile(userId, { brand_assessment_answers: merged }, "answers save");
   } catch (e) {
     console.error("[marketRead] answers save threw", e);
   }
