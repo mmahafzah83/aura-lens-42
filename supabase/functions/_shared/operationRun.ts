@@ -109,7 +109,14 @@ export async function startRun(
 
   /* Writes are chained so two marks in the same tick cannot land out of order.
      A failed write is logged and never propagated: recording must not break
-     the thing it records. */
+     the thing it records.
+
+     ONE WRITER PER RUN. `stages` is written as a whole-array snapshot from this
+     process's memory, so two processes sharing a run id would clobber each
+     other. That cannot happen today: the client mints a fresh uuid per invoke
+     and `startRun` INSERTs it, so a reused id fails the primary key and the
+     second run records nothing rather than corrupting the first. A retry must
+     therefore mint a NEW id — never reuse one. */
   let chain: Promise<void> = Promise.resolve();
   const persistStages = () => {
     if (!id) return;
