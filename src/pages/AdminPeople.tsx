@@ -304,6 +304,8 @@ export default function AdminPeople() {
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [selected, setSelected] = useState<Row | null>(null);
   const [copiedUid, setCopiedUid] = useState<string | null>(null);
+  const [attribution, setAttribution] = useState<Attribution | null>(null);
+
 
   const load = async () => {
     setLoading(true);
