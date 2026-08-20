@@ -268,7 +268,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .pcard .pchip{font-family:var(--mono);font-size:12.5px;letter-spacing:.09em;padding:6px 10px;border-radius:999px;background:var(--cyantint);color:var(--cyanT)}
 .aura-v2 .pcard.night .pchip{background:rgba(0,206,201,.16);color:var(--cyan)}
 .aura-v2 .pcard h3{font-size:22px;font-weight:700;letter-spacing:-.024em;line-height:1.25;margin-top:16px;max-width:20ch}
-.aura-v2 .pcard .who{font-size:13.5px;color:#A7B0BC;line-height:1.6;margin-top:10px}
+.aura-v2 .pcard .who{font-family:var(--ui);font-size:13.5px;color:#A7B0BC;line-height:1.6;margin-top:10px}
 .aura-v2 .pcard .prc{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
 .aura-v2 .pcard.night .prc{border-top-color:rgba(255,255,255,.14)}
 .aura-v2 .pcard .prc .p{font-family:var(--mono);font-size:28px;font-weight:600;letter-spacing:-.03em;color:var(--ink)}
