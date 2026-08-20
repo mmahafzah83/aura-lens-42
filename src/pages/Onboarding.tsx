@@ -1460,7 +1460,7 @@ const Onboarding = () => {
     setLinkFailed(false);
     go(6);
     let sent = false;
-    let deferred = false;
+    let anonRead = false;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
