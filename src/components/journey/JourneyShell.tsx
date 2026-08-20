@@ -47,10 +47,12 @@ export const BEATS = ["Your read", "Your evidence", "Your position"] as const;
  * all come from ONE module (`@/lib/journeyWork`), so a fill can never land
  * outside the segment its label claims and the two files cannot drift apart.
  */
+import { BEAT_WEIGHTS, BEAT_BOUNDS } from "@/lib/journeyWork";
+import type { Beat } from "@/lib/journeyWork";
 export {
   BEAT_WEIGHTS, BEAT_BOUNDS, JOURNEY_WORK_TOTAL, readStageFraction,
 } from "@/lib/journeyWork";
-export type { Beat } from "@/lib/journeyWork";
+
 
 
 export interface JourneySub {
