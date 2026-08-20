@@ -39,6 +39,7 @@ import MethodNote from "@/components/onboarding/MethodNote";
 import Confetti from "@/components/onboarding/Confetti";
 import WaitProof from "@/components/onboarding/WaitProof";
 import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
+import { buildStages } from "@/lib/operationStages";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
 import { loadProfileFacts, type ProfileFacts } from "@/lib/profileFacts";
 import { loadPostProof, type PostProof } from "@/lib/postProof";
@@ -676,6 +677,8 @@ const Onboarding = () => {
   const [visits, setVisits] = useState(0);
   /* step 1 never navigates: it reads in place, then becomes the result card */
   const [step1Phase, setStep1Phase] = useState<"ask" | "reading" | "result">("ask");
+  /* A run boundary is an event, not something inferred from stage names. */
+  const [readRunId, setReadRunId] = useState(0);
   /* the inline confirmation shown for a moment when they choose Finish later */
   const [exitNote, setExitNote] = useState<string>("");
   useEffect(() => {
@@ -1225,6 +1228,7 @@ const Onboarding = () => {
       return;
     }
     setLiBusy(true);
+    setReadRunId((n) => n + 1);
     setStep1Phase("reading");
     try {
       /**
