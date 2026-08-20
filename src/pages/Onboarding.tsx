@@ -48,7 +48,7 @@ import { OBButton, Actions, BUTTON_CSS } from "@/components/onboarding/buttons";
 import { smartPlaceholders } from "@/lib/smartPlaceholders";
 import JourneyShell, { STAGE_NAMES, type Beat, type JourneySub } from "@/components/journey/JourneyShell";
 import { CONSENT_VERSION } from "@/pages/Auth";
-import CvUploadControl, { readCvPurpose } from "@/components/cv/CvUploadControl";
+import CvUploadControl from "@/components/cv/CvUploadControl";
 import CvCrosscheck from "@/components/report/CvCrosscheck";
 import { num, cleanHeadline, memberText, trimToSentence } from "@/lib/memberText";
 import { inferSector } from "@/lib/inferSector";
@@ -1092,7 +1092,7 @@ const Onboarding = () => {
       else if (!passwordSet) setNeedsPassword(true);
 
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, level, seniority_band, onboarding_step, skill_ratings, brand_assessment_answers, identity_intelligence, journey_reset_at")
+        .select("first_name, last_name, firm, sector_focus, level, seniority_band, answered_band, onboarding_step, skill_ratings, brand_assessment_answers, identity_intelligence, journey_reset_at")
         .eq("user_id", uid)
         .maybeSingle();
       const p: any = profile || {};
@@ -1125,8 +1125,18 @@ const Onboarding = () => {
       /* P1 — answers must be in hand before any resume into the instrument.
          Without this, `advance` rebuilds the set from {} and the save wipes
          everything answered before the reload. */
-      const hydratedAnswers = (p.brand_assessment_answers && typeof p.brand_assessment_answers === "object")
+      let hydratedAnswers = (p.brand_assessment_answers && typeof p.brand_assessment_answers === "object")
         ? (p.brand_assessment_answers as Record<string, string>) : {};
+      /* THE BAND GUARD. Answer keys carry the prompt, and the prompts differ by
+         band. A member who changes band would otherwise accumulate two sets and
+         feed the stale one to the read. The band that produced the answers is
+         stamped beside them, so a change discards the whole set. */
+      const answeredBand = (p as any).answered_band ?? null;
+      if (answeredBand && p.seniority_band && answeredBand !== p.seniority_band
+        && Object.keys(hydratedAnswers).length) {
+        hydratedAnswers = {};
+        void upsertProfile(uid, { brand_assessment_answers: null, answered_band: null }, "band change answer reset");
+      }
       setAnswers(hydratedAnswers);
       const hasAnswers = Object.keys(hydratedAnswers).length > 0;
       const hasScores = Boolean(p.skill_ratings && typeof p.skill_ratings === "object"
@@ -1895,25 +1905,42 @@ const Onboarding = () => {
       /* Start over clears the answers, not the read. The read already exists
          server-side, and re-asking for an address we hold is a lie about it. */
       const keep = anonStateRef.current as any;
-      const preserved: Record<string, any> = { answers: {} };
+      /* Place in the instrument goes with the answers — otherwise a reload
+         drops a restarted member back where the old run stopped. */
+      const preserved: Record<string, any> = { answers: {}, q_idx: 0, dim_idx: 0 };
       for (const k of ["read", "posts_read", "profile_url", "name"]) {
         if (keep?.[k] !== undefined && keep?.[k] !== null) preserved[k] = keep[k];
       }
       anonStateRef.current = preserved as any;
       await saveSession(anonToken, preserved);
-      try { localStorage.removeItem("aura_ob_screen_anon"); } catch { /* ignore */ }
+      try {
+        localStorage.removeItem("aura_ob_screen_anon");
+        localStorage.removeItem("aura_ob_q_anon");
+        localStorage.removeItem("aura_ob_dim_anon");
+      } catch { /* ignore */ }
     }
     if (userId) {
       try {
         const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
           .select("identity_intelligence").eq("user_id", userId).maybeSingle();
         const ii = ((data as any)?.identity_intelligence as Record<string, any>) || {};
+        /* The answers must leave the row, not just memory. `saveAnswers` merges,
+           so anything left here would be un-removable by the new run. The
+           sliders go with them — the in-memory reset already clears both. */
         await writeProfile({
           identity_intelligence: { ...ii, journey_screen: 0, journey_paused: false },
           onboarding_step: 0,
+          brand_assessment_answers: null,
+          skill_ratings: null,
+          audit_results: null,
+          answered_band: null,
         }, "start over");
       } catch (e) { console.error("[journey] start over save threw", e); }
-      try { localStorage.removeItem(`aura_ob_screen_${userId}`); } catch { /* ignore */ }
+      try {
+        localStorage.removeItem(`aura_ob_screen_${userId}`);
+        localStorage.removeItem(`aura_ob_q_${userId}`);
+        localStorage.removeItem(`aura_ob_dim_${userId}`);
+      } catch { /* ignore */ }
     }
     setAnswers({});
     setScores({});
@@ -3133,7 +3160,12 @@ const Onboarding = () => {
         setTextAnswer("");
         setMultiPicked([]);
         setSinglePicked(null);
-        if (userId) void saveAnswers(userId, next);
+        if (userId) {
+          void saveAnswers(userId, next);
+          /* Stamp the band that produced these answers, so a later band change
+             discards them instead of merging two prompt sets. */
+          if (band) void upsertProfile(userId, { answered_band: band }, "answered band stamp");
+        }
         persistQuestionProgress(next, last ? qIdx : qIdx + 1);
         if (last) void finishQuestions(next); else setQIdx((i) => i + 1);
       };
@@ -3142,11 +3174,11 @@ const Onboarding = () => {
         setTextAnswer("");
         setMultiPicked([]);
         setSinglePicked(null);
-        setQIdx((i) => {
-          const nextIdx = Math.max(0, i - 1);
-          persistQuestionProgress(answers, nextIdx);
-          return nextIdx;
-        });
+        /* The write lives outside the updater — a state updater must be pure,
+           and StrictMode double-invokes them. */
+        const nextIdx = Math.max(0, qIdx - 1);
+        persistQuestionProgress(answers, nextIdx);
+        setQIdx(nextIdx);
       };
       const cap = q.kind === "multi" ? (q.max_choices ?? (q.options?.length || 99)) : 1;
       const atCap = multiPicked.length >= cap;
