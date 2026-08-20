@@ -49,7 +49,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .pg{display:none}
 .aura-v2 .pg.on{display:block;animation:auraIn .45s var(--sp)}
 @keyframes auraIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-.aura-v2 .tag{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);background:var(--bluetint);padding:6px 12px;border-radius:999px}
+.aura-v2 .tag{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);background:var(--bluetint);padding:6px 12px;border-radius:999px}
 .aura-v2 h1{font-size:clamp(38px,5.4vw,62px);font-weight:700;letter-spacing:-.035em;line-height:1.03;margin-top:20px}
 .aura-v2 h2{font-size:clamp(30px,4vw,48px);font-weight:700;letter-spacing:-.034em;line-height:1.06;margin-top:16px}
 .aura-v2 .grad{background:linear-gradient(96deg,var(--blue),var(--cyanT));-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -57,7 +57,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .sub b{color:var(--ink);font-weight:600}
 .aura-v2 .hdr{text-align:center;max-width:700px;margin:0 auto 44px}
 .aura-v2 .hdr .sub{margin-left:auto;margin-right:auto;max-width:560px}
-.aura-v2 .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink4);display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.aura-v2 .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink4);display:flex;align-items:center;gap:12px;margin-bottom:24px}
 .aura-v2 .eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
 .aura-v2 .btn{font-family:var(--ui);font-weight:600;font-size:14.5px;padding:14px 26px;border:none;border-radius:9px;cursor:pointer;transition:200ms var(--sp);text-decoration:none;display:inline-block}
 .aura-v2 .bp{background:var(--blue);color:#fff}
@@ -379,7 +379,7 @@ const LANDING_V2_HTML = `
 <section class="pg on" id="home">
   <div class="hero">
     <div>
-      <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> ${PRODUCT_DESCRIPTOR}</span>
+      <span class="tag" style="background:var(--cyantint);color:var(--cyanT)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="3" fill="#00807B"/></svg> AI Professional Identity Platform</span>
       <h1>${HEAD_LEAD}<br><span class="grad">${HEAD_TAIL}</span></h1>
       <p class="sub">Aura reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
       <p class="subxs">Built from your own capabilities, achievements, documents and career direction — every claim traceable to something you actually did.</p>
@@ -561,7 +561,7 @@ const LANDING_V2_HTML = `
 
 <section class="pg" id="how">
   <div class="hdr">
-    <span class="tag">How it works</span>
+    <span class="tag">It refuses to write first</span>
     <h2>Four stages.<br>You are only in <span class="grad">two of them.</span></h2>
     <p class="sub">Other tools start writing on day one. Aura will not write a word until it knows what you are good at.</p>
   </div>
@@ -650,7 +650,7 @@ const LANDING_V2_HTML = `
 
 <section class="pg" id="get">
   <div class="hdr">
-    <span class="tag">What you get</span>
+    <span class="tag">Free first, paid after</span>
     <h2>See yourself.<br>Then <span class="grad">be seen.</span></h2>
     <p class="sub">Two things. First you understand yourself — then the market understands you.</p>
   </div>
@@ -766,7 +766,7 @@ const LANDING_V2_HTML = `
 
 <section class="pg" id="why">
   <div class="hdr">
-    <span class="tag">Why now</span>
+    <span class="tag">The cost of one more quiet year</span>
     <h2>You read a lot.<br><span class="grad">Nobody ever sees it.</span></h2>
     <p class="sub">You read about five hours a week. You never write about it, and you never talk about it. So the market never learns what you know.</p>
   </div>
@@ -897,7 +897,7 @@ const LANDING_V2_HTML = `
 
 <section class="pg" id="cmp">
   <div class="hdr">
-    <span class="tag">Compare</span>
+    <span class="tag">Against every other option</span>
     <h2>They give everyone<br>the same template.<br><span class="grad">We start with you.</span></h2>
     <p class="sub">Other tools hand every person the same shapes and the same words. Aura learns your experience and your reading first — then writes from them.</p>
   </div>
@@ -968,7 +968,7 @@ const LANDING_V2_HTML = `
 
 <section class="pg" id="faq">
   <div class="hdr">
-    <span class="tag">Questions</span>
+    <span class="tag">Answered straight</span>
     <h2>What people ask<br>before joining.</h2>
   </div>
   <div style="max-width:760px;margin:0 auto">
