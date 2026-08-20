@@ -27,6 +27,8 @@ import {
 } from "./pipeline.ts";
 import { REQUIRED_SLOTS } from "./slots.ts";
 import { resolveIdentityFrom } from "../_shared/identity.ts";
+import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -289,6 +291,7 @@ async function generate(
   requestedLang?: "en" | "ar",
   sourceText?: string,
   template: string = DEFAULT_TEMPLATE,
+  run?: RunHandle | null,
 ) {
   const started = Date.now();
   const deckId = crypto.randomUUID();
@@ -305,6 +308,9 @@ async function generate(
   ctx.voiceRhythmOnly = Boolean(
     ctx.voice && !String(ctx.voice.language ?? "").toLowerCase().startsWith(p.lang),
   );
+
+  /* Planning is done; everything after this is drawing. */
+  run?.mark(OPERATION_STAGES.studio_slides[1]);
 
   const memberVocab = vocab(ctx.voice);
   const invOpts = {
@@ -496,6 +502,12 @@ serve(async (req) => {
   const attempt: Record<string, unknown> = {
     deck_id: null, signal_id: null, lang: null, theme: null, template: null,
   };
+  let run: RunHandle | null = null;
+  const close = async (outcome: "ok" | "refused" | "failed", reason?: string) => {
+    try { await run?.finish({ outcome, reason_code: reason ?? null }); }
+    catch (e) { console.error("[generate-deck] run finish failed:", (e as Error)?.message); }
+    run = null;
+  };
 
   try {
     const authHeader = req.headers.get("Authorization") || "";
@@ -509,6 +521,9 @@ serve(async (req) => {
     const user = userData?.user;
     if (!user) return json({ error: "unauthorized" }, 401);
     userRef = user.id;
+
+    run = await startRun(undefined, { operation: "studio_slides", user_id: user.id });
+    run.mark(OPERATION_STAGES.studio_slides[0]);
 
     const body = await req.json().catch(() => ({}));
     // Family first: a colourway is only meaningful inside its template.
@@ -627,12 +642,14 @@ serve(async (req) => {
       const existing = (body.deck.slides ?? []).find((s: any) => s.index === idx);
       if (!existing) return json({ error: "slide not found" }, 400);
       const avoid = JSON.stringify(existing.slots ?? {});
+      await close("ok", "rewrite_slide");
       const out = await rewriteSlide(db, user.id, body.signal_id, idx, existing.archetype, avoid, body.deck.primary_lang === "ar" ? "ar" : "en");
       // Always 200: a refusal is an answer the studio must be able to read.
       return json(out);
     }
 
-    const result = await generate(db, user.id, body.signal_id, body.length, theme, reqLang, sourceText, template);
+    const result = await generate(db, user.id, body.signal_id, body.length, theme, reqLang, sourceText, template, run);
+    await close("ok");
     return json(result);
   } catch (e) {
     const message = String(e instanceof Error ? e.message : e);
@@ -661,6 +678,7 @@ serve(async (req) => {
         duration_ms: Date.now() - startedAt,
       });
     }
+    await close("failed", code);
     return json({ ok: false, error: message, code }, 500);
   }
 });

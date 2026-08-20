@@ -131,6 +131,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const [profileUrl, setProfileUrl] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [stage, setStage] = useState<"profile" | "posts" | null>(null);
+  const [readDone, setReadDone] = useState<string[]>([]);
+  const [readRunId, setReadRunId] = useState(0);
   const [readFailure, setReadFailure] = useState<{ stageKey: string; message: string } | null>(null);
   const readAbortRef = useRef<AbortController | null>(null);
   const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
@@ -192,6 +194,10 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
 
   /** Profile first, then posts. Each call can take two minutes. */
   const readProfile = useCallback(async (from: "profile" | "posts" = "profile") => {
+    setReadRunId((n) => n + 1);
+    /* A record of what ACTUALLY completed. A finished step stays finished,
+       including in the failure state. */
+    setReadDone(from === "posts" ? ["profile"] : []);
     if (!profileUrl) { navigate("/settings?tab=connections"); return; }
     /* A hung function must have an exit. Five minutes is the ceiling. */
     readAbortRef.current?.abort();
@@ -207,12 +213,14 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         });
         if (error) throw error;
         if ((data as { error?: string } | null)?.error) throw new Error(String((data as { error?: string }).error));
+        setReadDone((d) => (d.includes("profile") ? d : [...d, "profile"]));
       }
       setStage("posts");
       const { error: postsError } = await supabase.functions.invoke("linkedin-fetch-posts", {
         body: { profile_url: profileUrl, max_posts: 50 }, signal: ctrl.signal,
       });
       if (postsError) throw postsError;
+      setReadDone((d) => (d.includes("posts") ? d : [...d, "posts"]));
       await load();
     } catch (e) {
       const message = ctrl.signal.aborted
@@ -229,10 +237,34 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
 
   useEffect(() => () => readAbortRef.current?.abort(), []);
 
-  const readStages: WorkingStage[] = [
-    { key: "fetch", label: "Reading your profile", state: stage === "profile" ? "active" : stage === "posts" ? "done" : readFailure?.stageKey === "profile" ? "failed" : "waiting" },
-    { key: "write", label: "Reading your public posts", state: stage === "posts" ? "active" : readFailure?.stageKey === "posts" ? "failed" : "waiting" },
-  ];
+  /* Derived from the record of completed steps — never from a single "current
+     stage" variable, which would revert a finished step to waiting the moment
+     a later step failed. These two calls are not one measured operation, so no
+     operation name is passed and no percentage is claimed. */
+  const readStages: WorkingStage[] = ([
+    { key: "profile", label: "Reading your profile" },
+    { key: "posts", label: "Reading your public posts" },
+  ] as const).map((s) => ({
+    key: s.key,
+    label: s.label,
+    state: readDone.includes(s.key)
+      ? "done"
+      : readFailure?.stageKey === s.key
+        ? "failed"
+        : stage === s.key
+          ? "active"
+          : "waiting",
+  }));
+
+  const readPanel = (
+    <WorkingPanel
+      runId={readRunId}
+      title="Reading what LinkedIn shows"
+      stages={readStages}
+      failure={stage === null ? readFailure : null}
+      onRetryFromStage={(key) => void readProfile(key === "posts" ? "posts" : "profile")}
+    />
+  );
 
   const useLinkedInPhoto = useCallback(async () => {
     if (!userId || !snapshot?.photo_url || avatarUrl) return;
@@ -253,15 +285,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         <p style={{ fontSize: 13.5, color: MUTED, margin: "8px 0 16px", lineHeight: 1.6 }}>
           One address, once. Then this fills in.
         </p>
-        {stage !== null || readFailure ? (
-          <WorkingPanel
-            operation="linkedin_read"
-            title="Reading what LinkedIn shows"
-            stages={readStages}
-            failure={stage === null ? readFailure : null}
-            onRetryFromStage={(key) => void readProfile(key === "posts" ? "posts" : "profile")}
-          />
-        ) : (
+        {stage !== null || readFailure ? readPanel : (
           <button type="button" style={primaryButtonStyle} onClick={() => void readProfile()}>
             Read my profile
           </button>
@@ -338,10 +362,14 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
             Read from LinkedIn on{" "}
             <span style={dashStyle}>{readDate ?? EM_DASH}</span>
           </span>
-          <button type="button" style={{ ...quietLinkStyle, marginBlockStart: 0 }} onClick={() => void readProfile()} disabled={stage !== null}>
-            {stage === "profile" ? "Reading your profile…" : stage === "posts" ? "Reading your posts…" : "Read again"}
-          </button>
+          {stage === null && !readFailure ? (
+            <button type="button" style={{ ...quietLinkStyle, marginBlockStart: 0 }} onClick={() => void readProfile()}>
+              Read again
+            </button>
+          ) : null}
         </div>
+        {/* The returning member's path gets the same panel as the first read. */}
+        {stage !== null || readFailure ? <div style={{ marginBlockStart: 12 }}>{readPanel}</div> : null}
       </div>
 
       {/* ══ HALF B — what Aura sees ════════════════════════════════════════ */}

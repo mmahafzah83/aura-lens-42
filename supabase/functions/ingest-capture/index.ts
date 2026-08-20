@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
+import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,6 +59,15 @@ Deno.serve(withObserve("ingest-capture", async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  /* One run row per capture, with the two stages the waiting screen draws. */
+  const [FETCH, READ] = OPERATION_STAGES.capture_ingest;
+  let run: RunHandle | null = null;
+  const close = async (outcome: "ok" | "refused" | "failed", reason?: string) => {
+    try { await run?.finish({ outcome, reason_code: reason ?? null }); }
+    catch (e) { console.error("[ingest-capture] run finish failed:", (e as Error)?.message); }
+    run = null;
+  };
+
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -80,6 +91,9 @@ Deno.serve(withObserve("ingest-capture", async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    run = await startRun(supabase, { operation: "capture_ingest", user_id: user.id });
+    run.mark(FETCH);
 
     const body = await req.json();
     const { type, content, metadata, source_url } = body;
@@ -107,6 +121,7 @@ Deno.serve(withObserve("ingest-capture", async (req) => {
         .limit(1);
 
       if (existing && existing.length > 0) {
+        await close("refused", "duplicate_url");
         return new Response(JSON.stringify({
           error: "duplicate_url",
           processing_status: "duplicate",
@@ -235,6 +250,8 @@ Deno.serve(withObserve("ingest-capture", async (req) => {
         error_message: processingError.message || "Processing failed",
       }).eq("id", capture.id);
     }
+
+    run?.mark(READ);
 
     const { data: finalCapture } = await supabase
       .from("captures")
@@ -385,6 +402,7 @@ Deno.serve(withObserve("ingest-capture", async (req) => {
       console.warn("[ingest-capture] entries write failed (non-fatal):", entryWriteErr?.message);
     }
 
+    await close("ok");
     return new Response(JSON.stringify({
       ...finalCapture,
       extracted_title: extracted_title,
@@ -395,6 +413,7 @@ Deno.serve(withObserve("ingest-capture", async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
+    await close("failed", "exception");
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

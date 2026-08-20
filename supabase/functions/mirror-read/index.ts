@@ -8,6 +8,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
+import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, type RunHandle } from "../_shared/operationRun.ts";
 
 const corsHeaders = {
@@ -394,7 +395,7 @@ Deno.serve(async (req) => {
 
     // --- d) Fetch profile and posts in parallel ---
     /* Stage one opens: everything until the provider answers. */
-    run?.mark("fetch");
+    run?.mark(OPERATION_STAGES.linkedin_read[0]);
     const [profile, postTexts] = await Promise.all([
       fetchProfile(canonical_url, APIFY_TOKEN),
       fetchPosts(canonical_url, handle, APIFY_TOKEN).catch(() => [] as string[]),
@@ -516,7 +517,7 @@ Deno.serve(async (req) => {
 
     const messages = [{ role: "user", content: userPrompt }];
     /* Stage two opens: the model writing the read. */
-    run?.mark("write");
+    run?.mark(OPERATION_STAGES.linkedin_read[1]);
     let raw = await callModel(messages);
     let read = parseJsonLoose(raw);
     if (read && hasPlaceholderInValues(read)) read = null;

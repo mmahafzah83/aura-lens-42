@@ -38,8 +38,8 @@ import { loadOwnSentence, type OwnSentence } from "@/lib/ownSentence";
 import MethodNote from "@/components/onboarding/MethodNote";
 import Confetti from "@/components/onboarding/Confetti";
 import WaitProof from "@/components/onboarding/WaitProof";
-import WorkProgress from "@/components/onboarding/WorkProgress";
 import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
+import { buildStages } from "@/lib/operationStages";
 import ReadCorrection from "@/components/onboarding/ReadCorrection";
 import { loadProfileFacts, type ProfileFacts } from "@/lib/profileFacts";
 import { loadPostProof, type PostProof } from "@/lib/postProof";
@@ -677,6 +677,10 @@ const Onboarding = () => {
   const [visits, setVisits] = useState(0);
   /* step 1 never navigates: it reads in place, then becomes the result card */
   const [step1Phase, setStep1Phase] = useState<"ask" | "reading" | "result">("ask");
+  /* A run boundary is an event, not something inferred from stage names. */
+  const [readRunId, setReadRunId] = useState(0);
+  const [captureRunId, setCaptureRunId] = useState(0);
+  const [revealRunId, setRevealRunId] = useState(0);
   /* the inline confirmation shown for a moment when they choose Finish later */
   const [exitNote, setExitNote] = useState<string>("");
   useEffect(() => {
@@ -1226,6 +1230,7 @@ const Onboarding = () => {
       return;
     }
     setLiBusy(true);
+    setReadRunId((n) => n + 1);
     setStep1Phase("reading");
     try {
       /**
@@ -1480,6 +1485,7 @@ const Onboarding = () => {
     sendingLinkRef.current = false;
     setSendingLink(false);
     if (deferred) {
+      setCaptureRunId((n) => n + 1);
       setCapturePending(true);
       return;
     }
@@ -1662,6 +1668,7 @@ const Onboarding = () => {
 
   /* ── the six questions, then the read ── */
   const finishQuestions = async (finalAnswers: Record<string, string>) => {
+    setRevealRunId((n) => n + 1);
     setRevealPending(true);
     go(12);
     if (!userId) {
@@ -2406,7 +2413,16 @@ const Onboarding = () => {
         {/* The read happens here, in place. Nothing moves while it lands. */}
         {step1Phase === "reading" ? (
           <div style={{ marginBlockStart: 22 }}>
-            <WorkProgress operation="linkedin_read" />
+            <WorkingPanel
+              operation="linkedin_read"
+              runId={readRunId}
+              title="Reading what LinkedIn shows"
+              stages={buildStages("linkedin_read", {
+                completed: readDone ? ["fetch"] : [],
+                active: readDone ? "write" : "fetch",
+              })}
+              onCarryOn={() => go(5)}
+            />
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 14 }}>
               {rows.map((r) => (
                 <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
@@ -2882,10 +2898,11 @@ const Onboarding = () => {
        event of its own, so it is not a step of its own. */
     const fetched = readStep >= 1;
     const found = readStep >= 2 || claims.length > 0;
-    const captureStages: WorkingStage[] = [
-      { key: "fetch", label: "Article fetched", state: fetched ? "done" : "active" },
-      { key: "read", label: "What Aura found in it", state: found ? "done" : fetched ? "active" : "waiting" },
-    ];
+    const captureStages: WorkingStage[] = buildStages("capture_ingest", {
+      completed: [...(fetched ? ["fetch"] : []), ...(found ? ["read"] : [])],
+      active: found ? null : fetched ? "read" : "fetch",
+      labels: { fetch: "Article fetched", read: "What Aura found in it" },
+    });
     const settled = claimsSlow && claims.length === 0;
     content = capturePending ? (
       <NightShell onExit={saveAndExit} footer={escapeFooter}>
@@ -2920,6 +2937,7 @@ const Onboarding = () => {
                 operation="capture_ingest"
                 title="Reading it"
                 stages={captureStages}
+                runId={captureRunId}
                 onCarryOn={{ label: "Carry on — I'll pick this up later", action: () => go(8) }}
               />
             </div>
@@ -3578,9 +3596,10 @@ const Onboarding = () => {
     /* Only the work that actually happened is shown, and a step only ticks on a
        real event. The three reading steps have no event of their own, so they
        stay plain named lines until the read itself lands. */
-    const genStages: WorkingStage[] = [
-      { key: "read", label: "Writing your read", state: revealPending ? "active" : "done" },
-    ];
+    const genStages: WorkingStage[] = buildStages("market_read", {
+      completed: revealPending ? [] : ["gather", "write"],
+      active: revealPending ? "gather" : null,
+    });
     content = (
       <PaperShell onExit={saveAndExit} bead={4} footer={escapeFooter}>
         {!revealPending ? <Confetti /> : null}
@@ -3590,6 +3609,7 @@ const Onboarding = () => {
               operation="market_read"
               title="Writing your read"
               stages={genStages}
+              runId={revealRunId}
             />
           </div>
         ) : null}

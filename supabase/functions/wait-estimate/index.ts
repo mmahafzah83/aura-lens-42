@@ -8,8 +8,8 @@
  * figures per stage.
  *
  * Below ten real runs we do not know, so we say nothing: { insufficient: true }.
- * A stage below ten finished runs is simply not returned; the client prints an
- * em dash rather than a number it cannot defend.
+ * Stages are ALL returned, each with its own sample count, and the client
+ * refuses to draw a percentage unless every stage is well sampled.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 
@@ -125,8 +125,10 @@ Deno.serve(async (req) => {
           sigma_over_mu: Number(sigmaOverMu(vals).toFixed(3)),
           sample: vals.length,
         };
-      })
-      .filter((s) => s.sample >= MIN_SAMPLE);
+      });
+    /* Every stage is returned WITH its sample count. The client decides: if any
+       stage is under-sampled the whole percentage is null, because partial
+       weighting inflates the bar. Filtering here would kill that guard. */
 
     let value: Estimate;
     if (seconds.length < MIN_SAMPLE) {
