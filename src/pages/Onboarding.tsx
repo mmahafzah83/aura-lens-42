@@ -4165,7 +4165,17 @@ const Onboarding = () => {
     );
   }
 
-  /* 13b — WHITE, and only after 13 */
+  /**
+   * 14 — THE LAST MOMENT, AND IT ASKS FOR ONE THING.
+   *
+   * It used to ask four: the daily slot, the accuracy question, the seat, and
+   * the exit. Peak-end says the last moment is half of what is remembered, and
+   * a form is a poor last moment. So: the slot and the exit stay here; the
+   * accuracy question moves to the follow-up email (the read is emailed by
+   * `finish()`, which is a better place to ask whether it was right); the seat
+   * offer gets its own beat, AFTER the journey is already finished, so it can
+   * never compete with finishing.
+   */
   if (screen === 14) {
     content = (
       <PaperShell onExit={saveAndExit} face footer={escapeFooter}>
@@ -4189,34 +4199,47 @@ const Onboarding = () => {
           Your time zone · {timeZone}
         </p>
 
-        {/* 1 · One feedback question */}
-        <div style={{ marginBlockStart: 24 }}>
-          <p style={{ margin: 0, fontFamily: OB.mono, fontSize: 11, letterSpacing: "0.14em", color: OB.muted, textTransform: "uppercase" }}>
-            One question
-          </p>
-          <p style={{ margin: "8px 0 0", fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", color: OB.ink }}>
-            Was that read accurate about you?
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBlockStart: 14 }}>
-            {optionButton("reveal-yes", "Yes, close", () => void handleRevealFeedback(5, revealMessage), revealRating === 5)}
-            {optionButton("reveal-partly", "Partly", () => void handleRevealFeedback(3, revealMessage), revealRating === 3)}
-            {optionButton("reveal-no", "Not really", () => void handleRevealFeedback(1, revealMessage), revealRating === 1)}
-          </div>
-          {revealRating !== null ? (
-            <textarea
-              aria-label="What did it miss? (optional)"
-              value={revealMessage}
-              onChange={(e) => setRevealMessage(e.target.value)}
-              onBlur={() => { if (revealRating !== null && revealMessage.trim()) void handleRevealFeedback(revealRating, revealMessage.trim()); }}
-              placeholder="What did it miss? (optional)"
-              rows={3}
-              style={{ ...fieldStyle, marginBlockStart: 14, resize: "vertical" }}
-            />
-          ) : null}
-        </div>
+        {/* ONE primary. Finishing happens here; nothing is sold beside it. */}
+        <Actions style={{ marginBlockStart: 26 }}>
+          <OBButton
+            loading={finishing}
+            loadingLabel="Finishing…"
+            onClick={async () => {
+              if (finishing) return;
+              setFinishing(true);
+              try {
+                /* Finished first, and staying — the seat beat is a postscript,
+                   never a toll gate in front of Home. */
+                await finish({ stay: true });
+              } catch (e) {
+                console.error("[journey] finish threw", e);
+              } finally {
+                setFinishing(false);
+              }
+              go(SEAT_SCREEN);
+            }}
+          >
+            Take me in
+          </OBButton>
+        </Actions>
+        <p style={{ margin: "10px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted, textAlign: "center" }}>
+          I'll email your read. If it got you wrong, reply to that email and tell me — that's how I learn you.
+        </p>
 
-        {/* 2 · What a seat adds, and what stays out of reach */}
-        <div style={{ marginBlockStart: 28, padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
+        {connected || userId ? null : (
+          <p style={{ ...bodyLight, textAlign: "center" }}>{CONNECT_AFTER_ACCOUNT}</p>
+        )}
+
+        <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
+      </PaperShell>
+    );
+  }
+
+  /* 14.5 — THE SEAT. Its own beat, and the journey is already complete. */
+  if (screen === SEAT_SCREEN) {
+    content = (
+      <PaperShell onExit={() => navigate("/home", { replace: true })} footer={escapeFooter}>
+        <div style={{ padding: 18, borderRadius: RADIUS.card, border: `1px solid ${OB.line}`, background: OB.canvas }}>
           <p style={{ margin: 0, fontSize: "var(--ob-body)", lineHeight: "var(--ob-lh)", fontWeight: 700, color: OB.ink }}>
             {SEAT_HEADING}
           </p>
@@ -4249,19 +4272,14 @@ const Onboarding = () => {
           <p style={{ margin: "4px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.muted }}>{SEAT_PRICE_SUBLINE}</p>
           <p style={{ margin: "8px 0 0", fontSize: "var(--ob-small)", lineHeight: 1.55, color: OB.ink }}>{SEAT_CONSTRAINT}</p>
           <Actions style={{ marginBlockStart: 16 }}>
-            {/* One primary. Both seat doors complete the journey before they
-                leave — a reserved seat used to strand the member on screen 14
-                with no read email and onboarding_step stuck at 3. */}
-            <OBButton onClick={() => void finish()}>Take me in</OBButton>
-            <OBButton
-              variant="secondary"
-              style={{ borderColor: OB.blue, color: OB.blue, background: "#FFFFFF" }}
-              onClick={() => void leaveForSeat("reserve_69")}
-            >
-              {SEAT_CTA}
-            </OBButton>
-            <OBButton variant="tertiary" onClick={() => void leaveForSeat("keep_posted")}>
+            {/* ONE primary — the seat, because the journey is already saved and
+                Home is one quiet control away. */}
+            <OBButton onClick={() => navigate(`${SEAT_PATH}?intent=reserve_69`)}>{SEAT_CTA}</OBButton>
+            <OBButton variant="tertiary" onClick={() => navigate(`${SEAT_PATH}?intent=keep_posted`)}>
               {SEAT_CTA_SECONDARY}
+            </OBButton>
+            <OBButton variant="tertiary" onClick={() => navigate("/home", { replace: true })}>
+              Not now — take me in
             </OBButton>
             {connected || !userId ? null : (
               /* A settings action, dressed as one: quiet, in the same row. */
@@ -4280,16 +4298,11 @@ const Onboarding = () => {
             </p>
           )}
         </div>
-
-
-        {connected || userId ? null : (
-          <p style={{ ...bodyLight, textAlign: "center" }}>{CONNECT_AFTER_ACCOUNT}</p>
-        )}
-
-        <p style={footnote}>Aura publishes only when you approve it. Nothing goes out in your name on its own.</p>
+        <p style={footnote}>You're already in. Your read is saved and your morning is set.</p>
       </PaperShell>
     );
   }
+
 
   return (
     <>
