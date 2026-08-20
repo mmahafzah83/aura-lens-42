@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { OB, reducedMotion } from "@/components/onboarding/tokens";
-import {
-  OVER_P95_LINE, mmss, useElapsed, useWaitEstimate, waitCopy,
-} from "@/lib/waitEstimate";
+import { WorkingPanel } from "@/components/ui/WorkingPanel";
+import { buildStages } from "@/lib/operationStages";
 
 /**
  * The one place a member adds a CV.
@@ -60,79 +59,6 @@ const ghostStyle: React.CSSProperties = {
 
 const helpStyle: React.CSSProperties = { fontSize: 12.5, color: MUTED, marginBlockStart: 8, lineHeight: 1.55 };
 
-/* ── the honest wait ──────────────────────────────────────────────────
-   The client knows two facts: the request left, and the answer came back.
-   So there is no percentage and no tick — none of these four steps has an
-   event of its own, so none of them claims to be finished. What is real is
-   the counter, and an estimate measured from finished cross-checks. */
-
-const WAIT_STEPS = [
-  "Reading your CV",
-  "Pulling your profile and your posts",
-  "Comparing the two",
-  "Checking every number and every claim",
-] as const;
-
-function WaitingPanel() {
-  const reduced = reducedMotion();
-  const secs = useElapsed(true);
-  const est = useWaitEstimate("cv_crosscheck");
-  const over = est.known && secs > est.p95;
-
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      style={{
-        marginBlockStart: 12, border: `1px solid ${RULE}`, borderRadius: 12, padding: 16,
-      }}
-    >
-      {!reduced ? (
-        <>
-          <style>{`@keyframes auraCvSlide{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}`}</style>
-          <div
-            aria-hidden
-            style={{ blockSize: 4, borderRadius: 999, background: "#EAF9F8", overflow: "hidden" }}
-          >
-            <div style={{
-              blockSize: "100%", inlineSize: "34%", borderRadius: 999, background: OB.cyan,
-              animation: "auraCvSlide 1.5s ease-in-out infinite",
-            }} />
-          </div>
-        </>
-      ) : null}
-
-      <p style={{ fontSize: 13.5, color: MUTED, margin: "12px 0 0", lineHeight: 1.55 }}>
-        Aura is working through four things. {waitCopy(est)}
-      </p>
-
-      <ul style={{ listStyle: "none", margin: "10px 0 0", padding: 0, display: "grid", gap: 6 }}>
-        {WAIT_STEPS.map((s) => (
-          <li
-            key={s}
-            style={{
-              fontSize: 14,
-              lineHeight: 1.5,
-              color: MUTED,
-              fontWeight: 400,
-            }}
-          >
-            {s}
-          </li>
-        ))}
-      </ul>
-
-      <p style={{ fontFamily: OB.mono, fontSize: 13, color: MUTED, margin: "12px 0 0", fontVariantNumeric: "tabular-nums" }}>
-        {mmss(secs)}
-      </p>
-
-      {over ? (
-        <p style={{ ...helpStyle, marginBlockStart: 6 }}>{OVER_P95_LINE}</p>
-      ) : null}
-    </div>
-  );
-}
-
 type Failure =
   | { kind: "no_cv" }
   | { kind: "no_snapshot" }
@@ -168,6 +94,9 @@ export default function CvUploadControl({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [comparing, setComparing] = useState(false);
+  /* A run boundary is an event. Every comparison gets its own id, so the bar
+     and the counter start from nothing rather than from the last run. */
+  const [runId, setRunId] = useState(0);
 
   useEffect(() => { try { localStorage.setItem(PURPOSE_KEY, purpose); } catch { /* ignore */ } }, [purpose]);
 
@@ -190,6 +119,7 @@ export default function CvUploadControl({
 
   const runCrosscheck = useCallback(async () => {
     setFailure(null);
+    setRunId((n) => n + 1);
     setComparing(true);
     try {
       const { data, error } = await supabase.functions.invoke("cv-crosscheck", {
@@ -349,7 +279,16 @@ export default function CvUploadControl({
             <button type="button" onClick={pick} style={{ ...ghostStyle, minInlineSize: 44 }}>Replace</button>
           ) : null}
         </div>
-        {comparing ? <WaitingPanel /> : null}
+        {comparing ? (
+          <div style={{ marginBlockStart: 12 }}>
+            <WorkingPanel
+              operation="cv_crosscheck"
+              runId={runId}
+              title="Reading it against your profile"
+              stages={buildStages("cv_crosscheck", { completed: [], active: "extract" })}
+            />
+          </div>
+        ) : null}
         </>
       ) : (
         <>
