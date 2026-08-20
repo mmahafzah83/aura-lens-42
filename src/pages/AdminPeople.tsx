@@ -295,6 +295,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     </div>
   );
 }
+type Attribution = { total: number; member: number; aura: number; machine: number; unknown: number };
+
+/** Counts read as numbers, not decoration: tabular mono, never colour-only. */
+const Num = ({ n }: { n: number }) => (
+  <span style={{ fontFamily: "'IBM Plex Mono', ui-monospace, monospace", fontVariantNumeric: "tabular-nums" }}>
+    {n.toLocaleString()}
+  </span>
+);
+
 
 export default function AdminPeople() {
   const [loading, setLoading] = useState(true);
