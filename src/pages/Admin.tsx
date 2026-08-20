@@ -1213,7 +1213,7 @@ export default function Admin() {
               <Chip tone={liveliness.tone} title={liveliness.note}>
                 {liveliness.text} · {liveliness.note}
               </Chip>
-              <Btn onClick={refresh} disabled={refreshing}>
+              <Btn tone="ox" onClick={refresh} disabled={refreshing}>
                 {refreshing ? "Refreshing…" : "Refresh now"}
               </Btn>
             </div>
