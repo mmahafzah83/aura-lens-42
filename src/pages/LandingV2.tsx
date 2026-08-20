@@ -976,7 +976,7 @@ const LANDING_V2_HTML = `
     <details><summary>Will it sound like AI?</summary><p>It learns from what you have already written — how you open, how long your sentences run, how you land a point. And it deletes its own drafts that do not pass as you, before you ever see them. If one still gets through, you say so, and it learns.</p></details>
     <details><summary>How many posts will I get?</summary><p>As many as you want. There is no weekly quota. Save two articles and you can publish two posts; save ten and you can publish ten. It follows your reading, not a calendar.</p></details>
     <details><summary>Do I need a designer for the carousels?</summary><p>No. Aura designs them for you, ready to post — no design tool, no design skill, no fee.</p></details>
-    <details><summary>Will the posts really sound like me?</summary><p>Aura learns from your own posts: how you open, how you explain, how you finish. And you read every word before anything goes out.</p></details>
+    
     <details><summary>Does it work in Arabic?</summary><p>Yes. Arabic is written as Arabic and English as English. One is never a translation of the other.</p></details>
     <details><summary>Who owns what I save?</summary><p>You do. Your articles, your notes, your posts. We never use your work to help anyone else.</p></details>
     <details><summary>What does “free” mean exactly?</summary><p>Your report is free permanently — not a trial. The part that runs every night, writing and designing while you sleep, is ${SEAT_PRICE}. A founding seat locks that price for as long as you keep it, and I onboard you personally. ${SEAT_NO_CARD}</p></details>
