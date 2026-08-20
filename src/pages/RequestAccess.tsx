@@ -628,9 +628,6 @@ const RA_CSS = `
   font-size:14px;line-height:1.55;color:var(--n700);}
 .ra-worth textarea{resize:vertical;}
 @media (max-width:520px){.ra-doors{grid-template-columns:1fr;}}
-.ra-signin{text-align:center;margin-top:22px;padding-top:20px;border-top:1px solid var(--n200);
-  font-size:14.5px;color:var(--n500);}
-.ra-signin a{color:var(--act);font-weight:600;}
 
 .ra-ceremony{text-align:center;padding:8px 0;}
 .ra-mk{display:flex;justify-content:center;margin-bottom:22px;}
