@@ -20,7 +20,8 @@ export type WaitOperation =
   | "capture_ingest"
   | "studio_generate"
   | "studio_slides"
-  | "studio_export";
+  | "studio_export"
+  | "studio_publish";
 
 /** One measured stage of an operation. Milliseconds, from finished runs. */
 export interface StageTiming {

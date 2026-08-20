@@ -19,6 +19,7 @@ export type OperationName =
   | "studio_generate"
   | "studio_slides"
   | "studio_export"
+  | "studio_publish"
   | "article_ingest";
 
 

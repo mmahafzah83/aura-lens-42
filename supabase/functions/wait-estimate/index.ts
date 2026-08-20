@@ -27,6 +27,7 @@ const OPERATIONS = new Set([
   "studio_generate",
   "studio_slides",
   "studio_export",
+  "studio_publish",
 ]);
 const MIN_SAMPLE = 10;
 const TTL_MS = 10 * 60 * 1000;
