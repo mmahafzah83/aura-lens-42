@@ -20,7 +20,7 @@ const PROFILE_ACTOR = "harvestapi~linkedin-profile-scraper";
 const POSTS_ACTOR = "harvestapi~linkedin-profile-posts";
 const MAX_POSTS = 20;
 /** Bumped whenever the read prompt changes; older cached rows regenerate. */
-const READ_VERSION = 2;
+const READ_VERSION = 3;
 /** A read older than this is always regenerated. */
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -441,6 +441,55 @@ Deno.serve(async (req) => {
     const education = pickArray(item, ["education", "educations", "schools"]) ?? [];
     const skills = pickArray(item, ["skills", "topSkills"]) ?? [];
     const certifications = pickArray(item, ["certifications", "certificates", "licenses"]) ?? [];
+    const projects = pickArray(item, ["projects"]) ?? [];
+    const recommendations = pickArray(item, ["receivedRecommendations", "recommendations"]) ?? [];
+    const registeredAt = pickText(item, ["registeredAt", "registered_at", "joinedAt"]);
+
+    /**
+     * THE RECORD, NOT ONLY THE READ.
+     *
+     * The model returns seven sentences; the profile behind them is fetched
+     * here and thrown away everywhere else, which left the anonymous member's
+     * "What Aura found in your record" card empty. These are the same fields
+     * the signed-in path reads out of `linkedin_profile_snapshots.raw`, cut to
+     * what screen 1 actually renders. Stored inside `read` so the cache path
+     * serves them too.
+     */
+    const skillNames = skills
+      .map((s: any) => (typeof s === "string" ? s : String(s?.name ?? "")).trim())
+      .filter(Boolean);
+    const recQuote = (() => {
+      for (const r of recommendations as any[]) {
+        const body = String(r?.description ?? r?.text ?? "").replace(/\s+/g, " ").trim();
+        const title = String(r?.givenByHeadline ?? r?.headline ?? "").split("|")[0].trim().slice(0, 90);
+        const parts = (body.match(/[^.!?]+[.!?]/g) || []).map((x: string) => x.trim());
+        for (let i = 0; i < parts.length; i++) {
+          const two = parts[i + 1] ? `${parts[i]} ${parts[i + 1]}` : null;
+          const pick = two && two.length >= 80 && two.length <= 300
+            ? two
+            : (parts[i].length >= 60 && parts[i].length <= 300 ? parts[i] : null);
+          if (pick && title) return { text: pick, title };
+        }
+      }
+      return null;
+    })();
+    const rawFacts = {
+      about: about ?? null,
+      location: location ?? null,
+      followers: followers ?? null,
+      registeredAt: registeredAt ?? null,
+      experience: experience.slice(0, 12).map((e: any) => ({
+        position: String(e?.position ?? e?.title ?? "").trim() || null,
+        companyName: String(e?.companyName ?? e?.company ?? "").trim() || null,
+      })),
+      roles_count: experience.length,
+      skills_count: skillNames.length,
+      topSkills: skillNames.slice(0, 5),
+      certifications_count: certifications.length,
+      projects_count: projects.length,
+      recommendations_count: recommendations.length,
+      recommendation_quote: recQuote,
+    };
 
     // --- e) Sparse mode ---
     const sparse = (!about && experience.length < 2) || postTexts.length === 0;
@@ -554,6 +603,8 @@ Deno.serve(async (req) => {
     }
 
     // --- 4) Cache and return ---
+    /* The read the client receives carries the record it was drawn from. */
+    read = { ...read, raw: rawFacts };
     const generated_at = new Date().toISOString();
     const { error: upErr } = await admin
       .from("mirror_reads")
