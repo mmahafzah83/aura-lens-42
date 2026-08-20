@@ -968,7 +968,8 @@ const LANDING_V2_HTML = `
 <section class="pg" id="faq">
   <div class="hdr">
     <span class="tag">Answered straight</span>
-    <h2>What people ask<br>before joining.</h2>
+    <h2>What people ask<br><span class="grad">before joining.</span></h2>
+    <p class="sub">No hedging and no small print. Where the answer is no, it says no.</p>
   </div>
   <div style="max-width:760px;margin:0 auto">
     <details open><summary>How much of my time does this take?</summary><p>${ASSESSMENT_QUESTIONS_PHRASE.replace(/^./, (c) => c.toUpperCase())} once at the start. After that, one tap when you read something good, and about two minutes to approve a post. Nothing more.</p></details>
