@@ -46,7 +46,7 @@ export type Beat = 1 | 2 | 3;
  * and the caller's global fraction is computed against the same numbers, so a
  * fill can never land outside the segment its label claims.
  */
-export const BEAT_WEIGHTS: [number, number, number] = [3 / 51, 44 / 51, 4 / 51];
+export const BEAT_WEIGHTS: [number, number, number] = [3 / 53.5, 45 / 53.5, 5.5 / 53.5];
 /** Cumulative boundaries: [0, end of beat 1, end of beat 2, 1]. */
 export const BEAT_BOUNDS: [number, number, number, number] = [
   0,
