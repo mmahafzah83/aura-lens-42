@@ -531,6 +531,9 @@ const Onboarding = () => {
 
   /* screen 9 */
   const [dims, setDims] = useState<Dimension[] | null>(null);
+  /** The profile the work in state was built from. A different subject makes
+   *  every downstream answer someone else's. */
+  const subjectRef = useRef<string | null>(null);
   const [dimIdx, setDimIdx] = useState(0);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [contentError, setContentError] = useState(false);
@@ -1084,7 +1087,7 @@ const Onboarding = () => {
         if (Array.isArray(st.capture_fragments) && st.capture_fragments.length) {
           setClaims(st.capture_fragments as Claim[]);
         }
-        if (st.profile_url) setLiInput(st.profile_url);
+        if (st.profile_url) { setLiInput(st.profile_url); subjectRef.current = normaliseLinkedIn(st.profile_url); }
         /* The quick read already happened at /assessment — never ask twice. */
         if (st.read) {
           setStep1Phase("result");
@@ -1246,7 +1249,7 @@ const Onboarding = () => {
       if (resume <= CV_SCREEN) {
         try {
           const addr = await loadLinkedInAddress(uid);
-          if (addr.profileUrl) setLiInput(addr.profileUrl);
+          if (addr.profileUrl) { setLiInput(addr.profileUrl); subjectRef.current = normaliseLinkedIn(addr.profileUrl); }
           /* NEVER ASK TWICE. read_done is the one readiness flag in the flow;
              a mirror_reads row for the same address proves the same thing when
              the flag predates it. Pre-filling the field was not enough — a
@@ -1343,6 +1346,22 @@ const Onboarding = () => {
       if ((data as any)?.error) throw new Error(String((data as any).error));
       const prof: any = (data as any)?.profile ?? data;
       setLiProfile(prof);
+
+      /* A DIFFERENT SUBJECT MAKES THE OLD WORK SOMEONE ELSE'S. Reading a new
+         profile mid-journey used to leave the previous person's strengths,
+         answers and read sitting in state and on the row. */
+      if (subjectRef.current && subjectRef.current !== profile_url) {
+        const hadWork = Object.keys(scores).length > 0 || Object.keys(answers).length > 0 || !!reveal;
+        setScores({}); setAnswers({}); setReveal(null); setDimIdx(0); setQIdx(0);
+        setClaims([]);
+        try { localStorage.removeItem(`aura_ob_dim_${userId}`); localStorage.removeItem(`aura_ob_q_${userId}`); } catch { /* ignore */ }
+        await writeProfile({
+          brand_assessment_answers: null, answered_band: null,
+          skill_ratings: null, audit_results: null,
+        }, "subject change reset");
+        if (hadWork) toast("That's a different profile — Aura has cleared the strengths and answers from the last one.");
+      }
+      subjectRef.current = profile_url;
 
       const readSector = String(prof?.sector || prof?.industry || "").trim();
       // The read first; failing that, what the headline, skills and about say.
