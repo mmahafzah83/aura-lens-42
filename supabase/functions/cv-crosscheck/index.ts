@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
+import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, type RunHandle } from "../_shared/operationRun.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { findUserIdByEmail } from "../_shared/findUserByEmail.ts";
@@ -186,7 +187,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
     });
   } catch (e) { console.error("[cv-crosscheck] run start failed:", (e as Error)?.message); }
   /* Stage one opens: reading the file and the profile snapshot. */
-  run?.mark("extract");
+  run?.mark(OPERATION_STAGES.cv_crosscheck[0]);
   const finish = async (outcome: "ok" | "refused" | "failed", reason_code?: string) => {
     try { await run?.finish({ outcome, reason_code: reason_code ?? null }); }
     catch (e) { console.error("[cv-crosscheck] run finish failed:", (e as Error)?.message); }
@@ -465,7 +466,7 @@ Rules you will be checked on after you answer: exactly one finding has do_first 
   });
 
   /* Stage two opens: the model comparing the CV against the profile. */
-  run?.mark("compare");
+  run?.mark(OPERATION_STAGES.cv_crosscheck[1]);
   const runOnce = async (prompt: string) => {
     const resp = await callAnthropic(prompt);
     const rawBody = await resp.text();
