@@ -11,25 +11,25 @@ test.describe("landing", () => {
 
     // The seat price. The landing repeats it in the price card, the timeline
     // and the questions, so what must be single is the *figure*: one price,
-    // $69, and no second figure competing with it.
+    // $35, and no second figure competing with it.
     const prices = await page.evaluate(() => {
       const text = document.body.textContent || "";
       const hits = text.match(/\$\d[\d,]*/g) || [];
       return {
-        sixtyNine: hits.filter((h) => h === "$69").length,
+        thirtyFive: hits.filter((h) => h === "$35").length,
         // Market comparison figures may appear alongside; only one paid headline price.
         distinct: Array.from(new Set(hits)),
       };
     });
-    expect(prices.sixtyNine, "the $69 seat price must be stated").toBeGreaterThan(0);
+    expect(prices.thirtyFive, "the $35 seat price must be stated").toBeGreaterThan(0);
 
-    // The headline price node says it once, and says $69.
+    // The headline price node says it once, and says $35.
     // The headline price nodes: the free read, and exactly one paid figure.
     const headline = await page.locator(".prc .p").allTextContents();
     expect(headline.length, "the landing states a headline price").toBeGreaterThan(0);
     const paid = headline.filter((t) => /\$/.test(t));
     expect(paid.length, "exactly one paid headline price").toBe(1);
-    expect(paid[0]).toContain("$69");
+    expect(paid[0]).toContain("$35");
 
     // D100 — no strikethrough price anywhere.
     const struck = await page.evaluate(() => {
