@@ -13,6 +13,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { callAI } from "../_shared/ai-router.ts";
 import { withObserve } from "../_shared/observe.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
+import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,6 +45,15 @@ function titleFromHtml(html: string): string | null {
 
 Deno.serve(withObserve("onboarding-read-link", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  /* The two stages a member watching this actually waits on. */
+  const [FETCH, READ] = OPERATION_STAGES.capture_ingest;
+  let run: RunHandle | null = null;
+  const closeRun = async (outcome: "ok" | "refused" | "failed", reason?: string) => {
+    try { await run?.finish({ outcome, reason_code: reason ?? null }); }
+    catch (e) { console.error("[onboarding-read-link] run finish failed:", (e as Error)?.message); }
+    run = null;
+  };
 
   try {
     const body = await req.json().catch(() => ({} as any));
@@ -76,6 +87,14 @@ Deno.serve(withObserve("onboarding-read-link", async (req) => {
       .maybeSingle();
     if (!sess) return json({ ok: false, reason: "no_session" }, 200);
 
+    run = await startRun(svc, {
+      id: runIdFrom(body),
+      operation: "capture_ingest",
+      anon_token: token,
+      meta: { host },
+    });
+    run.mark(FETCH);
+
     /* ── read the page ── */
     let pageText = "";
     let pageTitle: string | null = typeof body?.title === "string" ? body.title : null;
@@ -98,8 +117,10 @@ Deno.serve(withObserve("onboarding-read-link", async (req) => {
     } catch { /* fall through — handled below */ }
 
     if (pageText.length < 400 && !body?.summary) {
+      await closeRun("failed", "unreadable");
       return json({ ok: false, reason: "unreadable" }, 200);
     }
+    run.mark(READ);
 
     const state = ((sess as any).state ?? {}) as Record<string, any>;
 
@@ -137,7 +158,10 @@ Deno.serve(withObserve("onboarding-read-link", async (req) => {
       console.error("[onboarding-read-link] extraction failed:", (e as Error)?.message);
     }
 
-    if (fragments.length === 0) return json({ ok: false, reason: "unreadable" }, 200);
+    if (fragments.length === 0) {
+      await closeRun("failed", "unreadable");
+      return json({ ok: false, reason: "unreadable" }, 200);
+    }
 
     /* Keep them on the session so a reload does not lose the payoff. */
     try {
@@ -152,8 +176,13 @@ Deno.serve(withObserve("onboarding-read-link", async (req) => {
         .eq("token", token);
     } catch { /* the fragments still go back in the response */ }
 
+    await closeRun("ok");
     return json({ ok: true, fragments, title: pageTitle });
   } catch (err: any) {
     return json({ ok: false, reason: "error", message: err?.message }, 200);
+  } finally {
+    /* Structure, not discipline: `finish()` is idempotent, so an exit nobody
+       thought of can never leave a run open. */
+    await closeRun("failed", "unclosed");
   }
 }));

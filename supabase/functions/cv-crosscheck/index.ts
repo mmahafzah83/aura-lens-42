@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { withObserve, logEfError } from "../_shared/observe.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { findUserIdByEmail } from "../_shared/findUserByEmail.ts";
 import { hasBanned, loadBannedWords } from "../_shared/bannedWords.ts";
@@ -180,6 +180,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
   let run: RunHandle | null = null;
   try {
     run = await startRun(admin, {
+      id: runIdFrom(body),
       operation: "cv_crosscheck",
       user_id: callerId || null,
       anon_token: anonToken || null,

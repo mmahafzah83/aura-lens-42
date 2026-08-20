@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {
@@ -38,7 +38,8 @@ serve(async (req) => {
     }
     const userId = user.id;
     const admin = createClient(supabaseUrl, serviceKey);
-    run = await startRun(admin, { operation: "market_read", user_id: userId });
+    const body = await req.json().catch(() => ({}));
+    run = await startRun(admin, { id: runIdFrom(body), operation: "market_read", user_id: userId });
     run.mark(GATHER);
 
     // Rate limit: once per 7 days

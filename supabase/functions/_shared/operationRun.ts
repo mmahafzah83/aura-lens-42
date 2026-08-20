@@ -11,22 +11,26 @@
  */
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 
-export type OperationName =
-  | "linkedin_read"
-  | "cv_crosscheck"
-  | "market_read"
-  | "capture_ingest"
-  | "studio_generate"
-  | "studio_slides"
-  | "studio_export"
-  | "studio_publish"
-  | "article_ingest";
+import { OPERATION_STAGES, type InstrumentedOperation } from "./stageKeys.ts";
 
+/**
+ * The ONE list of operation names. Derived from the stage definition so a name
+ * that has no measurable stages cannot be recorded at all.
+ */
+export type OperationName = InstrumentedOperation;
+
+export const OPERATION_NAMES = Object.keys(OPERATION_STAGES) as OperationName[];
 
 export type Outcome = "ok" | "refused" | "failed";
 
 export interface RunStart {
   operation: OperationName;
+  /**
+   * The run id, minted by the CLIENT and passed in the request, so the tab can
+   * subscribe to its own run BEFORE the work starts. Omitted (server-minted)
+   * for background work nobody is watching.
+   */
+  id?: string | null;
   attempt?: number;
   user_id?: string | null;
   anon_token?: string | null;
@@ -45,13 +49,15 @@ export interface RunEnd {
 export interface RunHandle {
   id: string | null;
   /**
-   * Close the stage that was running and open this one. The last open stage
-   * is closed by `finish`. Stage durations are what the waiting screens weight
-   * their percentage by, so they are measured here and nowhere else.
+   * Close the stage that was running and open this one — AND WRITE IT DOWN.
+   * The row is updated on every boundary, because a stage list that only
+   * materialises at `finish()` cannot be watched while the work is happening,
+   * and is lost entirely if the function is killed by the wall clock.
    */
   mark: (stageKey: string) => void;
   finish: (end: RunEnd) => Promise<void>;
 }
+
 
 
 function adminClient(client?: SupabaseClient): SupabaseClient {
@@ -71,6 +77,7 @@ export async function startRun(
     const { data, error } = await admin
       .from("operation_runs")
       .insert({
+        ...(start.id ? { id: start.id } : {}),
         operation: start.operation,
         started_at: new Date().toISOString(),
         attempt: start.attempt ?? 1,
@@ -88,13 +95,36 @@ export async function startRun(
   }
 
   let done = false;
-  const stages: { key: string; ms: number }[] = [];
+  /** A closed stage carries its milliseconds; the OPEN stage carries null. */
+  const stages: { key: string; ms: number | null }[] = [];
   let openKey: string | null = null;
   let openAt = Date.now();
   const closeOpen = () => {
     if (openKey === null) return;
-    stages.push({ key: openKey, ms: Math.max(1, Date.now() - openAt) });
+    const row = stages[stages.length - 1];
+    if (row && row.key === openKey && row.ms === null) row.ms = Math.max(1, Date.now() - openAt);
+    else stages.push({ key: openKey, ms: Math.max(1, Date.now() - openAt) });
     openKey = null;
+  };
+
+  /* Writes are chained so two marks in the same tick cannot land out of order.
+     A failed write is logged and never propagated: recording must not break
+     the thing it records. */
+  let chain: Promise<void> = Promise.resolve();
+  const persistStages = () => {
+    if (!id) return;
+    const snapshot = stages.map((s) => ({ ...s }));
+    chain = chain.then(async () => {
+      try {
+        const { error } = await admin
+          .from("operation_runs")
+          .update({ stages: snapshot })
+          .eq("id", id);
+        if (error) throw error;
+      } catch (e) {
+        console.error("[operation_runs] mark failed (non-blocking):", (e as Error)?.message ?? e);
+      }
+    });
   };
 
   return {
@@ -103,12 +133,17 @@ export async function startRun(
       closeOpen();
       openKey = stageKey;
       openAt = Date.now();
+      stages.push({ key: stageKey, ms: null });
+      /* THE WRITE. Every boundary lands in the row, mid-run, so the tab
+         watching this operation sees the tick the moment it happens. */
+      persistStages();
     },
     async finish(end: RunEnd) {
       if (done || !id) return;
       done = true;
       closeOpen();
       try {
+        await chain;
         const patch: Record<string, unknown> = {
           finished_at: new Date().toISOString(),
           outcome: end.outcome,
@@ -124,5 +159,17 @@ export async function startRun(
       }
 
     },
+
   } as RunHandle;
 }
+
+/**
+ * The run id the CLIENT minted, if it sent one. A tab that mints its own id can
+ * subscribe to the run before invoking, so the first mark is never missed.
+ */
+export const runIdFrom = (body: unknown): string | null => {
+  const v = (body as { run_id?: unknown } | null | undefined)?.run_id;
+  return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+    ? v
+    : null;
+};

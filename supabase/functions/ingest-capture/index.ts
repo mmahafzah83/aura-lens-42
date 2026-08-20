@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { withObserve } from "../_shared/observe.ts";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {
@@ -92,10 +92,10 @@ Deno.serve(withObserve("ingest-capture", async (req) => {
       });
     }
 
-    run = await startRun(supabase, { operation: "capture_ingest", user_id: user.id });
+    const body = await req.json();
+    run = await startRun(supabase, { id: runIdFrom(body), operation: "capture_ingest", user_id: user.id });
     run.mark(FETCH);
 
-    const body = await req.json();
     const { type, content, metadata, source_url } = body;
 
     if (!type || !content) {

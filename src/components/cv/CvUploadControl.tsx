@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
-import { buildStages } from "@/lib/operationStages";
+import { useRunStages, newRunId } from "@/lib/useRunStages";
 
 /**
  * The one place a member adds a CV.
@@ -93,9 +93,11 @@ export default function CvUploadControl({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [comparing, setComparing] = useState(false);
-  /* A run boundary is an event. Every comparison gets its own id, so the bar
-     and the counter start from nothing rather than from the last run. */
-  const [runId, setRunId] = useState(0);
+  /* A run boundary is an event. The id is minted HERE, before the function is
+     asked to do anything, so the tick channel is open before the first stage
+     mark lands, and the bar and counter start from nothing each run. */
+  const [runId, setRunId] = useState<string | null>(null);
+  const run = useRunStages("cv_crosscheck", runId, { active: comparing, anonToken });
 
   useEffect(() => { try { localStorage.setItem(PURPOSE_KEY, purpose); } catch { /* ignore */ } }, [purpose]);
 
@@ -118,11 +120,12 @@ export default function CvUploadControl({
 
   const runCrosscheck = useCallback(async () => {
     setFailure(null);
-    setRunId((n) => n + 1);
+    const id = newRunId();
+    setRunId(id);
     setComparing(true);
     try {
       const { data, error } = await supabase.functions.invoke("cv-crosscheck", {
-        body: { purpose },
+        body: { purpose, run_id: id },
       });
       if (error) { setFailure({ kind: "server" }); return; }
       const res = data as { ok?: boolean; crosscheck?: unknown; reason?: string } | null;
@@ -161,6 +164,8 @@ export default function CvUploadControl({
     if (!anonToken) { setUploadError("Aura needs to read your profile first."); return; }
     setUploadError(null);
     setFailure(null);
+    const id = newRunId();
+    setRunId(id);
     /* The accepted-file row must be on screen for the whole wait, not after it. */
     setFileName(file.name);
     setBusy(true);
@@ -183,6 +188,7 @@ export default function CvUploadControl({
       const { data, error } = await supabase.functions.invoke("cv-crosscheck", {
         body: {
           anon_token: anonToken,
+          run_id: id,
           purpose,
           ...(cvText ? { cvText } : { cv_file: { mime: file.type, name: file.name, base64 } }),
         },
@@ -284,7 +290,7 @@ export default function CvUploadControl({
               operation="cv_crosscheck"
               runId={runId}
               title="Reading it against your profile"
-              stages={buildStages("cv_crosscheck", { completed: [], active: "extract" })}
+              stages={run.stages}
             />
           </div>
         ) : null}

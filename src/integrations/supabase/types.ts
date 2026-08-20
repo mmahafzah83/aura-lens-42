@@ -6349,6 +6349,10 @@ export type Database = {
           state: Json
         }[]
       }
+      get_run_stages: {
+        Args: { p_anon_token?: string; p_run_id: string }
+        Returns: Json
+      }
       get_shared_read: {
         Args: { p_token: string }
         Returns: {

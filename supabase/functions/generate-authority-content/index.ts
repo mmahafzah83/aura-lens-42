@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY, DEFAULT_REGISTER_EN, DEFAULT_REGISTER_AR } from "../_shared/contentDNA.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { sanitizeStyleFields, pickEnding, ENDING_DIRECTIVE_EN, ENDING_DIRECTIVE_AR, endingShapeOk } from "../_shared/voiceStyle.ts";
 import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGuard.ts";
@@ -487,7 +487,7 @@ serve(withObserve("generate-authority-content", async (req) => {
       : (storedRegister && !registerIsArabic ? storedRegister : DEFAULT_REGISTER_EN);
 
     if (action === "generate_content") {
-      run = await startRun(undefined, { operation: "studio_generate", user_id: effectiveUserId });
+      run = await startRun(undefined, { id: runIdFrom(params), operation: "studio_generate", user_id: effectiveUserId });
       run.mark(GATHER);
       const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme, signal_id, post_id } = params;
       // A verdict must be joinable to the post it judged, whenever the caller
@@ -1716,5 +1716,11 @@ ${insightsSummary}`
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  } finally {
+    /* STRUCTURE, NOT DISCIPLINE. Every exit closes the run; `finish()` is
+       idempotent, so a run already closed above pays nothing here, and an exit
+       nobody thought of can no longer leave a run open forever. */
+    await closeRun("failed", "unclosed");
   }
 }));
+

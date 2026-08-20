@@ -6,7 +6,7 @@ import { logError } from "../_shared/logError.ts";
 import { BRAND_ASSESSMENT_SYSTEM_PROMPT } from "../_shared/brandAssessmentPrompt.ts";
 import { buildReadEvidence } from "../_shared/readEvidence.ts";
 import { LIMITS, QUEUE_MESSAGE } from "../_shared/limits.ts";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 
 const corsHeaders = {
@@ -34,7 +34,8 @@ serve(withObserve("brand-assessment", async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { answers, auditScores, sector, band } = await req.json();
+    const body = await req.json();
+    const { answers, auditScores, sector, band } = body;
 
     // Read the member's own material so the report is written from it, not from answers alone.
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -43,6 +44,7 @@ serve(withObserve("brand-assessment", async (req) => {
     /* One run row per report generation. Today a failed report leaves no
        record anywhere; this is that record. */
     const run: RunHandle = await startRun(admin, {
+      id: runIdFrom(body),
       operation: "market_read",
       user_id: uid,
       meta: { sector: sector ?? null, band: band ?? null },

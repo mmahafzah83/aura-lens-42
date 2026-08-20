@@ -9,7 +9,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
-import { startRun, type RunHandle } from "../_shared/operationRun.ts";
+import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -361,7 +361,12 @@ Deno.serve(async (req) => {
     if ((count ?? 0) >= 5) return serveStale() ?? json({ error: "rate_limited" }, 429);
 
     run = await startRun(admin, {
+      id: runIdFrom(body),
       operation: "linkedin_read",
+      /* The tab watching this run needs a claim on it: a signed-in member has
+         none here (this is the public engine), so the anonymous session token
+         is what the tick channel reads by. */
+      anon_token: typeof body?.anon_token === "string" ? body.anon_token : null,
       fingerprint_hash: ip_hash,
       meta: { handle, force, regenerating: !!cached },
     });
