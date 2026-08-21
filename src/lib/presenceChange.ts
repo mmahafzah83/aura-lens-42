@@ -51,13 +51,16 @@ export interface PresenceChangeInput {
   previousSum: number;
   currentWord: string;
   previousWord: string;
+  /** Formatted date of the snapshot being compared against — the baseline may
+   *  not be the immediately preceding read, so the line names it. */
+  baselineDate?: string | null;
   /** Set only when the top subject's match state actually moved. */
   themeMove?: { theme: string; from: string; to: string } | null;
 }
 
 /** Empty array means: render nothing at all. */
 export function buildPresenceChange(input: PresenceChangeInput): ChangeSegment[] {
-  const { currentRows, previousRows, currentSum, previousSum, currentWord, previousWord, themeMove } = input;
+  const { currentRows, previousRows, currentSum, previousSum, currentWord, previousWord, themeMove, baselineDate } = input;
 
   const prevByKey = new Map(previousRows.map((r) => [r.key, r]));
   const fieldChanges: { weight: number; size: number; segments: ChangeSegment[] }[] = [];
@@ -102,13 +105,17 @@ export function buildPresenceChange(input: PresenceChangeInput): ChangeSegment[]
 
   const out: ChangeSegment[] = [];
   if (parts.length > 0) {
-    out.push({ text: "Since your last read: " });
-    parts.forEach((p, i) => {
+    if (baselineDate) {
+      out.push({ text: "Since your read on " }, { text: baselineDate, mono: true }, { text: ": " });
+    } else {
+      out.push({ text: "Since your last read: " });
+    }
+    parts.forEach((p) => {
       out.push(...p);
-      out.push({ text: i === parts.length - 1 && hidden <= 0 ? ". " : ". " });
+      out.push({ text: ". " });
     });
     if (hidden > 0) {
-      out.push({ text: "And " }, { text: String(hidden), mono: true }, { text: hidden === 1 ? " more. " : " more. " });
+      out.push({ text: "And " }, { text: String(hidden), mono: true }, { text: " more. " });
     }
   }
 

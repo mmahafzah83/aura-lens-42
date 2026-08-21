@@ -104,6 +104,33 @@ function formatReadDate(iso: string | null): string | null {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** Same shape, plus the clock time — used when two stored reads share a day,
+ *  so the change line can never point at two rows that look identical. */
+function formatReadDateTime(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const day = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return `${day} ${time}`;
+}
+
+const calendarDay = (iso: string | null): string => (iso ? new Date(iso).toDateString() : "");
+
+/** Everything the change line can possibly report: the scored facts and scores
+ *  buildPresenceChange diffs, plus the theme haystacks. Two reads with the same
+ *  fingerprint have nothing to say to each other. */
+function scoredFingerprint(s: unknown): string {
+  const rows = scorePresence(s as never)
+    .map((r) => `${r.key}:${r.fact}:${r.score}`)
+    .join("|");
+  const hay = buildHaystacks(s as never)
+    .map((h) => `${h.field}:${h.text}`)
+    .join("|");
+  return `${rows}||${hay}`;
+}
+
+
 interface Snapshot {
   full_name: string | null;
   headline: string | null;
@@ -140,8 +167,10 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  /* The read before this one. Kept only to say what moved. */
-  const [previousSnapshot, setPreviousSnapshot] = useState<Snapshot | null>(null);
+  /* Every stored read, newest first. Used only to find the most recent
+     MATERIALLY DIFFERENT read to compare against — a duplicate read must not
+     erase the payoff. */
+  const [history, setHistory] = useState<Snapshot[]>([]);
   const [postsWithText, setPostsWithText] = useState<number | null>(null);
   const [themes, setThemes] = useState<{ theme: string; count: number }[]>([]);
   const [totalThemes, setTotalThemes] = useState(0);
@@ -163,7 +192,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     const [snapRes, postsRes, signalsRes, profRes, appliedRes] = await Promise.all([
       supabase.from("linkedin_profile_snapshots")
         .select("full_name,headline,about,photo_url,location,followers,connections,experience,education,skills,fetched_at")
-        .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(2),
+        .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(20),
       supabase.from("linkedin_posts").select("id", { count: "exact", head: true })
         .eq("user_id", userId).not("post_text", "is", null).neq("post_text", ""),
       supabase.from("strategic_signals").select("theme_tags").eq("user_id", userId).limit(500),
@@ -172,7 +201,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     ]);
 
     setSnapshot(((snapRes.data as Snapshot[] | null)?.[0]) ?? null);
-    setPreviousSnapshot(((snapRes.data as Snapshot[] | null)?.[1]) ?? null);
+    setHistory((snapRes.data as Snapshot[] | null) ?? []);
     setPostsWithText(typeof postsRes.count === "number" ? postsRes.count : null);
     setAvatarUrl(((profRes.data as { avatar_url: string | null } | null)?.avatar_url) ?? null);
 
@@ -222,14 +251,35 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     () => themes.map((t) => ({ ...t, match: matchTheme(haystacks, t.theme) as ThemeMatch })),
     [themes, haystacks],
   );
-  /* Same pure function, the earlier snapshot. Nothing else reads these. */
+  /* The baseline is the most recent read whose SCORED FACTS differ from this
+     one — pressing "Read again" on an unchanged profile must not wipe out the
+     movement the member earned on an earlier read. */
+  const baseline = useMemo(() => {
+    if (!snapshot || history.length < 2) return null;
+    const cur = scoredFingerprint(snapshot);
+    for (let i = 1; i < history.length; i++) {
+      if (scoredFingerprint(history[i]) !== cur) return history[i];
+    }
+    return null;
+  }, [snapshot, history]);
+
+  /* Two reads on one day get the clock time, so the date can never point at
+     two rows that look the same. */
+  const baselineDate = useMemo(() => {
+    if (!baseline) return null;
+    const day = calendarDay(baseline.fetched_at);
+    const sameDay = history.filter((s) => s !== baseline && calendarDay(s.fetched_at) === day).length > 0;
+    return sameDay ? formatReadDateTime(baseline.fetched_at) : formatReadDate(baseline.fetched_at);
+  }, [baseline, history]);
+
+  /* Same pure functions, the baseline snapshot. Nothing else reads these. */
   const previousRows: PresenceRow[] | null = useMemo(
-    () => (previousSnapshot ? scorePresence(previousSnapshot) : null),
-    [previousSnapshot],
+    () => (baseline ? scorePresence(baseline) : null),
+    [baseline],
   );
   const previousHaystacks = useMemo(
-    () => (previousSnapshot ? buildHaystacks(previousSnapshot) : null),
-    [previousSnapshot],
+    () => (baseline ? buildHaystacks(baseline) : null),
+    [baseline],
   );
   const changeSegments = useMemo(() => {
     if (!previousRows) return [];
@@ -248,9 +298,10 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       previousSum: prevSum,
       currentWord: overallWord(sum),
       previousWord: overallWord(prevSum),
+      baselineDate,
       themeMove,
     });
-  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum]);
+  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum, baselineDate]);
 
   const carriedOfShown = themeRows.filter((t) => t.match.state === "carried").length;
   const partialOfShown = themeRows.filter((t) => t.match.state === "partial").length;
