@@ -205,8 +205,11 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     readAbortRef.current = ctrl;
     const ceiling = window.setTimeout(() => ctrl.abort(), 5 * 60 * 1000);
     setReadFailure(null);
+    /* Which stage was open when it broke — read locally, never from stale state. */
+    let openStage: "profile" | "posts" = from;
     try {
       if (from === "profile") {
+        openStage = "profile";
         setStage("profile");
         const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", {
           body: { profile_url: profileUrl }, signal: ctrl.signal,
@@ -215,6 +218,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         if ((data as { error?: string } | null)?.error) throw new Error(String((data as { error?: string }).error));
         setReadDone((d) => (d.includes("profile") ? d : [...d, "profile"]));
       }
+      openStage = "posts";
       setStage("posts");
       const { error: postsError } = await supabase.functions.invoke("linkedin-fetch-posts", {
         body: { profile_url: profileUrl, max_posts: 50 }, signal: ctrl.signal,
@@ -223,20 +227,20 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       setReadDone((d) => (d.includes("posts") ? d : [...d, "posts"]));
       await load();
     } catch (e) {
-      /* The raw error stays with us — console now, ef_error_log server-side.
+      /* The raw error stays with us — console here, ef_error_log server-side.
          The member reads the cause in their own words, via causeOf. */
       // eslint-disable-next-line no-console
-      console.error("[how-you-appear] read failed", e);
-      const stageKey = readDone.includes("profile") || from === "posts" ? "posts" : "profile";
+      console.error("[how-you-appear] read failed", { stage: openStage, error: e });
       const raw = ctrl.signal.aborted ? new DOMException("Aborted", "AbortError") : e;
-      setReadFailure({ stageKey, error: raw });
-      toast.error(causeOf(raw, stageKey === "posts" ? "Reading your posts" : "Reading your profile"));
+      setReadFailure({ stageKey: openStage, error: raw });
+      toast.error(causeOf(raw, openStage === "posts" ? "Reading your posts" : "Reading your profile"));
     } finally {
       window.clearTimeout(ceiling);
       readAbortRef.current = null;
       setStage(null);
     }
-  }, [profileUrl, navigate, load, readDone]);
+  }, [profileUrl, navigate, load]);
+
 
 
   useEffect(() => () => readAbortRef.current?.abort(), []);
