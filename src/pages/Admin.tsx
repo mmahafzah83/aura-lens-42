@@ -34,6 +34,15 @@ import {
   Zone,
   ZoneCard,
 } from "@/components/admin/cockpit/ui";
+import TodaySection, {
+  kindsLine,
+  matchesKnown,
+  useKnownIssues,
+  verdictSentence,
+  weekSum,
+  type Figure,
+  type NeedsItem,
+} from "@/components/admin/cockpit/Today";
 import { Loader2 } from "lucide-react";
 
 /**
