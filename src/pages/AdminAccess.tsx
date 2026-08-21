@@ -65,14 +65,14 @@ const relativeTime = (iso: string | null) => {
 
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
-    pending: "bg-neutral-500/15 text-neutral-300 border-neutral-500/30",
-    invited: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    approved: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    active: "bg-green-500/15 text-green-300 border-green-500/30",
+    pending: "bg-slate-100 text-slate-600 border-slate-300",
+    invited: "bg-amber-100 text-amber-800 border-amber-300",
+    approved: "bg-amber-100 text-amber-800 border-amber-300",
+    active: "bg-emerald-100 text-emerald-800 border-emerald-300",
     rejected: "bg-red-500/15 text-red-300 border-red-500/30",
     declined: "bg-neutral-500/15 text-neutral-400 border-neutral-500/30",
   };
-  return map[status] || "bg-neutral-700/40 text-neutral-300 border-neutral-600/40";
+  return map[status] || "bg-slate-100 text-slate-600 border-slate-300";
 };
 
 const AdminAccess = () => {
@@ -429,13 +429,13 @@ const AdminAccess = () => {
         {activeTab === "waitlist" && (<>
         {/* Stats row */}
         <div className="flex flex-wrap gap-2 mb-6">
-          <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+          <span className="text-xs px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
             {counts.pending} pending
           </span>
-          <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">
+          <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
             {counts.invited} invited
           </span>
-          <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+          <span className="text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 border border-slate-300">
             {counts.active} active
           </span>
         </div>
@@ -806,7 +806,7 @@ const AdminAccess = () => {
                         onClick={() => setConfirmDeleteRow({ email: r.email, name: r.name })}
                         disabled={isDeleting}
                         className="px-3 py-1.5 text-xs rounded-md inline-flex items-center gap-1.5 shrink-0"
-                        style={{ border: "1px solid rgba(220,38,38,0.4)", color: "rgb(248,113,113)" }}
+                        style={{ border: "1px solid rgba(192,57,43,0.4)", color: "#C0392B" }}
                       >
                         {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />} Delete user
                       </button>
