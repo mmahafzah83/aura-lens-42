@@ -11,6 +11,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { logEfError, withObserve } from "../_shared/observe.ts";
 import { mergeSnapshot } from "../_shared/mergeSnapshot.ts";
+import { similarityRatio } from "../_shared/editDistance.ts";
+
+/** Lowercase, strip punctuation, collapse whitespace — both sides, always. */
+const normaliseForCompare = (t: string) =>
+  String(t ?? "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").replace(/\s+/g, " ").trim();
 
 
 const corsHeaders = {
