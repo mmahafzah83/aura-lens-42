@@ -25,7 +25,6 @@ const LINE = "#E2E7EE";
 const CARD = "#FFFFFF";
 const ACT = "#0670C4";
 const SUCCESS = "#12805C";
-const AMBER = "#E0A82E";
 /* The dot sits on white; the bar sits on the #E2E7EE track. Same meaning,
    two values, because only one of them clears 3:1 against its own background. */
 const AMBER_BAR = "#9A6B00";
