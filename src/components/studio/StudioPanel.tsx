@@ -688,6 +688,9 @@ export default function StudioPanel({
         title,
         topic_label: title,
         ...generationMetadata(words),
+        // Stashed composer work: the route is known even when the generation
+        // that produced it belongs to an earlier session.
+        ...provenanceFields(null),
       } as any);
       if (!error) setStatus(T.savedOtherFirst[lang]);
     })();
