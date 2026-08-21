@@ -62,25 +62,27 @@ const KEYS: Record<string, (o: Row) => string> = {
  */
 export function unionByIdentity(field: string, next: unknown, prev: unknown): unknown[] | null {
   const keyOf = KEYS[field];
-  const a = arr(next);
-  const b = arr(prev);
-  if (!keyOf) return a.length ? a : (b.length ? b : null);
-  if (!a.length && !b.length) return null;
+  const a = items(next);
+  const b = items(prev);
+  // SAFETY NET — never return null for a non-empty input array, whatever shape
+  // its members are. Losing a list here is the exact failure this file prevents.
+  if (!a.length && !b.length) return nonEmptyArray(next) ?? nonEmptyArray(prev);
+  if (!keyOf) return (a.length ? a : b).map((i) => i.original);
 
   const seen = new Set<string>();
   for (const item of a) {
-    const k = keyOf(item);
+    const k = keyOf(item.key);
     if (k.replace(/\|/g, "")) seen.add(k);
   }
-  const out: Row[] = [...a];
+  const out: unknown[] = a.map((i) => i.original);
   for (const item of b) {
-    const k = keyOf(item);
+    const k = keyOf(item.key);
     if (!k.replace(/\|/g, "")) continue; // unmatchable — do not resurrect
     if (seen.has(k)) continue;
     seen.add(k);
-    out.push(item);
+    out.push(item.original);
   }
-  return out.length ? out : null;
+  return out.length ? out : (nonEmptyArray(next) ?? nonEmptyArray(prev));
 }
 
 const carry = (next: unknown, prev: unknown): unknown => {
