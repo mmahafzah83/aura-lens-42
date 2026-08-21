@@ -238,14 +238,35 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     () => themes.map((t) => ({ ...t, match: matchTheme(haystacks, t.theme) as ThemeMatch })),
     [themes, haystacks],
   );
-  /* Same pure function, the earlier snapshot. Nothing else reads these. */
+  /* The baseline is the most recent read whose SCORED FACTS differ from this
+     one — pressing "Read again" on an unchanged profile must not wipe out the
+     movement the member earned on an earlier read. */
+  const baseline = useMemo(() => {
+    if (!snapshot || history.length < 2) return null;
+    const cur = scoredFingerprint(snapshot);
+    for (let i = 1; i < history.length; i++) {
+      if (scoredFingerprint(history[i]) !== cur) return history[i];
+    }
+    return null;
+  }, [snapshot, history]);
+
+  /* Two reads on one day get the clock time, so the date can never point at
+     two rows that look the same. */
+  const baselineDate = useMemo(() => {
+    if (!baseline) return null;
+    const day = calendarDay(baseline.fetched_at);
+    const sameDay = history.filter((s) => s !== baseline && calendarDay(s.fetched_at) === day).length > 0;
+    return sameDay ? formatReadDateTime(baseline.fetched_at) : formatReadDate(baseline.fetched_at);
+  }, [baseline, history]);
+
+  /* Same pure functions, the baseline snapshot. Nothing else reads these. */
   const previousRows: PresenceRow[] | null = useMemo(
-    () => (previousSnapshot ? scorePresence(previousSnapshot) : null),
-    [previousSnapshot],
+    () => (baseline ? scorePresence(baseline) : null),
+    [baseline],
   );
   const previousHaystacks = useMemo(
-    () => (previousSnapshot ? buildHaystacks(previousSnapshot) : null),
-    [previousSnapshot],
+    () => (baseline ? buildHaystacks(baseline) : null),
+    [baseline],
   );
   const changeSegments = useMemo(() => {
     if (!previousRows) return [];
@@ -264,9 +285,10 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       previousSum: prevSum,
       currentWord: overallWord(sum),
       previousWord: overallWord(prevSum),
+      baselineDate,
       themeMove,
     });
-  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum]);
+  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum, baselineDate]);
 
   const carriedOfShown = themeRows.filter((t) => t.match.state === "carried").length;
   const partialOfShown = themeRows.filter((t) => t.match.state === "partial").length;
