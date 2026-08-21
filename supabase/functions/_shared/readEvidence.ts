@@ -15,7 +15,7 @@ export async function buildReadEvidence(
     admin.from("linkedin_profile_snapshots")
       .select("headline, about, experience, skills, followers, connections, location, education, certifications, languages, raw")
       .eq("user_id", uid)
-      .order("created_at", { ascending: false })
+      .order("fetched_at", { ascending: false })
       .limit(1),
     admin.from("evidence_fragments")
       .select("title, content, confidence")

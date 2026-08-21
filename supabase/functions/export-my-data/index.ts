@@ -17,6 +17,7 @@ const TABLES = [
   "signal_engagements",
   "signal_topic_preferences",
   "linkedin_posts",
+  "linkedin_profile_snapshots",
   "linkedin_post_metrics",
   "authority_voice_profiles",
   "training_logs",

@@ -3255,6 +3255,69 @@ export type Database = {
         }
         Relationships: []
       }
+      linkedin_profile_snapshots_backup_20260821: {
+        Row: {
+          about: string | null
+          certifications: Json | null
+          connections: number | null
+          created_at: string | null
+          education: Json | null
+          experience: Json | null
+          fetched_at: string | null
+          followers: number | null
+          full_name: string | null
+          headline: string | null
+          id: string | null
+          languages: Json | null
+          location: string | null
+          photo_url: string | null
+          raw: Json | null
+          skills: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          about?: string | null
+          certifications?: Json | null
+          connections?: number | null
+          created_at?: string | null
+          education?: Json | null
+          experience?: Json | null
+          fetched_at?: string | null
+          followers?: number | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string | null
+          languages?: Json | null
+          location?: string | null
+          photo_url?: string | null
+          raw?: Json | null
+          skills?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          about?: string | null
+          certifications?: Json | null
+          connections?: number | null
+          created_at?: string | null
+          education?: Json | null
+          experience?: Json | null
+          fetched_at?: string | null
+          followers?: number | null
+          full_name?: string | null
+          headline?: string | null
+          id?: string | null
+          languages?: Json | null
+          location?: string | null
+          photo_url?: string | null
+          raw?: Json | null
+          skills?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       market_mirror_cache: {
         Row: {
           client_cio_text: string | null

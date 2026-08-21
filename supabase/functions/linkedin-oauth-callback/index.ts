@@ -129,11 +129,13 @@ Deno.serve(withObserve("linkedin-oauth-callback", async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    const { data: snapshot } = await adminClient
+    const { data: snapRows } = await adminClient
       .from("linkedin_profile_snapshots")
       .select("user_id")
       .eq("user_id", user.id)
-      .maybeSingle();
+      .order("fetched_at", { ascending: false })
+      .limit(1);
+    const snapshot = snapRows?.[0] ?? null;
 
     const preserved: Record<string, unknown> = {};
     if (existing) {
