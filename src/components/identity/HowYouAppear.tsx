@@ -16,6 +16,7 @@ import { loadLinkedInAddress } from "@/lib/linkedinAddress";
 import DraftProfileCopy, { type DraftTarget } from "@/components/identity/DraftProfileCopy";
 import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
 import { causeOf } from "@/lib/failureCause";
+import { buildHaystacks, matchTheme, type ThemeMatch, type ThemeField } from "@/lib/themeMatch";
 
 /* ── System-B "Signal" values. Module scope, always. ─────────────────────── */
 const INK = "#0F1519";
@@ -25,6 +26,9 @@ const CARD = "#FFFFFF";
 const ACT = "#0670C4";
 const SUCCESS = "#12805C";
 const AMBER = "#E0A82E";
+/* The dot sits on white; the bar sits on the #E2E7EE track. Same meaning,
+   two values, because only one of them clears 3:1 against its own background. */
+const AMBER_BAR = "#9A6B00";
 const NIGHT = "#0F1519";
 const NIGHT_TEXT = "#FFFFFF";
 const NIGHT_MUTED = "#8A97A6";
@@ -110,16 +114,15 @@ interface Snapshot {
   fetched_at: string | null;
 }
 
-const barColour = (score: number) => (score >= 8 ? SUCCESS : score === 7 ? ACT : AMBER);
+const barColour = (score: number) => (score >= 8 ? SUCCESS : score === 7 ? ACT : AMBER_BAR);
 
 const overallWord = (sum: number) => (sum >= 50 ? "Strong" : sum >= 30 ? "Uneven" : "Thin");
 
-/** Whole-word-ish presence of a theme inside the profile text. */
-function mentions(haystack: string, theme: string): boolean {
-  const t = theme.trim().toLowerCase();
-  if (!t) return false;
-  const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`(^|[^a-z0-9])${escaped}`, "i").test(haystack);
+/** Where a half-carried subject already shows up, in the member's words. */
+function fieldList(fields: ThemeField[]): string {
+  if (fields.length === 0) return "your profile";
+  if (fields.length === 1) return fields[0];
+  return `${fields.slice(0, -1).join(", ")} and ${fields[fields.length - 1]}`;
 }
 
 export default function HowYouAppear({ userId }: { userId: string | null }) {
@@ -137,11 +140,14 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const [readFailure, setReadFailure] = useState<{ stageKey: string; error?: unknown } | null>(null);
   const readAbortRef = useRef<AbortController | null>(null);
   const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
+  /* Which drafted copy Aura has since FOUND on the live profile. Never "you
+     pressed copy" — only "it is there now". */
+  const [appliedTargets, setAppliedTargets] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
     setLoading(true);
-    const [snapRes, postsRes, signalsRes, profRes] = await Promise.all([
+    const [snapRes, postsRes, signalsRes, profRes, appliedRes] = await Promise.all([
       supabase.from("linkedin_profile_snapshots")
         .select("full_name,headline,about,photo_url,location,followers,connections,experience,education,skills,fetched_at")
         .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(1),
@@ -149,11 +155,18 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         .eq("user_id", userId).not("post_text", "is", null).neq("post_text", ""),
       supabase.from("strategic_signals").select("theme_tags").eq("user_id", userId).limit(500),
       supabase.from("diagnostic_profiles").select("avatar_url").eq("user_id", userId).maybeSingle(),
+      supabase.from("profile_copy_drafts").select("target, applied_at").eq("user_id", userId).not("applied_at", "is", null),
     ]);
 
     setSnapshot(((snapRes.data as Snapshot[] | null)?.[0]) ?? null);
     setPostsWithText(typeof postsRes.count === "number" ? postsRes.count : null);
     setAvatarUrl(((profRes.data as { avatar_url: string | null } | null)?.avatar_url) ?? null);
+
+    const applied: Record<string, string> = {};
+    for (const row of ((appliedRes.data as { target: string; applied_at: string }[] | null) || [])) {
+      if (row.applied_at) applied[row.target] = row.applied_at;
+    }
+    setAppliedTargets(applied);
 
     const counts = new Map<string, number>();
     for (const row of (signalsRes.data as { theme_tags: string[] | null }[] | null) || []) {
@@ -163,7 +176,9 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         counts.set(t, (counts.get(t) || 0) + 1);
       }
     }
-    const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    /* "Recurring" means it came back. A subject Aura saw once is not a subject
+       the member writes about. */
+    const ranked = [...counts.entries()].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]);
     setTotalThemes(ranked.length);
     setThemes(ranked.slice(0, 8).map(([theme, count]) => ({ theme, count })));
 
@@ -186,12 +201,19 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     return years > 0 ? years : null;
   }, [snapshot]);
 
-  const profileText = `${snapshot?.headline || ""} ${snapshot?.about || ""}`.toLowerCase();
-  const themeRows = themes.map((t) => ({ ...t, carried: mentions(profileText, t.theme) }));
-  const carriedOfShown = themeRows.filter((t) => t.carried).length;
+  /* The whole profile is the haystack: headline, About, every role title and
+     description, every skill. A subject the member put in a role is carried. */
+  const haystacks = useMemo(() => buildHaystacks(snapshot), [snapshot]);
+  const themeRows = useMemo(
+    () => themes.map((t) => ({ ...t, match: matchTheme(haystacks, t.theme) as ThemeMatch })),
+    [themes, haystacks],
+  );
+  const carriedOfShown = themeRows.filter((t) => t.match.state === "carried").length;
+  const partialOfShown = themeRows.filter((t) => t.match.state === "partial").length;
   const shown = themeRows.length;
-  const firstMissing = themeRows.find((t) => !t.carried);
-  const topIsMissing = themeRows.length > 0 && !themeRows[0].carried;
+  const firstMissing = themeRows.find((t) => t.match.state === "missing");
+  const firstPartial = themeRows.find((t) => t.match.state === "partial");
+  const top = themeRows[0];
 
   /** Profile first, then posts. Each call can take two minutes. */
   const readProfile = useCallback(async (from: "profile" | "posts" = "profile") => {
