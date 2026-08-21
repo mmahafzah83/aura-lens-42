@@ -87,9 +87,20 @@ export interface WorkingPanelProps {
   title: string;
   stages: WorkingStage[];
   onNight?: boolean;
-  failure?: { stageKey: string; message: string } | null;
+  /**
+   * The stage that failed, plus the RAW error. The member never sees the raw
+   * string — `causeOf` turns it into one plain sentence. Pass `message` only
+   * for copy that is already written for a member.
+   */
+  failure?: { stageKey: string; error?: unknown; message?: string } | null;
+  /**
+   * Resumes FROM the failed stage. Completed stages keep their ticks and are
+   * not re-run.
+   */
   onRetryFromStage?: (stageKey: string) => void;
+  /** The way onward that is not the retry. Never leave retry as the only door. */
   onCarryOn?: { label: string; action: () => void } | null;
+
   onNotifyMe?: () => void;
   rtl?: boolean;
   /**
