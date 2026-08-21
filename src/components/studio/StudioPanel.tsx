@@ -906,6 +906,7 @@ export default function StudioPanel({
     fingerprintRef.current = {};
     unsourcedRemovedRef.current = 0;
     unsourcedEntitiesRemovedRef.current = 0;
+    provenanceRef.current = null;
     setAskRefine(null);
     setPublished(false);
     setPostUrl(null);
@@ -984,6 +985,7 @@ export default function StudioPanel({
       fingerprintRef.current = {};
       unsourcedRemovedRef.current = 0;
       unsourcedEntitiesRemovedRef.current = 0;
+      provenanceRef.current = null;
       setAskRefine(null);
       // The member has chosen a path: any outstanding offer is answered.
       setPreparedDraft(null);
@@ -1263,6 +1265,8 @@ export default function StudioPanel({
       setGenWarnings(Array.isArray(json?.warnings) ? json.warnings.map(String) : []);
       unsourcedRemovedRef.current = Number(json?.unsourced_numbers_removed) || 0;
       unsourcedEntitiesRemovedRef.current = Number(json?.unsourced_entities_removed) || 0;
+      // What went into these words, kept for the row that is about to exist.
+      provenanceRef.current = readProvenance(json);
       fingerprintRef.current = {
         endingType: typeof json?.ending_type === "string" ? json.ending_type : undefined,
         hookStyle: typeof json?.hook_style === "string" ? json.hook_style : undefined,
