@@ -90,7 +90,7 @@ export default causeOf;
 
 /**
  * The retry's own words. The button names the stage it RESUMES — the law
- * forbids "Pick up from step 1" when step 1 already succeeded.
+ * forbids a "start from step one" retry when step one already succeeded.
  * "Reading your posts" → "Try reading your posts again".
  */
 export function retryLabel(stageLabel: string): string {
