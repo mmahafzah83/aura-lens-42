@@ -1349,16 +1349,51 @@ export default function Admin() {
               <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 8 }}>
                 Same computation as the daily email. Views and filters change what you see, never what was counted.
               </div>
+              {/* Who is counted, said in the open — never hidden in a tooltip. */}
+              <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 4 }}>
+                {kindsLine(N((p as any)?.people?.length), N(p?.excluded?.test_users))}
+              </div>
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <Chip tone={liveliness.tone} title={liveliness.note}>
                 {liveliness.text} · {liveliness.note}
               </Chip>
-              <Btn tone="ox" onClick={refresh} disabled={refreshing}>
+              {/* The only filled button on this page. */}
+              <Btn tone="primary" onClick={primaryAction.run}>
+                {primaryAction.label}
+              </Btn>
+              <Btn tone="quiet" onClick={refresh} disabled={refreshing}>
                 {refreshing ? "Refreshing…" : "Refresh now"}
               </Btn>
             </div>
           </div>
+
+          {p && (
+            <TodaySection
+              computedAt={computedAt}
+              verdict={todayVerdict}
+              figures={todayFigures}
+              needs={todayNeeds}
+              watch={todayWatch}
+              handled={handledCount}
+              checkedLine={`Publishing, drafts, failed sends, jobs and cost were all checked at ${computedAt}. Nothing came back needing a decision from you.`}
+              needsAction={(item) =>
+                String(item.fingerprint ?? "").startsWith("failed_publish") ? (
+                  <Btn tone="ox" onClick={() => runWorker("reap-stuck-publishes", "the publish retry worker")}>
+                    Run retry worker
+                  </Btn>
+                ) : String(item.fingerprint ?? "").startsWith("job_failed") ? (
+                  <Link to="/admin/crons" style={{ textDecoration: "none" }}>
+                    <Btn tone="quiet">Open crons</Btn>
+                  </Link>
+                ) : (
+                  <Link to="/admin/people" style={{ textDecoration: "none" }}>
+                    <Btn tone="quiet">Open people</Btn>
+                  </Link>
+                )
+              }
+            />
+          )}
 
           <SystemHealthPanel />
 
