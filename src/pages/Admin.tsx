@@ -453,6 +453,138 @@ export default function Admin() {
   const decide: any[] = p?.decide ?? [];
   const watch: any[] = p?.watch ?? [];
 
+  /* ================= TODAY (the front of the page) =================
+   * Nothing below computes a business number. It reads the stored brief and
+   * its audit pairs, and refuses to print a figure it cannot stand behind. */
+
+  const knownTitles = useKnownIssues();
+
+  /** Known is not news: a recorded issue is watched, never put in Needs you. */
+  const todayNeeds: NeedsItem[] = useMemo(
+    () => needs.filter((n: any) => !matchesKnown(`${n?.what ?? ""} ${n?.impact ?? ""}`, knownTitles)),
+    [needs, knownTitles],
+  );
+  const knownEcho = useMemo(
+    () => needs.filter((n: any) => matchesKnown(`${n?.what ?? ""} ${n?.impact ?? ""}`, knownTitles)),
+    [needs, knownTitles],
+  );
+  const todayWatch = useMemo(
+    () => [
+      ...watch.map((w: any) => ({ what: String(w.what), impact: w.impact ? String(w.impact) : undefined })),
+      ...knownEcho.map((w: any) => ({ what: String(w.what), impact: "Already written down as a known issue." })),
+    ],
+    [watch, knownEcho],
+  );
+
+  const publishedWeek = weekSum((p?.grid ?? []) as any[], "published");
+  const draftsWaiting = headline("drafts_total");
+  const draftsPair = pairOf("drafts_total");
+  const oldestDraftDays = N(p?.drafts?.oldest_days);
+  const handledCount = N(p?.handled);
+
+  const computedAt = (() => {
+    const raw = String(p?.counted_at_utc ?? "");
+    if (/^\d{2}:\d{2}/.test(raw)) return raw.slice(0, 5);
+    const t = new Date(raw);
+    return Number.isNaN(t.getTime())
+      ? "—"
+      : t.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  })();
+
+  const todayFigures: Figure[] = [
+    {
+      key: "needs",
+      label: "Needs you",
+      value: todayNeeds.length,
+      rows: {
+        head: ["What", "Why it matters", "What to do"],
+        body: todayNeeds.map((n) => [n.what, n.impact ?? "", n.action ?? ""]),
+      },
+      rowsNote: "Nothing is blocking anyone, so there is no row to open.",
+    },
+    {
+      key: "watch",
+      label: "Keep an eye",
+      value: todayWatch.length,
+      rows: { head: ["What", "Detail"], body: todayWatch.map((w) => [w.what, w.impact ?? ""]) },
+      rowsNote: "The watch list is empty today.",
+    },
+    {
+      key: "handled",
+      label: "Handled",
+      value: handledCount,
+      reason: "the brief records no handled count today",
+      rows: null,
+      rowsNote:
+        "Handled work is recorded as a count only — no list of the individual items is kept, so there is nothing to open.",
+    },
+    {
+      key: "published_week",
+      label: "Published this week",
+      value: publishedWeek,
+      reason: "the seven-day grid is missing from today's brief",
+      rows: {
+        head: ["Day", "Published", "Captures", "Signals"],
+        body: ((p?.grid ?? []) as any[]).slice(-7).map((d) => [d.d, d.published, d.captures, d.signals]),
+      },
+      rowsNote: "No day rows are stored for this week.",
+    },
+    {
+      key: "cost_today",
+      label: "Cost today",
+      value: null,
+      reason: "nothing records cost per operation yet",
+      rows: null,
+      rowsNote:
+        "Nothing records cost per operation yet, so there are no rows to add up. Until an operation writes its own cost, this figure stays a question mark.",
+    },
+  ];
+
+  /* A figure whose two counting routes disagree is a bug, not a rounding
+   * difference: show "?" and both numbers. Drafts is the one pair-backed
+   * figure on this strip. */
+  if (draftsPair && draftsPair.agree === false) {
+    todayFigures.splice(3, 0, {
+      key: "drafts_total",
+      label: "Drafts waiting",
+      value: null,
+      disagreement: { a: N(draftsPair.a), b: N(draftsPair.b) },
+      rows: null,
+      rowsNote: "The figure is not reportable until the two routes agree.",
+    });
+  }
+
+  const todayVerdict = verdictSentence({
+    publishedWeek,
+    needs: todayNeeds.length,
+    watch: todayWatch.length,
+    draftsWaiting,
+    oldestDraftDays,
+    captureHours: N(p?.machine?.hours_since_capture),
+  });
+
+  /** THE ONE ACTION. Named by its outcome, chosen from the brief itself. */
+  const primaryAction: { label: string; run: () => void } = (() => {
+    const first = todayNeeds[0] as any;
+    if (first) {
+      const who = String(first.fingerprint ?? "").split(":")[1];
+      const label =
+        String(first.fingerprint ?? "").startsWith("failed_publish") && who
+          ? `Get ${who}'s post out`
+          : "Clear the thing that needs you";
+      return {
+        label,
+        run: () => setMessage({ title: label, body: `${first.what}\n\n${first.impact ?? ""}\n\n${first.action ?? ""}` }),
+      };
+    }
+    const rec = ((p?.recommendations ?? []) as string[])[0];
+    if (rec) return { label: "Take today's one move", run: () => setMessage({ title: "Today's one move", body: rec }) };
+    return {
+      label: "Spend today with one user",
+      run: () => setMessage({ title: "Spend today with one user", body: "Nothing needs you. Open the people list and walk one person from draft to a published post." }),
+    };
+  })();
+
   const needsFindings = needs.map((item: any) => (
     <Finding
       key={item.fingerprint}
