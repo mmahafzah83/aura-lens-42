@@ -16,6 +16,12 @@ import { loadStartCards, type StartCard } from "@/components/composer/startCards
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
 import { generationMetadata, fingerprintFields } from "@/lib/generationMetadata";
+import {
+  readProvenance,
+  provenanceFields,
+  recordLineage,
+  type ComposerProvenance,
+} from "@/lib/composerProvenance";
 import { editFields } from "@/lib/editDistance";
 import { classifyPublishError } from "@/lib/publishFailure";
 import { toast } from "sonner";
@@ -269,6 +275,14 @@ export default function StudioPanel({
    * draft row; nothing is written when the generator reported nothing.
    */
   const fingerprintRef = useRef<{ endingType?: string; hookStyle?: string }>({});
+  /**
+   * NOTHING IS CREATED WITHOUT ITS LINEAGE.
+   *
+   * The generator hands back who made the words, which prompt and model wrote
+   * them, and every contribution that went in. It is held here until a row
+   * exists to record it against.
+   */
+  const provenanceRef = useRef<ComposerProvenance | null>(null);
   /* The angle the member tapped, if they asked to see angles first. Kept in a
      ref so the draft row can carry it without re-rendering the composer. */
   const chosenDirectionRef = useRef<string | null>(null);
