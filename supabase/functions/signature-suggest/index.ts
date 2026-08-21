@@ -7,6 +7,7 @@
 // gracefully falls back to its existing defaults.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { isOwnWriting, CORPUS_COLUMNS } from "../_shared/voiceCorpus.ts";
 
 // MIRRORED CONSTANT — canonical source: src/components/signature/DESIGN_MANUAL.ts
 // Any edit here must be applied verbatim to DESIGN_MANUAL.ts's BRAIN_RULEBOOK.
@@ -216,11 +217,11 @@ Deno.serve(async (req) => {
         .select("tone, preferred_structures")
         .eq("user_id", userId).maybeSingle(),
       admin.from("linkedin_posts")
-        .select("post_text, engagement_score, created_at")
+        .select(`${CORPUS_COLUMNS}, engagement_score, created_at`)
         .eq("user_id", userId)
         .not("post_text", "is", null)
         .order("created_at", { ascending: false })
-        .limit(3),
+        .limit(12),
     ]);
 
     if (!LOVABLE_API_KEY) return ok({ suggestions: [], caption: "" });
@@ -464,8 +465,8 @@ Deno.serve(async (req) => {
           ? `\nSOURCE SIGNAL (context, do not name):\n- ${signalsRes.data[0]?.signal_title || ""}\n- implications: ${String(signalsRes.data[0]?.strategic_implications || "").slice(0, 300)}`
           : "",
         (voiceRes.data?.tone) ? `\nVOICE tone: ${voiceRes.data.tone}` : "",
-        (postsRes.data && postsRes.data.length)
-          ? `\nRECENT POSTS (style hints only, do not copy):\n${postsRes.data.map((p: any, i: number) => `${i + 1}. ${String(p.post_text || "").slice(0, 220)}`).join("\n")}`
+        (ownPosts.length)
+          ? `\nRECENT POSTS (style hints only, do not copy):\n${ownPosts.map((p: any, i: number) => `${i + 1}. ${String(p.post_text || "").slice(0, 220)}`).join("\n")}`
           : "",
       ].filter(Boolean).join("\n");
 

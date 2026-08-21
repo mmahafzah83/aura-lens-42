@@ -10,7 +10,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAdmin } from "../_shared/adminRole.ts";
-import { isOwnWriting } from "../_shared/voiceCorpus.ts";
+import { isOwnWriting, CORPUS_COLUMNS } from "../_shared/voiceCorpus.ts";
 // Trait arithmetic lives in ONE module, shared with client-side voice_fidelity.
 import { measure } from "../_shared/voiceMeasure.ts";
 
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     // --- corpus ---
     const { data: rows, error: postsErr } = await admin
       .from("linkedin_posts")
-      .select("id, post_text, authorship, acquisition, source_type, voice_corpus_status")
+      .select(`id, ${CORPUS_COLUMNS}`)
       .eq("user_id", userId)
       .not("post_text", "is", null);
     if (postsErr) throw new Error(`corpus fetch failed: ${postsErr.message}`);

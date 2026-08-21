@@ -9,6 +9,7 @@ import {
   type EditPair,
 } from "../_shared/voiceRules.ts";
 import { sanitizeStyleFields } from "../_shared/voiceStyle.ts";
+import { isOwnWriting, CORPUS_COLUMNS } from "../_shared/voiceCorpus.ts";
 
 /**
  * What the member actually did: every draft they rewrote, as the pair
@@ -189,7 +190,7 @@ Deno.serve(async (req) => {
     } else {
       const { data: posts, error: postsErr } = await supabase
         .from("linkedin_posts")
-        .select("post_text, engagement_score, like_count, comment_count, source_type, tracking_status")
+        .select(`${CORPUS_COLUMNS}, engagement_score, like_count, comment_count, tracking_status`)
         .eq("user_id", user_id)
         .not("post_text", "is", null)
         .order("published_at", { ascending: false, nullsFirst: false })
@@ -204,7 +205,8 @@ Deno.serve(async (req) => {
         );
       }
 
-      rawPosts = (posts || []).filter((p: any) => {
+      // Search-result snippets and Aura's own output never train a voice.
+      rawPosts = (posts || []).filter(isOwnWriting).filter((p: any) => {
         const text = String(p.post_text ?? "").trim();
         const st = p.source_type;
         const ts = p.tracking_status;
