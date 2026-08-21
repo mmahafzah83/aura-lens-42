@@ -104,6 +104,20 @@ function formatReadDate(iso: string | null): string | null {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** Same shape, plus the clock time — used when two stored reads share a day,
+ *  so the change line can never point at two rows that look identical. */
+function formatReadDateTime(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const day = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return `${day} ${time}`;
+}
+
+const calendarDay = (iso: string | null): string => (iso ? new Date(iso).toDateString() : "");
+
+
 interface Snapshot {
   full_name: string | null;
   headline: string | null;
