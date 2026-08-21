@@ -179,7 +179,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     const [snapRes, postsRes, signalsRes, profRes, appliedRes] = await Promise.all([
       supabase.from("linkedin_profile_snapshots")
         .select("full_name,headline,about,photo_url,location,followers,connections,experience,education,skills,fetched_at")
-        .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(2),
+        .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(20),
       supabase.from("linkedin_posts").select("id", { count: "exact", head: true })
         .eq("user_id", userId).not("post_text", "is", null).neq("post_text", ""),
       supabase.from("strategic_signals").select("theme_tags").eq("user_id", userId).limit(500),
