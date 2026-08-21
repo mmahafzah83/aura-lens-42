@@ -16,6 +16,8 @@ import {
   OVER_P95_LINE, mmss, useElapsed, useWaitEstimate, useWeightedProgress, waitCopy,
   type WaitOperation,
 } from "@/lib/waitEstimate";
+import { causeOf, retryLabel } from "@/lib/failureCause";
+
 
 /* ── System-B values. Module scope, always. ─────────────────────────────── */
 const INK = "#0F1519";
@@ -87,9 +89,20 @@ export interface WorkingPanelProps {
   title: string;
   stages: WorkingStage[];
   onNight?: boolean;
-  failure?: { stageKey: string; message: string } | null;
+  /**
+   * The stage that failed, plus the RAW error. The member never sees the raw
+   * string — `causeOf` turns it into one plain sentence. Pass `message` only
+   * for copy that is already written for a member.
+   */
+  failure?: { stageKey: string; error?: unknown; message?: string } | null;
+  /**
+   * Resumes FROM the failed stage. Completed stages keep their ticks and are
+   * not re-run.
+   */
   onRetryFromStage?: (stageKey: string) => void;
+  /** The way onward that is not the retry. Never leave retry as the only door. */
   onCarryOn?: { label: string; action: () => void } | null;
+
   onNotifyMe?: () => void;
   rtl?: boolean;
   /**
@@ -175,14 +188,29 @@ export function WorkingPanel({
   const muted = onNight ? NIGHT_MUTED : MUTED;
   const hair = onNight ? NIGHT_LINE : LINE;
 
+  /* The failed stage, its words, and the cause in a member's language. The raw
+     error goes to the console for us — never to the screen. */
+  const failedIndex = failure ? stages.findIndex((s) => s.key === failure.stageKey) : -1;
+  const failedStage = failedIndex >= 0 ? stages[failedIndex] : null;
+  const failedLabel = failedStage?.label ?? title;
+  const failureLine = failure
+    ? (failure.message ?? causeOf(failure.error, failedLabel))
+    : "";
+
+  useEffect(() => {
+    if (failure?.error !== undefined && failure?.error !== null) {
+      // eslint-disable-next-line no-console
+      console.error("[working-panel] stage failed", { stage: failure.stageKey, error: failure.error });
+    }
+  }, [failure?.error, failure?.stageKey]);
+
   /* Screen readers hear stage changes, never percent ticks. */
   const announce = failed
-    ? `${title}. ${failure?.message ?? ""}`
+    ? `${title}. ${failureLine}`
     : active
       ? `${title}. ${active.label}.`
       : complete ? `${title}. Done.` : title;
 
-  const failedIndex = failure ? stages.findIndex((s) => s.key === failure.stageKey) : -1;
 
   const linkStyle: React.CSSProperties = {
     background: "transparent", border: 0, padding: 0, cursor: "pointer",
@@ -227,7 +255,9 @@ export function WorkingPanel({
           ? { role: "progressbar" as const, "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": Math.round((progress ?? 0) * 100) }
           : {})}
         aria-hidden={determinate ? undefined : true}
-        style={{ blockSize: 5, borderRadius: 999, background: CYAN_TRACK, marginBlockStart: 12, overflow: "hidden" }}
+        /* Cyan is work in progress only: a failed run shows no cyan at all. */
+        style={{ blockSize: 5, borderRadius: 999, background: failed ? "#F3CFC9" : CYAN_TRACK, marginBlockStart: 12, overflow: "hidden" }}
+
       >
         <div
           className="wp-fill"
@@ -279,7 +309,7 @@ export function WorkingPanel({
           border: `1px solid ${onNight ? "rgba(192,57,43,.35)" : "#F3CFC9"}`,
           color: onNight ? "#F5B4AC" : ERR, fontSize: 13,
         }}>
-          {failure.message}
+          {failureLine}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBlockStart: 12, alignItems: "center" }}>
             {onRetryFromStage ? (
               <button
@@ -290,13 +320,27 @@ export function WorkingPanel({
                   minBlockSize: 44, paddingInline: 18, fontSize: 14, fontWeight: 600, cursor: "pointer",
                 }}
               >
-                Pick up from step {failedIndex >= 0 ? failedIndex + 1 : 1}
+                {retryLabel(failedLabel)}
               </button>
             ) : null}
+            {/* The way onward. Quiet outline — never a second filled button. */}
             {onCarryOn ? (
-              <button type="button" onClick={onCarryOn.action} style={linkStyle}>{onCarryOn.label}</button>
+              <button
+                type="button"
+                onClick={onCarryOn.action}
+                style={{
+                  background: "transparent",
+                  color: onNight ? NIGHT_TEXT : INK,
+                  border: `1px solid ${onNight ? NIGHT_LINE : LINE}`,
+                  borderRadius: 10, minBlockSize: 44, paddingInline: 16,
+                  fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                {onCarryOn.label}
+              </button>
             ) : null}
           </div>
+
         </div>
       ) : null}
 

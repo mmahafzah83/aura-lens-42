@@ -15,6 +15,7 @@ import { scorePresence, earliestExperienceYear, type PresenceRow, type PresenceK
 import { loadLinkedInAddress } from "@/lib/linkedinAddress";
 import DraftProfileCopy, { type DraftTarget } from "@/components/identity/DraftProfileCopy";
 import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
+import { causeOf } from "@/lib/failureCause";
 
 /* ── System-B "Signal" values. Module scope, always. ─────────────────────── */
 const INK = "#0F1519";
@@ -133,7 +134,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const [stage, setStage] = useState<"profile" | "posts" | null>(null);
   const [readDone, setReadDone] = useState<string[]>([]);
   const [readRunId, setReadRunId] = useState(0);
-  const [readFailure, setReadFailure] = useState<{ stageKey: string; message: string } | null>(null);
+  const [readFailure, setReadFailure] = useState<{ stageKey: string; error?: unknown } | null>(null);
   const readAbortRef = useRef<AbortController | null>(null);
   const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
 
@@ -205,8 +206,11 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     readAbortRef.current = ctrl;
     const ceiling = window.setTimeout(() => ctrl.abort(), 5 * 60 * 1000);
     setReadFailure(null);
+    /* Which stage was open when it broke — read locally, never from stale state. */
+    let openStage: "profile" | "posts" = from;
     try {
       if (from === "profile") {
+        openStage = "profile";
         setStage("profile");
         const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", {
           body: { profile_url: profileUrl }, signal: ctrl.signal,
@@ -215,6 +219,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         if ((data as { error?: string } | null)?.error) throw new Error(String((data as { error?: string }).error));
         setReadDone((d) => (d.includes("profile") ? d : [...d, "profile"]));
       }
+      openStage = "posts";
       setStage("posts");
       const { error: postsError } = await supabase.functions.invoke("linkedin-fetch-posts", {
         body: { profile_url: profileUrl, max_posts: 50 }, signal: ctrl.signal,
@@ -223,17 +228,21 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       setReadDone((d) => (d.includes("posts") ? d : [...d, "posts"]));
       await load();
     } catch (e) {
-      const message = ctrl.signal.aborted
-        ? "That read didn't come back in time. Nothing you had is lost."
-        : e instanceof Error ? e.message.split("\n")[0] : "Couldn't read your profile just now.";
-      setReadFailure({ stageKey: from === "profile" ? "profile" : "posts", message });
-      toast.error(message);
+      /* The raw error stays with us — console here, ef_error_log server-side.
+         The member reads the cause in their own words, via causeOf. */
+      // eslint-disable-next-line no-console
+      console.error("[how-you-appear] read failed", { stage: openStage, error: e });
+      const raw = ctrl.signal.aborted ? new DOMException("Aborted", "AbortError") : e;
+      setReadFailure({ stageKey: openStage, error: raw });
+      toast.error(causeOf(raw, openStage === "posts" ? "Reading your posts" : "Reading your profile"));
     } finally {
       window.clearTimeout(ceiling);
       readAbortRef.current = null;
       setStage(null);
     }
   }, [profileUrl, navigate, load]);
+
+
 
   useEffect(() => () => readAbortRef.current?.abort(), []);
 
@@ -243,7 +252,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
      operation name is passed and no percentage is claimed. */
   const readStages: WorkingStage[] = ([
     { key: "profile", label: "Reading your profile" },
-    { key: "posts", label: "Reading your public posts" },
+    { key: "posts", label: "Reading your posts" },
   ] as const).map((s) => ({
     key: s.key,
     label: s.label,
@@ -263,8 +272,19 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       stages={readStages}
       failure={stage === null ? readFailure : null}
       onRetryFromStage={(key) => void readProfile(key === "posts" ? "posts" : "profile")}
+      /* A way onward that is not the retry: the profile read already landed,
+         so the member is not blocked by a failed posts read. */
+      onCarryOn={
+        stage === null && readFailure
+          ? {
+              label: readDone.includes("profile") ? "Continue without your posts" : "Continue without this read",
+              action: () => { setReadFailure(null); void load(); },
+            }
+          : null
+      }
     />
   );
+
 
   const useLinkedInPhoto = useCallback(async () => {
     if (!userId || !snapshot?.photo_url || avatarUrl) return;
