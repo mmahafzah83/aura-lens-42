@@ -437,7 +437,10 @@ Deno.serve(async (req) => {
       const langRule = lang === "ar"
         ? "Language: Arabic ONLY. Contemporary professional GCC register. No dialect. NO English words. No transliteration."
         : "Language: English ONLY.";
+      /* Style hints come only from writing the member actually did. */
+      const ownPosts = (((postsRes.data as any[]) || []).filter(isOwnWriting)).slice(0, 3);
       const capSystem = [
+
         "You write a LinkedIn caption to accompany a signature card image the user just made.",
         "Voice: the user's — calm, specific, first-person, no fanfare.",
         langRule,
