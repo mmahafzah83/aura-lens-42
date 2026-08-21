@@ -326,6 +326,30 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
       });
     if (upErr) throw new Error(`snapshot insert failed: ${upErr.message}`);
 
+    // --- Retention: keep the newest 20 reads plus the member's original
+    // baseline. Every row carries a full ~120KB payload. A retention failure
+    // must never fail a read that already succeeded.
+    try {
+      const { data: allRows } = await admin
+        .from("linkedin_profile_snapshots")
+        .select("id, fetched_at")
+        .eq("user_id", targetUserId)
+        .order("fetched_at", { ascending: false });
+      const rows = (allRows ?? []) as { id: string; fetched_at: string }[];
+      if (rows.length > 21) {
+        const keep = new Set<string>(rows.slice(0, 20).map((r) => r.id));
+        keep.add(rows[rows.length - 1].id); // oldest — the original baseline
+        const drop = rows.filter((r) => !keep.has(r.id)).map((r) => r.id);
+        if (drop.length) {
+          await admin.from("linkedin_profile_snapshots").delete().in("id", drop);
+        }
+      }
+    } catch (e) {
+      console.error("[linkedin-fetch-profile] retention skipped:", e instanceof Error ? e.message : String(e));
+    }
+
+
+
     // --- Gentle auto-fill: only ever fills a blank, never replaces the member's own value ---
     const profilePatch: Record<string, string> = {};
     if (photo_url) profilePatch.avatar_url = photo_url;
