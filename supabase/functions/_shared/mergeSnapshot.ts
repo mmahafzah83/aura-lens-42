@@ -11,7 +11,23 @@
 type Row = Record<string, unknown>;
 
 const s = (v: unknown): string => (typeof v === "string" ? v.trim().toLowerCase() : "");
-const arr = (v: unknown): Row[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === "object") as Row[]) : []);
+/**
+ * Items usable for keying. A bare string list (`["Python","SQL"]` — this scraper
+ * emits some lists that way) is coerced to `{ name: s }` for KEYING ONLY; the
+ * original value is carried alongside so the stored shape never changes.
+ */
+type Item = { key: Row; original: unknown };
+const items = (v: unknown): Item[] =>
+  Array.isArray(v)
+    ? v.flatMap((x) => {
+      if (typeof x === "string" && x.trim()) return [{ key: { name: x } as Row, original: x }];
+      if (x && typeof x === "object") return [{ key: x as Row, original: x }];
+      return [];
+    })
+    : [];
+const nonEmptyArray = (v: unknown): unknown[] | null =>
+  Array.isArray(v) && v.length > 0 ? (v as unknown[]) : null;
+
 
 const first = (o: Row, keys: string[]): string => {
   for (const k of keys) {
