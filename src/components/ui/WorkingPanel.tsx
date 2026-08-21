@@ -307,7 +307,7 @@ export function WorkingPanel({
           border: `1px solid ${onNight ? "rgba(192,57,43,.35)" : "#F3CFC9"}`,
           color: onNight ? "#F5B4AC" : ERR, fontSize: 13,
         }}>
-          {failure.message}
+          {failureLine}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBlockStart: 12, alignItems: "center" }}>
             {onRetryFromStage ? (
               <button
@@ -318,13 +318,27 @@ export function WorkingPanel({
                   minBlockSize: 44, paddingInline: 18, fontSize: 14, fontWeight: 600, cursor: "pointer",
                 }}
               >
-                Pick up from step {failedIndex >= 0 ? failedIndex + 1 : 1}
+                {retryLabel(failedLabel)}
               </button>
             ) : null}
+            {/* The way onward. Quiet outline — never a second filled button. */}
             {onCarryOn ? (
-              <button type="button" onClick={onCarryOn.action} style={linkStyle}>{onCarryOn.label}</button>
+              <button
+                type="button"
+                onClick={onCarryOn.action}
+                style={{
+                  background: "transparent",
+                  color: onNight ? NIGHT_TEXT : INK,
+                  border: `1px solid ${onNight ? NIGHT_LINE : LINE}`,
+                  borderRadius: 10, minBlockSize: 44, paddingInline: 16,
+                  fontSize: 13.5, fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                {onCarryOn.label}
+              </button>
             ) : null}
           </div>
+
         </div>
       ) : null}
 
