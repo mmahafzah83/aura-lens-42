@@ -1472,6 +1472,7 @@ export default function StudioPanel({
           unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
         }),
         ...fingerprintFields(fingerprintRef.current),
+        ...provenanceFields(provenanceRef.current),
         ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
       } as any)
       .select("id")
@@ -1484,6 +1485,9 @@ export default function StudioPanel({
     setDraftSource("linkedin_posts");
     // An identifier that must survive a reload is written the moment it exists.
     persistNow();
+    // What went into this draft, now that there is a row to name. Never awaited
+    // in a way that could cost the save: the helper swallows its own failures.
+    void recordLineage("linkedin_posts", id, provenanceRef.current?.contributions);
     return { id, failed: false };
     })();
     savingPromiseRef.current = run;
