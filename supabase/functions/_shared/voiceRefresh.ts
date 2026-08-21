@@ -28,6 +28,8 @@ interface PostRow {
   authorship?: string | null;
   acquisition?: string | null;
   voice_corpus_status?: string | null;
+  text_is_snippet?: boolean | null;
+
 }
 
 export interface RefreshResult {
@@ -133,7 +135,7 @@ function observedUsePhrases(posts: PostRow[]): string[] {
 export async function refreshVoiceProfiles(db: any, userId: string): Promise<RefreshResult> {
   const { data: rows, error } = await db
     .from("linkedin_posts")
-    .select("post_text, post_url, published_at, like_count, comment_count, repost_count, source_type, authorship, acquisition, voice_corpus_status")
+    .select("post_text, post_url, published_at, like_count, comment_count, repost_count, source_type, authorship, acquisition, voice_corpus_status, text_is_snippet")
     .eq("user_id", userId)
     .not("post_text", "is", null)
     .order("published_at", { ascending: false })

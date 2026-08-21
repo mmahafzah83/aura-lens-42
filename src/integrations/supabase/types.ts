@@ -3048,6 +3048,7 @@ export type Database = {
           source_type: string
           stance: string | null
           synced_at: string
+          text_is_snippet: boolean
           theme: string | null
           title: string | null
           tone: string | null
@@ -3108,6 +3109,7 @@ export type Database = {
           source_type?: string
           stance?: string | null
           synced_at?: string
+          text_is_snippet?: boolean
           theme?: string | null
           title?: string | null
           tone?: string | null
@@ -3168,6 +3170,7 @@ export type Database = {
           source_type?: string
           stance?: string | null
           synced_at?: string
+          text_is_snippet?: boolean
           theme?: string | null
           title?: string | null
           tone?: string | null
