@@ -16,6 +16,12 @@ import { loadStartCards, type StartCard } from "@/components/composer/startCards
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
 import { generationMetadata, fingerprintFields } from "@/lib/generationMetadata";
+import {
+  readProvenance,
+  provenanceFields,
+  recordLineage,
+  type ComposerProvenance,
+} from "@/lib/composerProvenance";
 import { editFields } from "@/lib/editDistance";
 import { classifyPublishError } from "@/lib/publishFailure";
 import { toast } from "sonner";
@@ -269,6 +275,14 @@ export default function StudioPanel({
    * draft row; nothing is written when the generator reported nothing.
    */
   const fingerprintRef = useRef<{ endingType?: string; hookStyle?: string }>({});
+  /**
+   * NOTHING IS CREATED WITHOUT ITS LINEAGE.
+   *
+   * The generator hands back who made the words, which prompt and model wrote
+   * them, and every contribution that went in. It is held here until a row
+   * exists to record it against.
+   */
+  const provenanceRef = useRef<ComposerProvenance | null>(null);
   /* The angle the member tapped, if they asked to see angles first. Kept in a
      ref so the draft row can carry it without re-rendering the composer. */
   const chosenDirectionRef = useRef<string | null>(null);
@@ -674,6 +688,9 @@ export default function StudioPanel({
         title,
         topic_label: title,
         ...generationMetadata(words),
+        // Stashed composer work: the route is known even when the generation
+        // that produced it belongs to an earlier session.
+        ...provenanceFields(null),
       } as any);
       if (!error) setStatus(T.savedOtherFirst[lang]);
     })();
@@ -892,6 +909,7 @@ export default function StudioPanel({
     fingerprintRef.current = {};
     unsourcedRemovedRef.current = 0;
     unsourcedEntitiesRemovedRef.current = 0;
+    provenanceRef.current = null;
     setAskRefine(null);
     setPublished(false);
     setPostUrl(null);
@@ -970,6 +988,7 @@ export default function StudioPanel({
       fingerprintRef.current = {};
       unsourcedRemovedRef.current = 0;
       unsourcedEntitiesRemovedRef.current = 0;
+      provenanceRef.current = null;
       setAskRefine(null);
       // The member has chosen a path: any outstanding offer is answered.
       setPreparedDraft(null);
@@ -1249,6 +1268,8 @@ export default function StudioPanel({
       setGenWarnings(Array.isArray(json?.warnings) ? json.warnings.map(String) : []);
       unsourcedRemovedRef.current = Number(json?.unsourced_numbers_removed) || 0;
       unsourcedEntitiesRemovedRef.current = Number(json?.unsourced_entities_removed) || 0;
+      // What went into these words, kept for the row that is about to exist.
+      provenanceRef.current = readProvenance(json);
       fingerprintRef.current = {
         endingType: typeof json?.ending_type === "string" ? json.ending_type : undefined,
         hookStyle: typeof json?.hook_style === "string" ? json.hook_style : undefined,
@@ -1454,6 +1475,7 @@ export default function StudioPanel({
           unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
         }),
         ...fingerprintFields(fingerprintRef.current),
+        ...provenanceFields(provenanceRef.current),
         ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
       } as any)
       .select("id")
@@ -1466,6 +1488,9 @@ export default function StudioPanel({
     setDraftSource("linkedin_posts");
     // An identifier that must survive a reload is written the moment it exists.
     persistNow();
+    // What went into this draft, now that there is a row to name. Never awaited
+    // in a way that could cost the save: the helper swallows its own failures.
+    void recordLineage("linkedin_posts", id, provenanceRef.current?.contributions);
     return { id, failed: false };
     })();
     savingPromiseRef.current = run;
@@ -1531,6 +1556,7 @@ export default function StudioPanel({
             unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
           }),
           ...fingerprintFields(fingerprintRef.current),
+          ...provenanceFields(provenanceRef.current),
           ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
         } as any)
         .select("id")
@@ -1539,6 +1565,7 @@ export default function StudioPanel({
       const newId = (ins as any)?.id as string;
       postRowRef.current = newId;
       persistNow();
+      void recordLineage("linkedin_posts", newId, provenanceRef.current?.contributions);
       return newId;
     }
     const { id } = await saveDraft({ silent: true });
