@@ -104,13 +104,16 @@ const photoOf = (item: Record<string, unknown>): string | null => {
   return null;
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Single writer for this function's traces. A read that fails must never
+    // leave zero evidence in the database.
+    const obs = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     // --- Auth first, before any service-role work ---
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -151,6 +154,13 @@ Deno.serve(async (req) => {
       // identity, may be handed to Apify. Anything else was never an address.
       const trusted = ["verified_by_read", "confirmed_by_identity", "member_entered"];
       if (conn && !trusted.includes(conn.source_status ?? "")) {
+        await logEfError(obs, {
+          function_name: "linkedin-fetch-profile",
+          error: "address_not_confirmed",
+          severity: "info",
+          user_id: targetUserId,
+          context: { source_status: conn.source_status ?? null, stored_handle: conn.handle ?? null },
+        });
         return json({ error: "address_not_confirmed" }, 400);
       }
       handle = parseHandle(conn?.profile_url) ??
@@ -214,6 +224,13 @@ Deno.serve(async (req) => {
     }
 
     if (!item) {
+      await logEfError(obs, {
+        function_name: "linkedin-fetch-profile",
+        error: `apify returned no rows: ${lastFailure}`,
+        severity: "high",
+        user_id: targetUserId,
+        context: { canonical_url, handle, stage: "apify_no_rows" },
+      });
       return json({
         error: "Aura could not read that profile. Check the address is public and try again.",
         canonical_url,
@@ -240,26 +257,69 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+    // --- A handle belongs to exactly one member ---
+    // Three accounts once shared one handle and a member ended up holding the
+    // founder's profile. An admin acting deliberately may still override.
+    const callerIsAdmin = targetUserId !== user.id || (await isAdmin(anon, user.id));
+    if (!callerIsAdmin) {
+      const { data: claimants } = await admin
+        .from("linkedin_connections")
+        .select("user_id")
+        .eq("handle", handle)
+        .neq("user_id", targetUserId)
+        .limit(1);
+      if (claimants && claimants.length) {
+        await logEfError(admin, {
+          function_name: "linkedin-fetch-profile",
+          error: "handle_claimed",
+          severity: "high",
+          user_id: targetUserId,
+          context: { handle, claimed_by: claimants[0].user_id },
+        });
+        return json({
+          error: "handle_claimed",
+          message: "That LinkedIn address is already connected to another Aura account.",
+          handle,
+        }, 409);
+      }
+    }
+
+    // --- Append a new dated snapshot, merged with the previous one ---
+    const { data: prevRows, error: prevErr } = await admin
+      .from("linkedin_profile_snapshots")
+      .select("full_name, headline, about, photo_url, location, followers, connections, experience, education, skills, languages, certifications, raw")
+      .eq("user_id", targetUserId)
+      .order("fetched_at", { ascending: false })
+      .limit(1);
+    if (prevErr) console.error("[linkedin-fetch-profile] previous snapshot read failed:", prevErr.message);
+    const previous = prevRows?.[0] ?? null;
+
+    const merged = mergeSnapshot({
+      full_name,
+      headline,
+      about,
+      photo_url,
+      location,
+      followers,
+      connections,
+      experience,
+      education,
+      skills,
+      languages,
+      certifications,
+      raw: item,
+    }, previous as Record<string, unknown> | null);
+
+    const now = new Date().toISOString();
     const { error: upErr } = await admin
       .from("linkedin_profile_snapshots")
-      .upsert({
+      .insert({
         user_id: targetUserId,
-        fetched_at: new Date().toISOString(),
-        full_name,
-        headline,
-        about,
-        photo_url,
-        location,
-        followers,
-        connections,
-        experience,
-        education,
-        skills,
-        languages,
-        certifications,
-        raw: item,
-      }, { onConflict: "user_id" });
-    if (upErr) throw new Error(`snapshot upsert failed: ${upErr.message}`);
+        fetched_at: now,
+        created_at: now,
+        ...merged,
+      });
+    if (upErr) throw new Error(`snapshot insert failed: ${upErr.message}`);
 
     // --- Gentle auto-fill: only ever fills a blank, never replaces the member's own value ---
     const profilePatch: Record<string, string> = {};
@@ -336,6 +396,18 @@ Deno.serve(async (req) => {
       ? "LinkedIn fetch timed out after 45 seconds. Try again."
       : (error as Error).message;
     console.error("linkedin-fetch-profile error:", error);
+    try {
+      const obsAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      await logEfError(obsAdmin, {
+        function_name: "linkedin-fetch-profile",
+        error,
+        severity: "critical",
+        context: { stage: "outer_catch" },
+      });
+    } catch (_) { /* logging must never mask the original failure */ }
     return json({ error: message }, 500);
   }
-});
+}));
