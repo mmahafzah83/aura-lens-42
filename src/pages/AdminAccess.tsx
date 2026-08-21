@@ -65,14 +65,14 @@ const relativeTime = (iso: string | null) => {
 
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
-    pending: "bg-neutral-500/15 text-neutral-300 border-neutral-500/30",
-    invited: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    approved: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    active: "bg-green-500/15 text-green-300 border-green-500/30",
+    pending: "bg-slate-100 text-slate-600 border-slate-300",
+    invited: "bg-amber-100 text-amber-800 border-amber-300",
+    approved: "bg-amber-100 text-amber-800 border-amber-300",
+    active: "bg-emerald-100 text-emerald-800 border-emerald-300",
     rejected: "bg-red-500/15 text-red-300 border-red-500/30",
     declined: "bg-neutral-500/15 text-neutral-400 border-neutral-500/30",
   };
-  return map[status] || "bg-neutral-700/40 text-neutral-300 border-neutral-600/40";
+  return map[status] || "bg-slate-100 text-slate-600 border-slate-300";
 };
 
 const AdminAccess = () => {
@@ -395,7 +395,7 @@ const AdminAccess = () => {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "var(--ink)" }}
+        style={{ backgroundColor: "var(--surface-card)" }}
       >
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
@@ -405,7 +405,7 @@ const AdminAccess = () => {
   return (
     <AdminShell title="Access" subtitle="Manage waitlist and send invites">
         {/* In-page tabs */}
-        <div className="flex flex-wrap gap-1 mb-6 p-1 rounded-lg" style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", width: "fit-content" }}>
+        <div className="flex flex-wrap gap-1 mb-6 p-1 rounded-lg" style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--border-default)", width: "fit-content" }}>
           {([
             { k: "waitlist", label: "Waitlist" },
             { k: "users", label: "Users" },
@@ -418,7 +418,7 @@ const AdminAccess = () => {
               style={
                 activeTab === t.k
                   ? { backgroundColor: "var(--brand-muted)", color: "var(--brand)", border: "1px solid var(--bronze-line)" }
-                  : { backgroundColor: "transparent", color: "var(--ink-5)", border: "1px solid transparent" }
+                  : { backgroundColor: "transparent", color: "var(--text-secondary)", border: "1px solid transparent" }
               }
             >
               {t.label}
@@ -429,13 +429,13 @@ const AdminAccess = () => {
         {activeTab === "waitlist" && (<>
         {/* Stats row */}
         <div className="flex flex-wrap gap-2 mb-6">
-          <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+          <span className="text-xs px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
             {counts.pending} pending
           </span>
-          <span className="text-xs px-3 py-1.5 rounded-full bg-green-500/15 text-green-300 border border-green-500/30">
+          <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
             {counts.invited} invited
           </span>
-          <span className="text-xs px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+          <span className="text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 border border-slate-300">
             {counts.active} active
           </span>
         </div>
@@ -456,8 +456,8 @@ const AdminAccess = () => {
                     }
                   : {
                       backgroundColor: "var(--surface-ink-raised)",
-                      color: "var(--ink-5)",
-                      borderColor: "var(--ink-3)",
+                      color: "var(--text-secondary)",
+                      borderColor: "var(--border-default)",
                     }
               }
             >
@@ -468,7 +468,7 @@ const AdminAccess = () => {
           <Select value={seniorityFilter} onValueChange={setSeniorityFilter}>
             <SelectTrigger
               className="h-8 w-[170px] text-xs"
-              style={{ backgroundColor: "var(--surface-ink-raised)", borderColor: "var(--ink-3)", color: "var(--ink-7)" }}
+              style={{ backgroundColor: "var(--surface-ink-raised)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
             >
               <SelectValue />
             </SelectTrigger>
@@ -485,7 +485,7 @@ const AdminAccess = () => {
           <Select value={sectorFilter} onValueChange={setSectorFilter}>
             <SelectTrigger
               className="h-8 w-[170px] text-xs"
-              style={{ backgroundColor: "var(--surface-ink-raised)", borderColor: "var(--ink-3)", color: "var(--ink-7)" }}
+              style={{ backgroundColor: "var(--surface-ink-raised)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
             >
               <SelectValue />
             </SelectTrigger>
@@ -508,21 +508,21 @@ const AdminAccess = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search waitlist by email or name…"
             className="w-full sm:w-[360px] px-3 py-2 rounded-md text-sm outline-none"
-            style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+            style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
           />
         </div>
 
         {/* Table */}
         <div
           className="rounded-2xl overflow-hidden mb-8"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--border-default)" }}
         >
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-sm" style={{ color: "var(--ink-5)" }}>
+            <div className="text-center py-12 text-sm" style={{ color: "var(--text-secondary)" }}>
               No entries match your filters.
             </div>
           ) : (
@@ -531,7 +531,7 @@ const AdminAccess = () => {
                 <thead>
                   <tr
                     className="text-xs uppercase tracking-wider"
-                    style={{ color: "var(--ink-5)", backgroundColor: "rgba(255,255,255,0.02)" }}
+                    style={{ color: "var(--text-secondary)", backgroundColor: "rgba(255,255,255,0.02)" }}
                   >
                     <th className="text-left px-4 py-3 font-medium">User</th>
                     <th className="text-left px-4 py-3 font-medium">Role / Sector</th>
@@ -542,7 +542,7 @@ const AdminAccess = () => {
                 </thead>
                 <tbody>
                   {filtered.map((r) => (
-                    <tr key={r.id} style={{ borderTop: "1px solid var(--ink-3)" }}>
+                    <tr key={r.id} style={{ borderTop: "1px solid var(--border-default)" }}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div
@@ -556,10 +556,10 @@ const AdminAccess = () => {
                               {initials(r.name, r.email)}
                             </div>
                             <div className="min-w-0">
-                              <div className="font-semibold truncate" style={{ color: "var(--ink-7)" }}>
+                              <div className="font-semibold truncate" style={{ color: "var(--text-primary)" }}>
                                 {r.name || "—"}
                               </div>
-                              <div className="text-xs truncate" style={{ color: "var(--ink-5)" }}>
+                              <div className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
                                 {r.email}
                               </div>
                             </div>
@@ -568,23 +568,23 @@ const AdminAccess = () => {
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
                             {r.seniority && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--ink-7)", border: "1px solid var(--ink-3)" }}>
+                              <span className="text-xs px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--text-primary)", border: "1px solid var(--border-default)" }}>
                                 {r.seniority}
                               </span>
                             )}
                             {r.sector && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
+                              <span className="text-xs px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
                                 {r.sector}
                               </span>
                             )}
                             {!r.seniority && !r.sector && (
-                              <span className="text-xs" style={{ color: "var(--ink-5)" }}>
+                              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
                                 —
                               </span>
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>
+                        <td className="px-4 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>
                           {formatDate(r.requested_at || r.created_at)}
                         </td>
                         <td className="px-4 py-3">
@@ -601,8 +601,8 @@ const AdminAccess = () => {
                                 className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors disabled:opacity-60"
                                 style={{
                                   backgroundColor: "transparent",
-                                  color: "var(--ink-5)",
-                                  border: "1px solid var(--ink-3)",
+                                  color: "var(--text-secondary)",
+                                  border: "1px solid var(--border-default)",
                                 }}
                               >
                                 {decliningId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Decline"}
@@ -612,7 +612,7 @@ const AdminAccess = () => {
                                 className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
                                 style={{
                                   backgroundColor: "var(--brand)",
-                                  color: "var(--ink)",
+                                  color: "#FFFFFF",
                                 }}
                               >
                                 Invite
@@ -621,7 +621,7 @@ const AdminAccess = () => {
                           )}
                           {(r.status === "invited" || r.status === "approved") && (
                             <div className="inline-flex items-center gap-2">
-                              <span className="text-xs" style={{ color: "var(--ink-5)" }}>
+                              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
                                 Invited ✓ · {formatDate(r.invited_at)}
                               </span>
                               <button
@@ -646,7 +646,7 @@ const AdminAccess = () => {
                             <span className="text-xs text-green-400">Active ✓</span>
                           )}
                           {r.status === "declined" && (
-                            <span className="text-xs" style={{ color: "var(--ink-5)" }}>
+                            <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
                               Declined
                             </span>
                           )}
@@ -662,12 +662,12 @@ const AdminAccess = () => {
         {/* Direct invite */}
         <div
           className="rounded-2xl p-6"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--border-default)" }}
         >
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
             Invite directly (bypasses waitlist)
           </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
+          <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
             Send an invite straight to an email — they'll be added to the allowlist automatically.
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -677,7 +677,7 @@ const AdminAccess = () => {
               onChange={(e) => { setDirectName(e.target.value); setDirectDuplicate(null); }}
               placeholder="Name (optional)"
               className="sm:w-[200px] px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
-              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+              style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
             />
             <input
               type="email"
@@ -685,13 +685,13 @@ const AdminAccess = () => {
               onChange={(e) => { setDirectEmail(e.target.value); setDirectDuplicate(null); }}
               placeholder="email@company.com"
               className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
-              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+              style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
             />
             <button
               onClick={sendDirectInvite}
               disabled={directSending || !directEmail}
               className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
-              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+              style={{ backgroundColor: "var(--brand)", color: "#FFFFFF" }}
             >
               {directSending ? <Loader2 className="w-4 h-4 animate-spin" /> : directDuplicate ? "Send anyway" : "Send invite"}
             </button>
@@ -709,19 +709,19 @@ const AdminAccess = () => {
         {/* Seed Captures */}
         <div
           className="rounded-2xl p-6 mt-8"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--border-default)" }}
         >
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
             Seed Captures
           </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
+          <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
             Pre-load articles for a user before inviting them.
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <Select value={seedUserId} onValueChange={setSeedUserId}>
               <SelectTrigger
                 className="sm:w-[260px] text-sm"
-                style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+                style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
               >
                 <SelectValue placeholder="Choose user" />
               </SelectTrigger>
@@ -741,13 +741,13 @@ const AdminAccess = () => {
               onChange={(e) => setSeedUrl(e.target.value)}
               placeholder="Paste article URL (https://...)"
               className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
-              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+              style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
             />
             <button
               onClick={seedCapture}
               disabled={seedSending || !seedUserId || !seedUrl}
               className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
-              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+              style={{ backgroundColor: "var(--brand)", color: "#FFFFFF" }}
             >
               {seedSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Seed Capture"}
             </button>
@@ -757,18 +757,18 @@ const AdminAccess = () => {
         {/* User management — delete users + their data */}
         <div
           className="rounded-2xl p-6 mt-8"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--border-default)" }}
         >
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
             User management
           </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
+          <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
             Users signed up: {metrics ? signedUp(metrics) ?? "?" : "—"}
             {metrics ? ` · ${freshnessLine(metrics)} · ${exclusionLine(metrics)}` : ""} The list below is every auth
             account, including test accounts. Deleting a user removes their auth account and all associated data permanently.
           </p>
           {rows.length === 0 ? (
-            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No users yet.</div>
+            <div className="text-xs" style={{ color: "var(--text-secondary)" }}>No users yet.</div>
           ) : (
             <div className="space-y-2">
               {rows.map((r) => {
@@ -781,24 +781,24 @@ const AdminAccess = () => {
                   <div
                     key={r.id}
                     className="flex items-start justify-between gap-4 p-3 rounded-md"
-                    style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)" }}
+                    style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)" }}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate" style={{ color: "var(--ink-7)" }}>
+                      <div className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
                         {r.email}
                       </div>
-                      <div className="text-xs mt-0.5" style={{ color: "var(--ink-5)" }}>
+                      <div className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
                         {profile?.first_name
                           ? `${profile.first_name}${profile.sector ? ` · ${profile.sector}` : ""}`
                           : r.name || "(Profile not completed)"}
                       </div>
-                      <div className="text-xs mt-1 uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>
+                      <div className="text-xs mt-1 uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
                         <span className={`inline-block px-2 py-0.5 rounded border ${statusBadge(r.status)}`}>{r.status}</span>
                         <span className="ml-2">Joined: {formatDate(r.invited_at || r.created_at || r.requested_at)}</span>
                       </div>
                     </div>
                     {isProtected ? (
-                      <span className="text-xs px-2 py-1 rounded" style={{ color: "var(--ink-5)", border: "1px dashed var(--ink-3)" }} title="Protected admin account">
+                      <span className="text-xs px-2 py-1 rounded" style={{ color: "var(--text-secondary)", border: "1px dashed var(--border-default)" }} title="Protected admin account">
                         Protected
                       </span>
                     ) : (
@@ -806,7 +806,7 @@ const AdminAccess = () => {
                         onClick={() => setConfirmDeleteRow({ email: r.email, name: r.name })}
                         disabled={isDeleting}
                         className="px-3 py-1.5 text-xs rounded-md inline-flex items-center gap-1.5 shrink-0"
-                        style={{ border: "1px solid rgba(220,38,38,0.4)", color: "rgb(248,113,113)" }}
+                        style={{ border: "1px solid rgba(192,57,43,0.4)", color: "#C0392B" }}
                       >
                         {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />} Delete user
                       </button>
@@ -824,51 +824,51 @@ const AdminAccess = () => {
         {/* NPS responses */}
         <div
           className="rounded-2xl p-6"
-          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--border-default)" }}
         >
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
             NPS responses
           </h2>
-          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
+          <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
             7-day post-signup survey. Higher NPS = more likely to recommend.
           </p>
           <div className="flex flex-wrap gap-2 mb-4">
             <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--brand-muted)", color: "var(--brand)", border: "1px solid var(--bronze-line)" }}>
               Avg score: {npsStats.avg.toFixed(1)}
             </span>
-            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--ink)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
+            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--surface-card)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
               NPS: {npsStats.nps}
             </span>
-            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--ink)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
+            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--surface-card)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
               {npsStats.count} responses
             </span>
           </div>
           {npsRows.length === 0 ? (
-            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No NPS responses yet.</div>
+            <div className="text-xs" style={{ color: "var(--text-secondary)" }}>No NPS responses yet.</div>
           ) : (
             <div className="space-y-2">
               {npsRows.map((r) => (
                 <div
                   key={r.id}
                   className="flex items-start gap-3 p-3 rounded-md"
-                  style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)" }}
+                  style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)" }}
                 >
                   <div
                     className="flex items-center justify-center font-semibold text-sm shrink-0"
                     style={{
                       width: 36, height: 36, borderRadius: 6,
-                      backgroundColor: (r.rating ?? 0) >= 9 ? "var(--brand)" : (r.rating ?? 0) >= 7 ? "var(--brand-muted)" : "rgba(255,255,255,0.05)",
-                      color: (r.rating ?? 0) >= 9 ? "var(--ink)" : "var(--ink-7)",
-                      border: "1px solid var(--ink-3)",
+                      backgroundColor: (r.rating ?? 0) >= 9 ? "var(--brand)" : (r.rating ?? 0) >= 7 ? "var(--brand-muted)" : "var(--surface-subtle)",
+                      color: (r.rating ?? 0) >= 9 ? "#FFFFFF" : "var(--text-primary)",
+                      border: "1px solid var(--border-default)",
                     }}
                   >
                     {r.rating ?? "—"}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm" style={{ color: "var(--ink-7)" }}>
-                      {r.message?.trim() || <span style={{ color: "var(--ink-5)", fontStyle: "italic" }}>No comment</span>}
+                    <div className="text-sm" style={{ color: "var(--text-primary)" }}>
+                      {r.message?.trim() || <span style={{ color: "var(--text-secondary)", fontStyle: "italic" }}>No comment</span>}
                     </div>
-                    <div className="text-xs mt-1" style={{ color: "var(--ink-5)" }}>
+                    <div className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>
                       {formatDate(r.created_at)} · {r.page || "—"}
                     </div>
                   </div>

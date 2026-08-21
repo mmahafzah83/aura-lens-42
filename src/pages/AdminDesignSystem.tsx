@@ -165,7 +165,7 @@ function ColorEditor({
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--ink-3)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--border-default)" }}>
       <div style={{ flex: "0 0 160px", fontSize: 12, color: "var(--ink-7, #eee)" }}>{tokenKey}</div>
       {isHex && (
         <input
@@ -182,7 +182,7 @@ function ColorEditor({
         style={{
           flex: 1,
           padding: "6px 10px",
-          background: "var(--ink)",
+          background: "var(--surface-card)",
           border: "1px solid var(--ink-3, #333)",
           color: "var(--ink-7, #eee)",
           borderRadius: 6,
@@ -419,7 +419,7 @@ const AdminDesignSystem = () => {
 
   if (!authChecked || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--ink)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--surface-card)" }}>
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
     );
@@ -466,16 +466,16 @@ const AdminDesignSystem = () => {
             <>
               <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 20 }}>
                 <div>
-                  <div style={{ fontSize: 12, color: "var(--ink-5)" }}>Version</div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Version</div>
                   <div style={{ fontSize: 24, fontWeight: 400, color: "var(--brand)" }}>v{active.version}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "var(--ink-5)" }}>Scope</div>
-                  <div style={{ fontSize: 14, color: "var(--ink-7)" }}>{active.scope}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Scope</div>
+                  <div style={{ fontSize: 14, color: "var(--text-primary)" }}>{active.scope}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "var(--ink-5)" }}>Created</div>
-                  <div style={{ fontSize: 14, color: "var(--ink-7)" }}>{formatDate(active.created_at)}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Created</div>
+                  <div style={{ fontSize: 14, color: "var(--text-primary)" }}>{formatDate(active.created_at)}</div>
                 </div>
               </div>
 
@@ -496,9 +496,9 @@ const AdminDesignSystem = () => {
               <div style={headingStyle}>Typography</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
                 {Object.entries(activeTypography).map(([k, v]) => (
-                  <div key={k} style={{ padding: 12, border: "1px solid var(--ink-3)", borderRadius: 8 }}>
-                    <div style={{ fontSize: 12, color: "var(--ink-5)" }}>{k}</div>
-                    <div style={{ fontFamily: typeof v === "string" ? `'${v}', sans-serif` : "inherit", fontSize: 18, color: "var(--ink-7)" }}>
+                  <div key={k} style={{ padding: 12, border: "1px solid var(--border-default)", borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{k}</div>
+                    <div style={{ fontFamily: typeof v === "string" ? `'${v}', sans-serif` : "inherit", fontSize: 18, color: "var(--text-primary)" }}>
                       {String(v)}
                     </div>
                   </div>
@@ -515,11 +515,11 @@ const AdminDesignSystem = () => {
                       borderRadius: 8,
                       background: "var(--paper, #14110C)",
                       boxShadow: resolve(v, editTheme),
-                      border: "1px solid var(--ink-3)",
+                      border: "1px solid var(--border-default)",
                     }}
                   >
-                    <div style={{ fontSize: 12, color: "var(--ink-7)", fontWeight: 600 }}>{k}</div>
-                    <div style={{ fontSize: 12, color: "var(--ink-5)", fontFamily: "monospace", marginTop: 4 }}>
+                    <div style={{ fontSize: 12, color: "var(--text-primary)", fontWeight: 600 }}>{k}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", fontFamily: "monospace", marginTop: 4 }}>
                       {resolve(v, editTheme)}
                     </div>
                   </div>
@@ -527,7 +527,7 @@ const AdminDesignSystem = () => {
               </div>
             </>
           ) : (
-            <div style={{ color: "var(--ink-5)" }}>No active version found.</div>
+            <div style={{ color: "var(--text-secondary)" }}>No active version found.</div>
           )}
         </section>
 
@@ -535,7 +535,7 @@ const AdminDesignSystem = () => {
         <section style={sectionCard}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
             <div style={labelStyle}>Section 2 · Edit tokens</div>
-            <div style={{ display: "flex", gap: 6, border: "1px solid var(--ink-3)", borderRadius: 6, padding: 2 }}>
+            <div style={{ display: "flex", gap: 6, border: "1px solid var(--border-default)", borderRadius: 6, padding: 2 }}>
               <button
                 onClick={() => setEditTheme("dark")}
                 style={{
@@ -547,7 +547,7 @@ const AdminDesignSystem = () => {
                   borderRadius: 4,
                   border: "none",
                   background: editTheme === "dark" ? "var(--brand-muted, rgba(6,112,196,0.18))" : "transparent",
-                  color: editTheme === "dark" ? "var(--brand)" : "var(--ink-5)",
+                  color: editTheme === "dark" ? "var(--brand)" : "var(--text-secondary)",
                   cursor: "pointer",
                 }}
               >
@@ -564,7 +564,7 @@ const AdminDesignSystem = () => {
                   borderRadius: 4,
                   border: "none",
                   background: editTheme === "light" ? "var(--brand-muted, rgba(6,112,196,0.18))" : "transparent",
-                  color: editTheme === "light" ? "var(--brand)" : "var(--ink-5)",
+                  color: editTheme === "light" ? "var(--brand)" : "var(--text-secondary)",
                   cursor: "pointer",
                 }}
               >
@@ -575,7 +575,7 @@ const AdminDesignSystem = () => {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
             <div>
-              <div style={{ fontSize: 12, color: "var(--ink-5)", marginBottom: 8, fontWeight: 600 }}>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8, fontWeight: 600 }}>
                 Colors ({editTheme})
               </div>
               <div style={{ maxHeight: 480, overflowY: "auto", paddingRight: 8 }}>
@@ -592,9 +592,9 @@ const AdminDesignSystem = () => {
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "var(--ink-5)", marginBottom: 8, fontWeight: 600 }}>Live preview</div>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8, fontWeight: 600 }}>Live preview</div>
               {editing && <PreviewCard tokens={editing} theme={editTheme} />}
-              <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 12, lineHeight: 1.625 }}>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 12, lineHeight: 1.625 }}>
                 The card above always reflects your edits. Use Preview below to apply changes to the entire page
                 (still client-side only — nothing is saved until you Activate).
               </div>
@@ -612,9 +612,9 @@ const AdminDesignSystem = () => {
                   fontSize: 12,
                   padding: "8px 16px",
                   borderRadius: 6,
-                  border: "0.5px solid var(--ink-3)",
+                  border: "0.5px solid var(--border-default)",
                   background: "transparent",
-                  color: "var(--ink-5)",
+                  color: "var(--text-secondary)",
                   cursor: "pointer",
                 }}
               >
@@ -668,7 +668,7 @@ const AdminDesignSystem = () => {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", fontSize: 14, borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ color: "var(--ink-5)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                <tr style={{ color: "var(--text-secondary)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   <th style={{ textAlign: "left", padding: "10px 12px", fontWeight: 500 }}>Version</th>
                   <th style={{ textAlign: "left", padding: "10px 12px", fontWeight: 500 }}>Created</th>
                   <th style={{ textAlign: "left", padding: "10px 12px", fontWeight: 500 }}>Status</th>
@@ -680,21 +680,21 @@ const AdminDesignSystem = () => {
                   <tr
                     key={r.id}
                     style={{
-                      borderTop: "1px solid var(--ink-3)",
+                      borderTop: "1px solid var(--border-default)",
                       background: r.is_active ? "var(--brand-ghost, rgba(6,112,196,0.06))" : "transparent",
                     }}
                   >
-                    <td style={{ padding: "12px", color: r.is_active ? "var(--brand)" : "var(--ink-7)", fontWeight: 600 }}>
+                    <td style={{ padding: "12px", color: r.is_active ? "var(--brand)" : "var(--text-primary)", fontWeight: 600 }}>
                       v{r.version}
                     </td>
-                    <td style={{ padding: "12px", color: "var(--ink-5)" }}>{formatDate(r.created_at)}</td>
+                    <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{formatDate(r.created_at)}</td>
                     <td style={{ padding: "12px" }}>
                       {r.is_active ? (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--brand)", fontWeight: 600 }}>
                           <Check size={12} /> Active
                         </span>
                       ) : (
-                        <span style={{ fontSize: 12, color: "var(--ink-5)" }}>Inactive</span>
+                        <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>Inactive</span>
                       )}
                     </td>
                     <td style={{ padding: "12px", textAlign: "right" }}>

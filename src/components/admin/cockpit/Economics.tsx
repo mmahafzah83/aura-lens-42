@@ -50,7 +50,7 @@ export function useEconomics(): EconomicsState {
 export function EconomicsHeadline({ state }: { state: EconomicsState }) {
   if (state.loading) return <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Reading spend…</div>;
   if (state.error || !state.data)
-    return <div style={{ fontFamily: MONO, fontSize: 11, color: C.ox }}>{state.error ?? "Spend could not be read."}</div>;
+    return <div style={{ fontFamily: MONO, fontSize: 11, color: C.fail }}>{state.error ?? "Spend could not be read."}</div>;
   const e = state.data;
   const top = topConsumers(e, 3);
   const named = top.map((t) => `${t.function_name} ${money(t.spend)}`).join(", ");
@@ -69,7 +69,7 @@ export function EconomicsHeadline({ state }: { state: EconomicsState }) {
 export function SpendByFunction({ state }: { state: EconomicsState }) {
   if (state.loading) return <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Reading spend…</div>;
   if (state.error || !state.data)
-    return <div style={{ fontFamily: MONO, fontSize: 11, color: C.ox }}>{state.error ?? "Spend could not be read."}</div>;
+    return <div style={{ fontFamily: MONO, fontSize: 11, color: C.fail }}>{state.error ?? "Spend could not be read."}</div>;
   const e = state.data;
   const last = new Map(e.byFunctionLastMonth.map((r) => [r.function_name, r.spend]));
   const rows = e.byFunction.map((r) => [

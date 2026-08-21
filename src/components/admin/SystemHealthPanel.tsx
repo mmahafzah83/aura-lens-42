@@ -26,7 +26,7 @@ const NAMES: Record<string, string> = {
   published_counts_consistent: "Published numbers add up",
 };
 
-const DOT: Record<Row["status"], string> = { pass: C.teal, warn: C.amber, fail: C.ox };
+const DOT: Record<Row["status"], string> = { pass: C.teal, warn: C.amber, fail: C.fail };
 
 function relative(iso: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -102,7 +102,7 @@ export default function SystemHealthPanel() {
         {loading ? (
           <div style={{ fontFamily: MONO, fontSize: 12, color: C.muted }}>Loading checks…</div>
         ) : error ? (
-          <div style={{ fontSize: 13, color: C.ox }}>{error}</div>
+          <div style={{ fontSize: 13, color: C.fail }}>{error}</div>
         ) : rows.length === 0 ? (
           <div style={{ fontFamily: MONO, fontSize: 12, color: C.muted }}>No checks recorded yet.</div>
         ) : (

@@ -70,7 +70,7 @@ function ScoreBar({ score }: { score: number }) {
   const color = score >= 7 ? STATUS_COLORS.pass : score >= 5 ? STATUS_COLORS.warn : STATUS_COLORS.fail;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-      <div style={{ flex: 1, height: 8, background: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
+      <div style={{ flex: 1, height: 8, background: "#E9EEF5", borderRadius: 4, overflow: "hidden" }}>
         <div style={{ width: `${(score / 10) * 100}%`, height: "100%", background: color }} />
       </div>
       <span style={{ fontFamily: "var(--font-mono, monospace)", minWidth: 32, textAlign: "right" }}>{score.toFixed(1)}</span>
@@ -614,7 +614,7 @@ const AdminQA = () => {
       {/* End-to-end walkthrough (relocated from Access) */}
       <Section title="End-to-end walkthrough">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 14, color: "#D4CCBC" }}>
+          <div style={{ fontSize: 14, color: "#5B6673" }}>
             {qaReports[0]
               ? `Last check: ${new Date(qaReports[0].run_at).toLocaleString()} — ${qaReports[0].passed}/${qaReports[0].total_checks} ${qaReports[0].failed === 0 ? "✅" : "⚠️"}`
               : "No checks run yet."}
@@ -625,12 +625,12 @@ const AdminQA = () => {
           </PrimaryBtn>
         </div>
         {qaReports.length === 0 ? (
-          <div style={{ marginTop: 12, fontSize: 14, color: "#B8B0A2" }}>No runs yet.</div>
+          <div style={{ marginTop: 12, fontSize: 14, color: "#5B6673" }}>No runs yet.</div>
         ) : (
           <div style={{ marginTop: 12, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
               <thead>
-                <tr style={{ textAlign: "left", color: "#D4CCBC", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600 }}>
+                <tr style={{ textAlign: "left", color: "#5B6673", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600 }}>
                   <th style={thStyle}>Date</th>
                   <th style={thStyle}>Result</th>
                   <th style={thStyle}>Failed steps</th>
@@ -640,7 +640,7 @@ const AdminQA = () => {
                 {qaReports.map((r) => {
                   const failed = (r.results || []).filter((x) => !x.passed);
                   return (
-                    <tr key={r.id} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                    <tr key={r.id} style={{ borderTop: "1px solid #E2E7EE" }}>
                       <td style={{ ...tdStyle, whiteSpace: "nowrap", fontFamily: "var(--font-mono, monospace)" }}>
                         {new Date(r.run_at).toLocaleString()}
                       </td>
@@ -671,9 +671,9 @@ const AdminQA = () => {
         </div>
         {(running || progress) && (
           <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 14, color: "#D4CCBC" }}>{progress}</div>
-            <div style={{ marginTop: 6, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: running ? "60%" : "100%", background: "var(--brand,#0670C4)", transition: "width 0.4s" }} />
+            <div style={{ fontSize: 14, color: "#5B6673" }}>{progress}</div>
+            <div style={{ marginTop: 6, height: 4, background: "#E9EEF5", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: running ? "60%" : "100%", background: "#0F1519", transition: "width 0.4s" }} />
             </div>
           </div>
         )}
@@ -691,8 +691,8 @@ const AdminQA = () => {
                 <span style={{ width: 18, fontSize: 16, color: s.state === "ok" ? STATUS_COLORS.pass : s.state === "fail" ? STATUS_COLORS.fail : "#999" }}>
                   {s.state === "ok" ? "✓" : s.state === "fail" ? "✗" : "…"}
                 </span>
-                <code style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#F4EFE6", minWidth: 140 }}>{s.route}</code>
-                <span style={{ fontSize: 14, color: "#B8B0A2" }}>
+                <code style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#0F1519", minWidth: 140 }}>{s.route}</code>
+                <span style={{ fontSize: 14, color: "#5B6673" }}>
                   {s.state === "ok" && `loaded (${((s.ms || 0) / 1000).toFixed(1)}s) — ${s.tests || 0} tests run`}
                   {s.state === "fail" && `failed to load — ${s.error || "unknown error"}`}
                   {s.state === "pending" && "pending…"}
@@ -714,7 +714,7 @@ const AdminQA = () => {
             <div style={{ fontSize: 14, color: STATUS_COLORS.fail, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.6 }}>
               run-qa-audit failed
             </div>
-            <pre style={{ margin: 0, fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#F4EFE6", whiteSpace: "pre-wrap" }}>{backendError}</pre>
+            <pre style={{ margin: 0, fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#0F1519", whiteSpace: "pre-wrap" }}>{backendError}</pre>
           </div>
         </Section>
       )}
@@ -738,11 +738,11 @@ const AdminQA = () => {
               </SecondaryBtn>
             </div>
             <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 15, color: "#F4EFE6", display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
+              <div style={{ fontSize: 15, color: "#0F1519", display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
                 <span>Overall pass rate</span>
                 <span style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 16 }}>{summary.rate}% &nbsp;•&nbsp; {(elapsedMs / 1000).toFixed(1)}s</span>
               </div>
-              <div style={{ marginTop: 6, height: 8, background: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ marginTop: 6, height: 8, background: "#E9EEF5", borderRadius: 4, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${summary.rate}%`, background: STATUS_COLORS.pass }} />
               </div>
             </div>
@@ -751,9 +751,9 @@ const AdminQA = () => {
                 const s = layerSummary(l);
                 return (
                   <div key={l} style={cardStyle}>
-                    <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: "#B8B0A2", fontWeight: 600 }}>{l}</div>
-                    <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 28, marginTop: 4, color: "#F4EFE6" }}>{s.rate}%</div>
-                    <div style={{ fontSize: 14, color: "#B8B0A2" }}>{s.pass} / {s.total} passing</div>
+                    <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: "#5B6673", fontWeight: 600 }}>{l}</div>
+                    <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 28, marginTop: 4, color: "#0F1519" }}>{s.rate}%</div>
+                    <div style={{ fontSize: 14, color: "#5B6673" }}>{s.pass} / {s.total} passing</div>
                   </div>
                 );
               })}
@@ -776,7 +776,7 @@ const AdminQA = () => {
             <>
               {functionalRows.length > 0 && (
                 <Section title={`Functional tests — does the product work? (${functionalRows.length})`}>
-                  <p style={{ marginTop: 0, marginBottom: 12, color: "#B8B0A2", fontSize: 14 }}>
+                  <p style={{ marginTop: 0, marginBottom: 12, color: "#5B6673", fontSize: 14 }}>
                     Behavior, navigation, modals, generation, data presence. These determine whether the product actually delivers.
                   </p>
                   {sortedPages.map((page) => {
@@ -791,10 +791,10 @@ const AdminQA = () => {
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <button onClick={() => toggleGroup(key)} style={{ background: "none", border: "none", color: "inherit", flex: 1, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 0, textAlign: "left" }}>
                             {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#F4EFE6", fontWeight: 700 }}>
+                            <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#0F1519", fontWeight: 700 }}>
                               {page === "ask-aura" ? "ASK AURA" : page === "my-story" ? "MY STORY" : page.toUpperCase()}
                             </span>
-                            <span style={{ marginLeft: "auto", fontSize: 14, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
+                            <span style={{ marginLeft: "auto", fontSize: 14, color: "#5B6673", display: "inline-flex", gap: 10 }}>
                               <span>{rows.length} tests</span>
                               <span style={{ color: STATUS_COLORS.pass }}>{pass} pass</span>
                               <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
@@ -864,11 +864,11 @@ const AdminQA = () => {
                       <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                         {dims.map((dim, i) => (
                           <div key={i}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--ink-2,#999)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#5B6673" }}>
                               <span>{dim.name}</span>
                             </div>
                             <ScoreBar score={Number(dim.score) || 0} />
-                            {dim.explanation && <div style={{ fontSize: 12, color: "var(--ink-2,#888)", marginTop: 2 }}>{dim.explanation}</div>}
+                            {dim.explanation && <div style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>{dim.explanation}</div>}
                           </div>
                         ))}
                       </div>
@@ -901,7 +901,7 @@ const AdminQA = () => {
       <Section title="History">
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
-            <tr style={{ textAlign: "left", color: "#D4CCBC", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600 }}>
+            <tr style={{ textAlign: "left", color: "#5B6673", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600 }}>
               <th style={thStyle}>When</th>
               <th style={thStyle}>Total</th>
               <th style={thStyle}>Pass rate</th>
@@ -915,8 +915,8 @@ const AdminQA = () => {
               const rate = h.total ? Math.round((h.pass / h.total) * 100) : 0;
               const isCurrent = currentRunId === h.run_id;
               return (
-                <tr key={h.run_id} style={{ borderTop: "1px solid rgba(255,255,255,0.08)", background: isCurrent ? "rgba(197,165,90,0.06)" : "transparent" }}>
-                  <td style={{ ...tdStyle, whiteSpace: "nowrap", color: "#F4EFE6", fontFamily: "var(--font-mono, monospace)" }}>{formatRunDate(h.run_at)}</td>
+                <tr key={h.run_id} style={{ borderTop: "1px solid #E2E7EE", background: isCurrent ? "#F2F5F9" : "transparent" }}>
+                  <td style={{ ...tdStyle, whiteSpace: "nowrap", color: "#0F1519", fontFamily: "var(--font-mono, monospace)" }}>{formatRunDate(h.run_at)}</td>
                   <td style={tdStyle}>{h.total}</td>
                   <td style={tdStyle}>{rate}%</td>
                   <td style={tdStyle}>
@@ -951,10 +951,10 @@ const AdminQA = () => {
         )}
         {compareDiff && (
           <div style={{ marginTop: 16, ...cardStyle }}>
-            <div style={{ fontSize: 12, color: "var(--ink-2,#999)", marginBottom: 8 }}>{compareDiff.length} tests changed</div>
+            <div style={{ fontSize: 12, color: "#5B6673", marginBottom: 8 }}>{compareDiff.length} tests changed</div>
             <div style={{ maxHeight: 320, overflowY: "auto" }}>
               {compareDiff.map((f, i) => (
-                <div key={i} style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12, padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                <div key={i} style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12, padding: "4px 0", borderBottom: "1px solid #E2E7EE" }}>
                   {f.test_id}: <span style={{ color: STATUS_COLORS[f.from] || "#999" }}>{f.from}</span> → <span style={{ color: STATUS_COLORS[f.to] || "#999" }}>{f.to}</span>
                 </div>
               ))}
@@ -979,12 +979,12 @@ const AdminQA = () => {
 
       {batchModal && (
         <div onClick={() => setBatchModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "#15140f", border: "1px solid rgba(197,165,90,0.4)", borderRadius: 10, padding: 20, width: "min(900px, 100%)", maxHeight: "85vh", display: "flex", flexDirection: "column", gap: 12 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#FFFFFF", border: "1px solid #E2E7EE", borderRadius: 10, padding: 20, width: "min(900px, 100%)", maxHeight: "85vh", display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h3 style={{ margin: 0, fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", fontSize: 24, color: "#F4EFE6" }}>{batchModal.title}</h3>
-              <button onClick={() => setBatchModal(null)} style={{ background: "transparent", border: "none", color: "#F4EFE6", cursor: "pointer" }}><X size={18} /></button>
+              <h3 style={{ margin: 0, fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", fontSize: 24, color: "#0F1519" }}>{batchModal.title}</h3>
+              <button onClick={() => setBatchModal(null)} style={{ background: "transparent", border: "none", color: "#0F1519", cursor: "pointer" }}><X size={18} /></button>
             </div>
-            <textarea readOnly value={batchModal.text} style={{ width: "100%", flex: 1, minHeight: 360, background: "var(--paper)", color: "#F4EFE6", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: 12, fontFamily: "var(--font-mono, monospace)", fontSize: 14, lineHeight: 1.5 }} />
+            <textarea readOnly value={batchModal.text} style={{ width: "100%", flex: 1, minHeight: 360, background: "#FFFFFF", color: "#0F1519", border: "1px solid #E2E7EE", borderRadius: 6, padding: 12, fontFamily: "var(--font-mono, monospace)", fontSize: 14, lineHeight: 1.5 }} />
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <SecondaryBtn onClick={() => setBatchModal(null)}>Close</SecondaryBtn>
               <PrimaryBtn onClick={() => copyText(batchModal.text)}><Copy size={14} /> Copy to clipboard</PrimaryBtn>
@@ -999,24 +999,24 @@ const AdminQA = () => {
 /* ---------------- Subcomponents ---------------- */
 
 const cardStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.12)",
+  background: "#FFFFFF",
+  border: "1px solid #E2E7EE",
   borderRadius: 8,
   padding: 16,
 };
 
 const thStyle: React.CSSProperties = { padding: "10px 12px", fontWeight: 600 };
-const tdStyle: React.CSSProperties = { padding: "10px 12px", color: "#F4EFE6" };
-const linkBtn: React.CSSProperties = { background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#F4EFE6", padding: "5px 12px", borderRadius: 4, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'Inter', sans-serif)" };
+const tdStyle: React.CSSProperties = { padding: "10px 12px", color: "#0F1519" };
+const linkBtn: React.CSSProperties = { background: "transparent", border: "1px solid #E2E7EE", color: "#0F1519", padding: "5px 12px", borderRadius: 4, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'Inter', sans-serif)" };
 
 const primaryBtnStyle: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
-  background: "var(--brand,#0670C4)", color: "var(--paper)", border: "none",
+  background: "var(--brand,#0670C4)", color: "#FFFFFF", border: "none",
   padding: "11px 20px", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'Inter', sans-serif)",
 };
 const secondaryBtnStyle: React.CSSProperties = {
-  background: "transparent", color: "#F4EFE6",
-  border: "1px solid rgba(255,255,255,0.2)", padding: "10px 16px",
+  background: "transparent", color: "#0F1519",
+  border: "1px solid #E2E7EE", padding: "10px 16px",
   borderRadius: 6, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'Inter', sans-serif)",
 };
 
@@ -1030,7 +1030,7 @@ function SecondaryBtn(p: React.ButtonHTMLAttributes<HTMLButtonElement>) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section style={{ marginTop: 32 }}>
-      <h2 style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 500, margin: "0 0 14px", borderBottom: "1px solid rgba(255,255,255,0.12)", paddingBottom: 10, color: "#F4EFE6", letterSpacing: 0.2 }}>{title}</h2>
+      <h2 style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", fontSize: 28, fontWeight: 500, margin: "0 0 14px", borderBottom: "1px solid #E2E7EE", paddingBottom: 10, color: "#0F1519", letterSpacing: 0.2 }}>{title}</h2>
       {children}
     </section>
   );
@@ -1038,9 +1038,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Stat({ label, value, color, emphasis }: { label: string; value: number; color?: string; emphasis?: boolean }) {
   return (
-    <div style={{ ...cardStyle, ...(emphasis ? { background: "rgba(197,165,90,0.08)", border: "1px solid rgba(197,165,90,0.4)" } : null) }}>
-      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "var(--brand, #0670C4)" : "#B8B0A2", fontWeight: 600 }}>{label}</div>
-      <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: emphasis ? 40 : 30, marginTop: 6, color: color || "#F4EFE6", fontWeight: emphasis ? 700 : 500 }}>{value}</div>
+    <div style={{ ...cardStyle, ...(emphasis ? { background: "#F2F5F9", border: "1px solid #E2E7EE" } : null) }}>
+      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "#0F1519" : "#5B6673", fontWeight: 600 }}>{label}</div>
+      <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: emphasis ? 40 : 30, marginTop: 6, color: color || "#0F1519", fontWeight: emphasis ? 700 : 500 }}>{value}</div>
     </div>
   );
 }
@@ -1219,11 +1219,11 @@ function TestingPanel() {
       {/* 1 — create a test member */}
       <div style={{ ...cardStyle, marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 14, color: "#D4CCBC", maxWidth: 520 }}>
+          <div style={{ fontSize: 14, color: "#5B6673", maxWidth: 520 }}>
             A fresh account with the confirmation mail and the password gate already bypassed.
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <label htmlFor="qa-create-persona" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600 }}>
+            <label htmlFor="qa-create-persona" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#5B6673", fontWeight: 600 }}>
               Persona
             </label>
             <select
@@ -1244,14 +1244,14 @@ function TestingPanel() {
         </div>
 
         {seedSummary && (
-          <div style={{ marginTop: 12, fontSize: 14, color: "#F4EFE6", fontFamily: "var(--font-mono, monospace)" }}>
+          <div style={{ marginTop: 12, fontSize: 14, color: "#0F1519", fontFamily: "var(--font-mono, monospace)" }}>
             {seedSummary}
           </div>
         )}
 
         {fresh && (
-          <div style={{ marginTop: 14, background: "rgba(0,0,0,0.3)", borderRadius: 6, padding: 14 }}>
-            <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#F4EFE6", wordBreak: "break-all" }}>
+          <div style={{ marginTop: 14, background: "#F2F5F9", borderRadius: 6, padding: 14 }}>
+            <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#0F1519", wordBreak: "break-all" }}>
               <div>{fresh.email}</div>
               <div>{fresh.password}</div>
             </div>
@@ -1265,7 +1265,7 @@ function TestingPanel() {
               >
                 <Copy size={13} /> Copy
               </SecondaryBtn>
-              <span style={{ fontSize: 14, color: "#B8B0A2" }}>
+              <span style={{ fontSize: 14, color: "#5B6673" }}>
                 Open a private window, sign in with these, and walk the journey as a stranger.
               </span>
             </div>
@@ -1274,13 +1274,13 @@ function TestingPanel() {
 
         {qaAccounts.length > 0 && (
           <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600, marginBottom: 6 }}>
+            <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#5B6673", fontWeight: 600, marginBottom: 6 }}>
               Last five test members
             </div>
             {qaAccounts.map((a) => (
-              <div key={a.email} style={{ display: "flex", gap: 12, justifyContent: "space-between", fontSize: 14, color: "#D4CCBC", padding: "6px 0", borderTop: "1px solid rgba(255,255,255,0.08)", fontFamily: "var(--font-mono, monospace)", flexWrap: "wrap" }}>
+              <div key={a.email} style={{ display: "flex", gap: 12, justifyContent: "space-between", fontSize: 14, color: "#5B6673", padding: "6px 0", borderTop: "1px solid #E2E7EE", fontFamily: "var(--font-mono, monospace)", flexWrap: "wrap" }}>
                 <span style={{ wordBreak: "break-all" }}>{a.email}</span>
-                <span style={{ color: "#9C9485" }}>{new Date(a.created_at).toLocaleString()}</span>
+                <span style={{ color: "#5B6673" }}>{new Date(a.created_at).toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -1289,8 +1289,8 @@ function TestingPanel() {
 
       {/* 2 — reset a member's journey */}
       <div style={{ ...cardStyle, marginBottom: 12 }}>
-        <div style={{ fontSize: 16, color: "#F4EFE6", fontWeight: 600, marginBottom: 10 }}>Reset a member's journey</div>
-        <label htmlFor="qa-reset-member" style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600, marginBottom: 6 }}>
+        <div style={{ fontSize: 16, color: "#0F1519", fontWeight: 600, marginBottom: 10 }}>Reset a member's journey</div>
+        <label htmlFor="qa-reset-member" style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#5B6673", fontWeight: 600, marginBottom: 6 }}>
           Member
         </label>
         <select
@@ -1311,7 +1311,7 @@ function TestingPanel() {
           </div>
         )}
 
-        <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, fontSize: 14, color: "#D4CCBC", minHeight: 44, cursor: "pointer" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, fontSize: 14, color: "#5B6673", minHeight: 44, cursor: "pointer" }}>
           <input
             type="checkbox"
             checked={wipeCaptures}
@@ -1321,7 +1321,7 @@ function TestingPanel() {
           Also delete their captures
         </label>
 
-        <label htmlFor="qa-reset-confirm" style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600, margin: "12px 0 6px" }}>
+        <label htmlFor="qa-reset-confirm" style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#5B6673", fontWeight: 600, margin: "12px 0 6px" }}>
           Type “{selectedName || "the member's name"}” to confirm
         </label>
         <input
@@ -1341,12 +1341,12 @@ function TestingPanel() {
         </div>
 
         {/* Re-seed — same member, same typed confirmation, a chosen persona */}
-        <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ fontSize: 14, color: "#D4CCBC", marginBottom: 10, maxWidth: 560 }}>
+        <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #E2E7EE" }}>
+          <div style={{ fontSize: 14, color: "#5B6673", marginBottom: 10, maxWidth: 560 }}>
             Or re-seed this member as a persona. The journey is reset first, so the result is always the same.
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <label htmlFor="qa-reseed-persona" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600 }}>
+            <label htmlFor="qa-reseed-persona" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#5B6673", fontWeight: 600 }}>
               Persona
             </label>
             <select
@@ -1365,7 +1365,7 @@ function TestingPanel() {
             </SecondaryBtn>
           </div>
           {reseedSummary && (
-            <div style={{ marginTop: 10, fontSize: 14, color: "#F4EFE6", fontFamily: "var(--font-mono, monospace)" }}>
+            <div style={{ marginTop: 10, fontSize: 14, color: "#0F1519", fontFamily: "var(--font-mono, monospace)" }}>
               {reseedSummary}
             </div>
           )}
@@ -1374,8 +1374,8 @@ function TestingPanel() {
 
       {/* 3 — delete a test member */}
       <div style={cardStyle}>
-        <div style={{ fontSize: 16, color: "#F4EFE6", fontWeight: 600, marginBottom: 10 }}>Delete a test member</div>
-        <label htmlFor="qa-delete-member" style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#9C9485", fontWeight: 600, marginBottom: 6 }}>
+        <div style={{ fontSize: 16, color: "#0F1519", fontWeight: 600, marginBottom: 10 }}>Delete a test member</div>
+        <label htmlFor="qa-delete-member" style={{ display: "block", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: "#5B6673", fontWeight: 600, marginBottom: 6 }}>
           Test address
         </label>
         <select
@@ -1420,8 +1420,8 @@ function Group({ cat, rows, open, onToggle, onCopyFix, onMarkKnown, onBatchFix }
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <button onClick={onToggle} style={{ background: "none", border: "none", color: "inherit", flex: 1, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 0, textAlign: "left" }}>
           {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#F4EFE6", fontWeight: 700 }}>{cat}</span>
-          <span style={{ marginLeft: "auto", fontSize: 14, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
+          <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#0F1519", fontWeight: 700 }}>{cat}</span>
+          <span style={{ marginLeft: "auto", fontSize: 14, color: "#5B6673", display: "inline-flex", gap: 10 }}>
             <span>{rows.length} total</span>
             <span style={{ color: STATUS_COLORS.pass }}>{pass} pass</span>
             <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
@@ -1456,18 +1456,18 @@ function ResultRowView({ r, onCopyFix, onMarkKnown }: {
   const fg: string | undefined = (d as any).fg;
   const bg: string | undefined = (d as any).bg;
   return (
-    <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 }}>
+    <div style={{ borderTop: "1px solid #E2E7EE", paddingTop: 10 }}>
       <button onClick={() => setOpen((p) => !p)} style={{ background: "none", border: "none", color: "inherit", width: "100%", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: 4, textAlign: "left", flexWrap: "wrap" }}>
         <StatusBadge status={r.status} />
         {r.status !== "pass" && (
           <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 8px", borderRadius: 4, background: `${sevColor}22`, color: sevColor, border: `1px solid ${sevColor}66`, textTransform: "uppercase", letterSpacing: 0.4 }}>{severity}</span>
         )}
-        <span style={{ fontSize: 14, color: "#F4EFE6", fontWeight: 500 }}>{r.test_name}</span>
-        <span style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12, color: "#9C9485", marginLeft: "auto" }}>{r.test_id}</span>
+        <span style={{ fontSize: 14, color: "#0F1519", fontWeight: 500 }}>{r.test_name}</span>
+        <span style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12, color: "#5B6673", marginLeft: "auto" }}>{r.test_id}</span>
       </button>
       {open && (
-        <div style={{ padding: "10px 12px 12px 12px", fontSize: 14, color: "#D4CCBC", display: "flex", flexDirection: "column", gap: 6, marginTop: 6, background: "rgba(0,0,0,0.25)", borderRadius: 6 }}>
-          {d.description && <div style={{ color: "#F4EFE6" }}>{d.description}</div>}
+        <div style={{ padding: "10px 12px 12px 12px", fontSize: 14, color: "#5B6673", display: "flex", flexDirection: "column", gap: 6, marginTop: 6, background: "#F2F5F9", borderRadius: 6 }}>
+          {d.description && <div style={{ color: "#0F1519" }}>{d.description}</div>}
           {d.page && <div><Label>Location</Label><code style={codeStyle}>{String(d.page)}{d.element ? ` → ${String(d.element)}` : ""}</code></div>}
           {!d.page && d.element && <div><Label>Location</Label><code style={codeStyle}>{String(d.element)}</code></div>}
           {(d.expected !== undefined) && <div><Label>Expected</Label><code style={codeStyle}>{String(d.expected)}</code></div>}
@@ -1484,8 +1484,8 @@ function ResultRowView({ r, onCopyFix, onMarkKnown }: {
           )}
           {Array.isArray(d.samples) && d.samples.length > 0 && (
             <details style={{ marginTop: 4 }}>
-              <summary style={{ cursor: "pointer", color: "#B8B0A2", fontSize: 14 }}>{d.samples.length} samples</summary>
-              <pre style={{ fontSize: 12, whiteSpace: "pre-wrap", margin: "6px 0", color: "#B8B0A2", fontFamily: "var(--font-mono, monospace)" }}>{d.samples.map((s: any) => typeof s === "string" ? s : JSON.stringify(s)).join("\n")}</pre>
+              <summary style={{ cursor: "pointer", color: "#5B6673", fontSize: 14 }}>{d.samples.length} samples</summary>
+              <pre style={{ fontSize: 12, whiteSpace: "pre-wrap", margin: "6px 0", color: "#5B6673", fontFamily: "var(--font-mono, monospace)" }}>{d.samples.map((s: any) => typeof s === "string" ? s : JSON.stringify(s)).join("\n")}</pre>
             </details>
           )}
           {r.status !== "pass" && (
@@ -1505,14 +1505,14 @@ function ResultRowView({ r, onCopyFix, onMarkKnown }: {
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <span style={{ display: "inline-block", minWidth: 80, fontSize: 12, color: "#9C9485", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600, marginRight: 8 }}>{children}</span>;
+  return <span style={{ display: "inline-block", minWidth: 80, fontSize: 12, color: "#5B6673", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600, marginRight: 8 }}>{children}</span>;
 }
 
 const codeStyle: React.CSSProperties = {
   fontFamily: "var(--font-mono, monospace)",
   fontSize: 14,
-  color: "#F4EFE6",
-  background: "rgba(255,255,255,0.05)",
+  color: "#0F1519",
+  background: "#E9EEF5",
   padding: "2px 6px",
   borderRadius: 4,
   wordBreak: "break-word",
@@ -1520,8 +1520,8 @@ const codeStyle: React.CSSProperties = {
 
 function Swatch({ color, label }: { color: string; label: string }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#B8B0A2" }}>
-      <span style={{ width: 16, height: 16, borderRadius: 3, background: color, border: "1px solid rgba(255,255,255,0.2)" }} />
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#5B6673" }}>
+      <span style={{ width: 16, height: 16, borderRadius: 3, background: color, border: "1px solid #E2E7EE" }} />
       <code style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12 }}>{label}: {color}</code>
     </span>
   );

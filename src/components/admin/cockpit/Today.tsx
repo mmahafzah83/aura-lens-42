@@ -20,8 +20,7 @@ import { C, Chip, Label, Modal, MONO, SERIF, Table } from "./ui";
 
 const NIGHT = "#0F1519";
 const AMBER = "#E0A82E";
-const OX = "#C0392B";
-const BLUE = "#0670C4";
+const FAIL = "#C0392B";
 
 const num = (v: unknown): number | null =>
   v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v);
@@ -263,7 +262,7 @@ export default function TodaySection({
         style={{
           background: C.card,
           border: `1px solid ${C.rule}`,
-          borderLeft: `3px solid ${OX}`,
+          borderLeft: `3px solid ${FAIL}`,
           borderRadius: 20,
           padding: "20px 18px",
           marginBottom: 16,
@@ -428,7 +427,6 @@ export function kindsLine(customers: number | null, testUsers: number | null): s
   return `${c} customers · 1 staff and ${t} test accounts excluded`;
 }
 
-export { BLUE as TODAY_BLUE };
 
 /** Small helper so callers can memoise a figure list cheaply. */
 export function useFigures(build: () => Figure[], deps: unknown[]): Figure[] {

@@ -12,6 +12,11 @@ export const C = {
   tealText: "#00807B",
   amber: "#E0A82E",
   damber: "#9A6F12",
+  /** Blue is an ACTION colour — buttons, links, active nav. Never a state. */
+  act: "#0670C4",
+  /** Failure state. */
+  fail: "#C0392B",
+  /** @deprecated use `act` (action) or `fail` (state) — kept so old imports compile. */
   ox: "#0670C4",
 };
 
@@ -149,9 +154,9 @@ export function Btn({
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   const filled = tone === "primary";
-  const bg = filled ? (hover && !disabled ? "#04477C" : C.ox) : "transparent";
-  const fg = filled ? "#FFFFFF" : tone === "ox" ? C.ox : C.ink;
-  const border = filled ? bg : tone === "ox" ? C.ox : C.rule;
+  const bg = filled ? (hover && !disabled ? "#04477C" : C.act) : "transparent";
+  const fg = filled ? "#FFFFFF" : tone === "ox" ? C.act : C.ink;
+  const border = filled ? bg : tone === "ox" ? C.act : C.rule;
   return (
     <button
       type="button"
@@ -175,7 +180,7 @@ export function Btn({
         border: `1px solid ${border}`,
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        outline: focus ? `2px solid ${C.ox}` : "none",
+        outline: focus ? `2px solid ${C.act}` : "none",
         outlineOffset: 2,
       }}
     >

@@ -234,7 +234,7 @@ export default function AdminCrons() {
   return (
     <AdminShell title="Crons" subtitle="Did the work land — outcomes first, dispatch second">
       <div className="grid gap-6" style={{ background: CANVAS }}>
-        {/* Refresh — single primary action */}
+        {/* Refresh — page-level action. Per-row "Run now" is also an action affordance. */}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
             onClick={load}

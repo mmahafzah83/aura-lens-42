@@ -108,7 +108,7 @@ const VIEW_KEY = "aura.admin.view";
 const ZONES_KEY = "aura.admin.zones";
 
 /** Severity order — anything red floats to the top, always. */
-const RANK: Record<string, number> = { [C.ox]: 0, [C.damber]: 1, [C.amber]: 2, [C.teal]: 3, [C.muted]: 4 };
+const RANK: Record<string, number> = { [C.fail]: 0, [C.damber]: 1, [C.amber]: 2, [C.teal]: 3, [C.muted]: 4 };
 
 function daysAgo(value: unknown): number | null {
   if (!value) return null;
@@ -588,7 +588,7 @@ export default function Admin() {
   const needsFindings = needs.map((item: any) => (
     <Finding
       key={item.fingerprint}
-      colour={C.ox}
+      colour={C.fail}
       finding={item.what}
       example={item.impact}
       recommendation={item.action}
@@ -658,7 +658,7 @@ export default function Admin() {
         style={{
           background: C.card,
           border: `1px solid ${C.rule}`,
-          borderLeft: `3px solid ${needs.length > 0 ? C.ox : C.teal}`,
+          borderLeft: `3px solid ${needs.length > 0 ? C.fail : C.teal}`,
           borderRadius: 4,
           padding: "22px 18px",
           marginBottom: 16,
@@ -717,7 +717,7 @@ export default function Admin() {
       key: "today",
       n: 1,
       title: "Today",
-      tone: needs.length > 0 ? C.ox : decide.length > 0 ? C.damber : C.teal,
+      tone: needs.length > 0 ? C.fail : decide.length > 0 ? C.damber : C.teal,
       keyLine:
         needs.length > 0
           ? `${needs.length} thing${needs.length === 1 ? "" : "s"} need you right now.`
@@ -725,7 +725,7 @@ export default function Admin() {
       content: (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginBottom: 18 }}>
-            <Stat label="Needs you" value={needs.length} colour={C.ox} />
+            <Stat label="Needs you" value={needs.length} colour={C.fail} />
             <Stat label="Decide" value={decide.length + decisionsDueN + targetsDueN} colour={C.damber} />
             <Stat label="Watch" value={watch.length} colour={C.amber} />
             <Stat label="Handled" value={N(p.handled) ?? 0} colour={C.teal} sub="quietly, by the machine" />
@@ -847,7 +847,7 @@ export default function Admin() {
               r.first_name,
               r.captures,
               r.drafts,
-              <span key="li" style={{ color: r.linkedin === "live" ? C.tealText : r.linkedin === "dropped" ? C.ox : C.muted }}>
+              <span key="li" style={{ color: r.linkedin === "live" ? C.tealText : r.linkedin === "dropped" ? C.fail : C.muted }}>
                 {r.linkedin}
               </span>,
               r.days_since_capture === null || r.days_since_capture === undefined ? (
@@ -886,7 +886,7 @@ export default function Admin() {
       key: "content",
       n: 5,
       title: "Content and publishing",
-      tone: failed.length > 0 ? C.ox : drafts && drafts > 0 ? C.damber : contentQuiet ? C.muted : C.teal,
+      tone: failed.length > 0 ? C.fail : drafts && drafts > 0 ? C.damber : contentQuiet ? C.muted : C.teal,
       quiet: contentQuiet,
       keyLine:
         contentQuiet
@@ -913,7 +913,7 @@ export default function Admin() {
               }
               sub="published as a share of all written work"
             />
-            <Stat label="Failed publishes" value={headline("failed_publishes") ?? "?"} colour={C.ox} />
+            <Stat label="Failed publishes" value={headline("failed_publishes") ?? "?"} colour={C.fail} />
           </div>
           {draftList.length > 0 && (
             <>
@@ -1049,7 +1049,7 @@ export default function Admin() {
               head={["Person", "Score", "Date", "What they wrote"]}
               rows={feedback.map((f: any) => [
                 f.first_name ?? "Someone",
-                <span key="r" style={{ color: Number(f.rating) >= 9 ? C.tealText : Number(f.rating) >= 7 ? C.amber : C.ox }}>
+                <span key="r" style={{ color: Number(f.rating) >= 9 ? C.tealText : Number(f.rating) >= 7 ? C.amber : C.fail }}>
                   {f.rating}
                 </span>,
                 f.date,
@@ -1117,13 +1117,13 @@ export default function Admin() {
       key: "machine",
       n: 8,
       title: "The machine",
-      tone: jobsFailed > 0 ? C.ox : Number(p.machine?.queue_failed ?? 0) > 0 ? C.amber : C.teal,
+      tone: jobsFailed > 0 ? C.fail : Number(p.machine?.queue_failed ?? 0) > 0 ? C.amber : C.teal,
       keyLine:
         jobsFailed > 0 ? "Scheduled work failed in the last 24 hours." : "Every job that was due has run.",
       content: (
         <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 20 }}>
-            <Stat label="Spend this month" value={`$${N(p.machine?.spend_mtd) ?? 0}`} colour={Number(p.machine?.spend_mtd ?? 0) > 200 ? C.ox : C.teal} />
+            <Stat label="Spend this month" value={`$${N(p.machine?.spend_mtd) ?? 0}`} colour={Number(p.machine?.spend_mtd ?? 0) > 200 ? C.fail : C.teal} />
             <Stat
               label="Projected month"
               value={`$${(() => {
@@ -1144,9 +1144,9 @@ export default function Admin() {
             <Stat
               label="AI providers up"
               value={`${(N(p.machine?.api_health?.checked) ?? 0) - (N(p.machine?.api_health?.failed) ?? 0)} / ${N(p.machine?.api_health?.checked) ?? 0}`}
-              colour={Number(p.machine?.api_health?.failed ?? 0) > 0 ? C.ox : C.teal}
+              colour={Number(p.machine?.api_health?.failed ?? 0) > 0 ? C.fail : C.teal}
             />
-            <Stat label="Hours since a capture" value={N(p.machine?.hours_since_capture) ?? "?"} colour={Number(p.machine?.hours_since_capture ?? 0) > 72 ? C.ox : C.teal} />
+            <Stat label="Hours since a capture" value={N(p.machine?.hours_since_capture) ?? "?"} colour={Number(p.machine?.hours_since_capture ?? 0) > 72 ? C.fail : C.teal} />
           </div>
 
           {/* Headline money, read from the same definition /admin/cost reads. */}
@@ -1162,15 +1162,15 @@ export default function Admin() {
           <CappedTable
             head={["Job", "State", "Schedule", "Last run"]}
             rows={[
-              ...(p.jobs?.failed ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.ox }}>{dot(C.ox)}failed in 24h</span>, j.schedule, j.last_run ?? "never"]),
-              ...(p.jobs?.dead ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.ox }}>{dot(C.ox)}missed its window</span>, j.schedule, j.last_run ?? "never"]),
+              ...(p.jobs?.failed ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.fail }}>{dot(C.fail)}failed in 24h</span>, j.schedule, j.last_run ?? "never"]),
+              ...(p.jobs?.dead ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.fail }}>{dot(C.fail)}missed its window</span>, j.schedule, j.last_run ?? "never"]),
               ...(p.jobs?.ok ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.tealText }}>{dot(C.teal)}ran clean</span>, j.schedule, j.last_run ?? "never"]),
               ...(p.jobs?.not_due ?? []).map((j: any) => [j.name, <span key="s" style={{ color: C.muted }}>{dot(C.muted)}not due yet</span>, j.schedule, j.last_run ?? "never"]),
             ]}
           />
           <div style={{ height: 18 }} />
           <Finding
-            colour={jobsFailed > 0 ? C.ox : C.teal}
+            colour={jobsFailed > 0 ? C.fail : C.teal}
             finding={jobsFailed > 0 ? "Scheduled work failed in the last 24 hours." : "Every job that was due has run."}
             example={
               (p.jobs?.failed ?? [])[0]
@@ -1193,7 +1193,7 @@ export default function Admin() {
       key: "proof",
       n: 9,
       title: "Proof",
-      tone: Number(audit?.disagreements ?? 0) > 0 ? C.ox : C.teal,
+      tone: Number(audit?.disagreements ?? 0) > 0 ? C.fail : C.teal,
       keyLine:
         Number(audit?.disagreements ?? 0) > 0
           ? `${audit.disagreements} numbers disagreed with their cross-check today.`
@@ -1201,7 +1201,7 @@ export default function Admin() {
       content: (
         <>
           <Finding
-            colour={Number(audit?.disagreements ?? 0) > 0 ? C.ox : C.teal}
+            colour={Number(audit?.disagreements ?? 0) > 0 ? C.fail : C.teal}
             finding="Each row below was computed once in SQL and once again through independent per-record counts."
             recommendation="Press “Verify against live data” before you quote any of these numbers to an outsider."
             action={
@@ -1486,7 +1486,7 @@ export default function Admin() {
               <Loader2 className="w-4 h-4 animate-spin" /> Counting…
             </div>
           ) : err || !p ? (
-            <div style={{ fontFamily: SERIF, fontSize: 17, color: C.ox }}>
+            <div style={{ fontFamily: SERIF, fontSize: 17, color: C.fail }}>
               The cockpit could not read today&apos;s brief: {err ?? "no data"}. <Btn onClick={refresh}>Try again</Btn>
             </div>
           ) : view === "ceo" ? (
@@ -1557,7 +1557,7 @@ function auditTable(pairs: any[], verify: any) {
           x.route_a,
           x.route_b,
           `${x.a ?? "?"} / ${x.b ?? "?"}`,
-          <span key="ag" style={{ color: x.agree ? C.tealText : C.ox }}>
+          <span key="ag" style={{ color: x.agree ? C.tealText : C.fail }}>
             {x.agree ? "✓" : "✗"}
           </span>,
           verify === null ? (
@@ -1565,7 +1565,7 @@ function auditTable(pairs: any[], verify: any) {
           ) : live === null ? (
             <span key="l" style={{ color: C.muted }}>not covered</span>
           ) : (
-            <span key="l" style={{ color: live === N(x.a) ? C.tealText : C.ox }}>
+            <span key="l" style={{ color: live === N(x.a) ? C.tealText : C.fail }}>
               {live} {live === N(x.a) ? "pass" : "FAIL"}
             </span>
           ),

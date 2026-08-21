@@ -15,7 +15,7 @@ type Finding = {
 const SEV_COLOR: Record<Finding["severity"], string> = {
   critical: "#C0392B",
   warn: "#9A6F12",
-  info: "#0891b2",
+  info: "#00807B",
 };
 
 function age(iso: string): string {
@@ -116,7 +116,7 @@ export default function HealthFindingsPanel() {
                 alignItems: "start", gap: 12,
                 padding: "10px 12px", borderRadius: 8,
                 background: "var(--ob-field, rgba(255,255,255,0.02))",
-                border: `0.5px solid ${resolved ? "rgba(255,255,255,0.06)" : SEV_COLOR[r.severity] + "55"}`,
+                border: `0.5px solid ${resolved ? "#E2E7EE" : SEV_COLOR[r.severity] + "55"}`,
                 opacity: resolved ? 0.55 : 1,
               }}>
                 <Icon size={14} style={{ marginTop: 2, color: SEV_COLOR[r.severity] }} />

@@ -125,7 +125,7 @@ export function ReviewCard({
               Cannot tell yet
             </Btn>
           </div>
-          {err && <div style={{ fontFamily: MONO, fontSize: 11, color: C.ox, marginTop: 8 }}>{err}</div>}
+          {err && <div style={{ fontFamily: MONO, fontSize: 11, color: C.fail, marginTop: 8 }}>{err}</div>}
         </div>
       }
       countedFrom="decisions.review_on <= today and status = open"
@@ -237,7 +237,7 @@ function NewDecisionForm({ metrics, onSaved }: { metrics: AdminMetrics | null; o
         The baseline is captured by the system from today&apos;s brief. You are never asked to type it.
       </div>
       {msg && (
-        <div style={{ fontFamily: SERIF, fontSize: 15, color: C.ox, marginTop: 10 }}>{msg}</div>
+        <div style={{ fontFamily: SERIF, fontSize: 15, color: C.fail, marginTop: 10 }}>{msg}</div>
       )}
       <div style={{ marginTop: 12 }}>
         <Btn onClick={save} disabled={busy} title={blocked ?? undefined}>
@@ -259,7 +259,7 @@ function Row({ children }: { children: React.ReactNode }) {
 export function DecisionsZone({ state }: { state: DecisionsState }) {
   const metrics = state.metrics;
   if (state.loading) return <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Reading the decision log…</div>;
-  if (state.error) return <div style={{ fontFamily: MONO, fontSize: 11, color: C.ox }}>{state.error}</div>;
+  if (state.error) return <div style={{ fontFamily: MONO, fontSize: 11, color: C.fail }}>{state.error}</div>;
 
   const board = decisionScoreboard(state.rows);
   const pending = pendingDecisions(state.rows);
@@ -314,7 +314,7 @@ export function DecisionsZone({ state }: { state: DecisionsState }) {
             <Row key={d.id}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ fontFamily: SERIF, fontSize: 17, color: C.ink }}>{d.title}</div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: left !== null && left <= 0 ? C.ox : C.muted }}>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: left !== null && left <= 0 ? C.fail : C.muted }}>
                   {left === null
                     ? "no review date"
                     : left <= 0
@@ -347,7 +347,7 @@ export function DecisionsZone({ state }: { state: DecisionsState }) {
                 style={{
                   fontFamily: MONO,
                   fontSize: 11,
-                  color: d.status === "confirmed" ? C.tealText : d.status === "refuted" ? C.ox : C.muted,
+                  color: d.status === "confirmed" ? C.tealText : d.status === "refuted" ? C.fail : C.muted,
                 }}
               >
                 {DECISION_STATUS_LABEL[d.status]}

@@ -60,7 +60,7 @@ const SectionTitle = ({ title, subtitle }: { title: string; subtitle: string }) 
     >
       {title}
     </h2>
-    <p className="text-sm" style={{ color: "var(--ink-5)" }}>
+    <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
       {subtitle}
     </p>
   </div>
@@ -210,7 +210,7 @@ const AdminExperience = () => {
 
   if (!authChecked || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--ink)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--surface-card)" }}>
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
     );
@@ -232,12 +232,12 @@ const AdminExperience = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h3
                     className="text-lg"
-                    style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif", color: "var(--ink-7)" }}
+                    style={{ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif", color: "var(--text-primary)" }}
                   >
                     {cap(bg.page_key)}
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs" style={{ color: "var(--ink-5)" }}>
+                    <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
                       {bg.enabled ? "On" : "Off"}
                     </span>
                     <Switch
@@ -249,19 +249,19 @@ const AdminExperience = () => {
 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-xs" style={{ color: "var(--ink-5)" }}>Image URL</Label>
+                    <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>Image URL</Label>
                     <Input
                       value={bg.image_url || ""}
                       onChange={(e) => updateBgLocal(bg.id, { image_url: e.target.value })}
                       placeholder="https://…"
                       className="mt-1 text-xs h-9"
-                      style={{ backgroundColor: "var(--ink)", borderColor: "var(--ink-3)", color: "var(--ink-7)" }}
+                      style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs" style={{ color: "var(--ink-5)" }}>Opacity</Label>
+                      <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>Opacity</Label>
                       <span className="text-xs tabular-nums" style={{ color: "var(--brand)" }}>
                         {(bg.opacity ?? 0).toFixed(2)}
                       </span>
@@ -277,13 +277,13 @@ const AdminExperience = () => {
                   </div>
 
                   <div>
-                    <Label className="text-xs" style={{ color: "var(--ink-5)" }}>Tint color</Label>
+                    <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>Tint color</Label>
                     <Input
                       value={bg.tint_color || ""}
                       onChange={(e) => updateBgLocal(bg.id, { tint_color: e.target.value })}
                       placeholder="rgba(6,112,196,0.04)"
                       className="mt-1 text-xs h-9"
-                      style={{ backgroundColor: "var(--ink)", borderColor: "var(--ink-3)", color: "var(--ink-7)" }}
+                      style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
                     />
                   </div>
 
@@ -292,8 +292,8 @@ const AdminExperience = () => {
                     className="relative w-full overflow-hidden rounded-md"
                     style={{
                       height: 60,
-                      border: "1px solid var(--ink-3)",
-                      backgroundColor: "var(--ink)",
+                      border: "1px solid var(--border-default)",
+                      backgroundColor: "var(--surface-card)",
                     }}
                   >
                     {bg.image_url ? (
@@ -307,7 +307,7 @@ const AdminExperience = () => {
                         }}
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-xs" style={{ color: "var(--ink-5)" }}>
+                      <div className="absolute inset-0 flex items-center justify-center text-xs" style={{ color: "var(--text-secondary)" }}>
                         no image
                       </div>
                     )}
@@ -321,7 +321,7 @@ const AdminExperience = () => {
                       onClick={() => saveBg(bg)}
                       disabled={savingBg === bg.id}
                       className="text-xs px-4 py-2 rounded-md font-medium disabled:opacity-60"
-                      style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+                      style={{ backgroundColor: "var(--brand)", color: "#FFFFFF" }}
                     >
                       {savingBg === bg.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
                     </button>
@@ -349,7 +349,7 @@ const AdminExperience = () => {
                 onChange={(v) => setEffect("orbs_enabled", v, "Orbs updated")}
               />
 
-              <div className="h-px" style={{ backgroundColor: "var(--ink-3)" }} />
+              <div className="h-px" style={{ backgroundColor: "var(--border-default)" }} />
 
               {/* Single booleans */}
               {[
@@ -361,7 +361,7 @@ const AdminExperience = () => {
                 ["page_transitions", "Page transitions"],
               ].map(([key, label]) => (
                 <div key={key} className="flex items-center justify-between">
-                  <span className="text-sm" style={{ color: "var(--ink-7)" }}>{label}</span>
+                  <span className="text-sm" style={{ color: "var(--text-primary)" }}>{label}</span>
                   <Switch
                     checked={!!effects[key]}
                     onCheckedChange={(v) => setEffect(key, v, `${label} ${v ? "on" : "off"}`)}
@@ -461,7 +461,7 @@ const AdminExperience = () => {
                 onClick={saveSidebar}
                 disabled={savingSidebar}
                 className="text-xs px-4 py-2 rounded-md font-medium disabled:opacity-60"
-                style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+                style={{ backgroundColor: "var(--brand)", color: "#FFFFFF" }}
               >
                 {savingSidebar ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save sidebar"}
               </button>
@@ -476,13 +476,13 @@ const ThemedToggleRow = ({
   label, value, onChange,
 }: { label: string; value: ThemedBool; onChange: (v: ThemedBool) => void }) => (
   <div className="flex items-center justify-between">
-    <span className="text-sm" style={{ color: "var(--ink-7)" }}>{label}</span>
+    <span className="text-sm" style={{ color: "var(--text-primary)" }}>{label}</span>
     <div className="flex items-center gap-5">
-      <label className="flex items-center gap-2 text-xs" style={{ color: "var(--ink-5)" }}>
+      <label className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
         Light
         <Switch checked={value.light} onCheckedChange={(v) => onChange({ ...value, light: v })} />
       </label>
-      <label className="flex items-center gap-2 text-xs" style={{ color: "var(--ink-5)" }}>
+      <label className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
         Dark
         <Switch checked={value.dark} onCheckedChange={(v) => onChange({ ...value, dark: v })} />
       </label>
@@ -495,7 +495,7 @@ const ParamSlider = ({
 }: { label: string; min: number; max: number; step: number; value: number; onChange: (v: number) => void; unit?: string }) => (
   <div>
     <div className="flex items-center justify-between mb-2">
-      <Label className="text-xs" style={{ color: "var(--ink-5)" }}>{label}</Label>
+      <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>{label}</Label>
       <span className="text-xs tabular-nums" style={{ color: "var(--brand)" }}>
         {unit ? `${value}${unit}` : value.toFixed(3)}
       </span>
@@ -508,18 +508,18 @@ const ColorRow = ({
   label, value, onChange,
 }: { label: string; value: string; onChange: (v: string) => void }) => (
   <div>
-    <Label className="text-xs" style={{ color: "var(--ink-5)" }}>{label}</Label>
+    <Label className="text-xs" style={{ color: "var(--text-secondary)" }}>{label}</Label>
     <div className="flex items-center gap-2 mt-1">
       <div
         className="w-9 h-9 rounded-md shrink-0"
-        style={{ border: "1px solid var(--ink-3)", backgroundColor: value || "transparent" }}
+        style={{ border: "1px solid var(--border-default)", backgroundColor: value || "transparent" }}
       />
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="#0670C4 or rgba(...)"
         className="text-xs h-9"
-        style={{ backgroundColor: "var(--ink)", borderColor: "var(--ink-3)", color: "var(--ink-7)" }}
+        style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
       />
     </div>
   </div>
