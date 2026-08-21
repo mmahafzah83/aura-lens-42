@@ -176,6 +176,37 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
       return json({ error: "APIFY_TOKEN not set — add it in Lovable Cloud secrets." }, 400);
     }
 
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    // --- A handle belongs to exactly one member ---
+    // Checked BEFORE the Apify call so a claimed handle never burns a paid
+    // scrape. Three accounts once shared one handle and a member ended up
+    // holding the founder's profile. An admin acting deliberately may override.
+    const callerIsAdmin = targetUserId !== user.id || (await isAdmin(anon, user.id));
+    if (!callerIsAdmin) {
+      const { data: claimants } = await admin
+        .from("linkedin_connections")
+        .select("user_id")
+        .eq("handle", handle)
+        .neq("user_id", targetUserId)
+        .limit(1);
+      if (claimants && claimants.length) {
+        await logEfError(admin as any, {
+          function_name: "linkedin-fetch-profile",
+          error: "handle_claimed",
+          severity: "high",
+          user_id: targetUserId,
+          context: { handle, claimed_by: claimants[0].user_id },
+        });
+        return json({
+          error: "handle_claimed",
+          message: "That LinkedIn address is already connected to another Aura account.",
+          handle,
+        }, 409);
+      }
+    }
+
+
     // --- Apify (sync run) ---
     // One shape that we know returns the full record, and one bare fallback.
     // Nothing else: every extra attempt was a whole timeout the member waited
@@ -255,34 +286,8 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
     const languages = pickArray(item, ["languages", "languageList"]);
     const certifications = pickArray(item, ["certifications", "certificates", "licenses"]);
 
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    // --- A handle belongs to exactly one member ---
-    // Three accounts once shared one handle and a member ended up holding the
-    // founder's profile. An admin acting deliberately may still override.
-    const callerIsAdmin = targetUserId !== user.id || (await isAdmin(anon, user.id));
-    if (!callerIsAdmin) {
-      const { data: claimants } = await admin
-        .from("linkedin_connections")
-        .select("user_id")
-        .eq("handle", handle)
-        .neq("user_id", targetUserId)
-        .limit(1);
-      if (claimants && claimants.length) {
-        await logEfError(admin as any, {
-          function_name: "linkedin-fetch-profile",
-          error: "handle_claimed",
-          severity: "high",
-          user_id: targetUserId,
-          context: { handle, claimed_by: claimants[0].user_id },
-        });
-        return json({
-          error: "handle_claimed",
-          message: "That LinkedIn address is already connected to another Aura account.",
-          handle,
-        }, 409);
-      }
-    }
+
 
     // --- Append a new dated snapshot, merged with the previous one ---
     const { data: prevRows, error: prevErr } = await admin
@@ -320,6 +325,30 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
         ...merged,
       });
     if (upErr) throw new Error(`snapshot insert failed: ${upErr.message}`);
+
+    // --- Retention: keep the newest 20 reads plus the member's original
+    // baseline. Every row carries a full ~120KB payload. A retention failure
+    // must never fail a read that already succeeded.
+    try {
+      const { data: allRows } = await admin
+        .from("linkedin_profile_snapshots")
+        .select("id, fetched_at")
+        .eq("user_id", targetUserId)
+        .order("fetched_at", { ascending: false });
+      const rows = (allRows ?? []) as { id: string; fetched_at: string }[];
+      if (rows.length > 21) {
+        const keep = new Set<string>(rows.slice(0, 20).map((r) => r.id));
+        keep.add(rows[rows.length - 1].id); // oldest — the original baseline
+        const drop = rows.filter((r) => !keep.has(r.id)).map((r) => r.id);
+        if (drop.length) {
+          await admin.from("linkedin_profile_snapshots").delete().in("id", drop);
+        }
+      }
+    } catch (e) {
+      console.error("[linkedin-fetch-profile] retention skipped:", e instanceof Error ? e.message : String(e));
+    }
+
+
 
     // --- Gentle auto-fill: only ever fills a blank, never replaces the member's own value ---
     const profilePatch: Record<string, string> = {};

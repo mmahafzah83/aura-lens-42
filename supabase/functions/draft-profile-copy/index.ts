@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
     }
     const themes = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([t]) => t);
 
-    const snap = (snapRes.data as Record<string, unknown> | null) || {};
+    const snap = ((snapRes.data as Record<string, unknown>[] | null)?.[0]) || {};
     const voice = (voiceRes.data as Record<string, unknown> | null) || null;
     const detected = languageOf(posts);
     const language = askedLanguage ?? detected;

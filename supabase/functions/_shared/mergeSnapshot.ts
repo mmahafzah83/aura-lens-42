@@ -11,7 +11,23 @@
 type Row = Record<string, unknown>;
 
 const s = (v: unknown): string => (typeof v === "string" ? v.trim().toLowerCase() : "");
-const arr = (v: unknown): Row[] => (Array.isArray(v) ? (v.filter((x) => x && typeof x === "object") as Row[]) : []);
+/**
+ * Items usable for keying. A bare string list (`["Python","SQL"]` — this scraper
+ * emits some lists that way) is coerced to `{ name: s }` for KEYING ONLY; the
+ * original value is carried alongside so the stored shape never changes.
+ */
+type Item = { key: Row; original: unknown };
+const items = (v: unknown): Item[] =>
+  Array.isArray(v)
+    ? v.flatMap((x) => {
+      if (typeof x === "string" && x.trim()) return [{ key: { name: x } as Row, original: x }];
+      if (x && typeof x === "object") return [{ key: x as Row, original: x }];
+      return [];
+    })
+    : [];
+const nonEmptyArray = (v: unknown): unknown[] | null =>
+  Array.isArray(v) && v.length > 0 ? (v as unknown[]) : null;
+
 
 const first = (o: Row, keys: string[]): string => {
   for (const k of keys) {
@@ -46,25 +62,27 @@ const KEYS: Record<string, (o: Row) => string> = {
  */
 export function unionByIdentity(field: string, next: unknown, prev: unknown): unknown[] | null {
   const keyOf = KEYS[field];
-  const a = arr(next);
-  const b = arr(prev);
-  if (!keyOf) return a.length ? a : (b.length ? b : null);
-  if (!a.length && !b.length) return null;
+  const a = items(next);
+  const b = items(prev);
+  // SAFETY NET — never return null for a non-empty input array, whatever shape
+  // its members are. Losing a list here is the exact failure this file prevents.
+  if (!a.length && !b.length) return nonEmptyArray(next) ?? nonEmptyArray(prev);
+  if (!keyOf) return (a.length ? a : b).map((i) => i.original);
 
   const seen = new Set<string>();
   for (const item of a) {
-    const k = keyOf(item);
+    const k = keyOf(item.key);
     if (k.replace(/\|/g, "")) seen.add(k);
   }
-  const out: Row[] = [...a];
+  const out: unknown[] = a.map((i) => i.original);
   for (const item of b) {
-    const k = keyOf(item);
+    const k = keyOf(item.key);
     if (!k.replace(/\|/g, "")) continue; // unmatchable — do not resurrect
     if (seen.has(k)) continue;
     seen.add(k);
-    out.push(item);
+    out.push(item.original);
   }
-  return out.length ? out : null;
+  return out.length ? out : (nonEmptyArray(next) ?? nonEmptyArray(prev));
 }
 
 const carry = (next: unknown, prev: unknown): unknown => {
