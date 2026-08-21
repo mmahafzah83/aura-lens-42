@@ -461,21 +461,41 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
               <div style={{ height: 6, borderRadius: 999, background: LINE, marginBlockStart: 8, overflow: "hidden" }}>
                 <div style={{ width: `${r.score * 10}%`, height: "100%", borderRadius: 999, background: barColour(r.score) }} />
               </div>
-              {r.weak && (
-                <div style={{ marginBlockStart: 8 }}>
-                  {r.rule && <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{r.rule}</div>}
-                  <FixAction
-                    rowKey={r.key}
-                    profileUrl={profileUrl}
-                    canUsePhoto={!!snapshot.photo_url && !avatarUrl}
-                    onUsePhoto={useLinkedInPhoto}
-                    onDraft={setDraftTarget}
-                    appliedAt={appliedTargets[r.key] ?? null}
-                  />
-                </div>
-              )}
+              {(() => {
+                const hasApplied = !!appliedTargets[r.key] && (r.key === "headline" || r.key === "about");
+                if (!hasApplied && !r.weak) return null;
+                return (
+                  <div style={{ marginBlockStart: 8 }}>
+                    {/* The acknowledgement is not gated on the row still being weak. */}
+                    {hasApplied ? (
+                      <FixAction
+                        rowKey={r.key}
+                        profileUrl={profileUrl}
+                        canUsePhoto={false}
+                        onUsePhoto={useLinkedInPhoto}
+                        onDraft={setDraftTarget}
+                        appliedAt={appliedTargets[r.key]}
+                      />
+                    ) : null}
+                    {r.weak && r.rule ? (
+                      <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginBlockStart: hasApplied ? 6 : 0 }}>{r.rule}</div>
+                    ) : null}
+                    {r.weak && !hasApplied ? (
+                      <FixAction
+                        rowKey={r.key}
+                        profileUrl={profileUrl}
+                        canUsePhoto={!!snapshot.photo_url && !avatarUrl}
+                        onUsePhoto={useLinkedInPhoto}
+                        onDraft={setDraftTarget}
+                        appliedAt={null}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })()}
 
             </div>
+
           ))}
         </div>
       </section>
