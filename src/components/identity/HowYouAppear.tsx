@@ -17,6 +17,7 @@ import DraftProfileCopy, { type DraftTarget } from "@/components/identity/DraftP
 import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
 import { causeOf } from "@/lib/failureCause";
 import { buildHaystacks, matchTheme, type ThemeMatch, type ThemeField } from "@/lib/themeMatch";
+import { buildPresenceChange } from "@/lib/presenceChange";
 
 /* ── System-B "Signal" values. Module scope, always. ─────────────────────── */
 const INK = "#0F1519";
@@ -119,6 +120,13 @@ interface Snapshot {
 
 const barColour = (score: number) => (score >= 8 ? SUCCESS : score === 7 ? ACT : AMBER_BAR);
 
+/** Match state in the member's words, for the change line only. */
+const STATE_WORDS: Record<"carried" | "partial" | "missing", string> = {
+  carried: "on your profile",
+  partial: "partly on your profile",
+  missing: "only in your writing",
+};
+
 const overallWord = (sum: number) => (sum >= 50 ? "Strong" : sum >= 30 ? "Uneven" : "Thin");
 
 /** Where a half-carried subject already shows up, in the member's words. */
@@ -132,6 +140,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  /* The read before this one. Kept only to say what moved. */
+  const [previousSnapshot, setPreviousSnapshot] = useState<Snapshot | null>(null);
   const [postsWithText, setPostsWithText] = useState<number | null>(null);
   const [themes, setThemes] = useState<{ theme: string; count: number }[]>([]);
   const [totalThemes, setTotalThemes] = useState(0);
@@ -153,7 +163,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     const [snapRes, postsRes, signalsRes, profRes, appliedRes] = await Promise.all([
       supabase.from("linkedin_profile_snapshots")
         .select("full_name,headline,about,photo_url,location,followers,connections,experience,education,skills,fetched_at")
-        .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(1),
+        .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(2),
       supabase.from("linkedin_posts").select("id", { count: "exact", head: true })
         .eq("user_id", userId).not("post_text", "is", null).neq("post_text", ""),
       supabase.from("strategic_signals").select("theme_tags").eq("user_id", userId).limit(500),
@@ -162,6 +172,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     ]);
 
     setSnapshot(((snapRes.data as Snapshot[] | null)?.[0]) ?? null);
+    setPreviousSnapshot(((snapRes.data as Snapshot[] | null)?.[1]) ?? null);
     setPostsWithText(typeof postsRes.count === "number" ? postsRes.count : null);
     setAvatarUrl(((profRes.data as { avatar_url: string | null } | null)?.avatar_url) ?? null);
 
@@ -211,6 +222,36 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     () => themes.map((t) => ({ ...t, match: matchTheme(haystacks, t.theme) as ThemeMatch })),
     [themes, haystacks],
   );
+  /* Same pure function, the earlier snapshot. Nothing else reads these. */
+  const previousRows: PresenceRow[] | null = useMemo(
+    () => (previousSnapshot ? scorePresence(previousSnapshot) : null),
+    [previousSnapshot],
+  );
+  const previousHaystacks = useMemo(
+    () => (previousSnapshot ? buildHaystacks(previousSnapshot) : null),
+    [previousSnapshot],
+  );
+  const changeSegments = useMemo(() => {
+    if (!previousRows) return [];
+    const prevSum = previousRows.reduce((a, r) => a + r.score, 0);
+    const top = themes[0]?.theme ?? null;
+    let themeMove: { theme: string; from: string; to: string } | null = null;
+    if (top && previousHaystacks) {
+      const before = matchTheme(previousHaystacks, top).state;
+      const after = matchTheme(haystacks, top).state;
+      if (before !== after) themeMove = { theme: top, from: STATE_WORDS[before], to: STATE_WORDS[after] };
+    }
+    return buildPresenceChange({
+      currentRows: rows,
+      previousRows,
+      currentSum: sum,
+      previousSum: prevSum,
+      currentWord: overallWord(sum),
+      previousWord: overallWord(prevSum),
+      themeMove,
+    });
+  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum]);
+
   const carriedOfShown = themeRows.filter((t) => t.match.state === "carried").length;
   const partialOfShown = themeRows.filter((t) => t.match.state === "partial").length;
   const shown = themeRows.length;
@@ -429,6 +470,13 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
             </button>
           ) : null}
         </div>
+        {changeSegments.length > 0 ? (
+          <p style={{ fontSize: 12.5, color: MUTED, margin: "6px 0 0", lineHeight: 1.6 }}>
+            {changeSegments.map((seg, i) => (
+              <span key={i} style={seg.mono ? dashStyle : undefined}>{seg.text}</span>
+            ))}
+          </p>
+        ) : null}
         {/* The returning member's path gets the same panel as the first read. */}
         {stage !== null || readFailure ? <div style={{ marginBlockStart: 12 }}>{readPanel}</div> : null}
       </div>
@@ -461,21 +509,41 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
               <div style={{ height: 6, borderRadius: 999, background: LINE, marginBlockStart: 8, overflow: "hidden" }}>
                 <div style={{ width: `${r.score * 10}%`, height: "100%", borderRadius: 999, background: barColour(r.score) }} />
               </div>
-              {r.weak && (
-                <div style={{ marginBlockStart: 8 }}>
-                  {r.rule && <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{r.rule}</div>}
-                  <FixAction
-                    rowKey={r.key}
-                    profileUrl={profileUrl}
-                    canUsePhoto={!!snapshot.photo_url && !avatarUrl}
-                    onUsePhoto={useLinkedInPhoto}
-                    onDraft={setDraftTarget}
-                    appliedAt={appliedTargets[r.key] ?? null}
-                  />
-                </div>
-              )}
+              {(() => {
+                const hasApplied = !!appliedTargets[r.key] && (r.key === "headline" || r.key === "about");
+                if (!hasApplied && !r.weak) return null;
+                return (
+                  <div style={{ marginBlockStart: 8 }}>
+                    {/* The acknowledgement is not gated on the row still being weak. */}
+                    {hasApplied ? (
+                      <FixAction
+                        rowKey={r.key}
+                        profileUrl={profileUrl}
+                        canUsePhoto={false}
+                        onUsePhoto={useLinkedInPhoto}
+                        onDraft={setDraftTarget}
+                        appliedAt={appliedTargets[r.key]}
+                      />
+                    ) : null}
+                    {r.weak && r.rule ? (
+                      <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginBlockStart: hasApplied ? 6 : 0 }}>{r.rule}</div>
+                    ) : null}
+                    {r.weak && !hasApplied ? (
+                      <FixAction
+                        rowKey={r.key}
+                        profileUrl={profileUrl}
+                        canUsePhoto={!!snapshot.photo_url && !avatarUrl}
+                        onUsePhoto={useLinkedInPhoto}
+                        onDraft={setDraftTarget}
+                        appliedAt={null}
+                      />
+                    ) : null}
+                  </div>
+                );
+              })()}
 
             </div>
+
           ))}
         </div>
       </section>
