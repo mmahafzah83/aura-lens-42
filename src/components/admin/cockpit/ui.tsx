@@ -12,6 +12,11 @@ export const C = {
   tealText: "#00807B",
   amber: "#E0A82E",
   damber: "#9A6F12",
+  /** Blue is an ACTION colour — buttons, links, active nav. Never a state. */
+  act: "#0670C4",
+  /** Failure state. */
+  fail: "#C0392B",
+  /** @deprecated use `act` (action) or `fail` (state) — kept so old imports compile. */
   ox: "#0670C4",
 };
 
