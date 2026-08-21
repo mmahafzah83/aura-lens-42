@@ -87,3 +87,13 @@ export function causeOf(error: unknown, stageLabel: string): string {
 }
 
 export default causeOf;
+
+/**
+ * The retry's own words. The button names the stage it RESUMES — the law
+ * forbids "Pick up from step 1" when step 1 already succeeded.
+ * "Reading your posts" → "Try reading your posts again".
+ */
+export function retryLabel(stageLabel: string): string {
+  const s = lower(stageLabel);
+  return s === "this step" ? "Try that step again" : `Try ${s} again`;
+}
