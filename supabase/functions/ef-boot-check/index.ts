@@ -14,7 +14,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, cron_secret",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, cron_secret, x-cron-secret",
 };
 
 const json = (data: unknown, status = 200) =>
@@ -218,7 +218,8 @@ Deno.serve(async (req) => {
 
   // The Vault key is lowercase `cron_secret`. A 401 here is nearly always case.
   const secret = Deno.env.get("cron_secret");
-  if (secret && req.headers.get("cron_secret") !== secret) {
+  const offered = req.headers.get("cron_secret") ?? req.headers.get("x-cron-secret");
+  if (secret && offered !== secret) {
     return json({ error: "Unauthorized" }, 401);
   }
 
