@@ -33,7 +33,6 @@ type Payload = {
 };
 
 /** Blue is an ACTION colour only. States use amber (attention) and #C0392B (failure). */
-const ACCENT = "#0670C4";
 const FAIL = "#C0392B";
 const ATTENTION = "#E0A82E";
 const RISK_COLOR: Record<string, string> = { high: FAIL, med: "#9A6F12", low: "#12805C" };
@@ -163,7 +162,7 @@ export default function AdminJourney() {
           <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> Loading journey…
         </div>
       ) : error ? (
-        <div style={{ ...card, textAlign: "center", padding: 32, color: ACCENT }}>{error}</div>
+        <div style={{ ...card, textAlign: "center", padding: 32, color: FAIL }}>{error}</div>
       ) : !metrics ? (
         <div style={{ ...card, textAlign: "center", padding: 48, color: "var(--glass-2)" }}>No data.</div>
       ) : (
@@ -185,21 +184,21 @@ export default function AdminJourney() {
                         style={{
                           width,
                           height: "100%",
-                          background: isLeak ? ACCENT : "var(--hair)",
-                          borderLeft: isLeak ? `3px solid ${ACCENT}` : "3px solid var(--glass-2)",
+                          background: isLeak ? ATTENTION : "var(--hair)",
+                          borderLeft: isLeak ? `3px solid ${ATTENTION}` : "3px solid var(--glass-2)",
                           transition: "width .4s ease",
                           display: "flex",
                           alignItems: "center",
                           paddingLeft: 12,
                           fontSize: 12,
-                          color: isLeak ? "#fff" : "var(--glass)",
+                          color: isLeak ? "#0F1519" : "var(--glass)",
                           fontWeight: 600,
                         }}
                       >
                         {s.count ?? "?"}{s.pct !== null ? ` · ${s.pct}%` : ""}
                       </div>
                     </div>
-                    <div style={{ width: 96, fontSize: 12, color: isLeak ? ACCENT : "var(--glass-2)", textAlign: "right", fontWeight: isLeak ? 600 : 400 }}>
+                    <div style={{ width: 96, fontSize: 12, color: isLeak ? "#9A6F12" : "var(--glass-2)", textAlign: "right", fontWeight: isLeak ? 600 : 400 }}>
                       {i === 0 || s.drop === null ? "—" : `−${s.drop}%`}
                     </div>
                   </div>
@@ -208,7 +207,7 @@ export default function AdminJourney() {
             </div>
             {maxDropKey && (
               <div style={{ marginTop: 16, fontSize: 12, color: "var(--glass-2)" }}>
-                <span style={{ color: ACCENT, fontWeight: 600 }}>Priority leak:</span>{" "}
+                <span style={{ color: "#9A6F12", fontWeight: 600 }}>Priority leak:</span>{" "}
                 {stages.find((s) => s.key === maxDropKey)?.label}
               </div>
             )}
