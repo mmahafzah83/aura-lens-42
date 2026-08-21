@@ -864,11 +864,11 @@ const AdminQA = () => {
                       <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                         {dims.map((dim, i) => (
                           <div key={i}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--ink-2,#999)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#5B6673" }}>
                               <span>{dim.name}</span>
                             </div>
                             <ScoreBar score={Number(dim.score) || 0} />
-                            {dim.explanation && <div style={{ fontSize: 12, color: "var(--ink-2,#888)", marginTop: 2 }}>{dim.explanation}</div>}
+                            {dim.explanation && <div style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>{dim.explanation}</div>}
                           </div>
                         ))}
                       </div>
@@ -951,7 +951,7 @@ const AdminQA = () => {
         )}
         {compareDiff && (
           <div style={{ marginTop: 16, ...cardStyle }}>
-            <div style={{ fontSize: 12, color: "var(--ink-2,#999)", marginBottom: 8 }}>{compareDiff.length} tests changed</div>
+            <div style={{ fontSize: 12, color: "#5B6673", marginBottom: 8 }}>{compareDiff.length} tests changed</div>
             <div style={{ maxHeight: 320, overflowY: "auto" }}>
               {compareDiff.map((f, i) => (
                 <div key={i} style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12, padding: "4px 0", borderBottom: "1px solid #E2E7EE" }}>
