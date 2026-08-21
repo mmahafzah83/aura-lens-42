@@ -125,6 +125,14 @@ export function Finding({
   );
 }
 
+/**
+ * ONE FILLED BUTTON, EVER.
+ *
+ * `primary` is the only filled tone and there is exactly one of it per page —
+ * the single most valuable thing to do today. Everything else, including the
+ * tones that used to be filled ink or filled blue, is an outline. The old black
+ * primary is retired.
+ */
 export function Btn({
   children,
   onClick,
@@ -134,14 +142,16 @@ export function Btn({
 }: {
   children: ReactNode;
   onClick?: () => void;
-  tone?: "ink" | "ox" | "quiet";
+  tone?: "ink" | "ox" | "quiet" | "primary";
   disabled?: boolean;
   title?: string;
 }) {
   const [hover, setHover] = useState(false);
-  const oxBg = hover && !disabled ? "#04477C" : C.ox;
-  const bg = tone === "ox" ? oxBg : tone === "quiet" ? "transparent" : C.ink;
-  const fg = tone === "quiet" ? C.ink : "#FFFFFF";
+  const [focus, setFocus] = useState(false);
+  const filled = tone === "primary";
+  const bg = filled ? (hover && !disabled ? "#04477C" : C.ox) : "transparent";
+  const fg = filled ? "#FFFFFF" : tone === "ox" ? C.ox : C.ink;
+  const border = filled ? bg : tone === "ox" ? C.ox : C.rule;
   return (
     <button
       type="button"
@@ -150,6 +160,8 @@ export function Btn({
       onClick={onClick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
+      onFocus={() => setFocus(true)}
+      onBlur={() => setFocus(false)}
       style={{
         fontFamily: MONO,
         fontSize: 11,
@@ -160,9 +172,11 @@ export function Btn({
         borderRadius: 8,
         background: bg,
         color: fg,
-        border: `1px solid ${tone === "quiet" ? C.rule : bg}`,
+        border: `1px solid ${border}`,
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.5 : 1,
+        outline: focus ? `2px solid ${C.ox}` : "none",
+        outlineOffset: 2,
       }}
     >
       {children}
