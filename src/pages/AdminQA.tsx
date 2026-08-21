@@ -673,7 +673,7 @@ const AdminQA = () => {
           <div style={{ marginTop: 16 }}>
             <div style={{ fontSize: 14, color: "#5B6673" }}>{progress}</div>
             <div style={{ marginTop: 6, height: 4, background: "#E9EEF5", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: running ? "60%" : "100%", background: "var(--brand,#0670C4)", transition: "width 0.4s" }} />
+              <div style={{ height: "100%", width: running ? "60%" : "100%", background: "#0F1519", transition: "width 0.4s" }} />
             </div>
           </div>
         )}
@@ -1039,7 +1039,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Stat({ label, value, color, emphasis }: { label: string; value: number; color?: string; emphasis?: boolean }) {
   return (
     <div style={{ ...cardStyle, ...(emphasis ? { background: "#F2F5F9", border: "1px solid #E2E7EE" } : null) }}>
-      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "var(--brand, #0670C4)" : "#5B6673", fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "#0F1519" : "#5B6673", fontWeight: 600 }}>{label}</div>
       <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: emphasis ? 40 : 30, marginTop: 6, color: color || "#0F1519", fontWeight: emphasis ? 700 : 500 }}>{value}</div>
     </div>
   );
