@@ -286,7 +286,7 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
     const languages = pickArray(item, ["languages", "languageList"]);
     const certifications = pickArray(item, ["certifications", "certificates", "licenses"]);
 
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
 
 
     // --- Append a new dated snapshot, merged with the previous one ---
