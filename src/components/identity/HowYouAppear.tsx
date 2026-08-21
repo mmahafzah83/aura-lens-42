@@ -25,10 +25,12 @@ const LINE = "#E2E7EE";
 const CARD = "#FFFFFF";
 const ACT = "#0670C4";
 const SUCCESS = "#12805C";
-const AMBER = "#E0A82E";
 /* The dot sits on white; the bar sits on the #E2E7EE track. Same meaning,
    two values, because only one of them clears 3:1 against its own background. */
 const AMBER_BAR = "#9A6B00";
+/* Dashed #E2E7EE on white is ~1.2:1 — invisible on a phone. The dashed state
+   gets a grey with real contrast, and only the dashed state. */
+const DASH_LINE = "#5B6673";
 const NIGHT = "#0F1519";
 const NIGHT_TEXT = "#FFFFFF";
 const NIGHT_MUTED = "#8A97A6";
@@ -488,23 +490,18 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                     state === "carried"
                       ? `On ${fieldList(t.match.fields)}`
                       : state === "partial"
-                        ? `"${t.match.matched.join(" ")}" is on ${fieldList(t.match.fields)}. "${t.match.missing.join(" ")}" is not.`
+                        ? (t.match.listedOnly
+                            ? `In your record — ${fieldList(t.match.fields)} — but not in your headline or About.`
+                            : `"${t.match.matched.join(" ")}" is on ${fieldList(t.match.fields)}. "${t.match.missing.join(" ")}" is not.`)
                         : "Only in your writing"
                   }
                   style={{
                     ...chipBase,
-                    border: solid ? `1px solid ${LINE}` : `1px dashed ${LINE}`,
+                    border: solid ? `1px solid ${LINE}` : `1px dashed ${DASH_LINE}`,
                     color: state === "carried" ? INK : MUTED,
                   }}
                 >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 6, height: 6, borderRadius: 999, flexShrink: 0,
-                      background: state === "carried" ? SUCCESS : state === "partial" ? AMBER : "transparent",
-                      border: state === "missing" ? `1px solid ${MUTED}` : "none",
-                    }}
-                  />
+                  <StateDot state={state} />
                   {t.theme}
                   <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
                     {state === "carried" ? " — on your profile" : state === "partial" ? " — half on your profile" : " — only in your writing"}
@@ -519,13 +516,13 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
             </div>
           )}
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: 11.5, color: MUTED, marginBlockStart: 10 }}>
-            <span style={{ width: 6, height: 6, borderRadius: 999, background: SUCCESS, flexShrink: 0 }} />
+            <StateDot state="carried" />
             on your profile
             <span aria-hidden="true">·</span>
-            <span style={{ width: 6, height: 6, borderRadius: 999, background: AMBER, flexShrink: 0 }} />
+            <StateDot state="partial" />
             half of it
             <span aria-hidden="true">·</span>
-            <span style={{ width: 6, height: 6, borderRadius: 999, border: `1px solid ${MUTED}`, flexShrink: 0 }} />
+            <StateDot state="missing" />
             only in your writing
           </div>
           {/* The summary names the state the member is actually in — including
@@ -535,17 +532,34 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
               The thing you write about most — {top.theme} — appears nowhere on your profile.
             </p>
           ) : top && top.match.state === "partial" ? (
-            <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-              {top.theme} is half on your profile. "{top.match.matched.join(" ")}" is on {fieldList(top.match.fields)}
-              ; "{top.match.missing.join(" ")}" is not.
-            </p>
+            top.match.listedOnly ? (
+              <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
+                {top.theme} is in your record — {fieldList(top.match.fields)} — but you never say it in your headline
+                or your About.
+              </p>
+            ) : (
+              <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
+                {top.theme} is half on your profile. "{top.match.matched.join(" ")}" is on {fieldList(top.match.fields)}
+                ; "{top.match.missing.join(" ")}" is not.
+              </p>
+            )
+          ) : firstPartial ? (
+            /* Half-finished work is the cheaper win — it ranks above an
+               untouched gap, because the member already showed intent there. */
+            firstPartial.match.listedOnly ? (
+              <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
+                {firstPartial.theme} is in your record — {fieldList(firstPartial.match.fields)} — but you never say it
+                in your headline or your About.
+              </p>
+            ) : (
+              <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
+                {firstPartial.theme} is half on your profile. "{firstPartial.match.matched.join(" ")}" is on{" "}
+                {fieldList(firstPartial.match.fields)}; "{firstPartial.match.missing.join(" ")}" is not.
+              </p>
+            )
           ) : firstMissing ? (
             <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
               You write about {firstMissing.theme} often. Your profile never mentions it.
-            </p>
-          ) : firstPartial ? (
-            <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-              {firstPartial.theme} is half on your profile. "{firstPartial.match.missing.join(" ")}" is missing.
             </p>
           ) : (
             <p style={{ fontSize: 13.5, color: MUTED, margin: "12px 0 0", lineHeight: 1.6 }}>
@@ -553,7 +567,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
             </p>
           )}
           {/* One action, and it names the target it will actually help. */}
-          {(top?.match.state === "partial" || (!firstMissing && firstPartial)) ? (
+          {(top?.match.state === "partial" || firstPartial) ? (
             <button type="button" style={quietLinkStyle} onClick={() => setDraftTarget("about")}>
               Say the rest of it in my About →
             </button>
@@ -621,4 +635,28 @@ function FixAction({
   }
   if (!profileUrl) return null;
   return <a href={profileUrl} target="_blank" rel="noreferrer" style={quietLinkStyle}>Add it on LinkedIn →</a>;
+}
+
+/**
+ * The one status dot. Shape carries the meaning, never hue alone (WCAG 1.4.1):
+ * carried = fully filled, partial = half filled, missing = hollow ring.
+ */
+function StateDot({ state }: { state: "carried" | "partial" | "missing" }) {
+  const common = { width: 8, height: 8, borderRadius: 999, flexShrink: 0 } as const;
+  if (state === "carried") {
+    return <span aria-hidden="true" style={{ ...common, background: SUCCESS }} />;
+  }
+  if (state === "partial") {
+    return (
+      <span
+        aria-hidden="true"
+        style={{
+          ...common,
+          border: `1px solid ${AMBER_BAR}`,
+          background: `linear-gradient(90deg, ${AMBER_BAR} 0 50%, transparent 50% 100%)`,
+        }}
+      />
+    );
+  }
+  return <span aria-hidden="true" style={{ ...common, border: `1px solid ${MUTED}`, background: "transparent" }} />;
 }

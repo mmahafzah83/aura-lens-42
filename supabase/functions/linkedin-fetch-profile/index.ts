@@ -364,17 +364,24 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
         .eq("user_id", targetUserId)
         .is("applied_at", null)
         .not("copied_text", "is", null);
-      const live: Record<string, string> = {
-        headline: String(merged.headline ?? headline ?? ""),
-        about: String(merged.about ?? about ?? ""),
+      /* THIS scrape only. merged carries the previous value forward when a
+         scrape returns null for a field — matching against that would mark a
+         draft applied on a stale value the member never touched. If this read
+         returned nothing for the field, we skip it. We never infer. */
+      const scraped: Record<string, string> = {
+        headline: String(headline ?? ""),
+        about: String(about ?? ""),
       };
       for (const row of (draftRows ?? []) as { id: string; target: string; copied_text: string }[]) {
-        const current = live[row.target] ?? "";
-        if (!current || !row.copied_text) continue;
+        const current = scraped[row.target] ?? "";
+        if (!current.trim() || !row.copied_text) continue;
         const a = normaliseForCompare(current);
         const b = normaliseForCompare(row.copied_text);
         if (!a || !b) continue;
-        if (a === b || similarityRatio(a, b) >= 0.8) {
+        /* 0.9, not 0.8: on a 200-character headline 0.8 tolerates ~40
+           characters of divergence. A missed detection is recoverable next
+           read; a false claim is not. */
+        if (a === b || similarityRatio(a, b) >= 0.9) {
           await admin.from("profile_copy_drafts").update({ applied_at: now }).eq("id", row.id);
         }
       }
