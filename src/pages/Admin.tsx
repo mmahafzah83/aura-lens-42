@@ -398,11 +398,26 @@ export default function Admin() {
     );
   };
 
+  // Cron workers refuse a plain browser call — they demand the cron secret,
+  // which only the database side holds. Trigger them the same way /admin/crons
+  // does: find the scheduled job and ask the server to run it now.
   const runWorker = async (fn: string, label: string) => {
     setActionNote(`Running ${label}…`);
-    const { error } = await supabase.functions.invoke(fn, { body: {} });
-    setActionNote(error ? `${label} failed: ${error.message}` : `${label} finished. Refresh to see the effect.`);
+    try {
+      const { data: jobs, error: listErr } = await supabase.rpc("admin_list_crons");
+      if (listErr) throw listErr;
+      const job = ((jobs as any[]) || []).find(
+        (j) => String(j.jobname || "") === fn || String(j.command || "").includes(fn),
+      );
+      if (!job) throw new Error(`No scheduled job found for ${fn}`);
+      const { data, error } = await supabase.rpc("admin_run_cron", { p_jobid: job.jobid });
+      if (error) throw error;
+      setActionNote(typeof data === "string" ? data : `${label} started. Refresh to see the effect.`);
+    } catch (e: any) {
+      setActionNote(`${label} failed: ${e?.message || "unknown error"}`);
+    }
   };
+
 
   const dot = (c: string) => (
     <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 8, background: c, marginRight: 8 }} />
