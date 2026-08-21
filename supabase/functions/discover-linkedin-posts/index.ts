@@ -789,7 +789,10 @@ Deno.serve(withObserve("discover-linkedin-posts", async (req) => {
         content_type: post.contentType,
         tracking_status: trackingStatus,
         source_type: "search_discovery",
+        // This text is a search-result description, not the member's writing.
+        text_is_snippet: true,
         authorship: "unknown",
+
         acquisition: "discovered",
         source_trust: 1,
         enriched_by: ["search_discovery"],

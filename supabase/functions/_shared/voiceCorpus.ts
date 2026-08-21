@@ -27,10 +27,14 @@ export function isOwnWriting(row: {
   acquisition?: string | null;
   source_type?: string | null;
   voice_corpus_status?: string | null;
+  text_is_snippet?: boolean | null;
 }): boolean {
   if (row.voice_corpus_status === "excluded") return false;
   const text = String(row.post_text ?? "");
   if (text.trim().length <= MIN_POST_CHARS) return false;
+  // A Google/SERP description is not writing. It reads like the member because
+  // it quotes them; feeding it back is how the voice engine gets poisoned.
+  if (row.text_is_snippet === true) return false;
   if (row.authorship === "aura_drafted") return false;
   if (row.acquisition === "discovered") return false;
   if (row.source_type === "search_discovery") return false;
@@ -38,3 +42,7 @@ export function isOwnWriting(row: {
   if (row.source_type === "aura_generated") return false;
   return true;
 }
+
+/** The columns every corpus query must select for `isOwnWriting` to be true. */
+export const CORPUS_COLUMNS =
+  "post_text, authorship, acquisition, source_type, voice_corpus_status, text_is_snippet";

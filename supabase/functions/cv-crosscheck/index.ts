@@ -6,6 +6,7 @@ import { OPERATION_STAGES } from "../_shared/stageKeys.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { findUserIdByEmail } from "../_shared/findUserByEmail.ts";
+import { CORPUS_COLUMNS, isOwnWriting } from "../_shared/voiceCorpus.ts";
 import { hasBanned, loadBannedWords } from "../_shared/bannedWords.ts";
 
 const corsHeaders = {
@@ -311,11 +312,11 @@ Certifications: ${cut(snap.certifications, 1200)}`;
     ? { data: [] as any[] }
     : await admin
     .from("linkedin_posts")
-    .select("post_text, like_count, published_at")
+    .select(`${CORPUS_COLUMNS}, like_count, published_at`)
     .eq("user_id", targetId!)
     .not("post_text", "is", null)
     .order("like_count", { ascending: false, nullsFirst: false })
-    .limit(15);
+    .limit(60);
 
   const fragmentsText = (fragments ?? []).length
     ? (fragments ?? []).map((f: any) =>
@@ -323,7 +324,9 @@ Certifications: ${cut(snap.certifications, 1200)}`;
       ).join("\n")
     : "None on file.";
 
-  const usablePosts = (posts ?? []).filter((p: any) => String(p.post_text ?? "").trim().length > 0);
+  // Search-result snippets and discovered posts are not this member's writing.
+  const usablePosts = (posts ?? []).filter((p: any) => isOwnWriting(p)).slice(0, 15);
+
   const postsText = usablePosts.length
     ? usablePosts.map((p: any) =>
         `· (${String(p.published_at ?? "").slice(0, 10) || "undated"}, ${p.like_count ?? 0} likes) ${String(p.post_text).slice(0, 600)}`

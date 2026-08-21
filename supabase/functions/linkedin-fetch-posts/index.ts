@@ -200,6 +200,11 @@ Deno.serve(withObserve("linkedin-fetch-posts", async (req) => {
           like_count,
           comment_count,
           synced_at: new Date().toISOString(),
+          // The author check above passed for this row: it is the member's own
+          // writing, read off their own activity page. Say so on the column
+          // that is meant to answer exactly that question.
+          authorship: "user_written",
+          text_is_snippet: false,
         };
         if (published_at) update.published_at = published_at;
         if (!hasText) update.post_text = p.content; // never overwrite real text
@@ -223,6 +228,9 @@ Deno.serve(withObserve("linkedin-fetch-posts", async (req) => {
         media_type: p?.postVideo ? "video" : images.length ? "image" : "text",
         acquisition: "imported",
         source_type: "imported",
+        // Verified as theirs by exact handle match, with real text.
+        authorship: "user_written",
+        text_is_snippet: false,
         source_metadata: {
           images,
           video: p?.postVideo?.videoUrl ?? null,
@@ -230,6 +238,7 @@ Deno.serve(withObserve("linkedin-fetch-posts", async (req) => {
         },
         synced_at: new Date().toISOString(),
       });
+
       if (error) console.error(`insert failed: ${error.message}`);
       else {
         inserted++;

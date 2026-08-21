@@ -199,7 +199,10 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     /* A record of what ACTUALLY completed. A finished step stays finished,
        including in the failure state. */
     setReadDone(from === "posts" ? ["profile"] : []);
-    if (!profileUrl) { navigate("/settings?tab=connections"); return; }
+    /* Settings, not the connections tab: that tab only SAVES an address. The
+       button that actually reads lives on the main Settings screen. */
+    if (!profileUrl) { navigate("/settings"); return; }
+
     /* A hung function must have an exit. Five minutes is the ceiling. */
     readAbortRef.current?.abort();
     const ctrl = new AbortController();

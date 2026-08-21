@@ -11,6 +11,8 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { canonicalHandle, profileUrlFor, saveLinkedInAddress } from "@/lib/linkedinAddress";
+import { causeOf, retryLabel } from "@/lib/failureCause";
+
 import { EMPTY_LINKEDIN_STATE, loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
 
 /* System-B tokens */
@@ -26,17 +28,26 @@ const SHAPE_ERROR =
 const READ_ERROR =
   "Aura couldn't open that page. Check the address is exactly what you see in your browser when you're on your own profile.";
 
+interface PostsOutcome {
+  status: "ok" | "failed";
+  count: number;
+  skipped_reshares: number;
+  skipped_empty: number;
+  error?: unknown;
+}
+
 interface ReadResult {
   name: string | null;
   headline: string | null;
   photo: string | null;
-  posts: number | null;
+  posts: PostsOutcome | null;
 }
 
 export default function YourLinkedInCard({ userId }: { userId: string | null }) {
   const [state, setState] = useState<LinkedInState | null>(null);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const [postsBusy, setPostsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ReadResult | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -51,6 +62,41 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
     });
     return () => { alive = false; };
   }, [userId]);
+
+  /**
+   * The posts read, on its own. A failure here is a failure — never a zero.
+   * The profile read is what confirms the address, so this can be retried
+   * without touching anything already established.
+   */
+  const readPosts = async (profile_url: string): Promise<PostsOutcome> => {
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke("linkedin-fetch-posts", {
+        body: { profile_url, max_posts: 50 },
+      });
+      if (invokeError) return { status: "failed", count: 0, skipped_reshares: 0, skipped_empty: 0, error: invokeError };
+      const d = data as any;
+      if (!d || d.error) {
+        return { status: "failed", count: 0, skipped_reshares: 0, skipped_empty: 0, error: d?.error ?? "no response" };
+      }
+      return {
+        status: "ok",
+        count: typeof d.kept_own_text === "number" ? d.kept_own_text : 0,
+        skipped_reshares: Number(d.skipped_reshares ?? 0) || 0,
+        skipped_empty: Number(d.skipped_empty ?? 0) || 0,
+      };
+    } catch (e) {
+      return { status: "failed", count: 0, skipped_reshares: 0, skipped_empty: 0, error: e };
+    }
+  };
+
+  const retryPosts = async () => {
+    const handle = canonicalHandle(value);
+    if (!handle) return;
+    setPostsBusy(true);
+    const posts = await readPosts(profileUrlFor(handle) as string);
+    setResult((r) => (r ? { ...r, posts } : r));
+    setPostsBusy(false);
+  };
 
   const run = async () => {
     if (!userId) return;
@@ -70,14 +116,7 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
         return;
       }
       const p = data as any;
-      let posts: number | null = null;
-      try {
-        const { data: postData } = await supabase.functions.invoke("linkedin-fetch-posts", {
-          body: { profile_url },
-        });
-        const n = (postData as any)?.kept_own_text;
-        if (typeof n === "number") posts = n;
-      } catch { /* the profile read is what confirms the address */ }
+      const posts = await readPosts(profile_url);
 
       setResult({
         name: p.full_name ?? null,
@@ -96,6 +135,7 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
       setBusy(false);
     }
   };
+
 
   if (!userId || state === null) return null;
   const confirmed = state.confirmedByRead;
@@ -134,11 +174,56 @@ export default function YourLinkedInCard({ userId }: { userId: string | null }) 
             )}
           </div>
         </div>
-        {typeof result.posts === "number" && (
+        {result.posts?.status === "ok" && result.posts.count > 0 && (
           <p style={{ fontSize: 13, color: MUTED, marginTop: 12, marginBottom: 0 }}>
-            Aura read {result.posts} of your posts.
+            Aura read {result.posts.count} of your posts.
           </p>
         )}
+        {result.posts?.status === "ok" && result.posts.count === 0 && (
+          <p style={{ fontSize: 13, color: MUTED, marginTop: 12, marginBottom: 0, lineHeight: 1.6 }}>
+            {result.posts.skipped_reshares > 0 || result.posts.skipped_empty > 0
+              ? `Your profile opened, but nothing on it was your own writing — ${
+                  [
+                    result.posts.skipped_reshares ? `${result.posts.skipped_reshares} reshares of other people's posts` : "",
+                    result.posts.skipped_empty ? `${result.posts.skipped_empty} posts with no text` : "",
+                  ].filter(Boolean).join(" and ")
+                }. Post something in your own words and Aura will pick it up.`
+              : "Your profile opened, but LinkedIn showed no posts on it yet."}
+          </p>
+        )}
+        {result.posts?.status === "failed" && (
+          <div style={{ marginTop: 14, borderTop: `1px solid ${LINE}`, paddingTop: 12 }}>
+            {/* A failed posts read is a failure, not a zero. Same words the
+                rest of the product uses. */}
+            <p style={{ fontSize: 13, color: RED, lineHeight: 1.6, margin: 0 }}>
+              Your profile was read. {causeOf(result.posts.error, "Reading your posts")}
+            </p>
+            <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={() => void retryPosts()}
+                disabled={postsBusy}
+                style={{
+                  border: "none", background: ACTION, color: "#FFFFFF", borderRadius: 8,
+                  padding: "9px 14px", fontSize: 13.5, fontWeight: 600,
+                  cursor: postsBusy ? "default" : "pointer", opacity: postsBusy ? 0.6 : 1,
+                  display: "flex", alignItems: "center", gap: 8,
+                }}
+              >
+                {postsBusy && <Loader2 size={13} className="animate-spin" />}
+                {retryLabel("Reading your posts")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setResult((r) => (r ? { ...r, posts: null } : r))}
+                style={{ background: "none", border: 0, padding: 0, color: ACTION, fontSize: 13, cursor: "pointer" }}
+              >
+                Carry on without my posts
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     );
   }

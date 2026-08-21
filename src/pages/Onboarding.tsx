@@ -461,7 +461,43 @@ const PaperShell = ({
 
 /* ──────────────────────────────── page ──────────────────────────────────── */
 
+/**
+ * WHAT THE POSTS READ ACTUALLY DID.
+ *
+ * "ok" with a count (which may honestly be zero), or "failed". A 502, a
+ * timeout or an aborted call is never flattened into a zero — a member who
+ * reads "0 posts" concludes Aura has nothing of theirs and never returns.
+ */
+type PostsOutcome =
+  | { status: "ok"; count: number; skipped_reshares: number; skipped_empty: number }
+  | { status: "failed"; error: unknown };
+
+function outcomeOf(settled: PromiseSettledResult<unknown>): PostsOutcome {
+  if (settled.status === "rejected") return { status: "failed", error: settled.reason };
+  const v = settled.value as { data?: any; error?: unknown } | null;
+  if (v?.error) return { status: "failed", error: v.error };
+  const d = v?.data;
+  if (!d || d.error) return { status: "failed", error: d?.error ?? "no response" };
+  return {
+    status: "ok",
+    count: typeof d.kept_own_text === "number" ? d.kept_own_text : 0,
+    skipped_reshares: Number(d.skipped_reshares ?? 0) || 0,
+    skipped_empty: Number(d.skipped_empty ?? 0) || 0,
+  };
+}
+
+/** What a successful read that stored nothing actually saw. */
+function emptyPostsLine(o: Extract<PostsOutcome, { status: "ok" }>): string {
+  const bits = [
+    o.skipped_reshares ? `${o.skipped_reshares} reshares of other people's posts` : "",
+    o.skipped_empty ? `${o.skipped_empty} posts with no text of their own` : "",
+  ].filter(Boolean);
+  if (!bits.length) return "Your profile opened, but LinkedIn showed no posts on it yet.";
+  return `Your profile opened. LinkedIn showed ${bits.join(" and ")} — nothing written in your own words yet.`;
+}
+
 const Onboarding = () => {
+
   usePageMeta({
     title: "Aura — Start your shelf",
     description: `${FULL_PICTURE_LINE}. Aura learns your sector, your level and the way you already write.`,
@@ -533,6 +569,10 @@ const Onboarding = () => {
   const [liError, setLiError] = useState("");
   const [liProfile, setLiProfile] = useState<any>(null);
   const [postsRead, setPostsRead] = useState<number | null>(null);
+  /* THREE STATES, NEVER TWO. A posts read that failed is not a read that
+     found nothing — the member has to be told which one happened. */
+  const [postsState, setPostsState] = useState<PostsOutcome | null>(null);
+  const [postsBusy, setPostsBusy] = useState(false);
   const [ownWords, setOwnWords] = useState<number | null>(null);
   const [readDone, setReadDone] = useState(false);
   /** Provenance of a cached read, so the visitor can see its age and refresh it. */
@@ -1344,6 +1384,7 @@ const Onboarding = () => {
     setReadDone(false);
     setReadCache(null);
     setPostsRead(null);
+    setPostsState(null);
     setOwnWords(null);
     const profile_url = normaliseLinkedIn(liInput);
     if (!profile_url) {
@@ -1371,8 +1412,11 @@ const Onboarding = () => {
       // Both reads start at the same moment. Running them one after the other
       // was most of the wait, and the posts read never needed the profile.
       const profilePromise = supabase.functions.invoke("linkedin-fetch-profile", { body: { profile_url } });
-      const postsPromise = supabase.functions.invoke("linkedin-fetch-posts", { body: { profile_url, max_posts: 50 } })
-        .catch(() => ({ data: null } as any));
+      /* A failed posts read is NOT "0 posts". The rejection is kept and read
+         as a failure below; the profile read stands on its own. */
+      const postsPromise = supabase.functions.invoke("linkedin-fetch-posts", { body: { profile_url, max_posts: 50 } });
+      postsPromise.catch(() => { /* handled at the settle below */ });
+
       const { data, error } = await profilePromise;
       if (error) throw error;
       if ((data as any)?.error) throw new Error(String((data as any).error));
@@ -1446,9 +1490,10 @@ const Onboarding = () => {
       setLiBusy(false);
 
       const [, postsSettled] = await Promise.allSettled([profilePromise, postsPromise]);
-      const postData = postsSettled.status === "fulfilled" ? (postsSettled.value as any)?.data : null;
-      const kept = typeof (postData as any)?.kept_own_text === "number" ? (postData as any).kept_own_text : 0;
-      setPostsRead(kept);
+      const postsOutcome = outcomeOf(postsSettled);
+      setPostsState(postsOutcome);
+      setPostsRead(postsOutcome.status === "ok" ? postsOutcome.count : null);
+
       if (userId) {
         const { data: rows } = await supabase
           .from("linkedin_posts").select("post_text").eq("user_id", userId).limit(200);
@@ -1470,7 +1515,30 @@ const Onboarding = () => {
     }
   };
 
+  /**
+   * Retry JUST the posts step. Everything the profile read established stays
+   * established — the law forbids restarting from a step that already worked.
+   */
+  const retryPosts = useCallback(async () => {
+    const profile_url = normaliseLinkedIn(liInput) || subjectRef.current;
+    if (!profile_url || !userId) return;
+    setPostsBusy(true);
+    const settled = await Promise.allSettled([
+      supabase.functions.invoke("linkedin-fetch-posts", { body: { profile_url, max_posts: 50 } }),
+    ]);
+    const outcome = outcomeOf(settled[0]);
+    setPostsState(outcome);
+    setPostsRead(outcome.status === "ok" ? outcome.count : null);
+    if (outcome.status === "ok") {
+      const { data: rows } = await supabase
+        .from("linkedin_posts").select("post_text").eq("user_id", userId).limit(200);
+      setOwnWords(wordsIn((rows as any[]) || []));
+    }
+    setPostsBusy(false);
+  }, [liInput, userId]);
+
   /** Return to the address card without losing anything already read. */
+
   const returnToAddress = useCallback((error?: string) => {
     setLiError(error ?? "");
     setStep1Phase("ask");
@@ -2176,6 +2244,7 @@ const Onboarding = () => {
       setLiInput("");
       setLiProfile(null);
       setPostsRead(null);
+      setPostsState(null);
     }
     setOwnWords(null);
     setSector(""); setSectorKnown(false);
@@ -2556,7 +2625,7 @@ const Onboarding = () => {
       { key: "s", label: "Sector", line: <>Sector · {mono(sector)}</>, done: !!sector, drop: readDone && !sector },
       { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
     ].filter((r) => !r.drop);
-    const nothingPublic = readDone && !postsRead && !ownWords;
+    const nothingPublic = readDone && !postsRead && !ownWords && postsState?.status !== "failed";
     // A zero for posts is never printed — the empty-post line stands in for it.
     const figures = [
       ...(postsRead ? [{ v: postsRead, l: "posts read" }] : []),
@@ -2701,9 +2770,29 @@ const Onboarding = () => {
               </div>
             ))}
           </div>
+        ) : postsState?.status === "failed" ? (
+          /* Waiting Law Part Two Rule 6: the profile step keeps its tick, the
+             posts step is named as the one that broke, the cause is stated,
+             the retry resumes from that step, and there is a way onward. */
+          <div style={{ marginBlockStart: 18 }}>
+            <WorkingPanel
+              runId={readRunId}
+              title="Reading what LinkedIn shows"
+              stages={[
+                { key: "profile", label: "Reading your profile", state: "done" },
+                { key: "posts", label: "Reading your posts", state: postsBusy ? "active" : "failed" },
+              ]}
+              failure={postsBusy ? null : { stageKey: "posts", error: (postsState as { error: unknown }).error }}
+              onRetryFromStage={() => void retryPosts()}
+              onCarryOn={{ label: "Carry on without my posts", action: () => setPostsState(null) }}
+            />
+          </div>
+        ) : postsState?.status === "ok" ? (
+          <p style={{ ...bodyLight, marginBlockStart: 18 }}>{emptyPostsLine(postsState)}</p>
         ) : (
           <p style={{ ...bodyLight, marginBlockStart: 18 }}>{EMPTY_POSTS_LINE}</p>
         )}
+
 
         {/* What Aura found in your record. Each part computed; anything missing is simply absent. */}
         {facts ? (() => {

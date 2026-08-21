@@ -8,6 +8,8 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { canonicalHandle, saveLinkedInAddress } from "@/lib/linkedinAddress";
+import { supabase } from "@/integrations/supabase/client";
+import { causeOf, retryLabel } from "@/lib/failureCause";
 import { EMPTY_LINKEDIN_STATE, loadLinkedInState, type LinkedInState } from "@/lib/linkedinState";
 
 const BLUE = "#0670C4";
@@ -30,6 +32,11 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
     return () => { alive = false; };
   }, [userId]);
 
+  /**
+   * Saving an address and then doing nothing with it is the bug: two members
+   * sat here with an address on file that Aura had never opened. The save now
+   * runs the read itself, and says plainly what came back.
+   */
   const save = async () => {
     if (!userId) return;
     setBusy(true);
@@ -40,13 +47,39 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
         handle: next.handle, address: next.profileUrl,
       }));
       setValue(next.profileUrl ?? "");
-      toast.success("LinkedIn address saved.");
+
+      const profile_url = next.profileUrl!;
+      const { data, error } = await supabase.functions.invoke("linkedin-fetch-profile", {
+        body: { profile_url },
+      });
+      if (error || !data || (data as any).error) {
+        toast.error(`Address saved. ${causeOf(error ?? (data as any)?.error, "Reading your profile")}`);
+        return;
+      }
+      setState((s) => ({ ...(s ?? EMPTY_LINKEDIN_STATE), confirmedByRead: true, addressConfirmed: true, sourceStatus: "verified_by_read" }));
+
+      const posts = await supabase.functions.invoke("linkedin-fetch-posts", {
+        body: { profile_url, max_posts: 50 },
+      }).catch((e) => ({ data: null, error: e } as any));
+      const pd = (posts as any)?.data;
+      if ((posts as any)?.error || !pd || pd.error) {
+        /* A failed posts read is never reported as "no posts". */
+        toast.error(causeOf((posts as any)?.error ?? pd?.error, "Reading your posts"), {
+          action: { label: retryLabel("Reading your posts"), onClick: () => void save() },
+        });
+        return;
+      }
+      const kept = typeof pd.kept_own_text === "number" ? pd.kept_own_text : 0;
+      toast.success(kept > 0
+        ? `Aura read your profile and ${kept} of your posts.`
+        : "Aura read your profile. LinkedIn showed no posts of your own writing yet.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't save that address.");
     } finally {
       setBusy(false);
     }
   };
+
 
   const valid = Boolean(canonicalHandle(value));
 
@@ -83,7 +116,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
             cursor: busy || !valid ? "not-allowed" : "pointer",
           }}
         >
-          {busy ? "Saving…" : "Save address"}
+          {busy ? "Saving and reading…" : "Save and read my profile"}
         </button>
       </div>
       <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>

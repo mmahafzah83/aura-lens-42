@@ -9,6 +9,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { hasBanned, loadBannedWords } from "../_shared/bannedWords.ts";
 import { isAdmin } from "../_shared/adminRole.ts";
+import { CORPUS_COLUMNS, isOwnWriting } from "../_shared/voiceCorpus.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -202,21 +203,25 @@ Deno.serve(async (req) => {
         .order("fetched_at", { ascending: false })
         .limit(1),
       admin.from("linkedin_posts")
-        .select("post_text, published_at")
+        .select(`${CORPUS_COLUMNS}, published_at`)
         .eq("user_id", targetUserId)
         .not("post_text", "is", null)
         .neq("post_text", "")
         .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(MAX_POSTS),
+        .limit(MAX_POSTS * 4),
       admin.from("strategic_signals").select("theme_tags").eq("user_id", targetUserId).limit(500),
       admin.from("authority_voice_profiles")
         .select("tone, preferred_structures, storytelling_patterns")
         .eq("user_id", targetUserId).maybeSingle(),
     ]);
 
-    const posts = ((postsRes.data as { post_text: string | null }[] | null) || [])
+    // ONE predicate for "the member wrote this", imported, never copied.
+    const posts = ((postsRes.data as Record<string, unknown>[] | null) || [])
+      .filter((p) => isOwnWriting(p as never))
       .map((p) => String(p.post_text || "").trim())
       .filter((t) => t.length > 0)
+      .slice(0, MAX_POSTS)
+
       .map((t) => t.slice(0, POST_CHARS));
 
     // HARD REFUSAL — no model call on a corpus we do not have.

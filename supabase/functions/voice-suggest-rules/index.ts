@@ -11,6 +11,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAdmin } from "../_shared/adminRole.ts";
+import { isOwnWriting, CORPUS_COLUMNS } from "../_shared/voiceCorpus.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -216,13 +217,14 @@ Deno.serve(async (req) => {
 
     const { data: postRows, error: postErr } = await admin
       .from("linkedin_posts")
-      .select("id, post_text, voice_corpus_status")
+      .select(`id, ${CORPUS_COLUMNS}`)
       .eq("user_id", userId)
       .not("post_text", "is", null)
       .limit(500);
     if (postErr) throw new Error(postErr.message);
 
     const posts: Post[] = (postRows ?? [])
+      .filter(isOwnWriting)
       .filter((r) => String(r.voice_corpus_status ?? "included") === "included")
       .map((r) => ({ id: String(r.id), text: String(r.post_text ?? "").trim() }))
       .filter((p) => p.text.length > 0);
