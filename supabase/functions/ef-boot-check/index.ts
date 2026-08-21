@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   // The Vault key is lowercase `cron_secret`. A 401 here is nearly always case.
-  const secret = Deno.env.get("cron_secret");
+  const secret = Deno.env.get("cron_secret") ?? Deno.env.get("CRON_SECRET");
   const offered = req.headers.get("cron_secret") ?? req.headers.get("x-cron-secret");
   if (secret && offered !== secret) {
     return json({ error: "Unauthorized" }, 401);
