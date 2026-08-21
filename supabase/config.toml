@@ -214,3 +214,6 @@ verify_jwt = false
 
 [functions.auth-resend-confirmation]
 verify_jwt = false
+
+[functions.ef-boot-check]
+verify_jwt = false
