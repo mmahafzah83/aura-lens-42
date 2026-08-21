@@ -15,6 +15,7 @@ import { scorePresence, earliestExperienceYear, type PresenceRow, type PresenceK
 import { loadLinkedInAddress } from "@/lib/linkedinAddress";
 import DraftProfileCopy, { type DraftTarget } from "@/components/identity/DraftProfileCopy";
 import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
+import { causeOf } from "@/lib/failureCause";
 
 /* ── System-B "Signal" values. Module scope, always. ─────────────────────── */
 const INK = "#0F1519";
@@ -133,7 +134,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const [stage, setStage] = useState<"profile" | "posts" | null>(null);
   const [readDone, setReadDone] = useState<string[]>([]);
   const [readRunId, setReadRunId] = useState(0);
-  const [readFailure, setReadFailure] = useState<{ stageKey: string; message: string } | null>(null);
+  const [readFailure, setReadFailure] = useState<{ stageKey: string; error?: unknown } | null>(null);
   const readAbortRef = useRef<AbortController | null>(null);
   const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
 
