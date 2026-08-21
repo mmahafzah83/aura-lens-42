@@ -612,7 +612,7 @@ const AdminAccess = () => {
                                 className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
                                 style={{
                                   backgroundColor: "var(--brand)",
-                                  color: "var(--ink)",
+                                  color: "#FFFFFF",
                                 }}
                               >
                                 Invite
@@ -857,8 +857,8 @@ const AdminAccess = () => {
                     className="flex items-center justify-center font-semibold text-sm shrink-0"
                     style={{
                       width: 36, height: 36, borderRadius: 6,
-                      backgroundColor: (r.rating ?? 0) >= 9 ? "var(--brand)" : (r.rating ?? 0) >= 7 ? "var(--brand-muted)" : "rgba(255,255,255,0.05)",
-                      color: (r.rating ?? 0) >= 9 ? "var(--ink)" : "var(--text-primary)",
+                      backgroundColor: (r.rating ?? 0) >= 9 ? "var(--brand)" : (r.rating ?? 0) >= 7 ? "var(--brand-muted)" : "var(--surface-subtle)",
+                      color: (r.rating ?? 0) >= 9 ? "#FFFFFF" : "var(--text-primary)",
                       border: "1px solid var(--border-default)",
                     }}
                   >
