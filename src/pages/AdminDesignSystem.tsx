@@ -182,7 +182,7 @@ function ColorEditor({
         style={{
           flex: 1,
           padding: "6px 10px",
-          background: "var(--ink)",
+          background: "var(--surface-card)",
           border: "1px solid var(--ink-3, #333)",
           color: "var(--ink-7, #eee)",
           borderRadius: 6,
@@ -419,7 +419,7 @@ const AdminDesignSystem = () => {
 
   if (!authChecked || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--ink)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--surface-card)" }}>
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
     );

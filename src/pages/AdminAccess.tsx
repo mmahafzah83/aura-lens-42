@@ -395,7 +395,7 @@ const AdminAccess = () => {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "var(--ink)" }}
+        style={{ backgroundColor: "var(--surface-card)" }}
       >
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
@@ -508,7 +508,7 @@ const AdminAccess = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search waitlist by email or name…"
             className="w-full sm:w-[360px] px-3 py-2 rounded-md text-sm outline-none"
-            style={{ backgroundColor: "var(--ink)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
+            style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
           />
         </div>
 
@@ -677,7 +677,7 @@ const AdminAccess = () => {
               onChange={(e) => { setDirectName(e.target.value); setDirectDuplicate(null); }}
               placeholder="Name (optional)"
               className="sm:w-[200px] px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
-              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
+              style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
             />
             <input
               type="email"
@@ -685,13 +685,13 @@ const AdminAccess = () => {
               onChange={(e) => { setDirectEmail(e.target.value); setDirectDuplicate(null); }}
               placeholder="email@company.com"
               className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
-              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
+              style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
             />
             <button
               onClick={sendDirectInvite}
               disabled={directSending || !directEmail}
               className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
-              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+              style={{ backgroundColor: "var(--brand)", color: "#FFFFFF" }}
             >
               {directSending ? <Loader2 className="w-4 h-4 animate-spin" /> : directDuplicate ? "Send anyway" : "Send invite"}
             </button>
@@ -721,7 +721,7 @@ const AdminAccess = () => {
             <Select value={seedUserId} onValueChange={setSeedUserId}>
               <SelectTrigger
                 className="sm:w-[260px] text-sm"
-                style={{ backgroundColor: "var(--ink)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
+                style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
               >
                 <SelectValue placeholder="Choose user" />
               </SelectTrigger>
@@ -741,13 +741,13 @@ const AdminAccess = () => {
               onChange={(e) => setSeedUrl(e.target.value)}
               placeholder="Paste article URL (https://...)"
               className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
-              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
+              style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)", color: "var(--text-primary)" }}
             />
             <button
               onClick={seedCapture}
               disabled={seedSending || !seedUserId || !seedUrl}
               className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
-              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+              style={{ backgroundColor: "var(--brand)", color: "#FFFFFF" }}
             >
               {seedSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Seed Capture"}
             </button>
@@ -781,7 +781,7 @@ const AdminAccess = () => {
                   <div
                     key={r.id}
                     className="flex items-start justify-between gap-4 p-3 rounded-md"
-                    style={{ backgroundColor: "var(--ink)", border: "1px solid var(--border-default)" }}
+                    style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)" }}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
@@ -836,10 +836,10 @@ const AdminAccess = () => {
             <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--brand-muted)", color: "var(--brand)", border: "1px solid var(--bronze-line)" }}>
               Avg score: {npsStats.avg.toFixed(1)}
             </span>
-            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--ink)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
+            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--surface-card)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
               NPS: {npsStats.nps}
             </span>
-            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--ink)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
+            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--surface-card)", color: "var(--text-secondary)", border: "1px solid var(--border-default)" }}>
               {npsStats.count} responses
             </span>
           </div>
@@ -851,7 +851,7 @@ const AdminAccess = () => {
                 <div
                   key={r.id}
                   className="flex items-start gap-3 p-3 rounded-md"
-                  style={{ backgroundColor: "var(--ink)", border: "1px solid var(--border-default)" }}
+                  style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)" }}
                 >
                   <div
                     className="flex items-center justify-center font-semibold text-sm shrink-0"

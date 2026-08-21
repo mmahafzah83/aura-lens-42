@@ -210,7 +210,7 @@ const AdminExperience = () => {
 
   if (!authChecked || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--ink)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--surface-card)" }}>
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
     );
@@ -255,7 +255,7 @@ const AdminExperience = () => {
                       onChange={(e) => updateBgLocal(bg.id, { image_url: e.target.value })}
                       placeholder="https://…"
                       className="mt-1 text-xs h-9"
-                      style={{ backgroundColor: "var(--ink)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
+                      style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
                     />
                   </div>
 
@@ -283,7 +283,7 @@ const AdminExperience = () => {
                       onChange={(e) => updateBgLocal(bg.id, { tint_color: e.target.value })}
                       placeholder="rgba(6,112,196,0.04)"
                       className="mt-1 text-xs h-9"
-                      style={{ backgroundColor: "var(--ink)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
+                      style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
                     />
                   </div>
 
@@ -293,7 +293,7 @@ const AdminExperience = () => {
                     style={{
                       height: 60,
                       border: "1px solid var(--border-default)",
-                      backgroundColor: "var(--ink)",
+                      backgroundColor: "var(--surface-card)",
                     }}
                   >
                     {bg.image_url ? (
@@ -321,7 +321,7 @@ const AdminExperience = () => {
                       onClick={() => saveBg(bg)}
                       disabled={savingBg === bg.id}
                       className="text-xs px-4 py-2 rounded-md font-medium disabled:opacity-60"
-                      style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+                      style={{ backgroundColor: "var(--brand)", color: "#FFFFFF" }}
                     >
                       {savingBg === bg.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
                     </button>
@@ -461,7 +461,7 @@ const AdminExperience = () => {
                 onClick={saveSidebar}
                 disabled={savingSidebar}
                 className="text-xs px-4 py-2 rounded-md font-medium disabled:opacity-60"
-                style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+                style={{ backgroundColor: "var(--brand)", color: "#FFFFFF" }}
               >
                 {savingSidebar ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save sidebar"}
               </button>
@@ -519,7 +519,7 @@ const ColorRow = ({
         onChange={(e) => onChange(e.target.value)}
         placeholder="#0670C4 or rgba(...)"
         className="text-xs h-9"
-        style={{ backgroundColor: "var(--ink)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
+        style={{ backgroundColor: "var(--surface-card)", borderColor: "var(--border-default)", color: "var(--text-primary)" }}
       />
     </div>
   </div>
