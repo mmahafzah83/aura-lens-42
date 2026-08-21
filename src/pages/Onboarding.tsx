@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { CORPUS_COLUMNS, isOwnWriting } from "../../supabase/functions/_shared/voiceCorpus";
+import { CORPUS_COLUMNS, CORPUS_SOURCE_TYPES, isOwnWriting } from "../../supabase/functions/_shared/voiceCorpus";
 import { saveLinkedInAddress, canonicalHandle, loadLinkedInAddress } from "@/lib/linkedinAddress";
 import usePageMeta from "@/hooks/usePageMeta";
 import { useCountUp } from "@/hooks/useCountUp";
@@ -297,6 +297,26 @@ const CORPUS_SELECT = CORPUS_COLUMNS;
 const wordsIn = (rows: Parameters<typeof isOwnWriting>[0][]): number =>
   rows.filter(isOwnWriting)
     .reduce((n, r) => n + String(r.post_text || "").trim().split(/\s+/).filter(Boolean).length, 0);
+
+async function loadOwnWordsCount(userId: string): Promise<number> {
+  const { data: rows, error } = await supabase
+    .from("linkedin_posts")
+    .select(CORPUS_SELECT)
+    .eq("user_id", userId)
+    .in("source_type", CORPUS_SOURCE_TYPES)
+    .neq("authorship", "aura_drafted")
+    .neq("acquisition", "discovered")
+    .not("post_text", "is", null)
+    .or("text_is_snippet.is.null,text_is_snippet.eq.false")
+    .or("voice_corpus_status.is.null,voice_corpus_status.neq.excluded")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(500);
+  if (error) {
+    console.error("loadOwnWordsCount failed:", error);
+    return 0;
+  }
+  return wordsIn((rows as Parameters<typeof isOwnWriting>[0][]) || []);
+}
 
 /* ──────────────────────────────── shells ────────────────────────────────── */
 
@@ -1503,9 +1523,7 @@ const Onboarding = () => {
       setPostsRead(postsOutcome.status === "ok" ? postsOutcome.count : null);
 
       if (userId) {
-        const { data: rows } = await supabase
-          .from("linkedin_posts").select(CORPUS_SELECT).eq("user_id", userId).limit(200);
-        setOwnWords(wordsIn((rows as any[]) || []));
+        setOwnWords(await loadOwnWordsCount(userId));
       } else {
         setOwnWords(0);
       }
@@ -1538,9 +1556,7 @@ const Onboarding = () => {
     setPostsState(outcome);
     setPostsRead(outcome.status === "ok" ? outcome.count : null);
     if (outcome.status === "ok") {
-      const { data: rows } = await supabase
-        .from("linkedin_posts").select(CORPUS_SELECT).eq("user_id", userId).limit(200);
-      setOwnWords(wordsIn((rows as any[]) || []));
+      setOwnWords(await loadOwnWordsCount(userId));
     }
     setPostsBusy(false);
   }, [liInput, userId]);
