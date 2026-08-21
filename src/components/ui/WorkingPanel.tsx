@@ -16,6 +16,8 @@ import {
   OVER_P95_LINE, mmss, useElapsed, useWaitEstimate, useWeightedProgress, waitCopy,
   type WaitOperation,
 } from "@/lib/waitEstimate";
+import { causeOf, retryLabel } from "@/lib/failureCause";
+
 
 /* ── System-B values. Module scope, always. ─────────────────────────────── */
 const INK = "#0F1519";
