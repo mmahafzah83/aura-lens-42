@@ -348,6 +348,37 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
       console.error("[linkedin-fetch-profile] retention skipped:", e instanceof Error ? e.message : String(e));
     }
 
+    /* --- Did the member actually put a copied suggestion on LinkedIn? ---
+       We never claim they applied it because they pressed Copy. We notice it
+       here, on the next read, by comparing the live field to what they copied.
+       A failure here must never fail a read that already succeeded. */
+    try {
+      const { data: draftRows } = await admin
+        .from("profile_copy_drafts")
+        .select("id, target, copied_text")
+        .eq("user_id", targetUserId)
+        .is("applied_at", null)
+        .not("copied_text", "is", null);
+      const live: Record<string, string> = {
+        headline: String(merged.headline ?? headline ?? ""),
+        about: String(merged.about ?? about ?? ""),
+      };
+      for (const row of (draftRows ?? []) as { id: string; target: string; copied_text: string }[]) {
+        const current = live[row.target] ?? "";
+        if (!current || !row.copied_text) continue;
+        const a = normaliseForCompare(current);
+        const b = normaliseForCompare(row.copied_text);
+        if (!a || !b) continue;
+        if (a === b || similarityRatio(a, b) >= 0.8) {
+          await admin.from("profile_copy_drafts").update({ applied_at: now }).eq("id", row.id);
+        }
+      }
+    } catch (e) {
+      console.error("[linkedin-fetch-profile] applied check skipped:", e instanceof Error ? e.message : String(e));
+    }
+
+
+
 
 
     // --- Gentle auto-fill: only ever fills a blank, never replaces the member's own value ---
