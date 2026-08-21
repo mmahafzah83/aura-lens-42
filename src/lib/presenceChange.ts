@@ -51,6 +51,9 @@ export interface PresenceChangeInput {
   previousSum: number;
   currentWord: string;
   previousWord: string;
+  /** Formatted date of the snapshot being compared against — the baseline may
+   *  not be the immediately preceding read, so the line names it. */
+  baselineDate?: string | null;
   /** Set only when the top subject's match state actually moved. */
   themeMove?: { theme: string; from: string; to: string } | null;
 }
