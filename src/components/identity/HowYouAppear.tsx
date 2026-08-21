@@ -117,6 +117,19 @@ function formatReadDateTime(iso: string | null): string | null {
 
 const calendarDay = (iso: string | null): string => (iso ? new Date(iso).toDateString() : "");
 
+/** Everything the change line can possibly report: the scored facts and scores
+ *  buildPresenceChange diffs, plus the theme haystacks. Two reads with the same
+ *  fingerprint have nothing to say to each other. */
+function scoredFingerprint(s: unknown): string {
+  const rows = scorePresence(s as never)
+    .map((r) => `${r.key}:${r.fact}:${r.score}`)
+    .join("|");
+  const hay = buildHaystacks(s as never)
+    .map((h) => `${h.field}:${h.text}`)
+    .join("|");
+  return `${rows}||${hay}`;
+}
+
 
 interface Snapshot {
   full_name: string | null;
