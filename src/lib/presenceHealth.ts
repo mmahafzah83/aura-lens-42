@@ -68,19 +68,44 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
   const hLen = headline.length;
   let headlineScore = hLen < 40 ? 3 : hLen < 120 ? 6 : 8;
   const lower = headline.toLowerCase();
-  if (/\d/.test(headline) || STRONG_VERBS.some((v) => new RegExp(`\\b${v}\\b`).test(lower))) headlineScore += 2;
+  const hasProof = /\d/.test(headline) || STRONG_VERBS.some((v) => new RegExp(`\\b${v}\\b`).test(lower));
+  if (hasProof) headlineScore += 2;
+  /* The rule names the branch that actually fired, with the member's own number. */
+  const headlineRule = hLen < 40
+    ? "Under 40 characters is a job title, not a position."
+    : hLen < 120
+      ? `${hLen} characters. Room for a number or a named sector.`
+      : hasProof
+        ? ""
+        : "No figure in it. A number is the fastest proof you have.";
 
   const aboutWords = wordCount(String(s.about || ""));
   const aboutScore =
     aboutWords === 0 ? 0 : aboutWords < 50 ? 3 : aboutWords < 150 ? 6 : aboutWords < 300 ? 9 : 10;
+  const aboutRule = aboutWords === 0
+    ? "Nothing here. It is the first thing a stranger reads."
+    : aboutWords < 50
+      ? `${aboutWords} words reads as a placeholder.`
+      : aboutWords < 150
+        ? `${aboutWords} words covers the facts. It does not say what you would argue.`
+        : "";
 
   const roles = asArray(s.experience);
   const withDesc = roles.filter((r) => roleDescription(r).length > 0).length;
+  const blankRoles = roles.length - withDesc;
   const expScore = roles.length === 0 ? 0 : Math.round((withDesc / roles.length) * 10);
+  const expRule = roles.length === 0
+    ? "No roles on file. A stranger has nothing to place you against."
+    : `${blankRoles} of your ${roles.length} roles carry no description.`;
 
   const skillCount = arrayLength(s.skills);
   const skillScore =
     skillCount === 0 ? 0 : skillCount < 5 ? 3 : skillCount < 10 ? 6 : skillCount < 20 ? 9 : 10;
+  const skillRule = skillCount < 5
+    ? `${skillCount} listed. Skills are how you get found in a search.`
+    : skillCount < 20
+      ? `${skillCount} listed. Under twenty thins your search reach.`
+      : "";
 
   const eduCount = arrayLength(s.education);
   const eduScore = eduCount > 0 ? 10 : 0;
@@ -99,7 +124,7 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
       label: "Headline",
       score: headlineScore,
       fact: `${hLen} characters`,
-      rule: "Under 40 characters is a job title, not a position.",
+      rule: headlineRule,
       weak: false,
     },
     {
@@ -107,7 +132,7 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
       label: "About",
       score: aboutScore,
       fact: `${aboutWords} words`,
-      rule: "Under 50 words reads as a placeholder.",
+      rule: aboutRule,
       weak: false,
     },
     {
@@ -115,7 +140,7 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
       label: "Experience",
       score: expScore,
       fact: `${withDesc} of ${roles.length} roles described`,
-      rule: "A role with no description is a job title on a list.",
+      rule: expRule,
       weak: false,
     },
     {
@@ -123,7 +148,7 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
       label: "Skills",
       score: skillScore,
       fact: `${skillCount} skills listed`,
-      rule: "Skills are how you get found in a search.",
+      rule: skillRule,
       weak: false,
     },
     {
@@ -138,6 +163,7 @@ export function scorePresence(snapshot: PresenceSnapshot | null | undefined): Pr
 
   return rows.map((r) => ({ ...r, weak: r.score <= 6 }));
 }
+
 
 /** Earliest start year found anywhere in the experience array. Null when undecidable. */
 export function earliestExperienceYear(experience: unknown): number | null {
