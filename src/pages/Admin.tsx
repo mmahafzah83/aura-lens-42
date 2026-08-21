@@ -579,14 +579,18 @@ export default function Admin() {
   });
 
   /** THE ONE ACTION. Named by its outcome, chosen from the brief itself. */
-  const primaryAction: { label: string; run: () => void } = (() => {
+  /**
+   * THE ONE ACTION. Named by its outcome, chosen from the brief itself.
+   * A failed publish has no button here: nothing this page can run repairs it,
+   * so it states where the recorded error can be read instead.
+   */
+  const primaryAction: { label: string; run: () => void } | { note: string } = (() => {
     const first = todayNeeds[0] as any;
     if (first) {
-      const who = String(first.fingerprint ?? "").split(":")[1];
-      const label =
-        String(first.fingerprint ?? "").startsWith("failed_publish") && who
-          ? `Get ${who}'s post out`
-          : "Clear the thing that needs you";
+      if (String(first.fingerprint ?? "").startsWith("failed_publish")) {
+        return { note: "Open this person's draft in People to see the recorded error." };
+      }
+      const label = "Clear the thing that needs you";
       return {
         label,
         run: () => setMessage({ title: label, body: `${first.what}\n\n${first.impact ?? ""}\n\n${first.action ?? ""}` }),
@@ -600,6 +604,7 @@ export default function Admin() {
     };
   })();
 
+
   const needsFindings = needs.map((item: any) => (
     <Finding
       key={item.fingerprint}
@@ -609,14 +614,9 @@ export default function Admin() {
       recommendation={item.action}
       action={
         item.fingerprint?.startsWith("failed_publish") ? (
-          <>
-            <Btn tone="ox" onClick={() => runWorker("reap-stuck-publishes", "the publish retry worker")}>
-              Run retry worker
-            </Btn>
-            <Link to="/admin/people" style={{ textDecoration: "none" }}>
-              <Btn tone="quiet">Open people</Btn>
-            </Link>
-          </>
+          <Link to="/admin/people" style={{ textDecoration: "none" }}>
+            <Btn tone="quiet">Open people</Btn>
+          </Link>
         ) : item.fingerprint?.startsWith("job_failed") ? (
           <Link to="/admin/crons" style={{ textDecoration: "none" }}>
             <Btn tone="ox">Open crons</Btn>
@@ -1373,10 +1373,16 @@ export default function Admin() {
               <Chip tone={liveliness.tone} title={liveliness.note}>
                 {liveliness.text} · {liveliness.note}
               </Chip>
-              {/* The only filled button on this page. */}
-              <Btn tone="primary" onClick={primaryAction.run}>
-                {primaryAction.label}
-              </Btn>
+              {/* The only filled button on this page — absent when there is nothing to run. */}
+              {"note" in primaryAction ? (
+                <span style={{ fontFamily: SERIF, fontSize: 14, color: C.muted, maxWidth: 320 }}>
+                  {primaryAction.note}
+                </span>
+              ) : (
+                <Btn tone="primary" onClick={primaryAction.run}>
+                  {primaryAction.label}
+                </Btn>
+              )}
               <Btn tone="quiet" onClick={refresh} disabled={refreshing}>
                 {refreshing ? "Refreshing…" : "Refresh now"}
               </Btn>
@@ -1393,11 +1399,7 @@ export default function Admin() {
               handled={handledCount}
               checkedLine={`Publishing, drafts, failed sends, jobs and cost were all checked at ${computedAt}. Nothing came back needing a decision from you.`}
               needsAction={(item) =>
-                String(item.fingerprint ?? "").startsWith("failed_publish") ? (
-                  <Btn tone="ox" onClick={() => runWorker("reap-stuck-publishes", "the publish retry worker")}>
-                    Run retry worker
-                  </Btn>
-                ) : String(item.fingerprint ?? "").startsWith("job_failed") ? (
+                String(item.fingerprint ?? "").startsWith("job_failed") ? (
                   <Link to="/admin/crons" style={{ textDecoration: "none" }}>
                     <Btn tone="quiet">Open crons</Btn>
                   </Link>
