@@ -255,7 +255,9 @@ export function WorkingPanel({
           ? { role: "progressbar" as const, "aria-valuemin": 0, "aria-valuemax": 100, "aria-valuenow": Math.round((progress ?? 0) * 100) }
           : {})}
         aria-hidden={determinate ? undefined : true}
-        style={{ blockSize: 5, borderRadius: 999, background: CYAN_TRACK, marginBlockStart: 12, overflow: "hidden" }}
+        /* Cyan is work in progress only: a failed run shows no cyan at all. */
+        style={{ blockSize: 5, borderRadius: 999, background: failed ? "#F3CFC9" : CYAN_TRACK, marginBlockStart: 12, overflow: "hidden" }}
+
       >
         <div
           className="wp-fill"
