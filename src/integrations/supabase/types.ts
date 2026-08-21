@@ -3996,31 +3996,49 @@ export type Database = {
       }
       profile_copy_drafts: {
         Row: {
+          applied_at: string | null
+          copied_angle: string | null
+          copied_at: string | null
+          copied_text: string | null
           created_at: string
           id: string
           language: string | null
           options: Json
           posts_used: number | null
+          source_about: string | null
+          source_headline: string | null
           target: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          applied_at?: string | null
+          copied_angle?: string | null
+          copied_at?: string | null
+          copied_text?: string | null
           created_at?: string
           id?: string
           language?: string | null
           options: Json
           posts_used?: number | null
+          source_about?: string | null
+          source_headline?: string | null
           target: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          applied_at?: string | null
+          copied_angle?: string | null
+          copied_at?: string | null
+          copied_text?: string | null
           created_at?: string
           id?: string
           language?: string | null
           options?: Json
           posts_used?: number | null
+          source_about?: string | null
+          source_headline?: string | null
           target?: string
           updated_at?: string
           user_id?: string

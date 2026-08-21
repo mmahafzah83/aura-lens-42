@@ -31,3 +31,4 @@ C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Ste
 - [Voice Learning Loop](mem://features/voice/learning-loop) — Edit persistence + edit_distance, entity provenance guard, evidence-backed voice rules
 - [Voice OS Data Foundation](mem://features/voice/voice-os-data) — voice_traits registry/values/feedback, computable traits, hook+ending vocabulary, readiness
 - [LinkedIn Address Authority](mem://features/linkedin/address-authority) — Address established from the member's own OAuth token; guessed handles retired
+- [Appear Noticing](mem://features/my-story/appear-noticing) — Three-state subject matching, full-profile haystack, applied-copy detection

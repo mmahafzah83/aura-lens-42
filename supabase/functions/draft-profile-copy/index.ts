@@ -174,15 +174,32 @@ Deno.serve(async (req) => {
     if (mode === "cached") {
       const { data: cached } = await admin
         .from("profile_copy_drafts")
-        .select("options, language, posts_used, updated_at")
+        .select("options, language, posts_used, updated_at, applied_at, source_headline, source_about")
         .eq("user_id", targetUserId)
         .eq("target", target)
         .maybeSingle();
       const cachedRow = cached as
-        | { options: unknown; language: string | null; posts_used: number | null; updated_at: string }
+        | {
+            options: unknown; language: string | null; posts_used: number | null; updated_at: string;
+            applied_at: string | null; source_headline: string | null; source_about: string | null;
+          }
         | null;
       if (cachedRow && Array.isArray(cachedRow.options) && cachedRow.options.length > 0) {
+        /* Is the cached draft still written against the profile the member has
+           now? We compare, we never spend credits to refresh on their behalf. */
+        const { data: liveRows } = await admin
+          .from("linkedin_profile_snapshots")
+          .select("headline, about")
+          .eq("user_id", targetUserId)
+          .order("fetched_at", { ascending: false })
+          .limit(1);
+        const liveSnap = (liveRows?.[0] ?? null) as { headline: string | null; about: string | null } | null;
+        const liveField = String((target === "headline" ? liveSnap?.headline : liveSnap?.about) ?? "").trim();
+        const storedField = String((target === "headline" ? cachedRow.source_headline : cachedRow.source_about) ?? "").trim();
+        const stale = Boolean(storedField) && Boolean(liveField) && storedField !== liveField;
         return json({
+          stale,
+          applied_at: cachedRow.applied_at ?? null,
           ok: true,
           from_cache: true,
           target,
@@ -324,6 +341,14 @@ Deno.serve(async (req) => {
         options,
         language,
         posts_used: posts.length,
+        /* The profile this was written against — so the next open can say
+           plainly when the member has moved on from it. */
+        source_headline: String(snap.headline ?? ""),
+        source_about: String(snap.about ?? ""),
+        copied_at: null,
+        copied_text: null,
+        copied_angle: null,
+        applied_at: null,
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id,target" });
     } catch { /* a failed save must never swallow the answer */ }

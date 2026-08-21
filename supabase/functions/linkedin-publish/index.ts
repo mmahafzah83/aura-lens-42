@@ -1,5 +1,6 @@
 // linkedin-publish — redeploy 2026-06-25 (image upload support)
 import { withObserve } from "../_shared/observe.ts";
+import { DIFF_CAP, levenshtein } from "../_shared/editDistance.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { linkedinFetch } from "../_shared/linkedinFetch.ts";
 import { alertPublishFailure } from "../_shared/publishFailureAlert.ts";
@@ -31,27 +32,7 @@ function json(body: unknown, status = 200) {
 }
 
 // --- Draft-edit telemetry helpers (data collection only; never blocks publish) ---
-const DIFF_CAP = 4000;
-
-function levenshtein(a: string, b: string): number {
-  const s = a.slice(0, DIFF_CAP);
-  const t = b.slice(0, DIFF_CAP);
-  if (s === t) return 0;
-  if (!s.length) return t.length;
-  if (!t.length) return s.length;
-  let prev = new Array(t.length + 1);
-  let curr = new Array(t.length + 1);
-  for (let j = 0; j <= t.length; j++) prev[j] = j;
-  for (let i = 1; i <= s.length; i++) {
-    curr[0] = i;
-    for (let j = 1; j <= t.length; j++) {
-      const cost = s[i - 1] === t[j - 1] ? 0 : 1;
-      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
-    }
-    const tmp = prev; prev = curr; curr = tmp;
-  }
-  return prev[t.length];
-}
+// levenshtein / DIFF_CAP live in _shared/editDistance.ts — one copy, one measure.
 
 function firstNonEmptyLine(text: string): string {
   for (const line of text.split("\n")) {

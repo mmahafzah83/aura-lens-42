@@ -16,6 +16,7 @@ import { loadLinkedInAddress } from "@/lib/linkedinAddress";
 import DraftProfileCopy, { type DraftTarget } from "@/components/identity/DraftProfileCopy";
 import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
 import { causeOf } from "@/lib/failureCause";
+import { buildHaystacks, matchTheme, type ThemeMatch, type ThemeField } from "@/lib/themeMatch";
 
 /* ── System-B "Signal" values. Module scope, always. ─────────────────────── */
 const INK = "#0F1519";
@@ -25,6 +26,9 @@ const CARD = "#FFFFFF";
 const ACT = "#0670C4";
 const SUCCESS = "#12805C";
 const AMBER = "#E0A82E";
+/* The dot sits on white; the bar sits on the #E2E7EE track. Same meaning,
+   two values, because only one of them clears 3:1 against its own background. */
+const AMBER_BAR = "#9A6B00";
 const NIGHT = "#0F1519";
 const NIGHT_TEXT = "#FFFFFF";
 const NIGHT_MUTED = "#8A97A6";
@@ -54,6 +58,7 @@ const primaryButtonStyle: React.CSSProperties = {
   fontSize: 14, fontWeight: 600, cursor: "pointer", minHeight: 44,
 };
 const chipBase: React.CSSProperties = {
+  position: "relative",
   display: "inline-flex", alignItems: "center", gap: 6, background: CARD,
   borderRadius: 4, padding: "5px 9px", fontSize: 12.5, lineHeight: 1.2,
 };
@@ -110,16 +115,15 @@ interface Snapshot {
   fetched_at: string | null;
 }
 
-const barColour = (score: number) => (score >= 8 ? SUCCESS : score === 7 ? ACT : AMBER);
+const barColour = (score: number) => (score >= 8 ? SUCCESS : score === 7 ? ACT : AMBER_BAR);
 
 const overallWord = (sum: number) => (sum >= 50 ? "Strong" : sum >= 30 ? "Uneven" : "Thin");
 
-/** Whole-word-ish presence of a theme inside the profile text. */
-function mentions(haystack: string, theme: string): boolean {
-  const t = theme.trim().toLowerCase();
-  if (!t) return false;
-  const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`(^|[^a-z0-9])${escaped}`, "i").test(haystack);
+/** Where a half-carried subject already shows up, in the member's words. */
+function fieldList(fields: ThemeField[]): string {
+  if (fields.length === 0) return "your profile";
+  if (fields.length === 1) return fields[0];
+  return `${fields.slice(0, -1).join(", ")} and ${fields[fields.length - 1]}`;
 }
 
 export default function HowYouAppear({ userId }: { userId: string | null }) {
@@ -137,11 +141,14 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const [readFailure, setReadFailure] = useState<{ stageKey: string; error?: unknown } | null>(null);
   const readAbortRef = useRef<AbortController | null>(null);
   const [draftTarget, setDraftTarget] = useState<DraftTarget | null>(null);
+  /* Which drafted copy Aura has since FOUND on the live profile. Never "you
+     pressed copy" — only "it is there now". */
+  const [appliedTargets, setAppliedTargets] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
     setLoading(true);
-    const [snapRes, postsRes, signalsRes, profRes] = await Promise.all([
+    const [snapRes, postsRes, signalsRes, profRes, appliedRes] = await Promise.all([
       supabase.from("linkedin_profile_snapshots")
         .select("full_name,headline,about,photo_url,location,followers,connections,experience,education,skills,fetched_at")
         .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(1),
@@ -149,11 +156,18 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         .eq("user_id", userId).not("post_text", "is", null).neq("post_text", ""),
       supabase.from("strategic_signals").select("theme_tags").eq("user_id", userId).limit(500),
       supabase.from("diagnostic_profiles").select("avatar_url").eq("user_id", userId).maybeSingle(),
+      supabase.from("profile_copy_drafts").select("target, applied_at").eq("user_id", userId).not("applied_at", "is", null),
     ]);
 
     setSnapshot(((snapRes.data as Snapshot[] | null)?.[0]) ?? null);
     setPostsWithText(typeof postsRes.count === "number" ? postsRes.count : null);
     setAvatarUrl(((profRes.data as { avatar_url: string | null } | null)?.avatar_url) ?? null);
+
+    const applied: Record<string, string> = {};
+    for (const row of ((appliedRes.data as { target: string; applied_at: string }[] | null) || [])) {
+      if (row.applied_at) applied[row.target] = row.applied_at;
+    }
+    setAppliedTargets(applied);
 
     const counts = new Map<string, number>();
     for (const row of (signalsRes.data as { theme_tags: string[] | null }[] | null) || []) {
@@ -163,7 +177,9 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         counts.set(t, (counts.get(t) || 0) + 1);
       }
     }
-    const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+    /* "Recurring" means it came back. A subject Aura saw once is not a subject
+       the member writes about. */
+    const ranked = [...counts.entries()].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]);
     setTotalThemes(ranked.length);
     setThemes(ranked.slice(0, 8).map(([theme, count]) => ({ theme, count })));
 
@@ -186,12 +202,19 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     return years > 0 ? years : null;
   }, [snapshot]);
 
-  const profileText = `${snapshot?.headline || ""} ${snapshot?.about || ""}`.toLowerCase();
-  const themeRows = themes.map((t) => ({ ...t, carried: mentions(profileText, t.theme) }));
-  const carriedOfShown = themeRows.filter((t) => t.carried).length;
+  /* The whole profile is the haystack: headline, About, every role title and
+     description, every skill. A subject the member put in a role is carried. */
+  const haystacks = useMemo(() => buildHaystacks(snapshot), [snapshot]);
+  const themeRows = useMemo(
+    () => themes.map((t) => ({ ...t, match: matchTheme(haystacks, t.theme) as ThemeMatch })),
+    [themes, haystacks],
+  );
+  const carriedOfShown = themeRows.filter((t) => t.match.state === "carried").length;
+  const partialOfShown = themeRows.filter((t) => t.match.state === "partial").length;
   const shown = themeRows.length;
-  const firstMissing = themeRows.find((t) => !t.carried);
-  const topIsMissing = themeRows.length > 0 && !themeRows[0].carried;
+  const firstMissing = themeRows.find((t) => t.match.state === "missing");
+  const firstPartial = themeRows.find((t) => t.match.state === "partial");
+  const top = themeRows[0];
 
   /** Profile first, then posts. Each call can take two minutes. */
   const readProfile = useCallback(async (from: "profile" | "posts" = "profile") => {
@@ -425,16 +448,18 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
               </div>
               {r.weak && (
                 <div style={{ marginBlockStart: 8 }}>
-                  <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{r.rule}</div>
+                  {r.rule && <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{r.rule}</div>}
                   <FixAction
                     rowKey={r.key}
                     profileUrl={profileUrl}
                     canUsePhoto={!!snapshot.photo_url && !avatarUrl}
                     onUsePhoto={useLinkedInPhoto}
                     onDraft={setDraftTarget}
+                    appliedAt={appliedTargets[r.key] ?? null}
                   />
                 </div>
               )}
+
             </div>
           ))}
         </div>
@@ -445,54 +470,99 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         <section id="how-you-appear-gap" style={cardStyle}>
           <SectionHeader label="WHAT YOU WRITE ABOUT VS WHAT YOUR PROFILE SAYS" />
           <p style={{ fontSize: 13.5, color: INK, margin: "0 0 12px", lineHeight: 1.6 }}>
-            You write about <span style={dashStyle}>{totalThemes}</span> recurring subjects. Your profile mentions{" "}
-            <span style={dashStyle}>{carriedOfShown}</span> of the <span style={dashStyle}>{shown}</span> biggest.
+            You write about <span style={dashStyle}>{totalThemes}</span> recurring subjects. Your profile carries{" "}
+            <span style={dashStyle}>{carriedOfShown}</span> of the <span style={dashStyle}>{shown}</span> biggest
+            {partialOfShown > 0 ? (
+              <> and half-carries <span style={dashStyle}>{partialOfShown}</span></>
+            ) : null}
+            .
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {themeRows.map((t) => (
-              <span
-                key={t.theme}
-                style={{
-                  ...chipBase,
-                  border: t.carried ? `1px solid ${LINE}` : `1px dashed ${LINE}`,
-                  color: t.carried ? INK : MUTED,
-                }}
-              >
-                <span style={{ width: 6, height: 6, borderRadius: 999, background: t.carried ? SUCCESS : AMBER, flexShrink: 0 }} />
-                {t.theme}
-              </span>
-            ))}
+            {themeRows.map((t) => {
+              const state = t.match.state;
+              const solid = state !== "missing";
+              return (
+                <span
+                  key={t.theme}
+                  title={
+                    state === "carried"
+                      ? `On ${fieldList(t.match.fields)}`
+                      : state === "partial"
+                        ? `"${t.match.matched.join(" ")}" is on ${fieldList(t.match.fields)}. "${t.match.missing.join(" ")}" is not.`
+                        : "Only in your writing"
+                  }
+                  style={{
+                    ...chipBase,
+                    border: solid ? `1px solid ${LINE}` : `1px dashed ${LINE}`,
+                    color: state === "carried" ? INK : MUTED,
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 6, height: 6, borderRadius: 999, flexShrink: 0,
+                      background: state === "carried" ? SUCCESS : state === "partial" ? AMBER : "transparent",
+                      border: state === "missing" ? `1px solid ${MUTED}` : "none",
+                    }}
+                  />
+                  {t.theme}
+                  <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+                    {state === "carried" ? " — on your profile" : state === "partial" ? " — half on your profile" : " — only in your writing"}
+                  </span>
+                </span>
+              );
+            })}
           </div>
           {totalThemes > shown && (
             <div style={{ fontSize: 11.5, color: MUTED, marginBlockStart: 10 }}>
               Showing your <span style={dashStyle}>{shown}</span> most frequent.
             </div>
           )}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: MUTED, marginBlockStart: 10 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, fontSize: 11.5, color: MUTED, marginBlockStart: 10 }}>
             <span style={{ width: 6, height: 6, borderRadius: 999, background: SUCCESS, flexShrink: 0 }} />
             on your profile
             <span aria-hidden="true">·</span>
             <span style={{ width: 6, height: 6, borderRadius: 999, background: AMBER, flexShrink: 0 }} />
+            half of it
+            <span aria-hidden="true">·</span>
+            <span style={{ width: 6, height: 6, borderRadius: 999, border: `1px solid ${MUTED}`, flexShrink: 0 }} />
             only in your writing
           </div>
-          {topIsMissing ? (
+          {/* The summary names the state the member is actually in — including
+              the half-way one, which used to be reported as a miss. */}
+          {top && top.match.state === "missing" ? (
             <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-              The thing you write about most — {themeRows[0].theme} — appears nowhere on your profile.
+              The thing you write about most — {top.theme} — appears nowhere on your profile.
+            </p>
+          ) : top && top.match.state === "partial" ? (
+            <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
+              {top.theme} is half on your profile. "{top.match.matched.join(" ")}" is on {fieldList(top.match.fields)}
+              ; "{top.match.missing.join(" ")}" is not.
             </p>
           ) : firstMissing ? (
             <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
               You write about {firstMissing.theme} often. Your profile never mentions it.
+            </p>
+          ) : firstPartial ? (
+            <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
+              {firstPartial.theme} is half on your profile. "{firstPartial.match.missing.join(" ")}" is missing.
             </p>
           ) : (
             <p style={{ fontSize: 13.5, color: MUTED, margin: "12px 0 0", lineHeight: 1.6 }}>
               Everything you write about is on your profile.
             </p>
           )}
-          {firstMissing && (
+          {/* One action, and it names the target it will actually help. */}
+          {(top?.match.state === "partial" || (!firstMissing && firstPartial)) ? (
+            <button type="button" style={quietLinkStyle} onClick={() => setDraftTarget("about")}>
+              Say the rest of it in my About →
+            </button>
+          ) : firstMissing ? (
             <button type="button" style={quietLinkStyle} onClick={() => setDraftTarget("headline")}>
               Put this in my headline →
             </button>
-          )}
+          ) : null}
+
         </section>
       )}
       </div>
@@ -512,14 +582,25 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
 
 /** The single quiet action under a weak row. Never a button styled as one. */
 function FixAction({
-  rowKey, profileUrl, canUsePhoto, onUsePhoto, onDraft,
+  rowKey, profileUrl, canUsePhoto, onUsePhoto, onDraft, appliedAt,
 }: {
   rowKey: PresenceKey;
   profileUrl: string | null;
   canUsePhoto: boolean;
   onUsePhoto: () => void;
   onDraft: (target: DraftTarget) => void;
+  /** Set only when the next LinkedIn read FOUND the copied wording live. */
+  appliedAt?: string | null;
 }) {
+  /* The member already acted on this one and Aura has seen it. Do not ask
+     again — say what happened, and get out of the way. */
+  if (appliedAt && (rowKey === "headline" || rowKey === "about")) {
+    return (
+      <div style={{ ...comingNextStyle, color: SUCCESS }}>
+        You put Aura's wording here on <span style={dashStyle}>{formatReadDate(appliedAt) ?? EM_DASH}</span>.
+      </div>
+    );
+  }
   if (rowKey === "photo") {
     if (!canUsePhoto) return null;
     return <button type="button" style={quietLinkStyle} onClick={onUsePhoto}>Use my LinkedIn photo</button>;
