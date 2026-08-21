@@ -217,6 +217,19 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const firstMissing = themeRows.find((t) => t.match.state === "missing");
   const firstPartial = themeRows.find((t) => t.match.state === "partial");
   const top = themeRows[0];
+  /* Whichever theme the closing sentence is about — same precedence, so the
+     sentence and the control can never drift apart. */
+  const ctaTheme = useMemo(() => {
+    const spoken =
+      top && (top.match.state === "missing" || top.match.state === "partial")
+        ? top
+        : firstPartial ?? firstMissing ?? null;
+    if (!spoken) return null;
+    return {
+      theme: spoken.theme,
+      target: (spoken.match.state === "partial" ? "about" : "headline") as DraftTarget,
+    };
+  }, [top, firstPartial, firstMissing]);
 
   /** Profile first, then posts. Each call can take two minutes. */
   const readProfile = useCallback(async (from: "profile" | "posts" = "profile") => {
@@ -491,7 +504,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                       ? `On ${fieldList(t.match.fields)}`
                       : state === "partial"
                         ? (t.match.listedOnly
-                            ? `In your record — ${fieldList(t.match.fields)} — but not in your headline or About.`
+                            ? `In your record — ${fieldList(t.match.listedFields)} — but not in your headline or About.`
                             : `"${t.match.matched.join(" ")}" is on ${fieldList(t.match.fields)}. "${t.match.missing.join(" ")}" is not.`)
                         : "Only in your writing"
                   }
@@ -534,8 +547,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
           ) : top && top.match.state === "partial" ? (
             top.match.listedOnly ? (
               <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-                {top.theme} is in your record — {fieldList(top.match.fields)} — but you never say it in your headline
-                or your About.
+                {top.theme} is in your record — {fieldList(top.match.listedFields)} — but you never say it in your
+                headline or your About.
               </p>
             ) : (
               <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
@@ -548,8 +561,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
                untouched gap, because the member already showed intent there. */
             firstPartial.match.listedOnly ? (
               <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
-                {firstPartial.theme} is in your record — {fieldList(firstPartial.match.fields)} — but you never say it
-                in your headline or your About.
+                {firstPartial.theme} is in your record — {fieldList(firstPartial.match.listedFields)} — but you never
+                say it in your headline or your About.
               </p>
             ) : (
               <p style={{ fontSize: 13.5, color: INK, margin: "12px 0 0", lineHeight: 1.6 }}>
@@ -567,13 +580,17 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
             </p>
           )}
           {/* One action, and it names the target it will actually help. */}
-          {(top?.match.state === "partial" || firstPartial) ? (
-            <button type="button" style={quietLinkStyle} onClick={() => setDraftTarget("about")}>
-              Say the rest of it in my About →
-            </button>
-          ) : firstMissing ? (
-            <button type="button" style={quietLinkStyle} onClick={() => setDraftTarget("headline")}>
-              Put this in my headline →
+          {/* The control names the SAME subject as the sentence above it —
+              never a sentence about one theme and a button acting on another. */}
+          {ctaTheme ? (
+            <button
+              type="button"
+              style={quietLinkStyle}
+              onClick={() => setDraftTarget(ctaTheme.target)}
+            >
+              {ctaTheme.target === "about"
+                ? `Say ${ctaTheme.theme} in my About →`
+                : `Put ${ctaTheme.theme} in my headline →`}
             </button>
           ) : null}
 
