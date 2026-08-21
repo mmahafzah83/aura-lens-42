@@ -2,11 +2,16 @@
  * Fetch a member's FULL LinkedIn profile via Apify and snapshot it.
  *
  * Companion to linkedin-fetch-posts: same auth shape, same URL rules, same
- * Apify call style. Writes exactly one snapshot row per member and fills in
- * profile fields the member has not set themselves — never over one they have.
+ * Apify call style. Appends ONE NEW dated snapshot row per read — the history
+ * is append-only, and a short scrape can never shrink a member's record because
+ * every list field is merged with the previous snapshot. Fills in profile fields
+ * the member has not set themselves — never over one they have.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { isAdmin } from "../_shared/adminRole.ts";
+import { logEfError, withObserve } from "../_shared/observe.ts";
+import { mergeSnapshot } from "../_shared/mergeSnapshot.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
