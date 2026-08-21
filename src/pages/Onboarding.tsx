@@ -287,8 +287,15 @@ const normaliseLinkedIn = (input: string): string | null => {
   return handle ? `https://www.linkedin.com/in/${handle}` : null;
 };
 
-const wordsIn = (rows: { post_text?: string | null }[]): number =>
-  rows.reduce((n, r) => n + String(r.post_text || "").trim().split(/\s+/).filter(Boolean).length, 0);
+/**
+ * Words the member actually wrote. Counted through the one shared corpus
+ * predicate, so search snippets, reshares and Aura's own drafts are never
+ * shown back to a member as their own writing.
+ */
+const CORPUS_SELECT = CORPUS_COLUMNS;
+const wordsIn = (rows: Parameters<typeof isOwnWriting>[0][]): number =>
+  rows.filter(isOwnWriting)
+    .reduce((n, r) => n + String(r.post_text || "").trim().split(/\s+/).filter(Boolean).length, 0);
 
 /* ──────────────────────────────── shells ────────────────────────────────── */
 
