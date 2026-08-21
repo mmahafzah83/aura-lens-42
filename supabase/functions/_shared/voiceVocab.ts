@@ -97,3 +97,176 @@ export const ENDING_DEFINITIONS: Record<Exclude<EndingTypeLabel, "other">, strin
   number: "closes on a figure that lands the point.",
   cta: "closes by asking for a comment, follow, share or booking.",
 };
+
+/* ------------------------------------------------------------------------ *
+ * Stored-profile hygiene.
+ *
+ * `authority_voice_profiles` rows have been written by half a dozen different
+ * jobs over a year, so the shapes in the column are not uniform. Everything
+ * that reads or writes that column routes through the four helpers below, so
+ * there is exactly one definition of "well formed" — and, more importantly,
+ * exactly one place where the rule "a human's curated entry is never destroyed
+ * by a machine" is enforced.
+ * ------------------------------------------------------------------------ */
+
+import { toRules, type VoiceRule } from "./voiceRules.ts";
+
+/**
+ * How many example posts a profile row may carry.
+ *
+ * This is a TRIM limit for machine-observed examples only. It must stay at or
+ * above the largest array already stored (10 at the time of writing) so that
+ * simply normalising an untouched row can never delete a member's examples.
+ */
+export const EXAMPLE_CAP = 12;
+
+export interface ExampleEntry {
+  source?: string;
+  content?: string;
+  url?: string | null;
+  published_at?: string | null;
+  engagement?: number;
+  [key: string]: unknown;
+}
+
+/** The identity of an example is its text, not its metadata. */
+const exampleKey = (e: ExampleEntry) =>
+  String(e?.content ?? "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 120);
+
+const engagementOfEntry = (e: ExampleEntry) => Number(e?.engagement ?? 0) || 0;
+
+/**
+ * One shape, no duplicates, and a cap that only ever bites machine-observed
+ * entries. A curated example — anything whose `source` is not `observedSource`
+ * — survives de-duplication and the cap unconditionally: a member (or a human
+ * operator) put it there deliberately and no refresh job may drop it.
+ *
+ * Pure: the input array is never mutated.
+ */
+export function normalizeExamples(
+  entries: unknown,
+  cap: number = EXAMPLE_CAP,
+  observedSource = "linkedin_own",
+): ExampleEntry[] {
+  const list: ExampleEntry[] = (Array.isArray(entries) ? entries : [])
+    .map((e) => (typeof e === "string" ? { content: e } : e))
+    .filter((e): e is ExampleEntry => Boolean(e) && typeof e === "object")
+    .filter((e) => String(e.content ?? "").trim().length > 0);
+
+  const isObserved = (e: ExampleEntry) => e.source === observedSource;
+
+  // First occurrence wins, but a curated entry always beats an observed
+  // duplicate no matter which came first.
+  const byKey = new Map<string, ExampleEntry>();
+  const order: string[] = [];
+  for (const e of list) {
+    const k = exampleKey(e);
+    const kept = byKey.get(k);
+    if (!kept) { byKey.set(k, e); order.push(k); continue; }
+    if (isObserved(kept) && !isObserved(e)) byKey.set(k, e);
+  }
+  const unique = order.map((k) => byKey.get(k)!);
+
+  const curated = unique.filter((e) => !isObserved(e));
+  const observed = unique
+    .filter(isObserved)
+    .sort((a, b) => engagementOfEntry(b) - engagementOfEntry(a));
+
+  const room = Math.max(0, (Number.isFinite(cap) ? cap : EXAMPLE_CAP) - curated.length);
+  return [...curated, ...observed.slice(0, room)];
+}
+
+export interface SanitizedVocabulary {
+  vocabulary: Record<string, unknown> & { use: VoiceRule[]; avoid: VoiceRule[]; rhythm: string };
+  changed: boolean;
+  promotedExamples: ExampleEntry[];
+}
+
+/**
+ * Guarantees the shape of `vocabulary_preferences` without ever losing a key.
+ *
+ * Callers rely on this never throwing — it is the function that turns whatever
+ * is actually in the column (null, a string, an array, a legacy object) into
+ * something the rest of the code can trust. Keys it does not understand are
+ * passed through untouched; nothing is silently deleted. Long prose that was
+ * mistakenly filed under a samples key is lifted out as `promotedExamples`
+ * rather than dropped.
+ *
+ * `changed` says whether the output differs from the input, so a caller can
+ * skip a pointless write.
+ */
+export function sanitizeVocabulary(raw: unknown): SanitizedVocabulary {
+  const source: Record<string, unknown> =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? { ...(raw as Record<string, unknown>) }
+      : {};
+
+  const promotedExamples: ExampleEntry[] = [];
+  for (const key of ["examples", "example_posts", "samples"]) {
+    const v = source[key];
+    if (Array.isArray(v)) {
+      for (const item of v) {
+        const content = typeof item === "string" ? item : String((item as any)?.content ?? "");
+        if (content.trim().length > 0) {
+          promotedExamples.push({
+            source: typeof item === "object" && item ? String((item as any)?.source ?? "curated") : "curated",
+            content: content.trim(),
+          });
+        }
+      }
+      delete source[key];
+    }
+  }
+
+  const use = dedupeRuleEntries(toRules(source.use));
+  const avoid = dedupeRuleEntries(toRules(source.avoid));
+  const rhythm = typeof source.rhythm === "string" ? source.rhythm : "";
+
+  const vocabulary = { ...source, use, avoid, rhythm } as SanitizedVocabulary["vocabulary"];
+  // `observed` and every other unrecognised key are already carried by the spread.
+
+  const changed = JSON.stringify(raw ?? null) !== JSON.stringify(vocabulary) ||
+    promotedExamples.length > 0;
+
+  return { vocabulary, changed, promotedExamples };
+}
+
+/**
+ * De-duplicates rule entries on the rule text alone.
+ *
+ * The FIRST occurrence is kept because every call site passes curated rules
+ * first on purpose — curated must win. Evidence carried by a later duplicate is
+ * merged into the kept entry, so de-duplication can only ever strengthen a
+ * rule, never weaken it. Input order is preserved. Pure.
+ */
+export function dedupeRuleEntries(entries: unknown): VoiceRule[] {
+  const out: VoiceRule[] = [];
+  const index = new Map<string, number>();
+  for (const r of toRules(entries)) {
+    const key = r.rule.trim().toLowerCase();
+    const at = index.get(key);
+    if (at === undefined) {
+      index.set(key, out.length);
+      out.push({ ...r });
+      continue;
+    }
+    const kept = out[at];
+    if (!kept.evidence && r.evidence) {
+      out[at] = { ...kept, evidence: r.evidence, verified: true };
+    }
+    out[at] = {
+      ...out[at],
+      contradictions: Math.max(out[at].contradictions, r.contradictions),
+    };
+  }
+  return out;
+}
+
+/**
+ * The plain-string equivalent, for callers that hold a bare list of rule texts.
+ * Anything richer is handed to `dedupeRuleEntries` so both paths agree on what
+ * counts as the same rule.
+ */
+export function dedupeRules(rules: unknown): string[] {
+  return dedupeRuleEntries(rules).map((r) => r.rule);
+}
