@@ -22,6 +22,8 @@ export interface ThemeMatch {
   missing: string[];
   /** Where the matches were found, in reading order. */
   fields: ThemeField[];
+  /** Every token is present, but the profile only LISTS it — never states it. */
+  listedOnly: boolean;
 }
 
 const STOPWORDS = new Set(["of", "the", "and", "for", "in", "to", "a", "an", "on", "with"]);
@@ -56,7 +58,9 @@ export interface ProfileFields {
   skills?: unknown;
 }
 
-interface Haystack { field: ThemeField; text: string }
+export type ThemeTier = "stated" | "listed";
+
+interface Haystack { field: ThemeField; text: string; tier: ThemeTier }
 
 const asArray = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 
@@ -85,40 +89,53 @@ export function buildHaystacks(profile: ProfileFields | null | undefined): Hayst
       .join(" ");
   const roleText = roles.map((r) => `${roleTitle(r)} ${roleDescription(r)}`).join(" ");
   const skillText = asArray(p.skills).map(skillName).join(" ");
+  /* Two tiers, deliberately unequal. STATED is prose he wrote to present
+     himself. LISTED is his record — a skill LinkedIn auto-suggested and he
+     accepted once is not evidence of how he positions himself. */
   return [
-    { field: "your headline", text: normalise(p.headline || "") },
-    { field: "your About", text: normalise(p.about || "") },
-    { field: "your roles", text: normalise(roleText) },
-    { field: "your skills", text: normalise(skillText) },
+    { field: "your headline", text: normalise(p.headline || ""), tier: "stated" },
+    { field: "your About", text: normalise(p.about || ""), tier: "stated" },
+    { field: "your roles", text: normalise(roleText), tier: "listed" },
+    { field: "your skills", text: normalise(skillText), tier: "listed" },
   ];
 }
 
 /**
- * One theme against the whole profile.
- * All significant tokens present → carried. Some → partial. None → missing.
- * A single-token theme can only ever be carried or missing.
+ * One theme against the whole profile, weighted by tier.
+ * All tokens in STATED → carried. All tokens but at least one only in LISTED,
+ * or only some tokens anywhere → partial. None → missing.
  */
 export function matchTheme(haystacks: Haystack[], theme: string): ThemeMatch {
   const tokens = themeTokens(theme);
-  if (tokens.length === 0) return { state: "missing", matched: [], missing: [], fields: [] };
+  if (tokens.length === 0) {
+    return { state: "missing", matched: [], missing: [], fields: [], listedOnly: false };
+  }
 
   const matched: string[] = [];
   const missing: string[] = [];
   const fields: ThemeField[] = [];
+  let anyListedOnly = false;
 
   for (const token of tokens) {
+    let inStated = false;
     let found = false;
     for (const h of haystacks) {
       if (h.text && hasToken(h.text, token)) {
         found = true;
+        if (h.tier === "stated") inStated = true;
         if (!fields.includes(h.field)) fields.push(h.field);
       }
     }
+    if (found && !inStated) anyListedOnly = true;
     (found ? matched : missing).push(token);
   }
 
-  const state: ThemeState =
-    matched.length === tokens.length ? "carried" : matched.length === 0 ? "missing" : "partial";
+  const all = matched.length === tokens.length;
+  const state: ThemeState = all
+    ? (anyListedOnly ? "partial" : "carried")
+    : matched.length === 0
+      ? "missing"
+      : "partial";
 
-  return { state, matched, missing, fields };
+  return { state, matched, missing, fields, listedOnly: all && anyListedOnly };
 }
