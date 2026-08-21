@@ -257,32 +257,6 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    // --- A handle belongs to exactly one member ---
-    // Three accounts once shared one handle and a member ended up holding the
-    // founder's profile. An admin acting deliberately may still override.
-    const callerIsAdmin = targetUserId !== user.id || (await isAdmin(anon, user.id));
-    if (!callerIsAdmin) {
-      const { data: claimants } = await admin
-        .from("linkedin_connections")
-        .select("user_id")
-        .eq("handle", handle)
-        .neq("user_id", targetUserId)
-        .limit(1);
-      if (claimants && claimants.length) {
-        await logEfError(admin as any, {
-          function_name: "linkedin-fetch-profile",
-          error: "handle_claimed",
-          severity: "high",
-          user_id: targetUserId,
-          context: { handle, claimed_by: claimants[0].user_id },
-        });
-        return json({
-          error: "handle_claimed",
-          message: "That LinkedIn address is already connected to another Aura account.",
-          handle,
-        }, 409);
-      }
-    }
 
     // --- Append a new dated snapshot, merged with the previous one ---
     const { data: prevRows, error: prevErr } = await admin
