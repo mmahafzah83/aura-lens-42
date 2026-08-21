@@ -1553,6 +1553,7 @@ export default function StudioPanel({
             unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
           }),
           ...fingerprintFields(fingerprintRef.current),
+          ...provenanceFields(provenanceRef.current),
           ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
         } as any)
         .select("id")
@@ -1561,6 +1562,7 @@ export default function StudioPanel({
       const newId = (ins as any)?.id as string;
       postRowRef.current = newId;
       persistNow();
+      void recordLineage("linkedin_posts", newId, provenanceRef.current?.contributions);
       return newId;
     }
     const { id } = await saveDraft({ silent: true });
