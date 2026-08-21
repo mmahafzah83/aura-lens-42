@@ -246,7 +246,7 @@ serve(withObserve("cv-crosscheck", async (req) => {
       .from("linkedin_profile_snapshots")
       .select("headline, about, experience, education, skills, certifications, raw")
       .eq("user_id", targetId!)
-      .order("created_at", { ascending: false })
+      .order("fetched_at", { ascending: false })
       .limit(1);
   const snap: any = snapRows?.[0] ?? null;
   if (!transient && !snap) {
