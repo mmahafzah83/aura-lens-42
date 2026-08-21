@@ -188,14 +188,29 @@ export function WorkingPanel({
   const muted = onNight ? NIGHT_MUTED : MUTED;
   const hair = onNight ? NIGHT_LINE : LINE;
 
+  /* The failed stage, its words, and the cause in a member's language. The raw
+     error goes to the console for us — never to the screen. */
+  const failedIndex = failure ? stages.findIndex((s) => s.key === failure.stageKey) : -1;
+  const failedStage = failedIndex >= 0 ? stages[failedIndex] : null;
+  const failedLabel = failedStage?.label ?? title;
+  const failureLine = failure
+    ? (failure.message ?? causeOf(failure.error, failedLabel))
+    : "";
+
+  useEffect(() => {
+    if (failure?.error !== undefined && failure?.error !== null) {
+      // eslint-disable-next-line no-console
+      console.error("[working-panel] stage failed", { stage: failure.stageKey, error: failure.error });
+    }
+  }, [failure?.error, failure?.stageKey]);
+
   /* Screen readers hear stage changes, never percent ticks. */
   const announce = failed
-    ? `${title}. ${failure?.message ?? ""}`
+    ? `${title}. ${failureLine}`
     : active
       ? `${title}. ${active.label}.`
       : complete ? `${title}. Done.` : title;
 
-  const failedIndex = failure ? stages.findIndex((s) => s.key === failure.stageKey) : -1;
 
   const linkStyle: React.CSSProperties = {
     background: "transparent", border: 0, padding: 0, cursor: "pointer",
