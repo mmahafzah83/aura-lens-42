@@ -251,7 +251,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
      operation name is passed and no percentage is claimed. */
   const readStages: WorkingStage[] = ([
     { key: "profile", label: "Reading your profile" },
-    { key: "posts", label: "Reading your public posts" },
+    { key: "posts", label: "Reading your posts" },
   ] as const).map((s) => ({
     key: s.key,
     label: s.label,
@@ -271,8 +271,19 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       stages={readStages}
       failure={stage === null ? readFailure : null}
       onRetryFromStage={(key) => void readProfile(key === "posts" ? "posts" : "profile")}
+      /* A way onward that is not the retry: the profile read already landed,
+         so the member is not blocked by a failed posts read. */
+      onCarryOn={
+        stage === null && readFailure
+          ? {
+              label: readDone.includes("profile") ? "Continue without your posts" : "Continue without this read",
+              action: () => { setReadFailure(null); void load(); },
+            }
+          : null
+      }
     />
   );
+
 
   const useLinkedInPhoto = useCallback(async () => {
     if (!userId || !snapshot?.photo_url || avatarUrl) return;
