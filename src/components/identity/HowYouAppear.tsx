@@ -223,17 +223,21 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       setReadDone((d) => (d.includes("posts") ? d : [...d, "posts"]));
       await load();
     } catch (e) {
-      const message = ctrl.signal.aborted
-        ? "That read didn't come back in time. Nothing you had is lost."
-        : e instanceof Error ? e.message.split("\n")[0] : "Couldn't read your profile just now.";
-      setReadFailure({ stageKey: from === "profile" ? "profile" : "posts", message });
-      toast.error(message);
+      /* The raw error stays with us — console now, ef_error_log server-side.
+         The member reads the cause in their own words, via causeOf. */
+      // eslint-disable-next-line no-console
+      console.error("[how-you-appear] read failed", e);
+      const stageKey = readDone.includes("profile") || from === "posts" ? "posts" : "profile";
+      const raw = ctrl.signal.aborted ? new DOMException("Aborted", "AbortError") : e;
+      setReadFailure({ stageKey, error: raw });
+      toast.error(causeOf(raw, stageKey === "posts" ? "Reading your posts" : "Reading your profile"));
     } finally {
       window.clearTimeout(ceiling);
       readAbortRef.current = null;
       setStage(null);
     }
-  }, [profileUrl, navigate, load]);
+  }, [profileUrl, navigate, load, readDone]);
+
 
   useEffect(() => () => readAbortRef.current?.abort(), []);
 
