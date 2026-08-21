@@ -105,13 +105,17 @@ export function buildPresenceChange(input: PresenceChangeInput): ChangeSegment[]
 
   const out: ChangeSegment[] = [];
   if (parts.length > 0) {
-    out.push({ text: "Since your last read: " });
-    parts.forEach((p, i) => {
+    if (baselineDate) {
+      out.push({ text: "Since your read on " }, { text: baselineDate, mono: true }, { text: ": " });
+    } else {
+      out.push({ text: "Since your last read: " });
+    }
+    parts.forEach((p) => {
       out.push(...p);
-      out.push({ text: i === parts.length - 1 && hidden <= 0 ? ". " : ". " });
+      out.push({ text: ". " });
     });
     if (hidden > 0) {
-      out.push({ text: "And " }, { text: String(hidden), mono: true }, { text: hidden === 1 ? " more. " : " more. " });
+      out.push({ text: "And " }, { text: String(hidden), mono: true }, { text: " more. " });
     }
   }
 
