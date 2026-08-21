@@ -389,7 +389,7 @@ Deno.serve(async (req) => {
     };
 
     for (const f of (A.failed_publishes ?? [])) {
-      push(needs_you, `failed_publish:${f.first_name}:${f.date}`,
+      push(needs_you, `failed_publish:${f.post_id}`,
         `${f.first_name}'s post failed to publish on ${f.date}`,
         "A real user pressed publish and nothing went out.",
         `Open their draft, read the error (“${String(f.error).slice(0, 120)}”), republish for them and tell them it is done.`);
