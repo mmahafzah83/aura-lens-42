@@ -76,9 +76,14 @@ const skillName = (s: unknown): string => {
 export function buildHaystacks(profile: ProfileFields | null | undefined): Haystack[] {
   const p = profile || {};
   const roles = asArray(p.experience).filter((r) => r && typeof r === "object") as Record<string, unknown>[];
-  const roleText = roles
-    .map((r) => `${typeof r.title === "string" ? r.title : ""} ${roleDescription(r)}`)
-    .join(" ");
+  /* The scraper calls the job title "position" on some rows and "title" on
+     others. Read every spelling — a missed title reads as a missed subject. */
+  const roleTitle = (r: Record<string, unknown>) =>
+    ["position", "title", "jobTitle", "role"]
+      .map((k) => (typeof r[k] === "string" ? (r[k] as string) : ""))
+      .filter(Boolean)
+      .join(" ");
+  const roleText = roles.map((r) => `${roleTitle(r)} ${roleDescription(r)}`).join(" ");
   const skillText = asArray(p.skills).map(skillName).join(" ");
   return [
     { field: "your headline", text: normalise(p.headline || "") },
