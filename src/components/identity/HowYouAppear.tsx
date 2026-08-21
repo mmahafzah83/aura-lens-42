@@ -188,7 +188,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     ]);
 
     setSnapshot(((snapRes.data as Snapshot[] | null)?.[0]) ?? null);
-    setPreviousSnapshot(((snapRes.data as Snapshot[] | null)?.[1]) ?? null);
+    setHistory((snapRes.data as Snapshot[] | null) ?? []);
     setPostsWithText(typeof postsRes.count === "number" ? postsRes.count : null);
     setAvatarUrl(((profRes.data as { avatar_url: string | null } | null)?.avatar_url) ?? null);
 
