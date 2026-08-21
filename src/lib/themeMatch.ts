@@ -22,6 +22,10 @@ export interface ThemeMatch {
   missing: string[];
   /** Where the matches were found, in reading order. */
   fields: ThemeField[];
+  /** Where matches landed in the STATED tier (headline, About). */
+  statedFields: ThemeField[];
+  /** Where matches landed in the LISTED tier (roles, skills). */
+  listedFields: ThemeField[];
   /** Every token is present, but the profile only LISTS it — never states it. */
   listedOnly: boolean;
 }
@@ -108,12 +112,19 @@ export function buildHaystacks(profile: ProfileFields | null | undefined): Hayst
 export function matchTheme(haystacks: Haystack[], theme: string): ThemeMatch {
   const tokens = themeTokens(theme);
   if (tokens.length === 0) {
-    return { state: "missing", matched: [], missing: [], fields: [], listedOnly: false };
+    return {
+      state: "missing", matched: [], missing: [], fields: [],
+      statedFields: [], listedFields: [], listedOnly: false,
+    };
   }
 
   const matched: string[] = [];
   const missing: string[] = [];
   const fields: ThemeField[] = [];
+  /* Per tier, never one accumulated list: the listed-only sentence must be
+     able to name the record WITHOUT naming the headline it is denying. */
+  const statedFields: ThemeField[] = [];
+  const listedFields: ThemeField[] = [];
   let anyListedOnly = false;
 
   for (const token of tokens) {
@@ -123,6 +134,8 @@ export function matchTheme(haystacks: Haystack[], theme: string): ThemeMatch {
       if (h.text && hasToken(h.text, token)) {
         found = true;
         if (h.tier === "stated") inStated = true;
+        const bucket = h.tier === "stated" ? statedFields : listedFields;
+        if (!bucket.includes(h.field)) bucket.push(h.field);
         if (!fields.includes(h.field)) fields.push(h.field);
       }
     }
@@ -137,5 +150,8 @@ export function matchTheme(haystacks: Haystack[], theme: string): ThemeMatch {
       ? "missing"
       : "partial";
 
-  return { state, matched, missing, fields, listedOnly: all && anyListedOnly };
+  return {
+    state, matched, missing, fields, statedFields, listedFields,
+    listedOnly: all && anyListedOnly,
+  };
 }
