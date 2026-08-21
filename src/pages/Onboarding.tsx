@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { CORPUS_COLUMNS, isOwnWriting } from "../../supabase/functions/_shared/voiceCorpus";
 import { saveLinkedInAddress, canonicalHandle, loadLinkedInAddress } from "@/lib/linkedinAddress";
 import usePageMeta from "@/hooks/usePageMeta";
 import { useCountUp } from "@/hooks/useCountUp";
@@ -287,8 +288,15 @@ const normaliseLinkedIn = (input: string): string | null => {
   return handle ? `https://www.linkedin.com/in/${handle}` : null;
 };
 
-const wordsIn = (rows: { post_text?: string | null }[]): number =>
-  rows.reduce((n, r) => n + String(r.post_text || "").trim().split(/\s+/).filter(Boolean).length, 0);
+/**
+ * Words the member actually wrote. Counted through the one shared corpus
+ * predicate, so search snippets, reshares and Aura's own drafts are never
+ * shown back to a member as their own writing.
+ */
+const CORPUS_SELECT = CORPUS_COLUMNS;
+const wordsIn = (rows: Parameters<typeof isOwnWriting>[0][]): number =>
+  rows.filter(isOwnWriting)
+    .reduce((n, r) => n + String(r.post_text || "").trim().split(/\s+/).filter(Boolean).length, 0);
 
 /* ──────────────────────────────── shells ────────────────────────────────── */
 
@@ -1496,7 +1504,7 @@ const Onboarding = () => {
 
       if (userId) {
         const { data: rows } = await supabase
-          .from("linkedin_posts").select("post_text").eq("user_id", userId).limit(200);
+          .from("linkedin_posts").select(CORPUS_SELECT).eq("user_id", userId).limit(200);
         setOwnWords(wordsIn((rows as any[]) || []));
       } else {
         setOwnWords(0);
@@ -1531,7 +1539,7 @@ const Onboarding = () => {
     setPostsRead(outcome.status === "ok" ? outcome.count : null);
     if (outcome.status === "ok") {
       const { data: rows } = await supabase
-        .from("linkedin_posts").select("post_text").eq("user_id", userId).limit(200);
+        .from("linkedin_posts").select(CORPUS_SELECT).eq("user_id", userId).limit(200);
       setOwnWords(wordsIn((rows as any[]) || []));
     }
     setPostsBusy(false);

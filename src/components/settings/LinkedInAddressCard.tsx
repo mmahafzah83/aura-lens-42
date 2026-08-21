@@ -33,6 +33,34 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
   }, [userId]);
 
   /**
+   * The posts read on its own. The profile read is what confirms the address,
+   * so a failure here is retried FROM here — never by starting over and
+   * spending another profile scrape.
+   */
+  const readPosts = async (profile_url: string) => {
+    setBusy(true);
+    try {
+      const posts = await supabase.functions.invoke("linkedin-fetch-posts", {
+        body: { profile_url, max_posts: 50 },
+      }).catch((e) => ({ data: null, error: e } as any));
+      const pd = (posts as any)?.data;
+      if ((posts as any)?.error || !pd || pd.error) {
+        /* A failed posts read is never reported as "no posts". */
+        toast.error(causeOf((posts as any)?.error ?? pd?.error, "Reading your posts"), {
+          action: { label: retryLabel("Reading your posts"), onClick: () => void readPosts(profile_url) },
+        });
+        return;
+      }
+      const kept = typeof pd.kept_own_text === "number" ? pd.kept_own_text : 0;
+      toast.success(kept > 0
+        ? `Aura read your profile and ${kept} of your posts.`
+        : "Aura read your profile. LinkedIn showed no posts of your own writing yet.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
    * Saving an address and then doing nothing with it is the bug: two members
    * sat here with an address on file that Aura had never opened. The save now
    * runs the read itself, and says plainly what came back.
@@ -58,27 +86,14 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
       }
       setState((s) => ({ ...(s ?? EMPTY_LINKEDIN_STATE), confirmedByRead: true, addressConfirmed: true, sourceStatus: "verified_by_read" }));
 
-      const posts = await supabase.functions.invoke("linkedin-fetch-posts", {
-        body: { profile_url, max_posts: 50 },
-      }).catch((e) => ({ data: null, error: e } as any));
-      const pd = (posts as any)?.data;
-      if ((posts as any)?.error || !pd || pd.error) {
-        /* A failed posts read is never reported as "no posts". */
-        toast.error(causeOf((posts as any)?.error ?? pd?.error, "Reading your posts"), {
-          action: { label: retryLabel("Reading your posts"), onClick: () => void save() },
-        });
-        return;
-      }
-      const kept = typeof pd.kept_own_text === "number" ? pd.kept_own_text : 0;
-      toast.success(kept > 0
-        ? `Aura read your profile and ${kept} of your posts.`
-        : "Aura read your profile. LinkedIn showed no posts of your own writing yet.");
+      await readPosts(profile_url);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't save that address.");
     } finally {
       setBusy(false);
     }
   };
+
 
 
   const valid = Boolean(canonicalHandle(value));

@@ -15,6 +15,15 @@ export type CorpusPost = {
 export const MIN_POST_CHARS = 50;
 
 /**
+ * The ONLY source types that may enter a member's voice corpus.
+ *
+ * An allow-list, deliberately. A deny-list means every new source type
+ * defaults INTO the corpus — that is how carousel drafts and search snippets
+ * came within one missing stamp of teaching Aura how the member writes.
+ */
+export const CORPUS_SOURCE_TYPES = ["imported", "linkedin_export"] as const;
+
+/**
  * True when this row is the member's own written post.
  *
  * A member who has excluded a post on the Teach Aura review list has said
@@ -37,12 +46,13 @@ export function isOwnWriting(row: {
   if (row.text_is_snippet === true) return false;
   if (row.authorship === "aura_drafted") return false;
   if (row.acquisition === "discovered") return false;
-  if (row.source_type === "search_discovery") return false;
-  // Aura's own drafts never train the member's voice, published or not.
-  if (row.source_type === "aura_generated") return false;
+  // Allow-list: anything not named here — carousel_studio, aura_generated,
+  // search_discovery, or a source type invented next month — stays out.
+  if (!(CORPUS_SOURCE_TYPES as readonly string[]).includes(String(row.source_type ?? ""))) return false;
   return true;
 }
 
 /** The columns every corpus query must select for `isOwnWriting` to be true. */
 export const CORPUS_COLUMNS =
   "post_text, authorship, acquisition, source_type, voice_corpus_status, text_is_snippet";
+
