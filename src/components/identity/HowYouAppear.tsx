@@ -154,8 +154,10 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  /* The read before this one. Kept only to say what moved. */
-  const [previousSnapshot, setPreviousSnapshot] = useState<Snapshot | null>(null);
+  /* Every stored read, newest first. Used only to find the most recent
+     MATERIALLY DIFFERENT read to compare against — a duplicate read must not
+     erase the payoff. */
+  const [history, setHistory] = useState<Snapshot[]>([]);
   const [postsWithText, setPostsWithText] = useState<number | null>(null);
   const [themes, setThemes] = useState<{ theme: string; count: number }[]>([]);
   const [totalThemes, setTotalThemes] = useState(0);
