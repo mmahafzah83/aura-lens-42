@@ -118,6 +118,8 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
   const [fromCache, setFromCache] = useState(false);
   const [writtenAt, setWrittenAt] = useState<string | null>(null);
   const [language, setLanguage] = useState<"ar" | "en">("en");
+  const [stale, setStale] = useState(false);
+  const [appliedAt, setAppliedAt] = useState<string | null>(null);
   const [mixed, setMixed] = useState(false);
   const [wide, setWide] = useState(
     typeof window !== "undefined" ? window.matchMedia("(min-width: 768px)").matches : true,
@@ -131,6 +133,8 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
     setError(null);
     setDropped(0);
     setFromCache(false);
+    setStale(false);
+    setAppliedAt(null);
     const toWriting = window.setTimeout(() => setPhase("writing"), 1200);
     timers.current.push(toWriting);
     try {
@@ -143,6 +147,7 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
         options?: Option[]; error?: string; dropped?: number;
         from_cache?: boolean; written_at?: string;
         language?: string; detected_language?: string;
+        stale?: boolean; applied_at?: string | null;
       } | null;
       const detected = res?.detected_language ?? res?.language;
       if (detected === "ar" || detected === "en") setLanguage(detected);
@@ -152,6 +157,8 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
         setDropped(typeof res.dropped === "number" ? res.dropped : 0);
         setFromCache(Boolean(res.from_cache));
         setWrittenAt(res.written_at ?? null);
+        setStale(Boolean(res.stale));
+        setAppliedAt(res.applied_at ?? null);
       } else if (res?.reason === "not_enough_writing") {
         setThin(typeof res.posts_found === "number" ? res.posts_found : 0);
       } else if (res?.reason === "unreadable_response") {
@@ -200,10 +207,33 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
 
   useEffect(() => () => { timers.current.forEach((t) => window.clearTimeout(t)); }, []);
 
-  const copy = async (text: string, index: number) => {
+  /* Copying is the moment the member acts. We record what they took — but we
+     do NOT claim they applied it. That is only ever decided by the next read. */
+  const recordCopy = async (text: string, angle?: string) => {
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      await supabase
+        .from("profile_copy_drafts")
+        .update({ copied_at: new Date().toISOString(), copied_text: text, copied_angle: angle ?? null })
+        .eq("user_id", uid)
+        .eq("target", target);
+      await supabase.from("product_events").insert({
+        user_id: uid,
+        event: "profile_copy_copied",
+        props: { target, angle: angle ?? null, characters: text.length },
+      });
+    } catch {
+      /* Telemetry must never break a copy the member already has. */
+    }
+  };
+
+  const copy = async (text: string, index: number, angle?: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(index);
+      void recordCopy(text, angle);
       const t = window.setTimeout(() => setCopied(null), 2000);
       timers.current.push(t);
     } catch {
@@ -287,6 +317,14 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
           {!busy && fromCache && writtenAt && options.length > 0 && (
             <div style={CACHE_LINE}>
               Written on <span style={{ fontFamily: MONO }}>{formatDate(writtenAt)}</span>.
+              {stale && " Your profile has changed since then."}
+            </div>
+          )}
+
+          {!busy && appliedAt && options.length > 0 && (
+            <div style={CACHE_LINE}>
+              Aura found one of these on your profile on{" "}
+              <span style={{ fontFamily: MONO }}>{formatDate(appliedAt)}</span>.
             </div>
           )}
 
@@ -313,7 +351,7 @@ export default function DraftProfileCopy({ target, open, onClose, handle, onRead
                     : `${wordCount(o.text)} words`}
                 </div>
                 {o.why && <div dir="auto" style={WHY_LINE}>{o.why}</div>}
-                <button type="button" style={QUIET_ACTION} onClick={() => void copy(o.text, i)}>
+                <button type="button" style={QUIET_ACTION} onClick={() => void copy(o.text, i, o.angle)}>
                   {copied === i ? "Copied" : "Copy"}
                 </button>
               </div>
