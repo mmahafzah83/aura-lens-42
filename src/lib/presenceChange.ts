@@ -60,7 +60,7 @@ export interface PresenceChangeInput {
 
 /** Empty array means: render nothing at all. */
 export function buildPresenceChange(input: PresenceChangeInput): ChangeSegment[] {
-  const { currentRows, previousRows, currentSum, previousSum, currentWord, previousWord, themeMove } = input;
+  const { currentRows, previousRows, currentSum, previousSum, currentWord, previousWord, themeMove, baselineDate } = input;
 
   const prevByKey = new Map(previousRows.map((r) => [r.key, r]));
   const fieldChanges: { weight: number; size: number; segments: ChangeSegment[] }[] = [];
