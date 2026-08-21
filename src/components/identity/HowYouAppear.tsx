@@ -144,14 +144,14 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     const [snapRes, postsRes, signalsRes, profRes] = await Promise.all([
       supabase.from("linkedin_profile_snapshots")
         .select("full_name,headline,about,photo_url,location,followers,connections,experience,education,skills,fetched_at")
-        .eq("user_id", userId).maybeSingle(),
+        .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(1),
       supabase.from("linkedin_posts").select("id", { count: "exact", head: true })
         .eq("user_id", userId).not("post_text", "is", null).neq("post_text", ""),
       supabase.from("strategic_signals").select("theme_tags").eq("user_id", userId).limit(500),
       supabase.from("diagnostic_profiles").select("avatar_url").eq("user_id", userId).maybeSingle(),
     ]);
 
-    setSnapshot((snapRes.data as Snapshot | null) ?? null);
+    setSnapshot(((snapRes.data as Snapshot[] | null)?.[0]) ?? null);
     setPostsWithText(typeof postsRes.count === "number" ? postsRes.count : null);
     setAvatarUrl(((profRes.data as { avatar_url: string | null } | null)?.avatar_url) ?? null);
 

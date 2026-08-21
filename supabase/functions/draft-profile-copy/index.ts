@@ -198,7 +198,9 @@ Deno.serve(async (req) => {
     const [snapRes, postsRes, signalsRes, voiceRes] = await Promise.all([
       admin.from("linkedin_profile_snapshots")
         .select("headline, about, experience, skills, full_name")
-        .eq("user_id", targetUserId).maybeSingle(),
+        .eq("user_id", targetUserId)
+        .order("fetched_at", { ascending: false })
+        .limit(1),
       admin.from("linkedin_posts")
         .select("post_text, published_at")
         .eq("user_id", targetUserId)

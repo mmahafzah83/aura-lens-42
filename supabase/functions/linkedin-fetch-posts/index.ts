@@ -7,6 +7,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { isAdmin } from "../_shared/adminRole.ts";
 import { refreshVoiceProfiles } from "../_shared/voiceRefresh.ts";
+import { logEfError, withObserve } from "../_shared/observe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,13 +38,16 @@ function activityId(value?: string | null): string | null {
   return ids && ids.length ? ids[ids.length - 1] : null;
 }
 
-Deno.serve(async (req) => {
+Deno.serve(withObserve("linkedin-fetch-posts", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Single writer for this function's traces. A read that keeps nothing must
+    // leave a record — silence proves nothing.
+    const obs = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     // --- Auth first, before any service-role work ---
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -77,6 +81,13 @@ Deno.serve(async (req) => {
       // identity, or typed by the member, may be spent on a scrape credit.
       const trusted = ["verified_by_read", "confirmed_by_identity", "member_entered"];
       if (conn && !trusted.includes(conn.source_status ?? "")) {
+        await logEfError(obs, {
+          function_name: "linkedin-fetch-posts",
+          error: "address_not_confirmed",
+          severity: "info",
+          user_id: targetUserId,
+          context: { source_status: conn.source_status ?? null, stored_handle: conn.handle ?? null },
+        });
         return json({ error: "address_not_confirmed" }, 400);
       }
       handle = parseHandle(conn?.profile_url) ??
@@ -120,11 +131,27 @@ Deno.serve(async (req) => {
 
     if (res.status !== 200 && res.status !== 201) {
       const text = await res.text();
+      await logEfError(obs, {
+        function_name: "linkedin-fetch-posts",
+        error: `apify request failed (${res.status})`,
+        severity: "high",
+        user_id: targetUserId,
+        context: { canonical_url, status: res.status, body: text.slice(0, 300) },
+      });
       return json({ error: "Apify request failed", status: res.status, apify_body: text.slice(0, 500) }, 502);
     }
 
     const items = await res.json();
     const list: any[] = Array.isArray(items) ? items : [];
+    if (!list.length) {
+      await logEfError(obs, {
+        function_name: "linkedin-fetch-posts",
+        error: "apify returned no rows",
+        severity: "high",
+        user_id: targetUserId,
+        context: { canonical_url, handle, stage: "apify_no_rows" },
+      });
+    }
 
     // --- Keep only the member's own written posts ---
     const wanted = handle.toLowerCase();
@@ -250,6 +277,27 @@ Deno.serve(async (req) => {
       console.error("voice refresh failed", e);
     }
 
+    // A 200 that stored nothing is indistinguishable from a crash unless we say
+    // so out loud. This is the exact case we keep chasing.
+    if (inserted === 0 && updated_existing === 0) {
+      await logEfError(obs, {
+        function_name: "linkedin-fetch-posts",
+        error: "read succeeded but stored zero posts",
+        severity: "high",
+        user_id: targetUserId,
+        context: {
+          canonical_url,
+          handle,
+          fetched: list.length,
+          kept_own_text: kept.length,
+          skipped_reshares,
+          skipped_empty,
+          inserted,
+          updated_existing,
+        },
+      });
+    }
+
     return json({
       handle,
       canonical_url,
@@ -263,6 +311,18 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("linkedin-fetch-posts error:", error);
+    try {
+      const obsAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      await logEfError(obsAdmin, {
+        function_name: "linkedin-fetch-posts",
+        error,
+        severity: "critical",
+        context: { stage: "outer_catch" },
+      });
+    } catch (_) { /* logging must never mask the original failure */ }
     return json({ error: (error as Error).message }, 500);
   }
-});
+}));

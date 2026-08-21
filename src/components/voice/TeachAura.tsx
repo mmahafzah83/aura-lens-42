@@ -45,8 +45,9 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       .from("linkedin_profile_snapshots")
       .select("fetched_at")
       .eq("user_id", userId)
-      .maybeSingle();
-    setLastRead((data as any)?.fetched_at ?? null);
+      .order("fetched_at", { ascending: false })
+      .limit(1);
+    setLastRead((data as any)?.[0]?.fetched_at ?? null);
   }, [userId]);
 
   useEffect(() => { void loadLastRead(); }, [loadLastRead]);
