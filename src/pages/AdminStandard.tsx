@@ -19,7 +19,7 @@ export default function AdminStandard() {
         style={{
           display: "block",
           width: "100%",
-          height: "calc(100vh - 60px)",
+          height: "calc(100vh - 100px)",
           border: 0,
           background: "var(--paper)",
         }}

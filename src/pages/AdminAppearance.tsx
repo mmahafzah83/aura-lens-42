@@ -39,7 +39,7 @@ export default function AdminAppearance() {
         >
           <p style={{ margin: 0, ...mutedStyle, lineHeight: 1.55 }}>
             These panels control the legacy bronze / dual-theme token set. The live app now
-            renders System-A tokens from code, so most edits here won't change the current
+            renders System-B tokens from code, so most edits here won't change the current
             look. Kept for reference and rollback.
           </p>
         </div>

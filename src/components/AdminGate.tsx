@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
  *   <AdminGate><AdminPageContents /></AdminGate>
  *
  * Behavior:
- *   - Loading  → centered spinner on bone surface.
+ *   - Loading  → centered spinner on the System-B page surface (#F2F5F9).
  *   - No session → redirect to /auth.
  *   - Signed in but not admin → renders an inline "Not authorized." panel.
  *   - Admin → renders children.

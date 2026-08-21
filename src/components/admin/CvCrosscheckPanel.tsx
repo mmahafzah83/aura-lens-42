@@ -270,7 +270,7 @@ export default function CvCrosscheckPanel() {
                               borderRadius: 4,
                               textTransform: "uppercase",
                               letterSpacing: ".08em",
-                              color: f.weight === "high" ? "#f59e0b" : "var(--glass-2, #8a8a95)",
+                              color: f.weight === "high" ? "#9A6F12" : "var(--glass-2, #8a8a95)",
                               border: `0.5px solid ${f.weight === "high" ? "rgba(245,158,11,0.4)" : "var(--hair, rgba(255,255,255,0.15))"}`,
                             }}
                           >

@@ -55,7 +55,7 @@ const STATUS_COLOR: Record<Status, string> = {
   activated: "#12805C",
   stalled: "#9A6F12",
   "at-risk": "#C0392B",
-  new: "#3b82f6",
+  new: "#00807B",
 };
 
 const card: React.CSSProperties = {
@@ -512,7 +512,7 @@ export default function AdminPeople() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--glass-1)", textTransform: "uppercase", letterSpacing: 0.6 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: 0.6 }}>
                   Inactive (48h+)
                 </span>
               </div>
@@ -535,7 +535,7 @@ export default function AdminPeople() {
                       }}
                     >
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 13, color: "var(--glass-1)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {name}
                         </div>
                         <div style={{ fontSize: 11, color: "var(--glass-2)" }}>

@@ -32,9 +32,11 @@ type Payload = {
   };
 };
 
-/** Oxblood — the only accent this page uses. */
+/** Blue is an ACTION colour only. States use amber (attention) and #C0392B (failure). */
 const ACCENT = "#0670C4";
-const RISK_COLOR: Record<string, string> = { high: "#0670C4", med: "#9A6F12", low: "#12805C" };
+const FAIL = "#C0392B";
+const ATTENTION = "#E0A82E";
+const RISK_COLOR: Record<string, string> = { high: FAIL, med: "#9A6F12", low: "#12805C" };
 
 const card: React.CSSProperties = {
   background: "var(--ob-panel)",
