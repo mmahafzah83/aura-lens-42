@@ -1011,7 +1011,7 @@ const linkBtn: React.CSSProperties = { background: "transparent", border: "1px s
 
 const primaryBtnStyle: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
-  background: "var(--brand,#0670C4)", color: "var(--paper)", border: "none",
+  background: "var(--brand,#0670C4)", color: "#FFFFFF", border: "none",
   padding: "11px 20px", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'Inter', sans-serif)",
 };
 const secondaryBtnStyle: React.CSSProperties = {
@@ -1250,7 +1250,7 @@ function TestingPanel() {
         )}
 
         {fresh && (
-          <div style={{ marginTop: 14, background: "rgba(0,0,0,0.3)", borderRadius: 6, padding: 14 }}>
+          <div style={{ marginTop: 14, background: "#F2F5F9", borderRadius: 6, padding: 14 }}>
             <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#0F1519", wordBreak: "break-all" }}>
               <div>{fresh.email}</div>
               <div>{fresh.password}</div>
