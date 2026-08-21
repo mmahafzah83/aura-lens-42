@@ -81,7 +81,7 @@ Deno.serve(withObserve("linkedin-fetch-posts", async (req) => {
       // identity, or typed by the member, may be spent on a scrape credit.
       const trusted = ["verified_by_read", "confirmed_by_identity", "member_entered"];
       if (conn && !trusted.includes(conn.source_status ?? "")) {
-        await logEfError(obs, {
+        await logEfError(obs as any, {
           function_name: "linkedin-fetch-posts",
           error: "address_not_confirmed",
           severity: "info",
@@ -131,7 +131,7 @@ Deno.serve(withObserve("linkedin-fetch-posts", async (req) => {
 
     if (res.status !== 200 && res.status !== 201) {
       const text = await res.text();
-      await logEfError(obs, {
+      await logEfError(obs as any, {
         function_name: "linkedin-fetch-posts",
         error: `apify request failed (${res.status})`,
         severity: "high",
@@ -144,7 +144,7 @@ Deno.serve(withObserve("linkedin-fetch-posts", async (req) => {
     const items = await res.json();
     const list: any[] = Array.isArray(items) ? items : [];
     if (!list.length) {
-      await logEfError(obs, {
+      await logEfError(obs as any, {
         function_name: "linkedin-fetch-posts",
         error: "apify returned no rows",
         severity: "high",
@@ -280,7 +280,7 @@ Deno.serve(withObserve("linkedin-fetch-posts", async (req) => {
     // A 200 that stored nothing is indistinguishable from a crash unless we say
     // so out loud. This is the exact case we keep chasing.
     if (inserted === 0 && updated_existing === 0) {
-      await logEfError(obs, {
+      await logEfError(obs as any, {
         function_name: "linkedin-fetch-posts",
         error: "read succeeded but stored zero posts",
         severity: "high",
@@ -316,7 +316,7 @@ Deno.serve(withObserve("linkedin-fetch-posts", async (req) => {
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       );
-      await logEfError(obsAdmin, {
+      await logEfError(obsAdmin as any, {
         function_name: "linkedin-fetch-posts",
         error,
         severity: "critical",

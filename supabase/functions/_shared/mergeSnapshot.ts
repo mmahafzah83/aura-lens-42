@@ -74,6 +74,7 @@ const carry = (next: unknown, prev: unknown): unknown => {
 };
 
 export interface SnapshotFields {
+  [key: string]: unknown;
   full_name: unknown;
   headline: unknown;
   about: unknown;
@@ -102,11 +103,11 @@ export function mergeSnapshot(next: SnapshotFields, prev: Row | null): SnapshotF
   const merged: Record<string, unknown> = { ...next };
 
   for (const f of LIST_FIELDS) {
-    merged[f] = unionByIdentity(f, (next as Row)[f], prev[f]);
+    merged[f] = unionByIdentity(f, (next as unknown as Row)[f], prev[f]);
   }
 
   for (const f of ["about", "headline", "full_name", "photo_url", "location"]) {
-    merged[f] = carry((next as Row)[f], prev[f]);
+    merged[f] = carry((next as unknown as Row)[f], prev[f]);
   }
 
   // followers / connections: new value wins, always. No union, no max.
@@ -119,7 +120,7 @@ export function mergeSnapshot(next: SnapshotFields, prev: Row | null): SnapshotF
   if (rawNext && typeof rawNext === "object") {
     const prevRaw = prev.raw && typeof prev.raw === "object" ? (prev.raw as Row) : {};
     for (const f of LIST_FIELDS) {
-      const rawUnion = unionByIdentity(f, (rawNext as Row)[f] ?? (next as Row)[f], prevRaw[f] ?? prev[f]);
+      const rawUnion = unionByIdentity(f, (rawNext as Row)[f] ?? (next as unknown as Row)[f], prevRaw[f] ?? prev[f]);
       if (rawUnion) (rawNext as Row)[f] = rawUnion;
     }
   }

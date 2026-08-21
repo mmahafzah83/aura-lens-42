@@ -154,7 +154,7 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
       // identity, may be handed to Apify. Anything else was never an address.
       const trusted = ["verified_by_read", "confirmed_by_identity", "member_entered"];
       if (conn && !trusted.includes(conn.source_status ?? "")) {
-        await logEfError(obs, {
+        await logEfError(obs as any, {
           function_name: "linkedin-fetch-profile",
           error: "address_not_confirmed",
           severity: "info",
@@ -224,7 +224,7 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
     }
 
     if (!item) {
-      await logEfError(obs, {
+      await logEfError(obs as any, {
         function_name: "linkedin-fetch-profile",
         error: `apify returned no rows: ${lastFailure}`,
         severity: "high",
@@ -269,7 +269,7 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
         .neq("user_id", targetUserId)
         .limit(1);
       if (claimants && claimants.length) {
-        await logEfError(admin, {
+        await logEfError(admin as any, {
           function_name: "linkedin-fetch-profile",
           error: "handle_claimed",
           severity: "high",
@@ -401,7 +401,7 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       );
-      await logEfError(obsAdmin, {
+      await logEfError(obsAdmin as any, {
         function_name: "linkedin-fetch-profile",
         error,
         severity: "critical",
