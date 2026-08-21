@@ -447,16 +447,18 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
               </div>
               {r.weak && (
                 <div style={{ marginBlockStart: 8 }}>
-                  <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{r.rule}</div>
+                  {r.rule && <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>{r.rule}</div>}
                   <FixAction
                     rowKey={r.key}
                     profileUrl={profileUrl}
                     canUsePhoto={!!snapshot.photo_url && !avatarUrl}
                     onUsePhoto={useLinkedInPhoto}
                     onDraft={setDraftTarget}
+                    appliedAt={appliedTargets[r.key] ?? null}
                   />
                 </div>
               )}
+
             </div>
           ))}
         </div>
