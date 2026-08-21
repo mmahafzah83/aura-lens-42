@@ -58,6 +58,7 @@ const primaryButtonStyle: React.CSSProperties = {
   fontSize: 14, fontWeight: 600, cursor: "pointer", minHeight: 44,
 };
 const chipBase: React.CSSProperties = {
+  position: "relative",
   display: "inline-flex", alignItems: "center", gap: 6, background: CARD,
   borderRadius: 4, padding: "5px 9px", fontSize: 12.5, lineHeight: 1.2,
 };
@@ -581,14 +582,25 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
 
 /** The single quiet action under a weak row. Never a button styled as one. */
 function FixAction({
-  rowKey, profileUrl, canUsePhoto, onUsePhoto, onDraft,
+  rowKey, profileUrl, canUsePhoto, onUsePhoto, onDraft, appliedAt,
 }: {
   rowKey: PresenceKey;
   profileUrl: string | null;
   canUsePhoto: boolean;
   onUsePhoto: () => void;
   onDraft: (target: DraftTarget) => void;
+  /** Set only when the next LinkedIn read FOUND the copied wording live. */
+  appliedAt?: string | null;
 }) {
+  /* The member already acted on this one and Aura has seen it. Do not ask
+     again — say what happened, and get out of the way. */
+  if (appliedAt && (rowKey === "headline" || rowKey === "about")) {
+    return (
+      <div style={{ ...comingNextStyle, color: SUCCESS }}>
+        You put Aura's wording here on <span style={dashStyle}>{formatReadDate(appliedAt) ?? EM_DASH}</span>.
+      </div>
+    );
+  }
   if (rowKey === "photo") {
     if (!canUsePhoto) return null;
     return <button type="button" style={quietLinkStyle} onClick={onUsePhoto}>Use my LinkedIn photo</button>;
