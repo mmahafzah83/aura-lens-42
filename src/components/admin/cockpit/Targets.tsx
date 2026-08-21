@@ -181,7 +181,7 @@ function TargetReviewCard({
               Drop it
             </Btn>
           </div>
-          {err && <div style={{ fontFamily: MONO, fontSize: 11, color: C.ox, marginTop: 8 }}>{err}</div>}
+          {err && <div style={{ fontFamily: MONO, fontSize: 11, color: C.fail, marginTop: 8 }}>{err}</div>}
         </div>
       }
       countedFrom="metric_targets.target_by <= today and status = active"
@@ -288,7 +288,7 @@ export function SetTargetForm({
           </>
         )}
       </div>
-      {msg && <div style={{ fontFamily: SERIF, fontSize: 15, color: C.ox, marginTop: 10 }}>{msg}</div>}
+      {msg && <div style={{ fontFamily: SERIF, fontSize: 15, color: C.fail, marginTop: 10 }}>{msg}</div>}
       <div style={{ marginTop: 12 }}>
         <Btn onClick={save} disabled={busy}>
           {busy ? "Saving…" : "Save target"}
@@ -301,7 +301,7 @@ export function SetTargetForm({
 /** The list of targets in force, and the plain truth when there are none. */
 export function TargetsPanel({ state, presetKey }: { state: TargetsState; presetKey?: MetricKey | null }) {
   if (state.loading) return <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Reading targets…</div>;
-  if (state.error) return <div style={{ fontFamily: MONO, fontSize: 11, color: C.ox }}>{state.error}</div>;
+  if (state.error) return <div style={{ fontFamily: MONO, fontSize: 11, color: C.fail }}>{state.error}</div>;
   const inForce = state.rows.filter((t) => t.status === "active");
   const n = countWhere(inForce, () => true);
   return (

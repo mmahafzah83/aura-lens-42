@@ -154,14 +154,14 @@ function TrendChart({
                 x2={x(m.shipped_on)}
                 y1={PAD.t}
                 y2={H - PAD.b}
-                stroke={C.ox}
+                stroke={C.damber}
                 strokeWidth={1}
                 strokeDasharray="2 3"
               />
               <text
                 x={lx}
                 y={PAD.t + 8}
-                fill={C.ox}
+                fill={C.damber}
                 fontFamily={MONO}
                 fontSize={9}
                 transform={`rotate(90 ${lx} ${PAD.t + 8})`}
@@ -208,7 +208,7 @@ export default function IsItWorkingZone({ data }: { data: IsItWorking }) {
   if (loading) return <div style={{ fontFamily: MONO, fontSize: 12, color: C.muted }}>Reading history…</div>;
   if (error)
     return (
-      <div style={{ fontFamily: MONO, fontSize: 12, color: C.ox }}>
+      <div style={{ fontFamily: MONO, fontSize: 12, color: C.fail }}>
         History could not be read: {error}
       </div>
     );
