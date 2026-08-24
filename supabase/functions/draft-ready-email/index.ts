@@ -687,8 +687,8 @@ serve(async (req) => {
     await admin.from("ef_error_log").insert({
       function_name: "draft-ready-email",
       severity: "info",
-      error_message: `DRAFT_READY_EMAIL dry_run=${dryRun} only_user=${onlyUserId ?? "none"} only_draft=${onlyDraftId ?? "none"} candidates=${candidates} sent=${sent} skipped_already=${skippedAlready} failed=${failed}`,
-      context: { dry_run: dryRun, only_user_id: onlyUserId, only_draft_id: onlyDraftId, candidates, sent, skipped_already: skippedAlready, failed },
+      error_message: `DRAFT_READY_EMAIL dry_run=${dryRun} only_user=${onlyUserId ?? "none"} only_draft=${onlyDraftId ?? "none"} candidates=${candidates} sent=${sent} skipped_already=${skippedAlready} skipped_opted_out=${skippedOptedOut} skipped_admin=${skippedAdmin} skipped_post_ready_sent=${skippedPostReadySent} failed=${failed}`,
+      context: { dry_run: dryRun, only_user_id: onlyUserId, only_draft_id: onlyDraftId, candidates, sent, skipped_already: skippedAlready, skipped_opted_out: skippedOptedOut, skipped_admin: skippedAdmin, skipped_post_ready_sent: skippedPostReadySent, failed },
     });
 
     return new Response(
