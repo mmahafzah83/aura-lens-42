@@ -1340,7 +1340,7 @@ export default function StudioPanel({
     setAnglesOpen(true);
     setPickedAngleId(null);
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 60000);
+    const timer = window.setTimeout(() => controller.abort(), 120000);
     try {
       const { data: sess } = await supabase.auth.getSession();
       const freshToken = sess?.session?.access_token;
@@ -1814,7 +1814,7 @@ export default function StudioPanel({
         timedOut = true;
         try { controller.abort(); } catch { /* an abort never fails loudly */ }
         resolve("timeout");
-      }, 90000);
+      }, 120000);
     });
     try {
       const { id: rowId } = await saveDraft({ silent: true });
