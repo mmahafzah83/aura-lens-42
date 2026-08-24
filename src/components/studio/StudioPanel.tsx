@@ -235,6 +235,11 @@ export default function StudioPanel({
    * the right room: delegator and author open at step 2, editor at step 1.
    */
   const [step, setStep] = useState<number>(1);
+  /**
+   * THE STAGE INSIDE STEP 1. The four numbered journey steps are unchanged;
+   * this only decides which of step 1's five screens is on the glass.
+   */
+  const [pickStage, setPickStage] = useState<PickStage>("hub");
   const [sub, setSub] = useState<SubNav>("build");
   const [format, setFormat] = useState<Format | null>(null);
   /**
@@ -899,6 +904,9 @@ export default function StudioPanel({
     setFormat(next?.format ?? null);
     setFormatDecided(Boolean(next?.format));
     setStep(1);
+    // A piece that arrives WITH a subject opens on the decision; a fresh one
+    // opens on the hub.
+    setPickStage(next?.choice ? "confirm" : "hub");
     setSub("build");
     setDraftId(null);
     draftIdRef.current = null;
@@ -970,6 +978,8 @@ export default function StudioPanel({
       if (!preselectedRef.current && posture === "delegator" && rows[0]) {
         preselectedRef.current = true;
         setChoice((c) => c ?? { id: rows[0].signalId, title: rows[0].title, insight: rows[0].insight });
+        // Aura picked it, so the member lands on the decision, not the hub.
+        setPickStage("confirm");
       }
     })();
     return () => { dead = true; };
@@ -1176,6 +1186,7 @@ export default function StudioPanel({
         setPendingFormat(nextFormat);
         setPendingOrigin(signalPrefill.origin ?? null);
         setStep(1);
+        setPickStage("confirm");
       } else {
         startNewPiece({ choice: arriving, format: nextFormat });
         setOrigin(signalPrefill.origin ?? null);
@@ -1184,6 +1195,7 @@ export default function StudioPanel({
       preselectedRef.current = true;
       setChoice({ id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" });
       setTypedTopic("");
+      setPickStage("confirm");
       setOrigin(signalPrefill.origin ?? null);
       if (nextFormat) { setFormat(nextFormat); setFormatDecided(true); }
     } else if (nextFormat) {
@@ -2463,7 +2475,7 @@ export default function StudioPanel({
   const confirmOwnsPrimary =
     Boolean(confirmNewPiece) ||                                   // top-level, every step
     (Boolean(pendingSubject) && step === 1) ||
-    (Boolean(askReplace) && step === 1 && showPaste) ||
+    (Boolean(askReplace) && step === 1 && pickStage === "paste") ||
     (Boolean(askRefine) && step === 2) ||                          // writeArea renders on step 2 only
     (Boolean(askLangSwitch) && step === 2) ||
     (pendingFormat === "post" && step === 3) ||
