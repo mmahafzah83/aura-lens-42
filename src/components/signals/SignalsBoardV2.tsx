@@ -113,8 +113,10 @@ interface Props {
   onOpenChat?: (msg?: string) => void;
   onDraftToStudio?: (prefill: {
     topic: string; context: string; signalId?: string; signalTitle?: string;
-    source?: string; sourceType?: string; origin?: { surface: string; label: string };
+    source?: string; sourceType?: string; contentFormat?: "post" | "carousel";
+    origin?: { surface: string; label: string };
   }) => void;
+
 }
 
 const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenChat, onDraftToStudio }) => {

@@ -128,8 +128,23 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
 
   const goRoute = useCallback((route: string) => {
     const tab = tabForRoute(route);
-    if (tab) { onSwitchTab(tab); window.scrollTo({ top: 0, behavior: "smooth" }); }
+    if (!tab) return;
+    // The tab is resolved exactly as before, but the rest of the stored route
+    // (signal, draft, src, format, from) rides along so the dashboard's own
+    // deep-link handlers can act on it instead of dropping the subject.
+    const qs = route.includes("?") ? route.slice(route.indexOf("?") + 1) : "";
+    const carried = new URLSearchParams(qs);
+    carried.delete("tab");
+    if (Array.from(carried.keys()).length > 0) {
+      window.dispatchEvent(new CustomEvent("aura:switch-tab", {
+        detail: { tab, params: carried.toString() },
+      }));
+    } else {
+      onSwitchTab(tab);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [onSwitchTab]);
+
 
   const openAsk = useCallback((prompt: string) => {
     try {

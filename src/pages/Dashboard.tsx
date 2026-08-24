@@ -159,12 +159,14 @@ const Dashboard = () => {
   /* Doors, not tabs: First Flight dims the group when none of its members is lit. */
   const isDoorDimmed = (g: typeof NAV_GROUPS[number]) =>
     isGroupDimmed(g, firstFlight.dimmedTabs, activeTab);
-  /* Clicking a door opens its primary member — unless the member you are on
-     already lives behind that door, in which case the click is a no-op. */
+  /* Clicking a door opens its primary member. The click is only a no-op when
+     you are ALREADY standing on that primary — sitting on a secondary member
+     (e.g. Library behind the Write door) must still move you to the primary. */
   const openDoor = (g: typeof NAV_GROUPS[number]) => {
-    if (isGroupActive(g, activeTab)) return;
+    if (activeTab === g.primary) return;
     switchTab(g.primary as TabValue);
   };
+
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
   const [showDiagnostic, setShowDiagnostic] = useState(false);
@@ -295,7 +297,7 @@ const Dashboard = () => {
   useEffect(() => {
     const openCap = () => setCaptureOpen(true);
     const switchTab = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { tab?: string } | undefined;
+      const detail = (e as CustomEvent).detail as { tab?: string; params?: string } | undefined;
       const target = detail?.tab;
       // Settings lives on its own route now (avatar menu), not in the rail.
       if (target === "settings" || target === "preferences") {
@@ -306,7 +308,15 @@ const Dashboard = () => {
       const resolved = target ? resolveTab(target) : null;
       if (resolved && isTabValue(resolved)) {
         setActiveTab(resolved as TabValue);
-        setSearchParams({ tab: resolved });
+        // A move may carry the existing deep-link parameters (signal, draft,
+        // src, format, from). Keep them on the URL AND run the same handlers
+        // the mount path runs, so the intent is not silently dropped.
+        const carried = new URLSearchParams(detail?.params ?? "");
+        carried.delete("tab");
+        const next = new URLSearchParams({ tab: resolved });
+        carried.forEach((v, k) => next.set(k, v));
+        setSearchParams(next);
+        if (Array.from(carried.keys()).length > 0) applyDeepLinkParams(next);
       }
     };
     window.addEventListener("aura:open-capture", openCap);
@@ -315,7 +325,9 @@ const Dashboard = () => {
       window.removeEventListener("aura:open-capture", openCap);
       window.removeEventListener("aura:switch-tab", switchTab);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setSearchParams]);
+
 
   /**
    * The composer mounts on first arrival at the authority tab and is never
@@ -396,10 +408,11 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Handle ?tab=intelligence&signal=xxx from URL
-  useEffect(() => {
-    const params = resumedParams ?? searchParams;
+  // Handle ?tab=intelligence&signal=xxx from URL (mount, and in-app tab moves
+  // that carry the very same parameters).
+  const applyDeepLinkParams = useCallback((params: URLSearchParams) => {
     const tabParam = params.get("tab");
+
     const resolvedTab = tabParam ? resolveTab(tabParam) : null;
     if (resolvedTab && isTabValue(resolvedTab)) {
       setActiveTab(resolvedTab as TabValue);
@@ -408,6 +421,7 @@ const Dashboard = () => {
     // If we landed on the Publish tab with a signal id, fetch that signal and
     // pre-fill the draft so the user lands directly in the right context.
     const signalParam = params.get("signal");
+    const formatParam = params.get("format");
     if (signalParam && resolvedTab === "authority") {
       (async () => {
         const { data: sig } = await (supabase
@@ -423,16 +437,19 @@ const Dashboard = () => {
             signalTitle: sig.signal_title,
             sourceType: "signal",
             sourceTitle: sig.signal_title,
+            contentFormat: formatParam === "carousel" ? "carousel" : "post",
             origin: originFromParams(params),
           } as any);
         }
         // Clear so a refresh doesn't reapply
         const next = new URLSearchParams(window.location.search);
         next.delete("signal");
+        next.delete("format");
         next.delete("from");
         setSearchParams(next, { replace: true });
       })();
     }
+
 
     // If we landed on the Publish tab with a draft id (from a lifecycle email),
     // fetch that specific draft and hand it to the Composer. Mirrors the
@@ -509,7 +526,14 @@ const Dashboard = () => {
         setSearchParams(next, { replace: true });
       })();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setSearchParams, resolveMissingDraft]);
+
+  useEffect(() => {
+    applyDeepLinkParams(resumedParams ?? searchParams);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   // Handle prefill from trend Draft Post (passed via React Router state)
   useEffect(() => {
@@ -1103,10 +1127,18 @@ const Dashboard = () => {
                     case "p1_first_post":
                     case "p2_published":
                     case "p3_five_signal_posts":
-                    case "p3_carousel":
                       setActiveTab("authority");
                       window.scrollTo({ top: 0, behavior: "smooth" });
                       break;
+                    case "p3_carousel":
+                      // Same navigation as before, but the carousel intent now
+                      // rides the ordinary prefill channel so the composer
+                      // actually lands on slides.
+                      setSignalDraftPrefill({ topic: "", context: "", contentFormat: "carousel" });
+                      setActiveTab("authority");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                      break;
+
                     case "p2_first_signal":
                     case "p2_three_signals":
                     case "p3_themes":

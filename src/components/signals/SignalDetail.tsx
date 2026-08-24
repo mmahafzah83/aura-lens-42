@@ -18,9 +18,11 @@ interface Props {
   onOpenChat?: (msg?: string) => void;
   onDraftToStudio?: (prefill: {
     topic: string; context: string; signalId?: string; signalTitle?: string;
-    sourceType?: string; origin?: { surface: string; label: string };
+    sourceType?: string; contentFormat?: "post" | "carousel";
+    origin?: { surface: string; label: string };
   }) => void;
 }
+
 
 const SignalDetail: React.FC<Props> = ({ signalId, onBack, onOpenChat, onDraftToStudio }) => {
   const [signal, setSignal] = useState<Signal | null>(null);
@@ -43,7 +45,7 @@ const SignalDetail: React.FC<Props> = ({ signalId, onBack, onOpenChat, onDraftTo
   }, [signalId]);
 
   // Same handoff Observatory used: nudge priority, then hand to the studio.
-  const draftFromSignal = useCallback(async (s: Signal) => {
+  const draftFromSignal = useCallback(async (s: Signal, contentFormat: "post" | "carousel" = "post") => {
     await supabase.from("strategic_signals")
       .update({ priority_score: (s.priority_score || 0) + 0.05 }).eq("id", s.id);
     try { trackSignalOpen(s.id, "signal_detail_draft_handoff"); } catch { /* never blocks */ }
@@ -51,9 +53,11 @@ const SignalDetail: React.FC<Props> = ({ signalId, onBack, onOpenChat, onDraftTo
       topic: s.signal_title,
       context: [s.explanation, s.strategic_implications, s.what_it_means_for_you].filter(Boolean).join("\n\n"),
       signalId: s.id, signalTitle: s.signal_title, sourceType: "signals_board",
+      contentFormat,
       origin: { surface: "signals", label: "From your signal" },
     });
   }, [onDraftToStudio]);
+
 
   return (
     <section data-testid="signal-detail" style={{ fontFamily: "var(--ff-ui)", marginBottom: 26 }}>
@@ -74,11 +78,12 @@ const SignalDetail: React.FC<Props> = ({ signalId, onBack, onOpenChat, onDraftTo
           <div style={{ marginTop: 12 }}>
             <ButtonGhost
               data-testid="signal-make-carousel"
-              onClick={() => { window.location.href = `/carousel-studio?signal=${signal.id}`; }}
+              onClick={() => { void draftFromSignal(signal, "carousel"); }}
             >
               <LayoutGrid size={13} />Make a carousel
             </ButtonGhost>
           </div>
+
         </>
       )}
     </section>
