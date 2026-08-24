@@ -418,7 +418,6 @@ export default function StudioPanel({
   /* Step 1 secondaries — collapsed by default, never above the subjects. */
   // Posture is a SILENT default only: the author simply arrives with their own
   // words already open. The controls are identical for everyone.
-  const [showPaste, setShowPaste] = useState(() => readStoredPosture() === "author");
   // The pile stays CLOSED until the member asks for it.
   const [showDrafts, setShowDrafts] = useState(false);
   /** The quality gate held this post. One sentence, never a checklist. */
@@ -2817,7 +2816,7 @@ export default function StudioPanel({
 
       {/* One journey map, and only once the member is inside a piece. A tracker
           with nothing ticked, before a subject exists, is furniture. */}
-      {(step > 1 || Boolean(doneMap[1]) || content.trim().length > 0 || Boolean(draftId) || Boolean(deck)) && (
+      {step > 1 && (Boolean(doneMap[1]) || content.trim().length > 0 || Boolean(draftId) || Boolean(deck)) && (
         <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtlShell={rtlShell} />
       )}
 
