@@ -407,10 +407,39 @@ serve(async (req) => {
     const picks = Array.from(byUser.values());
     candidates = picks.length;
 
+    // GUARD 2 + 3 inputs: opt-out flags and admin ids, resolved once per run.
+    // Same table/column/shape as lifecycle-emails: diagnostic_profiles.lifecycle_opt_out
+    // and adminUserIds() from _shared/adminRole.ts.
+    const adminIds = new Set(picks.length > 0 ? await adminUserIds(admin) : []);
+    const optOut = new Set<string>();
+    if (picks.length > 0) {
+      const { data: optRows } = await admin
+        .from("diagnostic_profiles")
+        .select("user_id, lifecycle_opt_out")
+        .in("user_id", picks.map((p) => p.user_id));
+      for (const r of optRows || []) {
+        if ((r as any).lifecycle_opt_out === true) optOut.add((r as any).user_id as string);
+      }
+    }
+
     for (const pick of picks) {
       const keySuffix = `draft_ready:${pick.draft_id}`;
       const bareKey = keySuffix;
       const dryKey = `dryrun:${keySuffix}`;
+
+      // GUARD 3 — admin accounts are never emailed by a scheduled run.
+      if (adminIds.has(pick.user_id)) {
+        skippedAdmin += 1;
+        results.push({ user_id: pick.user_id, draft_id: pick.draft_id, outcome: "skipped_admin" });
+        continue;
+      }
+
+      // GUARD 2 — respect lifecycle opt-out. No send, no log row.
+      if (optOut.has(pick.user_id)) {
+        skippedOptedOut += 1;
+        results.push({ user_id: pick.user_id, draft_id: pick.draft_id, outcome: "skipped_opted_out" });
+        continue;
+      }
 
       // Never nag: if the bare key was ever written, skip regardless of mode.
       // In real-send mode, also treat the bare key as blocking.
@@ -423,6 +452,35 @@ serve(async (req) => {
       if (existing && existing.length > 0) {
         skippedAlready += 1;
         results.push({ user_id: pick.user_id, draft_id: pick.draft_id, outcome: "skipped_already" });
+        continue;
+      }
+
+      // GUARD 4 — never collide with the sibling post_ready email about this same
+      // draft. send-lifecycle-email records post_ready in `lifecycle_emails` as
+      // email_type='post_ready' with metadata.post_id = the draft id (it writes no
+      // message_key row), so that is the exact shape we match. We also check
+      // lifecycle_email_log for a `post_ready:<draft_id>` key in case a future
+      // sender uses the log table.
+      const { data: prSent } = await admin
+        .from("lifecycle_emails")
+        .select("id")
+        .eq("user_id", pick.user_id)
+        .eq("email_type", "post_ready")
+        .eq("metadata->>post_id", pick.draft_id)
+        .limit(1);
+      let postReadyCollision = !!(prSent && prSent.length > 0);
+      if (!postReadyCollision) {
+        const { data: prLog } = await admin
+          .from("lifecycle_email_log")
+          .select("id")
+          .eq("user_id", pick.user_id)
+          .eq("message_key", `post_ready:${pick.draft_id}`)
+          .limit(1);
+        postReadyCollision = !!(prLog && prLog.length > 0);
+      }
+      if (postReadyCollision) {
+        skippedPostReadySent += 1;
+        results.push({ user_id: pick.user_id, draft_id: pick.draft_id, outcome: "skipped_post_ready_sent" });
         continue;
       }
 
