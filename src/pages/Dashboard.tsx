@@ -396,10 +396,11 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Handle ?tab=intelligence&signal=xxx from URL
-  useEffect(() => {
-    const params = resumedParams ?? searchParams;
+  // Handle ?tab=intelligence&signal=xxx from URL (mount, and in-app tab moves
+  // that carry the very same parameters).
+  const applyDeepLinkParams = useCallback((params: URLSearchParams) => {
     const tabParam = params.get("tab");
+
     const resolvedTab = tabParam ? resolveTab(tabParam) : null;
     if (resolvedTab && isTabValue(resolvedTab)) {
       setActiveTab(resolvedTab as TabValue);
@@ -408,6 +409,7 @@ const Dashboard = () => {
     // If we landed on the Publish tab with a signal id, fetch that signal and
     // pre-fill the draft so the user lands directly in the right context.
     const signalParam = params.get("signal");
+    const formatParam = params.get("format");
     if (signalParam && resolvedTab === "authority") {
       (async () => {
         const { data: sig } = await (supabase
@@ -423,16 +425,19 @@ const Dashboard = () => {
             signalTitle: sig.signal_title,
             sourceType: "signal",
             sourceTitle: sig.signal_title,
+            contentFormat: formatParam === "carousel" ? "carousel" : "post",
             origin: originFromParams(params),
           } as any);
         }
         // Clear so a refresh doesn't reapply
         const next = new URLSearchParams(window.location.search);
         next.delete("signal");
+        next.delete("format");
         next.delete("from");
         setSearchParams(next, { replace: true });
       })();
     }
+
 
     // If we landed on the Publish tab with a draft id (from a lifecycle email),
     // fetch that specific draft and hand it to the Composer. Mirrors the
