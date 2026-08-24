@@ -199,7 +199,7 @@ export function handoffDraft(input: {
     _source: d._source,
     ...(d.signalId ? { signalId: d.signalId } : {}),
     contentFormat: d.type === "carousel" ? "carousel" : "post",
-    origin: originFor(input.surface),
+    origin: originFor(input.surface, { signalId: d.signalId ?? null, draftId: d.id }),
   };
 }
 
