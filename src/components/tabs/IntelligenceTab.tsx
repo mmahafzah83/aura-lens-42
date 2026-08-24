@@ -1519,6 +1519,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                           {evidenceAndSources(
                             (s as any).evidenceCount ?? s.fragment_count ?? 0,
                             s.unique_orgs ?? 0,
+                            "en",
                           )}
                           {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
                         </div>
