@@ -192,6 +192,21 @@ export const T = {
       : `أظهر الـ${n} الأخرى`,
   }),
   draftsShowFewer: { en: "Show fewer", ar: "أظهر أقل" },
+  /** An EMPTY list — not one missing draft. Those are different sentences. */
+  draftsEmpty: {
+    en: "Nothing is waiting yet. Posts Aura writes for you, and posts you save, appear here.",
+    ar: "لا يوجد شيء ينتظرك بعد. المنشورات التي تكتبها أورا لك، والمنشورات التي تحفظها، ستظهر هنا.",
+  },
+  /** Per-stage headings — each screen names itself, none inherits. */
+  subjectStageHelp: {
+    en: "Tell Aura the subject in your own words.",
+    ar: "أخبر أورا بالموضوع بكلماتك.",
+  },
+  pasteStageHead: { en: "Paste a post I already wrote", ar: "الصق منشورًا كتبته بالفعل" },
+  confirmStageHelp: {
+    en: "This is what Aura will write about. Change anything before you start.",
+    ar: "هذا ما ستكتب عنه أورا. غيّر ما تريد قبل أن تبدأ.",
+  },
   hubSignalsTitle: { en: "Write from your signals", ar: "اكتب من إشاراتك" },
   hubSignalsEvidence: (n: number) => ({
     // True of the value shown: the sum of evidence fragments behind the ranked
