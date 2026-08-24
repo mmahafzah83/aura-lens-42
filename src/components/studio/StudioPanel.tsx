@@ -38,6 +38,8 @@ import { plainFailure } from "@/carousel/studio/slotLabels";
 import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEdit";
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
 import JourneyMap from "@/components/studio/JourneyMap";
+import WriteFromPanel from "@/components/studio/WriteFromPanel";
+
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
 import { useRunStages, newRunId } from "@/lib/useRunStages";
 import type { WaitOperation } from "@/lib/waitEstimate";
@@ -3017,7 +3019,10 @@ export default function StudioPanel({
             </div>
           </div>
 
+          {choice?.id ? <WriteFromPanel signalId={choice.id} lang={lang} /> : null}
+
           <div style={{ marginTop: 18 }}>
+
             <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px" }}>
               {T.writeLangLabel[lang]}
             </p>
