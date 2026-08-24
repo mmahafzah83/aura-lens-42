@@ -2908,9 +2908,16 @@ export default function StudioPanel({
       )}
 
       {step === 1 && (
-        <StageCard title={T.chooseHead[lang]} subtitle={T.chooseHelp[lang]} align={rtlShell ? "right" : "left"} lang={lang} rtlShell={rtlShell} defaultOpen>
+        <StageCard
+          title={T.chooseHead[lang]}
+          subtitle={pickStage === "hub" ? T.chooseHelp[lang] : undefined}
+          align={rtlShell ? "right" : "left"}
+          lang={lang}
+          rtlShell={rtlShell}
+          defaultOpen
+        >
           {/* W9 — a tick nobody earned must name who earned it. */}
-          {posture === "delegator" && choice?.id && !wordsReady && (
+          {pickStage === "confirm" && posture === "delegator" && choice?.id && !wordsReady && (
             <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "0 0 14px" }}>
               {T.auraPicked[lang]}
             </p>
@@ -2941,180 +2948,424 @@ export default function StudioPanel({
             </div>
           )}
 
-          {cardsLoading && (
-            <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)" }}>
-              {T.loading[lang]}
-            </p>
-          )}
-          {!cardsLoading && cards.length === 0 && totalSignals === -1 && (
-            <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: rtlShell ? 1.9 : 1.7, margin: 0 }}>
-                {T.subjectsUnreadable[lang]}
-              </p>
-              <ButtonGhost onClick={() => setCardsNonce((n) => n + 1)} style={{ minHeight: 44 }}>
-                {T.subjectsRetry[lang]}
-              </ButtonGhost>
-            </div>
-          )}
-          {!cardsLoading && cards.length === 0 && totalSignals > 0 && (
-            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: rtlShell ? 1.9 : 1.7, margin: 0 }}>
-              {T.nothingNewToRank[lang]}
-            </p>
-          )}
-          {!cardsLoading && cards.length === 0 && totalSignals === 0 && (
-            <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: rtlShell ? 1.9 : 1.7, margin: 0 }}>
-                {T.chooseEmpty[lang]}
-              </p>
-              {onOpenCapture && (
-                confirmOwnsPrimary ? (
-                  <ButtonGhost onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
-                    {T.captureNow[lang]}
-                  </ButtonGhost>
-                ) : (
-                  <ButtonPrimary onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
-                    {T.captureNow[lang]}
-                  </ButtonPrimary>
-                )
-              )}
-            </div>
-          )}
-          <div style={{ display: "grid", gap: 10 }}>
-            {cards.map((c) => {
-              const on = choice?.id === c.signalId;
-              return (
-                <button
-                  key={c.signalId}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => {
-                    // N1 — changing subject over words already written is a NEW
-                    // piece, and it is confirmed before anything is lost.
-                    const next = { id: c.signalId, title: c.title, insight: c.insight };
-                    if (choice?.id === c.signalId) return;
-                    if (published || content.trim()) { setPendingSubject(next); return; }
-                    setPickedAngleId(null);
-                    setAngles([]);
-                    setAnglesOpen(false);
-                    setAnglesError(false);
-                    setChoice(next);
-                    setTypedTopic("");
-                  }}
+          {/* ---------------- STAGE: HUB ---------------- */}
+          {pickStage === "hub" && (
+            <>
+              {/* The resume bar. A bar, not a fourth choice: no primary, real count. */}
+              {!draftsLoading && drafts.length > 0 && (
+                <div
                   style={{
-                    textAlign: rtlShell ? "right" : "left",
-                    cursor: "pointer",
-                    background: on ? "var(--act-tint)" : "var(--surface-subtle)",
-                    border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
-                    borderRadius: 12,
-                    padding: 14,
+                    display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+                    background: "var(--surface-card)", border: "1px solid var(--border-default)",
+                    borderRadius: 12, padding: "10px 12px", marginBottom: 14,
                   }}
                 >
-                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                    {c.title}
-                  </p>
-                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "6px 0 0" }}>
-                    {startReason(c.kind, c.fragmentCount, c.reason, lang)}
-                  </p>
-                  {c.insight && (
-                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "6px 0 0" }}>
-                      {c.insight}
-                    </p>
-                  )}
-                  <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>
-                    {c.fragmentCount} {T.sources[lang]}
+                  <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)" }}>
+                    {T.hubResume[lang].split("{n}").map((part, i) => (
+                      <React.Fragment key={i}>
+                        {i > 0 && (
+                          <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{drafts.length}</span>
+                        )}
+                        {part}
+                      </React.Fragment>
+                    ))}
                   </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* The ranked three are a shortcut. The whole shelf lives in Signals,
-              where every subject carries its evidence — so we hand off there
-              instead of repeating a weaker copy of it here. */}
-          <div style={{ marginTop: 12 }}>
-            <button
-              type="button"
-              onClick={() => {
-                try {
-                  window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "intelligence" } }));
-                } catch { /* noop */ }
-              }}
-              style={{
-                minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
-                fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
-                textAlign: rtlShell ? "right" : "left",
-              }}
-            >
-              {T.browseInSignals[lang]} <span aria-hidden>{rtlShell ? "\u2190" : "\u2192"}</span>
-            </button>
-          </div>
-
-          <div style={{ marginTop: 16 }}>
-            <label htmlFor="studio-topic" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
-              {T.chooseOwn[lang]}
-            </label>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <input
-                id="studio-topic"
-                value={typedTopic}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  const t = v.trim();
-                  // Typing never destroys words. Over an empty piece the typed
-                  // subject IS the subject; over written words the swap is
-                  // offered as a confirmation instead.
-                  setTypedTopic(v);
-                  if (published || content.trim()) {
-                    setPendingSubject(t ? { id: null, title: t, insight: "" } : null);
-                    return;
-                  }
-                  setChoice(t ? { id: null, title: t, insight: "" } : null);
-                }}
-                placeholder={T.chooseOwnPlaceholder[lang]}
-                style={{
-                  flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 8,
-                  background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                  fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14, color: "var(--text-primary)",
-                  textAlign: rtlShell ? "right" : "left",
-                }}
-              />
-            </div>
-          </div>
-
-          {choice?.id ? <WriteFromPanel signalId={choice.id} lang={lang} /> : null}
-
-          <div style={{ marginTop: 18 }}>
-
-            <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px" }}>
-              {T.writeLangLabel[lang]}
-            </p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {([["en", T.langEn[lang]], ["ar", T.langAr[lang]]] as Array<[Lang, string]>).map(([key, label]) => {
-                const on = writeLang === key;
-                return (
+                  <span style={{ flex: 1 }} />
                   <button
-                    key={key}
                     type="button"
-                    aria-pressed={on}
-                    onClick={() => { langChosenRef.current = true; setWriteLang(key); }}
+                    className="v23-tap v23-focus"
+                    onClick={() => setShowDrafts((v) => !v)}
+                    aria-expanded={showDrafts}
                     style={{
-                      minHeight: 44, padding: "0 16px", borderRadius: 8, cursor: "pointer",
-                      fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
-                      background: on ? "var(--act-tint)" : "var(--surface-subtle)",
-                      color: on ? "var(--act)" : "var(--text-secondary)",
-                      border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                      minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                      fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
                     }}
                   >
-                    {label}
+                    {T.hubResumeOpen[lang]}
                   </button>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+              )}
 
-          {/* THE ONE PRIMARY on this screen. It is the only control that
-              writes, and the only forward action step 1 offers. */}
-          {(() => {
+              {/* The drafts already waiting — opened by the bar above. */}
+              {!draftsLoading && drafts.length > 0 && showDrafts && (
+                <div style={{ display: "grid", gap: 8, marginBottom: 16 }}>
+                  {drafts.slice(0, 12).map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      className="v23-tap v23-focus"
+                      onClick={() => void openDraft(d, "studio_drafts_list")}
+                      style={{
+                        textAlign: rtlShell ? "right" : "left", cursor: "pointer",
+                        background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                        borderRadius: 12, padding: 12,
+                      }}
+                    >
+                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
+                        {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
+                      </span>
+                      <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
+                        {T.draftSaved[lang]} {savedAgo(d.created_at, lang)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
+                      </span>
+                    </button>
+                  ))}
+                  {drafts.length > 12 && (
+                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: 0 }}>
+                      {(() => {
+                        const parts = T.draftsShowingSome[lang].split(/(\{shown\}|\{total\})/);
+                        return parts.map((part, idx) =>
+                          part === "{shown}" || part === "{total}" ? (
+                            <span key={idx} style={{ fontFamily: "var(--ff-mono)" }}>
+                              {part === "{shown}" ? 12 : drafts.length}
+                            </span>
+                          ) : (
+                            <React.Fragment key={idx}>{part}</React.Fragment>
+                          ),
+                        );
+                      })()}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* THE THREE WAYS IN. Same size, one grid track each. */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isPhone ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                  gap: 12,
+                  alignItems: "stretch",
+                }}
+              >
+                {/* Box A — the only blue primary on this screen. */}
+                <div style={hubBox}>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                    {T.hubSignalsTitle[lang]}
+                  </p>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
+                    {savedBehindSubjects > 0
+                      ? T.hubSignalsEvidence[lang].split("{n}").map((part, i) => (
+                          <React.Fragment key={i}>
+                            {i > 0 && <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{savedBehindSubjects}</span>}
+                            {part}
+                          </React.Fragment>
+                        ))
+                      : T.hubSignalsEmpty[lang]}
+                  </p>
+                  <span style={{ flex: 1 }} />
+                  {confirmOwnsPrimary || captureEmpty ? (
+                    <ButtonGhost onClick={() => setPickStage("signals")} style={{ minHeight: 44 }}>
+                      {T.hubSignalsAction[lang]}
+                    </ButtonGhost>
+                  ) : (
+                    <ButtonPrimary onClick={() => setPickStage("signals")} style={{ minHeight: 44 }}>
+                      {T.hubSignalsAction[lang]}
+                    </ButtonPrimary>
+                  )}
+                </div>
+
+                {/* Box B — quiet. */}
+                <div style={hubBox}>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                    {T.chooseOwn[lang]}
+                  </p>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
+                    {T.chooseOwnPlaceholder[lang]}
+                  </p>
+                  <span style={{ flex: 1 }} />
+                  <ButtonGhost onClick={() => setPickStage("subject")} style={{ minHeight: 44 }}>
+                    {T.hubElseAction[lang]}
+                  </ButtonGhost>
+                </div>
+
+                {/* Box C — quiet. */}
+                <div style={hubBox}>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                    {T.hubPasteTitle[lang]}
+                  </p>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
+                    {T.pasteHelp[lang]}
+                  </p>
+                  <span style={{ flex: 1 }} />
+                  <ButtonGhost onClick={() => setPickStage("paste")} style={{ minHeight: 44 }}>
+                    {T.hubPasteAction[lang]}
+                  </ButtonGhost>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 18 }}>{langPicker}</div>
+            </>
+          )}
+
+          {/* ---------------- STAGE: SIGNALS ---------------- */}
+          {pickStage === "signals" && (
+            <>
+              {cardsLoading && (
+                <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)" }}>
+                  {T.loading[lang]}
+                </p>
+              )}
+              {!cardsLoading && cards.length === 0 && totalSignals === -1 && (
+                <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: rtlShell ? 1.9 : 1.7, margin: 0 }}>
+                    {T.subjectsUnreadable[lang]}
+                  </p>
+                  <ButtonGhost onClick={() => setCardsNonce((n) => n + 1)} style={{ minHeight: 44 }}>
+                    {T.subjectsRetry[lang]}
+                  </ButtonGhost>
+                </div>
+              )}
+              {!cardsLoading && cards.length === 0 && totalSignals > 0 && (
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: rtlShell ? 1.9 : 1.7, margin: 0 }}>
+                  {T.nothingNewToRank[lang]}
+                </p>
+              )}
+              {!cardsLoading && cards.length === 0 && totalSignals === 0 && (
+                <div style={{ display: "grid", gap: 10, justifyItems: rtlShell ? "end" : "start" }}>
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", lineHeight: rtlShell ? 1.9 : 1.7, margin: 0 }}>
+                    {T.chooseEmpty[lang]}
+                  </p>
+                  {onOpenCapture && (
+                    confirmOwnsPrimary ? (
+                      <ButtonGhost onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                        {T.captureNow[lang]}
+                      </ButtonGhost>
+                    ) : (
+                      <ButtonPrimary onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                        {T.captureNow[lang]}
+                      </ButtonPrimary>
+                    )
+                  )}
+                </div>
+              )}
+              <div style={{ display: "grid", gap: 10 }}>
+                {cards.map((c) => {
+                  const on = choice?.id === c.signalId;
+                  return (
+                    <button
+                      key={c.signalId}
+                      type="button"
+                      className="v23-tap v23-focus"
+                      aria-pressed={on}
+                      onClick={() => {
+                        // N1 — changing subject over words already written is a NEW
+                        // piece, and it is confirmed before anything is lost.
+                        const next = { id: c.signalId, title: c.title, insight: c.insight };
+                        if (choice?.id === c.signalId) { setPickStage("confirm"); return; }
+                        if (published || content.trim()) { setPendingSubject(next); setPickStage("confirm"); return; }
+                        setPickedAngleId(null);
+                        setAngles([]);
+                        setAnglesOpen(false);
+                        setAnglesError(false);
+                        setChoice(next);
+                        setTypedTopic("");
+                        setPickStage("confirm");
+                      }}
+                      style={{
+                        textAlign: rtlShell ? "right" : "left",
+                        cursor: "pointer",
+                        background: on ? "var(--act-tint)" : "var(--surface-subtle)",
+                        border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                        borderRadius: 12,
+                        padding: 14,
+                      }}
+                    >
+                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                        {c.title}
+                      </p>
+                      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "6px 0 0" }}>
+                        {startReason(c.kind, c.fragmentCount, c.reason, lang)}
+                      </p>
+                      {c.insight && (
+                        <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "6px 0 0" }}>
+                          {c.insight}
+                        </p>
+                      )}
+                      <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 10 }}>
+                        {c.fragmentCount} {T.sources[lang]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* The ranked few are a shortcut. The whole shelf lives in Signals,
+                  where every subject carries its evidence — so we hand off there
+                  instead of repeating a weaker copy of it here. */}
+              <div style={{ marginTop: 12 }}>
+                <button
+                  type="button"
+                  className="v23-tap v23-focus"
+                  onClick={() => {
+                    try {
+                      window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "intelligence" } }));
+                    } catch { /* noop */ }
+                  }}
+                  style={{
+                    minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                    fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+                    textAlign: rtlShell ? "right" : "left",
+                  }}
+                >
+                  {T.browseInSignals[lang]} <span aria-hidden>{rtlShell ? "\u2190" : "\u2192"}</span>
+                </button>
+              </div>
+
+              <div style={{ marginTop: 12 }}>{backToHub}</div>
+            </>
+          )}
+
+          {/* ---------------- STAGE: SUBJECT ---------------- */}
+          {pickStage === "subject" && (
+            <>
+              <div>
+                <label htmlFor="studio-topic" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
+                  {T.chooseOwn[lang]}
+                </label>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <input
+                    id="studio-topic"
+                    className="v23-focus"
+                    value={typedTopic}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      const t = v.trim();
+                      // Typing never destroys words. Over an empty piece the typed
+                      // subject IS the subject; over written words the swap is
+                      // offered as a confirmation instead.
+                      setTypedTopic(v);
+                      if (published || content.trim()) {
+                        setPendingSubject(t ? { id: null, title: t, insight: "" } : null);
+                        return;
+                      }
+                      setChoice(t ? { id: null, title: t, insight: "" } : null);
+                    }}
+                    placeholder={T.chooseOwnPlaceholder[lang]}
+                    style={{
+                      flex: "1 1 260px", minHeight: 44, padding: "0 12px", borderRadius: 8,
+                      background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                      fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14, color: "var(--text-primary)",
+                      textAlign: rtlShell ? "right" : "left",
+                    }}
+                  />
+                </div>
+              </div>
+              <div style={{ marginTop: 12 }}>{backToHub}</div>
+            </>
+          )}
+
+          {/* ---------------- STAGE: PASTE ---------------- */}
+          {pickStage === "paste" && (
+            <>
+              <div>
+                <label htmlFor="studio-paste" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                  {T.pasteHead[lang]}
+                </label>
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "4px 0 8px" }}>
+                  {T.pasteHelp[lang]}
+                </p>
+                <textarea
+                  id="studio-paste"
+                  className="v23-focus"
+                  value={pasted}
+                  rows={6}
+                  dir={rtlWrite ? "rtl" : "ltr"}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setPasted(v);
+                    // The author's subject may simply be the first line they wrote.
+                    const first = v.split("\n").map((l) => l.trim()).find(Boolean) || "";
+                    if (!choice && first) setChoice({ id: null, title: first.slice(0, 80), insight: "" });
+                  }}
+                  placeholder={T.pastePlaceholder[lang]}
+                  style={{
+                    width: "100%", background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                    borderRadius: 12, padding: 12, fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14,
+                    lineHeight: rtlWrite ? 1.9 : 1.75, textAlign: rtlWrite ? "right" : "left",
+                    color: "var(--text-primary)", resize: "vertical",
+                  }}
+                />
+                {askReplace && (
+                  <div style={{ marginTop: 10, background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12 }}>
+                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
+                      {T.replaceHead[lang]}
+                    </p>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <ButtonPrimary onClick={() => void onContinue()} style={{ minHeight: 44 }}>{T.replaceYes[lang]}</ButtonPrimary>
+                      <ButtonGhost onClick={() => { setAskReplace(false); setPasted(""); }} style={{ minHeight: 44 }}>
+                        {T.replaceNo[lang]}
+                      </ButtonGhost>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: 12 }}>{backToHub}</div>
+            </>
+          )}
+
+          {/* ---------------- STAGE: CONFIRM ---------------- */}
+          {pickStage === "confirm" && (
+            <>
+              {/* The subject decided — one box, the same content the card showed. */}
+              <div
+                style={{
+                  background: "var(--surface-subtle)", border: "1px solid var(--act)",
+                  borderRadius: 16, padding: 16, textAlign: rtlShell ? "right" : "left",
+                }}
+              >
+                <p style={{ fontFamily: "var(--ff-mono)", fontSize: 11, letterSpacing: ".03em", color: "var(--text-muted)", margin: "0 0 6px" }}>
+                  {T.chosenSubjectHead[lang]}
+                </p>
+                <p dir="auto" style={{ fontFamily: "var(--ff-ui)", fontSize: 16, fontWeight: 700, color: "var(--text-primary)", margin: 0, overflowWrap: "anywhere" }}>
+                  {choice?.title || ""}
+                </p>
+                {chosenCard && (
+                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "8px 0 0" }}>
+                    {startReason(chosenCard.kind, chosenCard.fragmentCount, chosenCard.reason, lang)}
+                  </p>
+                )}
+                {(chosenCard?.insight || choice?.insight) && (
+                  <p dir="auto" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "6px 0 0" }}>
+                    {chosenCard?.insight || choice?.insight}
+                  </p>
+                )}
+              </div>
+
+              {choice?.id ? <WriteFromPanel signalId={choice.id} lang={lang} /> : null}
+
+              {/* Ways to change the decision. All quiet, none of them primary. */}
+              <div style={{ marginTop: 16, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+                <button
+                  type="button"
+                  className="v23-tap v23-focus"
+                  onClick={() => setPickStage("signals")}
+                  style={{
+                    minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                    fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+                  }}
+                >
+                  {T.chooseDifferentSubject[lang]}
+                </button>
+                <button
+                  type="button"
+                  className="v23-tap v23-focus"
+                  onClick={() => setPickStage("subject")}
+                  style={{
+                    minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                    fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+                  }}
+                >
+                  {T.chooseOwn[lang]}
+                </button>
+                <span style={{ flexBasis: "100%" }} />
+                {langPicker}
+              </div>
+            </>
+          )}
+
+          {/* THE ONE PRIMARY on the stages that go forward. It is the only
+              control that writes, and the only forward action step 1 offers. */}
+          {(pickStage === "subject" || pickStage === "paste" || pickStage === "confirm") && (() => {
             const advances = Boolean(pasted.trim()) || Boolean(content.trim());
             const blocked = !doneMap[1] || generating;
             /* Exactly one primary. A pending subject change owns it (its
@@ -3186,6 +3437,7 @@ export default function StudioPanel({
                               <button
                                 key={d.id}
                                 type="button"
+                                className="v23-tap v23-focus"
                                 onClick={() => pickAngle(d)}
                                 aria-pressed={on}
                                 dir={rtlWrite ? "rtl" : "ltr"}
@@ -3230,6 +3482,7 @@ export default function StudioPanel({
                         {!pickedAngleId && (
                           <button
                             type="button"
+                            className="v23-tap v23-focus"
                             onClick={() => { setAnglesOpen(false); void generate(); }}
                             style={{
                               marginTop: 10, minHeight: 44, padding: 0, background: "transparent", border: 0,
@@ -3246,132 +3499,6 @@ export default function StudioPanel({
               </div>
             );
           })()}
-
-          <hr style={{ margin: "20px 0 4px", border: 0, borderTop: "1px solid var(--border-default)" }} />
-
-          {/* SECONDARY, below the line: own words, and work already waiting.
-              Both collapsed — neither may stand above the subjects. */}
-          <div style={{ marginTop: 12 }}>
-            <button
-              type="button"
-              onClick={() => setShowPaste((v) => !v)}
-              aria-expanded={showPaste}
-              style={{
-                minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
-                fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
-              }}
-            >
-              {T.pasteHead[lang]}
-            </button>
-            {showPaste && (
-            <div style={{ marginTop: 8 }}>
-              <label htmlFor="studio-paste" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
-                {T.pasteHead[lang]}
-              </label>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 12.5, color: "var(--text-muted)", margin: "4px 0 8px" }}>
-                {T.pasteHelp[lang]}
-              </p>
-              <textarea
-                id="studio-paste"
-                value={pasted}
-                rows={6}
-                dir={rtlWrite ? "rtl" : "ltr"}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setPasted(v);
-                  // The author's subject may simply be the first line they wrote.
-                  const first = v.split("\n").map((l) => l.trim()).find(Boolean) || "";
-                  if (!choice && first) setChoice({ id: null, title: first.slice(0, 80), insight: "" });
-                }}
-                placeholder={T.pastePlaceholder[lang]}
-                style={{
-                  width: "100%", background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                  borderRadius: 12, padding: 12, fontFamily: "var(--ff-ui)", fontSize: isPhone ? 16 : 14,
-                  lineHeight: rtlWrite ? 1.9 : 1.75, textAlign: rtlWrite ? "right" : "left",
-                  color: "var(--text-primary)", resize: "vertical",
-                }}
-              />
-              {askReplace && (
-                <div style={{ marginTop: 10, background: "var(--surface-subtle)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 12 }}>
-                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
-                    {T.replaceHead[lang]}
-                  </p>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <ButtonPrimary onClick={() => void onContinue()} style={{ minHeight: 44 }}>{T.replaceYes[lang]}</ButtonPrimary>
-                    <ButtonGhost onClick={() => { setAskReplace(false); setPasted(""); }} style={{ minHeight: 44 }}>
-                      {T.replaceNo[lang]}
-                    </ButtonGhost>
-                  </div>
-                </div>
-              )}
-            </div>
-            )}
-          </div>
-
-          {!draftsLoading && drafts.length > 0 && (
-            <div style={{ marginTop: 14 }}>
-              <div style={{
-                fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 700,
-                color: "var(--act)", marginBottom: 6,
-              }}>
-                {lang === "ar" ? "عمل جاهز بالفعل" : "Work already waiting"}
-                {" · "}
-                <span style={{ fontFamily: "var(--ff-mono)" }}>{drafts.length}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowDrafts((v) => !v)}
-                aria-expanded={showDrafts}
-                style={{
-                  minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
-                  fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
-                }}
-              >
-                {T.openDraft[lang]}{" ("}
-                <span style={{ fontFamily: "var(--ff-mono)" }}>{drafts.length}</span>
-                {")"}
-              </button>
-              {showDrafts && (
-                <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-                  {drafts.slice(0, 12).map((d) => (
-                    <button
-                      key={d.id}
-                      type="button"
-                      onClick={() => void openDraft(d, "studio_drafts_list")}
-                      style={{
-                        textAlign: rtlShell ? "right" : "left", cursor: "pointer",
-                        background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                        borderRadius: 12, padding: 12,
-                      }}
-                    >
-                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
-                        {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
-                      </span>
-                      <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
-                        {T.draftSaved[lang]} {savedAgo(d.created_at, lang)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
-                      </span>
-                    </button>
-                  ))}
-                  {drafts.length > 12 && (
-                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: 0 }}>
-                      {(() => {
-                        const parts = T.draftsShowingSome[lang].split(/(\{shown\}|\{total\})/);
-                        return parts.map((part, idx) =>
-                          part === "{shown}" || part === "{total}" ? (
-                            <span key={idx} style={{ fontFamily: "var(--ff-mono)" }}>
-                              {part === "{shown}" ? 12 : drafts.length}
-                            </span>
-                          ) : (
-                            <React.Fragment key={idx}>{part}</React.Fragment>
-                          ),
-                        );
-                      })()}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </StageCard>
       )}
 
