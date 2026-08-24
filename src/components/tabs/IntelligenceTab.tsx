@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { nCaptures, nEvidence, nSources, evidenceAndSources, CAPTURE, EVIDENCE, SIGNAL } from "@/constants/vocabulary";
+import { nCaptures, nEvidence, nSources, nSignals, evidenceAndSources, CAPTURE, EVIDENCE, SIGNAL } from "@/constants/vocabulary";
 import { toast } from "sonner";
 // Sources now live in the Library tab.
 import SectionError from "@/components/ui/section-error";
@@ -354,7 +354,7 @@ const TerritoryPanel = ({
                   }}>{t.name}</p>
                 </div>
                 <span style={{ fontSize: 13, color: "var(--glass-2)", whiteSpace: "nowrap" }}>
-                  {t.signalCount} signal{t.signalCount === 1 ? "" : "s"}
+                  {nSignals(t.signalCount, "en")}
                 </span>
                 <StatusBadge status={t.status} />
                 {isSelected && <ChevronRight size={16} color="var(--brand)" />}
@@ -1322,7 +1322,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     const ids = dormantSignals.map(s => s.id);
     const { error } = await supabase.from("strategic_signals").update({ status: "archived" } as any).in("id", ids);
     if (error) { toast.error("Couldn't archive signals"); return; }
-    toast.success(`Archived ${ids.length} dormant signal${ids.length > 1 ? "s" : ""}`);
+    toast.success(`Archived ${nSignals(ids.length, "en")} that had gone dormant`);
     await loadSignals();
   };
 
@@ -1347,7 +1347,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
       const data = await invokeDetectPatterns(session.user.id);
-      toast.success(`Detected ${data.signals_created || 0} new signals`);
+      toast.success(`Detected ${nSignals(data.signals_created || 0, "en")}`);
       await loadSignals();
     } catch (e: any) { toast.error(e.message); }
     finally { setDetecting(false); }
@@ -1439,7 +1439,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                     <AlertTriangle size={12} /> FADING
                   </span>
                   <span style={{ fontSize: 12, color: "var(--glass-2)" }}>
-                    {fadingSignals.length} signal{fadingSignals.length > 1 ? "s" : ""} losing strength — new evidence in the next {daysUntilDormant(topFading.confidence)} days reverses the trend.
+                    {nSignals(fadingSignals.length, "en")} losing strength — new evidence in the next {daysUntilDormant(topFading.confidence)} days reverses the trend.
                   </span>
                   <button onClick={() => onOpenCapture?.()} style={{ background: "none", border: "none", color: "hsl(24 95% 53%)", fontSize: 12, fontWeight: 500, cursor: "pointer", padding: 0 }}>
                     Capture for "{topFading.signal_title}" →
@@ -1451,7 +1451,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
             {dormantSignals.length > 0 && (
               <div role="status" style={{ marginBottom: 16, padding: "12px 14px", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10, background: "var(--surface-ink-raised)" }}>
                 <div style={{ fontSize: 12, color: "var(--glass-2)", marginBottom: 8 }}>
-                  ◌ {dormantSignals.length} signal{dormantSignals.length > 1 ? "s have" : " has"} gone dormant (60+ days without new evidence).
+                  ◌ {nSignals(dormantSignals.length, "en")} {dormantSignals.length > 1 ? "have" : "has"} gone dormant (60+ days without new evidence).
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -1461,7 +1461,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Archive {dormantSignals.length} dormant signal{dormantSignals.length > 1 ? "s" : ""}?</AlertDialogTitle>
+                      <AlertDialogTitle>Archive {nSignals(dormantSignals.length, "en")} that went dormant?</AlertDialogTitle>
                       <AlertDialogDescription>Archived signals are removed from your active radar. You can still find them in your data.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

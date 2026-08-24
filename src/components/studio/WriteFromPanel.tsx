@@ -44,8 +44,8 @@ const COPY = {
   eyebrow: { en: "WHAT AURA WILL WRITE FROM", ar: "ما ستكتب منه Aura" },
   loading: { en: "Reading what this is built on…", ar: "نقرأ ما بُني عليه هذا…" },
   see: {
-    en: (n: number) => `See the ${n} source${n === 1 ? "" : "s"} behind this`,
-    ar: (n: number) => `اطّلع على ${n} مصدر وراء هذا`,
+    en: (n: number) => `See the ${nSources(n, "en")} behind this`,
+    ar: (n: number) => `اطّلع على ${nSources(n, "ar")} وراء هذا`,
   },
   hide: { en: "Hide the sources", ar: "أخفِ المصادر" },
   showMore: {
