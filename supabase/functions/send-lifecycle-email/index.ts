@@ -52,7 +52,7 @@ function buildEmail(
     sectorFocus: string | null;
     level: string | null;
     entriesCount: number;
-    topSignals: { signal_title: string; confidence: number }[];
+    topSignals: { id?: string; signal_title: string; confidence: number }[];
     score: number | null;
     tier: string | null;
     signalCount: number;
@@ -62,11 +62,12 @@ function buildEmail(
     recentTrend: { headline: string; source: string } | null;
     postTitle?: string;
     postPreview?: string;
+    postId?: string;
     missingGates?: string[];
     monthName?: string;
   },
 ): { subject: string; html: string } {
-  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount, fadingSignals, fadingCount, publishedCount, recentTrend, postTitle, postPreview, missingGates, monthName } = ctx;
+  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount, fadingSignals, fadingCount, publishedCount, recentTrend, postTitle, postPreview, postId, missingGates, monthName } = ctx;
   const name = firstName || "there";
   const focus = sectorFocus && sectorFocus.trim() ? sectorFocus.trim() : "your sector";
   const tierMessage = (() => {
@@ -90,7 +91,7 @@ function buildEmail(
         ${heading(`${name}, your signal graph is waiting.`)}
         <p style="margin:0 0 18px;">The captures you've made are being analyzed — signals emerge when Aura detects recurring themes across multiple sources.</p>
         <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
-        ${ctaButton(BRAND, "Capture something", APP_URL)}
+        ${ctaButton(BRAND, "Capture something", `${APP_URL}/dashboard`)}
         ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body, subject) };
   }
@@ -100,12 +101,16 @@ function buildEmail(
     const trendLine = recentTrend
       ? `The market conversation in ${focus} shifted — '<strong>${recentTrend.headline}</strong>' (via ${recentTrend.source}). You have ${signalCount} active signal${signalCount === 1 ? "" : "s"} tracking this space.`
       : `Aura is watching ${focus} for fresh market movement. You have ${signalCount} active signal${signalCount === 1 ? "" : "s"} ready to anchor your next post.`;
+    const d3 = topSignals[0];
+    const day3Href = d3?.id
+      ? `${APP_URL}/dashboard?tab=authority&signal=${encodeURIComponent(d3.id)}`
+      : `${APP_URL}/dashboard?tab=authority`;
     const body = `
       ${heading(`${name}, your Imprint is ${score ?? 0}.`)}
       <p style="margin:0 0 18px;">${tierMessage}</p>
       <p style="margin:0 0 18px;">${trendLine}</p>
       <p style="margin:0 0 18px;">Publishing from your strongest signal builds presence fastest. Your signals are ready.</p>
-      ${ctaButton(BRAND, "Generate your first post", `${APP_URL}/dashboard?tab=publish`)}
+      ${ctaButton(BRAND, "Generate your first post", day3Href)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body, subject) };
   }
@@ -140,7 +145,7 @@ function buildEmail(
       <p style="margin:0 0 18px;">You generated a LinkedIn post yesterday — and it's still waiting.</p>
       <p style="margin:0 0 18px;padding:16px 20px;background:${CANVAS};border-left:2px solid ${ACCENT};font-style:italic;color:${INK_SOFT};">"${preview}${preview.length >= 120 ? "..." : ""}"</p>
       <p style="margin:0 0 18px;">One tap and it is live.</p>
-      ${ctaButton(BRAND, "Open in Publish tab", `${APP_URL}/home?tab=authority`)}
+      ${ctaButton(BRAND, "Open your draft", openHref)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body, subject) };
   }
@@ -210,7 +215,7 @@ function buildEmail(
     <p style="margin:0 0 18px;">${f1Line}${f2Line}</p>
     <p style="margin:0 0 18px;">${trendLine}</p>
     <p style="margin:0 0 18px;">One capture brings them back. Consistency matters more than volume here.</p>
-    ${ctaButton(BRAND, "Capture now", APP_URL)}
+    ${ctaButton(BRAND, "Capture now", `${APP_URL}/dashboard`)}
     ${signoff(name, level)}`;
   return { subject, html: shell(BRAND, FONT, body, subject) };
 }
@@ -376,7 +381,7 @@ serve(withObserve("send-lifecycle-email", async (req) => {
     // Signals
     const { data: signals, count: signalCount } = await admin
       .from("strategic_signals")
-      .select("signal_title, confidence", { count: "exact" })
+      .select("id, signal_title, confidence", { count: "exact" })
       .eq("user_id", user_id)
       .eq("status", "active")
       .order("confidence", { ascending: false })
@@ -443,6 +448,7 @@ serve(withObserve("send-lifecycle-email", async (req) => {
       recentTrend: trendRow ? { headline: (trendRow as any).headline, source: (trendRow as any).source } : null,
       postTitle: post_title || undefined,
       postPreview: post_preview || undefined,
+      postId: post_id || undefined,
       missingGates: Array.isArray(missing_gates) ? missing_gates : undefined,
       monthName: typeof month_name === "string" ? month_name : undefined,
     });
