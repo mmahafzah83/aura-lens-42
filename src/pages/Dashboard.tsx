@@ -181,6 +181,7 @@ const Dashboard = () => {
     sourceTitle?: string;
     contentFormat?: "post" | "carousel" | "framework_summary";
     trendHeadline?: string;
+    origin?: { surface: string; label: string };
   } | null>(null);
   const [draftPrefill, setDraftPrefill] = useState<{
     id: string;
@@ -189,6 +190,7 @@ const Dashboard = () => {
     type: "carousel" | "framework" | "linkedin_post";
     topic?: string | null;
     _source?: "content_items" | "linkedin_posts";
+    origin?: { surface: string; label: string };
   } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
