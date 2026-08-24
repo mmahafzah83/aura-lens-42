@@ -457,7 +457,8 @@ export const SignalHero = ({
   }, [signal.id]);
 
   const confPct = Math.round(signal.confidence * 100);
-  const orgs = signal.unique_orgs || 1;
+  // unique_orgs counts distinct source_registry rows — sources, not firms.
+  const orgs = signal.unique_orgs ?? 0;
   const fragCount = signal.fragment_count ?? (signal as any).evidenceCount ?? 0;
   // unique_orgs is the one truth for "sources behind this signal" — the
   // reconciler keeps it exact for every signal of every status.
@@ -507,7 +508,7 @@ export const SignalHero = ({
           side="top"
           triggerSize={14}
         />.
-        {orgs < 3 && " Two more sources from different organisations would push this above the publishing threshold."}
+        {orgs < 3 && " Two more sources behind this would push it above the publishing threshold."}
       </p>
 
       {signal.what_it_means_for_you && (
