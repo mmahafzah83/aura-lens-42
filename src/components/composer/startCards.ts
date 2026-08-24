@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { nEvidence } from "@/constants/vocabulary";
 
 /**
  * ZONE 1 — START.
@@ -171,13 +172,13 @@ export async function loadStartCards(
     for (const s of ordered.slice(0, LIMIT)) {
       const n = s.fragment_count ?? 0;
       if (!lastPostFor.has(s.id)) {
-        push(s, "never_written", `Not written about yet — ${n} pieces of evidence behind it.`);
+        push(s, "never_written", `Not written about yet — ${nEvidence(n, "en")} behind it.`);
       } else if (isFresh(s)) {
-        push(s, "new_evidence", `${n} pieces of evidence now sit behind this — some of them landed after your last post on it.`);
+        push(s, "new_evidence", `${nEvidence(n, "en")} now sit behind this — some of them landed after your last post on it.`);
       } else if (s.velocity_status === "accelerating") {
-        push(s, "accelerating", `Picking up speed — ${n} pieces of evidence and still climbing.`);
+        push(s, "accelerating", `Picking up speed — ${nEvidence(n, "en")} and still climbing.`);
       } else {
-        push(s, "steady", `Steady — ${n} pieces of evidence behind it.`);
+        push(s, "steady", `Steady — ${nEvidence(n, "en")} behind it.`);
       }
     }
     return { cards, totalSignals: signals.length };
@@ -191,7 +192,7 @@ export async function loadStartCards(
     push(
       s,
       "new_evidence",
-      `${s.fragment_count ?? 0} pieces of evidence now sit behind this — some of them landed after your last post on it.`
+      `${nEvidence(s.fragment_count ?? 0, "en")} now sit behind this — some of them landed after your last post on it.`
     );
   }
 
@@ -199,14 +200,14 @@ export async function loadStartCards(
   const acceleratingLeft = accelerating.filter((s) => !used.has(s.id));
   if (acceleratingLeft[0]) {
     const s = acceleratingLeft[0];
-    push(s, "accelerating", `Picking up speed — ${s.fragment_count ?? 0} pieces of evidence and still climbing.`);
+    push(s, "accelerating", `Picking up speed — ${nEvidence(s.fragment_count ?? 0, "en")} and still climbing.`);
   }
 
   // 3 — Never written about.
   const neverWrittenLeft = neverWritten.filter((s) => !used.has(s.id));
   if (neverWrittenLeft[0]) {
     const s = neverWrittenLeft[0];
-    push(s, "never_written", `Your strongest signal you have never posted about — ${s.fragment_count ?? 0} pieces of evidence.`);
+    push(s, "never_written", `Your strongest signal you have never posted about — ${nEvidence(s.fragment_count ?? 0, "en")}.`);
   }
 
   // Degrade honestly: if fewer than LIMIT qualified, backfill only from the
@@ -215,14 +216,14 @@ export async function loadStartCards(
     for (const s of neverWritten) {
       if (cards.length >= LIMIT) break;
       if (used.has(s.id)) continue;
-      push(s, "never_written", `Not written about yet — ${s.fragment_count ?? 0} pieces of evidence behind it.`);
+      push(s, "never_written", `Not written about yet — ${nEvidence(s.fragment_count ?? 0, "en")} behind it.`);
     }
   }
   if (cards.length < LIMIT) {
     for (const s of accelerating) {
       if (cards.length >= LIMIT) break;
       if (used.has(s.id)) continue;
-      push(s, "accelerating", `Picking up speed — ${s.fragment_count ?? 0} pieces of evidence and still climbing.`);
+      push(s, "accelerating", `Picking up speed — ${nEvidence(s.fragment_count ?? 0, "en")} and still climbing.`);
     }
   }
 

@@ -9,18 +9,19 @@
  * The expandable toggle names the SAME source number it reveals, so every
  * number on screen traces back to one already stated.
  *
- * ROOT CAUSE FIXED: the fragment fetch used to `.limit(20)` before the rows
- * were deduplicated onto their source, so a signal with 72 pieces of evidence
- * across 20 sources revealed 5 rows — a third, unexplained number. We now read
- * every supporting fragment (chunked so a long id list still fits in one URL),
- * dedupe onto the source, and take the source count from the deduped rows
- * themselves rather than from `unique_orgs`.
+ * ONE TRUTH FOR THE NUMBER: the stated source count is `unique_orgs`, the same
+ * field the signals list and the confirm screen read, so three surfaces can no
+ * longer disagree. The expandable LIST still fetches real rows — chunked, so a
+ * long id list fits in one URL — because members must see the actual readings.
+ * If the readable rows ever disagree with `unique_orgs` we log it rather than
+ * quietly reshaping the number.
  *
  * Never throws: any failure renders nothing.
  */
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
+import { nEvidence, nSources } from "@/constants/vocabulary";
 
 type Lang = "en" | "ar";
 
@@ -43,8 +44,8 @@ const COPY = {
   eyebrow: { en: "WHAT AURA WILL WRITE FROM", ar: "ما ستكتب منه Aura" },
   loading: { en: "Reading what this is built on…", ar: "نقرأ ما بُني عليه هذا…" },
   see: {
-    en: (n: number) => `See the ${n} source${n === 1 ? "" : "s"} behind this`,
-    ar: (n: number) => `اطّلع على ${n} مصدر وراء هذا`,
+    en: (n: number) => `See the ${nSources(n, "en")} behind this`,
+    ar: (n: number) => `اطّلع على ${nSources(n, "ar")} وراء هذا`,
   },
   hide: { en: "Hide the sources", ar: "أخفِ المصادر" },
   showMore: {
@@ -174,11 +175,20 @@ export default function WriteFromPanel({ signalId, lang }: { signalId: string | 
           meaning: String(s.what_it_means_for_you || "").trim() || String(s.strategic_implications || "").trim(),
           confPct: Math.round(Number(s.confidence || 0) * 100),
           fragCount: Number(s.fragment_count ?? ids.length ?? 0),
-          // The number we state is the number we can show.
-          sourceCount: fragments.length || Number(s.unique_orgs ?? 0),
+          // unique_orgs is the one truth for "sources behind this signal" — the
+          // reconciler keeps it exact for every signal of every status, so the
+          // confirm screen, the signals list and this panel all state it.
+          sourceCount: Number(s.unique_orgs ?? 0) || fragments.length,
           fragments,
         });
         setLoadedFor(signalId);
+        const stated = Number(s.unique_orgs ?? 0) || fragments.length;
+        if (stated !== fragments.length) {
+          // Never papered over: if the rows we can read disagree with the
+          // stamped count, that is a real discrepancy worth seeing.
+          console.warn("[WriteFromPanel] unique_orgs disagrees with readable sources",
+            { signalId, unique_orgs: stated, readable: fragments.length });
+        }
       } catch (e) {
         console.warn("[WriteFromPanel] load failed", e);
         if (!cancelled) { setData(null); setLoadedFor(signalId); }
@@ -216,8 +226,8 @@ export default function WriteFromPanel({ signalId, lang }: { signalId: string | 
   const rest = fragments.length - shown.length;
 
   const countLine = rtl
-    ? `${fragCount} قطعة من الأدلة من ${sourceCount} مصدر. الثقة: ${confPct}%.`
-    : `${fragCount} piece${fragCount === 1 ? "" : "s"} of evidence from ${sourceCount} source${sourceCount === 1 ? "" : "s"}. Confidence: ${confPct}%.`;
+    ? `${nEvidence(fragCount, "ar")} من ${nSources(sourceCount, "ar")}. الثقة: ${confPct}%.`
+    : `${nEvidence(fragCount)} from ${nSources(sourceCount)}. Confidence: ${confPct}%.`;
 
   return (
     <div dir={rtl ? "rtl" : undefined} style={shell}>

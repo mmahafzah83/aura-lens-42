@@ -4,6 +4,7 @@ import {
   TrendingUp, BookOpen, User
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { nSignals } from "@/constants/vocabulary";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
@@ -350,7 +351,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             <div className="text-center py-8">
               <Lightbulb className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--ink-3)" }} />
               <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.5 }}>
-                No signals yet. Capture 3-5 articles to build your signal map.
+                No signals yet. Capture a few articles and your signal map starts here.
                 <br />
                 <span style={{ fontSize: 12, opacity: 0.7 }}>Signal-grounded posts perform far better than topic-only generation.</span>
               </p>
@@ -454,7 +455,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
               style={{ marginTop: 4, fontSize: 12, fontWeight: 600 }}
               className="v23-textlink v23-tap"
             >
-              See all {totalSignals} signals →
+              See all {nSignals(totalSignals)} →
             </a>
           )}
 

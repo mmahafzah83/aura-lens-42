@@ -1,3 +1,5 @@
+import { evidenceAndSources, evidenceCountAr as evidenceAr } from "@/constants/vocabulary";
+
 export type Lang = "en" | "ar";
 export type Posture = "delegator" | "editor" | "author";
 
@@ -744,46 +746,26 @@ export function attentionText(englishLine: string, lang: Lang): string {
 }
 
 /**
- * Arabic count words for the two — and only two — numbers a card may state.
+ * The count words live in ONE place: src/constants/vocabulary.ts.
  * `fragment_count` is ALWAYS evidence, `unique_orgs` is ALWAYS sources.
- * Arabic grammar: 1 singular, 2 dual, 3–10 plural, 11+ singular accusative.
+ * Re-exported here so existing studio imports keep working — there is no
+ * second implementation.
  */
-export function evidenceCountAr(n: number): string {
-  if (n === 1) return "قطعة واحدة من الأدلة";
-  if (n === 2) return "قطعتان من الأدلة";
-  if (n >= 3 && n <= 10) return `${n} قطع من الأدلة`;
-  return `${n} قطعة من الأدلة`;
-}
-
-export function sourceCountAr(n: number): string {
-  if (n === 1) return "مصدر واحد";
-  if (n === 2) return "مصدران";
-  if (n >= 3 && n <= 10) return `${n} مصادر`;
-  return `${n} مصدراً`;
-}
-
-export function evidenceCountEn(n: number): string {
-  return `${n} piece${n === 1 ? "" : "s"} of evidence`;
-}
-
-export function sourceCountEn(n: number): string {
-  return `${n} source${n === 1 ? "" : "s"}`;
-}
+export { evidenceCountAr, sourceCountAr, evidenceCountEn, sourceCountEn } from "@/constants/vocabulary";
 
 /**
  * The card footer states both true numbers, in the same words the confirm
  * screen uses, so a member reads one pair of numbers across both screens.
  */
 export function cardCounts(evidence: number, sources: number, lang: Lang): string {
-  return lang === "ar"
-    ? `${evidenceCountAr(evidence)} · ${sourceCountAr(sources)}`
-    : `${evidenceCountEn(evidence)} · ${sourceCountEn(sources)}`;
+  return evidenceAndSources(evidence, sources, lang);
 }
+
 
 /** Arabic version of a start-card reason, keyed off its kind. */
 export function startReason(kind: string, count: number, english: string, lang: Lang): string {
   if (lang !== "ar") return english;
-  const ev = evidenceCountAr(count);
+  const ev = evidenceAr(count);
   if (kind === "new_evidence") return `${ev} تقف خلف هذا الآن — بعضها وصل بعد آخر منشور لك عنه.`;
   if (kind === "accelerating") return `يكتسب زخماً — ${ev} وما زال يتصاعد.`;
   if (kind === "never_written") {

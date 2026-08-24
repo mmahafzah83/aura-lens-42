@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+import { nCaptures, nEvidence, nSources, nSignals, evidenceAndSources, CAPTURE, EVIDENCE, SIGNAL } from "@/constants/vocabulary";
 import { toast } from "sonner";
 // Sources now live in the Library tab.
 import SectionError from "@/components/ui/section-error";
@@ -353,7 +354,7 @@ const TerritoryPanel = ({
                   }}>{t.name}</p>
                 </div>
                 <span style={{ fontSize: 13, color: "var(--glass-2)", whiteSpace: "nowrap" }}>
-                  {t.signalCount} signal{t.signalCount === 1 ? "" : "s"}
+                  {nSignals(t.signalCount, "en")}
                 </span>
                 <StatusBadge status={t.status} />
                 {isSelected && <ChevronRight size={16} color="var(--brand)" />}
@@ -456,9 +457,12 @@ export const SignalHero = ({
   }, [signal.id]);
 
   const confPct = Math.round(signal.confidence * 100);
-  const orgs = signal.unique_orgs || 1;
+  // unique_orgs counts distinct source_registry rows — sources, not firms.
+  const orgs = signal.unique_orgs ?? 0;
   const fragCount = signal.fragment_count ?? (signal as any).evidenceCount ?? 0;
-  const sourceCount = (signal as any).unique_orgs ?? 1;
+  // unique_orgs is the one truth for "sources behind this signal" — the
+  // reconciler keeps it exact for every signal of every status.
+  const sourceCount = signal.unique_orgs ?? 0;
   const isRising = signal.velocity_status === "accelerating";
   const isFading = signal.velocity_status === "fading";
   const velText = isRising ? "and rising" : isFading ? "and fading" : "and stable";
@@ -488,12 +492,12 @@ export const SignalHero = ({
       </h2>
 
       <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.7, margin: "0 0 20px" }}>
-        You've captured <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{fragCount} piece{fragCount === 1 ? "" : "s"} of evidence</strong> from{" "}
-        <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{sourceCount} source{sourceCount === 1 ? "" : "s"}</strong>.{" "}
+        You've captured <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{nEvidence(fragCount)}</strong> from{" "}
+        <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{nSources(sourceCount)}</strong>.{" "}
         Confidence: <strong style={{ color: "var(--brand)", fontWeight: 500 }}>{confPct}%</strong>
         <InfoTooltip
           label="Confidence"
-          text="Evidence strength for this signal. More captures on this signal = higher confidence. Signals below 20% will fade."
+          text="Evidence strength for this signal. More pieces of evidence behind it = higher confidence. Signals below 20% will fade."
           side="top"
           triggerSize={14}
         />{" "}
@@ -504,7 +508,7 @@ export const SignalHero = ({
           side="top"
           triggerSize={14}
         />.
-        {orgs < 3 && " Two more sources from different organisations would push this above the publishing threshold."}
+        {orgs < 3 && " Two more sources behind this would push it above the publishing threshold."}
       </p>
 
       {signal.what_it_means_for_you && (
@@ -542,7 +546,7 @@ export const SignalHero = ({
           }}
         >
           <Layers size={12} />
-          See the evidence behind this signal ({fragCount} piece{fragCount === 1 ? "" : "s"})
+          See the evidence behind this signal ({nEvidence(fragCount)})
           <ChevronDown size={12} style={{ transform: showEvidence ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
         </button>
         {showEvidence && (
@@ -1207,6 +1211,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [entryCount, setEntryCount] = useState(0);
   const [evidenceCount, setEvidenceCount] = useState(0);
+  // The list is capped at 50 rows; the funnel must state the real total.
+  const [signalsTotal, setSignalsTotal] = useState(0);
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("signals");
   const [detecting, setDetecting] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -1224,10 +1230,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
-      const [signalsRes, entriesRes, documentsRes, evidenceRes] = await Promise.all([
+      const [signalsRes, signalsTotalRes, entriesRes, documentsRes, evidenceRes] = await Promise.all([
         supabase.from("strategic_signals")
           .select("*, signal_velocity, velocity_status, commercial_validation_score")
           .eq("status", "active").order("strength_score", { ascending: false, nullsFirst: false }).limit(50),
+        supabase.from("strategic_signals").select("id", { count: "exact", head: true })
+          .eq("user_id", user.id).eq("status", "active"),
         supabase.from("entries").select("id", { count: "exact", head: true }),
         supabase.from("documents").select("id", { count: "exact", head: true }),
         supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", user.id),
@@ -1242,6 +1250,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       setSignals(loaded);
       setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setEvidenceCount(evidenceRes.count || 0);
+      setSignalsTotal(signalsTotalRes.count ?? loaded.length);
       if (loaded.length > 0 && !selectedSignalId) setSelectedSignalId([...loaded].sort(byStrength)[0].id);
     } catch (e) {
       console.error("[IntelligenceTab]", e);
@@ -1313,7 +1322,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     const ids = dormantSignals.map(s => s.id);
     const { error } = await supabase.from("strategic_signals").update({ status: "archived" } as any).in("id", ids);
     if (error) { toast.error("Couldn't archive signals"); return; }
-    toast.success(`Archived ${ids.length} dormant signal${ids.length > 1 ? "s" : ""}`);
+    toast.success(`Archived ${nSignals(ids.length, "en")} that had gone dormant`);
     await loadSignals();
   };
 
@@ -1338,7 +1347,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
       const data = await invokeDetectPatterns(session.user.id);
-      toast.success(`Detected ${data.signals_created || 0} new signals`);
+      toast.success(`Detected ${nSignals(data.signals_created || 0, "en")}`);
       await loadSignals();
     } catch (e: any) { toast.error(e.message); }
     finally { setDetecting(false); }
@@ -1388,7 +1397,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
         {signals.length === 0 && <FirstVisitHint page="intelligence" />}
 
         {/* HEADER */}
-        <Header entryCount={entryCount} evidenceCount={evidenceCount} signalsCount={signals.length} />
+        <Header entryCount={entryCount} evidenceCount={evidenceCount} signalsCount={signalsTotal} />
 
         {/* TAB SWITCHER */}
         <div style={{
@@ -1398,7 +1407,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
         }}>
           {([
             { value: "signals" as const, label: "Signals" },
-            { value: "sources" as const, label: `Sources ${entryCount}` },
+            { value: "sources" as const, label: nCaptures(entryCount) },
           ]).map(t => {
             const active = activeSubTab === t.value;
             return (
@@ -1430,7 +1439,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                     <AlertTriangle size={12} /> FADING
                   </span>
                   <span style={{ fontSize: 12, color: "var(--glass-2)" }}>
-                    {fadingSignals.length} signal{fadingSignals.length > 1 ? "s" : ""} losing strength — new evidence in the next {daysUntilDormant(topFading.confidence)} days reverses the trend.
+                    {nSignals(fadingSignals.length, "en")} losing strength — new evidence in the next {daysUntilDormant(topFading.confidence)} days reverses the trend.
                   </span>
                   <button onClick={() => onOpenCapture?.()} style={{ background: "none", border: "none", color: "hsl(24 95% 53%)", fontSize: 12, fontWeight: 500, cursor: "pointer", padding: 0 }}>
                     Capture for "{topFading.signal_title}" →
@@ -1442,7 +1451,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
             {dormantSignals.length > 0 && (
               <div role="status" style={{ marginBottom: 16, padding: "12px 14px", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10, background: "var(--surface-ink-raised)" }}>
                 <div style={{ fontSize: 12, color: "var(--glass-2)", marginBottom: 8 }}>
-                  ◌ {dormantSignals.length} signal{dormantSignals.length > 1 ? "s have" : " has"} gone dormant (60+ days without new evidence).
+                  ◌ {nSignals(dormantSignals.length, "en")} {dormantSignals.length > 1 ? "have" : "has"} gone dormant (60+ days without new evidence).
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -1452,7 +1461,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Archive {dormantSignals.length} dormant signal{dormantSignals.length > 1 ? "s" : ""}?</AlertDialogTitle>
+                      <AlertDialogTitle>Archive {nSignals(dormantSignals.length, "en")} that went dormant?</AlertDialogTitle>
                       <AlertDialogDescription>Archived signals are removed from your active radar. You can still find them in your data.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -1469,11 +1478,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
               entryCount === 0 ? (
                 <EmptyState icon={Brain} title="Your radar is quiet"
                   description="The market isn't. Capture one article about your sector and watch Aura detect what others miss."
-                  ctaLabel="Capture your first source →" ctaAction={() => onOpenCapture?.()} />
+                  ctaLabel="Make your first capture →" ctaAction={() => onOpenCapture?.()} />
               ) : entryCount < 3 ? (
                 <EmptyState icon={Brain} title="Your radar is warming up"
-                  description={`Aura needs at least 3 captures to detect strategic patterns. You have ${entryCount}/3.`}
-                  ctaLabel="Capture another source →" ctaAction={() => onOpenCapture?.()} />
+                  description={`Aura reads every capture on its own and looks for a pattern in it. Nothing has formed yet from your ${nCaptures(entryCount)}.`}
+                  ctaLabel="Capture something else →" ctaAction={() => onOpenCapture?.()} />
               ) : (
                 <EmptyState icon={Brain} title="Your captures are being analysed"
                   description="Signals are forming — check back soon or try detecting patterns manually."
@@ -1543,11 +1552,10 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                           {s.signal_title}
                         </div>
                         <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
-                          {(() => {
-                            const ec = (s as any).evidenceCount ?? s.fragment_count ?? 0;
-                            const sc = (s as any).sourceCount ?? 0;
-                            return `${ec} piece${ec === 1 ? "" : "s"} of evidence · ${sc} source${sc === 1 ? "" : "s"}`;
-                          })()}
+                          {evidenceAndSources(
+                            (s as any).evidenceCount ?? s.fragment_count ?? 0,
+                            s.unique_orgs ?? 0,
+                          )}
                           {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
                         </div>
                       </div>
@@ -1653,11 +1661,13 @@ const Header = ({ entryCount, evidenceCount, signalsCount }: { entryCount: numbe
       What the market doesn't know you know.
     </p>
     <div data-testid="intel-stats" style={{ display: "inline-flex", alignItems: "center", gap: 0, background: "none", border: "none", flexWrap: "wrap", justifyContent: "center" }}>
-      {/* Funnel: Sources → Evidence → Signals */}
+      {/* Funnel: Captures → Evidence → Signals.
+          The first number is entries + documents — things the member saved —
+          so it is CAPTURES, never sources. Sources live in source_registry. */}
       {[
-        { val: entryCount, label: entryCount === 1 ? "source" : "sources", color: "var(--brand)" },
-        { val: evidenceCount, label: "evidence", color: "var(--info, var(--brand))" },
-        { val: signalsCount, label: signalsCount === 1 ? "signal" : "signals", color: "var(--info, var(--brand))" },
+        { val: entryCount, label: entryCount === 1 ? CAPTURE.noun : CAPTURE.nounPlural, color: "var(--brand)" },
+        { val: evidenceCount, label: EVIDENCE.Many.toLowerCase(), color: "var(--info, var(--brand))" },
+        { val: signalsCount, label: signalsCount === 1 ? SIGNAL.one : SIGNAL.many, color: "var(--info, var(--brand))" },
       ].map((s, i, arr) => (
         <div key={s.label} style={{ display: "inline-flex", alignItems: "center" }}>
           <div style={{

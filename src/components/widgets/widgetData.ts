@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { loadPostCounts, isPublishedPost } from "@/lib/postProvenance";
+import { CAPTURE, SIGNAL } from "@/constants/vocabulary";
 
 /**
  * widgetData — every number on the Widgets page and in the Home widget region
@@ -19,8 +20,8 @@ export interface WidgetDef {
 
 export const WIDGET_DEFS: WidgetDef[] = [
   { key: "language",     name: "Language balance", blurb: "Arabic and English across your published posts." },
-  { key: "rhythm",       name: "Capture rhythm",   blurb: "Consecutive weeks with at least one capture." },
-  { key: "quiet",        name: "Quiet signals",    blurb: "Active signals with no new evidence for 45+ days and nothing published against them." },
+  { key: "rhythm",       name: "Capture rhythm",   blurb: `Consecutive weeks with at least one ${CAPTURE.noun}.` },
+  { key: "quiet",        name: `Quiet ${SIGNAL.many}`,    blurb: `Active ${SIGNAL.many} with no new evidence for 45+ days and nothing published against them.` },
   { key: "drafts",       name: "Drafts waiting",   blurb: "Drafts you started and have not published yet." },
 ];
 
