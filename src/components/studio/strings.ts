@@ -144,9 +144,9 @@ export const T = {
   writeWithAngle: { en: "Write it with this angle", ar: "اكتبه بهذه الزاوية" },
 
   // Step 1 — choose
-  chooseHead: { en: "What is this post about?", ar: "عن ماذا يدور هذا المنشور؟" },
+  chooseHead: { en: "Top Signals you have?", ar: "عن ماذا يدور هذا المنشور؟" },
   chooseHelp: {
-    en: "These come from what you saved. Pick one, or type your own subject.",
+    en: "These come from what you saved. Pick one, or check other signals.",
     ar: "هذه من المواد التي حفظتها. اختر واحدة، أو اكتب موضوعك.",
   },
   sources: { en: "sources", ar: "مصدر" },
