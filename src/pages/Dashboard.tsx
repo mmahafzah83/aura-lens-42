@@ -159,12 +159,14 @@ const Dashboard = () => {
   /* Doors, not tabs: First Flight dims the group when none of its members is lit. */
   const isDoorDimmed = (g: typeof NAV_GROUPS[number]) =>
     isGroupDimmed(g, firstFlight.dimmedTabs, activeTab);
-  /* Clicking a door opens its primary member — unless the member you are on
-     already lives behind that door, in which case the click is a no-op. */
+  /* Clicking a door opens its primary member. The click is only a no-op when
+     you are ALREADY standing on that primary — sitting on a secondary member
+     (e.g. Library behind the Write door) must still move you to the primary. */
   const openDoor = (g: typeof NAV_GROUPS[number]) => {
-    if (isGroupActive(g, activeTab)) return;
+    if (activeTab === g.primary) return;
     switchTab(g.primary as TabValue);
   };
+
   const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
   const [showDiagnostic, setShowDiagnostic] = useState(false);
