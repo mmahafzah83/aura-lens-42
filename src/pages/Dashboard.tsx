@@ -522,6 +522,7 @@ const Dashboard = () => {
         sourceTitle: st.prefill_topic,
         contentFormat: "post",
         trendHeadline: st.prefill_topic,
+        origin: { surface: "trend", label: "From a market trend" },
       });
       setActiveTab("authority");
       // Clear router state so refresh doesn't re-prefill
