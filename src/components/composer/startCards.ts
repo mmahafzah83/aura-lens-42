@@ -3,15 +3,34 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * ZONE 1 — START.
  *
- * Ranks up to three honest starting points out of signals the user already has.
+ * Ranks up to five honest starting points out of signals the user already has.
  * Every number here comes from a row that exists. Nothing is invented, nothing
  * is padded: if a category has no qualifying row we simply do not emit a card.
  *
  * A post links to a signal through `linkedin_posts.source_metadata->'signal_ids'`.
  * (`source_type='signal'` is NOT a value that exists in this database.)
+ *
+ * ORDER — one preference, one default. "recommended" is the composite rule that
+ * has always been here; the other three are single-column orders the member can
+ * ask for. An unknown or missing preference is always "recommended".
  */
 
-export type StartCardKind = "new_evidence" | "accelerating" | "never_written";
+export type StartCardKind = "new_evidence" | "accelerating" | "never_written" | "steady";
+
+export type StartSort = "recommended" | "newest" | "most_evidence" | "never_written";
+
+export const START_SORTS: readonly StartSort[] = [
+  "recommended",
+  "newest",
+  "most_evidence",
+  "never_written",
+] as const;
+
+export const DEFAULT_START_SORT: StartSort = "recommended";
+
+export function asStartSort(v: unknown): StartSort {
+  return START_SORTS.includes(v as StartSort) ? (v as StartSort) : DEFAULT_START_SORT;
+}
 
 export interface StartCard {
   kind: StartCardKind;
@@ -21,12 +40,15 @@ export interface StartCard {
   /** Honest, human reason this signal is being suggested. */
   reason: string;
   insight: string;
+  /** True only when evidence landed after the last post on this subject. */
+  freshEvidence: boolean;
 }
 
 interface SignalRow {
   id: string;
   signal_title: string | null;
   fragment_count: number | null;
+  unique_orgs: number | null;
   strength_score: number | null;
   velocity_status: string | null;
   last_evidence_at: string | null;
@@ -41,6 +63,8 @@ const LIMIT = 5;
 const byStrength = (a: SignalRow, b: SignalRow) =>
   (b.strength_score ?? 0) - (a.strength_score ?? 0);
 
+const time = (v: string | null) => (v ? new Date(v).getTime() : 0);
+
 function insightOf(s: SignalRow) {
   return (s.what_it_means_for_you || s.explanation || "").trim();
 }
@@ -54,12 +78,15 @@ export interface StartZoneData {
   totalSignals: number;
 }
 
-export async function loadStartCards(userId: string): Promise<StartZoneData> {
+export async function loadStartCards(
+  userId: string,
+  sort: StartSort = DEFAULT_START_SORT,
+): Promise<StartZoneData> {
   const [{ data: sigData, error: sigError }, { data: postData, error: postError }] = await Promise.all([
     supabase
       .from("strategic_signals")
       .select(
-        "id, signal_title, fragment_count, strength_score, velocity_status, last_evidence_at, status, explanation, what_it_means_for_you"
+        "id, signal_title, fragment_count, unique_orgs, strength_score, velocity_status, last_evidence_at, status, explanation, what_it_means_for_you"
       )
       .eq("user_id", userId)
       .eq("status", "active"),
@@ -91,6 +118,12 @@ export async function loadStartCards(userId: string): Promise<StartZoneData> {
     }
   }
 
+  const isFresh = (s: SignalRow) => {
+    const lastPost = lastPostFor.get(s.id);
+    if (!lastPost || !s.last_evidence_at) return false;
+    return new Date(s.last_evidence_at) > new Date(lastPost);
+  };
+
   const used = new Set<string>();
   const cards: StartCard[] = [];
 
@@ -103,18 +136,53 @@ export async function loadStartCards(userId: string): Promise<StartZoneData> {
       fragmentCount: s.fragment_count ?? 0,
       reason,
       insight: insightOf(s),
+      freshEvidence: isFresh(s),
     });
   };
 
+  const newEvidence = signals.filter(isFresh).sort(byStrength);
+  const accelerating = signals.filter((s) => s.velocity_status === "accelerating").sort(byStrength);
+  const neverWritten = signals.filter((s) => !lastPostFor.has(s.id)).sort(byStrength);
+
+  /* ---------- the three single-column orders --------------------------- */
+  if (sort !== "recommended") {
+    const ordered = [...signals];
+    if (sort === "newest") {
+      ordered.sort((a, b) => time(b.last_evidence_at) - time(a.last_evidence_at) || byStrength(a, b));
+    } else if (sort === "most_evidence") {
+      ordered.sort(
+        (a, b) =>
+          (b.fragment_count ?? 0) - (a.fragment_count ?? 0) ||
+          (b.unique_orgs ?? 0) - (a.unique_orgs ?? 0) ||
+          byStrength(a, b),
+      );
+    } else {
+      ordered.sort((a, b) => {
+        const an = lastPostFor.has(a.id) ? 1 : 0;
+        const bn = lastPostFor.has(b.id) ? 1 : 0;
+        return an - bn || byStrength(a, b);
+      });
+    }
+
+    // The line under each title still says only what is true of that row.
+    for (const s of ordered.slice(0, LIMIT)) {
+      const n = s.fragment_count ?? 0;
+      if (!lastPostFor.has(s.id)) {
+        push(s, "never_written", `Not written about yet — ${n} sources behind it.`);
+      } else if (isFresh(s)) {
+        push(s, "new_evidence", `${n} sources now sit behind this — some of them landed after your last post on it.`);
+      } else if (s.velocity_status === "accelerating") {
+        push(s, "accelerating", `Picking up speed — ${n} sources and still climbing.`);
+      } else {
+        push(s, "steady", `Steady — ${n} sources behind it.`);
+      }
+    }
+    return { cards, totalSignals: signals.length };
+  }
+
+  /* ---------- recommended: the composite rule, unchanged --------------- */
+
   // 1 — New evidence since you wrote.
-  // Requires last_evidence_at to be non-null AND newer than the post that used it.
-  const newEvidence = signals
-    .filter((s) => {
-      const lastPost = lastPostFor.get(s.id);
-      if (!lastPost || !s.last_evidence_at) return false;
-      return new Date(s.last_evidence_at) > new Date(lastPost);
-    })
-    .sort(byStrength);
   if (newEvidence[0]) {
     const s = newEvidence[0];
     push(
@@ -125,20 +193,16 @@ export async function loadStartCards(userId: string): Promise<StartZoneData> {
   }
 
   // 2 — Accelerating this week.
-  const accelerating = signals
-    .filter((s) => s.velocity_status === "accelerating" && !used.has(s.id))
-    .sort(byStrength);
-  if (accelerating[0]) {
-    const s = accelerating[0];
+  const acceleratingLeft = accelerating.filter((s) => !used.has(s.id));
+  if (acceleratingLeft[0]) {
+    const s = acceleratingLeft[0];
     push(s, "accelerating", `Picking up speed — ${s.fragment_count ?? 0} sources and still climbing.`);
   }
 
   // 3 — Never written about.
-  const neverWritten = signals
-    .filter((s) => !lastPostFor.has(s.id) && !used.has(s.id))
-    .sort(byStrength);
-  if (neverWritten[0]) {
-    const s = neverWritten[0];
+  const neverWrittenLeft = neverWritten.filter((s) => !used.has(s.id));
+  if (neverWrittenLeft[0]) {
+    const s = neverWrittenLeft[0];
     push(s, "never_written", `Your strongest signal you have never posted about — ${s.fragment_count ?? 0} sources.`);
   }
 
