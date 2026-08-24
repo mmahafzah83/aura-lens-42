@@ -311,7 +311,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       baselineDate,
       themeMove,
     });
-  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum, baselineDate]);
+  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum, baselineDate, aliases]);
 
   const carriedOfShown = themeRows.filter((t) => t.match.state === "carried").length;
   const partialOfShown = themeRows.filter((t) => t.match.state === "partial").length;
