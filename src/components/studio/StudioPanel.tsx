@@ -1166,7 +1166,9 @@ export default function StudioPanel({
       // words the member already has. It is offered, at step 1, as a choice.
       if (contentRef.current.trim() || publishedRef.current) {
         setPendingSubject(arriving);
-        setPendingFormat(null);
+        // The format asked for travels WITH the subject. Discarding it here is
+        // how a carousel request used to turn into an ordinary post.
+        setPendingFormat(nextFormat);
         setStep(1);
       } else {
         startNewPiece({ choice: arriving, format: nextFormat });
@@ -2795,7 +2797,7 @@ export default function StudioPanel({
                 <ButtonPrimary
                   onClick={() => {
                     const next = pendingSubject;
-                    startNewPiece({ choice: next });
+                    startNewPiece({ choice: next, format: pendingFormat });
                   }}
                   style={{ minHeight: 44 }}
                 >
