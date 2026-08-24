@@ -484,7 +484,7 @@ const Dashboard = () => {
         }
 
         if (prefill) {
-          setDraftPrefill(prefill);
+          setDraftPrefill({ ...prefill, origin: originFromParams(params) });
           setActiveTab("authority");
         } else if (readError) {
           // The query itself failed. Never imply the work is gone.
@@ -505,6 +505,7 @@ const Dashboard = () => {
         const next = new URLSearchParams(window.location.search);
         next.delete("draft");
         next.delete("src");
+        next.delete("from");
         setSearchParams(next, { replace: true });
       })();
     }
