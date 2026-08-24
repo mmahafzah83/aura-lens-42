@@ -486,6 +486,41 @@ serve(withObserve("generate-authority-content", async (req) => {
       ? (registerIsArabic ? storedRegister : DEFAULT_REGISTER_AR)
       : (storedRegister && !registerIsArabic ? storedRegister : DEFAULT_REGISTER_EN);
 
+    /* Recovery only: hand back a draft a finished run already stored. It starts
+       no run and calls no model. */
+    if (action === "fetch_result") {
+      const wantedRunId = runIdFrom(params);
+      if (!wantedRunId) {
+        return new Response(JSON.stringify({ error: "run_id required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+      const { data: row } = await admin
+        .from("operation_runs")
+        .select("id, user_id, outcome, meta")
+        .eq("id", wantedRunId)
+        .maybeSingle();
+      if (!row) {
+        return new Response(JSON.stringify({ error: "not_found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (row.user_id && row.user_id !== effectiveUserId) {
+        return new Response(JSON.stringify({ error: "forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (row.outcome !== "ok") {
+        return new Response(JSON.stringify({ status: row.outcome ?? "pending" }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify((row.meta as any)?.result ?? {}), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "generate_content") {
       run = await startRun(undefined, { id: runIdFrom(params), operation: "studio_generate", user_id: effectiveUserId });
       run.mark(GATHER);
@@ -1260,8 +1295,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         contributions,
       };
 
-      await closeRun("ok");
-      return new Response(JSON.stringify({
+      /* The draft is built ONCE and persisted on the run row before it is
+         returned, so a client whose connection dropped can still recover it. */
+      const resultPayload = {
         content,
         success: true,
         provenance,
@@ -1280,9 +1316,14 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         unsourced_entity_values: unsourcedEntities,
         warnings,
         integrity_issues: integrity.ok ? [] : integrity.issues,
-      }), {
+      };
+
+      await run?.finish({ outcome: "ok", meta: { result: resultPayload } });
+      run = null;
+      return new Response(JSON.stringify(resultPayload), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+
     }
 
     if (action === "extract_card_content") {
