@@ -455,7 +455,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
               style={{ marginTop: 4, fontSize: 12, fontWeight: 600 }}
               className="v23-textlink v23-tap"
             >
-              See all {nSignals(totalSignals)} →
+              See all {nSignals(totalSignals, "en")} →
             </a>
           )}
 

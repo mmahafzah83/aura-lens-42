@@ -59,6 +59,11 @@ const LITERAL_PATTERNS = [
 const JSX_PATTERN = new RegExp(
   String.raw`(?<![=\w])\{[^{}=]{0,80}\}\s*(?:[A-Za-z']+\s+){0,2}${NOUN}\b`, "i");
 
+/** A brace whose expression already calls the dictionary is the CORRECT shape —
+ *  `{nSources(n, lang)} behind this signal` is what the gate is asking for, so
+ *  it must never be reported as a hand-written count. */
+const FROM_DICTIONARY = /\b(?:nSources|nCaptures|nEvidence|nSignals|evidenceAndSources|sourceCount(?:En|Ar)|captureCount(?:En|Ar)|evidenceCount(?:En|Ar)|signalCount(?:En|Ar)|cardCounts)\s*\(/;
+
 /** Literals that are plainly code, not prose. */
 const CODE_LIKE = /^(?:[\w./@-]*)$|var\(|--|px|%|hsl|rgb|#[0-9a-f]{3}/i;
 
@@ -77,6 +82,7 @@ function findHit(rawLine) {
     .replace(/className=\{[^}]*\}/g, " ")
     .replace(/className="[^"]*"/g, " ")
     .replace(/class="[^"]*"/g, " ");
+  if (FROM_DICTIONARY.test(line)) return null;
   for (const lit of literalsOf(line)) {
     if (lit.length < 4 || CODE_LIKE.test(lit)) continue;
     for (const re of LITERAL_PATTERNS) {

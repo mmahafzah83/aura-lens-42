@@ -204,7 +204,7 @@ export function useReadChips(userId: string | null | undefined, facts: HomeFacts
   if (profile?.linkedin || facts?.linkedin_connected) chips.push({ key: "li", label: "Your LinkedIn" });
   if (profile && profile.answers > 0) chips.push({ key: "as", label: `${profile.answers} answers` });
   if (profile?.calibrated) chips.push({ key: "cal", label: "Your calibration" });
-  if (facts?.fragments_total) chips.push({ key: "fr", label: nEvidence(facts.fragments_total) });
+  if (facts?.fragments_total) chips.push({ key: "fr", label: nEvidence(facts.fragments_total, "en") });
   if (facts?.distinct_sources) chips.push({ key: "src", label: `${facts.distinct_sources} sources` });
   return { chips, failed, refresh };
 }

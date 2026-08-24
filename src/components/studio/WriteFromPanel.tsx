@@ -5,16 +5,19 @@
  * from: how much evidence, how many sources, how confident, and — if they ask
  * for it — the individual sources behind the signal.
  *
- * TWO NUMBERS, NOT THREE. The stat line states pieces of evidence and sources.
- * The expandable toggle names the SAME source number it reveals, so every
- * number on screen traces back to one already stated.
+ * THE RULE, restored: the number next to a control that reveals a list IS the
+ * length of the list that will be revealed. "See the 4 sources behind this"
+ * opens four rows. Round 1 established this; it stands.
  *
- * ONE TRUTH FOR THE NUMBER: the stated source count is `unique_orgs`, the same
- * field the signals list and the confirm screen read, so three surfaces can no
- * longer disagree. The expandable LIST still fetches real rows — chunked, so a
- * long id list fits in one URL — because members must see the actual readings.
- * If the readable rows ever disagree with `unique_orgs` we log it rather than
- * quietly reshaping the number.
+ * TWO NUMBERS, NOT THREE. The stat line states pieces of evidence (from
+ * `fragment_count` — nothing reveals that list here) and sources (from the rows
+ * themselves). The toggle names the SAME source number it reveals.
+ *
+ * The rows come from `loadSignalSources`, whose dedupe key is byte-for-byte the
+ * reconciler's `COALESCE(sr.source_id, sr.id)` over an INNER JOIN — so
+ * `rows.length` and `unique_orgs` are two computations of one rule and must
+ * agree. `warnIfDrifted` is therefore a real invariant alarm, not a display
+ * choice: if it fires, the data drifted.
  *
  * Never throws: any failure renders nothing.
  */
@@ -22,22 +25,16 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
 import { nEvidence, nSources } from "@/constants/vocabulary";
+import { loadSignalSources, warnIfDrifted, type SignalSourceRow } from "@/lib/signalSources";
 
 type Lang = "en" | "ar";
-
-interface FragmentRow {
-  id: string;
-  title: string;
-  created_at: string;
-  source_label: string;
-}
 
 interface Loaded {
   meaning: string;
   confPct: number;
   fragCount: number;
   sourceCount: number;
-  fragments: FragmentRow[];
+  sources: (SignalSourceRow & { source_label: string })[];
 }
 
 const COPY = {
@@ -55,18 +52,11 @@ const COPY = {
   none: { en: "No sources linked to this one yet.", ar: "لا توجد مصادر مرتبطة بهذا بعد." },
   yourCapture: { en: "Your capture", ar: "من التقاطك" },
   extracted: { en: "Extracted", ar: "مُستخرج" },
+  untitled: { en: "Untitled source", ar: "مصدر بلا عنوان" },
 };
 
 /** How many source rows sit inline before the one "show the other n" control. */
 const INLINE_ROWS = 8;
-/** Ids per request — keeps a long `.in()` list inside a safe URL length. */
-const CHUNK = 150;
-
-function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
 
 export default function WriteFromPanel({ signalId, lang }: { signalId: string | null; lang: Lang }) {
   const [data, setData] = useState<Loaded | null>(null);
@@ -96,99 +86,22 @@ export default function WriteFromPanel({ signalId, lang }: { signalId: string | 
 
         const s: any = sig;
         const ids: string[] = Array.isArray(s.supporting_evidence_ids) ? s.supporting_evidence_ids.map(String) : [];
-        const fragments: FragmentRow[] = [];
-
-        if (ids.length) {
-          // Every supporting fragment, not the first 20 — the cut used to happen
-          // before dedup, which is what made the revealed count a third number.
-          const fs: any[] = [];
-          for (const part of chunk(ids, CHUNK)) {
-            const { data: frags } = await supabase
-              .from("evidence_fragments")
-              .select("id, title, content, created_at, source_registry_id")
-              .in("id", part)
-              .order("created_at", { ascending: false });
-            fs.push(...((frags || []) as any[]));
-          }
-          fs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-          const regIds = Array.from(new Set(fs.map(f => f.source_registry_id).filter(Boolean)));
-          const regMap = new Map<string, any>();
-          const entryMap = new Map<string, any>();
-          for (const part of chunk(regIds, CHUNK)) {
-            const sr = await supabase.from("source_registry" as any).select("id, source_type, source_id, title").in("id", part);
-            (sr.data || []).forEach((r: any) => regMap.set(r.id, r));
-          }
-          const entryIds = Array.from(new Set(
-            Array.from(regMap.values())
-              .filter((r: any) => r.source_type === "entry" && r.source_id)
-              .map((r: any) => r.source_id),
-          ));
-          for (const part of chunk(entryIds as string[], CHUNK)) {
-            const ents = await supabase.from("entries").select("id, title, type, account_name").in("id", part);
-            (ents.data || []).forEach((e: any) => entryMap.set(e.id, e));
-          }
-
-          const seen = new Set<string>();
-          for (const f of fs) {
-            const reg = f.source_registry_id ? regMap.get(f.source_registry_id) : null;
-            let kind: "capture" | "aura" | "unknown" = "unknown";
-            let label = f.title || (rtl ? "مصدر بلا عنوان" : "Untitled source");
-            // A fragment with no readable registry row is still a source the
-            // signal stands on — it keeps its own identity instead of being
-            // silently dropped or folded into someone else's row.
-            let key = f.id;
-            if (reg) {
-              key = reg.id;
-              if (reg.source_type === "entry" && reg.source_id) {
-                const ent = entryMap.get(reg.source_id);
-                if (ent) {
-                  const isAura = (ent.account_name || "").toLowerCase().includes("aura")
-                    || (ent.type || "").toLowerCase().includes("onboarding")
-                    || (ent.type || "").toLowerCase().includes("exa");
-                  kind = isAura ? "aura" : "capture";
-                  label = ent.title || reg.title || label;
-                  key = reg.source_id;
-                } else {
-                  label = reg.title || label;
-                }
-              } else if (reg.source_type === "document") {
-                kind = "capture";
-                label = reg.title || label;
-              } else {
-                label = reg.title || label;
-              }
-            }
-            if (seen.has(key)) continue;
-            seen.add(key);
-            fragments.push({
-              id: f.id,
-              title: label,
-              created_at: f.created_at,
-              source_label: kind === "aura" ? COPY.extracted[lang] : COPY.yourCapture[lang],
-            });
-          }
-        }
-
+        const rows = await loadSignalSources(ids, COPY.untitled[lang]);
         if (cancelled) return;
+
         setData({
           meaning: String(s.what_it_means_for_you || "").trim() || String(s.strategic_implications || "").trim(),
           confPct: Math.round(Number(s.confidence || 0) * 100),
           fragCount: Number(s.fragment_count ?? ids.length ?? 0),
-          // unique_orgs is the one truth for "sources behind this signal" — the
-          // reconciler keeps it exact for every signal of every status, so the
-          // confirm screen, the signals list and this panel all state it.
-          sourceCount: Number(s.unique_orgs ?? 0) || fragments.length,
-          fragments,
+          // The number we state is the number we can show.
+          sourceCount: rows.length,
+          sources: rows.map(r => ({
+            ...r,
+            source_label: r.kind === "aura" ? COPY.extracted[lang] : COPY.yourCapture[lang],
+          })),
         });
         setLoadedFor(signalId);
-        const stated = Number(s.unique_orgs ?? 0) || fragments.length;
-        if (stated !== fragments.length) {
-          // Never papered over: if the rows we can read disagree with the
-          // stamped count, that is a real discrepancy worth seeing.
-          console.warn("[WriteFromPanel] unique_orgs disagrees with readable sources",
-            { signalId, unique_orgs: stated, readable: fragments.length });
-        }
+        warnIfDrifted("WriteFromPanel", signalId, rows.length, Number(s.unique_orgs ?? 0));
       } catch (e) {
         console.warn("[WriteFromPanel] load failed", e);
         if (!cancelled) { setData(null); setLoadedFor(signalId); }
@@ -206,7 +119,7 @@ export default function WriteFromPanel({ signalId, lang }: { signalId: string | 
     background: "var(--surface-subtle)",
     border: "1px solid var(--border-default)",
     textAlign: rtl ? "right" : "left",
-    ...(rtl ? { fontFamily: "'Cairo', 'Inter', system-ui, sans-serif", lineHeight: 1.9 } : null),
+    ...(rtl ? { fontFamily: "var(--ff-ui)", lineHeight: 1.9 } : null),
   };
 
   if (loading && !data) {
@@ -221,20 +134,21 @@ export default function WriteFromPanel({ signalId, lang }: { signalId: string | 
 
   if (!data) return null;
 
-  const { meaning, confPct, fragCount, sourceCount, fragments } = data;
-  const shown = expanded ? fragments : fragments.slice(0, INLINE_ROWS);
-  const rest = fragments.length - shown.length;
+  const { meaning, confPct, fragCount, sourceCount, sources } = data;
+  const shown = expanded ? sources : sources.slice(0, INLINE_ROWS);
+  // Reconciles against the number stated on the toggle: shown + rest = sourceCount.
+  const rest = sourceCount - shown.length;
 
   const countLine = rtl
     ? `${nEvidence(fragCount, "ar")} من ${nSources(sourceCount, "ar")}. الثقة: ${confPct}%.`
-    : `${nEvidence(fragCount)} from ${nSources(sourceCount)}. Confidence: ${confPct}%.`;
+    : `${nEvidence(fragCount, "en")} from ${nSources(sourceCount, "en")}. Confidence: ${confPct}%.`;
 
   return (
     <div dir={rtl ? "rtl" : undefined} style={shell}>
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8 }}>
-        <span style={{ width: 5, height: 5, borderRadius: 999, background: "#00CEC9", flex: "0 0 auto" }} />
+        <span style={{ width: 5, height: 5, borderRadius: 999, background: "var(--machine)", flex: "0 0 auto" }} />
         <span style={{
-          fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+          fontFamily: "var(--ff-mono)",
           fontSize: 10, fontWeight: 600, letterSpacing: ".14em", textTransform: "uppercase",
           color: "var(--text-secondary)",
         }}>
@@ -275,7 +189,7 @@ export default function WriteFromPanel({ signalId, lang }: { signalId: string | 
 
         {open && (
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-            {fragments.length === 0 ? (
+            {sources.length === 0 ? (
               <span style={{ fontFamily: "var(--ff-ui)", fontSize: 12, color: "var(--text-secondary)" }}>
                 {COPY.none[lang]}
               </span>
@@ -303,7 +217,7 @@ export default function WriteFromPanel({ signalId, lang }: { signalId: string | 
                     </span>
                     <span style={{
                       color: "var(--text-secondary)", flex: "0 0 auto",
-                      fontFamily: "'IBM Plex Mono', ui-monospace, monospace", fontSize: 11,
+                      fontFamily: "var(--ff-mono)", fontSize: 11,
                     }}>
                       {formatSmartDate(f.created_at)}
                     </span>

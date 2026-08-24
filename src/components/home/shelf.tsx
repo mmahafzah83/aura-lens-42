@@ -179,7 +179,7 @@ export const OwnCard: React.FC<{
         }}>
           <span style={{ fontSize: 13.5, color: "var(--text-primary)" }}>{t.title}</span>
           <span style={{ ...MONO, fontSize: 12, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-            {nEvidence(t.fragments)} · {velocityWord(t.velocity)} this week
+            {nEvidence(t.fragments, "en")} · {velocityWord(t.velocity)} this week
           </span>
         </div>
       ))}
@@ -208,7 +208,7 @@ export const NightCard: React.FC<{ facts: HomeFacts | null; onOpen: () => void }
         {ln ? (
           <>
             <Body>Read {ln.sources_read} {ln.sources_read === 1 ? "source" : "sources"}.</Body>
-            <Body>Strengthened {nSignals(ln.themes_strengthened)}.</Body>
+            <Body>Strengthened {nSignals(ln.themes_strengthened, "en")}.</Body>
             <Body>
               {ln.drafts_written > 0
                 ? `Wrote ${ln.drafts_written} draft${ln.drafts_written === 1 ? "" : "s"}.`

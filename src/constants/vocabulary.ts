@@ -123,20 +123,22 @@ export function signalCountEn(n: number): string {
 
 // ── the four formatters every surface calls ────────────────────────────────
 //
-// `lang` defaults to English so English-only surfaces stay a one-argument call.
+// `lang` is REQUIRED. A forgotten argument used to render English silently on
+// an Arabic surface with no type error; now the compiler catches it. An
+// English-only surface passes "en" explicitly, which is honest about its state.
 
-export const nCaptures = (n: number, lang: VocabLang = "en"): string =>
+export const nCaptures = (n: number, lang: VocabLang): string =>
   lang === "ar" ? captureCountAr(n) : captureCountEn(n);
 
-export const nSources = (n: number, lang: VocabLang = "en"): string =>
+export const nSources = (n: number, lang: VocabLang): string =>
   lang === "ar" ? sourceCountAr(n) : sourceCountEn(n);
 
-export const nEvidence = (n: number, lang: VocabLang = "en"): string =>
+export const nEvidence = (n: number, lang: VocabLang): string =>
   lang === "ar" ? evidenceCountAr(n) : evidenceCountEn(n);
 
-export const nSignals = (n: number, lang: VocabLang = "en"): string =>
+export const nSignals = (n: number, lang: VocabLang): string =>
   lang === "ar" ? signalCountAr(n) : signalCountEn(n);
 
 /** Evidence and sources in one line — the pair every signal surface states. */
-export const evidenceAndSources = (evidence: number, sources: number, lang: VocabLang = "en"): string =>
+export const evidenceAndSources = (evidence: number, sources: number, lang: VocabLang): string =>
   `${nEvidence(evidence, lang)} · ${nSources(sources, lang)}`;

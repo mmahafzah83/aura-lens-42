@@ -1164,7 +1164,7 @@ const SourcesSubTab = ({
                           onClick={(ev) => { ev.stopPropagation(); onSwitchToSignal(madeOf[0].id); }}
                           style={{ background: "none", border: "none", padding: 0, marginTop: 6, cursor: "pointer", color: "var(--brand)", fontSize: 12, fontWeight: 500, textAlign: "left", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                         >
-                          → strengthened: {madeOf[0].title} ({nSources(madeOf[0].sources)})
+                          → strengthened: {madeOf[0].title} ({nSources(madeOf[0].sources, "en")})
                           {madeOf.length > 1 ? ` and ${madeOf.length - 1} more` : ""}
                         </button>
                       )}

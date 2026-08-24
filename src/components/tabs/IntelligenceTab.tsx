@@ -8,6 +8,7 @@ import {
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { nCaptures, nEvidence, nSources, nSignals, evidenceAndSources, CAPTURE, EVIDENCE, SIGNAL } from "@/constants/vocabulary";
+import { loadSignalSources, warnIfDrifted, type SignalSourceRow } from "@/lib/signalSources";
 import { toast } from "sonner";
 // Sources now live in the Library tab.
 import SectionError from "@/components/ui/section-error";
@@ -112,15 +113,6 @@ export interface Signal {
   commercial_validation_score?: number | null;
   lifecycle_tier?: "live" | "evergreen" | "emerging" | "faded" | null;
   strength_score?: number | null;
-}
-
-interface EvidenceFragmentRow {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  source_kind?: "capture" | "aura" | "unknown";
-  source_label?: string;
 }
 
 /* ── Helpers ── */
@@ -339,7 +331,7 @@ const TerritoryPanel = ({
                 border: isSelected ? "0.5px solid var(--brand-muted, var(--surface-ink-subtle))" : "0.5px solid var(--surface-ink-subtle)",
                 borderLeft: isSelected ? "3px solid var(--brand)" : "3px solid transparent",
                 borderRadius: 8,
-                background: isSelected ? "hsl(var(--muted) / 0.35)" : "transparent",
+                background: isSelected ? "var(--surface-subtle)" : "transparent",
                 cursor: "pointer",
                 transition: "background .15s",
                 width: "100%",
@@ -398,75 +390,45 @@ export const SignalHero = ({
   onDraft: (s: Signal) => void;
   onOpenChat?: (msg?: string) => void;
 }) => {
-  const [evidence, setEvidence] = useState<EvidenceFragmentRow[]>([]);
+  /**
+   * THE LIST IS A LIST OF SOURCES, and now it says so.
+   *
+   * The rows were always sources: the old code deduped fragments onto their
+   * registry row and labelled each row "Your capture" / "Extracted" — one row
+   * per source, never per piece of evidence. It then stated `fragment_count`
+   * next to the toggle, so a signal with 40 pieces of evidence across 5 sources
+   * promised 40 and revealed 5, with the wrong noun on both.
+   *
+   * Decision: keep it a SOURCES list. It answers the question members actually
+   * ask of a signal — "who says so?" — and it is the same list, from the same
+   * loader, that the composer's confirm screen reveals. The stated number is
+   * therefore the revealed row count, and the noun is "sources".
+   */
+  const [sources, setSources] = useState<SignalSourceRow[]>([]);
   const [showEvidence, setShowEvidence] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      if (!signal.supporting_evidence_ids?.length) { setEvidence([]); return; }
-      const { data: frags } = await supabase
-        .from("evidence_fragments")
-        .select("id, title, content, created_at, source_registry_id")
-        .in("id", signal.supporting_evidence_ids)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      const fs = (frags || []) as any[];
-      const regIds = Array.from(new Set(fs.map(f => f.source_registry_id).filter(Boolean)));
-      let regMap = new Map<string, any>();
-      let entryMap = new Map<string, any>();
-      if (regIds.length) {
-        const sr = await supabase.from("source_registry" as any).select("id, source_type, source_id, title").in("id", regIds);
-        (sr.data || []).forEach((r: any) => regMap.set(r.id, r));
-        const entryIds = Array.from(new Set((sr.data || []).filter((r: any) => r.source_type === "entry" && r.source_id).map((r: any) => r.source_id)));
-        if (entryIds.length) {
-          const ents = await supabase.from("entries").select("id, title, type, account_name").in("id", entryIds);
-          (ents.data || []).forEach((e: any) => entryMap.set(e.id, e));
-        }
-      }
-      const seen = new Set<string>();
-      const out: EvidenceFragmentRow[] = [];
-      for (const f of fs) {
-        const reg = f.source_registry_id ? regMap.get(f.source_registry_id) : null;
-        let kind: "capture" | "aura" | "unknown" = "unknown";
-        let label = f.title || "Untitled source";
-        let key = f.id;
-        if (reg) {
-          key = reg.id;
-          if (reg.source_type === "entry" && reg.source_id) {
-            const ent = entryMap.get(reg.source_id);
-            if (ent) {
-              const isAura = (ent.account_name || "").toLowerCase().includes("aura") || (ent.type || "").toLowerCase().includes("onboarding") || (ent.type || "").toLowerCase().includes("exa");
-              kind = isAura ? "aura" : "capture";
-              label = ent.title || reg.title || label;
-              key = reg.source_id;
-            }
-          } else if (reg.source_type === "document") {
-            kind = "capture"; label = reg.title || label;
-          }
-        }
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push({
-          id: f.id, title: label, content: f.content, created_at: f.created_at,
-          source_kind: kind,
-          source_label: kind === "aura" ? "Extracted" : "Your capture",
-        });
-      }
-      setEvidence(out);
+      const rows = await loadSignalSources(signal.supporting_evidence_ids || []);
+      if (cancelled) return;
+      setSources(rows);
+      warnIfDrifted("IntelligenceTab/SignalHero", signal.id, rows.length, signal.unique_orgs ?? 0);
     })();
-  }, [signal.id]);
+    return () => { cancelled = true; };
+  }, [signal.id, signal.supporting_evidence_ids, signal.unique_orgs]);
 
   const confPct = Math.round(signal.confidence * 100);
   // unique_orgs counts distinct source_registry rows — sources, not firms.
   const orgs = signal.unique_orgs ?? 0;
   const fragCount = signal.fragment_count ?? (signal as any).evidenceCount ?? 0;
-  // unique_orgs is the one truth for "sources behind this signal" — the
-  // reconciler keeps it exact for every signal of every status.
-  const sourceCount = signal.unique_orgs ?? 0;
+  // The number we state is the number we can show: these are the rows the
+  // toggle below reveals. `warnIfDrifted` shouts if they part from unique_orgs.
+  const sourceCount = sources.length;
   const isRising = signal.velocity_status === "accelerating";
   const isFading = signal.velocity_status === "fading";
   const velText = isRising ? "and rising" : isFading ? "and fading" : "and stable";
-  const velColor = isRising ? "var(--success, hsl(140 60% 45%))" : isFading ? "hsl(24 95% 53%)" : "var(--glass-2)";
+  const velColor = isRising ? "var(--pos-text, var(--machine-text))" : isFading ? "var(--warning-text)" : "var(--glass-2)";
 
   return (
     <section style={{ marginTop: 32, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
@@ -492,8 +454,8 @@ export const SignalHero = ({
       </h2>
 
       <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.7, margin: "0 0 20px" }}>
-        You've captured <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{nEvidence(fragCount)}</strong> from{" "}
-        <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{nSources(sourceCount)}</strong>.{" "}
+        You've captured <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{nEvidence(fragCount, "en")}</strong> from{" "}
+        <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{nSources(sourceCount, "en")}</strong>.{" "}
         Confidence: <strong style={{ color: "var(--brand)", fontWeight: 500 }}>{confPct}%</strong>
         <InfoTooltip
           label="Confidence"
@@ -546,14 +508,14 @@ export const SignalHero = ({
           }}
         >
           <Layers size={12} />
-          See the evidence behind this signal ({nEvidence(fragCount)})
+          See the {nSources(sourceCount, "en")} behind this signal
           <ChevronDown size={12} style={{ transform: showEvidence ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
         </button>
         {showEvidence && (
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-            {evidence.length === 0 ? (
-              <p style={{ fontSize: 12, color: "var(--glass-2)" }}>No evidence linked yet.</p>
-            ) : evidence.map(f => (
+            {sources.length === 0 ? (
+              <p style={{ fontSize: 12, color: "var(--glass-2)" }}>No sources linked yet.</p>
+            ) : sources.map(f => (
               <div key={f.id} style={{
                 display: "flex", gap: 10, padding: "8px 12px",
                 background: "var(--surface-ink-raised)", borderRadius: 8,
@@ -561,7 +523,9 @@ export const SignalHero = ({
                 alignItems: "center", fontSize: 12,
               }}>
                 <span style={{ flex: 1, color: "var(--glass-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.title}</span>
-                <span style={{ color: "var(--glass-2)", textTransform: "uppercase", letterSpacing: 0.4, fontSize: 10 }}>{f.source_label}</span>
+                <span style={{ color: "var(--glass-2)", textTransform: "uppercase", letterSpacing: 0.4, fontSize: 10 }}>
+                  {f.kind === "aura" ? "Extracted" : "Your capture"}
+                </span>
                 <span style={{ color: "var(--glass-2)" }}>{relativeTime(f.created_at)}</span>
               </div>
             ))}
@@ -905,7 +869,7 @@ export const TierSection = ({
           marginTop: 8,
           display: "flex", flexDirection: "column", gap: 1,
           borderRadius: "var(--radius, 8px)", overflow: "hidden",
-          border: "0.5px solid hsl(var(--border))",
+          border: "0.5px solid var(--rule-outer)",
         }}>
           {signals.map(renderRow)}
         </div>
@@ -1127,8 +1091,8 @@ export const EditorialReadingList = ({
                     onClick={() => onOpenCapture?.(rec.url || undefined, undefined, sourceKey)}
                     disabled={captured}
                     style={{
-                      background: captured ? "hsl(var(--muted) / 0.5)" : "var(--brand)",
-                      color: captured ? "hsl(var(--muted-foreground))" : "#fff", border: "none",
+                      background: captured ? "var(--surface-subtle)" : "var(--brand)",
+                      color: captured ? "var(--text-secondary)" : "var(--action-ink)", border: "none",
                       borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500,
                       cursor: captured ? "default" : "pointer",
                       opacity: captured ? 0.85 : 1,
@@ -1407,7 +1371,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
         }}>
           {([
             { value: "signals" as const, label: "Signals" },
-            { value: "sources" as const, label: nCaptures(entryCount) },
+            { value: "sources" as const, label: nCaptures(entryCount, "en") },
           ]).map(t => {
             const active = activeSubTab === t.value;
             return (
@@ -1433,15 +1397,15 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
           <>
             {/* Alerts */}
             {fadingSignals.length > 0 && topFading && (
-              <div role="status" style={{ marginBottom: 16, paddingTop: 14, paddingBottom: 14, borderTop: "0.5px solid hsl(24 95% 53% / 0.3)", borderBottom: "0.5px solid hsl(24 95% 53% / 0.3)" }}>
+              <div role="status" style={{ marginBottom: 16, paddingTop: 14, paddingBottom: 14, borderTop: "0.5px solid var(--warning-line, var(--warning-text))", borderBottom: "0.5px solid var(--warning-line, var(--warning-text))" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "hsl(24 95% 53%)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--warning-text)", display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <AlertTriangle size={12} /> FADING
                   </span>
                   <span style={{ fontSize: 12, color: "var(--glass-2)" }}>
                     {nSignals(fadingSignals.length, "en")} losing strength — new evidence in the next {daysUntilDormant(topFading.confidence)} days reverses the trend.
                   </span>
-                  <button onClick={() => onOpenCapture?.()} style={{ background: "none", border: "none", color: "hsl(24 95% 53%)", fontSize: 12, fontWeight: 500, cursor: "pointer", padding: 0 }}>
+                  <button onClick={() => onOpenCapture?.()} style={{ background: "none", border: "none", color: "var(--warning-text)", fontSize: 12, fontWeight: 500, cursor: "pointer", padding: 0 }}>
                     Capture for "{topFading.signal_title}" →
                   </button>
                 </div>
@@ -1481,7 +1445,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                   ctaLabel="Make your first capture →" ctaAction={() => onOpenCapture?.()} />
               ) : entryCount < 3 ? (
                 <EmptyState icon={Brain} title="Your radar is warming up"
-                  description={`Aura reads every capture on its own and looks for a pattern in it. Nothing has formed yet from your ${nCaptures(entryCount)}.`}
+                  description={`Aura reads every capture on its own and looks for a pattern in it. Nothing has formed yet from your ${nCaptures(entryCount, "en")}.`}
                   ctaLabel="Capture something else →" ctaAction={() => onOpenCapture?.()} />
               ) : (
                 <EmptyState icon={Brain} title="Your captures are being analysed"
@@ -1540,21 +1504,22 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                         gap: 12,
                         alignItems: "center",
                         padding: "12px 16px",
-                        background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
+                        background: selectedSignalId === s.id ? "var(--surface-subtle)" : "var(--surface-card)",
                         cursor: "pointer",
                         transition: "background 0.15s",
                       }}
-                      onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
-                      onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
+                      onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "var(--surface-subtle)"; }}
+                      onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "var(--surface-card)"; }}
                     >
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
                           {s.signal_title}
                         </div>
-                        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
                           {evidenceAndSources(
                             (s as any).evidenceCount ?? s.fragment_count ?? 0,
                             s.unique_orgs ?? 0,
+                            "en",
                           )}
                           {s.velocity_status && s.velocity_status !== "stable" && ` · ${s.velocity_status}`}
                         </div>
@@ -1572,8 +1537,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                             padding: "4px 10px",
                             borderRadius: "var(--radius, 6px)",
                             background: "none",
-                            border: "0.5px solid hsl(var(--border))",
-                            color: "hsl(var(--muted-foreground))",
+                            border: "0.5px solid var(--rule-outer)",
+                            color: "var(--text-secondary)",
                             cursor: "pointer",
                             whiteSpace: "nowrap",
                           }}
