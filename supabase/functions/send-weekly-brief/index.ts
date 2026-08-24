@@ -107,7 +107,7 @@ function buildHtml(opts: BuildHtmlOpts): string {
 
   if (readyPost) {
     const readyHref = appendParams(`${APP_URL}/home`, {
-      tab: "authority", draft: readyPost.id, src: "content_items", email: opts.emailParam,
+      tab: "authority", draft: readyPost.id, src: "content_items", email: opts.emailParam, from: "weekly_brief",
     });
     rows.push(row(`
       ${label("Your post is ready")}
