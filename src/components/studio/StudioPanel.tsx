@@ -401,17 +401,12 @@ export default function StudioPanel({
   const [draftSource, setDraftSource] = useState<"content_items" | "linkedin_posts" | null>(null);
   const [drafts, setDrafts] = useState<StudioDraft[]>([]);
   const [draftsLoading, setDraftsLoading] = useState(true);
-  /** All active subjects, loaded only when the member asks to see them. */
-  const [allSignals, setAllSignals] = useState<Array<{ id: string; title: string; insight: string }>>([]);
-  const [showAllSubjects, setShowAllSubjects] = useState(false);
   /* Step 1 secondaries — collapsed by default, never above the subjects. */
   // Posture is a SILENT default only: the author simply arrives with their own
   // words already open. The controls are identical for everyone.
   const [showPaste, setShowPaste] = useState(() => readStoredPosture() === "author");
+  // The pile stays CLOSED until the member asks for it.
   const [showDrafts, setShowDrafts] = useState(false);
-  // Finished work must never hide behind a collapsed link: open the list the
-  // moment drafts arrive.
-  const draftsOpened = useRef(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
   /* The reading generation already took, held only for display. */
@@ -965,9 +960,8 @@ export default function StudioPanel({
       setCards(rows);
       setTotalSignals(total);
       setCardsLoading(false);
-      // Ranked nothing, but the shelf is not empty: open the shelf so the
-      // member sees the subjects they actually have.
-      if (rows.length === 0 && total > 0) setShowAllSubjects(true);
+      // Ranked nothing, but the shelf is not empty: the whole shelf lives in
+      // Signals, and the handoff link below the cards points there.
       // First entry only. Changing posture later never overwrites a subject
       // the member has already chosen.
       if (!preselectedRef.current && posture === "delegator" && rows[0]) {
@@ -1089,10 +1083,6 @@ export default function StudioPanel({
    */
   const delegatorPreparedRef = useRef(false);
   useEffect(() => {
-    if (draftsLoading || draftsOpened.current) return;
-    if (drafts.length > 0) { draftsOpened.current = true; setShowDrafts(true); }
-  }, [draftsLoading, drafts.length]);
-  useEffect(() => {
     // Leaving the posture arms the preparation again, so returning to it over
     // an empty piece prepares once more.
     if (posture !== "delegator") { delegatorPreparedRef.current = false; return; }
@@ -1194,32 +1184,6 @@ export default function StudioPanel({
     }
     onSignalPrefillConsumed?.();
   }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
-
-  /* Every subject, on request. The three ranked cards are a shortcut, not a cap. */
-  useEffect(() => {
-    if (!showAllSubjects || !userId || allSignals.length > 0) return;
-    let dead = false;
-    (async () => {
-      const { data } = await supabase
-        .from("strategic_signals")
-        .select("id, signal_title, explanation, what_it_means_for_you, strength_score")
-        .eq("user_id", userId)
-        .eq("status", "active")
-        .order("strength_score", { ascending: false })
-        .limit(200);
-      if (dead) return;
-      setAllSignals(
-        ((data as any[]) || [])
-          .filter((s) => s.signal_title)
-          .map((s) => ({
-            id: s.id as string,
-            title: s.signal_title as string,
-            insight: (s.what_it_means_for_you || s.explanation || "") as string,
-          })),
-      );
-    })();
-    return () => { dead = true; };
-  }, [showAllSubjects, userId, allSignals.length]);
 
   /* ---------- step 2: the words ----------------------------------- */
   const generate = useCallback(async (picked?: Choice, langOverride?: Lang, angle?: string) => {
@@ -2721,8 +2685,11 @@ export default function StudioPanel({
         </div>
       )}
 
-      {/* One journey map, at every width. */}
-      <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtlShell={rtlShell} />
+      {/* One journey map, and only once the member is inside a piece. A tracker
+          with nothing ticked, before a subject exists, is furniture. */}
+      {(step > 1 || Boolean(doneMap[1]) || content.trim().length > 0 || Boolean(draftId) || Boolean(deck)) && (
+        <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtlShell={rtlShell} />
+      )}
 
       {/* One status strip, at every width: what Aura is doing, what it has
           done, and what is in the way. */}
@@ -2762,18 +2729,14 @@ export default function StudioPanel({
             {T.cancel[lang]}
           </ButtonGhost>
         )}
-        <span style={{ display: "grid", gap: 2 }}>
-          <ButtonGhost onClick={() => void saveAndComeBack()} disabled={!canSave || busy === "save"} style={{ minHeight: 44 }}>
-            {T.saveLater[lang]}
-          </ButtonGhost>
-          {/* The precondition, never a promise. The drafts confirmation is
-              transient and appears only after a real save (`saveAndComeBack`). */}
-          {!canSave && (
-            <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 260 }}>
-              {T.nothingToSaveYet[lang]}
-            </span>
-          )}
-        </span>
+        {/* A control that can never be used is not shown at all. */}
+        {canSave && (
+          <span style={{ display: "grid", gap: 2 }}>
+            <ButtonGhost onClick={() => void saveAndComeBack()} disabled={busy === "save"} style={{ minHeight: 44 }}>
+              {T.saveLater[lang]}
+            </ButtonGhost>
+          </span>
+        )}
         {step > 1 && step < 4 && !stageOwnsPrimary && (
           <span style={{ display: "grid", gap: 2 }}>
             {confirmOwnsPrimary ? (
@@ -2932,59 +2895,25 @@ export default function StudioPanel({
             })}
           </div>
 
-          {/* The ranked three are a shortcut, never the whole shelf. */}
+          {/* The ranked three are a shortcut. The whole shelf lives in Signals,
+              where every subject carries its evidence — so we hand off there
+              instead of repeating a weaker copy of it here. */}
           <div style={{ marginTop: 12 }}>
             <button
               type="button"
-              onClick={() => setShowAllSubjects((v) => !v)}
-              aria-expanded={showAllSubjects}
+              onClick={() => {
+                try {
+                  window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "intelligence" } }));
+                } catch { /* noop */ }
+              }}
               style={{
                 minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
                 fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+                textAlign: rtlShell ? "right" : "left",
               }}
             >
-              {showAllSubjects ? T.hideAllSubjects[lang] : T.seeAllSubjects[lang]}
+              {T.browseInSignals[lang]} <span aria-hidden>{rtlShell ? "\u2190" : "\u2192"}</span>
             </button>
-            {showAllSubjects && (
-              <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-                {allSignals.length === 0 && (
-                  <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--text-secondary)", margin: 0 }}>
-                    {T.allSubjectsEmpty[lang]}
-                  </p>
-                )}
-                {allSignals.map((s) => {
-                  const on = choice?.id === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => {
-                        const next = { id: s.id, title: s.title, insight: s.insight };
-                        if (choice?.id === s.id) return;
-                        if (published || content.trim()) { setPendingSubject(next); return; }
-                        setPickedAngleId(null);
-                        setAngles([]);
-                        setAnglesOpen(false);
-                        setAnglesError(false);
-                        setChoice(next);
-                        setTypedTopic("");
-                      }}
-                      style={{
-                        textAlign: rtlShell ? "right" : "left", cursor: "pointer",
-                        background: on ? "var(--act-tint)" : "var(--surface-subtle)",
-                        border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
-                        borderRadius: 12, padding: 12,
-                      }}
-                    >
-                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
-                        {s.title}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
           <div style={{ marginTop: 16 }}>
@@ -3290,6 +3219,22 @@ export default function StudioPanel({
                       </span>
                     </button>
                   ))}
+                  {drafts.length > 12 && (
+                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: 0 }}>
+                      {(() => {
+                        const parts = T.draftsShowingSome[lang].split(/(\{shown\}|\{total\})/);
+                        return parts.map((part, idx) =>
+                          part === "{shown}" || part === "{total}" ? (
+                            <span key={idx} style={{ fontFamily: "var(--ff-mono)" }}>
+                              {part === "{shown}" ? 12 : drafts.length}
+                            </span>
+                          ) : (
+                            <React.Fragment key={idx}>{part}</React.Fragment>
+                          ),
+                        );
+                      })()}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
