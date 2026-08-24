@@ -355,7 +355,8 @@ serve(async (req) => {
         .select("id, user_id, created_at, post_text, title, source_signal_id, source_metadata")
         .eq("tracking_status", "draft")
         .is("published_at", null)
-        .lt("created_at", cutoffIso);
+        .lt("created_at", cutoffIso)
+        .gte("created_at", maxAgeIso);
       if (onlyUserId) lpQuery = lpQuery.eq("user_id", onlyUserId);
       const { data: lp, error: lpErr } = await lpQuery;
       if (lpErr) throw lpErr;
