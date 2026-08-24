@@ -3042,7 +3042,9 @@ export default function StudioPanel({
                     {T.hubSignalsTitle[lang]}
                   </p>
                   <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
-                    {savedBehindSubjects > 0
+                    {captureEmpty
+                      ? T.chooseEmpty[lang]
+                      : savedBehindSubjects > 0
                       ? T.hubSignalsEvidence[lang].split("{n}").map((part, i) => (
                           <React.Fragment key={i}>
                             {i > 0 && <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{savedBehindSubjects}</span>}
@@ -3052,7 +3054,19 @@ export default function StudioPanel({
                       : T.hubSignalsEmpty[lang]}
                   </p>
                   <span style={{ flex: 1 }} />
-                  {confirmOwnsPrimary || captureEmpty ? (
+                  {/* Nothing captured yet: the only move that goes forward IS capture,
+                      so it takes the label, the handler and the one blue primary. */}
+                  {captureEmpty && onOpenCapture ? (
+                    confirmOwnsPrimary ? (
+                      <ButtonGhost onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                        {T.captureNow[lang]}
+                      </ButtonGhost>
+                    ) : (
+                      <ButtonPrimary onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                        {T.captureNow[lang]}
+                      </ButtonPrimary>
+                    )
+                  ) : confirmOwnsPrimary ? (
                     <ButtonGhost onClick={() => setPickStage("signals")} style={{ minHeight: 44 }}>
                       {T.hubSignalsAction[lang]}
                     </ButtonGhost>
