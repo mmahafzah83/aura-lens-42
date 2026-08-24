@@ -3017,7 +3017,10 @@ export default function StudioPanel({
             </div>
           </div>
 
+          {choice?.id ? <WriteFromPanel signalId={choice.id} lang={lang} /> : null}
+
           <div style={{ marginTop: 18 }}>
+
             <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px" }}>
               {T.writeLangLabel[lang]}
             </p>
