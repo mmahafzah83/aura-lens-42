@@ -423,11 +423,13 @@ const Dashboard = () => {
             signalTitle: sig.signal_title,
             sourceType: "signal",
             sourceTitle: sig.signal_title,
+            origin: originFromParams(params),
           } as any);
         }
         // Clear so a refresh doesn't reapply
         const next = new URLSearchParams(window.location.search);
         next.delete("signal");
+        next.delete("from");
         setSearchParams(next, { replace: true });
       })();
     }
