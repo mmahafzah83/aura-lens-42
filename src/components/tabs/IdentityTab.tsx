@@ -38,6 +38,7 @@ import { TIER_COPY } from "@/constants/tierCopy";
 import ReadShape from "@/components/identity/ReadShape";
 import CvCrosscheck from "@/components/report/CvCrosscheck";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { handoffSubject, type SubjectHandoff } from "@/lib/workHandoff";
 import {
   applyPublishedFilter,
   applyCatalogFilter,
