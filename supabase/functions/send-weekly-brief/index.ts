@@ -495,7 +495,7 @@ serve(async (req) => {
           yourMove = {
             copy: "You published last week — let's see how it landed and where to compound next.",
             ctaLabel: "See your impact →",
-            ctaHref: appendParams(`${APP_URL}/home`, { tab: "authority", email: emailParam }),
+            ctaHref: appendParams(`${APP_URL}/home`, { tab: "momentum", email: emailParam }),
           };
         } else if (topSignals.length > 0) {
           yourMove = {
