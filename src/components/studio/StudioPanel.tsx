@@ -501,6 +501,10 @@ export default function StudioPanel({
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
 
+  /** Where this arrival came from, in the member's words. Belongs to the
+   *  arrival only — cleared whenever a new piece starts. */
+  const [origin, setOrigin] = useState<{ surface: string; label: string } | null>(null);
+
   /* ---------- boot ------------------------------------------------ */
   /**
    * N2 — ONCE PER MOUNT. This effect seeds the language from the profile.
