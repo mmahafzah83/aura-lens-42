@@ -1006,14 +1006,36 @@ export default function StudioPanel({
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* quota never blocks editing */ }
   }, []);
 
+  /* ---------- step 1: the remembered order ------------------------- */
+  useEffect(() => {
+    if (!userId) { setSortLoaded(true); return; }
+    let dead = false;
+    (async () => {
+      try {
+        const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+          .select("composer_sort_pref").eq("user_id", userId).maybeSingle();
+        if (!dead) setSortPref(asStartSort((data as any)?.composer_sort_pref));
+      } catch { /* an unreadable preference is simply the default */ }
+      if (!dead) setSortLoaded(true);
+    })();
+    return () => { dead = true; };
+  }, [userId]);
+
+  /** Remembered quietly. A failed write never blocks the re-sort on screen. */
+  const chooseSort = useCallback((next: StartSort) => {
+    setSortPref(next);
+    if (!userId) return;
+    void writeProfile(userId, { composer_sort_pref: next }, "composer sort preference");
+  }, [userId]);
+
   /* ---------- step 1: the subject --------------------------------- */
   const preselectedRef = useRef(false);
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !sortLoaded) return;
     let dead = false;
     setCardsLoading(true);
     (async () => {
-      const { cards: rows, totalSignals: total } = await loadStartCards(userId);
+      const { cards: rows, totalSignals: total } = await loadStartCards(userId, sortPref);
       if (dead) return;
       setCards(rows);
       setTotalSignals(total);
@@ -1030,7 +1052,8 @@ export default function StudioPanel({
       }
     })();
     return () => { dead = true; };
-  }, [userId, posture, cardsNonce]);
+  }, [userId, posture, cardsNonce, sortPref, sortLoaded]);
+
 
   /* ---------- step 1: the drafts already waiting ------------------ */
   const openDraft = useCallback(
