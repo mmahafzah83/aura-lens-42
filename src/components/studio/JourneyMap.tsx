@@ -49,18 +49,32 @@ export const JourneyMap: React.FC<{
                   fontSize: 13.5,
                   fontWeight: isCurrent ? 700 : 500,
                   /* Blue is "your turn" — only the CURRENT step wears it. A
-                     finished step is status, so it reads neutral/machine. */
-                  background: isCurrent ? "var(--act-tint)" : isDone ? "var(--machine-tint)" : "var(--surface-card)",
+                     finished step is status, so it reads neutral: cyan is never
+                     a fill on a control, and a step chip is a control. The
+                     machine colour survives only as a MARK, below. */
+                  background: isCurrent ? "var(--act-tint)" : isDone ? "var(--surface-subtle)" : "var(--surface-card)",
                   /* 4.5:1 gate: --act on --act-tint is 4.37:1 at 13.5px/700,
                      which is not large text. --act-hover clears it at 8.41:1 —
-                     the same fix the language chip carries. */
-                  color: isCurrent ? "var(--act-hover)" : isDone ? "var(--machine-text)" : "var(--text-secondary)",
-                  border: `${isCurrent ? 2 : 1}px solid ${isCurrent ? "var(--act)" : isDone ? "var(--machine-text)" : "var(--border-default)"}`,
+                     the same fix the language chip carries. Done chips read
+                     --text-secondary on --surface-subtle: 5.20:1. */
+                  color: isCurrent ? "var(--act-hover)" : "var(--text-secondary)",
+                  border: `${isCurrent ? 2 : 1}px solid ${isCurrent ? "var(--act)" : "var(--border-default)"}`,
                 }}
               >
                 {/* W10 — being here does not un-finish the work: the current
-                    step still shows its tick. */}
-                <span aria-hidden="true" style={{ fontFamily: "var(--ff-mono)" }}>{isDone ? `✓ ${n}` : n}</span>
+                    step still shows its tick. The tick is the only cyan on the
+                    chip, and it is a mark, not a fill. It is a leading span in
+                    both directions, so RTL places it on the right by flow —
+                    never a ↳ or any drawn arrow. */}
+                {isDone && (
+                  <span
+                    aria-hidden="true"
+                    style={{ fontFamily: "var(--ff-mono)", color: "var(--machine-text)", fontWeight: 700 }}
+                  >
+                    ✓
+                  </span>
+                )}
+                <span aria-hidden="true" style={{ fontFamily: "var(--ff-mono)" }}>{n}</span>
                 <span>{label}</span>
               </button>
             </li>
