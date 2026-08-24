@@ -2683,20 +2683,43 @@ export default function StudioPanel({
         </div>
       )}
 
-      {/* Where this arrival came from. Cyan: Aura reporting context, not an action. */}
+      {/* Where this arrival came from — and the way back to it. */}
       {origin && (
-        <div
+        <button
+          type="button"
           dir={rtlShell ? "rtl" : "ltr"}
+          aria-label={T.originBack[lang]}
+          onClick={() => {
+            try {
+              window.dispatchEvent(new CustomEvent("aura:switch-tab", {
+                detail: { tab: origin.back.tab, params: origin.back.params },
+              }));
+            } catch { /* noop */ }
+          }}
+          className="v23-tap v23-focus"
           style={{
             display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 12,
             fontFamily: "var(--ff-mono)", fontSize: 11, letterSpacing: ".03em",
             color: "var(--machine-text)", background: "var(--machine-tint)",
             border: "1px solid var(--machine)", borderRadius: 999, padding: "6px 12px",
+            cursor: "pointer",
+            transition: "background 150ms ease, box-shadow 150ms ease",
           }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "var(--machine)";
+            e.currentTarget.style.color = "var(--text-inverse)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "var(--machine-tint)";
+            e.currentTarget.style.color = "var(--machine-text)";
+          }}
+          onFocus={(e) => { e.currentTarget.style.boxShadow = "0 0 0 2px var(--machine)"; }}
+          onBlur={(e) => { e.currentTarget.style.boxShadow = "none"; }}
         >
-          <span aria-hidden>↩</span>{origin.label}
-        </div>
+          <span aria-hidden style={{ transform: rtlShell ? "scaleX(-1)" : "none", display: "inline-block" }}>↩</span>{origin.label}
+        </button>
       )}
+
 
       {/* One journey map, and only once the member is inside a piece. A tracker
           with nothing ticked, before a subject exists, is furniture. */}
