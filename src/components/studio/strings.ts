@@ -755,6 +755,8 @@ export function startReason(kind: string, count: number, english: string, lang: 
       ? `أقوى إشاراتك ولم تنشر عنها قط — ${count} مصدراً.`
       : `لم تكتب عنه بعد — ${count} مصدراً يقف خلفه.`;
   }
+  if (kind === "steady") return `ثابت — ${count} مصدراً يقف خلفه.`;
+
   return english;
 }
 
