@@ -1051,6 +1051,9 @@ export default function StudioPanel({
       if (d.signalId || d.title || d.topic) {
         setChoice({ id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" });
       }
+      // Step 1 must not read as "start over": a piece that already has a
+      // subject belongs on the confirm stage if the member goes back to it.
+      setPickStage(d.signalId || d.title || d.topic ? "confirm" : "hub");
       setStep(2);
       setStatus(T.draftOpened[lang]);
       if (!alreadyOpened(`draft:${d.id}`)) {
