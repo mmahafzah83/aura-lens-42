@@ -15,6 +15,7 @@ import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
+import type { SubjectHandoff, DraftHandoff } from "@/lib/workHandoff";
 import { generationMetadata, fingerprintFields } from "@/lib/generationMetadata";
 import {
   readProvenance,
