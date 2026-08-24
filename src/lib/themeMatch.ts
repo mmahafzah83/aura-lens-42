@@ -4,10 +4,19 @@
  * Token-level, three-state, and honest about halves: a member who put one word
  * of a two-word subject into their headline moved, and must be told they moved.
  *
- * Pure arithmetic — no React, no network.
+ * All normalising, stemming and alias resolution live in the one shared text
+ * layer (`_shared/textMatch`). This file owns the two-tier state rule only.
  */
 
 import { roleDescription } from "@/lib/presenceHealth";
+import {
+  EMPTY_ALIASES,
+  expandWithAliases,
+  normaliseText,
+  stemToken,
+  tokenise,
+  type AliasIndex,
+} from "../../supabase/functions/_shared/textMatch";
 
 export type ThemeState = "carried" | "partial" | "missing";
 
@@ -30,29 +39,14 @@ export interface ThemeMatch {
   listedOnly: boolean;
 }
 
-const STOPWORDS = new Set(["of", "the", "and", "for", "in", "to", "a", "an", "on", "with"]);
-
-/** Lowercase, strip punctuation, collapse whitespace. Both sides, always. */
+/** Kept for callers that still normalise raw strings. One source of truth. */
 export function normalise(text: string): string {
-  return String(text ?? "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return normaliseText(text);
 }
 
 /** Significant tokens of a theme — stopwords dropped, order kept. */
 export function themeTokens(theme: string): string[] {
-  const all = normalise(theme).split(" ").filter(Boolean);
-  const significant = all.filter((t) => !STOPWORDS.has(t));
-  return significant.length ? significant : all;
-}
-
-/** Whole-word presence, bounded on BOTH sides. "ai" never matches "airport". */
-function hasToken(haystack: string, token: string): boolean {
-  if (!token) return false;
-  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`(^| )${escaped}( |$)`).test(haystack);
+  return tokenise(theme).raw;
 }
 
 export interface ProfileFields {
@@ -64,7 +58,13 @@ export interface ProfileFields {
 
 export type ThemeTier = "stated" | "listed";
 
-interface Haystack { field: ThemeField; text: string; tier: ThemeTier }
+export interface Haystack {
+  field: ThemeField;
+  text: string;
+  tier: ThemeTier;
+  /** Stemmed token set — what matching actually reads. */
+  tokens: Set<string>;
+}
 
 const asArray = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 
@@ -96,11 +96,20 @@ export function buildHaystacks(profile: ProfileFields | null | undefined): Hayst
   /* Two tiers, deliberately unequal. STATED is prose he wrote to present
      himself. LISTED is his record — a skill LinkedIn auto-suggested and he
      accepted once is not evidence of how he positions himself. */
+  const make = (field: ThemeField, raw: string, tier: ThemeTier): Haystack => {
+    const text = normaliseText(raw);
+    /* Stopwords stay OUT of the token set; every token is stemmed, so
+       "efficiencies" and "efficiency" are the same unit. */
+    const tokens = new Set(
+      text.split(" ").filter(Boolean).map(stemToken),
+    );
+    return { field, text, tier, tokens };
+  };
   return [
-    { field: "your headline", text: normalise(p.headline || ""), tier: "stated" },
-    { field: "your About", text: normalise(p.about || ""), tier: "stated" },
-    { field: "your roles", text: normalise(roleText), tier: "listed" },
-    { field: "your skills", text: normalise(skillText), tier: "listed" },
+    make("your headline", p.headline || "", "stated"),
+    make("your About", p.about || "", "stated"),
+    make("your roles", roleText, "listed"),
+    make("your skills", skillText, "listed"),
   ];
 }
 
@@ -108,15 +117,26 @@ export function buildHaystacks(profile: ProfileFields | null | undefined): Hayst
  * One theme against the whole profile, weighted by tier.
  * All tokens in STATED → carried. All tokens but at least one only in LISTED,
  * or only some tokens anywhere → partial. None → missing.
+ *
+ * Aliases are optional and resolved one hop in both directions. When the alias
+ * table cannot be read the caller passes nothing and matching is exact.
  */
-export function matchTheme(haystacks: Haystack[], theme: string): ThemeMatch {
-  const tokens = themeTokens(theme);
+export function matchTheme(haystacks: Haystack[], theme: string, aliases: AliasIndex = EMPTY_ALIASES): ThemeMatch {
+  const rawTokens = tokenise(theme);
+  const tokens = rawTokens.raw;
+  const stems = rawTokens.stems;
   if (tokens.length === 0) {
     return {
       state: "missing", matched: [], missing: [], fields: [],
       statedFields: [], listedFields: [], listedOnly: false,
     };
   }
+
+  /* Both sides expand: "ai" on the profile satisfies the theme "artificial
+     intelligence", and the theme "ai" is satisfied by a profile that spells it
+     out. One hop, computed against the original sets. */
+  const expanded = haystacks.map((h) => ({ ...h, tokens: expandWithAliases(h.tokens, aliases) }));
+  const themeStems = Array.from(expandWithAliases(new Set(stems), aliases));
 
   const matched: string[] = [];
   const missing: string[] = [];
@@ -127,21 +147,24 @@ export function matchTheme(haystacks: Haystack[], theme: string): ThemeMatch {
   const listedFields: ThemeField[] = [];
   let anyListedOnly = false;
 
-  for (const token of tokens) {
+  tokens.forEach((token, i) => {
+    const stem = stems[i];
+    /* A theme token counts as found when its own stem is present, or when the
+       alias expansion of the theme reaches something the profile carries. */
     let inStated = false;
     let found = false;
-    for (const h of haystacks) {
-      if (h.text && hasToken(h.text, token)) {
-        found = true;
-        if (h.tier === "stated") inStated = true;
-        const bucket = h.tier === "stated" ? statedFields : listedFields;
-        if (!bucket.includes(h.field)) bucket.push(h.field);
-        if (!fields.includes(h.field)) fields.push(h.field);
-      }
+    for (const h of expanded) {
+      const hit = h.tokens.has(stem) || (themeStems.length > stems.length && themeStems.some((s) => !stems.includes(s) && h.tokens.has(s)));
+      if (!hit) continue;
+      found = true;
+      if (h.tier === "stated") inStated = true;
+      const bucket = h.tier === "stated" ? statedFields : listedFields;
+      if (!bucket.includes(h.field)) bucket.push(h.field);
+      if (!fields.includes(h.field)) fields.push(h.field);
     }
     if (found && !inStated) anyListedOnly = true;
     (found ? matched : missing).push(token);
-  }
+  });
 
   const all = matched.length === tokens.length;
   const state: ThemeState = all
