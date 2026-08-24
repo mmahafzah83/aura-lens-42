@@ -1178,11 +1178,13 @@ export default function StudioPanel({
         setStep(1);
       } else {
         startNewPiece({ choice: arriving, format: nextFormat });
+        setOrigin(signalPrefill.origin ?? null);
       }
     } else if (title) {
       preselectedRef.current = true;
       setChoice({ id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" });
       setTypedTopic("");
+      setOrigin(signalPrefill.origin ?? null);
       if (nextFormat) { setFormat(nextFormat); setFormatDecided(true); }
     } else if (nextFormat) {
       setFormat(nextFormat);
