@@ -1074,7 +1074,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               </span>
             </div>
             <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
-              {themesForTerritory.length} {themesForTerritory.length === 1 ? "theme" : "themes"}
+              {themesForTerritory.length} {themesForTerritory.length === 1 ? "tag" : "tags"}
             </span>
           </div>
           <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 12px" }}>

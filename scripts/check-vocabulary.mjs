@@ -99,7 +99,10 @@ const DICTIONARY_CALL = /\b(?:nSources|nCaptures|nEvidence|nSignals|evidenceAndS
 
 /** Replace every dictionary call with spaces, preserving offsets. */
 function blankDictionaryCalls(line) {
-  return line.replace(DICTIONARY_CALL, (m) => " ".repeat(m.length));
+  const blanked = line.replace(DICTIONARY_CALL, (m) => " ".repeat(m.length));
+  // A JSX brace whose whole expression WAS the dictionary call is now `{     }`.
+  // Blank the braces too, or the emptied brace still reads as an interpolation.
+  return blanked.replace(/\{[ ]+\}/g, (m) => " ".repeat(m.length));
 }
 
 /** Literals that are plainly code, not prose. */
