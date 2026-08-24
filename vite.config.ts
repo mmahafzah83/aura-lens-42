@@ -51,7 +51,13 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger(), mcpPlugin()].filter(Boolean),
+  plugins: [
+    react(),
+    mode === "development" && componentTagger(),
+    mode !== "development" && vocabularyGate(),
+    mcpPlugin(),
+  ].filter(Boolean),
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
