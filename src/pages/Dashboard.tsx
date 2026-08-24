@@ -103,6 +103,21 @@ const TAB_ALIAS: Record<string, string> = {
 };
 const resolveTab = (v: string) => TAB_ALIAS[v] ?? v;
 
+/** Where an arrival came from, in the member's words. `?from=` is set by the
+ *  emails; a bare deep link falls back to an honest generic. */
+const ORIGIN_LABELS: Record<string, string> = {
+  weekly_brief: "From your Monday brief",
+  post_ready: "From your reminder",
+  draft_ready: "From your email",
+  m4: "From your signal email",
+  morning_signal: "From this morning's signal",
+};
+const originFromParams = (params: URLSearchParams): { surface: string; label: string } => {
+  const from = (params.get("from") || "").trim();
+  if (from && ORIGIN_LABELS[from]) return { surface: from, label: ORIGIN_LABELS[from] };
+  return { surface: from || "link", label: "From a link you opened" };
+};
+
 const Dashboard = () => {
   usePageMeta({
     title: "Aura — Dashboard",
