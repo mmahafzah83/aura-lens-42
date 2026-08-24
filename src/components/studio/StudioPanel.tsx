@@ -757,10 +757,17 @@ export default function StudioPanel({
         if (typeof parsed.data.template === "string") setTemplate(parsed.data.template);
       }
     }
+    let hasSubject = false;
     if (saved.choice && typeof saved.choice === "object") {
       const c = saved.choice as Choice;
-      if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
+      if (typeof c.title === "string") {
+        setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
+        hasSubject = Boolean(c.id) || Boolean(c.title.trim());
+      }
     }
+    // The restored piece already knows its subject: step 1 shows the decision,
+    // not the hub.
+    setPickStage(hasSubject ? "confirm" : "hub");
     if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
     // W3 — a format only survives a restore when the member DECIDED it, or a
     // deck exists to prove the decision. Never inferred from a draft's type.
@@ -1051,6 +1058,9 @@ export default function StudioPanel({
       if (d.signalId || d.title || d.topic) {
         setChoice({ id: d.signalId ?? null, title: d.title || d.topic || "", insight: "" });
       }
+      // Step 1 must not read as "start over": a piece that already has a
+      // subject belongs on the confirm stage if the member goes back to it.
+      setPickStage(d.signalId || d.title || d.topic ? "confirm" : "hub");
       setStep(2);
       setStatus(T.draftOpened[lang]);
       if (!alreadyOpened(`draft:${d.id}`)) {
@@ -2540,7 +2550,9 @@ export default function StudioPanel({
                 minHeight: 44, padding: "0 16px", borderRadius: 8, cursor: "pointer",
                 fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
                 background: on ? "var(--act-tint)" : "var(--surface-subtle)",
-                color: on ? "var(--act)" : "var(--text-secondary)",
+                // 4.5:1 gate: --act on --act-tint measures 4.48:1 at 13.5px/700,
+                // which is not large text. --act-hover clears it at 9.1:1.
+                color: on ? "var(--act-hover)" : "var(--text-secondary)",
                 border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
               }}
             >
@@ -3042,7 +3054,9 @@ export default function StudioPanel({
                     {T.hubSignalsTitle[lang]}
                   </p>
                   <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
-                    {savedBehindSubjects > 0
+                    {captureEmpty
+                      ? T.chooseEmpty[lang]
+                      : savedBehindSubjects > 0
                       ? T.hubSignalsEvidence[lang].split("{n}").map((part, i) => (
                           <React.Fragment key={i}>
                             {i > 0 && <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{savedBehindSubjects}</span>}
@@ -3052,7 +3066,19 @@ export default function StudioPanel({
                       : T.hubSignalsEmpty[lang]}
                   </p>
                   <span style={{ flex: 1 }} />
-                  {confirmOwnsPrimary || captureEmpty ? (
+                  {/* Nothing captured yet: the only move that goes forward IS capture,
+                      so it takes the label, the handler and the one blue primary. */}
+                  {captureEmpty && onOpenCapture ? (
+                    confirmOwnsPrimary ? (
+                      <ButtonGhost onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                        {T.captureNow[lang]}
+                      </ButtonGhost>
+                    ) : (
+                      <ButtonPrimary onClick={() => onOpenCapture()} style={{ minHeight: 44 }}>
+                        {T.captureNow[lang]}
+                      </ButtonPrimary>
+                    )
+                  ) : confirmOwnsPrimary ? (
                     <ButtonGhost onClick={() => setPickStage("signals")} style={{ minHeight: 44 }}>
                       {T.hubSignalsAction[lang]}
                     </ButtonGhost>
@@ -3356,6 +3382,9 @@ export default function StudioPanel({
                 >
                   {T.chooseOwn[lang]}
                 </button>
+                {/* A member who ARRIVED at confirm never saw the hub. Without
+                    this they can reach neither the paste box nor the drafts. */}
+                {backToHub}
                 <span style={{ flexBasis: "100%" }} />
                 {langPicker}
               </div>

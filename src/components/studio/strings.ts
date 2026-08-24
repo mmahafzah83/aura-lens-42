@@ -90,7 +90,6 @@ export const T = {
   continue: { en: "Continue", ar: "متابعة" },
 
   // Preconditions — every control says, in words, why it cannot be pressed.
-  nothingToSaveYet: { en: "Nothing to save yet", ar: "لا شيء لحفظه بعد" },
   whyNoSubject: {
     en: "Choose a subject first, or paste words of your own.",
     ar: "اختر موضوعاً أولاً، أو الصق كلماتك.",
@@ -170,7 +169,12 @@ export const T = {
   hubResume: { en: "You have {n} pieces already waiting.", ar: "لديك {n} قطعة جاهزة بالفعل." },
   hubResumeOpen: { en: "Open one", ar: "افتح واحدة" },
   hubSignalsTitle: { en: "Write from your signals", ar: "اكتب من إشاراتك" },
-  hubSignalsEvidence: { en: "{n} things you saved are waiting.", ar: "{n} مادة حفظتها في انتظارك." },
+  hubSignalsEvidence: {
+    // True of the value shown: the sum of evidence behind the ranked subjects
+    // only — never a total of everything the member has ever saved.
+    en: "{n} saved sources sit behind the subjects we have ranked for you.",
+    ar: "{n} مصدرًا محفوظًا يقف خلف المواضيع التي رتّبناها لك.",
+  },
   hubSignalsEmpty: { en: "Nothing saved behind your subjects yet.", ar: "لا مواد محفوظة خلف مواضيعك بعد." },
   hubSignalsAction: { en: "Choose a signal", ar: "اختر إشارة" },
   hubElseAction: { en: "Type a subject", ar: "اكتب موضوعًا" },
@@ -495,11 +499,6 @@ export const T = {
   cardToggle: { en: "Show or hide this section", ar: "أظهر أو أخفِ هذا القسم" },
 
   // Your drafts, on step 1
-  draftsHead: { en: "Your drafts", ar: "مسوّداتك" },
-  draftsHelp: {
-    en: "Posts already written for you. Open one and carry on.",
-    ar: "منشورات مكتوبة لك بالفعل. افتح واحداً وتابع.",
-  },
   draftSaved: { en: "saved", ar: "حُفظ" },
   draftOpened: { en: "We opened that draft. Pick up where it stopped.", ar: "فتحنا تلك المسوّدة. تابع من حيث توقفت." },
   draftMissing: { en: "That draft is no longer there.", ar: "تلك المسوّدة لم تعد موجودة." },
