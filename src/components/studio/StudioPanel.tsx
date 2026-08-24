@@ -11,6 +11,8 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
+
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import {
   loadStartCards,
