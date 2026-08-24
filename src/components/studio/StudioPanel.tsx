@@ -2526,6 +2526,10 @@ export default function StudioPanel({
      ghost. Mirrors the empty-state banner's own guard. */
   const captureEmpty =
     !cardsLoading && cards.length === 0 && totalSignals === 0 && Boolean(onOpenCapture);
+  /* The capture primary only RENDERS on the hub and the signals stage, so it
+     may only demote a forward action on those two screens. Anywhere else the
+     forward action is the only thing on screen that can carry the primary. */
+  const captureOwnsPrimary = captureEmpty && (pickStage === "hub" || pickStage === "signals");
 
   /* ---------- step 1's own furniture ------------------------------ */
   /* All three hub boxes are the SAME shell: same width (one grid track each),
@@ -3472,17 +3476,25 @@ export default function StudioPanel({
               control that writes, and the only forward action step 1 offers. */}
           {(pickStage === "subject" || pickStage === "paste" || pickStage === "confirm") && (() => {
             const advances = Boolean(pasted.trim()) || Boolean(content.trim());
-            const blocked = !doneMap[1] || generating;
+            /* A question on screen is not something the forward action may walk
+               past: pressing it would go on with the OLD subject and throw the
+               typed one away without a word. So it is blocked until answered. */
+            const questionPending =
+              Boolean(pendingSubject) && (pickStage === "subject" || pickStage === "confirm");
+            const blocked = !doneMap[1] || generating || questionPending;
+            const blockedReason = questionPending ? T.whyAnswerAbove[lang] : T.whyNoSubject[lang];
             /* Exactly one primary. A pending subject change owns it (its
-               confirm is the primary), so the forward action stands down. */
+               confirm is the primary), so the forward action stands down.
+               `captureOwnsPrimary` is stage-scoped: it only demotes on the two
+               screens where the capture primary is actually rendered. */
             const forwardIsGhost =
               confirmOwnsPrimary ||
-              captureEmpty ||
+              captureOwnsPrimary ||
               (anglesOpen && Boolean(pickedAngleId) && !anglesBusy && !anglesError);
             return (
               <div style={{ marginTop: 20, display: "grid", gap: 6, justifyItems: rtlShell ? "end" : "start" }}>
                 {advances ? (
-                  confirmOwnsPrimary || captureEmpty ? (
+                  confirmOwnsPrimary || captureOwnsPrimary ? (
                     <ButtonGhost onClick={() => void onContinue()} disabled={blocked} style={{ minHeight: 44 }}>
                       {T.useTheseWords[lang]} {rtlShell ? "←" : "→"}
                     </ButtonGhost>
@@ -3509,8 +3521,8 @@ export default function StudioPanel({
                   </ButtonPrimary>
                 )}
                 {blocked && !generating && (
-                  <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 320 }}>
-                    {T.whyNoSubject[lang]}
+                  <span style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, color: "var(--text-muted)", maxWidth: 320, lineHeight: rtlShell ? 1.9 : 1.6 }}>
+                    {blockedReason}
                   </span>
                 )}
                 {/* Optional: four ways in, offered beside the primary. */}
