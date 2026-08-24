@@ -1262,7 +1262,7 @@ const Dashboard = () => {
                     line="Aura works while you sleep and tells you what it found."
                   >
                     <OvernightPage
-                      onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                      onOpenDraft={(d) => { setDraftPrefill({ ...d, origin: { surface: "overnight", label: "From last night's run" } }); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                       onOpenSettings={() => navigate("/settings?tab=preferences")}
                     />
                   </LockedPanel>
