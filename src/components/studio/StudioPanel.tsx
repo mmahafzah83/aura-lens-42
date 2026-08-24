@@ -960,9 +960,8 @@ export default function StudioPanel({
       setCards(rows);
       setTotalSignals(total);
       setCardsLoading(false);
-      // Ranked nothing, but the shelf is not empty: open the shelf so the
-      // member sees the subjects they actually have.
-      if (rows.length === 0 && total > 0) setShowAllSubjects(true);
+      // Ranked nothing, but the shelf is not empty: the whole shelf lives in
+      // Signals, and the handoff link below the cards points there.
       // First entry only. Changing posture later never overwrites a subject
       // the member has already chosen.
       if (!preselectedRef.current && posture === "delegator" && rows[0]) {
