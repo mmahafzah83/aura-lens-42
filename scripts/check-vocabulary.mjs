@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * VOCABULARY GATE — fails the build when a member-facing count noun is written
  * by hand instead of coming from the dictionary at src/constants/vocabulary.ts.
