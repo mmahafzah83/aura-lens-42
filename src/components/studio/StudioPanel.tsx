@@ -2952,9 +2952,10 @@ export default function StudioPanel({
       {step === 1 && (
         <StageCard
           /* The hub asks where the writing starts; the signals stage is the one
-             that still asks what the post is about. */
+             that still asks what the post is about. The hub has no title — the
+             three boxes are the first thing on screen. */
           title={
-            pickStage === "hub" ? T.hubHead[lang]
+            pickStage === "hub" ? undefined
             : pickStage === "drafts" ? T.draftsStageHead[lang]
             : pickStage === "subject" ? T.chooseOwn[lang]
             : pickStage === "paste" ? T.pasteStageHead[lang]
@@ -2962,7 +2963,7 @@ export default function StudioPanel({
             : T.chooseHead[lang]
           }
           subtitle={
-            pickStage === "hub" ? T.hubHelp[lang]
+            pickStage === "hub" ? undefined
             : pickStage === "drafts" ? T.draftsStageHelp[lang]
             : pickStage === "subject" ? T.subjectStageHelp[lang]
             : pickStage === "paste" ? T.pasteHelp[lang]
