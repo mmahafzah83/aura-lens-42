@@ -8,6 +8,7 @@ import {
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { nCaptures, nEvidence, nSources, nSignals, evidenceAndSources, CAPTURE, EVIDENCE, SIGNAL } from "@/constants/vocabulary";
+import { loadSignalSources, warnIfDrifted, type SignalSourceRow } from "@/lib/signalSources";
 import { toast } from "sonner";
 // Sources now live in the Library tab.
 import SectionError from "@/components/ui/section-error";
@@ -398,75 +399,45 @@ export const SignalHero = ({
   onDraft: (s: Signal) => void;
   onOpenChat?: (msg?: string) => void;
 }) => {
-  const [evidence, setEvidence] = useState<EvidenceFragmentRow[]>([]);
+  /**
+   * THE LIST IS A LIST OF SOURCES, and now it says so.
+   *
+   * The rows were always sources: the old code deduped fragments onto their
+   * registry row and labelled each row "Your capture" / "Extracted" — one row
+   * per source, never per piece of evidence. It then stated `fragment_count`
+   * next to the toggle, so a signal with 40 pieces of evidence across 5 sources
+   * promised 40 and revealed 5, with the wrong noun on both.
+   *
+   * Decision: keep it a SOURCES list. It answers the question members actually
+   * ask of a signal — "who says so?" — and it is the same list, from the same
+   * loader, that the composer's confirm screen reveals. The stated number is
+   * therefore the revealed row count, and the noun is "sources".
+   */
+  const [sources, setSources] = useState<SignalSourceRow[]>([]);
   const [showEvidence, setShowEvidence] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      if (!signal.supporting_evidence_ids?.length) { setEvidence([]); return; }
-      const { data: frags } = await supabase
-        .from("evidence_fragments")
-        .select("id, title, content, created_at, source_registry_id")
-        .in("id", signal.supporting_evidence_ids)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      const fs = (frags || []) as any[];
-      const regIds = Array.from(new Set(fs.map(f => f.source_registry_id).filter(Boolean)));
-      let regMap = new Map<string, any>();
-      let entryMap = new Map<string, any>();
-      if (regIds.length) {
-        const sr = await supabase.from("source_registry" as any).select("id, source_type, source_id, title").in("id", regIds);
-        (sr.data || []).forEach((r: any) => regMap.set(r.id, r));
-        const entryIds = Array.from(new Set((sr.data || []).filter((r: any) => r.source_type === "entry" && r.source_id).map((r: any) => r.source_id)));
-        if (entryIds.length) {
-          const ents = await supabase.from("entries").select("id, title, type, account_name").in("id", entryIds);
-          (ents.data || []).forEach((e: any) => entryMap.set(e.id, e));
-        }
-      }
-      const seen = new Set<string>();
-      const out: EvidenceFragmentRow[] = [];
-      for (const f of fs) {
-        const reg = f.source_registry_id ? regMap.get(f.source_registry_id) : null;
-        let kind: "capture" | "aura" | "unknown" = "unknown";
-        let label = f.title || "Untitled source";
-        let key = f.id;
-        if (reg) {
-          key = reg.id;
-          if (reg.source_type === "entry" && reg.source_id) {
-            const ent = entryMap.get(reg.source_id);
-            if (ent) {
-              const isAura = (ent.account_name || "").toLowerCase().includes("aura") || (ent.type || "").toLowerCase().includes("onboarding") || (ent.type || "").toLowerCase().includes("exa");
-              kind = isAura ? "aura" : "capture";
-              label = ent.title || reg.title || label;
-              key = reg.source_id;
-            }
-          } else if (reg.source_type === "document") {
-            kind = "capture"; label = reg.title || label;
-          }
-        }
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push({
-          id: f.id, title: label, content: f.content, created_at: f.created_at,
-          source_kind: kind,
-          source_label: kind === "aura" ? "Extracted" : "Your capture",
-        });
-      }
-      setEvidence(out);
+      const rows = await loadSignalSources(signal.supporting_evidence_ids || []);
+      if (cancelled) return;
+      setSources(rows);
+      warnIfDrifted("IntelligenceTab/SignalHero", signal.id, rows.length, signal.unique_orgs ?? 0);
     })();
-  }, [signal.id]);
+    return () => { cancelled = true; };
+  }, [signal.id, signal.supporting_evidence_ids, signal.unique_orgs]);
 
   const confPct = Math.round(signal.confidence * 100);
   // unique_orgs counts distinct source_registry rows — sources, not firms.
   const orgs = signal.unique_orgs ?? 0;
   const fragCount = signal.fragment_count ?? (signal as any).evidenceCount ?? 0;
-  // unique_orgs is the one truth for "sources behind this signal" — the
-  // reconciler keeps it exact for every signal of every status.
-  const sourceCount = signal.unique_orgs ?? 0;
+  // The number we state is the number we can show: these are the rows the
+  // toggle below reveals. `warnIfDrifted` shouts if they part from unique_orgs.
+  const sourceCount = sources.length;
   const isRising = signal.velocity_status === "accelerating";
   const isFading = signal.velocity_status === "fading";
   const velText = isRising ? "and rising" : isFading ? "and fading" : "and stable";
-  const velColor = isRising ? "var(--success, hsl(140 60% 45%))" : isFading ? "hsl(24 95% 53%)" : "var(--glass-2)";
+  const velColor = isRising ? "var(--pos-text, var(--machine-text))" : isFading ? "var(--warning-text)" : "var(--glass-2)";
 
   return (
     <section style={{ marginTop: 32, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
@@ -546,14 +517,14 @@ export const SignalHero = ({
           }}
         >
           <Layers size={12} />
-          See the evidence behind this signal ({nEvidence(fragCount, "en")})
+          See the {nSources(sourceCount, "en")} behind this signal
           <ChevronDown size={12} style={{ transform: showEvidence ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
         </button>
         {showEvidence && (
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-            {evidence.length === 0 ? (
-              <p style={{ fontSize: 12, color: "var(--glass-2)" }}>No evidence linked yet.</p>
-            ) : evidence.map(f => (
+            {sources.length === 0 ? (
+              <p style={{ fontSize: 12, color: "var(--glass-2)" }}>No sources linked yet.</p>
+            ) : sources.map(f => (
               <div key={f.id} style={{
                 display: "flex", gap: 10, padding: "8px 12px",
                 background: "var(--surface-ink-raised)", borderRadius: 8,
@@ -561,7 +532,9 @@ export const SignalHero = ({
                 alignItems: "center", fontSize: 12,
               }}>
                 <span style={{ flex: 1, color: "var(--glass-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.title}</span>
-                <span style={{ color: "var(--glass-2)", textTransform: "uppercase", letterSpacing: 0.4, fontSize: 10 }}>{f.source_label}</span>
+                <span style={{ color: "var(--glass-2)", textTransform: "uppercase", letterSpacing: 0.4, fontSize: 10 }}>
+                  {f.kind === "aura" ? "Extracted" : "Your capture"}
+                </span>
                 <span style={{ color: "var(--glass-2)" }}>{relativeTime(f.created_at)}</span>
               </div>
             ))}
