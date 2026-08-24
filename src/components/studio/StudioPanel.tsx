@@ -757,10 +757,17 @@ export default function StudioPanel({
         if (typeof parsed.data.template === "string") setTemplate(parsed.data.template);
       }
     }
+    let hasSubject = false;
     if (saved.choice && typeof saved.choice === "object") {
       const c = saved.choice as Choice;
-      if (typeof c.title === "string") setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
+      if (typeof c.title === "string") {
+        setChoice({ id: c.id ?? null, title: c.title, insight: c.insight ?? "" });
+        hasSubject = Boolean(c.id) || Boolean(c.title.trim());
+      }
     }
+    // The restored piece already knows its subject: step 1 shows the decision,
+    // not the hub.
+    setPickStage(hasSubject ? "confirm" : "hub");
     if (saved.writeLang === "ar" || saved.writeLang === "en") setWriteLang(saved.writeLang);
     // W3 — a format only survives a restore when the member DECIDED it, or a
     // deck exists to prove the decision. Never inferred from a draft's type.
