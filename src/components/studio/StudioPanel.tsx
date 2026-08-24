@@ -938,6 +938,7 @@ export default function StudioPanel({
     setConfirmNewPiece(false);
     preselectedRef.current = Boolean(next?.choice);
     draftPrefillRef.current = null;
+    setOrigin(null);
     liveRef.current = {
       content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
       step: 1, format: next?.format ?? null,
