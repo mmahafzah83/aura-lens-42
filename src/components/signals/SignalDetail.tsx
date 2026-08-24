@@ -17,7 +17,8 @@ interface Props {
   onBack: () => void;
   onOpenChat?: (msg?: string) => void;
   onDraftToStudio?: (prefill: {
-    topic: string; context: string; signalId?: string; signalTitle?: string; source?: string;
+    topic: string; context: string; signalId?: string; signalTitle?: string;
+    sourceType?: string; origin?: { surface: string; label: string };
   }) => void;
 }
 
