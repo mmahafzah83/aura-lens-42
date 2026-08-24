@@ -819,7 +819,7 @@ const TIER_SECTION_META: Record<TierKey, { label: string; Icon: typeof Zap; varN
   live: { label: "Live", Icon: Zap, varName: "--tier-live" },
   evergreen: { label: "Evergreen", Icon: Leaf, varName: "--tier-evergreen" },
   emerging: { label: "Emerging", Icon: Sprout, varName: "--tier-emerging" },
-  other: { label: "Other", Icon: HelpCircle, varName: "--ink-3" },
+  other: { label: "Other", Icon: HelpCircle, varName: "--text-muted" },
 };
 
 export const TierSection = ({

@@ -1073,7 +1073,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 />
               </span>
             </div>
-            <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
+            <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
               {themesForTerritory.length} {themesForTerritory.length === 1 ? "tag" : "tags"}
             </span>
           </div>
