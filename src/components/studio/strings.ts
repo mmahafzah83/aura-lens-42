@@ -169,7 +169,12 @@ export const T = {
   hubResume: { en: "You have {n} pieces already waiting.", ar: "لديك {n} قطعة جاهزة بالفعل." },
   hubResumeOpen: { en: "Open one", ar: "افتح واحدة" },
   hubSignalsTitle: { en: "Write from your signals", ar: "اكتب من إشاراتك" },
-  hubSignalsEvidence: { en: "{n} things you saved are waiting.", ar: "{n} مادة حفظتها في انتظارك." },
+  hubSignalsEvidence: {
+    // True of the value shown: the sum of evidence behind the ranked subjects
+    // only — never a total of everything the member has ever saved.
+    en: "{n} saved sources sit behind the subjects we have ranked for you.",
+    ar: "{n} مصدرًا محفوظًا يقف خلف المواضيع التي رتّبناها لك.",
+  },
   hubSignalsEmpty: { en: "Nothing saved behind your subjects yet.", ar: "لا مواد محفوظة خلف مواضيعك بعد." },
   hubSignalsAction: { en: "Choose a signal", ar: "اختر إشارة" },
   hubElseAction: { en: "Type a subject", ar: "اكتب موضوعًا" },
