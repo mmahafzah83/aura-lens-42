@@ -34,6 +34,7 @@ export const JourneyMap: React.FC<{
             <li key={n}>
               <button
                 type="button"
+                className="v23-tap v23-focus"
                 onClick={() => onStep(n)}
                 aria-current={isCurrent ? "step" : undefined}
                 style={{
@@ -50,7 +51,10 @@ export const JourneyMap: React.FC<{
                   /* Blue is "your turn" — only the CURRENT step wears it. A
                      finished step is status, so it reads neutral/machine. */
                   background: isCurrent ? "var(--act-tint)" : isDone ? "var(--machine-tint)" : "var(--surface-card)",
-                  color: isCurrent ? "var(--act)" : isDone ? "var(--machine-text)" : "var(--text-secondary)",
+                  /* 4.5:1 gate: --act on --act-tint is 4.37:1 at 13.5px/700,
+                     which is not large text. --act-hover clears it at 8.41:1 —
+                     the same fix the language chip carries. */
+                  color: isCurrent ? "var(--act-hover)" : isDone ? "var(--machine-text)" : "var(--text-secondary)",
                   border: `${isCurrent ? 2 : 1}px solid ${isCurrent ? "var(--act)" : isDone ? "var(--machine-text)" : "var(--border-default)"}`,
                 }}
               >
