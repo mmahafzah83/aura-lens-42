@@ -2547,9 +2547,9 @@ export default function StudioPanel({
      same reason line the card showed. */
   const chosenCard = choice?.id ? (cards.find((c) => c.signalId === choice.id) ?? null) : null;
 
-  /* ONE language control, ONE state. Rendered on the hub and again on the
-     confirm screen; both are this same element, so there is no second source
-     of truth for the writing language. */
+  /* ONE language control, ONE state. Rendered on the hub, subject, paste and
+     confirm screens; every one of them is this same element, so there is no
+     second source of truth for the writing language. */
   const langPicker = (
     <div>
       <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px" }}>
