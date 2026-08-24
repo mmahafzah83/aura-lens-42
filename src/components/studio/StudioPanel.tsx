@@ -189,7 +189,10 @@ function savedAgo(dateStr: string, lang: Lang): string {
 function savedStamp(dateStr: string, lang: Lang): string {
   const d = new Date(dateStr);
   if (!dateStr || isNaN(d.getTime())) return "";
-  return d.toLocaleString(lang === "ar" ? "ar" : "en-US", {
+  // Latin digits in Arabic too: IBM Plex Mono carries no Arabic-Indic figures,
+  // so `ar` numerals fall back to another face and the stamp changes typeface
+  // mid-list. `-u-nu-latn` keeps the month name Arabic and the digits mono.
+  return d.toLocaleString(lang === "ar" ? "ar-u-nu-latn" : "en-US", {
     day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",
   });
 }
@@ -2586,7 +2589,14 @@ export default function StudioPanel({
     <button
       type="button"
       className="v23-tap v23-focus"
-      onClick={() => setPickStage("hub")}
+      onClick={() => {
+        // A stale question must not survive a screen change. The three states
+        // were set together, so they are cleared together.
+        setPendingSubject(null);
+        setPendingFormat(null);
+        setPendingOrigin(null);
+        setPickStage("hub");
+      }}
       style={{
         minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
         fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
@@ -2937,8 +2947,22 @@ export default function StudioPanel({
         <StageCard
           /* The hub asks where the writing starts; the signals stage is the one
              that still asks what the post is about. */
-          title={pickStage === "hub" ? T.hubHead[lang] : pickStage === "drafts" ? T.draftsStageHead[lang] : T.chooseHead[lang]}
-          subtitle={pickStage === "hub" ? T.hubHelp[lang] : pickStage === "drafts" ? T.draftsStageHelp[lang] : pickStage === "signals" ? T.chooseHelp[lang] : undefined}
+          title={
+            pickStage === "hub" ? T.hubHead[lang]
+            : pickStage === "drafts" ? T.draftsStageHead[lang]
+            : pickStage === "subject" ? T.chooseOwn[lang]
+            : pickStage === "paste" ? T.pasteStageHead[lang]
+            : pickStage === "confirm" ? T.chosenSubjectHead[lang]
+            : T.chooseHead[lang]
+          }
+          subtitle={
+            pickStage === "hub" ? T.hubHelp[lang]
+            : pickStage === "drafts" ? T.draftsStageHelp[lang]
+            : pickStage === "subject" ? T.subjectStageHelp[lang]
+            : pickStage === "paste" ? T.pasteHelp[lang]
+            : pickStage === "confirm" ? T.confirmStageHelp[lang]
+            : T.chooseHelp[lang]
+          }
           align={rtlShell ? "right" : "left"}
           lang={lang}
           rtlShell={rtlShell}
@@ -2951,7 +2975,10 @@ export default function StudioPanel({
             </p>
           )}
           {/* A subject change over written words is asked for, never assumed. */}
-          {pendingSubject && (
+          {/* Only on the screens where the question makes sense. On the hub or
+              the drafts list it would carry a second blue primary onto a screen
+              that owns its own. */}
+          {pendingSubject && (pickStage === "signals" || pickStage === "confirm") && (
             <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--act)", borderRadius: 12, padding: 12, marginBottom: 16 }}>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
                 {T.confirmSubjectHead[lang]}
@@ -3106,13 +3133,13 @@ export default function StudioPanel({
             <>
               <div style={{ marginBottom: 14 }}>{backToHub}</div>
               {draftsLoading && (
-                <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", margin: 0 }}>
+                <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
                   {T.loading[lang]}
                 </p>
               )}
               {!draftsLoading && drafts.length === 0 && (
                 <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
-                  {T.draftMissing[lang]}
+                  {T.draftsEmpty[lang]}
                 </p>
               )}
               {!draftsLoading && drafts.length > 0 && (
@@ -3129,14 +3156,14 @@ export default function StudioPanel({
                         borderRadius: 12, padding: 12,
                       }}
                     >
-                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
+                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
                         {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
                       </span>
-                      {/* WHEN, exactly. `loadStudioDrafts` returns only
-                          `created_at` — there is no edited stamp on the row — so
-                          that is the one field shown, with date and time. */}
+                      {/* WHEN it was SAVED, exactly: `saved_at` is
+                          content_items.updated_at / linkedin_posts.edited_at,
+                          falling back to created_at. Same field the list sorts by. */}
                       <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
-                        {T.draftSaved[lang]} {savedStamp(d.created_at, lang)}
+                        {T.draftSaved[lang]} {savedStamp(d.saved_at, lang)}
                       </span>
                     </button>
                   ))}
@@ -3315,6 +3342,9 @@ export default function StudioPanel({
                   />
                 </div>
               </div>
+              {/* The same shared `langPicker` constant, directly above the
+                  forward action — the language stays reachable on every stage. */}
+              <div style={{ marginTop: 16 }}>{langPicker}</div>
               <div style={{ marginTop: 12 }}>{backToHub}</div>
             </>
           )}
@@ -3364,6 +3394,7 @@ export default function StudioPanel({
                   </div>
                 )}
               </div>
+              <div style={{ marginTop: 16 }}>{langPicker}</div>
               <div style={{ marginTop: 12 }}>{backToHub}</div>
             </>
           )}
