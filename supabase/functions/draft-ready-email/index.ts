@@ -5,11 +5,15 @@
 // In dry-run mode we do every lookup, build every email, write log rows prefixed
 // `dryrun:`, but call Resend ZERO times.
 //
-// NO CRON is scheduled for this function. It stays manually invocable only until the
-// Composer draft-open fix is confirmed live in production. Do not add a cron job here.
+// GUARDED. The run is now safe to schedule: drafts must be 12h–7d old, members with
+// `lifecycle_opt_out` are skipped, admin accounts are skipped, and a draft that already
+// had a `post_ready` email is never emailed again here. This function is therefore a
+// candidate for a cron schedule — but DRY-RUN REMAINS THE DEFAULT, so any schedule must
+// pass `dry_run: false` explicitly to actually send.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { adminUserIds } from "../_shared/adminRole.ts";
 import {
   renderEmail,
   heading as headingHtml,
@@ -276,7 +280,7 @@ serve(async (req) => {
   const results: Array<{
     user_id: string;
     draft_id: string;
-    outcome: "sent" | "would_send" | "skipped_already" | "failed";
+    outcome: "sent" | "would_send" | "skipped_already" | "skipped_opted_out" | "skipped_admin" | "skipped_post_ready_sent" | "failed";
     resend_status?: number;
     error?: string;
     subject?: string;
@@ -287,13 +291,17 @@ serve(async (req) => {
   let candidates = 0;
   let sent = 0;
   let skippedAlready = 0;
+  let skippedOptedOut = 0;
+  let skippedAdmin = 0;
+  let skippedPostReadySent = 0;
   let failed = 0;
 
   try {
-    // Pick each user's single newest draft older than 12h — UNLESS only_draft_id
-    // targets a specific rehearsal draft, in which case we select that row
-    // directly and skip the age gate.
+    // Pick each user's single newest draft older than 12h and younger than 7 days —
+    // UNLESS only_draft_id targets a specific rehearsal draft, in which case we
+    // select that row directly and skip the age gate entirely.
     const cutoffIso = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    const maxAgeIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     let ciDrafts: any[] | null = null;
     let lpDrafts: any[] | null = null;
@@ -335,7 +343,8 @@ serve(async (req) => {
         .from("content_items")
         .select("id, user_id, created_at, body, title, signal_id, generation_params")
         .eq("status", "draft")
-        .lt("created_at", cutoffIso);
+        .lt("created_at", cutoffIso)
+        .gte("created_at", maxAgeIso);
       if (onlyUserId) ciQuery = ciQuery.eq("user_id", onlyUserId);
       const { data, error } = await ciQuery;
       if (error) throw error;
@@ -346,7 +355,8 @@ serve(async (req) => {
         .select("id, user_id, created_at, post_text, title, source_signal_id, source_metadata")
         .eq("tracking_status", "draft")
         .is("published_at", null)
-        .lt("created_at", cutoffIso);
+        .lt("created_at", cutoffIso)
+        .gte("created_at", maxAgeIso);
       if (onlyUserId) lpQuery = lpQuery.eq("user_id", onlyUserId);
       const { data: lp, error: lpErr } = await lpQuery;
       if (lpErr) throw lpErr;
@@ -397,10 +407,39 @@ serve(async (req) => {
     const picks = Array.from(byUser.values());
     candidates = picks.length;
 
+    // GUARD 2 + 3 inputs: opt-out flags and admin ids, resolved once per run.
+    // Same table/column/shape as lifecycle-emails: diagnostic_profiles.lifecycle_opt_out
+    // and adminUserIds() from _shared/adminRole.ts.
+    const adminIds = new Set(picks.length > 0 ? await adminUserIds(admin) : []);
+    const optOut = new Set<string>();
+    if (picks.length > 0) {
+      const { data: optRows } = await admin
+        .from("diagnostic_profiles")
+        .select("user_id, lifecycle_opt_out")
+        .in("user_id", picks.map((p) => p.user_id));
+      for (const r of optRows || []) {
+        if ((r as any).lifecycle_opt_out === true) optOut.add((r as any).user_id as string);
+      }
+    }
+
     for (const pick of picks) {
       const keySuffix = `draft_ready:${pick.draft_id}`;
       const bareKey = keySuffix;
       const dryKey = `dryrun:${keySuffix}`;
+
+      // GUARD 3 — admin accounts are never emailed by a scheduled run.
+      if (adminIds.has(pick.user_id)) {
+        skippedAdmin += 1;
+        results.push({ user_id: pick.user_id, draft_id: pick.draft_id, outcome: "skipped_admin" });
+        continue;
+      }
+
+      // GUARD 2 — respect lifecycle opt-out. No send, no log row.
+      if (optOut.has(pick.user_id)) {
+        skippedOptedOut += 1;
+        results.push({ user_id: pick.user_id, draft_id: pick.draft_id, outcome: "skipped_opted_out" });
+        continue;
+      }
 
       // Never nag: if the bare key was ever written, skip regardless of mode.
       // In real-send mode, also treat the bare key as blocking.
@@ -413,6 +452,35 @@ serve(async (req) => {
       if (existing && existing.length > 0) {
         skippedAlready += 1;
         results.push({ user_id: pick.user_id, draft_id: pick.draft_id, outcome: "skipped_already" });
+        continue;
+      }
+
+      // GUARD 4 — never collide with the sibling post_ready email about this same
+      // draft. send-lifecycle-email records post_ready in `lifecycle_emails` as
+      // email_type='post_ready' with metadata.post_id = the draft id (it writes no
+      // message_key row), so that is the exact shape we match. We also check
+      // lifecycle_email_log for a `post_ready:<draft_id>` key in case a future
+      // sender uses the log table.
+      const { data: prSent } = await admin
+        .from("lifecycle_emails")
+        .select("id")
+        .eq("user_id", pick.user_id)
+        .eq("email_type", "post_ready")
+        .eq("metadata->>post_id", pick.draft_id)
+        .limit(1);
+      let postReadyCollision = !!(prSent && prSent.length > 0);
+      if (!postReadyCollision) {
+        const { data: prLog } = await admin
+          .from("lifecycle_email_log")
+          .select("id")
+          .eq("user_id", pick.user_id)
+          .eq("message_key", `post_ready:${pick.draft_id}`)
+          .limit(1);
+        postReadyCollision = !!(prLog && prLog.length > 0);
+      }
+      if (postReadyCollision) {
+        skippedPostReadySent += 1;
+        results.push({ user_id: pick.user_id, draft_id: pick.draft_id, outcome: "skipped_post_ready_sent" });
         continue;
       }
 
@@ -619,8 +687,8 @@ serve(async (req) => {
     await admin.from("ef_error_log").insert({
       function_name: "draft-ready-email",
       severity: "info",
-      error_message: `DRAFT_READY_EMAIL dry_run=${dryRun} only_user=${onlyUserId ?? "none"} only_draft=${onlyDraftId ?? "none"} candidates=${candidates} sent=${sent} skipped_already=${skippedAlready} failed=${failed}`,
-      context: { dry_run: dryRun, only_user_id: onlyUserId, only_draft_id: onlyDraftId, candidates, sent, skipped_already: skippedAlready, failed },
+      error_message: `DRAFT_READY_EMAIL dry_run=${dryRun} only_user=${onlyUserId ?? "none"} only_draft=${onlyDraftId ?? "none"} candidates=${candidates} sent=${sent} skipped_already=${skippedAlready} skipped_opted_out=${skippedOptedOut} skipped_admin=${skippedAdmin} skipped_post_ready_sent=${skippedPostReadySent} failed=${failed}`,
+      context: { dry_run: dryRun, only_user_id: onlyUserId, only_draft_id: onlyDraftId, candidates, sent, skipped_already: skippedAlready, skipped_opted_out: skippedOptedOut, skipped_admin: skippedAdmin, skipped_post_ready_sent: skippedPostReadySent, failed },
     });
 
     return new Response(
@@ -632,6 +700,9 @@ serve(async (req) => {
         candidates,
         sent,
         skipped_already: skippedAlready,
+        skipped_opted_out: skippedOptedOut,
+        skipped_admin: skippedAdmin,
+        skipped_post_ready_sent: skippedPostReadySent,
         failed,
         results,
       }),
