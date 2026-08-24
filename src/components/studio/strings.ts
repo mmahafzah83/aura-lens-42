@@ -169,13 +169,25 @@ export const T = {
   hubResume: { en: "You have {n} pieces already waiting.", ar: "لديك {n} قطعة جاهزة بالفعل." },
   hubResumeOpen: { en: "Open one", ar: "افتح واحدة" },
   hubSignalsTitle: { en: "Write from your signals", ar: "اكتب من إشاراتك" },
-  hubSignalsEvidence: {
-    // True of the value shown: the sum of evidence behind the ranked subjects
-    // only — never a total of everything the member has ever saved.
-    en: "{n} saved sources sit behind the subjects we have ranked for you.",
-    ar: "{n} مصدرًا محفوظًا يقف خلف المواضيع التي رتّبناها لك.",
-  },
+  hubSignalsEvidence: (n: number) => ({
+    // True of the value shown: the sum of evidence fragments behind the ranked
+    // subjects — never a total of distinct sources, and never everything saved.
+    en: n === 1
+      ? "1 piece of evidence behind the subjects we have ranked for you."
+      : "{n} pieces of evidence behind the subjects we have ranked for you.",
+    // Arabic count grammar: 1/11+ use singular قطعة, 2 uses dual قطعتان,
+    // 3–10 use plural قطع. We switch on the small-count ranges so the line is
+    // correct for the values members will most often see.
+    ar: n === 1
+      ? "قطعة واحدة من الأدلة خلف المواضيع التي رتّبناها لك."
+      : n === 2
+      ? "قطعتان من الأدلة خلف المواضيع التي رتّبناها لك."
+      : n >= 3 && n <= 10
+      ? "{n} قطع من الأدلة خلف المواضيع التي رتّبناها لك."
+      : "{n} قطعة من الأدلة خلف المواضيع التي رتّبناها لك.",
+  }),
   hubSignalsEmpty: { en: "Nothing saved behind your subjects yet.", ar: "لا مواد محفوظة خلف مواضيعك بعد." },
+
   hubSignalsAction: { en: "Choose a signal", ar: "اختر إشارة" },
   hubElseAction: { en: "Type a subject", ar: "اكتب موضوعًا" },
   hubPasteTitle: { en: "Paste a post I already wrote", ar: "الصق منشورًا كتبته بالفعل" },
