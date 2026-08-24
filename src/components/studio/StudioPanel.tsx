@@ -2938,7 +2938,7 @@ export default function StudioPanel({
           /* The hub asks where the writing starts; the signals stage is the one
              that still asks what the post is about. */
           title={pickStage === "hub" ? T.hubHead[lang] : pickStage === "drafts" ? T.draftsStageHead[lang] : T.chooseHead[lang]}
-          subtitle={pickStage === "hub" ? T.hubHelp[lang] : pickStage === "drafts" ? T.draftsStageHelp[lang] : undefined}
+          subtitle={pickStage === "hub" ? T.hubHelp[lang] : pickStage === "drafts" ? T.draftsStageHelp[lang] : pickStage === "signals" ? T.chooseHelp[lang] : undefined}
           align={rtlShell ? "right" : "left"}
           lang={lang}
           rtlShell={rtlShell}
