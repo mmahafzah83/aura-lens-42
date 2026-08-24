@@ -59,7 +59,7 @@ export const T = {
   postureNameAuthor: { en: "I write it", ar: "أنا أكتبه" },
 
   // Journey map
-  step1: { en: "Choose the subject", ar: "اختر الموضوع" },
+  step1: { en: "Choose your starting point", ar: "اختر نقطة البداية" },
   step2: { en: "Write the post", ar: "اكتب المنشور" },
   step3: { en: "Words, or words and slides", ar: "نص، أو نص وشرائح" },
   step4: { en: "Put it on LinkedIn", ar: "انشره على لينكدإن" },
@@ -166,8 +166,32 @@ export const T = {
   pastePlaceholder: { en: "Paste your post here…", ar: "الصق منشورك هنا…" },
 
   // Step 1 — the hub, and the three ways in
+  /** The hub asks where the writing STARTS FROM — not what it is about. */
+  hubHead: { en: "Where should this post start?", ar: "من أين يبدأ هذا المنشور؟" },
+  hubHelp: {
+    en: "Choose what you are writing from. Everything after this follows from it.",
+    ar: "اختر ما تكتب منه. كل ما يأتي بعد ذلك يتبع هذا الاختيار.",
+  },
   hubResume: { en: "You have {n} pieces already waiting.", ar: "لديك {n} قطعة جاهزة بالفعل." },
   hubResumeOpen: { en: "Open one", ar: "افتح واحدة" },
+  // Step 1 — the waiting work, its own screen
+  draftsStageHead: { en: "Work already waiting", ar: "عمل ينتظرك بالفعل" },
+  draftsStageHelp: {
+    en: "Posts Aura wrote for you, and posts you saved. Open one and carry on where it stopped.",
+    ar: "منشورات كتبتها أورا لك، ومنشورات حفظتها. افتح واحدة وتابع من حيث توقفت.",
+  },
+  /** Reveals the remainder in place. Singular/plural correct in both shells. */
+  draftsShowRest: (n: number) => ({
+    en: n === 1 ? "Show the other one" : `Show the other ${n}`,
+    ar: n === 1
+      ? "أظهر الواحدة الأخرى"
+      : n === 2
+      ? "أظهر الاثنتين الأخريين"
+      : n >= 3 && n <= 10
+      ? `أظهر الـ${n} الأخرى`
+      : `أظهر الـ${n} الأخرى`,
+  }),
+  draftsShowFewer: { en: "Show fewer", ar: "أظهر أقل" },
   hubSignalsTitle: { en: "Write from your signals", ar: "اكتب من إشاراتك" },
   hubSignalsEvidence: (n: number) => ({
     // True of the value shown: the sum of evidence fragments behind the ranked
@@ -515,10 +539,6 @@ export const T = {
   draftOpened: { en: "We opened that draft. Pick up where it stopped.", ar: "فتحنا تلك المسوّدة. تابع من حيث توقفت." },
   draftMissing: { en: "That draft is no longer there.", ar: "تلك المسوّدة لم تعد موجودة." },
   untitledDraft: { en: "Untitled draft", ar: "مسوّدة بلا عنوان" },
-  draftsShowingSome: {
-    en: "Showing the {shown} most recent of {total}.",
-    ar: "نعرض أحدث {shown} من {total}.",
-  },
 
   // Every subject lives in Signals; the composer hands off there.
   browseInSignals: { en: "Browse everything in Signals", ar: "تصفّح كل شيء في الإشارات" },
