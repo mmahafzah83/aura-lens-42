@@ -1138,6 +1138,7 @@ export default function StudioPanel({
         return;
       }
       await openDraft(full, "dashboard_draft");
+      setOrigin(draftPrefill.origin ?? null);
       onDraftPrefillConsumed?.();
     })();
   }, [userId, draftPrefill, openDraft, lang, onDraftPrefillConsumed]);
