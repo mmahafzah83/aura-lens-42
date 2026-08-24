@@ -105,13 +105,20 @@ function blankDictionaryCalls(line) {
 /** Literals that are plainly code, not prose. */
 const CODE_LIKE = /^(?:[\w./@-]*)$|var\(|--|px|%|hsl|rgb|#[0-9a-f]{3}/i;
 
-/** A line that is counting something: ternary, a text-bearing key, or a
- *  number-bearing identifier. A bare noun literal here is a hand-rolled plural. */
-const COUNT_CONTEXT = [
-  /\?[^?]*:/,                                             // ternary
-  /\b(?:label|name|title|text|noun|word|unit|suffix)\s*[:=]/i,
-  /\b\w*(?:count|total|length|size|num|qty|n)\b\s*(?:[=!<>]=?|\)|\s)/i,
-];
+/** A line that is COUNTING something. A bare noun literal is only a hand-rolled
+ *  plural when a number is visibly driving the choice: a ternary whose test
+ *  compares against 1 or reads a count-shaped identifier, or a text-bearing key
+ *  on a line that also carries such an identifier. Discriminator literals
+ *  (`kind === "capture"`, `"signal" | "insight"`) have no number and are code. */
+const NUM_IDENT = /\b\w*(?:count|total|length|size|qty)\b/i;
+
+function isCountContext(line) {
+  const ternary = /\?/.test(line) && /:/.test(line)
+    && (/[=!<>]=*\s*1\b/.test(line) || NUM_IDENT.test(line));
+  const textKey = /\b(?:label|title|text|name|noun|word|unit|suffix)\s*[:=]/i.test(line)
+    && NUM_IDENT.test(line);
+  return ternary || textKey;
+}
 
 function findHit(rawLine) {
   // Class lists are styling, not prose — `flex items-center` is not a count.
@@ -122,7 +129,7 @@ function findHit(rawLine) {
   // Per-match, not per-line: only the dictionary call itself is forgiven.
   line = blankDictionaryCalls(line);
 
-  const counting = COUNT_CONTEXT.some((re) => re.test(line));
+  const counting = isCountContext(line);
   for (const lit of literalsOf(line)) {
     const bare = lit.trim();
     // A literal that IS a noun is never exempted by CODE_LIKE.
