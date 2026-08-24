@@ -50,7 +50,8 @@ const SignalDetail: React.FC<Props> = ({ signalId, onBack, onOpenChat, onDraftTo
     onDraftToStudio?.({
       topic: s.signal_title,
       context: [s.explanation, s.strategic_implications, s.what_it_means_for_you].filter(Boolean).join("\n\n"),
-      signalId: s.id, signalTitle: s.signal_title, source: "signals_board",
+      signalId: s.id, signalTitle: s.signal_title, sourceType: "signals_board",
+      origin: { surface: "signals", label: "From your signal" },
     });
   }, [onDraftToStudio]);
 
