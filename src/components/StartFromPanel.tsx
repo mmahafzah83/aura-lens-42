@@ -551,3 +551,5 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
     </aside>
   );
 }
+
+const __violation = `${totalSignals} sources`;
