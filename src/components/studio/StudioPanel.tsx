@@ -3075,12 +3075,18 @@ export default function StudioPanel({
                     {captureEmpty
                       ? T.chooseEmpty[lang]
                       : savedBehindSubjects > 0
-                      ? T.hubSignalsEvidence(savedBehindSubjects)[lang].split("{n}").map((part, i) => (
-                          <React.Fragment key={i}>
-                            {i > 0 && <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{savedBehindSubjects}</span>}
-                            {part}
-                          </React.Fragment>
-                        ))
+                      ? (() => {
+                          const parts = T.hubSignalsEvidence(savedBehindSubjects, lang);
+                          return (
+                            <>
+                              {parts.pre}
+                              {parts.digit !== null && (
+                                <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{parts.digit}</span>
+                              )}
+                              {parts.post}
+                            </>
+                          );
+                        })()
                       : T.hubSignalsEmpty[lang]}
                   </p>
                   <span style={{ flex: 1 }} />
@@ -3157,14 +3163,18 @@ export default function StudioPanel({
                     }}
                   >
                     <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)" }}>
-                      {T.hubResume(drafts.length)[lang].split("{n}").map((part, i) => (
-                        <React.Fragment key={i}>
-                          {i > 0 && (
-                            <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{drafts.length}</span>
-                          )}
-                          {part}
-                        </React.Fragment>
-                      ))}
+                      {(() => {
+                        const parts = T.hubResume(drafts.length, lang);
+                        return (
+                          <>
+                            {parts.pre}
+                            {parts.digit !== null && (
+                              <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{parts.digit}</span>
+                            )}
+                            {parts.post}
+                          </>
+                        );
+                      })()}
                     </span>
                     <span style={{ flex: 1 }} />
                     {/* ONE control, ONE meaning: it opens the waiting work on its

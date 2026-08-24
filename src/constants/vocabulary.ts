@@ -142,3 +142,40 @@ export const nSignals = (n: number, lang: VocabLang): string =>
 /** Evidence and sources in one line — the pair every signal surface states. */
 export const evidenceAndSources = (evidence: number, sources: number, lang: VocabLang): string =>
   `${nEvidence(evidence, lang)} · ${nSources(sources, lang)}`;
+
+// ── parts, for surfaces that render the numeral in the mono face ───────────
+//
+// A surface that gives the digit its own <span> must NOT reverse-engineer the
+// placeholder out of a rendered sentence (`.replace(String(n), "{n}")`): the
+// Arabic singular and dual carry NO numeral at all, and a second numeral in any
+// future wording would be swapped by mistake. So the dictionary emits the split
+// BY CONSTRUCTION.
+//
+// DECISION for Arabic n=1 / n=2: keep the worded forms (قطعة واحدة / قطعتان)
+// and return `digit: null`. Native Arabic states one and two as words; forcing
+// a numeral to satisfy a typographic effect would be worse grammar for the sake
+// of a font. The caller renders the mono digit only when `digit` is non-null.
+
+export type CountParts = { pre: string; digit: string | null; post: string };
+
+const worded = (text: string): CountParts => ({ pre: text, digit: null, post: "" });
+const numbered = (n: number, tail: string): CountParts => ({ pre: "", digit: String(n), post: tail });
+
+export function evidencePartsAr(n: number): CountParts {
+  if (n === 1) return worded("قطعة واحدة من الأدلة");
+  if (n === 2) return worded("قطعتان من الأدلة");
+  return numbered(n, n <= 10 ? " قطع من الأدلة" : " قطعة من الأدلة");
+}
+
+export function evidencePartsEn(n: number): CountParts {
+  return numbered(n, ` piece${n === 1 ? "" : "s"} of evidence`);
+}
+
+/** The evidence count, split so the caller can style the numeral. */
+export const nEvidenceParts = (n: number, lang: VocabLang): CountParts =>
+  lang === "ar" ? evidencePartsAr(n) : evidencePartsEn(n);
+
+/** Append a trailing clause to a parts object without touching the numeral. */
+export const withTail = (parts: CountParts, tail: string): CountParts =>
+  ({ ...parts, post: `${parts.post}${tail}` });
+
