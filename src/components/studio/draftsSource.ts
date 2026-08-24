@@ -18,6 +18,9 @@ export type StudioDraft = {
   _source: "content_items" | "linkedin_posts";
   title: string | null;
   created_at: string;
+  /** When it was last SAVED: content_items.updated_at / linkedin_posts.edited_at,
+      falling back to created_at when the table has never recorded an edit. */
+  saved_at: string;
   signalId: string | null;
 };
 
@@ -30,14 +33,14 @@ export async function loadStudioDrafts(): Promise<StudioDraft[]> {
     const [ci, lp] = await Promise.all([
       supabase
         .from("content_items")
-        .select("id, type, body, language, status, title, generation_params, created_at")
+        .select("id, type, body, language, status, title, generation_params, created_at, updated_at")
         .eq("status", "draft")
         .order("created_at", { ascending: false })
         .limit(100),
       supabase
         .from("linkedin_posts")
         .select(
-          "id, post_text, title, hook, topic_label, format_type, tracking_status, source_type, source_metadata, source_signal_id, published_at, created_at",
+          "id, post_text, title, hook, topic_label, format_type, tracking_status, source_type, source_metadata, source_signal_id, published_at, created_at, edited_at",
         )
         .eq("tracking_status", "draft")
         .is("published_at", null)
@@ -58,6 +61,7 @@ export async function loadStudioDrafts(): Promise<StudioDraft[]> {
         _source: "content_items",
         title: r.title || params.topic || null,
         created_at: r.created_at,
+        saved_at: r.updated_at || r.created_at,
         signalId: params.signal_id ?? null,
       });
     }
@@ -75,13 +79,14 @@ export async function loadStudioDrafts(): Promise<StudioDraft[]> {
         _source: "linkedin_posts",
         title: r.title || r.topic_label || meta.topic || null,
         created_at: r.created_at,
+        saved_at: r.edited_at || r.created_at,
         signalId: r.source_signal_id ?? (Array.isArray(meta.signal_ids) ? meta.signal_ids[0] ?? null : null),
       });
     }
 
     return Array.from(merged.values())
       .filter((d) => (d.body || "").trim().length > 0)
-      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      .sort((a, b) => (a.saved_at < b.saved_at ? 1 : -1));
   } catch {
     return [];
   }
@@ -95,7 +100,7 @@ export async function loadStudioDraft(id: string): Promise<StudioDraft | null> {
   // A published or otherwise filtered row still opens when linked to directly.
   const { data } = await supabase
     .from("linkedin_posts")
-    .select("id, post_text, title, topic_label, format_type, source_metadata, source_signal_id, created_at")
+    .select("id, post_text, title, topic_label, format_type, source_metadata, source_signal_id, created_at, edited_at")
     .eq("id", id)
     .maybeSingle();
   if (!data) return null;
@@ -112,6 +117,7 @@ export async function loadStudioDraft(id: string): Promise<StudioDraft | null> {
     _source: "linkedin_posts",
     title: r.title || r.topic_label || meta.topic || null,
     created_at: r.created_at,
+    saved_at: r.edited_at || r.created_at,
     signalId: r.source_signal_id ?? null,
   };
 }
