@@ -78,11 +78,12 @@ const SignalDetail: React.FC<Props> = ({ signalId, onBack, onOpenChat, onDraftTo
           <div style={{ marginTop: 12 }}>
             <ButtonGhost
               data-testid="signal-make-carousel"
-              onClick={() => { window.location.href = `/carousel-studio?signal=${signal.id}`; }}
+              onClick={() => { void draftFromSignal(signal, "carousel"); }}
             >
               <LayoutGrid size={13} />Make a carousel
             </ButtonGhost>
           </div>
+
         </>
       )}
     </section>
