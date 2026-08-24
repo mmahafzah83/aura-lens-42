@@ -297,7 +297,7 @@ const Dashboard = () => {
   useEffect(() => {
     const openCap = () => setCaptureOpen(true);
     const switchTab = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { tab?: string } | undefined;
+      const detail = (e as CustomEvent).detail as { tab?: string; params?: string } | undefined;
       const target = detail?.tab;
       // Settings lives on its own route now (avatar menu), not in the rail.
       if (target === "settings" || target === "preferences") {
@@ -308,7 +308,15 @@ const Dashboard = () => {
       const resolved = target ? resolveTab(target) : null;
       if (resolved && isTabValue(resolved)) {
         setActiveTab(resolved as TabValue);
-        setSearchParams({ tab: resolved });
+        // A move may carry the existing deep-link parameters (signal, draft,
+        // src, format, from). Keep them on the URL AND run the same handlers
+        // the mount path runs, so the intent is not silently dropped.
+        const carried = new URLSearchParams(detail?.params ?? "");
+        carried.delete("tab");
+        const next = new URLSearchParams({ tab: resolved });
+        carried.forEach((v, k) => next.set(k, v));
+        setSearchParams(next);
+        if (Array.from(carried.keys()).length > 0) applyDeepLinkParams(next);
       }
     };
     window.addEventListener("aura:open-capture", openCap);
@@ -317,7 +325,9 @@ const Dashboard = () => {
       window.removeEventListener("aura:open-capture", openCap);
       window.removeEventListener("aura:switch-tab", switchTab);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setSearchParams]);
+
 
   /**
    * The composer mounts on first arrival at the authority tab and is never
