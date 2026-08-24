@@ -2977,10 +2977,14 @@ export default function StudioPanel({
             </p>
           )}
           {/* A subject change over written words is asked for, never assumed. */}
-          {/* Only on the screens where the question makes sense. On the hub or
-              the drafts list it would carry a second blue primary onto a screen
-              that owns its own. */}
-          {pendingSubject && (pickStage === "signals" || pickStage === "confirm") && (
+          {/* The two screens that can SET a pending subject are the only two
+              that show the question: the subject stage (typing sets it) and the
+              confirm stage (a picked card sets it and lands here in the same
+              tick). The hub and the drafts list never set it, and showing it
+              there would carry a second blue primary onto a screen that already
+              owns one. The old `signals` arm was unreachable — the card handler
+              moves to `confirm` in the same tick — so it is gone. */}
+          {pendingSubject && (pickStage === "subject" || pickStage === "confirm") && (
             <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--act)", borderRadius: 12, padding: 12, marginBottom: 16 }}>
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-primary)", margin: "0 0 10px" }}>
                 {T.confirmSubjectHead[lang]}
