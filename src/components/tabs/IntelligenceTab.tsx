@@ -331,7 +331,7 @@ const TerritoryPanel = ({
                 border: isSelected ? "0.5px solid var(--brand-muted, var(--surface-ink-subtle))" : "0.5px solid var(--surface-ink-subtle)",
                 borderLeft: isSelected ? "3px solid var(--brand)" : "3px solid transparent",
                 borderRadius: 8,
-                background: isSelected ? "hsl(var(--muted) / 0.35)" : "transparent",
+                background: isSelected ? "var(--surface-subtle)" : "transparent",
                 cursor: "pointer",
                 transition: "background .15s",
                 width: "100%",
@@ -869,7 +869,7 @@ export const TierSection = ({
           marginTop: 8,
           display: "flex", flexDirection: "column", gap: 1,
           borderRadius: "var(--radius, 8px)", overflow: "hidden",
-          border: "0.5px solid hsl(var(--border))",
+          border: "0.5px solid var(--rule-outer)",
         }}>
           {signals.map(renderRow)}
         </div>
@@ -1091,8 +1091,8 @@ export const EditorialReadingList = ({
                     onClick={() => onOpenCapture?.(rec.url || undefined, undefined, sourceKey)}
                     disabled={captured}
                     style={{
-                      background: captured ? "hsl(var(--muted) / 0.5)" : "var(--brand)",
-                      color: captured ? "hsl(var(--muted-foreground))" : "#fff", border: "none",
+                      background: captured ? "var(--surface-subtle)" : "var(--brand)",
+                      color: captured ? "var(--text-secondary)" : "var(--action-ink)", border: "none",
                       borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500,
                       cursor: captured ? "default" : "pointer",
                       opacity: captured ? 0.85 : 1,
@@ -1536,7 +1536,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                             padding: "4px 10px",
                             borderRadius: "var(--radius, 6px)",
                             background: "none",
-                            border: "0.5px solid hsl(var(--border))",
+                            border: "0.5px solid var(--rule-outer)",
                             color: "var(--text-secondary)",
                             cursor: "pointer",
                             whiteSpace: "nowrap",
