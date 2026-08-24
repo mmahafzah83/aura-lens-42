@@ -166,6 +166,21 @@ export const T = {
   },
   pastePlaceholder: { en: "Paste your post here…", ar: "الصق منشورك هنا…" },
 
+  // Step 1 — the hub, and the three ways in
+  hubResume: { en: "You have {n} pieces already waiting.", ar: "لديك {n} قطعة جاهزة بالفعل." },
+  hubResumeOpen: { en: "Open one", ar: "افتح واحدة" },
+  hubSignalsTitle: { en: "Write from your signals", ar: "اكتب من إشاراتك" },
+  hubSignalsEvidence: { en: "{n} things you saved are waiting.", ar: "{n} مادة حفظتها في انتظارك." },
+  hubSignalsEmpty: { en: "Nothing saved behind your subjects yet.", ar: "لا مواد محفوظة خلف مواضيعك بعد." },
+  hubSignalsAction: { en: "Choose a signal", ar: "اختر إشارة" },
+  hubElseAction: { en: "Type a subject", ar: "اكتب موضوعًا" },
+  hubPasteTitle: { en: "Paste a post I already wrote", ar: "الصق منشورًا كتبته بالفعل" },
+  hubPasteAction: { en: "Paste it", ar: "الصقه" },
+  backToHub: { en: "Back", ar: "رجوع" },
+  chosenSubjectHead: { en: "Your subject", ar: "موضوعك" },
+  chooseDifferentSubject: { en: "Choose a different subject", ar: "اختر موضوعًا آخر" },
+
+
   // Step 2 — write
   writeHead: { en: "Your post", ar: "منشورك" },
   writeHelp: {
