@@ -280,7 +280,7 @@ serve(async (req) => {
   const results: Array<{
     user_id: string;
     draft_id: string;
-    outcome: "sent" | "would_send" | "skipped_already" | "failed";
+    outcome: "sent" | "would_send" | "skipped_already" | "skipped_opted_out" | "skipped_admin" | "skipped_post_ready_sent" | "failed";
     resend_status?: number;
     error?: string;
     subject?: string;
@@ -291,13 +291,17 @@ serve(async (req) => {
   let candidates = 0;
   let sent = 0;
   let skippedAlready = 0;
+  let skippedOptedOut = 0;
+  let skippedAdmin = 0;
+  let skippedPostReadySent = 0;
   let failed = 0;
 
   try {
-    // Pick each user's single newest draft older than 12h — UNLESS only_draft_id
-    // targets a specific rehearsal draft, in which case we select that row
-    // directly and skip the age gate.
+    // Pick each user's single newest draft older than 12h and younger than 7 days —
+    // UNLESS only_draft_id targets a specific rehearsal draft, in which case we
+    // select that row directly and skip the age gate entirely.
     const cutoffIso = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    const maxAgeIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     let ciDrafts: any[] | null = null;
     let lpDrafts: any[] | null = null;
