@@ -94,6 +94,10 @@ export const T = {
     en: "Choose a subject first, or paste words of your own.",
     ar: "اختر موضوعاً أولاً، أو الصق كلماتك.",
   },
+  whyAnswerAbove: {
+    en: "There is a question waiting above. Answer it first.",
+    ar: "هناك سؤال في الأعلى ينتظر إجابتك. أجب عنه أولاً.",
+  },
   whyNoWords: {
     en: "Write or generate the post first.",
     ar: "اكتب المنشور أو ولّده أولاً.",
