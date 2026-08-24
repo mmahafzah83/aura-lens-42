@@ -97,7 +97,7 @@ function milestoneText(m: RecordMilestone): { head: string; sub: string } {
     return { head: "Your first post written with Aura.", sub: postTitle(m.value) };
   }
   return {
-    head: `One signal reached ${nEvidence(m.n ?? 25)}.`,
+    head: `One signal reached ${nEvidence(m.n ?? 25, "en")}.`,
     sub: postTitle(m.value),
   };
 }
@@ -153,7 +153,7 @@ const ThemeChip: React.FC<{
         fontSize: 12.5, color: "var(--text-secondary)",
       }}>
         <span aria-hidden style={{ ...MONO, fontSize: 10 }}>{open ? "▾" : "▸"}</span>
-        {`${nSignals(n)} found`}
+        {`${nSignals(n, "en")} found`}
       </button>
     </div>
     {open && (

@@ -492,8 +492,8 @@ export const SignalHero = ({
       </h2>
 
       <p style={{ fontSize: 12, color: "var(--glass-2)", lineHeight: 1.7, margin: "0 0 20px" }}>
-        You've captured <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{nEvidence(fragCount)}</strong> from{" "}
-        <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{nSources(sourceCount)}</strong>.{" "}
+        You've captured <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{nEvidence(fragCount, "en")}</strong> from{" "}
+        <strong style={{ color: "var(--glass)", fontWeight: 500 }}>{nSources(sourceCount, "en")}</strong>.{" "}
         Confidence: <strong style={{ color: "var(--brand)", fontWeight: 500 }}>{confPct}%</strong>
         <InfoTooltip
           label="Confidence"
@@ -546,7 +546,7 @@ export const SignalHero = ({
           }}
         >
           <Layers size={12} />
-          See the evidence behind this signal ({nEvidence(fragCount)})
+          See the evidence behind this signal ({nEvidence(fragCount, "en")})
           <ChevronDown size={12} style={{ transform: showEvidence ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }} />
         </button>
         {showEvidence && (
@@ -1407,7 +1407,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
         }}>
           {([
             { value: "signals" as const, label: "Signals" },
-            { value: "sources" as const, label: nCaptures(entryCount) },
+            { value: "sources" as const, label: nCaptures(entryCount, "en") },
           ]).map(t => {
             const active = activeSubTab === t.value;
             return (
@@ -1481,7 +1481,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                   ctaLabel="Make your first capture →" ctaAction={() => onOpenCapture?.()} />
               ) : entryCount < 3 ? (
                 <EmptyState icon={Brain} title="Your radar is warming up"
-                  description={`Aura reads every capture on its own and looks for a pattern in it. Nothing has formed yet from your ${nCaptures(entryCount)}.`}
+                  description={`Aura reads every capture on its own and looks for a pattern in it. Nothing has formed yet from your ${nCaptures(entryCount, "en")}.`}
                   ctaLabel="Capture something else →" ctaAction={() => onOpenCapture?.()} />
               ) : (
                 <EmptyState icon={Brain} title="Your captures are being analysed"

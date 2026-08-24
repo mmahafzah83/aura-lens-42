@@ -43,7 +43,7 @@ export default function ResumeJourneyCard({ userId }: { userId: string | null })
       const strengths = Object.keys(((data as any).skill_ratings as Record<string, unknown>) || {}).length;
       const saved = [
         (data as any).headline || (data as any).seniority_band ? "Your profile is read" : "",
-        claims ? `${nEvidence(claims)} saved` : "",
+        claims ? `${nEvidence(claims, "en")} saved` : "",
         strengths ? "your strengths saved" : "",
       ].filter(Boolean) as string[];
       setPaused({

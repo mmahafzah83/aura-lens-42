@@ -320,7 +320,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
         }}>
           <EvidenceMeter filled={Math.min(evidence, 5)} bucket={bucket} />
           <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".06em", color: "var(--text-muted)" }}>
-            {nEvidence(evidence)} · quiet {ageDays(r.last_evidence_at)}d
+            {nEvidence(evidence, "en")} · quiet {ageDays(r.last_evidence_at)}d
           </span>
           <span
             aria-hidden
@@ -596,7 +596,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                     {bucket === "accelerating" && <Chip variant="live">Accelerating</Chip>}
                     <EvidenceMeter filled={Math.min((r.supporting_evidence_ids || []).length, 5)} bucket={bucket} />
                     <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".06em", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                      {nEvidence((r.supporting_evidence_ids || []).length)} · quiet {ageDays(r.last_evidence_at)}d
+                      {nEvidence((r.supporting_evidence_ids || []).length, "en")} · quiet {ageDays(r.last_evidence_at)}d
                     </span>
                     <span
                       aria-hidden
