@@ -5,11 +5,15 @@
 // In dry-run mode we do every lookup, build every email, write log rows prefixed
 // `dryrun:`, but call Resend ZERO times.
 //
-// NO CRON is scheduled for this function. It stays manually invocable only until the
-// Composer draft-open fix is confirmed live in production. Do not add a cron job here.
+// GUARDED. The run is now safe to schedule: drafts must be 12h–7d old, members with
+// `lifecycle_opt_out` are skipped, admin accounts are skipped, and a draft that already
+// had a `post_ready` email is never emailed again here. This function is therefore a
+// candidate for a cron schedule — but DRY-RUN REMAINS THE DEFAULT, so any schedule must
+// pass `dry_run: false` explicitly to actually send.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { adminUserIds } from "../_shared/adminRole.ts";
 import {
   renderEmail,
   heading as headingHtml,
