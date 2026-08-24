@@ -17,6 +17,8 @@ import DraftProfileCopy, { type DraftTarget } from "@/components/identity/DraftP
 import { WorkingPanel, type WorkingStage } from "@/components/ui/WorkingPanel";
 import { causeOf } from "@/lib/failureCause";
 import { buildHaystacks, matchTheme, type ThemeMatch, type ThemeField } from "@/lib/themeMatch";
+import { loadThemeAliases } from "@/lib/themeAliases";
+import { EMPTY_ALIASES, type AliasIndex } from "../../../supabase/functions/_shared/textMatch";
 import { buildPresenceChange } from "@/lib/presenceChange";
 
 /* ── System-B "Signal" values. Module scope, always. ─────────────────────── */
@@ -247,9 +249,17 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
   /* The whole profile is the haystack: headline, About, every role title and
      description, every skill. A subject the member put in a role is carried. */
   const haystacks = useMemo(() => buildHaystacks(snapshot), [snapshot]);
+  /* Read once per session. A failed read leaves EMPTY_ALIASES — exact matching,
+     no throw, card unaffected. */
+  const [aliases, setAliases] = useState<AliasIndex>(EMPTY_ALIASES);
+  useEffect(() => {
+    let live = true;
+    loadThemeAliases().then((a) => { if (live) setAliases(a); }).catch(() => {});
+    return () => { live = false; };
+  }, []);
   const themeRows = useMemo(
-    () => themes.map((t) => ({ ...t, match: matchTheme(haystacks, t.theme) as ThemeMatch })),
-    [themes, haystacks],
+    () => themes.map((t) => ({ ...t, match: matchTheme(haystacks, t.theme, aliases) as ThemeMatch })),
+    [themes, haystacks, aliases],
   );
   /* The baseline is the most recent read whose SCORED FACTS differ from this
      one — pressing "Read again" on an unchanged profile must not wipe out the
@@ -287,8 +297,8 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
     const top = themes[0]?.theme ?? null;
     let themeMove: { theme: string; from: string; to: string } | null = null;
     if (top && previousHaystacks) {
-      const before = matchTheme(previousHaystacks, top).state;
-      const after = matchTheme(haystacks, top).state;
+      const before = matchTheme(previousHaystacks, top, aliases).state;
+      const after = matchTheme(haystacks, top, aliases).state;
       if (before !== after) themeMove = { theme: top, from: STATE_WORDS[before], to: STATE_WORDS[after] };
     }
     return buildPresenceChange({
@@ -301,7 +311,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
       baselineDate,
       themeMove,
     });
-  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum, baselineDate]);
+  }, [previousRows, previousHaystacks, haystacks, themes, rows, sum, baselineDate, aliases]);
 
   const carriedOfShown = themeRows.filter((t) => t.match.state === "carried").length;
   const partialOfShown = themeRows.filter((t) => t.match.state === "partial").length;

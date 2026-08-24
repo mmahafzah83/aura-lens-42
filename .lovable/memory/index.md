@@ -32,3 +32,4 @@ C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Ste
 - [Voice OS Data Foundation](mem://features/voice/voice-os-data) — voice_traits registry/values/feedback, computable traits, hook+ending vocabulary, readiness
 - [LinkedIn Address Authority](mem://features/linkedin/address-authority) — Address established from the member's own OAuth token; guessed handles retired
 - [Appear Noticing](mem://features/my-story/appear-noticing) — Three-state subject matching, full-profile haystack, applied-copy detection
+- [Shared Text Layer](mem://technical/shared-text-layer) — One normaliser/stemmer/alias module, theme_aliases table, no stopword aliases
