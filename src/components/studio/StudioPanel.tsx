@@ -196,9 +196,11 @@ interface Choice {
  * already computes these in Dashboard; the studio honours them.
  */
 export interface StudioPanelProps {
-  signalPrefill?: any;
+  /** May carry an optional `origin` describing where the arrival came from. */
+  signalPrefill?: { origin?: { surface: string; label: string } } & Record<string, any>;
   onSignalPrefillConsumed?: () => void;
-  draftPrefill?: any;
+  /** May carry an optional `origin` describing where the arrival came from. */
+  draftPrefill?: { origin?: { surface: string; label: string } } & Record<string, any>;
   onDraftPrefillConsumed?: () => void;
   onOpenCapture?: () => void;
   /** True only while the Write tab is the visible tab. Gates the export portal. */
