@@ -14,10 +14,27 @@ export type WorkFormat = "post" | "carousel";
 
 export type WorkLanguage = "en" | "ar";
 
-/** Where an arrival came from, in the member's words. */
+/**
+ * Where the way back goes. `tab` is a dashboard tab key; `params` is the
+ * query string the existing deep-link handlers already understand
+ * (signal, draft, src, format, from).
+ */
+export interface WorkBackTarget {
+  tab: string;
+  params?: string;
+}
+
+/** Where an arrival came from, in the member's words, and the way back. */
 export interface WorkOrigin {
   surface: string;
   label: string;
+  back: WorkBackTarget;
+}
+
+/** The ids a surface may know about when the way back is derived. */
+export interface BackIds {
+  signalId?: string | null;
+  draftId?: string | null;
 }
 
 /**
@@ -40,17 +57,58 @@ export const ORIGIN: Record<string, string> = {
 
 export const ORIGIN_FALLBACK_LABEL = "From a link you opened";
 
-/** The origin for a surface, with the existing fallback behaviour kept. */
-export function originFor(surface: string | null | undefined): WorkOrigin {
+/**
+ * The way back for a surface. Email surfaces get one too: a cold deep-link
+ * arrival has no history behind it, so it must still offer a way up.
+ */
+export function backTargetFor(surface: string | null | undefined, ids?: BackIds): WorkBackTarget {
   const s = (surface || "").trim();
-  if (s && ORIGIN[s]) return { surface: s, label: ORIGIN[s] };
-  return { surface: s || "link", label: ORIGIN_FALLBACK_LABEL };
+  const signalId = ids?.signalId || null;
+  const onSignal = (): WorkBackTarget =>
+    signalId
+      ? { tab: "intelligence", params: `signal=${encodeURIComponent(signalId)}` }
+      : { tab: "intelligence" };
+
+  switch (s) {
+    case "signals":
+    case "m4":
+      return onSignal();
+    case "trend":
+      return { tab: "intelligence" };
+    case "overnight":
+    case "morning_signal":
+      return { tab: "overnight" };
+    case "my_story":
+      return { tab: "identity" };
+    case "weekly_brief":
+      return signalId ? onSignal() : { tab: "library" };
+    case "post_ready":
+    case "draft_ready":
+      return { tab: "library" };
+    case "home":
+    case "milestone":
+      return { tab: "home" };
+    default:
+      return { tab: "home" };
+  }
+}
+
+/** The origin for a surface, with the existing fallback behaviour kept. */
+export function originFor(surface: string | null | undefined, ids?: BackIds): WorkOrigin {
+  const s = (surface || "").trim();
+  const back = backTargetFor(s, ids);
+  if (s && ORIGIN[s]) return { surface: s, label: ORIGIN[s], back };
+  return { surface: s || "link", label: ORIGIN_FALLBACK_LABEL, back };
 }
 
 /** The origin carried by a deep link (`?from=`). */
 export function originFromParams(params: URLSearchParams): WorkOrigin {
-  return originFor(params.get("from"));
+  return originFor(params.get("from"), {
+    signalId: params.get("signal"),
+    draftId: params.get("draft"),
+  });
 }
+
 
 /**
  * Everything a sender may hand over. `kind` and `origin` are always present;
@@ -109,7 +167,7 @@ export function handoffSignal(input: {
     sourceTitle: input.title,
     contentFormat: input.contentFormat ?? "post",
     ...(input.language ? { language: input.language } : {}),
-    origin: originFor(input.surface),
+    origin: originFor(input.surface, { signalId: input.signalId }),
   };
 }
 
@@ -141,7 +199,7 @@ export function handoffDraft(input: {
     _source: d._source,
     ...(d.signalId ? { signalId: d.signalId } : {}),
     contentFormat: d.type === "carousel" ? "carousel" : "post",
-    origin: originFor(input.surface),
+    origin: originFor(input.surface, { signalId: d.signalId ?? null, draftId: d.id }),
   };
 }
 
