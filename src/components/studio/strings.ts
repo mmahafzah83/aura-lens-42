@@ -765,7 +765,7 @@ export function cardCounts(evidence: number, sources: number, lang: Lang): strin
 /** Arabic version of a start-card reason, keyed off its kind. */
 export function startReason(kind: string, count: number, english: string, lang: Lang): string {
   if (lang !== "ar") return english;
-  const ev = evidenceCountAr(count);
+  const ev = evidenceAr(count);
   if (kind === "new_evidence") return `${ev} تقف خلف هذا الآن — بعضها وصل بعد آخر منشور لك عنه.`;
   if (kind === "accelerating") return `يكتسب زخماً — ${ev} وما زال يتصاعد.`;
   if (kind === "never_written") {
