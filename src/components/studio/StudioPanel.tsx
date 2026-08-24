@@ -2688,7 +2688,7 @@ export default function StudioPanel({
         <button
           type="button"
           dir={rtlShell ? "rtl" : "ltr"}
-          aria-label={T.originBack[lang]}
+          aria-label={`${origin.label}. ${T.originBack[lang]}`}
           onClick={() => {
             try {
               window.dispatchEvent(new CustomEvent("aura:switch-tab", {
@@ -2703,18 +2703,19 @@ export default function StudioPanel({
             color: "var(--machine-text)", background: "var(--machine-tint)",
             border: "1px solid var(--machine)", borderRadius: 999, padding: "6px 12px",
             cursor: "pointer",
-            transition: "background 150ms ease, box-shadow 150ms ease",
+            textDecoration: "none",
+            transition: "background 150ms ease",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "var(--machine)";
-            e.currentTarget.style.color = "var(--text-inverse)";
+            // Deeper tint from the same machine family — cyan stays a tint, never a fill.
+            e.currentTarget.style.background = "color-mix(in srgb, var(--machine-tint) 88%, var(--machine))";
+            e.currentTarget.style.textDecoration = "underline";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "var(--machine-tint)";
-            e.currentTarget.style.color = "var(--machine-text)";
+            e.currentTarget.style.textDecoration = "none";
           }}
-          onFocus={(e) => { e.currentTarget.style.boxShadow = "0 0 0 2px var(--machine)"; }}
-          onBlur={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+
         >
           <span aria-hidden style={{ transform: rtlShell ? "scaleX(-1)" : "none", display: "inline-block" }}>↩</span>{origin.label}
         </button>
