@@ -743,19 +743,57 @@ export function attentionText(englishLine: string, lang: Lang): string {
   return "احتاجت أورا إلى تعديل شيء وستحاول مرة أخرى.";
 }
 
+/**
+ * Arabic count words for the two — and only two — numbers a card may state.
+ * `fragment_count` is ALWAYS evidence, `unique_orgs` is ALWAYS sources.
+ * Arabic grammar: 1 singular, 2 dual, 3–10 plural, 11+ singular accusative.
+ */
+export function evidenceCountAr(n: number): string {
+  if (n === 1) return "قطعة واحدة من الأدلة";
+  if (n === 2) return "قطعتان من الأدلة";
+  if (n >= 3 && n <= 10) return `${n} قطع من الأدلة`;
+  return `${n} قطعة من الأدلة`;
+}
+
+export function sourceCountAr(n: number): string {
+  if (n === 1) return "مصدر واحد";
+  if (n === 2) return "مصدران";
+  if (n >= 3 && n <= 10) return `${n} مصادر`;
+  return `${n} مصدراً`;
+}
+
+export function evidenceCountEn(n: number): string {
+  return `${n} piece${n === 1 ? "" : "s"} of evidence`;
+}
+
+export function sourceCountEn(n: number): string {
+  return `${n} source${n === 1 ? "" : "s"}`;
+}
+
+/**
+ * The card footer states both true numbers, in the same words the confirm
+ * screen uses, so a member reads one pair of numbers across both screens.
+ */
+export function cardCounts(evidence: number, sources: number, lang: Lang): string {
+  return lang === "ar"
+    ? `${evidenceCountAr(evidence)} · ${sourceCountAr(sources)}`
+    : `${evidenceCountEn(evidence)} · ${sourceCountEn(sources)}`;
+}
+
 /** Arabic version of a start-card reason, keyed off its kind. */
 export function startReason(kind: string, count: number, english: string, lang: Lang): string {
   if (lang !== "ar") return english;
-  if (kind === "new_evidence") return `${count} مصدراً يقف خلف هذا الآن — بعضها وصل بعد آخر منشور لك عنه.`;
-  if (kind === "accelerating") return `يكتسب زخماً — ${count} مصدراً وما زال يتصاعد.`;
+  const ev = evidenceCountAr(count);
+  if (kind === "new_evidence") return `${ev} تقف خلف هذا الآن — بعضها وصل بعد آخر منشور لك عنه.`;
+  if (kind === "accelerating") return `يكتسب زخماً — ${ev} وما زال يتصاعد.`;
   if (kind === "never_written") {
     // Two English forms exist for this kind; the Arabic must claim exactly what
     // the English claims, never more.
     return /strongest/i.test(english)
-      ? `أقوى إشاراتك ولم تنشر عنها قط — ${count} مصدراً.`
-      : `لم تكتب عنه بعد — ${count} مصدراً يقف خلفه.`;
+      ? `أقوى إشاراتك ولم تنشر عنها قط — ${ev}.`
+      : `لم تكتب عنه بعد — ${ev} تقف خلفه.`;
   }
-  if (kind === "steady") return `ثابت — ${count} مصدراً يقف خلفه.`;
+  if (kind === "steady") return `ثابت — ${ev} تقف خلفه.`;
 
   return english;
 }
