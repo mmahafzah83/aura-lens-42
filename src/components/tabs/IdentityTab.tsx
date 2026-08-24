@@ -544,9 +544,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
   const handleGenerateContent = (topic: string, context?: string) => {
     if (onDraftToStudio) {
-      onDraftToStudio({ topic, context: context || "", sourceType: "authority_next", sourceTitle: topic });
+      onDraftToStudio(handoffSubject({
+        topic,
+        context: context || "",
+        sourceType: "authority_next",
+        sourceTitle: topic,
+        contentFormat: "post",
+        surface: "my_story",
+      }));
     } else if (onSwitchTab) {
-      sessionStorage.setItem("aura_prefill_topic", topic);
       onSwitchTab("authority");
     }
   };
