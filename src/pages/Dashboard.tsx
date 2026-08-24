@@ -103,6 +103,21 @@ const TAB_ALIAS: Record<string, string> = {
 };
 const resolveTab = (v: string) => TAB_ALIAS[v] ?? v;
 
+/** Where an arrival came from, in the member's words. `?from=` is set by the
+ *  emails; a bare deep link falls back to an honest generic. */
+const ORIGIN_LABELS: Record<string, string> = {
+  weekly_brief: "From your Monday brief",
+  post_ready: "From your reminder",
+  draft_ready: "From your email",
+  m4: "From your signal email",
+  morning_signal: "From this morning's signal",
+};
+const originFromParams = (params: URLSearchParams): { surface: string; label: string } => {
+  const from = (params.get("from") || "").trim();
+  if (from && ORIGIN_LABELS[from]) return { surface: from, label: ORIGIN_LABELS[from] };
+  return { surface: from || "link", label: "From a link you opened" };
+};
+
 const Dashboard = () => {
   usePageMeta({
     title: "Aura — Dashboard",
@@ -166,6 +181,7 @@ const Dashboard = () => {
     sourceTitle?: string;
     contentFormat?: "post" | "carousel" | "framework_summary";
     trendHeadline?: string;
+    origin?: { surface: string; label: string };
   } | null>(null);
   const [draftPrefill, setDraftPrefill] = useState<{
     id: string;
@@ -174,6 +190,7 @@ const Dashboard = () => {
     type: "carousel" | "framework" | "linkedin_post";
     topic?: string | null;
     _source?: "content_items" | "linkedin_posts";
+    origin?: { surface: string; label: string };
   } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -406,11 +423,13 @@ const Dashboard = () => {
             signalTitle: sig.signal_title,
             sourceType: "signal",
             sourceTitle: sig.signal_title,
+            origin: originFromParams(params),
           } as any);
         }
         // Clear so a refresh doesn't reapply
         const next = new URLSearchParams(window.location.search);
         next.delete("signal");
+        next.delete("from");
         setSearchParams(next, { replace: true });
       })();
     }
@@ -465,7 +484,7 @@ const Dashboard = () => {
         }
 
         if (prefill) {
-          setDraftPrefill(prefill);
+          setDraftPrefill({ ...prefill, origin: originFromParams(params) });
           setActiveTab("authority");
         } else if (readError) {
           // The query itself failed. Never imply the work is gone.
@@ -486,6 +505,7 @@ const Dashboard = () => {
         const next = new URLSearchParams(window.location.search);
         next.delete("draft");
         next.delete("src");
+        next.delete("from");
         setSearchParams(next, { replace: true });
       })();
     }
@@ -502,6 +522,7 @@ const Dashboard = () => {
         sourceTitle: st.prefill_topic,
         contentFormat: "post",
         trendHeadline: st.prefill_topic,
+        origin: { surface: "trend", label: "From a market trend" },
       });
       setActiveTab("authority");
       // Clear router state so refresh doesn't re-prefill
@@ -1241,7 +1262,7 @@ const Dashboard = () => {
                     line="Aura works while you sleep and tells you what it found."
                   >
                     <OvernightPage
-                      onOpenDraft={(d) => { setDraftPrefill(d); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                      onOpenDraft={(d) => { setDraftPrefill({ ...d, origin: { surface: "overnight", label: "From last night's run" } }); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                       onOpenSettings={() => navigate("/settings?tab=preferences")}
                     />
                   </LockedPanel>

@@ -196,9 +196,11 @@ interface Choice {
  * already computes these in Dashboard; the studio honours them.
  */
 export interface StudioPanelProps {
-  signalPrefill?: any;
+  /** May carry an optional `origin` describing where the arrival came from. */
+  signalPrefill?: { origin?: { surface: string; label: string } } & Record<string, any>;
   onSignalPrefillConsumed?: () => void;
-  draftPrefill?: any;
+  /** May carry an optional `origin` describing where the arrival came from. */
+  draftPrefill?: { origin?: { surface: string; label: string } } & Record<string, any>;
   onDraftPrefillConsumed?: () => void;
   onOpenCapture?: () => void;
   /** True only while the Write tab is the visible tab. Gates the export portal. */
@@ -498,6 +500,10 @@ export default function StudioPanel({
   const isPhone = useIsPhone();
   const rtlShell = lang === "ar";
   const rtlWrite = writeLang === "ar";
+
+  /** Where this arrival came from, in the member's words. Belongs to the
+   *  arrival only — cleared whenever a new piece starts. */
+  const [origin, setOrigin] = useState<{ surface: string; label: string } | null>(null);
 
   /* ---------- boot ------------------------------------------------ */
   /**
@@ -932,6 +938,7 @@ export default function StudioPanel({
     setConfirmNewPiece(false);
     preselectedRef.current = Boolean(next?.choice);
     draftPrefillRef.current = null;
+    setOrigin(null);
     liveRef.current = {
       content: "", deck: null, choice: next?.choice ?? null, writeLang: liveRef.current.writeLang,
       step: 1, format: next?.format ?? null,
@@ -1131,6 +1138,7 @@ export default function StudioPanel({
         return;
       }
       await openDraft(full, "dashboard_draft");
+      setOrigin(draftPrefill.origin ?? null);
       onDraftPrefillConsumed?.();
     })();
   }, [userId, draftPrefill, openDraft, lang, onDraftPrefillConsumed]);
@@ -1170,11 +1178,13 @@ export default function StudioPanel({
         setStep(1);
       } else {
         startNewPiece({ choice: arriving, format: nextFormat });
+        setOrigin(signalPrefill.origin ?? null);
       }
     } else if (title) {
       preselectedRef.current = true;
       setChoice({ id: signalPrefill.signalId ?? null, title, insight: signalPrefill.context || "" });
       setTypedTopic("");
+      setOrigin(signalPrefill.origin ?? null);
       if (nextFormat) { setFormat(nextFormat); setFormatDecided(true); }
     } else if (nextFormat) {
       setFormat(nextFormat);
@@ -2691,6 +2701,21 @@ export default function StudioPanel({
           <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
             {T.newPost[lang]}
           </ButtonGhost>
+        </div>
+      )}
+
+      {/* Where this arrival came from. Cyan: Aura reporting context, not an action. */}
+      {origin && (
+        <div
+          dir={rtlShell ? "rtl" : "ltr"}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 12,
+            fontFamily: "var(--ff-mono)", fontSize: 11, letterSpacing: ".03em",
+            color: "var(--machine-text)", background: "var(--machine-tint)",
+            border: "1px solid var(--machine)", borderRadius: 999, padding: "6px 12px",
+          }}
+        >
+          <span aria-hidden>↩</span>{origin.label}
         </div>
       )}
 

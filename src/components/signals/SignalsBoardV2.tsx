@@ -112,7 +112,8 @@ interface Props {
   onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
   onOpenChat?: (msg?: string) => void;
   onDraftToStudio?: (prefill: {
-    topic: string; context: string; signalId?: string; signalTitle?: string; source?: string;
+    topic: string; context: string; signalId?: string; signalTitle?: string;
+    source?: string; sourceType?: string; origin?: { surface: string; label: string };
   }) => void;
 }
 
