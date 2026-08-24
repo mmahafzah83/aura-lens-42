@@ -12,7 +12,14 @@ import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
-import { loadStartCards, type StartCard } from "@/components/composer/startCards";
+import {
+  loadStartCards,
+  asStartSort,
+  DEFAULT_START_SORT,
+  type StartCard,
+  type StartSort,
+} from "@/components/composer/startCards";
+
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
 import type { SubjectHandoff, DraftHandoff, WorkOrigin } from "@/lib/workHandoff";
