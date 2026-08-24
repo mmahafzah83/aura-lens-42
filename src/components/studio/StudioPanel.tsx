@@ -3372,6 +3372,9 @@ export default function StudioPanel({
                 >
                   {T.chooseOwn[lang]}
                 </button>
+                {/* A member who ARRIVED at confirm never saw the hub. Without
+                    this they can reach neither the paste box nor the drafts. */}
+                {backToHub}
                 <span style={{ flexBasis: "100%" }} />
                 {langPicker}
               </div>
