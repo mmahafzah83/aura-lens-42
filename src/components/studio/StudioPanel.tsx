@@ -2512,7 +2512,7 @@ export default function StudioPanel({
      banner's render condition, change its term here in the same edit. */
   const confirmOwnsPrimary =
     Boolean(confirmNewPiece) ||                                   // top-level, every step
-    (Boolean(pendingSubject) && step === 1) ||
+    (Boolean(pendingSubject) && step === 1 && (pickStage === "subject" || pickStage === "confirm")) ||
     (Boolean(askReplace) && step === 1 && pickStage === "paste") ||
     (Boolean(askRefine) && step === 2) ||                          // writeArea renders on step 2 only
     (Boolean(askLangSwitch) && step === 2) ||
