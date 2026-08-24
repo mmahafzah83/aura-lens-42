@@ -11,8 +11,17 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
+
 import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
-import { loadStartCards, type StartCard } from "@/components/composer/startCards";
+import {
+  loadStartCards,
+  asStartSort,
+  DEFAULT_START_SORT,
+  type StartCard,
+  type StartSort,
+} from "@/components/composer/startCards";
+
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
 import type { SubjectHandoff, DraftHandoff, WorkOrigin } from "@/lib/workHandoff";
@@ -277,6 +286,13 @@ export default function StudioPanel({
 
   const [cards, setCards] = useState<StartCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
+  /**
+   * ONE preference, ONE default. Unset always means "recommended" — the
+   * composite rule that has always ranked these cards.
+   */
+  const [sortPref, setSortPref] = useState<StartSort>(DEFAULT_START_SORT);
+  const [sortLoaded, setSortLoaded] = useState(false);
+
   /**
    * How many active subjects the member owns. -1 means the look itself failed —
    * that is a different sentence from "you have nothing".
@@ -992,14 +1008,36 @@ export default function StudioPanel({
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* quota never blocks editing */ }
   }, []);
 
+  /* ---------- step 1: the remembered order ------------------------- */
+  useEffect(() => {
+    if (!userId) { setSortLoaded(true); return; }
+    let dead = false;
+    (async () => {
+      try {
+        const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+          .select("composer_sort_pref").eq("user_id", userId).maybeSingle();
+        if (!dead) setSortPref(asStartSort((data as any)?.composer_sort_pref));
+      } catch { /* an unreadable preference is simply the default */ }
+      if (!dead) setSortLoaded(true);
+    })();
+    return () => { dead = true; };
+  }, [userId]);
+
+  /** Remembered quietly. A failed write never blocks the re-sort on screen. */
+  const chooseSort = useCallback((next: StartSort) => {
+    setSortPref(next);
+    if (!userId) return;
+    void writeProfile(userId, { composer_sort_pref: next }, "composer sort preference");
+  }, [userId]);
+
   /* ---------- step 1: the subject --------------------------------- */
   const preselectedRef = useRef(false);
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !sortLoaded) return;
     let dead = false;
     setCardsLoading(true);
     (async () => {
-      const { cards: rows, totalSignals: total } = await loadStartCards(userId);
+      const { cards: rows, totalSignals: total } = await loadStartCards(userId, sortPref);
       if (dead) return;
       setCards(rows);
       setTotalSignals(total);
@@ -1016,7 +1054,8 @@ export default function StudioPanel({
       }
     })();
     return () => { dead = true; };
-  }, [userId, posture, cardsNonce]);
+  }, [userId, posture, cardsNonce, sortPref, sortLoaded]);
+
 
   /* ---------- step 1: the drafts already waiting ------------------ */
   const openDraft = useCallback(
@@ -3251,7 +3290,41 @@ export default function StudioPanel({
                   )}
                 </div>
               )}
+              {/* One quiet control, one preference, one default. Never a primary. */}
+              {cards.length > 1 && (
+                <div
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
+                    justifyContent: rtlShell ? "flex-end" : "flex-start", flexWrap: "wrap",
+                  }}
+                >
+                  <label
+                    htmlFor="composer-sort"
+                    style={{ fontFamily: "var(--ff-mono)", fontSize: 11, letterSpacing: ".03em", color: "var(--text-muted)" }}
+                  >
+                    {T.sortLabel[lang]}
+                  </label>
+                  <select
+                    id="composer-sort"
+                    className="v23-tap v23-focus"
+                    value={sortPref}
+                    onChange={(e) => chooseSort(asStartSort(e.target.value))}
+                    dir={rtlShell ? "rtl" : undefined}
+                    style={{
+                      minHeight: 44, padding: "0 10px", borderRadius: 10, cursor: "pointer",
+                      background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                      color: "var(--text-primary)", fontFamily: "var(--ff-ui)", fontSize: 13,
+                    }}
+                  >
+                    <option value="recommended">{T.sortRecommended[lang]}</option>
+                    <option value="newest">{T.sortNewest[lang]}</option>
+                    <option value="most_evidence">{T.sortMostEvidence[lang]}</option>
+                    <option value="never_written">{T.sortNeverWritten[lang]}</option>
+                  </select>
+                </div>
+              )}
               <div style={{ display: "grid", gap: 10 }}>
+
                 {cards.map((c) => {
                   const on = choice?.id === c.signalId;
                   return (
@@ -3436,16 +3509,14 @@ export default function StudioPanel({
                 <p dir="auto" style={{ fontFamily: "var(--ff-ui)", fontSize: 16, fontWeight: 700, color: "var(--text-primary)", margin: 0, overflowWrap: "anywhere" }}>
                   {choice?.title || ""}
                 </p>
-                {chosenCard && (
+                {/* One box, one fact: the title, and a freshness note only when it is true.
+                    The explanation lives once, in the box below. */}
+                {chosenCard?.freshEvidence && (
                   <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "8px 0 0" }}>
-                    {startReason(chosenCard.kind, chosenCard.fragmentCount, chosenCard.reason, lang)}
+                    {T.freshSinceLastPost[lang]}
                   </p>
                 )}
-                {(chosenCard?.insight || choice?.insight) && (
-                  <p dir="auto" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "6px 0 0" }}>
-                    {chosenCard?.insight || choice?.insight}
-                  </p>
-                )}
+
               </div>
 
               {choice?.id ? <WriteFromPanel signalId={choice.id} lang={lang} /> : null}
