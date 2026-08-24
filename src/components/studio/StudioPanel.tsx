@@ -15,7 +15,7 @@ import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
-import type { SubjectHandoff, DraftHandoff } from "@/lib/workHandoff";
+import type { SubjectHandoff, DraftHandoff, WorkOrigin } from "@/lib/workHandoff";
 import { generationMetadata, fingerprintFields } from "@/lib/generationMetadata";
 import {
   readProvenance,
@@ -465,7 +465,7 @@ export default function StudioPanel({
   const [pendingSubject, setPendingSubject] = useState<Choice | null>(null);
   const [pendingFormat, setPendingFormat] = useState<Format | null>(null);
   /** The origin of a deferred subject, so the badge survives the confirmation. */
-  const [pendingOrigin, setPendingOrigin] = useState<{ surface: string; label: string } | null>(null);
+  const [pendingOrigin, setPendingOrigin] = useState<WorkOrigin | null>(null);
   const [askEditAfterPublish, setAskEditAfterPublish] = useState(false);
 
   /**
@@ -503,7 +503,7 @@ export default function StudioPanel({
 
   /** Where this arrival came from, in the member's words. Belongs to the
    *  arrival only — cleared whenever a new piece starts. */
-  const [origin, setOrigin] = useState<{ surface: string; label: string } | null>(null);
+  const [origin, setOrigin] = useState<WorkOrigin | null>(null);
 
   /* ---------- boot ------------------------------------------------ */
   /**
@@ -1157,8 +1157,8 @@ export default function StudioPanel({
     if (!signalPrefill) return;
     const title: string = signalPrefill.topic || signalPrefill.signalTitle || signalPrefill.trendHeadline || "";
     const nextFormat: Format | null = signalPrefill.contentFormat === "carousel" ? "slides" : null;
-    // The sender may know the language the member asked in; honour it.
-    if (signalPrefill.language === "en" || signalPrefill.language === "ar") setLang(signalPrefill.language);
+    const nextLang: Lang | null =
+      signalPrefill.language === "en" || signalPrefill.language === "ar" ? signalPrefill.language : null;
     const cur = choiceRef.current;
     const same =
       Boolean(cur) &&
@@ -1191,6 +1191,10 @@ export default function StudioPanel({
       setFormatDecided(true);
       setOrigin(signalPrefill.origin ?? null);
     }
+    // The sender may know which language the member asked in. That is the
+    // WRITING language, never the shell. A language the member picked herself
+    // outranks it, exactly as the advisor and the retry paths treat it.
+    if (nextLang && !langChosenRef.current) setWriteLang(nextLang);
     onSignalPrefillConsumed?.();
   }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
 

@@ -7,7 +7,6 @@ import {
   handoffSignal,
   handoffDraft,
   handoffSubject,
-  type WorkHandoff,
   type SubjectHandoff,
   type DraftHandoff,
 } from "@/lib/workHandoff";
