@@ -552,4 +552,5 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
   );
 }
 
-const __violation = `${totalSignals} sources`;
+const __bareNoun = totalSignals === 1 ? "source" : "sources";
+const __arabic = `${totalSignals} مصادر`;
