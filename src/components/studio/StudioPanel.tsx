@@ -198,11 +198,11 @@ interface Choice {
  * already computes these in Dashboard; the studio honours them.
  */
 export interface StudioPanelProps {
-  /** May carry an optional `origin` describing where the arrival came from. */
-  signalPrefill?: { origin?: { surface: string; label: string } } & Record<string, any>;
+  /** A subject (signal, trend or free text) arriving under the one contract. */
+  signalPrefill?: SubjectHandoff | null;
   onSignalPrefillConsumed?: () => void;
-  /** May carry an optional `origin` describing where the arrival came from. */
-  draftPrefill?: { origin?: { surface: string; label: string } } & Record<string, any>;
+  /** An existing draft arriving under the one contract. */
+  draftPrefill?: DraftHandoff | null;
   onDraftPrefillConsumed?: () => void;
   onOpenCapture?: () => void;
   /** True only while the Write tab is the visible tab. Gates the export portal. */
