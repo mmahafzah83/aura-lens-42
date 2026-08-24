@@ -1191,6 +1191,10 @@ export default function StudioPanel({
       setFormatDecided(true);
       setOrigin(signalPrefill.origin ?? null);
     }
+    // The sender may know which language the member asked in. That is the
+    // WRITING language, never the shell. A language the member picked herself
+    // outranks it, exactly as the advisor and the retry paths treat it.
+    if (nextLang && !langChosenRef.current) setWriteLang(nextLang);
     onSignalPrefillConsumed?.();
   }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
 
