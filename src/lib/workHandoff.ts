@@ -167,7 +167,7 @@ export function handoffSignal(input: {
     sourceTitle: input.title,
     contentFormat: input.contentFormat ?? "post",
     ...(input.language ? { language: input.language } : {}),
-    origin: originFor(input.surface),
+    origin: originFor(input.surface, { signalId: input.signalId }),
   };
 }
 
