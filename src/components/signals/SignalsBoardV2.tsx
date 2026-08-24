@@ -434,7 +434,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
             <>
               <div style={{ height: 1, background: "var(--rule-divider)", margin: "10px 0" }} />
               <div style={{ fontFamily: "var(--ff-ui)", fontSize: 12, fontWeight: 500, color: "var(--text-muted)", padding: "0 8px 6px" }}>
-                Themes
+                Tags on your signals
               </div>
               {themes.map(([t, n]) => {
                 const active = theme === t;

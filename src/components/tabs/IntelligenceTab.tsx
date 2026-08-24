@@ -238,8 +238,8 @@ const WrappingTick = (props: any) => {
 
 const StatusBadge = ({ status }: { status: TerritoryStatus }) => {
   const styles: Record<TerritoryStatus, React.CSSProperties> = {
-    ready: { background: "var(--aura-accent)", color: "var(--aura-bg, #0b0b0c)" },
-    building: { background: "transparent", color: "hsl(38 90% 60%)", border: "0.5px solid hsl(38 90% 60% / 0.4)" },
+    ready: { background: "var(--aura-accent)", color: "var(--text-inverse)" },
+    building: { background: "transparent", color: "var(--deadline-text)", border: "0.5px solid var(--deadline)" },
     new: { background: "transparent", color: "var(--info)", border: "0.5px solid var(--info)" },
   };
   const label = status === "ready" ? "Ready to publish" : status === "new" ? "New" : "Building";
@@ -440,8 +440,8 @@ export const SignalHero = ({
         {isRising && (
           <span style={{
             fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
-            background: "hsl(140 50% 40% / 0.12)", color: "var(--success, hsl(140 60% 45%))",
-            border: "0.5px solid var(--success, hsl(140 60% 45%))",
+            background: "var(--success-tint)", color: "var(--success-text)",
+            border: "0.5px solid var(--success)",
           }}>Rising</span>
         )}
       </div>
@@ -672,7 +672,7 @@ export const EditorialBlindSpots = ({
   return (
     <section style={{ marginTop: 40, paddingTop: 24, borderTop: "0.5px solid var(--color-border-tertiary, var(--surface-ink-subtle))" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--error, hsl(0 70% 55%))" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--error)" }}>
           <EyeOff size={12} />
           WHAT YOU'RE NOT SEEING
           <InfoTooltip
@@ -711,7 +711,7 @@ export const EditorialBlindSpots = ({
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {gaps.slice(0, expanded ? 3 : 1).map((it, idx) => {
               const isOpp = it.category === "opportunity";
-              const accent = isOpp ? "var(--warning, hsl(35 90% 55%))" : "var(--error, hsl(0 70% 55%))";
+              const accent = isOpp ? "var(--deadline-text)" : "var(--error)";
               const urgency = isOpp
                 ? "This trend is gaining momentum. Your take is missing."
                 : "No one in your network is publishing on this yet.";
@@ -941,25 +941,25 @@ export const EditorialReadingList = ({
     const matchedTheme = Array.from(signalThemes).find(t => haystack.includes(t));
     if (matchedTheme && topSignal) {
       return {
-        icon: <TrendingUp size={12} style={{ color: "var(--success, hsl(140 60% 45%))" }} />,
+        icon: <TrendingUp size={12} style={{ color: "var(--success-text)" }} />,
         label: "Strengthens your signal:",
         text: rec.intelligence_value || `Adds depth to your "${topSignal.signal_title}" signal.`,
-        color: "var(--success, hsl(140 60% 45%))",
+        color: "var(--success-text)",
       };
     }
     if (rec.skill_gap && rec.skill_gap.trim()) {
       return {
-        icon: <EyeOff size={12} style={{ color: "var(--error, hsl(0 70% 55%))" }} />,
+        icon: <EyeOff size={12} style={{ color: "var(--error)" }} />,
         label: `Closes a blind spot: ${formatSkillLabel(rec.skill_gap)}`,
         text: rec.intelligence_value || "",
-        color: "var(--error, hsl(0 70% 55%))",
+        color: "var(--error)",
       };
     }
     // Default rotation to avoid monotony
     const palette = [
       { color: "var(--brand)", icon: <Lightbulb size={12} style={{ color: "var(--brand)" }} /> },
-      { color: "var(--success, hsl(140 60% 45%))", icon: <Lightbulb size={12} style={{ color: "var(--success, hsl(140 60% 45%))" }} /> },
-      { color: "var(--info, var(--brand))", icon: <Lightbulb size={12} style={{ color: "var(--info, var(--brand))" }} /> },
+      { color: "var(--success-text)", icon: <Lightbulb size={12} style={{ color: "var(--success-text)" }} /> },
+      { color: "var(--act)", icon: <Lightbulb size={12} style={{ color: "var(--act)" }} /> },
     ];
     const p = palette[index % palette.length];
     return {
@@ -1018,7 +1018,7 @@ export const EditorialReadingList = ({
           <button
             onClick={() => onOpenCapture?.()}
             style={{
-              background: "var(--brand)", color: "#fff", border: "none",
+              background: "var(--act)", color: "var(--text-inverse)", border: "none",
               borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 500, cursor: "pointer",
             }}
           >
@@ -1631,8 +1631,8 @@ const Header = ({ entryCount, evidenceCount, signalsCount }: { entryCount: numbe
           so it is CAPTURES, never sources. Sources live in source_registry. */}
       {[
         { val: entryCount, label: entryCount === 1 ? CAPTURE.noun : CAPTURE.nounPlural, color: "var(--brand)" },
-        { val: evidenceCount, label: EVIDENCE.Many.toLowerCase(), color: "var(--info, var(--brand))" },
-        { val: signalsCount, label: signalsCount === 1 ? SIGNAL.one : SIGNAL.many, color: "var(--info, var(--brand))" },
+        { val: evidenceCount, label: EVIDENCE.Many.toLowerCase(), color: "var(--act)" },
+        { val: signalsCount, label: signalsCount === 1 ? SIGNAL.one : SIGNAL.many, color: "var(--act)" },
       ].map((s, i, arr) => (
         <div key={s.label} style={{ display: "inline-flex", alignItems: "center" }}>
           <div style={{

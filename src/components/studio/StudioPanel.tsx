@@ -3157,7 +3157,7 @@ export default function StudioPanel({
                     }}
                   >
                     <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)" }}>
-                      {T.hubResume[lang].split("{n}").map((part, i) => (
+                      {T.hubResume(drafts.length)[lang].split("{n}").map((part, i) => (
                         <React.Fragment key={i}>
                           {i > 0 && (
                             <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{drafts.length}</span>
