@@ -4,6 +4,7 @@ export type Posture = "delegator" | "editor" | "author";
 /** Every user-facing string in the one-room studio, in both languages. */
 export const T = {
   loading: { en: "Loading…", ar: "جارٍ التحميل…" },
+  originBack: { en: "Go back to where this came from", ar: "العودة إلى المصدر" },
   signIn: { en: "Please sign in", ar: "من فضلك سجّل الدخول" },
   signInLink: { en: "Go to sign in", ar: "اذهب لتسجيل الدخول" },
 
