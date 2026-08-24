@@ -9,12 +9,12 @@
  * The expandable toggle names the SAME source number it reveals, so every
  * number on screen traces back to one already stated.
  *
- * ROOT CAUSE FIXED: the fragment fetch used to `.limit(20)` before the rows
- * were deduplicated onto their source, so a signal with 72 pieces of evidence
- * across 20 sources revealed 5 rows — a third, unexplained number. We now read
- * every supporting fragment (chunked so a long id list still fits in one URL),
- * dedupe onto the source, and take the source count from the deduped rows
- * themselves rather than from `unique_orgs`.
+ * ONE TRUTH FOR THE NUMBER: the stated source count is `unique_orgs`, the same
+ * field the signals list and the confirm screen read, so three surfaces can no
+ * longer disagree. The expandable LIST still fetches real rows — chunked, so a
+ * long id list fits in one URL — because members must see the actual readings.
+ * If the readable rows ever disagree with `unique_orgs` we log it rather than
+ * quietly reshaping the number.
  *
  * Never throws: any failure renders nothing.
  */
