@@ -514,7 +514,14 @@ const Dashboard = () => {
         setSearchParams(next, { replace: true });
       })();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setSearchParams, resolveMissingDraft]);
+
+  useEffect(() => {
+    applyDeepLinkParams(resumedParams ?? searchParams);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   // Handle prefill from trend Draft Post (passed via React Router state)
   useEffect(() => {
