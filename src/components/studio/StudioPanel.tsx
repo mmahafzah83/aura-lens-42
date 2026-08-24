@@ -3436,16 +3436,14 @@ export default function StudioPanel({
                 <p dir="auto" style={{ fontFamily: "var(--ff-ui)", fontSize: 16, fontWeight: 700, color: "var(--text-primary)", margin: 0, overflowWrap: "anywhere" }}>
                   {choice?.title || ""}
                 </p>
-                {chosenCard && (
+                {/* One box, one fact: the title, and a freshness note only when it is true.
+                    The explanation lives once, in the box below. */}
+                {chosenCard?.freshEvidence && (
                   <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "8px 0 0" }}>
-                    {startReason(chosenCard.kind, chosenCard.fragmentCount, chosenCard.reason, lang)}
+                    {T.freshSinceLastPost[lang]}
                   </p>
                 )}
-                {(chosenCard?.insight || choice?.insight) && (
-                  <p dir="auto" style={{ fontFamily: "var(--ff-ui)", fontSize: 13, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: "6px 0 0" }}>
-                    {chosenCard?.insight || choice?.insight}
-                  </p>
-                )}
+
               </div>
 
               {choice?.id ? <WriteFromPanel signalId={choice.id} lang={lang} /> : null}
