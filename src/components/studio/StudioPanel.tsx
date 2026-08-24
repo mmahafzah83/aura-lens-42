@@ -2526,6 +2526,10 @@ export default function StudioPanel({
      ghost. Mirrors the empty-state banner's own guard. */
   const captureEmpty =
     !cardsLoading && cards.length === 0 && totalSignals === 0 && Boolean(onOpenCapture);
+  /* The capture primary only RENDERS on the hub and the signals stage, so it
+     may only demote a forward action on those two screens. Anywhere else the
+     forward action is the only thing on screen that can carry the primary. */
+  const captureOwnsPrimary = captureEmpty && (pickStage === "hub" || pickStage === "signals");
 
   /* ---------- step 1's own furniture ------------------------------ */
   /* All three hub boxes are the SAME shell: same width (one grid track each),
