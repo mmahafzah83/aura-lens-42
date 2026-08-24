@@ -115,15 +115,6 @@ export interface Signal {
   strength_score?: number | null;
 }
 
-interface EvidenceFragmentRow {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  source_kind?: "capture" | "aura" | "unknown";
-  source_label?: string;
-}
-
 /* ── Helpers ── */
 function relativeTime(dateStr: string): string {
   const ms = Date.now() - new Date(dateStr).getTime();
@@ -1406,15 +1397,15 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
           <>
             {/* Alerts */}
             {fadingSignals.length > 0 && topFading && (
-              <div role="status" style={{ marginBottom: 16, paddingTop: 14, paddingBottom: 14, borderTop: "0.5px solid hsl(24 95% 53% / 0.3)", borderBottom: "0.5px solid hsl(24 95% 53% / 0.3)" }}>
+              <div role="status" style={{ marginBottom: 16, paddingTop: 14, paddingBottom: 14, borderTop: "0.5px solid var(--warning-line, var(--warning-text))", borderBottom: "0.5px solid var(--warning-line, var(--warning-text))" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "hsl(24 95% 53%)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".06em", color: "var(--warning-text)", display: "inline-flex", alignItems: "center", gap: 4 }}>
                     <AlertTriangle size={12} /> FADING
                   </span>
                   <span style={{ fontSize: 12, color: "var(--glass-2)" }}>
                     {nSignals(fadingSignals.length, "en")} losing strength — new evidence in the next {daysUntilDormant(topFading.confidence)} days reverses the trend.
                   </span>
-                  <button onClick={() => onOpenCapture?.()} style={{ background: "none", border: "none", color: "hsl(24 95% 53%)", fontSize: 12, fontWeight: 500, cursor: "pointer", padding: 0 }}>
+                  <button onClick={() => onOpenCapture?.()} style={{ background: "none", border: "none", color: "var(--warning-text)", fontSize: 12, fontWeight: 500, cursor: "pointer", padding: 0 }}>
                     Capture for "{topFading.signal_title}" →
                   </button>
                 </div>
@@ -1513,18 +1504,18 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                         gap: 12,
                         alignItems: "center",
                         padding: "12px 16px",
-                        background: selectedSignalId === s.id ? "hsl(var(--muted) / 0.5)" : "hsl(var(--background))",
+                        background: selectedSignalId === s.id ? "var(--surface-subtle)" : "var(--surface-card)",
                         cursor: "pointer",
                         transition: "background 0.15s",
                       }}
-                      onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--muted) / 0.3)"; }}
-                      onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "hsl(var(--background))"; }}
+                      onMouseEnter={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "var(--surface-subtle)"; }}
+                      onMouseLeave={(e) => { if (selectedSignalId !== s.id) e.currentTarget.style.background = "var(--surface-card)"; }}
                     >
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: "hsl(var(--foreground))" }}>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
                           {s.signal_title}
                         </div>
-                        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
                           {evidenceAndSources(
                             (s as any).evidenceCount ?? s.fragment_count ?? 0,
                             s.unique_orgs ?? 0,
@@ -1546,7 +1537,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
                             borderRadius: "var(--radius, 6px)",
                             background: "none",
                             border: "0.5px solid hsl(var(--border))",
-                            color: "hsl(var(--muted-foreground))",
+                            color: "var(--text-secondary)",
                             cursor: "pointer",
                             whiteSpace: "nowrap",
                           }}
