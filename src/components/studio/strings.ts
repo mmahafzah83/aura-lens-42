@@ -1,4 +1,4 @@
-import { evidenceAndSources, nEvidence, evidenceCountAr as evidenceAr } from "@/constants/vocabulary";
+import { evidenceAndSources, nEvidence, evidenceCountAr as evidenceAr, nEvidenceParts, withTail, type CountParts } from "@/constants/vocabulary";
 
 export type Lang = "en" | "ar";
 export type Posture = "delegator" | "editor" | "author";
@@ -175,20 +175,17 @@ export const T = {
       This heading sits above the waiting-work bar. */
   hubPreviousWork: { en: "Previous work on posts", ar: "منشورات سابقة" },
   /** `{n}` is the number of UNFINISHED DRAFTS (rows in the drafts pile) — never
-      evidence, never captures. Rendered via `.split("{n}")` so the digit gets
-      the mono face. */
-  hubResume: (n: number) => ({
-    en: n === 1
-      ? "One unfinished draft is waiting."
-      : "{n} unfinished drafts are waiting.",
-    ar: n === 1
-      ? "مسودة واحدة غير مكتملة تنتظرك."
-      : n === 2
-      ? "مسودتان غير مكتملتين تنتظرانك."
-      : n >= 3 && n <= 10
-      ? "{n} مسودات غير مكتملة تنتظرك."
-      : "{n} مسودة غير مكتملة تنتظرك.",
-  }),
+      evidence, never captures. Returned as parts so the digit gets the mono
+      face; Arabic 1 and 2 are worded and carry no digit. */
+  hubResume: (n: number, lang: Lang): CountParts => {
+    if (lang === "ar") {
+      if (n === 1) return { pre: "مسودة واحدة غير مكتملة تنتظرك.", digit: null, post: "" };
+      if (n === 2) return { pre: "مسودتان غير مكتملتين تنتظرانك.", digit: null, post: "" };
+      return { pre: "", digit: String(n), post: n <= 10 ? " مسودات غير مكتملة تنتظرك." : " مسودة غير مكتملة تنتظرك." };
+    }
+    if (n === 1) return { pre: "One unfinished draft is waiting.", digit: null, post: "" };
+    return { pre: "", digit: String(n), post: " unfinished drafts are waiting." };
+  },
   hubResumeOpen: { en: "Open one", ar: "افتح واحدة" },
   // Step 1 — the waiting work, its own screen
   draftsStageHead: { en: "Work already waiting", ar: "عمل ينتظرك بالفعل" },
@@ -224,16 +221,14 @@ export const T = {
     ar: "هذا ما ستكتب عنه أورا. غيّر ما تريد قبل أن تبدأ.",
   },
   hubSignalsTitle: { en: "Write from your signals", ar: "اكتب من إشاراتك" },
-  /** One dictionary, one plural ladder. `nEvidence` owns the grammar; we only
-      swap the rendered digit back to the `{n}` placeholder that StudioPanel
-      splits on to give the number the mono face. */
-  hubSignalsEvidence: (n: number) => {
-    const ev = (lang: Lang) => nEvidence(n, lang).replace(String(n), "{n}");
-    return {
-      en: `${ev("en")} stand behind what we ranked for you.`,
-      ar: `${ev("ar")} خلف ما رتّبناه لك.`,
-    };
-  },
+  /** One dictionary, one plural ladder. `nEvidenceParts` emits the numeral as
+      its own part BY CONSTRUCTION, so the caller can give it the mono face
+      without any string surgery. Arabic 1 and 2 are worded (digit === null). */
+  hubSignalsEvidence: (n: number, lang: Lang): CountParts =>
+    withTail(
+      nEvidenceParts(n, lang),
+      lang === "ar" ? " خلف ما رتّبناه لك." : " stand behind what we ranked for you.",
+    ),
   hubSignalsEmpty: { en: "Nothing saved behind your subjects yet.", ar: "لا مواد محفوظة خلف مواضيعك بعد." },
 
   hubSignalsAction: { en: "Choose a signal", ar: "اختر إشارة" },
