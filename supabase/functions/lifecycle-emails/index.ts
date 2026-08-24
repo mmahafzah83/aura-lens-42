@@ -271,7 +271,7 @@ serve(withObserve("lifecycle-emails", async (req) => {
       const captureCount = captures ?? 0;
       const signalCount = signals ?? 0;
       const lastEntryAt = (lastEntryRes.data as any)?.created_at as string | undefined;
-      const latestSignal = latestSignalRes.data as { signal_title?: string; created_at?: string } | null;
+      const latestSignal = latestSignalRes.data as { id?: string; signal_title?: string; created_at?: string } | null;
 
       const firstName = (prof?.first_name as string | undefined)?.trim() || "";
       // Member language preference drives the AR copy set + RTL shell.
