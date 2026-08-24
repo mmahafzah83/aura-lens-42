@@ -17,7 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { readToken } from "@/lib/assessmentSession";
-import { buildStages, type InstrumentedOperation } from "@/lib/operationStages";
+import { buildStages, OPERATION_STAGES, type InstrumentedOperation } from "@/lib/operationStages";
 import type { WorkingStage } from "@/components/ui/WorkingPanel";
 
 export const newRunId = (): string =>
@@ -53,11 +53,17 @@ export function useRunStages(
   const doneRef = useRef<Set<string>>(new Set());
   /* Each finished stage's own duration, so the mono column can show it. */
   const msRef = useRef<Record<string, number>>({});
+  /* Wall-clock anchor: when the member pressed go. */
+  const startRef = useRef<number>(Date.now());
+  /* Cumulative elapsed (ms) when each stage was FIRST observed done. */
+  const observedRef = useRef<Record<string, number>>({});
   const [durations, setDurations] = useState<Record<string, number>>({});
 
   useEffect(() => {
+    startRef.current = Date.now();
     doneRef.current = new Set();
     msRef.current = {};
+    observedRef.current = {};
     setCompleted([]); setActive(null); setFailedAt(null); setOutcome(null); setDurations({});
   }, [runId]);
 
@@ -69,6 +75,19 @@ export function useRunStages(
        every call site to drop its `active` prop. */
     const stopPolling = () => { if (timer) { window.clearInterval(timer); timer = 0; } };
 
+    const clientDurations = (): Record<string, number> => {
+      const result: Record<string, number> = {};
+      let prev = 0;
+      for (const key of OPERATION_STAGES[operation]) {
+        const cumulative = observedRef.current[key];
+        if (cumulative !== undefined) {
+          result[key] = Math.max(1, cumulative - prev);
+          prev = cumulative;
+        }
+      }
+      return result;
+    };
+
     const apply = (stages: unknown, runOutcome: unknown) => {
       if (!alive) return;
       const list = Array.isArray(stages) ? (stages as StageRow[]) : [];
@@ -76,13 +95,21 @@ export function useRunStages(
       for (const s of list) {
         const key = String(s?.key ?? "").trim();
         if (!key) continue;
+        const alreadyDone = doneRef.current.has(key);
         const ms = Number(s?.ms);
-        if (Number.isFinite(ms) && ms > 0) { doneRef.current.add(key); msRef.current[key] = ms; }
-        else open = key;
+        if (Number.isFinite(ms) && ms > 0) {
+          if (!alreadyDone) {
+            observedRef.current[key] = Date.now() - startRef.current;
+          }
+          doneRef.current.add(key);
+          msRef.current[key] = ms;
+        } else {
+          open = key;
+        }
       }
       const out = (runOutcome as RunStages["outcome"]) ?? null;
       setCompleted(Array.from(doneRef.current));
-      setDurations({ ...msRef.current });
+      setDurations(clientDurations());
       setOutcome(out);
       if (out === "failed" || out === "refused") {
         setActive(null);
