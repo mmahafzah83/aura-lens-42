@@ -343,7 +343,8 @@ serve(async (req) => {
         .from("content_items")
         .select("id, user_id, created_at, body, title, signal_id, generation_params")
         .eq("status", "draft")
-        .lt("created_at", cutoffIso);
+        .lt("created_at", cutoffIso)
+        .gte("created_at", maxAgeIso);
       if (onlyUserId) ciQuery = ciQuery.eq("user_id", onlyUserId);
       const { data, error } = await ciQuery;
       if (error) throw error;
