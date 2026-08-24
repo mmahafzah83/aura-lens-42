@@ -2803,7 +2803,7 @@ export default function StudioPanel({
                 >
                   {T.confirmSubjectYes[lang]}
                 </ButtonPrimary>
-                <ButtonGhost onClick={() => setPendingSubject(null)} style={{ minHeight: 44 }}>
+                <ButtonGhost onClick={() => { setPendingSubject(null); setPendingFormat(null); }} style={{ minHeight: 44 }}>
                   {T.replaceNo[lang]}
                 </ButtonGhost>
               </div>
