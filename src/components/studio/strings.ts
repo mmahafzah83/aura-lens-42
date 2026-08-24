@@ -562,6 +562,25 @@ export const T = {
   subjectsRetry: { en: "Try again", ar: "حاول مرة أخرى" },
   nothingNewToRank: { en: "Nothing new to rank right now — here is everything you have.", ar: "لا جديد لترتيبه الآن — هذه كل مواضيعك." },
 
+  // One preference, one default: how the ranked subjects are ordered.
+  sortLabel: { en: "Order", ar: "الترتيب" },
+  sortRecommended: { en: "Recommended", ar: "المُوصى به" },
+  sortNewest: { en: "Newest evidence first", ar: "الأدلة الأحدث أولاً" },
+  sortMostEvidence: { en: "Most evidence behind it", ar: "الأكثر أدلة خلفه" },
+  sortNeverWritten: { en: "Never written about first", ar: "ما لم تكتب عنه أولاً" },
+
+  // The readings behind a signal — one toggle, one number, both already stated.
+  seeSources: {
+    en: "See the sources behind this",
+    ar: "اطّلع على المصادر وراء هذا",
+  },
+  showMoreSources: { en: "Show the other sources", ar: "أظهر بقية المصادر" },
+  freshSinceLastPost: {
+    en: "New material landed since your last post on this.",
+    ar: "وصلت مادة جديدة بعد آخر منشور لك عن هذا.",
+  },
+
+
   // Writing language, changed after the first draft
   writeAgainEn: { en: "Write this in English instead", ar: "اكتبه بالإنجليزية بدلاً من ذلك" },
   writeAgainAr: { en: "Write this in Arabic instead", ar: "اكتبه بالعربية بدلاً من ذلك" },
