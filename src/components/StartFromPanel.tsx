@@ -285,9 +285,9 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
 
   const sourceIcon = (type: CuratedItem["sourceType"]) => {
     switch (type) {
-      case "signal": return <Zap className="w-3 h-3 text-primary/70" />;
-      case "framework": return <BookOpen className="w-3 h-3 text-blue-400/70" />;
-      default: return <Lightbulb className="w-3 h-3 text-primary/50" />;
+      case "signal": return <Zap className="w-3 h-3" style={{ color: "var(--machine-text)" }} />;
+      case "framework": return <BookOpen className="w-3 h-3" style={{ color: "var(--text-muted)" }} />;
+      default: return <Lightbulb className="w-3 h-3" style={{ color: "var(--text-muted)" }} />;
     }
   };
 
@@ -307,10 +307,11 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
     >
       <div
         style={{
-          background: "var(--paper-2)",
+          background: "var(--surface-card)",
           borderRadius: 16,
-          border: "0.5px solid var(--brand-line)",
-          boxShadow: "var(--shadow-sm)",
+          border: "1px solid var(--border-default)",
+          boxShadow: "var(--shadow-rest)",
+          fontFamily: "var(--ff-ui)",
           maxHeight: "calc(100vh - 80px)",
           overflowY: "auto",
         }}
@@ -333,7 +334,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
           <button
             onClick={fetchData}
             disabled={loading}
-            style={{ color: "var(--ink-5)" }}
+            style={{ color: "var(--text-secondary)" }}
             className="hover:opacity-80 transition-opacity"
             title="Refresh suggestions"
           >
@@ -345,12 +346,12 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         <div style={{ padding: "0 14px 16px" }}>
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--bronze-deep)" }} />
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--act)" }} />
             </div>
           ) : groups.length === 0 ? (
             <div className="text-center py-8">
-              <Lightbulb className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--ink-3)" }} />
-              <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.5 }}>
+              <Lightbulb className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--text-muted)" }} />
+              <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
                 No signals yet. Capture a few articles and your signal map starts here.
                 <br />
                 <span style={{ fontSize: 12, opacity: 0.7 }}>Signal-grounded posts perform far better than topic-only generation.</span>
@@ -365,21 +366,21 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   key={item.id}
                   className="group post-angle-card"
                   style={{
-                    background: isConfirm ? "var(--brand-pale)" : "var(--vellum)",
+                    background: isConfirm ? "var(--act-tint)" : "var(--surface-subtle)",
                     borderRadius: 10,
                     padding: "10px 12px",
                     marginBottom: 7,
-                    border: "0.5px solid var(--brand-line)",
+                    border: "1px solid var(--border-default)",
                     borderLeft: "3px solid transparent",
                     transition: "border-color 0.15s, background 0.15s",
                     cursor: "pointer",
                   }}
                   onClick={() => handleItemClick(item)}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderLeftColor = "var(--brand)"; }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderLeftColor = "var(--act)"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderLeftColor = "transparent"; }}
                 >
                   {isConfirm ? (
-                    <p style={{ fontSize: 12, color: "var(--warning-text)", fontWeight: 600 }}>
+                    <p style={{ fontSize: 12, color: "var(--deadline-text)", fontWeight: 600 }}>
                       Replace current draft? Click again to confirm.
                     </p>
                   ) : (
@@ -387,8 +388,8 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                       {isRecommended && (
                         <span
                           style={{
-                            background: "var(--brand-ghost, var(--brand-pale))",
-                            color: "var(--spot-2)",
+                            background: "var(--act-tint)",
+                            color: "var(--act-hover)",
                             fontSize: 12,
                             fontWeight: 600,
                             padding: "2px 7px",
@@ -405,29 +406,29 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                         style={{
                           fontSize: 14,
                           fontWeight: 500,
-                          color: "var(--ink)",
+                          color: "var(--text-primary)",
                           lineHeight: 1.35,
                         }}
                       >
                         {item.angle || item.title}
                       </p>
-                      <p style={{ fontSize: 12, color: "var(--ink-2)", marginTop: 4, lineHeight: 1.3 }} className="line-clamp-1">
+                      <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4, lineHeight: 1.3 }} className="line-clamp-1">
                         {item.signalTitle || item.title}
                       </p>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
                         {typeof item.confidence === "number" && (
-                          <span style={{  fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>
+                          <span style={{  fontSize: 12, color: "var(--text-secondary)", fontFamily: "var(--ff-mono)", fontWeight: 600 }}>
                             {Math.round(item.confidence * 100)}%
                           </span>
                         )}
                         {item.velocityStatus === "fading" && (
-                          <span style={{ fontSize: 12, color: "var(--warning-text)", fontWeight: 600 }}>↓ Fading</span>
+                          <span style={{ fontSize: 12, color: "var(--deadline-text)", fontWeight: 600 }}>↓ Fading</span>
                         )}
                         {item.velocityStatus === "accelerating" && (
-                          <span style={{ fontSize: 12, color: "var(--pos-text)", fontWeight: 600 }}>↑ Gaining</span>
+                          <span style={{ fontSize: 12, color: "var(--success-text)", fontWeight: 600 }}>↑ Gaining</span>
                         )}
                         {item.velocityStatus === "stable" && (
-                          <span style={{ fontSize: 12, color: "var(--ink-4)", fontWeight: 600 }}>→ Stable</span>
+                          <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600 }}>→ Stable</span>
                         )}
                       </div>
                       <button
@@ -438,6 +439,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                           marginTop: 8,
                           fontSize: 12,
                           fontWeight: 600,
+                          color: "var(--act)",
                         }}
                       >
                         Write on this →
@@ -464,13 +466,13 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             style={{
               marginTop: 12,
               paddingTop: 14,
-              borderTop: "0.5px solid var(--brand-line)",
+              borderTop: "1px solid var(--border-default)",
             }}
           >
             <p
               style={{
                 fontSize: 12,
-                color: "var(--ink-5)",
+                color: "var(--text-secondary)",
                 letterSpacing: "0.1em",
                 fontWeight: 700,
                 marginBottom: 4,
@@ -487,7 +489,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 triggerSize={13}
               />
             </p>
-            <p style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8, lineHeight: 1.4 }}>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8, lineHeight: 1.4 }}>
               Aura learned how you write from your real posts. This is your voice — not AI's.
             </p>
             <div className="flex items-start gap-2.5">
@@ -497,10 +499,10 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   width: 36,
                   height: 36,
                   borderRadius: "50%",
-                  border: "2px solid var(--brand)",
+                  border: "2px solid var(--machine)",
                   background: "var(--surface-subtle)",
                   overflow: "hidden",
-                  color: "var(--brand)",
+                  color: "var(--machine-text)",
                   fontSize: 12,
                   fontWeight: 600,
                 }}
@@ -514,10 +516,10 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 )}
               </span>
               <div className="flex-1 min-w-0">
-                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", lineHeight: 1.2 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.2 }}>
                   {voice?.fullName || "Your voice"}
                 </p>
-                <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.35, marginTop: 2 }}>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.35, marginTop: 2 }}>
                   {voice?.tone || "Teach Aura your voice from past posts"}
                 </p>
               </div>
@@ -531,7 +533,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   marginTop: 8,
                 }}
               >
-                <p style={{ fontSize: 12, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
+                <p style={{ fontSize: 12, fontStyle: "italic", color: "var(--text-muted)", lineHeight: 1.4 }}>
                   “{voice.sample}{voice.sample.length >= 120 ? "…" : ""}”
                 </p>
               </div>
