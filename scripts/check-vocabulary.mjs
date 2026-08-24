@@ -46,7 +46,7 @@ const NOUN = `(?:${NOUNS.join("|")})`;
 
 /**
  * Two scans, because a count noun only matters in member-facing TEXT:
- *   A) inside a string/template literal, next to `${...}`, `{n}` or a digit;
+ *   A) inside a string/template literal, next to `${...}` or a `{n}` placeholder;
  *   B) as JSX text right after an expression — `{n} sources`.
  * JSX attribute values (`theme={theme}`) are code, never text, so an `=` or a
  * bare identifier immediately before the brace disqualifies a match.
@@ -54,7 +54,6 @@ const NOUN = `(?:${NOUNS.join("|")})`;
 const LITERAL_PATTERNS = [
   new RegExp(String.raw`\$\{[^}]{0,80}\}\s*(?:[A-Za-z']+\s+){0,2}${NOUN}\b`, "i"),
   new RegExp(String.raw`\{n\}\s*(?:[A-Za-z']+\s+){0,2}${NOUN}\b`, "i"),
-  new RegExp(String.raw`\b\d+\s+(?:[A-Za-z']+\s+){0,1}${NOUN}\b`, "i"),
 ];
 
 const JSX_PATTERN = new RegExp(
@@ -72,7 +71,12 @@ function literalsOf(line) {
   return out;
 }
 
-function findHit(line) {
+function findHit(rawLine) {
+  // Class lists are styling, not prose — `flex items-center` is not a count.
+  const line = rawLine
+    .replace(/className=\{[^}]*\}/g, " ")
+    .replace(/className="[^"]*"/g, " ")
+    .replace(/class="[^"]*"/g, " ");
   for (const lit of literalsOf(line)) {
     if (lit.length < 4 || CODE_LIKE.test(lit)) continue;
     for (const re of LITERAL_PATTERNS) {
