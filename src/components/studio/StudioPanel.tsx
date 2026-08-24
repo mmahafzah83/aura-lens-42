@@ -1155,6 +1155,8 @@ export default function StudioPanel({
     if (!signalPrefill) return;
     const title: string = signalPrefill.topic || signalPrefill.signalTitle || signalPrefill.trendHeadline || "";
     const nextFormat: Format | null = signalPrefill.contentFormat === "carousel" ? "slides" : null;
+    // The sender may know the language the member asked in; honour it.
+    if (signalPrefill.language === "en" || signalPrefill.language === "ar") setLang(signalPrefill.language);
     const cur = choiceRef.current;
     const same =
       Boolean(cur) &&
@@ -1170,6 +1172,7 @@ export default function StudioPanel({
         // The format asked for travels WITH the subject. Discarding it here is
         // how a carousel request used to turn into an ordinary post.
         setPendingFormat(nextFormat);
+        setPendingOrigin(signalPrefill.origin ?? null);
         setStep(1);
       } else {
         startNewPiece({ choice: arriving, format: nextFormat });
@@ -1184,6 +1187,7 @@ export default function StudioPanel({
     } else if (nextFormat) {
       setFormat(nextFormat);
       setFormatDecided(true);
+      setOrigin(signalPrefill.origin ?? null);
     }
     onSignalPrefillConsumed?.();
   }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
