@@ -136,7 +136,6 @@ export function matchTheme(haystacks: Haystack[], theme: string, aliases: AliasI
      intelligence", and the theme "ai" is satisfied by a profile that spells it
      out. One hop, computed against the original sets. */
   const expanded = haystacks.map((h) => ({ ...h, tokens: expandWithAliases(h.tokens, aliases) }));
-  const themeStems = Array.from(expandWithAliases(new Set(stems), aliases));
 
   const matched: string[] = [];
   const missing: string[] = [];
@@ -149,13 +148,10 @@ export function matchTheme(haystacks: Haystack[], theme: string, aliases: AliasI
 
   tokens.forEach((token, i) => {
     const stem = stems[i];
-    /* A theme token counts as found when its own stem is present, or when the
-       alias expansion of the theme reaches something the profile carries. */
     let inStated = false;
     let found = false;
     for (const h of expanded) {
-      const hit = h.tokens.has(stem) || (themeStems.length > stems.length && themeStems.some((s) => !stems.includes(s) && h.tokens.has(s)));
-      if (!hit) continue;
+      if (!h.tokens.has(stem)) continue;
       found = true;
       if (h.tier === "stated") inStated = true;
       const bucket = h.tier === "stated" ? statedFields : listedFields;
