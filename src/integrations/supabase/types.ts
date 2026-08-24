@@ -4956,6 +4956,36 @@ export type Database = {
           },
         ]
       }
+      theme_aliases: {
+        Row: {
+          active: boolean
+          alias: string
+          canonical: string
+          created_at: string
+          id: string
+          locale: string
+          source: string
+        }
+        Insert: {
+          active?: boolean
+          alias: string
+          canonical: string
+          created_at?: string
+          id?: string
+          locale?: string
+          source?: string
+        }
+        Update: {
+          active?: boolean
+          alias?: string
+          canonical?: string
+          created_at?: string
+          id?: string
+          locale?: string
+          source?: string
+        }
+        Relationships: []
+      }
       training_logs: {
         Row: {
           created_at: string
