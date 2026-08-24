@@ -2804,13 +2804,16 @@ export default function StudioPanel({
                 <ButtonPrimary
                   onClick={() => {
                     const next = pendingSubject;
+                    const keptOrigin = pendingOrigin;
                     startNewPiece({ choice: next, format: pendingFormat });
+                    setOrigin(keptOrigin);
+                    setPendingOrigin(null);
                   }}
                   style={{ minHeight: 44 }}
                 >
                   {T.confirmSubjectYes[lang]}
                 </ButtonPrimary>
-                <ButtonGhost onClick={() => { setPendingSubject(null); setPendingFormat(null); }} style={{ minHeight: 44 }}>
+                <ButtonGhost onClick={() => { setPendingSubject(null); setPendingFormat(null); setPendingOrigin(null); }} style={{ minHeight: 44 }}>
                   {T.replaceNo[lang]}
                 </ButtonGhost>
               </div>
