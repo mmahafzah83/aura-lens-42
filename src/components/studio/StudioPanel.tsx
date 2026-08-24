@@ -2497,6 +2497,79 @@ export default function StudioPanel({
   const captureEmpty =
     !cardsLoading && cards.length === 0 && totalSignals === 0 && Boolean(onOpenCapture);
 
+  /* ---------- step 1's own furniture ------------------------------ */
+  /* All three hub boxes are the SAME shell: same width (one grid track each),
+     same minimum height. Box A is emphasised by its action and its evidence
+     line only — never by size. */
+  const hubBox: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    minHeight: 168,
+    background: "var(--surface-card)",
+    border: "1px solid var(--border-default)",
+    borderRadius: 16,
+    padding: 16,
+    textAlign: rtlShell ? "right" : "left",
+  };
+  /* The evidence behind Box A. Same rows the ranked cards already carry — no
+     new query: `cards` is loaded once by the subjects loader above. */
+  const savedBehindSubjects = cards.reduce((n, c) => n + (c.fragmentCount || 0), 0);
+  /* The ranked card for the chosen subject, so the confirm screen can show the
+     same reason line the card showed. */
+  const chosenCard = choice?.id ? (cards.find((c) => c.signalId === choice.id) ?? null) : null;
+
+  /* ONE language control, ONE state. Rendered on the hub and again on the
+     confirm screen; both are this same element, so there is no second source
+     of truth for the writing language. */
+  const langPicker = (
+    <div>
+      <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px" }}>
+        {T.writeLangLabel[lang]}
+      </p>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {([["en", T.langEn[lang]], ["ar", T.langAr[lang]]] as Array<[Lang, string]>).map(([key, label]) => {
+          const on = writeLang === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              className="v23-tap v23-focus"
+              aria-pressed={on}
+              onClick={() => { langChosenRef.current = true; setWriteLang(key); }}
+              style={{
+                minHeight: 44, padding: "0 16px", borderRadius: 8, cursor: "pointer",
+                fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
+                background: on ? "var(--act-tint)" : "var(--surface-subtle)",
+                color: on ? "var(--act)" : "var(--text-secondary)",
+                border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  /* A quiet way back to the hub. Present on every stage that is not the hub,
+     so a member is never trapped. */
+  const backToHub = (
+    <button
+      type="button"
+      className="v23-tap v23-focus"
+      onClick={() => setPickStage("hub")}
+      style={{
+        minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+        fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+        textAlign: rtlShell ? "right" : "left",
+      }}
+    >
+      <span aria-hidden>{rtlShell ? "\u2192" : "\u2190"}</span> {T.backToHub[lang]}
+    </button>
+  );
+
   const onContinue = async () => {
     if (step === 1) {
       if (pasted.trim()) {
