@@ -495,11 +495,6 @@ export const T = {
   cardToggle: { en: "Show or hide this section", ar: "أظهر أو أخفِ هذا القسم" },
 
   // Your drafts, on step 1
-  draftsHead: { en: "Your drafts", ar: "مسوّداتك" },
-  draftsHelp: {
-    en: "Posts already written for you. Open one and carry on.",
-    ar: "منشورات مكتوبة لك بالفعل. افتح واحداً وتابع.",
-  },
   draftSaved: { en: "saved", ar: "حُفظ" },
   draftOpened: { en: "We opened that draft. Pick up where it stopped.", ar: "فتحنا تلك المسوّدة. تابع من حيث توقفت." },
   draftMissing: { en: "That draft is no longer there.", ar: "تلك المسوّدة لم تعد موجودة." },
