@@ -278,6 +278,13 @@ export default function StudioPanel({
   const [cards, setCards] = useState<StartCard[]>([]);
   const [cardsLoading, setCardsLoading] = useState(false);
   /**
+   * ONE preference, ONE default. Unset always means "recommended" — the
+   * composite rule that has always ranked these cards.
+   */
+  const [sortPref, setSortPref] = useState<StartSort>(DEFAULT_START_SORT);
+  const [sortLoaded, setSortLoaded] = useState(false);
+
+  /**
    * How many active subjects the member owns. -1 means the look itself failed —
    * that is a different sentence from "you have nothing".
    */
