@@ -51,7 +51,7 @@ interface BuildHtmlOpts {
   worthReading: { title: string; url: string; author: string | null; readMinutes: number; why: string } | null;
   activeWeeks: number;
   rhythmCopy: string;
-  readyPost: string | null;
+  readyPost: { id: string; body: string } | null;
 }
 
 const PREFS_URL = `${APP_URL}/dashboard?settings=notifications`;
@@ -106,11 +106,14 @@ function buildHtml(opts: BuildHtmlOpts): string {
   `));
 
   if (readyPost) {
+    const readyHref = appendParams(`${APP_URL}/home`, {
+      tab: "authority", draft: readyPost.id, src: "content_items", email: opts.emailParam,
+    });
     rows.push(row(`
       ${label("Your post is ready")}
       ${panel(`
-        <p style="margin:0 0 14px;font-family:${BODY};font-size:14px;line-height:1.75;color:${INK};white-space:pre-line;">${escapeHtml(readyPost)}</p>
-        <a href="${APP_URL}/home?tab=authority" style="font-family:${BODY};font-size:14px;font-weight:600;color:${ACCENT};text-decoration:none;">Open in Publish tab &rarr;</a>
+        <p style="margin:0 0 14px;font-family:${BODY};font-size:14px;line-height:1.75;color:${INK};white-space:pre-line;">${escapeHtml(readyPost.body)}</p>
+        <a href="${escapeHtml(readyHref)}" style="font-family:${BODY};font-size:14px;font-weight:600;color:${ACCENT};text-decoration:none;">Open your draft &rarr;</a>
       `, ACCENT)}
     `));
   }
@@ -358,60 +361,26 @@ serve(async (req) => {
         });
         const topSignalTitle = topSignals[0]?.title ?? null;
 
-        // Generate a ready-to-publish post from the top signal
-        let readyPost: string | null = null;
-        const topSig = (topSignalsRows || [])[0] as any;
-        if (topSig?.signal_title) {
-          try {
-            const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-            if (LOVABLE_API_KEY) {
-              const sectorFocus = (profile?.sector_focus as string) || "your sector";
-              const postPrompt = `Write a concise LinkedIn post (120-180 words) for a senior professional in ${sectorFocus}.
-
-Based on this strategic signal:
-Title: ${topSig.signal_title}
-Confidence: ${Math.round(Number(topSig.confidence) * 100)}%
-${topSig.strategic_implications ? `Implications: ${topSig.strategic_implications}` : ""}
-
-Rules:
-- Write as a senior professional sharing an observation, not as AI
-- Open with a hook that names a specific sector shift or data point
-- Include one concrete insight or implication
-- End with a question that invites professional discussion
-- No hashtags, no emoji, no motivational language
-- Professional, measured, direct tone
-- Do NOT use these words: delve, tapestry, landscape, synergy, leverage, holistic, robust, utilize, comprehensive, cutting-edge, game-changer, unprecedented, paradigm`;
-              const ctrl = new AbortController();
-              const timeoutId = setTimeout(() => ctrl.abort(), 15_000);
-              try {
-                const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${LOVABLE_API_KEY}`,
-                    "Content-Type": "application/json",
-                  },
-                  signal: ctrl.signal,
-                  body: JSON.stringify({
-                    model: "google/gemini-3-flash-preview",
-                    messages: [
-                      { role: "system", content: "You are a LinkedIn ghostwriter for GCC executives. Write concise, professional posts. Return only the post text — no preamble, no markdown, no quotes." },
-                      { role: "user", content: postPrompt },
-                    ],
-                  }),
-                });
-                clearTimeout(timeoutId);
-                if (aiRes.ok) {
-                  const aiData = await aiRes.json();
-                  readyPost = aiData?.choices?.[0]?.message?.content?.trim() || null;
-                }
-              } catch (e) {
-                clearTimeout(timeoutId);
-                console.warn("Ready post generation timed out or failed:", (e as Error).message);
-              }
-            }
-          } catch (e) {
-            console.warn("Ready post generation failed:", (e as Error).message);
+        // The draft prepare-weekly-drafts already wrote for this member this week.
+        // Never invent a post here: an email may only promise what actually exists.
+        let readyPost: { id: string; body: string } | null = null;
+        try {
+          const weekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          const { data: preparedRows } = await admin
+            .from("content_items")
+            .select("id, body, created_at")
+            .eq("user_id", userId)
+            .eq("status", "draft")
+            .eq("generation_params->>source", "weekly_ready")
+            .gte("created_at", weekAgoIso)
+            .order("created_at", { ascending: false })
+            .limit(1);
+          const prepared = (preparedRows || [])[0] as any;
+          if (prepared?.id && String(prepared.body || "").trim()) {
+            readyPost = { id: prepared.id as string, body: String(prepared.body) };
           }
+        } catch (e) {
+          console.warn("weekly brief: prepared draft lookup failed", (e as Error).message);
         }
 
         // Publishing cadence
