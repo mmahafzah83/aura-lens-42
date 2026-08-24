@@ -3222,9 +3222,18 @@ export default function StudioPanel({
                   ))}
                   {drafts.length > 12 && (
                     <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: 0 }}>
-                      {T.draftsShowingSome[lang]
-                        .split("{shown}").join("12")
-                        .split("{total}").join(String(drafts.length))}
+                      {(() => {
+                        const parts = T.draftsShowingSome[lang].split(/(\{shown\}|\{total\})/);
+                        return parts.map((part, idx) =>
+                          part === "{shown}" || part === "{total}" ? (
+                            <span key={idx} style={{ fontFamily: "var(--ff-mono)" }}>
+                              {part === "{shown}" ? 12 : drafts.length}
+                            </span>
+                          ) : (
+                            <React.Fragment key={idx}>{part}</React.Fragment>
+                          ),
+                        );
+                      })()}
                     </p>
                   )}
                 </div>
