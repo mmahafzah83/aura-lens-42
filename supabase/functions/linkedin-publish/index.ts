@@ -2,6 +2,7 @@
 import { withObserve } from "../_shared/observe.ts";
 import { DIFF_CAP, levenshtein } from "../_shared/editDistance.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { findUnsourcedNumbers } from "../_shared/numberGuard.ts";
 import { linkedinFetch } from "../_shared/linkedinFetch.ts";
 import { alertPublishFailure } from "../_shared/publishFailureAlert.ts";
 import {
