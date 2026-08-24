@@ -2797,7 +2797,7 @@ export default function StudioPanel({
                 <ButtonPrimary
                   onClick={() => {
                     const next = pendingSubject;
-                    startNewPiece({ choice: next });
+                    startNewPiece({ choice: next, format: pendingFormat });
                   }}
                   style={{ minHeight: 44 }}
                 >
