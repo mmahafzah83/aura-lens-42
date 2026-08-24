@@ -18,9 +18,11 @@ interface Props {
   onOpenChat?: (msg?: string) => void;
   onDraftToStudio?: (prefill: {
     topic: string; context: string; signalId?: string; signalTitle?: string;
-    sourceType?: string; origin?: { surface: string; label: string };
+    sourceType?: string; contentFormat?: "post" | "carousel";
+    origin?: { surface: string; label: string };
   }) => void;
 }
+
 
 const SignalDetail: React.FC<Props> = ({ signalId, onBack, onOpenChat, onDraftToStudio }) => {
   const [signal, setSignal] = useState<Signal | null>(null);
