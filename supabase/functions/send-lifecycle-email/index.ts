@@ -140,6 +140,9 @@ function buildEmail(
     const title = postTitle || "your latest insight";
     const preview = (postPreview || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const subject = `Your post about ${title} is ready to publish`;
+    const openHref = postId
+      ? `${APP_URL}/home?tab=authority&draft=${encodeURIComponent(postId)}&src=linkedin_posts`
+      : `${APP_URL}/home?tab=authority`;
     const body = `
       ${heading(`${name}, your post is waiting.`)}
       <p style="margin:0 0 18px;">You generated a LinkedIn post yesterday — and it's still waiting.</p>
