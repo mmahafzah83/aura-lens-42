@@ -58,7 +58,7 @@ export const T = {
   // Journey map
   step1: { en: "Choose the subject", ar: "اختر الموضوع" },
   step2: { en: "Write the post", ar: "اكتب المنشور" },
-  step3: { en: "Choose how it looks", ar: "اختر شكله" },
+  step3: { en: "Words, or words and slides", ar: "نص، أو نص وشرائح" },
   step4: { en: "Put it on LinkedIn", ar: "انشره على لينكدإن" },
   mapNote: {
     en: "Click any step to go back. Nothing is locked.",
@@ -486,11 +486,13 @@ export const T = {
   draftOpened: { en: "We opened that draft. Pick up where it stopped.", ar: "فتحنا تلك المسوّدة. تابع من حيث توقفت." },
   draftMissing: { en: "That draft is no longer there.", ar: "تلك المسوّدة لم تعد موجودة." },
   untitledDraft: { en: "Untitled draft", ar: "مسوّدة بلا عنوان" },
+  draftsShowingSome: {
+    en: "Showing the {shown} most recent of {total}.",
+    ar: "نعرض أحدث {shown} من {total}.",
+  },
 
-  // Every subject, not only the ranked three
-  seeAllSubjects: { en: "See all your subjects", ar: "اعرض كل مواضيعك" },
-  hideAllSubjects: { en: "Show fewer subjects", ar: "اعرض عدداً أقل" },
-  allSubjectsEmpty: { en: "You have no saved subjects yet.", ar: "لا توجد مواضيع محفوظة بعد." },
+  // Every subject lives in Signals; the composer hands off there.
+  browseInSignals: { en: "Browse everything in Signals", ar: "تصفّح كل شيء في الإشارات" },
   subjectsUnreadable: { en: "We could not read your subjects just now.", ar: "لم نتمكن من قراءة مواضيعك الآن." },
   subjectsRetry: { en: "Try again", ar: "حاول مرة أخرى" },
   nothingNewToRank: { en: "Nothing new to rank right now — here is everything you have.", ar: "لا جديد لترتيبه الآن — هذه كل مواضيعك." },
