@@ -90,7 +90,6 @@ export const T = {
   continue: { en: "Continue", ar: "متابعة" },
 
   // Preconditions — every control says, in words, why it cannot be pressed.
-  nothingToSaveYet: { en: "Nothing to save yet", ar: "لا شيء لحفظه بعد" },
   whyNoSubject: {
     en: "Choose a subject first, or paste words of your own.",
     ar: "اختر موضوعاً أولاً، أو الصق كلماتك.",
