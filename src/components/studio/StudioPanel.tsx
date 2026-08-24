@@ -1157,8 +1157,8 @@ export default function StudioPanel({
     if (!signalPrefill) return;
     const title: string = signalPrefill.topic || signalPrefill.signalTitle || signalPrefill.trendHeadline || "";
     const nextFormat: Format | null = signalPrefill.contentFormat === "carousel" ? "slides" : null;
-    // The sender may know the language the member asked in; honour it.
-    if (signalPrefill.language === "en" || signalPrefill.language === "ar") setLang(signalPrefill.language);
+    const nextLang: Lang | null =
+      signalPrefill.language === "en" || signalPrefill.language === "ar" ? signalPrefill.language : null;
     const cur = choiceRef.current;
     const same =
       Boolean(cur) &&
