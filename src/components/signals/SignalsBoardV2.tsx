@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Chip, Tooltip, ButtonPrimary } from "@/components/systemb";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
+import { type SubjectHandoff } from "@/lib/workHandoff";
 import { isArabicText } from "@/lib/utils";
 import { LayoutGrid, List as ListIcon, Plus, ChevronRight } from "lucide-react";
 import SignalDetail from "@/components/signals/SignalDetail";
