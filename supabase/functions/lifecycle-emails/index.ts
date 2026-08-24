@@ -266,7 +266,7 @@ serve(withObserve("lifecycle-emails", async (req) => {
         admin.from("entries").select("id", { count: "exact", head: true }).eq("user_id", u.id),
         admin.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", u.id),
         admin.from("entries").select("created_at").eq("user_id", u.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-        admin.from("strategic_signals").select("signal_title, created_at").eq("user_id", u.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        admin.from("strategic_signals").select("id, signal_title, created_at").eq("user_id", u.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
       const captureCount = captures ?? 0;
       const signalCount = signals ?? 0;
