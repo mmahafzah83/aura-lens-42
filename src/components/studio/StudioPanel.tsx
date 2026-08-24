@@ -181,6 +181,20 @@ function savedAgo(dateStr: string, lang: Lang): string {
   return d.toLocaleDateString("ar", { month: "short", day: "numeric" });
 }
 
+/**
+ * A drafts row must say WHEN, exactly — date and time, in the member's
+ * language. A relative phrase alone cannot separate two drafts saved the same
+ * afternoon.
+ */
+function savedStamp(dateStr: string, lang: Lang): string {
+  const d = new Date(dateStr);
+  if (!dateStr || isNaN(d.getTime())) return "";
+  return d.toLocaleString(lang === "ar" ? "ar" : "en-US", {
+    day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",
+  });
+}
+
+
 /** Two tabs that both do something. There is no third. */
 type SubNav = "build" | "look";
 
@@ -194,10 +208,11 @@ interface Choice {
 }
 
 /**
- * The five screens inside step 1. "hub" is the three ways in; "signals",
- * "subject" and "paste" are each one way; "confirm" is the subject decided.
+ * The six screens inside step 1. "hub" is the three ways in; "drafts" is the
+ * work already waiting; "signals", "subject" and "paste" are each one way;
+ * "confirm" is the subject decided.
  */
-type PickStage = "hub" | "signals" | "subject" | "paste" | "confirm";
+type PickStage = "hub" | "drafts" | "signals" | "subject" | "paste" | "confirm";
 
 
 
@@ -415,11 +430,12 @@ export default function StudioPanel({
   const [draftSource, setDraftSource] = useState<"content_items" | "linkedin_posts" | null>(null);
   const [drafts, setDrafts] = useState<StudioDraft[]>([]);
   const [draftsLoading, setDraftsLoading] = useState(true);
-  /* Step 1 secondaries — collapsed by default, never above the subjects. */
-  // Posture is a SILENT default only: the author simply arrives with their own
-  // words already open. The controls are identical for everyone.
-  // The pile stays CLOSED until the member asks for it.
-  const [showDrafts, setShowDrafts] = useState(false);
+  /* Step 1 secondaries. Posture is a SILENT default only: the author simply
+     arrives with their own words already open. The controls are identical for
+     everyone. */
+  /* The waiting work is its own stage; "Open one" goes there. The only thing
+     held here is whether the list is showing its first five or all of them. */
+  const [showAllDrafts, setShowAllDrafts] = useState(false);
   /** The quality gate held this post. One sentence, never a checklist. */
   const [notReady, setNotReady] = useState<string | null>(null);
   /* The reading generation already took, held only for display. */
@@ -2826,11 +2842,10 @@ export default function StudioPanel({
       )}
 
 
-      {/* One journey map, and only once the member is inside a piece. A tracker
-          with nothing ticked, before a subject exists, is furniture. */}
-      {step > 1 && (Boolean(doneMap[1]) || content.trim().length > 0 || Boolean(draftId) || Boolean(deck)) && (
-        <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtlShell={rtlShell} />
-      )}
+      {/* One journey map, on every step INCLUDING step 1 and all its stages.
+          The member sees the whole journey from the first screen and watches it
+          advance. It is a tracker, not a primary. */}
+      <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtlShell={rtlShell} />
 
       {/* One status strip, at every width: what Aura is doing, what it has
           done, and what is in the way. */}
@@ -2920,8 +2935,10 @@ export default function StudioPanel({
 
       {step === 1 && (
         <StageCard
-          title={T.chooseHead[lang]}
-          subtitle={pickStage === "hub" ? T.chooseHelp[lang] : undefined}
+          /* The hub asks where the writing starts; the signals stage is the one
+             that still asks what the post is about. */
+          title={pickStage === "hub" ? T.hubHead[lang] : pickStage === "drafts" ? T.draftsStageHead[lang] : T.chooseHead[lang]}
+          subtitle={pickStage === "hub" ? T.hubHelp[lang] : pickStage === "drafts" ? T.draftsStageHelp[lang] : pickStage === "signals" ? T.chooseHelp[lang] : undefined}
           align={rtlShell ? "right" : "left"}
           lang={lang}
           rtlShell={rtlShell}
@@ -2982,11 +2999,12 @@ export default function StudioPanel({
                     ))}
                   </span>
                   <span style={{ flex: 1 }} />
+                  {/* ONE control, ONE meaning: it opens the waiting work on its
+                      own screen. It never also closes anything. */}
                   <button
                     type="button"
                     className="v23-tap v23-focus"
-                    onClick={() => setShowDrafts((v) => !v)}
-                    aria-expanded={showDrafts}
+                    onClick={() => { setShowAllDrafts(false); setPickStage("drafts"); }}
                     style={{
                       minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
                       fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
@@ -2997,47 +3015,6 @@ export default function StudioPanel({
                 </div>
               )}
 
-              {/* The drafts already waiting — opened by the bar above. */}
-              {!draftsLoading && drafts.length > 0 && showDrafts && (
-                <div style={{ display: "grid", gap: 8, marginBottom: 16 }}>
-                  {drafts.slice(0, 12).map((d) => (
-                    <button
-                      key={d.id}
-                      type="button"
-                      className="v23-tap v23-focus"
-                      onClick={() => void openDraft(d, "studio_drafts_list")}
-                      style={{
-                        textAlign: rtlShell ? "right" : "left", cursor: "pointer",
-                        background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
-                        borderRadius: 12, padding: 12,
-                      }}
-                    >
-                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
-                        {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
-                      </span>
-                      <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
-                        {T.draftSaved[lang]} {savedAgo(d.created_at, lang)} · {d.language === "ar" ? T.langAr[lang] : T.langEn[lang]}
-                      </span>
-                    </button>
-                  ))}
-                  {drafts.length > 12 && (
-                    <p style={{ fontFamily: "var(--ff-ui)", fontSize: 11.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-muted)", margin: 0 }}>
-                      {(() => {
-                        const parts = T.draftsShowingSome[lang].split(/(\{shown\}|\{total\})/);
-                        return parts.map((part, idx) =>
-                          part === "{shown}" || part === "{total}" ? (
-                            <span key={idx} style={{ fontFamily: "var(--ff-mono)" }}>
-                              {part === "{shown}" ? 12 : drafts.length}
-                            </span>
-                          ) : (
-                            <React.Fragment key={idx}>{part}</React.Fragment>
-                          ),
-                        );
-                      })()}
-                    </p>
-                  )}
-                </div>
-              )}
 
               {/* THE THREE WAYS IN. Same size, one grid track each. */}
               <div
@@ -3121,6 +3098,69 @@ export default function StudioPanel({
               <div style={{ marginTop: 18 }}>{langPicker}</div>
             </>
           )}
+
+          {/* ---------------- STAGE: DRAFTS ----------------
+              The waiting work, alone on its own screen. Header, a way back, the
+              list. Nothing else lands here. */}
+          {pickStage === "drafts" && (
+            <>
+              <div style={{ marginBottom: 14 }}>{backToHub}</div>
+              {draftsLoading && (
+                <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--text-secondary)", margin: 0 }}>
+                  {T.loading[lang]}
+                </p>
+              )}
+              {!draftsLoading && drafts.length === 0 && (
+                <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
+                  {T.draftMissing[lang]}
+                </p>
+              )}
+              {!draftsLoading && drafts.length > 0 && (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {(showAllDrafts ? drafts : drafts.slice(0, 5)).map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      className="v23-tap v23-focus"
+                      onClick={() => void openDraft(d, "studio_drafts_list")}
+                      style={{
+                        textAlign: rtlShell ? "right" : "left", cursor: "pointer",
+                        background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                        borderRadius: 12, padding: 12,
+                      }}
+                    >
+                      <span dir="auto" style={{ display: "block", fontFamily: "var(--ff-ui)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
+                        {d.title || d.body.split("\n").map((l) => l.trim()).find(Boolean)?.slice(0, 120) || T.untitledDraft[lang]}
+                      </span>
+                      {/* WHEN, exactly. `loadStudioDrafts` returns only
+                          `created_at` — there is no edited stamp on the row — so
+                          that is the one field shown, with date and time. */}
+                      <span style={{ display: "block", fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
+                        {T.draftSaved[lang]} {savedStamp(d.created_at, lang)}
+                      </span>
+                    </button>
+                  ))}
+                  {/* One control, one meaning at a time: it either reveals the
+                      rest or, once revealed, collapses back. */}
+                  {drafts.length > 5 && (
+                    <button
+                      type="button"
+                      className="v23-tap v23-focus"
+                      onClick={() => setShowAllDrafts((v) => !v)}
+                      style={{
+                        minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                        fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+                        textAlign: rtlShell ? "right" : "left",
+                      }}
+                    >
+                      {showAllDrafts ? T.draftsShowFewer[lang] : T.draftsShowRest(drafts.length - 5)[lang]}
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
 
           {/* ---------------- STAGE: SIGNALS ---------------- */}
           {pickStage === "signals" && (
