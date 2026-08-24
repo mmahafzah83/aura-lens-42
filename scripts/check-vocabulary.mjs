@@ -44,13 +44,46 @@ const NOUNS = [
 ];
 const NOUN = `(?:${NOUNS.join("|")})`;
 
-/** Number-ish on the left: ${...}, {expr}, or a bare digit run. */
-const PATTERNS = [
-  new RegExp(String.raw`\$\{[^}]{0,80}\}\s*(?:\w+\s+){0,2}${NOUN}\b`, "i"),
-  new RegExp(String.raw`\{[^{}]{0,80}\}\s*(?:\w+\s+){0,2}${NOUN}\b`, "i"),
-  new RegExp(String.raw`\b\d+\s+(?:\w+\s+){0,1}${NOUN}\b`, "i"),
-  new RegExp(String.raw`${NOUN}\b\s*(?::|=)?\s*\$\{`, "i"),
+/**
+ * Two scans, because a count noun only matters in member-facing TEXT:
+ *   A) inside a string/template literal, next to `${...}`, `{n}` or a digit;
+ *   B) as JSX text right after an expression — `{n} sources`.
+ * JSX attribute values (`theme={theme}`) are code, never text, so an `=` or a
+ * bare identifier immediately before the brace disqualifies a match.
+ */
+const LITERAL_PATTERNS = [
+  new RegExp(String.raw`\$\{[^}]{0,80}\}\s*(?:[A-Za-z']+\s+){0,2}${NOUN}\b`, "i"),
+  new RegExp(String.raw`\{n\}\s*(?:[A-Za-z']+\s+){0,2}${NOUN}\b`, "i"),
+  new RegExp(String.raw`\b\d+\s+(?:[A-Za-z']+\s+){0,1}${NOUN}\b`, "i"),
 ];
+
+const JSX_PATTERN = new RegExp(
+  String.raw`(?<![=\w])\{[^{}=]{0,80}\}\s*(?:[A-Za-z']+\s+){0,2}${NOUN}\b`, "i");
+
+/** Literals that are plainly code, not prose. */
+const CODE_LIKE = /^(?:[\w./@-]*)$|var\(|--|px|%|hsl|rgb|#[0-9a-f]{3}/i;
+
+/** Pull every string / template literal out of one line. */
+function literalsOf(line) {
+  const out = [];
+  const re = /'([^'\\]*(?:\\.[^'\\]*)*)'|"([^"\\]*(?:\\.[^"\\]*)*)"|`([^`]*)`/g;
+  let m;
+  while ((m = re.exec(line))) out.push(m[1] ?? m[2] ?? m[3] ?? "");
+  return out;
+}
+
+function findHit(line) {
+  for (const lit of literalsOf(line)) {
+    if (lit.length < 4 || CODE_LIKE.test(lit)) continue;
+    for (const re of LITERAL_PATTERNS) {
+      const m = lit.match(re);
+      if (m) return m[0].trim();
+    }
+  }
+  const j = line.match(JSX_PATTERN);
+  if (j && !/[=<>]/.test(j[0])) return j[0].trim();
+  return null;
+}
 
 /** Files exempt entirely. */
 const EXEMPT = [
@@ -115,17 +148,11 @@ for (const file of walk(SRC)) {
   const rawLines = raw.split("\n");
   stripped.split("\n").forEach((line, idx) => {
     if (/vocab-ok/.test(rawLines[idx] || "")) return;
-    // Only member-facing text: something quoted, or JSX text next to a brace.
-    if (!/["'`]/.test(line) && !/[{}]/.test(line)) return;
-    for (const re of PATTERNS) {
-      const m = line.match(re);
-      if (!m) continue;
-      if (isIdentifierHit(line, m[0])) continue;
-      const hit = { rel, line: idx + 1, text: (rawLines[idx] || "").trim().slice(0, 160), match: m[0].trim() };
-      if (ROUND_2B.some((p) => rel.startsWith(p))) deferred.push(hit);
-      else hits.push(hit);
-      break;
-    }
+    const match = findHit(line);
+    if (!match) return;
+    const hit = { rel, line: idx + 1, text: (rawLines[idx] || "").trim().slice(0, 160), match };
+    if (ROUND_2B.some((p) => rel.startsWith(p))) deferred.push(hit);
+    else hits.push(hit);
   });
 }
 
