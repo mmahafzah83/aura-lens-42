@@ -170,12 +170,9 @@ export const T = {
   pastePlaceholder: { en: "Paste your post here…", ar: "الصق منشورك هنا…" },
 
   // Step 1 — the hub, and the three ways in
-  /** The hub asks where the writing STARTS FROM — not what it is about. */
-  hubHead: { en: "Where should this post start?", ar: "من أين يبدأ هذا المنشور؟" },
-  hubHelp: {
-    en: "Choose what you are writing from. Everything after this follows from it.",
-    ar: "اختر ما تكتب منه. كل ما يأتي بعد ذلك يتبع هذا الاختيار.",
-  },
+  /** The hub has no StageCard title; the three boxes are the first thing on screen.
+      This heading sits above the waiting-work bar. */
+  hubPreviousWork: { en: "Previous work on posts", ar: "منشورات سابقة" },
   hubResume: { en: "You have {n} pieces already waiting.", ar: "لديك {n} قطعة جاهزة بالفعل." },
   hubResumeOpen: { en: "Open one", ar: "افتح واحدة" },
   // Step 1 — the waiting work, its own screen

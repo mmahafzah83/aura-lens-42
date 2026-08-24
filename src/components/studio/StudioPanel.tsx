@@ -2952,9 +2952,10 @@ export default function StudioPanel({
       {step === 1 && (
         <StageCard
           /* The hub asks where the writing starts; the signals stage is the one
-             that still asks what the post is about. */
+             that still asks what the post is about. The hub has no title — the
+             three boxes are the first thing on screen. */
           title={
-            pickStage === "hub" ? T.hubHead[lang]
+            pickStage === "hub" ? undefined
             : pickStage === "drafts" ? T.draftsStageHead[lang]
             : pickStage === "subject" ? T.chooseOwn[lang]
             : pickStage === "paste" ? T.pasteStageHead[lang]
@@ -2962,7 +2963,7 @@ export default function StudioPanel({
             : T.chooseHead[lang]
           }
           subtitle={
-            pickStage === "hub" ? T.hubHelp[lang]
+            pickStage === "hub" ? undefined
             : pickStage === "drafts" ? T.draftsStageHelp[lang]
             : pickStage === "subject" ? T.subjectStageHelp[lang]
             : pickStage === "paste" ? T.pasteHelp[lang]
@@ -3013,46 +3014,10 @@ export default function StudioPanel({
             </div>
           )}
 
-          {/* ---------------- STAGE: HUB ---------------- */}
+          {/* ---------------- STAGE: HUB ----------------
+              The three ways in first; previous work sits below them. */}
           {pickStage === "hub" && (
             <>
-              {/* The resume bar. A bar, not a fourth choice: no primary, real count. */}
-              {!draftsLoading && drafts.length > 0 && (
-                <div
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
-                    background: "var(--surface-card)", border: "1px solid var(--border-default)",
-                    borderRadius: 12, padding: "10px 12px", marginBottom: 14,
-                  }}
-                >
-                  <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)" }}>
-                    {T.hubResume[lang].split("{n}").map((part, i) => (
-                      <React.Fragment key={i}>
-                        {i > 0 && (
-                          <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{drafts.length}</span>
-                        )}
-                        {part}
-                      </React.Fragment>
-                    ))}
-                  </span>
-                  <span style={{ flex: 1 }} />
-                  {/* ONE control, ONE meaning: it opens the waiting work on its
-                      own screen. It never also closes anything. */}
-                  <button
-                    type="button"
-                    className="v23-tap v23-focus"
-                    onClick={() => { setShowAllDrafts(false); setPickStage("drafts"); }}
-                    style={{
-                      minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
-                      fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
-                    }}
-                  >
-                    {T.hubResumeOpen[lang]}
-                  </button>
-                </div>
-              )}
-
-
               {/* THE THREE WAYS IN. Same size, one grid track each. */}
               <div
                 style={{
@@ -3132,7 +3097,53 @@ export default function StudioPanel({
                 </div>
               </div>
 
-              <div style={{ marginTop: 18 }}>{langPicker}</div>
+              {/* PREVIOUS WORK. The heading and the bar share the same guard —
+                  an empty section heading is worse than nothing. */}
+              {!draftsLoading && drafts.length > 0 && (
+                <>
+                  <p
+                    style={{
+                      fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 700, color: "var(--text-primary)",
+                      margin: "24px 0 8px", lineHeight: rtlShell ? 1.9 : 1.7,
+                    }}
+                  >
+                    {T.hubPreviousWork[lang]}
+                  </p>
+                  {/* The resume bar. A bar, not a fourth choice: no primary, real count. */}
+                  <div
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+                      background: "var(--surface-card)", border: "1px solid var(--border-default)",
+                      borderRadius: 12, padding: "10px 12px",
+                    }}
+                  >
+                    <span style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)" }}>
+                      {T.hubResume[lang].split("{n}").map((part, i) => (
+                        <React.Fragment key={i}>
+                          {i > 0 && (
+                            <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{drafts.length}</span>
+                          )}
+                          {part}
+                        </React.Fragment>
+                      ))}
+                    </span>
+                    <span style={{ flex: 1 }} />
+                    {/* ONE control, ONE meaning: it opens the waiting work on its
+                        own screen. It never also closes anything. */}
+                    <button
+                      type="button"
+                      className="v23-tap v23-focus"
+                      onClick={() => { setShowAllDrafts(false); setPickStage("drafts"); }}
+                      style={{
+                        minHeight: 44, padding: 0, background: "transparent", border: 0, cursor: "pointer",
+                        fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--act)",
+                      }}
+                    >
+                      {T.hubResumeOpen[lang]}
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           )}
 

@@ -8,7 +8,7 @@ import { T, type Lang } from "./strings";
  */
 export const StageCard: React.FC<
   React.PropsWithChildren<{
-    title: string;
+    title?: string;
     subtitle?: string;
     defaultOpen?: boolean;
     collapsible?: boolean;
@@ -22,6 +22,7 @@ export const StageCard: React.FC<
   // `useState` snapshots at mount. When the caller's answer changes later the
   // card must follow it, never keep a stale first answer.
   useEffect(() => { setOpen(defaultOpen); }, [defaultOpen]);
+  const showHeader = Boolean(title) || Boolean(subtitle) || collapsible;
   return (
     <section
       style={{
@@ -32,39 +33,41 @@ export const StageCard: React.FC<
         textAlign: align,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-        <h2
-          style={{
-            fontFamily: "var(--ff-ui)",
-            fontSize: 18,
-            fontWeight: 700,
-            color: "var(--text-primary)",
-            margin: 0,
-          }}
-        >
-          {title}
-        </h2>
-        {collapsible && (
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-label={T.cardToggle[lang]}
+      {showHeader && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+          <h2
             style={{
-              background: "transparent",
-              border: 0,
-              cursor: "pointer",
-              minHeight: 44,
               fontFamily: "var(--ff-ui)",
-              fontSize: 13,
-              fontWeight: 600,
-              color: "var(--act)",
+              fontSize: 18,
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              margin: 0,
             }}
           >
-            {open ? "▴" : "▾"}
-          </button>
-        )}
-      </div>
+            {title}
+          </h2>
+          {collapsible && (
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-label={T.cardToggle[lang]}
+              style={{
+                background: "transparent",
+                border: 0,
+                cursor: "pointer",
+                minHeight: 44,
+                fontFamily: "var(--ff-ui)",
+                fontSize: 13,
+                fontWeight: 600,
+                color: "var(--act)",
+              }}
+            >
+              {open ? "▴" : "▾"}
+            </button>
+          )}
+        </div>
+      )}
       {subtitle && (
         <p
           style={{
