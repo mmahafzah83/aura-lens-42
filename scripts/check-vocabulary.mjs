@@ -131,6 +131,9 @@ function findHit(rawLine) {
     .replace(/class="[^"]*"/g, " ");
   // Per-match, not per-line: only the dictionary call itself is forgiven.
   line = blankDictionaryCalls(line);
+  // A JSX attribute holding a literal number (`triggerSize={13}`) is layout,
+  // not a count — it must not turn a static label into a "counting" line.
+  line = line.replace(/\b[\w-]+=\{\s*-?\d+(?:\.\d+)?\s*\}/g, (m) => " ".repeat(m.length));
 
   const counting = isCountContext(line);
   for (const lit of literalsOf(line)) {
