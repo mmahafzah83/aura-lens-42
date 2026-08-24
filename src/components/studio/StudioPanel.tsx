@@ -2551,7 +2551,7 @@ export default function StudioPanel({
                 fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
                 background: on ? "var(--act-tint)" : "var(--surface-subtle)",
                 // 4.5:1 gate: --act on --act-tint measures 4.48:1 at 13.5px/700,
-                // which is not large text. --act-hover clears it at 9.1:1.
+                // which is not large text. --act-hover clears it at 8.41:1.
                 color: on ? "var(--act-hover)" : "var(--text-secondary)",
                 border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
               }}
