@@ -35,6 +35,9 @@ interface SignalRow {
   what_it_means_for_you: string | null;
 }
 
+/** How many ranked starting points the composer shows. Ranking is untouched. */
+const LIMIT = 5;
+
 const byStrength = (a: SignalRow, b: SignalRow) =>
   (b.strength_score ?? 0) - (a.strength_score ?? 0);
 
@@ -139,22 +142,22 @@ export async function loadStartCards(userId: string): Promise<StartZoneData> {
     push(s, "never_written", `Your strongest signal you have never posted about — ${s.fragment_count ?? 0} sources.`);
   }
 
-  // Degrade honestly: if fewer than three qualified, backfill only from the
+  // Degrade honestly: if fewer than LIMIT qualified, backfill only from the
   // next-best genuinely-qualifying rows of the remaining categories. Never pad.
-  if (cards.length < 3) {
+  if (cards.length < LIMIT) {
     for (const s of neverWritten) {
-      if (cards.length >= 3) break;
+      if (cards.length >= LIMIT) break;
       if (used.has(s.id)) continue;
       push(s, "never_written", `Not written about yet — ${s.fragment_count ?? 0} sources behind it.`);
     }
   }
-  if (cards.length < 3) {
+  if (cards.length < LIMIT) {
     for (const s of accelerating) {
-      if (cards.length >= 3) break;
+      if (cards.length >= LIMIT) break;
       if (used.has(s.id)) continue;
       push(s, "accelerating", `Picking up speed — ${s.fragment_count ?? 0} sources and still climbing.`);
     }
   }
 
-  return { cards: cards.slice(0, 3), totalSignals: signals.length };
+  return { cards: cards.slice(0, LIMIT), totalSignals: signals.length };
 }
