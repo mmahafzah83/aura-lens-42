@@ -3,6 +3,30 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
+import { reportVocabularyCheck } from "./scripts/check-vocabulary.mjs";
+
+/**
+ * VOCABULARY GATE as a build step. A `prebuild` npm script is not enough —
+ * a deploy may call `vite build` directly — so the check runs inside the build
+ * itself and throws, which fails it. Skipped in development so local work is
+ * never blocked.
+ */
+function vocabularyGate() {
+  return {
+    name: "aura-vocabulary-gate",
+    apply: "build" as const,
+    buildStart() {
+      const hits = reportVocabularyCheck();
+      if (hits.length) {
+        throw new Error(
+          `Vocabulary gate failed: ${hits.length} hand-written count noun(s). ` +
+          `Use the formatters in src/constants/vocabulary.ts.`,
+        );
+      }
+    },
+  };
+}
+
 
 const BUILD_TIME = new Date().toISOString();
 const BUILD_SHA =
@@ -27,7 +51,13 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger(), mcpPlugin()].filter(Boolean),
+  plugins: [
+    react(),
+    mode === "development" && componentTagger(),
+    mode !== "development" && vocabularyGate(),
+    mcpPlugin(),
+  ].filter(Boolean),
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

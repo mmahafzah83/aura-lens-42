@@ -1,4 +1,4 @@
-import { evidenceAndSources, evidenceCountAr as evidenceAr } from "@/constants/vocabulary";
+import { evidenceAndSources, nEvidence, evidenceCountAr as evidenceAr } from "@/constants/vocabulary";
 
 export type Lang = "en" | "ar";
 export type Posture = "delegator" | "editor" | "author";
@@ -151,7 +151,6 @@ export const T = {
     en: "These come from what you saved. Pick one, or check other signals.",
     ar: "هذه من المواد التي حفظتها. اختر واحدة، أو اكتب موضوعك.",
   },
-  sources: { en: "sources", ar: "مصدر" },
   /** W9 — a tick the member did not earn must say who earned it. */
   auraPicked: {
     en: "Aura picked this subject for you — choose a different one below.",
@@ -175,7 +174,21 @@ export const T = {
   /** The hub has no StageCard title; the three boxes are the first thing on screen.
       This heading sits above the waiting-work bar. */
   hubPreviousWork: { en: "Previous work on posts", ar: "منشورات سابقة" },
-  hubResume: { en: "You have {n} pieces already waiting.", ar: "لديك {n} قطعة جاهزة بالفعل." },
+  /** `{n}` is the number of UNFINISHED DRAFTS (rows in the drafts pile) — never
+      evidence, never captures. Rendered via `.split("{n}")` so the digit gets
+      the mono face. */
+  hubResume: (n: number) => ({
+    en: n === 1
+      ? "One unfinished draft is waiting."
+      : "{n} unfinished drafts are waiting.",
+    ar: n === 1
+      ? "مسودة واحدة غير مكتملة تنتظرك."
+      : n === 2
+      ? "مسودتان غير مكتملتين تنتظرانك."
+      : n >= 3 && n <= 10
+      ? "{n} مسودات غير مكتملة تنتظرك."
+      : "{n} مسودة غير مكتملة تنتظرك.",
+  }),
   hubResumeOpen: { en: "Open one", ar: "افتح واحدة" },
   // Step 1 — the waiting work, its own screen
   draftsStageHead: { en: "Work already waiting", ar: "عمل ينتظرك بالفعل" },
@@ -211,23 +224,16 @@ export const T = {
     ar: "هذا ما ستكتب عنه أورا. غيّر ما تريد قبل أن تبدأ.",
   },
   hubSignalsTitle: { en: "Write from your signals", ar: "اكتب من إشاراتك" },
-  hubSignalsEvidence: (n: number) => ({
-    // True of the value shown: the sum of evidence fragments behind the ranked
-    // subjects — never a total of distinct sources, and never everything saved.
-    en: n === 1
-      ? "1 piece of evidence behind the subjects we have ranked for you."
-      : "{n} pieces of evidence behind the subjects we have ranked for you.",
-    // Arabic count grammar: 1/11+ use singular قطعة, 2 uses dual قطعتان,
-    // 3–10 use plural قطع. We switch on the small-count ranges so the line is
-    // correct for the values members will most often see.
-    ar: n === 1
-      ? "قطعة واحدة من الأدلة خلف المواضيع التي رتّبناها لك."
-      : n === 2
-      ? "قطعتان من الأدلة خلف المواضيع التي رتّبناها لك."
-      : n >= 3 && n <= 10
-      ? "{n} قطع من الأدلة خلف المواضيع التي رتّبناها لك."
-      : "{n} قطعة من الأدلة خلف المواضيع التي رتّبناها لك.",
-  }),
+  /** One dictionary, one plural ladder. `nEvidence` owns the grammar; we only
+      swap the rendered digit back to the `{n}` placeholder that StudioPanel
+      splits on to give the number the mono face. */
+  hubSignalsEvidence: (n: number) => {
+    const ev = (lang: Lang) => nEvidence(n, lang).replace(String(n), "{n}");
+    return {
+      en: `${ev("en")} stand behind what we ranked for you.`,
+      ar: `${ev("ar")} خلف ما رتّبناه لك.`,
+    };
+  },
   hubSignalsEmpty: { en: "Nothing saved behind your subjects yet.", ar: "لا مواد محفوظة خلف مواضيعك بعد." },
 
   hubSignalsAction: { en: "Choose a signal", ar: "اختر إشارة" },

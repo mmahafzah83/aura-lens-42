@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/check-vocabulary.mjs",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "node scripts/check-vocabulary.mjs && eslint .",
