@@ -464,6 +464,8 @@ export default function StudioPanel({
   /* Guarded transitions. Nothing destructive happens without one of these. */
   const [pendingSubject, setPendingSubject] = useState<Choice | null>(null);
   const [pendingFormat, setPendingFormat] = useState<Format | null>(null);
+  /** The origin of a deferred subject, so the badge survives the confirmation. */
+  const [pendingOrigin, setPendingOrigin] = useState<{ surface: string; label: string } | null>(null);
   const [askEditAfterPublish, setAskEditAfterPublish] = useState(false);
 
   /**
