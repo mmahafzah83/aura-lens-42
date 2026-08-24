@@ -8,8 +8,9 @@ import { reportVocabularyCheck } from "./scripts/check-vocabulary.mjs";
 /**
  * VOCABULARY GATE as a build step. A `prebuild` npm script is not enough —
  * a deploy may call `vite build` directly — so the check runs inside the build
- * itself and throws, which fails it. Skipped in development so local work is
- * never blocked.
+ * itself and throws, which fails it. `apply: "build"` already keeps it off the
+ * dev SERVER; it now runs for EVERY build mode, including `build:dev`, so no
+ * build path can bypass it.
  */
 function vocabularyGate() {
   return {
@@ -54,7 +55,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    mode !== "development" && vocabularyGate(),
+    vocabularyGate(),
     mcpPlugin(),
   ].filter(Boolean),
 

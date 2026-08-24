@@ -73,8 +73,9 @@ const NOUN =
   `(?:\\b(?:${NOUNS_EN.join("|")})\\b` +
   `|(?<![${AR_LETTER}])(?:${NOUNS_AR.join("|")})(?![${AR_LETTER}]))`;
 
-/** Every noun on its own, for the bare-literal check. */
-const BARE_NOUN = new RegExp(`^(?:${[...NOUNS_EN, ...NOUNS_AR].join("|")})$`, "u");
+/** Every noun on its own, for the bare-literal check. Case-insensitive: a
+ *  title-cased `"Source"`/`"Sources"` is the same hand-rolled plural. */
+const BARE_NOUN = new RegExp(`^(?:${[...NOUNS_EN, ...NOUNS_AR].join("|")})$`, "iu");
 
 /**
  * Two scans, because a count noun only matters in member-facing TEXT:
