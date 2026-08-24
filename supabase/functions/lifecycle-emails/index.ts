@@ -126,15 +126,16 @@ function footer(lang: Lang): string {
   `;
 }
 
-function buildEmail(lang: Lang, key: MessageKey, firstName: string, signalTitle?: string) {
+function buildEmail(lang: Lang, key: MessageKey, firstName: string, signalTitle?: string, ctaHrefOverride?: string) {
   const msg = MESSAGES[lang][key];
   const inner = msg.render({ firstName, signalTitle }) + footer(lang);
+  const cta = ctaHrefOverride ? { ...msg.cta, href: ctaHrefOverride } : msg.cta;
   return {
     subject: msg.subject,
     html: renderEmail({
       preheader: msg.subject,
       body: inner,
-      cta: msg.cta,
+      cta,
       rtl: lang === "ar",
       prefsHref: NOTIF_SETTINGS_URL,
     }),
