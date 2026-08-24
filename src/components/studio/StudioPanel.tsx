@@ -3290,7 +3290,41 @@ export default function StudioPanel({
                   )}
                 </div>
               )}
+              {/* One quiet control, one preference, one default. Never a primary. */}
+              {cards.length > 1 && (
+                <div
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
+                    justifyContent: rtlShell ? "flex-end" : "flex-start", flexWrap: "wrap",
+                  }}
+                >
+                  <label
+                    htmlFor="composer-sort"
+                    style={{ fontFamily: "var(--ff-mono)", fontSize: 11, letterSpacing: ".03em", color: "var(--text-muted)" }}
+                  >
+                    {T.sortLabel[lang]}
+                  </label>
+                  <select
+                    id="composer-sort"
+                    className="v23-tap v23-focus"
+                    value={sortPref}
+                    onChange={(e) => chooseSort(asStartSort(e.target.value))}
+                    dir={rtlShell ? "rtl" : undefined}
+                    style={{
+                      minHeight: 44, padding: "0 10px", borderRadius: 10, cursor: "pointer",
+                      background: "var(--surface-subtle)", border: "1px solid var(--border-default)",
+                      color: "var(--text-primary)", fontFamily: "var(--ff-ui)", fontSize: 13,
+                    }}
+                  >
+                    <option value="recommended">{T.sortRecommended[lang]}</option>
+                    <option value="newest">{T.sortNewest[lang]}</option>
+                    <option value="most_evidence">{T.sortMostEvidence[lang]}</option>
+                    <option value="never_written">{T.sortNeverWritten[lang]}</option>
+                  </select>
+                </div>
+              )}
               <div style={{ display: "grid", gap: 10 }}>
+
                 {cards.map((c) => {
                   const on = choice?.id === c.signalId;
                   return (
