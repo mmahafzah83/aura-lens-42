@@ -554,3 +554,4 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
 
 const __bareNoun = totalSignals === 1 ? "source" : "sources";
 const __arabic = `${totalSignals} مصادر`;
+const __composite = <p>{nSignals(totalSignals, "en")} from {totalSignals} sources</p>;
