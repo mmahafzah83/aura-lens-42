@@ -9,6 +9,7 @@ import { isArabicText } from "@/lib/utils";
 import { LayoutGrid, List as ListIcon, Plus, ChevronRight } from "lucide-react";
 import SignalDetail from "@/components/signals/SignalDetail";
 import ReadingStrip from "@/components/signals/ReadingStrip";
+import { nEvidence } from "@/constants/vocabulary";
 
 /**
  * SignalsBoardV2 — THE Signals page.
@@ -72,11 +73,11 @@ const SectionLabel: React.FC<React.PropsWithChildren> = ({ children }) => (
   </div>
 );
 
-/** Five-bar capture meter — independent captures behind the claim. */
-const CaptureMeter: React.FC<{ filled: number; bucket: SignalFilter }> = ({ filled, bucket }) => {
+/** Five-bar evidence meter — pieces of evidence standing behind the signal. */
+const EvidenceMeter: React.FC<{ filled: number; bucket: SignalFilter }> = ({ filled, bucket }) => {
   const on = bucket === "accelerating" ? "var(--machine)" : bucket === "stable" ? "var(--border-strong)" : "var(--text-muted)";
   return (
-    <Tooltip title="Capture meter" body="Independent captures behind the claim.">
+    <Tooltip title="Evidence meter" body="Pieces of evidence standing behind this signal.">
       <span style={{ display: "inline-flex", gap: 3, alignItems: "flex-end" }} tabIndex={0}>
         {[0, 1, 2, 3, 4].map(i => (
           <span key={i} style={{
@@ -281,7 +282,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
 
   const Card: React.FC<{ r: Row }> = ({ r }) => {
     const bucket = bucketOf(r);
-    const captures = (r.supporting_evidence_ids || []).length;
+    const evidence = (r.supporting_evidence_ids || []).length;
     const ar = isArabicText(r.signal_title);
     const tag = (r.theme_tags || [])[0];
     return (
@@ -317,9 +318,9 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
           marginTop: "auto", paddingTop: 12, display: "flex",
           alignItems: "center", justifyContent: "space-between", gap: 10,
         }}>
-          <CaptureMeter filled={Math.min(captures, 5)} bucket={bucket} />
+          <EvidenceMeter filled={Math.min(evidence, 5)} bucket={bucket} />
           <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".06em", color: "var(--text-muted)" }}>
-            {captures} captures · quiet {ageDays(r.last_evidence_at)}d
+            {nEvidence(evidence)} · quiet {ageDays(r.last_evidence_at)}d
           </span>
           <span
             aria-hidden
@@ -377,7 +378,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
             What your market is telling you
           </h1>
           <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--text-secondary)", maxWidth: 620 }}>
-            A signal is a claim about your market, defended by the captures behind it.
+            A signal is a read on your market, defended by the pieces of evidence behind it.
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -593,9 +594,9 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                       {tag && <Chip variant="cooling" className="hidden sm:inline-flex">{tag}</Chip>}
                     </div>
                     {bucket === "accelerating" && <Chip variant="live">Accelerating</Chip>}
-                    <CaptureMeter filled={Math.min((r.supporting_evidence_ids || []).length, 5)} bucket={bucket} />
+                    <EvidenceMeter filled={Math.min((r.supporting_evidence_ids || []).length, 5)} bucket={bucket} />
                     <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".06em", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                      {(r.supporting_evidence_ids || []).length} captures · quiet {ageDays(r.last_evidence_at)}d
+                      {nEvidence((r.supporting_evidence_ids || []).length)} · quiet {ageDays(r.last_evidence_at)}d
                     </span>
                     <span
                       aria-hidden
