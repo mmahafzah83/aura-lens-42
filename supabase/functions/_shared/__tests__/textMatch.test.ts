@@ -89,8 +89,14 @@ describe("theme matching", () => {
   it("ai governance is carried", () => {
     expect(matchTheme(buildHaystacks(profile()), "ai governance", ALIASES).state).toBe("carried");
   });
-  it("risk management is missing", () => {
-    expect(matchTheme(buildHaystacks(profile()), "risk management", ALIASES).state).toBe("missing");
+  it("a subject nowhere on the profile is missing", () => {
+    expect(matchTheme(buildHaystacks(profile()), "procurement reform", ALIASES).state).toBe("missing");
+  });
+  /* "risk management" is PARTIAL, not missing, on this profile: the word
+     "management" is in the About ("change management"). Half a subject found
+     is half a subject reported — that is the two-tier rule working. */
+  it("risk management is partial because management is present", () => {
+    expect(matchTheme(buildHaystacks(profile()), "risk management", ALIASES).state).toBe("partial");
   });
   it("airport does not match the theme ai", () => {
     const hay = buildHaystacks({ headline: "Airport programmes", about: "airports", experience: [], skills: [] });
