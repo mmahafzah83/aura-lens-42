@@ -194,6 +194,14 @@ interface Choice {
 }
 
 /**
+ * The five screens inside step 1. "hub" is the three ways in; "signals",
+ * "subject" and "paste" are each one way; "confirm" is the subject decided.
+ */
+type PickStage = "hub" | "signals" | "subject" | "paste" | "confirm";
+
+
+
+/**
  * C2 — the shell hands the studio its context. Every entry point in the app
  * (Home, My Story, Signals, Overnight, Library, TrendDetail, lifecycle email)
  * already computes these in Dashboard; the studio honours them.
