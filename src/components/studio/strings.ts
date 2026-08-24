@@ -1,3 +1,5 @@
+import { evidenceAndSources, evidenceCountAr as evidenceAr } from "@/constants/vocabulary";
+
 export type Lang = "en" | "ar";
 export type Posture = "delegator" | "editor" | "author";
 
