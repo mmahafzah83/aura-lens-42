@@ -89,7 +89,8 @@ const STANDING_STACK: React.CSSProperties = {
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
   onSwitchTab?: (tab: string) => void;
-  onDraftToStudio?: (prefill: { topic: string; context: string; sourceType?: string; sourceTitle?: string }) => void;
+  /** One shape for every handoff — see src/lib/workHandoff.ts. */
+  onDraftToStudio?: (prefill: SubjectHandoff) => void;
 }
 
 interface ProfileRow {
