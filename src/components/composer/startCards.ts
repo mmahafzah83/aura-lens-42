@@ -37,6 +37,8 @@ export interface StartCard {
   signalId: string;
   title: string;
   fragmentCount: number;
+  /** Distinct sources behind the signal (`unique_orgs`) — never the evidence count. */
+  sourceCount: number;
   /** Honest, human reason this signal is being suggested. */
   reason: string;
   insight: string;
@@ -134,6 +136,7 @@ export async function loadStartCards(
       signalId: s.id,
       title: s.signal_title as string,
       fragmentCount: s.fragment_count ?? 0,
+      sourceCount: s.unique_orgs ?? 0,
       reason,
       insight: insightOf(s),
       freshEvidence: isFresh(s),
@@ -168,13 +171,13 @@ export async function loadStartCards(
     for (const s of ordered.slice(0, LIMIT)) {
       const n = s.fragment_count ?? 0;
       if (!lastPostFor.has(s.id)) {
-        push(s, "never_written", `Not written about yet — ${n} sources behind it.`);
+        push(s, "never_written", `Not written about yet — ${n} pieces of evidence behind it.`);
       } else if (isFresh(s)) {
-        push(s, "new_evidence", `${n} sources now sit behind this — some of them landed after your last post on it.`);
+        push(s, "new_evidence", `${n} pieces of evidence now sit behind this — some of them landed after your last post on it.`);
       } else if (s.velocity_status === "accelerating") {
-        push(s, "accelerating", `Picking up speed — ${n} sources and still climbing.`);
+        push(s, "accelerating", `Picking up speed — ${n} pieces of evidence and still climbing.`);
       } else {
-        push(s, "steady", `Steady — ${n} sources behind it.`);
+        push(s, "steady", `Steady — ${n} pieces of evidence behind it.`);
       }
     }
     return { cards, totalSignals: signals.length };
@@ -188,7 +191,7 @@ export async function loadStartCards(
     push(
       s,
       "new_evidence",
-      `${s.fragment_count ?? 0} sources now sit behind this — some of them landed after your last post on it.`
+      `${s.fragment_count ?? 0} pieces of evidence now sit behind this — some of them landed after your last post on it.`
     );
   }
 
@@ -196,14 +199,14 @@ export async function loadStartCards(
   const acceleratingLeft = accelerating.filter((s) => !used.has(s.id));
   if (acceleratingLeft[0]) {
     const s = acceleratingLeft[0];
-    push(s, "accelerating", `Picking up speed — ${s.fragment_count ?? 0} sources and still climbing.`);
+    push(s, "accelerating", `Picking up speed — ${s.fragment_count ?? 0} pieces of evidence and still climbing.`);
   }
 
   // 3 — Never written about.
   const neverWrittenLeft = neverWritten.filter((s) => !used.has(s.id));
   if (neverWrittenLeft[0]) {
     const s = neverWrittenLeft[0];
-    push(s, "never_written", `Your strongest signal you have never posted about — ${s.fragment_count ?? 0} sources.`);
+    push(s, "never_written", `Your strongest signal you have never posted about — ${s.fragment_count ?? 0} pieces of evidence.`);
   }
 
   // Degrade honestly: if fewer than LIMIT qualified, backfill only from the
@@ -212,14 +215,14 @@ export async function loadStartCards(
     for (const s of neverWritten) {
       if (cards.length >= LIMIT) break;
       if (used.has(s.id)) continue;
-      push(s, "never_written", `Not written about yet — ${s.fragment_count ?? 0} sources behind it.`);
+      push(s, "never_written", `Not written about yet — ${s.fragment_count ?? 0} pieces of evidence behind it.`);
     }
   }
   if (cards.length < LIMIT) {
     for (const s of accelerating) {
       if (cards.length >= LIMIT) break;
       if (used.has(s.id)) continue;
-      push(s, "accelerating", `Picking up speed — ${s.fragment_count ?? 0} sources and still climbing.`);
+      push(s, "accelerating", `Picking up speed — ${s.fragment_count ?? 0} pieces of evidence and still climbing.`);
     }
   }
 
