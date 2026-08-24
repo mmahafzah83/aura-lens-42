@@ -3014,8 +3014,8 @@ export default function StudioPanel({
             </div>
           )}
 
-          {/* ---------------- STAGE: HUB ---------------- */
-              The three ways in first; previous work sits below them. */
+          {/* ---------------- STAGE: HUB ----------------
+              The three ways in first; previous work sits below them. */}
           {pickStage === "hub" && (
             <>
               {/* THE THREE WAYS IN. Same size, one grid track each. */}
