@@ -1230,7 +1230,36 @@ export default function StudioPanel({
     setSub("build");
 
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 60000);
+    const timer = window.setTimeout(() => controller.abort(), 120000);
+    /* One reading of a finished draft, whether it arrived on the original
+       response or was recovered from the run row afterwards. */
+    const applyResult = (json: any) => {
+      const text = json?.content;
+      if (!text) return false;
+      setGenWarnings(Array.isArray(json?.warnings) ? json.warnings.map(String) : []);
+      unsourcedRemovedRef.current = Number(json?.unsourced_numbers_removed) || 0;
+      unsourcedEntitiesRemovedRef.current = Number(json?.unsourced_entities_removed) || 0;
+      // What went into these words, kept for the row that is about to exist.
+      provenanceRef.current = readProvenance(json);
+      fingerprintRef.current = {
+        endingType: typeof json?.ending_type === "string" ? json.ending_type : undefined,
+        hookStyle: typeof json?.hook_style === "string" ? json.hook_style : undefined,
+      };
+      const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
+      setContent(generated);
+      generatedTextRef.current = generated;
+      // The reading the generation already took. Display only — no re-run.
+      const q = json?.quality_gate;
+      setGatePayload(q && typeof q === "object" ? (q as GatePayload) : null);
+      // The gate already ran at generation. If it held the post, the words stay
+      // fully editable and only the publish action waits.
+      if (json?.blocked === true) {
+        // Only a category is ever read. If this surface cannot supply one,
+        // the last of our four sentences stands.
+        applyGate(json?.gate_category ?? json?.quality_gate?.category);
+      }
+      return true;
+    };
     try {
       const { data: sess } = await supabase.auth.getSession();
       const freshToken = sess?.session?.access_token;
@@ -1259,41 +1288,46 @@ export default function StudioPanel({
       });
       const json = await res.json().catch(() => null);
       if (runId !== genRunId.current) return;
-      const text = json?.content;
-      if (!res.ok || !text) {
+      if (!res.ok || !applyResult(json)) {
         setGenErrorDetail(typeof json?.error === "string" ? json.error : null);
         setGenError("failed");
         return;
       }
-      setGenWarnings(Array.isArray(json?.warnings) ? json.warnings.map(String) : []);
-      unsourcedRemovedRef.current = Number(json?.unsourced_numbers_removed) || 0;
-      unsourcedEntitiesRemovedRef.current = Number(json?.unsourced_entities_removed) || 0;
-      // What went into these words, kept for the row that is about to exist.
-      provenanceRef.current = readProvenance(json);
-      fingerprintRef.current = {
-        endingType: typeof json?.ending_type === "string" ? json.ending_type : undefined,
-        hookStyle: typeof json?.hook_style === "string" ? json.hook_style : undefined,
-      };
-      const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
-      setContent(generated);
-      generatedTextRef.current = generated;
-      // The reading the generation already took. Display only — no re-run.
-      const q = json?.quality_gate;
-      setGatePayload(q && typeof q === "object" ? (q as GatePayload) : null);
-      // The gate already ran at generation. If it held the post, the words stay
-      // fully editable and only the publish action waits.
-      if (json?.blocked === true) {
-        // Only a category is ever read. If this surface cannot supply one,
-        // the last of our four sentences stands.
-        applyGate(json?.gate_category ?? json?.quality_gate?.category);
-      }
     } catch {
-      if (runId === genRunId.current) setGenError("failed");
+      /* The connection dropped, but the server may well have finished. The
+         draft is stored on the run row: ask for it before saying anything went
+         wrong. */
+      if (runId !== genRunId.current) return;
+      let recovered = false;
+      for (let attempt = 0; attempt < 6 && !recovered; attempt++) {
+        await new Promise((r) => window.setTimeout(r, 3000));
+        if (runId !== genRunId.current) return;
+        try {
+          const { data: sess } = await supabase.auth.getSession();
+          const freshToken = sess?.session?.access_token;
+          if (!freshToken) continue;
+          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${freshToken}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({ action: "fetch_result", run_id: writeRunId }),
+          });
+          if (!res.ok) continue;
+          const json = await res.json().catch(() => null);
+          if (runId !== genRunId.current) return;
+          recovered = applyResult(json);
+        } catch { /* another attempt is the only answer */ }
+      }
+      if (!recovered && runId === genRunId.current) setGenError("failed");
     } finally {
       window.clearTimeout(timer);
       if (runId === genRunId.current) { setGenerating(false); setBusyMessage(null); }
     }
   }, [choice, writeLang, lang, applyGate]);
+
 
   /* Four short ways into the same subject. Optional, additive: it never
      replaces "Write it", and skipping it lands on the normal generate. */
@@ -1306,7 +1340,7 @@ export default function StudioPanel({
     setAnglesOpen(true);
     setPickedAngleId(null);
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 60000);
+    const timer = window.setTimeout(() => controller.abort(), 120000);
     try {
       const { data: sess } = await supabase.auth.getSession();
       const freshToken = sess?.session?.access_token;
@@ -1780,7 +1814,7 @@ export default function StudioPanel({
         timedOut = true;
         try { controller.abort(); } catch { /* an abort never fails loudly */ }
         resolve("timeout");
-      }, 90000);
+      }, 120000);
     });
     try {
       const { id: rowId } = await saveDraft({ silent: true });
