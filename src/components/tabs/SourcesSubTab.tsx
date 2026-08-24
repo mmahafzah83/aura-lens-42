@@ -6,6 +6,7 @@ import {
   Loader2, Zap, ChevronDown, ChevronUp, ExternalLink, Pencil, Download, BookOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { nSources } from "@/constants/vocabulary";
 import { toast } from "sonner";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -744,7 +745,7 @@ const SourcesSubTab = ({
       const [regRes, fragRes, sigRes] = await Promise.all([
         supabase.from("source_registry" as any).select("id, source_id").eq("user_id", user.id).range(0, 4999),
         supabase.from("evidence_fragments").select("id, source_registry_id").eq("user_id", user.id).range(0, 9999),
-        supabase.from("strategic_signals").select("id, signal_title, supporting_evidence_ids")
+        supabase.from("strategic_signals").select("id, signal_title, supporting_evidence_ids, unique_orgs")
           .eq("user_id", user.id).eq("status", "active").range(0, 999),
       ]);
       if (cancelled) return;
@@ -766,7 +767,10 @@ const SourcesSubTab = ({
           if (src) sources.add(src);
         }
         if (sources.size === 0) continue;
-        const item = { id: s.id, title: s.signal_title as string, sources: sources.size };
+        // The stated number is always unique_orgs — the one truth for "sources
+        // behind this signal". The local dedupe only decides WHICH captures the
+        // signal hangs off, never how many sources it claims.
+        const item = { id: s.id, title: s.signal_title as string, sources: (s.unique_orgs as number) ?? sources.size };
         for (const src of sources) {
           const list = map.get(src) || [];
           list.push(item);
@@ -1160,7 +1164,7 @@ const SourcesSubTab = ({
                           onClick={(ev) => { ev.stopPropagation(); onSwitchToSignal(madeOf[0].id); }}
                           style={{ background: "none", border: "none", padding: 0, marginTop: 6, cursor: "pointer", color: "var(--brand)", fontSize: 12, fontWeight: 500, textAlign: "left", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                         >
-                          → strengthened: {madeOf[0].title} ({madeOf[0].sources} {madeOf[0].sources === 1 ? "source" : "sources"})
+                          → strengthened: {madeOf[0].title} ({nSources(madeOf[0].sources)})
                           {madeOf.length > 1 ? ` and ${madeOf.length - 1} more` : ""}
                         </button>
                       )}
