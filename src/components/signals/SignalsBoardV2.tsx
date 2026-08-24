@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Chip, Tooltip, ButtonPrimary } from "@/components/systemb";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
+import { type SubjectHandoff } from "@/lib/workHandoff";
 import { isArabicText } from "@/lib/utils";
 import { LayoutGrid, List as ListIcon, Plus, ChevronRight } from "lucide-react";
 import SignalDetail from "@/components/signals/SignalDetail";
@@ -111,11 +112,8 @@ interface Props {
   initialFilter?: SignalFilter;
   onOpenCapture?: (prefillUrl?: string, prefillText?: string) => void;
   onOpenChat?: (msg?: string) => void;
-  onDraftToStudio?: (prefill: {
-    topic: string; context: string; signalId?: string; signalTitle?: string;
-    source?: string; sourceType?: string; contentFormat?: "post" | "carousel";
-    origin?: { surface: string; label: string };
-  }) => void;
+  /** One shape for every handoff — see src/lib/workHandoff.ts. */
+  onDraftToStudio?: (prefill: SubjectHandoff) => void;
 
 }
 

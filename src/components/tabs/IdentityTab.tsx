@@ -38,6 +38,7 @@ import { TIER_COPY } from "@/constants/tierCopy";
 import ReadShape from "@/components/identity/ReadShape";
 import CvCrosscheck from "@/components/report/CvCrosscheck";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { handoffSubject, type SubjectHandoff } from "@/lib/workHandoff";
 import {
   applyPublishedFilter,
   applyCatalogFilter,
@@ -89,7 +90,8 @@ const STANDING_STACK: React.CSSProperties = {
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
   onSwitchTab?: (tab: string) => void;
-  onDraftToStudio?: (prefill: { topic: string; context: string; sourceType?: string; sourceTitle?: string }) => void;
+  /** One shape for every handoff — see src/lib/workHandoff.ts. */
+  onDraftToStudio?: (prefill: SubjectHandoff) => void;
 }
 
 interface ProfileRow {
@@ -542,9 +544,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
   const handleGenerateContent = (topic: string, context?: string) => {
     if (onDraftToStudio) {
-      onDraftToStudio({ topic, context: context || "", sourceType: "authority_next", sourceTitle: topic });
+      onDraftToStudio(handoffSubject({
+        topic,
+        context: context || "",
+        sourceType: "authority_next",
+        sourceTitle: topic,
+        contentFormat: "post",
+        surface: "my_story",
+      }));
     } else if (onSwitchTab) {
-      sessionStorage.setItem("aura_prefill_topic", topic);
       onSwitchTab("authority");
     }
   };

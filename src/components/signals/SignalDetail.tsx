@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ButtonGhost } from "@/components/systemb";
 import { SignalHero, type Signal } from "@/components/tabs/IntelligenceTab";
 import { trackSignalOpen } from "@/lib/trackSignalOpen";
+import { handoffSignal, type SubjectHandoff } from "@/lib/workHandoff";
 
 /**
  * SignalDetail — the EXISTING signal detail experience (SignalHero and its
@@ -16,11 +17,8 @@ interface Props {
   signalId: string;
   onBack: () => void;
   onOpenChat?: (msg?: string) => void;
-  onDraftToStudio?: (prefill: {
-    topic: string; context: string; signalId?: string; signalTitle?: string;
-    sourceType?: string; contentFormat?: "post" | "carousel";
-    origin?: { surface: string; label: string };
-  }) => void;
+  /** One shape for every handoff — see src/lib/workHandoff.ts. */
+  onDraftToStudio?: (prefill: SubjectHandoff) => void;
 }
 
 
@@ -49,13 +47,14 @@ const SignalDetail: React.FC<Props> = ({ signalId, onBack, onOpenChat, onDraftTo
     await supabase.from("strategic_signals")
       .update({ priority_score: (s.priority_score || 0) + 0.05 }).eq("id", s.id);
     try { trackSignalOpen(s.id, "signal_detail_draft_handoff"); } catch { /* never blocks */ }
-    onDraftToStudio?.({
-      topic: s.signal_title,
+    onDraftToStudio?.(handoffSignal({
+      signalId: s.id,
+      title: s.signal_title,
       context: [s.explanation, s.strategic_implications, s.what_it_means_for_you].filter(Boolean).join("\n\n"),
-      signalId: s.id, signalTitle: s.signal_title, sourceType: "signals_board",
+      sourceType: "signals_board",
       contentFormat,
-      origin: { surface: "signals", label: "From your signal" },
-    });
+      surface: "signals",
+    }));
   }, [onDraftToStudio]);
 
 

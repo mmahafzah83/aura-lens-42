@@ -2,6 +2,15 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { Plus, LogOut, MessageCircle, Compass, Moon, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles, UserPlus, Flame, Library as LibraryIcon, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  originFromParams as originFromParamsShared,
+  handoffSignal,
+  handoffDraft,
+  handoffSubject,
+  type WorkHandoff,
+  type SubjectHandoff,
+  type DraftHandoff,
+} from "@/lib/workHandoff";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -103,20 +112,10 @@ const TAB_ALIAS: Record<string, string> = {
 };
 const resolveTab = (v: string) => TAB_ALIAS[v] ?? v;
 
-/** Where an arrival came from, in the member's words. `?from=` is set by the
- *  emails; a bare deep link falls back to an honest generic. */
-const ORIGIN_LABELS: Record<string, string> = {
-  weekly_brief: "From your Monday brief",
-  post_ready: "From your reminder",
-  draft_ready: "From your email",
-  m4: "From your signal email",
-  morning_signal: "From this morning's signal",
-};
-const originFromParams = (params: URLSearchParams): { surface: string; label: string } => {
-  const from = (params.get("from") || "").trim();
-  if (from && ORIGIN_LABELS[from]) return { surface: from, label: ORIGIN_LABELS[from] };
-  return { surface: from || "link", label: "From a link you opened" };
-};
+/** Where an arrival came from now lives in the one handoff contract
+ *  (src/lib/workHandoff.ts). Kept as a local alias for the call sites below. */
+const originFromParams = originFromParamsShared;
+
 
 const Dashboard = () => {
   usePageMeta({
@@ -174,26 +173,9 @@ const Dashboard = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [signalDraftPrefill, setSignalDraftPrefill] = useState<{
-    topic: string;
-    context: string;
-    signalId?: string;
-    signalTitle?: string;
-    sourceType?: string;
-    sourceTitle?: string;
-    contentFormat?: "post" | "carousel" | "framework_summary";
-    trendHeadline?: string;
-    origin?: { surface: string; label: string };
-  } | null>(null);
-  const [draftPrefill, setDraftPrefill] = useState<{
-    id: string;
-    body: string;
-    language: "en" | "ar";
-    type: "carousel" | "framework" | "linkedin_post";
-    topic?: string | null;
-    _source?: "content_items" | "linkedin_posts";
-    origin?: { surface: string; label: string };
-  } | null>(null);
+  /* One shape for every arrival — see src/lib/workHandoff.ts. */
+  const [signalDraftPrefill, setSignalDraftPrefill] = useState<SubjectHandoff | null>(null);
+  const [draftPrefill, setDraftPrefill] = useState<DraftHandoff | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -430,16 +412,13 @@ const Dashboard = () => {
           .eq("id", signalParam)
           .maybeSingle();
         if (sig) {
-          setSignalDraftPrefill({
-            topic: sig.signal_title,
-            context: sig.strategic_implications || sig.explanation || "",
+          setSignalDraftPrefill(handoffSignal({
             signalId: sig.id,
-            signalTitle: sig.signal_title,
-            sourceType: "signal",
-            sourceTitle: sig.signal_title,
+            title: sig.signal_title,
+            context: sig.strategic_implications || sig.explanation || "",
             contentFormat: formatParam === "carousel" ? "carousel" : "post",
-            origin: originFromParams(params),
-          } as any);
+            surface: originFromParams(params).surface,
+          }));
         }
         // Clear so a refresh doesn't reapply
         const next = new URLSearchParams(window.location.search);
@@ -490,8 +469,8 @@ const Dashboard = () => {
           return { ...draftFromLinkedInPost(r), _source: "linkedin_posts" as const };
         };
 
-        type DraftPrefillType = NonNullable<typeof draftPrefill>;
-        let prefill: DraftPrefillType | null = null;
+        type RawDraft = Parameters<typeof handoffDraft>[0]["draft"];
+        let prefill: RawDraft | null = null;
         if (srcParam === "linkedin_posts") {
           prefill = await tryLinkedInPosts();
         } else if (srcParam === "content_items") {
@@ -501,7 +480,7 @@ const Dashboard = () => {
         }
 
         if (prefill) {
-          setDraftPrefill({ ...prefill, origin: originFromParams(params) });
+          setDraftPrefill(handoffDraft({ draft: prefill, surface: originFromParams(params).surface }));
           setActiveTab("authority");
         } else if (readError) {
           // The query itself failed. Never imply the work is gone.
@@ -539,15 +518,16 @@ const Dashboard = () => {
   useEffect(() => {
     const st = location.state as any;
     if (st?.prefill_topic) {
-      setSignalDraftPrefill({
+      setSignalDraftPrefill(handoffSubject({
+        kind: "trend",
         topic: st.prefill_topic,
         context: st.prefill_context || "",
         sourceType: st.source || "trend",
         sourceTitle: st.prefill_topic,
-        contentFormat: "post",
         trendHeadline: st.prefill_topic,
-        origin: { surface: "trend", label: "From a market trend" },
-      });
+        contentFormat: "post",
+        surface: "trend",
+      }));
       setActiveTab("authority");
       // Clear router state so refresh doesn't re-prefill
       window.history.replaceState({}, document.title);
@@ -577,15 +557,13 @@ const Dashboard = () => {
   };
   const writeFromFirstFlightSignal = (sig: { id: string; title: string; what: string | null; explanation: string | null }) => {
     const context = [sig.what, sig.explanation].filter(Boolean).join("\n\n");
-    setSignalDraftPrefill({
-      topic: sig.title,
-      context,
+    setSignalDraftPrefill(handoffSignal({
       signalId: sig.id,
-      signalTitle: sig.title,
-      sourceType: "signal",
-      sourceTitle: sig.title,
+      title: sig.title,
+      context,
       contentFormat: "post",
-    });
+      surface: "home",
+    }));
     setActiveTab("authority");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -1134,7 +1112,7 @@ const Dashboard = () => {
                       // Same navigation as before, but the carousel intent now
                       // rides the ordinary prefill channel so the composer
                       // actually lands on slides.
-                      setSignalDraftPrefill({ topic: "", context: "", contentFormat: "carousel" });
+                      setSignalDraftPrefill(handoffSubject({ topic: "", context: "", contentFormat: "carousel", surface: "milestone" }));
                       setActiveTab("authority");
                       window.scrollTo({ top: 0, behavior: "smooth" });
                       break;
@@ -1234,9 +1212,15 @@ const Dashboard = () => {
                     activeTab={activeTab}
                     guidedActive={firstFlight.active}
                     onSwitchTab={(t) => switchTab(t as TabValue)}
-                    onOpenDraft={(d) => { setDraftPrefill(d as any); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                    onOpenDraft={(d) => { setDraftPrefill(handoffDraft({ draft: d, surface: "home" })); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                     onStartSignalPost={(p) => {
-                      setSignalDraftPrefill({ ...p, sourceType: "signal", contentFormat: "post" } as any);
+                      setSignalDraftPrefill(handoffSignal({
+                        signalId: p.signalId,
+                        title: p.topic || p.signalTitle,
+                        context: p.context,
+                        contentFormat: "post",
+                        surface: "home",
+                      }));
                       setActiveTab("authority");
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
@@ -1294,7 +1278,7 @@ const Dashboard = () => {
                     line="Aura works while you sleep and tells you what it found."
                   >
                     <OvernightPage
-                      onOpenDraft={(d) => { setDraftPrefill({ ...d, origin: { surface: "overnight", label: "From last night's run" } }); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                      onOpenDraft={(d) => { setDraftPrefill(handoffDraft({ draft: d, surface: "overnight" })); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                       onOpenSettings={() => navigate("/settings?tab=preferences")}
                     />
                   </LockedPanel>

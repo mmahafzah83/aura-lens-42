@@ -15,6 +15,7 @@ import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { loadStartCards, type StartCard } from "@/components/composer/startCards";
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
 import { track } from "@/lib/track";
+import type { SubjectHandoff, DraftHandoff } from "@/lib/workHandoff";
 import { generationMetadata, fingerprintFields } from "@/lib/generationMetadata";
 import {
   readProvenance,
@@ -198,11 +199,11 @@ interface Choice {
  * already computes these in Dashboard; the studio honours them.
  */
 export interface StudioPanelProps {
-  /** May carry an optional `origin` describing where the arrival came from. */
-  signalPrefill?: { origin?: { surface: string; label: string } } & Record<string, any>;
+  /** A subject (signal, trend or free text) arriving under the one contract. */
+  signalPrefill?: SubjectHandoff | null;
   onSignalPrefillConsumed?: () => void;
-  /** May carry an optional `origin` describing where the arrival came from. */
-  draftPrefill?: { origin?: { surface: string; label: string } } & Record<string, any>;
+  /** An existing draft arriving under the one contract. */
+  draftPrefill?: DraftHandoff | null;
   onDraftPrefillConsumed?: () => void;
   onOpenCapture?: () => void;
   /** True only while the Write tab is the visible tab. Gates the export portal. */
@@ -463,6 +464,8 @@ export default function StudioPanel({
   /* Guarded transitions. Nothing destructive happens without one of these. */
   const [pendingSubject, setPendingSubject] = useState<Choice | null>(null);
   const [pendingFormat, setPendingFormat] = useState<Format | null>(null);
+  /** The origin of a deferred subject, so the badge survives the confirmation. */
+  const [pendingOrigin, setPendingOrigin] = useState<{ surface: string; label: string } | null>(null);
   const [askEditAfterPublish, setAskEditAfterPublish] = useState(false);
 
   /**
@@ -1154,6 +1157,8 @@ export default function StudioPanel({
     if (!signalPrefill) return;
     const title: string = signalPrefill.topic || signalPrefill.signalTitle || signalPrefill.trendHeadline || "";
     const nextFormat: Format | null = signalPrefill.contentFormat === "carousel" ? "slides" : null;
+    // The sender may know the language the member asked in; honour it.
+    if (signalPrefill.language === "en" || signalPrefill.language === "ar") setLang(signalPrefill.language);
     const cur = choiceRef.current;
     const same =
       Boolean(cur) &&
@@ -1169,6 +1174,7 @@ export default function StudioPanel({
         // The format asked for travels WITH the subject. Discarding it here is
         // how a carousel request used to turn into an ordinary post.
         setPendingFormat(nextFormat);
+        setPendingOrigin(signalPrefill.origin ?? null);
         setStep(1);
       } else {
         startNewPiece({ choice: arriving, format: nextFormat });
@@ -1183,6 +1189,7 @@ export default function StudioPanel({
     } else if (nextFormat) {
       setFormat(nextFormat);
       setFormatDecided(true);
+      setOrigin(signalPrefill.origin ?? null);
     }
     onSignalPrefillConsumed?.();
   }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
@@ -2797,13 +2804,16 @@ export default function StudioPanel({
                 <ButtonPrimary
                   onClick={() => {
                     const next = pendingSubject;
+                    const keptOrigin = pendingOrigin;
                     startNewPiece({ choice: next, format: pendingFormat });
+                    setOrigin(keptOrigin);
+                    setPendingOrigin(null);
                   }}
                   style={{ minHeight: 44 }}
                 >
                   {T.confirmSubjectYes[lang]}
                 </ButtonPrimary>
-                <ButtonGhost onClick={() => { setPendingSubject(null); setPendingFormat(null); }} style={{ minHeight: 44 }}>
+                <ButtonGhost onClick={() => { setPendingSubject(null); setPendingFormat(null); setPendingOrigin(null); }} style={{ minHeight: 44 }}>
                   {T.replaceNo[lang]}
                 </ButtonGhost>
               </div>
