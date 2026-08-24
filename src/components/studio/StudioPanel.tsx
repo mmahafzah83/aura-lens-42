@@ -2704,6 +2704,21 @@ export default function StudioPanel({
         </div>
       )}
 
+      {/* Where this arrival came from. Cyan: Aura reporting context, not an action. */}
+      {origin && (
+        <div
+          dir={rtlShell ? "rtl" : "ltr"}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 12,
+            fontFamily: "var(--ff-mono)", fontSize: 11, letterSpacing: ".03em",
+            color: "var(--machine-text)", background: "var(--machine-tint)",
+            border: "1px solid var(--machine)", borderRadius: 999, padding: "6px 12px",
+          }}
+        >
+          <span aria-hidden>↩</span>{origin.label}
+        </div>
+      )}
+
       {/* One journey map, at every width. */}
       <JourneyMap lang={lang} step={step} done={doneMap} onStep={(n) => setStep(n)} rtlShell={rtlShell} />
 
