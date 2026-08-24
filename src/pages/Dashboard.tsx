@@ -1127,10 +1127,18 @@ const Dashboard = () => {
                     case "p1_first_post":
                     case "p2_published":
                     case "p3_five_signal_posts":
-                    case "p3_carousel":
                       setActiveTab("authority");
                       window.scrollTo({ top: 0, behavior: "smooth" });
                       break;
+                    case "p3_carousel":
+                      // Same navigation as before, but the carousel intent now
+                      // rides the ordinary prefill channel so the composer
+                      // actually lands on slides.
+                      setSignalDraftPrefill({ topic: "", context: "", contentFormat: "carousel" });
+                      setActiveTab("authority");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                      break;
+
                     case "p2_first_signal":
                     case "p2_three_signals":
                     case "p3_themes":
