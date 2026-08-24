@@ -38,6 +38,8 @@ import { plainFailure } from "@/carousel/studio/slotLabels";
 import { moveSlide, replaceSlide, setSlidePhoto } from "@/carousel/studio/deckEdit";
 import { SLIDE_MEDIA_LIMITS, checkImage, fitToSlot } from "@/lib/imagePrep";
 import JourneyMap from "@/components/studio/JourneyMap";
+import WriteFromPanel from "@/components/studio/WriteFromPanel";
+
 import { WorkingPanel } from "@/components/ui/WorkingPanel";
 import { useRunStages, newRunId } from "@/lib/useRunStages";
 import type { WaitOperation } from "@/lib/waitEstimate";
