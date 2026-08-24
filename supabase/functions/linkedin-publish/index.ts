@@ -141,21 +141,17 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
     const isCardShare = String((post as any)?.content_type ?? "") === "aura_card";
 
     // ── QUALITY GATE (control, not telemetry) ─────────────────────────────
-    // Every publish surface converges here. Gate the text actually being sent.
+    // One deterministic check remains at publish: every specific claim-shaped
+    // figure must be traceable to the evidence the post was grounded in. The
+    // writing-time guard already judged voice, structure and register; this
+    // guard only verifies numbers, and it never re-judges with an LLM.
     if (!isCardShare) {
       const meta = (post as any)?.source_metadata ?? {};
       const language: string =
         meta.language || meta.content_language ||
         (/[\u0600-\u06FF]/.test(postText) ? "ar" : "en");
 
-      const { data: profile } = await adminClient
-        .from("diagnostic_profiles")
-        .select("sector_focus, target_register")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
       let groundingText: string | null = null;
-      let signalTitle: string | null = null;
       if (post.source_signal_id) {
         const { data: sig } = await adminClient
           .from("strategic_signals")
@@ -163,7 +159,6 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
           .eq("id", post.source_signal_id)
           .maybeSingle();
         if (sig) {
-          signalTitle = sig.signal_title ?? null;
           const impl = typeof sig.strategic_implications === "string"
             ? sig.strategic_implications
             : JSON.stringify(sig.strategic_implications ?? "");
@@ -171,82 +166,39 @@ Deno.serve(withObserve("linkedin-publish", async (req) => {
         }
       }
 
-      let gate: any = null;
-      let gateError: string | null = null;
-      try {
-        const call = fetch(`${SUPABASE_URL}/functions/v1/evaluate-content-quality`, {
-          method: "POST",
-          headers: { Authorization: authHeader, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            post_text: postText,
-            language,
-            signal_title: signalTitle,
-            user_sector: profile?.sector_focus ?? null,
-            target_register: profile?.target_register ?? null,
-            grounding_text: groundingText,
-            content_kind: "post",
-          }),
-        }).then(async (r) => {
-          if (!r.ok) throw new Error(`gate_http_${r.status}`);
-          return await r.json();
-        });
-        const timeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("gate_timeout")), 55000)
-        );
-        gate = await Promise.race([call, timeout]);
-      } catch (e) {
-        gateError = (e as Error).message || "gate_invoke_error";
-      }
+      const unsourced = groundingText ? findUnsourcedNumbers(postText, groundingText) : [];
 
-      const rawOverall = Number(gate?.overall ?? 0);
-      const overallScore = Math.min(100, Math.max(0, rawOverall <= 10 ? Math.round(rawOverall * 10) : Math.round(rawOverall)));
-      const weaknesses = Array.isArray(gate?.weaknesses) ? gate.weaknesses : [];
-      const gateUnavailable = Boolean(gateError) || !gate || gate.skipped === true;
-      const passed = !gateUnavailable
-        ? (gate.pass === true || (gate.pass === undefined && overallScore >= 70))
-        : false;
-
-      // Awaited on purpose: this row is the record of a control decision.
+      // Awaited on purpose: this row is the honest record of a control decision.
       try {
         await adminClient.from("content_gate_results").insert({
           user_id: user.id,
           post_id: postId,
           function_name: "linkedin-publish",
           language,
-          overall_score: overallScore,
-          pass: passed,
-          assertions: gate?.assertions ?? null,
-          weaknesses,
-          skipped: gate ? gate.skipped === true : true,
-          skip_reason: gate?.skip_reason ?? gateError,
-          judge_model: gate?.judge_model ?? null,
+          overall_score: unsourced.length === 0 ? 100 : 0,
+          pass: unsourced.length === 0,
+          assertions: null,
+          weaknesses: unsourced,
+          skipped: false,
+          skip_reason: null,
+          judge_model: "deterministic_number_guard",
         });
       } catch (e) {
         console.error("[linkedin-publish] gate log failed:", (e as Error).message);
       }
 
-      if (gateUnavailable) {
-        // An infrastructure timeout is not a failing verdict. Fail open.
-        const unavailableReason = gateError ?? gate?.skip_reason ?? "skipped";
-        console.warn("[linkedin-publish] gate unavailable, publishing anyway:", unavailableReason);
-        quality_note = {
-          overall_score: overallScore,
-          gate_category: typeof gate?.category === "string" ? gate.category : "other",
-          blocked_would_have: true,
-          gate_unavailable: true,
-        };
-      } else if (!passed) {
+      if (unsourced.length > 0) {
         if (advisory === true) {
-          quality_note = { overall_score: overallScore, gate_category: typeof gate?.category === "string" ? gate.category : "other", blocked_would_have: true };
+          quality_note = { overall_score: 0, gate_category: "unsupported_number", blocked_would_have: true };
         } else {
-        // Only a CATEGORY leaves this server. No weakness, no verdict, no
-        // judge wording of any kind reaches a member's screen.
-        return json({
-          success: false,
-          blocked: true,
-          error: "Held by the quality gate",
-          gate_category: typeof gate?.category === "string" ? gate.category : "other",
-        });
+          // Only a CATEGORY leaves this server. No weakness, no verdict, no
+          // judge wording of any kind reaches a member's screen.
+          return json({
+            success: false,
+            blocked: true,
+            error: "Held by the number check",
+            gate_category: "unsupported_number",
+          });
         }
       }
     }
