@@ -271,7 +271,7 @@ serve(withObserve("lifecycle-emails", async (req) => {
       const captureCount = captures ?? 0;
       const signalCount = signals ?? 0;
       const lastEntryAt = (lastEntryRes.data as any)?.created_at as string | undefined;
-      const latestSignal = latestSignalRes.data as { signal_title?: string; created_at?: string } | null;
+      const latestSignal = latestSignalRes.data as { id?: string; signal_title?: string; created_at?: string } | null;
 
       const firstName = (prof?.first_name as string | undefined)?.trim() || "";
       // Member language preference drives the AR copy set + RTL shell.
@@ -290,7 +290,10 @@ serve(withObserve("lifecycle-emails", async (req) => {
 
       // 6. M4
       if (signalCount >= 1 && latestSignal?.created_at && latestSignal.created_at > cutoff3d && !has("M4")) {
-        const { subject, html } = buildEmail(lang, "M4", firstName, latestSignal.signal_title || undefined);
+        const m4Href = latestSignal?.id
+          ? `${INTELLIGENCE_URL}&signal=${encodeURIComponent(latestSignal.id)}`
+          : INTELLIGENCE_URL;
+        const { subject, html } = buildEmail(lang, "M4", firstName, latestSignal.signal_title || undefined, m4Href);
         await sendResend(RESEND_API_KEY, u.email, subject, html, u.id, "M4");
         await admin.from("lifecycle_email_log").insert({ user_id: u.id, message_key: "M4" });
         results.push({ email: u.email, state: "SENT_M4" });
