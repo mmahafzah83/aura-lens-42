@@ -3075,12 +3075,18 @@ export default function StudioPanel({
                     {captureEmpty
                       ? T.chooseEmpty[lang]
                       : savedBehindSubjects > 0
-                      ? T.hubSignalsEvidence(savedBehindSubjects)[lang].split("{n}").map((part, i) => (
-                          <React.Fragment key={i}>
-                            {i > 0 && <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{savedBehindSubjects}</span>}
-                            {part}
-                          </React.Fragment>
-                        ))
+                      ? (() => {
+                          const parts = T.hubSignalsEvidence(savedBehindSubjects, lang);
+                          return (
+                            <>
+                              {parts.pre}
+                              {parts.digit !== null && (
+                                <span style={{ fontFamily: "var(--ff-mono)", color: "var(--text-primary)" }}>{parts.digit}</span>
+                              )}
+                              {parts.post}
+                            </>
+                          );
+                        })()
                       : T.hubSignalsEmpty[lang]}
                   </p>
                   <span style={{ flex: 1 }} />
