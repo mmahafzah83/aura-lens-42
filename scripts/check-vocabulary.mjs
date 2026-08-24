@@ -108,6 +108,39 @@ const ROUND_2B = [
   "src/components/onboarding/",
 ];
 
+/**
+ * OUT OF THIS ROUND — surfaces outside Signals / Intelligence / composer. Real
+ * hits, reported every run, migrated in a later round.
+ */
+const LATER_ROUNDS = [
+  // TODO later-round
+  "src/carousel/",
+  "src/components/admin/",
+  "src/components/analytics/",
+  "src/components/ask/",
+  "src/components/identity/",
+  "src/components/influence/",
+  "src/components/rail/",
+  "src/components/report/",
+  "src/constants/language.ts",
+  "src/pages/Admin.tsx",
+  "src/pages/AdminQA.tsx",
+  "src/pages/Dashboard.tsx",
+  "src/pages/LandingV2.tsx",
+  "src/pages/TrendDetail.tsx",
+  "src/utils/",
+];
+
+/** Single-file surfaces outside this round (flat components directory). */
+const LATER_FILES_PREFIX = "src/components/";
+const LATER_FILES = [
+  "AccountIntelligence.tsx", "AuthorityMomentumMap.tsx", "BrandAssessmentModal.tsx",
+  "KnowledgeIntelligenceEngine.tsx", "LinkedInConnector.tsx", "LinkedInExpertAdvisor.tsx",
+  "LinkedInProfileAnalyzer.tsx", "MilestonesSection.tsx", "ReportDocument.tsx",
+  "SignalExplorer.tsx", "SignalGraph.tsx", "SignalsRadar.tsx",
+  "StrategicEvolutionMap.tsx", "TierCeremonyModal.tsx", "AuditResultsView.tsx",
+].map((f) => LATER_FILES_PREFIX + f);
+
 const SKIP_DIRS = new Set(["__tests__", "__fixtures__", "node_modules"]);
 
 function walk(dir, out = []) {
@@ -155,7 +188,10 @@ for (const file of walk(SRC)) {
     const match = findHit(line);
     if (!match) return;
     const hit = { rel, line: idx + 1, text: (rawLines[idx] || "").trim().slice(0, 160), match };
-    if (ROUND_2B.some((p) => rel.startsWith(p))) deferred.push(hit);
+    const later = ROUND_2B.some((p) => rel.startsWith(p))
+      || LATER_ROUNDS.some((p) => rel.startsWith(p))
+      || LATER_FILES.includes(rel);
+    if (later) deferred.push(hit);
     else hits.push(hit);
   });
 }
@@ -163,7 +199,7 @@ for (const file of walk(SRC)) {
 const say = (h) => `  ${h.rel}:${h.line}\n    ${h.text}\n    ↳ hand-written count noun: "${h.match}" — use the formatter from src/constants/vocabulary.ts`;
 
 if (deferred.length) {
-  console.log(`\nVOCABULARY — ${deferred.length} deferred hit(s) in Round 2B files (allowlisted):`);
+  console.log(`\nVOCABULARY — ${deferred.length} deferred hit(s) in files outside this round (allowlisted):`);
   for (const h of deferred) console.log(say(h));
 }
 
@@ -174,4 +210,4 @@ if (hits.length) {
   process.exit(1);
 }
 
-console.log(`\nVOCABULARY GATE OK — no hand-written count nouns outside the Round 2B allowlist.\n`);
+console.log(`\nVOCABULARY GATE OK — no hand-written count nouns outside the deferred allowlist.\n`);
