@@ -1674,7 +1674,7 @@ export default function StudioPanel({
           }),
           ...fingerprintFields(fingerprintRef.current),
           ...(voiceMatchRef.current !== null ? { voice_match: voiceMatchRef.current } : {}),
-        ...(voiceMatchRef.current !== null ? { voice_match: voiceMatchRef.current } : {}),
+
           ...provenanceFields(provenanceRef.current),
           ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
         } as any)
