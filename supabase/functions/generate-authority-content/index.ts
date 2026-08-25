@@ -18,7 +18,8 @@ import {
   firstSixWords,
   shouldCollapse,
   selectShape,
-  hasLearnedVoice,
+  deriveInVoiceSubsets,
+
   opensOnBannedWord,
   sameBeats,
   resolveMove,
@@ -671,6 +672,13 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
        * this one array, so the three levels can never disagree about what "the
        * last two drafts" were.
        */
+      const historyShapes: PastShape[] = recentDrafts.map((r) => ({
+        move_id: r.move_id ?? null,
+        beats: Array.isArray(r.beats) ? r.beats : null,
+        hook_style: r.hook_style ?? null,
+        ending_type: r.ending_type ?? null,
+        opening: r.body ?? null,
+      }));
       const pastShapes: PastShape[] = [
         ...siblingShapes.map((s) => ({
           move_id: s?.move_id ?? null,
@@ -679,71 +687,19 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
           ending_type: s?.ending_type ?? null,
           opening: s?.opening ?? null,
         })),
-        ...recentDrafts.map((r) => ({
-          move_id: r.move_id ?? null,
-          beats: Array.isArray(r.beats) ? r.beats : null,
-          hook_style: r.hook_style ?? null,
-          ending_type: r.ending_type ?? null,
-          opening: r.body ?? null,
-        })),
+        ...historyShapes,
       ];
 
-      /**
-       * Precedence 1: a learned voice profile with observed opening habits
-       * weights the pool toward what the member really does.
-       */
-      const PREF_TO_OPEN: Record<string, OpenType> = {
-        number_first: "specific_number",
-        contrarian_claim: "contrarian",
-        scene: "scene",
-        question: "question",
-        confession: "confession",
-        observation: "scene",
-        contrast: "contrarian",
-        dialogue: "scene",
-      };
-
-      const openWeights: Record<string, number> | undefined = (() => {
-        const list = memberPrefs.openings || [];
-        if (!list.length) return undefined;
-        const w: Record<string, number> = {};
-        for (const o of list) {
-          const t = PREF_TO_OPEN[o];
-          if (t) w[t] = (w[t] || 0) + 1;
-        }
-        return Object.keys(w).length ? w : undefined;
-      })();
-      const landWeights: Record<string, number> | undefined = (() => {
-        const allowed = Array.isArray(voiceProfile?.allowed_endings) ? voiceProfile!.allowed_endings : [];
-        const w: Record<string, number> = {};
-        for (const e of allowed) {
-          const t = landTypeOfEnding(
-            String(e) === "hanging_line" || String(e) === "signature" ? "suspended" : String(e),
-          );
-          if (t) w[t] = (w[t] || 0) + 1;
-        }
-        return Object.keys(w).length >= 2 ? w : undefined;
-      })();
 
       /**
-       * MOVE weights: what this member's own drafts actually did. Only consulted
-       * when a voice exists — see the first principle at the top of contentDNA.
+       * VOICE NARROWS THE RANGE — it does not pick the shape. The profile marks
+       * which moves / OPENs / LANDs are this member's; rotation then runs the
+       * full three levels inside that subset. With no voice the subset is the
+       * full table, so there is exactly one code path.
        */
-      const moveWeights: Record<string, number> | undefined = (() => {
-        const w: Record<string, number> = {};
-        for (const r of recentDrafts) {
-          const m = resolveMove(r.move_id ?? null);
-          if (m) w[m] = (w[m] || 0) + 1;
-        }
-        const structures = Array.isArray((voiceProfile as any)?.preferred_structures)
-          ? (voiceProfile as any).preferred_structures
-          : [];
-        for (const s of structures) {
-          const m = resolveMove(String(s));
-          if (m) w[m] = (w[m] || 0) + 2;
-        }
-        return Object.keys(w).length ? w : undefined;
-      })();
+      const derivation = deriveInVoiceSubsets(voiceProfile);
+      if (derivation.log) console.log(derivation.log);
+      const memberHasVoice = derivation.basis === "voice";
 
       const seed = rotationSeed(
         effectiveUserId,
@@ -752,18 +708,8 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         new Date().toISOString().slice(0, 10),
       );
 
-      /**
-       * ONE selector, three levels — MOVE, then beat order, then OPEN/LAND. With
-       * a learned voice it collapses to the single no-immediate-repeat guard.
-       */
-      const memberHasVoice = hasLearnedVoice(voiceProfile);
-      const shape = selectShape({
-        hasVoice: memberHasVoice,
-        past: pastShapes,
+      const shape = selectShape(historyShapes, siblingShapes, derivation.subset, {
         seed,
-        moveWeights,
-        openWeights,
-        landWeights,
         requestedMove,
       });
       const moveId: MoveId = shape.move;
@@ -773,12 +719,13 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       const avoidOpenTypes = shape.avoidOpenTypes;
       const avoidLandTypes = shape.avoidLandTypes;
       const avoidOpeningTexts = shape.avoidOpeningTexts;
-      /** The two moves that must not come round again, and the previous shape. */
+      /** The moves that must not come round again, and the previous shape. */
       const avoidMoves = pastShapes
-        .slice(0, memberHasVoice ? 1 : 2)
+        .slice(0, Math.max(1, Math.min(2, shape.subset.moves.length - 1)))
         .map((p) => resolveMove(p.move_id ?? null))
         .filter(Boolean) as MoveId[];
       const previousBeats = pastShapes[0]?.beats ?? null;
+
 
       const recentPatternBlock = (() => {
         const bannedOpens = [...new Set(avoidOpenTypes.filter(Boolean))] as OpenType[];
@@ -932,7 +879,7 @@ ${identityContext}
 
 ${formatInstructions[content_type] || formatInstructions.post}
 ${langLabel}
-${frameworkInstruction}
+${/* The MOVE directive inside buildContentDNA is the only kind-of-post instruction. */ ""}
 ${extraInstruction}${flashAddendum}${endingDirective}
 
 Write with conviction. No generic statements. Every line should demonstrate strategic depth.
