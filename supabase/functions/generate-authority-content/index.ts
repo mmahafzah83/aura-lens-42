@@ -779,19 +779,13 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       if (rulesBlock) voiceSection += `\n\n${rulesBlock}`;
 
       const sectorContextLabel = `${(typeof sector === "string" && sector.trim()) || profile?.sector_focus || "their own"} context`;
-      const hookFramework = `You are writing for ${readerDescription}. Always open with one of these two hook types:
-
-1. Contrarian truth: Challenge what the industry believes in one sentence under 20 words.
-2. Specific tension: Name a contradiction the reader lives with daily. Be specific to ${sectorContextLabel}.
-
-Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (in the exact shape named by ENDING FOR THIS POST below — that directive is the only authority on the close). Write in short paragraphs. One idea per line. No dense blocks.
-
-FORMATTING RULES (mandatory):
-- NEVER start the post with a format label like "POST", "LinkedIn Post", "منشور LinkedIn", or "BOOST". The very first line must be the hook content itself.
-- Do NOT use "---" or "***" as section separators. Use a single blank line.
-- Do NOT use "#" markdown headers. LinkedIn does not render markdown headers.
-- NEVER use markdown bold or asterisks. Do NOT wrap words in **double asterisks** or *single asterisks* — LinkedIn renders them literally. For emphasis, use line breaks, ALL-CAPS sparingly, or a leading bullet glyph. Numbered lists "1. " are acceptable. Bullet glyphs ◆ ↳ are acceptable.
-- No code fences, no horizontal rules, no markdown links.`;
+      /**
+       * What used to be `hookFramework` — a second, competing 4-step structure
+       * that MANDATED a contrarian opening on every post — is gone. Structure
+       * and formatting live once, in `contentDNA`. What remains here is only the
+       * audience note, which is context, not structure.
+       */
+      const audienceNote = `You are writing for ${readerDescription}. Ground every concrete detail in ${sectorContextLabel}. Never open with "I am excited" or "In today's world".`;
 
       const langLabel = effectiveLanguage === "ar"
         ? `اكتب المنشور بالكامل بالعربية. الأدلة والحقائق أدناه قد تكون بالإنجليزية — استخرج المعنى واكتبه بالعربية، ولا تنسخ أي جملة أو عبارة إنجليزية كما هي. تبقى بالإنجليزية المصطلحات التقنية فقط (AI, KPI, dashboard, API).`
