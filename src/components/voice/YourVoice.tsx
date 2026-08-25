@@ -461,7 +461,7 @@ export default function YourVoice({
       />
 
       {/* 6 — variation, the only copy in the product */}
-      <VariationEngine model={dna} />
+      <VariationEngine model={dna} busy={busy} onMutate={(run) => void mutate(dna, run)} />
 
       {/* 7 — what worked: the voice measured against its own results */}
       <WhatWorked
