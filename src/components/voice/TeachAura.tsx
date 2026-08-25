@@ -353,24 +353,148 @@ export default function TeachAura({ userId }: { userId: string | null }) {
           </p>
         )}
 
+        {/* Writing the member added themselves — a paste or an upload. */}
         <div style={{ borderBlockStart: `1px solid ${LINE}`, marginBlockStart: 14, paddingBlockStart: 12 }}>
-          <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>Uploaded files</span>
-          <p style={{ fontSize: TYPE.body, color: MUTED, marginBlock: "6px 0" }}>
-            {model.documentCount > 0
-              ? `${model.documentCount} document${model.documentCount === 1 ? "" : "s"} read`
-              : "No files uploaded yet."}
+          <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
+            Writing you added yourself — {model.addedByYouCount}
+          </span>
+          <p style={{ fontSize: TYPE.body, color: MUTED, marginBlock: "6px 8px", lineHeight: 1.6 }}>
+            Posts you wrote that are not on your LinkedIn. They join your posts as evidence of how you write.
           </p>
+          <textarea
+            dir="auto"
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            rows={4}
+            aria-label="Paste your own writing"
+            placeholder="Paste one or more of your own posts — leave a blank line between them…"
+            style={{
+              inlineSize: "100%", border: `1px solid ${LINE}`, borderRadius: 12, padding: 10,
+              fontSize: TYPE.body, lineHeight: 1.6, color: INK, background: "#FFFFFF", resize: "vertical",
+            }}
+          />
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBlockStart: 8 }}>
+            <button
+              type="button"
+              disabled={adding || !pasteText.trim()}
+              onClick={() => void addWriting(splitPastedPosts(pasteText))}
+              style={{ ...ghostButton, minBlockSize: 44, display: "flex", gap: 6, alignItems: "center", opacity: adding || !pasteText.trim() ? 0.6 : 1 }}
+            >
+              {adding && <Loader2 size={13} className="animate-spin" />} Add this writing
+            </button>
+            <button
+              type="button"
+              disabled={adding}
+              onClick={() => fileRef.current?.click()}
+              style={{ ...ghostButton, minBlockSize: 44, display: "flex", gap: 6, alignItems: "center" }}
+            >
+              <Upload size={13} /> Upload a .txt or .md file
+            </button>
+            <input ref={fileRef} type="file" accept=".txt,.md" hidden onChange={(e) => void onFile(e)} />
+          </div>
+          {addReport && <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 8 }}>{addReport}</p>}
         </div>
 
+        {/* Posts the member admires — reference only, never reused. */}
         <div style={{ borderBlockStart: `1px solid ${LINE}`, marginBlockStart: 12, paddingBlockStart: 12 }}>
-          <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>Pasted samples</span>
-          <p style={{ fontSize: TYPE.body, color: MUTED, marginBlock: "6px 0" }}>
-            {model.pastedCount > 0
-              ? `${model.pastedCount} sample${model.pastedCount === 1 ? "" : "s"} pasted`
-              : "No samples pasted yet."}
+          <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
+            Posts you admire — {model.admired.length}
+          </span>
+          <p style={{ fontSize: TYPE.body, color: MUTED, marginBlock: "6px 8px", lineHeight: 1.6 }}>
+            Someone else's writing you want to sound closer to. Aura learns tone from these — it never reuses their
+            words or claims them as yours. Up to {ADMIRED_CAP}.
           </p>
+          {model.admired.length > 0 && (
+            <ul style={{ listStyle: "none", margin: "0 0 8px", padding: 0, display: "grid", gap: 6 }}>
+              {model.admired.map((a, i) => (
+                <li key={`${i}-${a.addedAt ?? ""}`} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: TYPE.small, color: MUTED, flex: 1, lineHeight: 1.5 }} dir="auto">
+                    {a.content.slice(0, 120)}{a.content.length > 120 ? "…" : ""}
+                    {a.source ? ` — ${a.source}` : " — source not noted"}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Remove this admired post"
+                    onClick={() => void dropAdmired(i)}
+                    style={{ ...ghostButton, minBlockSize: 44, minInlineSize: 44, display: "flex", alignItems: "center", justifyContent: "center", color: RED }}
+                  >
+                    <X size={13} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {model.admired.length < ADMIRED_CAP && (
+            <>
+              <textarea
+                dir="auto"
+                value={admiredText}
+                onChange={(e) => setAdmiredText(e.target.value)}
+                rows={3}
+                aria-label="Paste a post you admire"
+                placeholder="Paste a post you admire — not your own…"
+                style={{
+                  inlineSize: "100%", border: `1px solid ${LINE}`, borderRadius: 12, padding: 10,
+                  fontSize: TYPE.body, lineHeight: 1.6, color: INK, background: "#FFFFFF", resize: "vertical",
+                }}
+              />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBlockStart: 8 }}>
+                <input
+                  value={admiredSource}
+                  onChange={(e) => setAdmiredSource(e.target.value)}
+                  aria-label="Who wrote it"
+                  placeholder="Who wrote it"
+                  style={{
+                    flex: "1 1 180px", minBlockSize: 44, padding: "0 12px", fontSize: TYPE.body,
+                    border: `1px solid ${LINE}`, borderRadius: 8, color: INK, background: "#FFFFFF",
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={addingAdmired || !admiredText.trim()}
+                  onClick={() => void addAdmired()}
+                  style={{ ...ghostButton, minBlockSize: 44, opacity: addingAdmired || !admiredText.trim() ? 0.6 : 1 }}
+                >
+                  {addingAdmired ? "Saving…" : "Add this post"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </Card>
+
+      <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 8, lineHeight: 1.6 }}>
+        {model.documentCount} document{model.documentCount === 1 ? "" : "s"} feed what Aura knows, not how you sound.{" "}
+        <Link to="/home?tab=intelligence" style={{ color: BLUE, textDecoration: "none" }}>See them →</Link>
+      </p>
+
+      <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 6, lineHeight: 1.6 }}>
+        Examples Aura kept from your posts — {model.examples.length}
+        {model.examples.length > 0 ? `: ${Array.from(new Set(model.examples.map((e) => e.sourceLabel))).join(", ")}` : ""}
+      </p>
+
+      <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 6, lineHeight: 1.6 }}>
+        Publishing a draft teaches Aura nothing, on purpose — learning from its own writing is how a voice goes stale.
+      </p>
+
+      {model.negativeVerdicts >= 3 && (
+        <div style={{ ...cardStyle, marginBlockStart: 10 }}>
+          <div style={{ fontSize: TYPE.body, color: INK, lineHeight: 1.6 }}>
+            You have told Aura {model.negativeVerdicts} times in the last two weeks that a draft did not sound like you
+            {model.negativeDimension ? `, mostly about ${model.negativeDimension}` : ""}. A re-read of your posts is the fix.
+          </div>
+          <button
+            type="button"
+            onClick={() => void reread()}
+            disabled={stage !== null}
+            style={{ ...ghostButton, minBlockSize: 44, marginBlockStart: 8, opacity: stage !== null ? 0.6 : 1 }}
+          >
+            Re-read my posts
+          </button>
+        </div>
+      )}
+
+
 
       {!noPosts && (
         <>
