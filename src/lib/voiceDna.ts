@@ -147,7 +147,9 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
       .from("authority_voice_profiles")
       .select("id, mode_key, mode_label, readiness, updated_at, is_primary")
       .eq("user_id", userId)
-      // A tied `updated_at` used to make the winner arbitrary; `id` breaks the tie.
+      // A member can hold more than one row per mode_key, one per language.
+      // The primary row is their canonical voice and must win even if another row was written last.
+      .order("is_primary", { ascending: false })
       .order("updated_at", { ascending: false })
       .order("id", { ascending: true }),
     supabase
