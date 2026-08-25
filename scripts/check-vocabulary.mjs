@@ -56,6 +56,9 @@ const NOUNS_EN = [
   "capture", "captures",
   "evidence",
   "signal", "signals",
+  "draft", "drafts",
+  "post", "posts",
+  "page", "pages",
 ];
 
 /** The same nouns in Arabic, in the forms the number-agreement ladder produces. */
@@ -65,7 +68,11 @@ const NOUNS_AR = [
   "التقاطات", "التقاطاً", "التقاطا", "التقاطان", "التقاط",
   "إشارات", "إشارة", "إشارتان",
   "أدلة", "الأدلة",
+  "مسودات", "مسودتان", "مسودة",
+  "منشورات", "منشوراً", "منشورا", "منشوران", "منشور",
+  "صفحات", "صفحتان", "صفحة",
 ];
+
 
 const AR_LETTER = "\\u0600-\\u06FF";
 /** One boundary-safe alternation covering both scripts. */
