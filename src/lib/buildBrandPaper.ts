@@ -349,8 +349,31 @@ export function buildBrandPaper(
  * A masthead over nothing is a lie. If the paper carries no member content,
  * the surfaces render the honest "not ready" state instead of printing it.
  */
-export function brandPaperHasContent(bp: BrandPaper | null | undefined): boolean {
-  if (!bp) return false;
+/**
+ * Snapshots are frozen editions: rows written before a field existed simply do
+ * not carry it. Every reader must therefore normalise before it reads, or a
+ * missing array blanks the whole pane (`paper.capabilities.length` on an
+ * undefined). This is the one place that fills the gaps.
+ */
+export function normaliseBrandPaper(bp: any): BrandPaper {
+  const src = (bp && typeof bp === "object") ? bp : {};
+  const arr = (v: any) => (Array.isArray(v) ? v : []);
+  return {
+    ...src,
+    topics: arr(src.topics),
+    invest_next: arr(src.invest_next),
+    content_pillars: arr(src.content_pillars),
+    growth_areas: arr(src.growth_areas),
+    capabilities: arr(src.capabilities),
+    profile: (src.profile && typeof src.profile === "object") ? src.profile : {
+      first_name: null, last_name: null, level: null, sector_focus: null,
+    },
+  } as BrandPaper;
+}
+
+export function brandPaperHasContent(raw: BrandPaper | null | undefined): boolean {
+  if (!raw) return false;
+  const bp = normaliseBrandPaper(raw);
   return !!(
     bp.primary_archetype || bp.market_read || bp.positioning_statement ||
     bp.trust_pattern || bp.natural_tone || bp.unique_capability ||
