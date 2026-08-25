@@ -28,8 +28,9 @@ import {
 import { REPETITION_GATES } from "@/lib/voiceGates";
 import { useCachedVoice, invalidateVoiceCache } from "@/lib/voiceCache";
 import {
-  loadVoiceOverview, dismissRecommendation, readinessSentence, HOOK_LABEL,
+  loadVoiceOverview, dismissRecommendation, readinessSentence, variationSummary, HOOK_LABEL,
   READINESS_LABEL, READINESS_ORDER, type VoiceOverviewModel, type Readiness,
+
 } from "@/lib/voiceOverview";
 import {
   MODE_DEFS, addRule, confirmTrait, createMode, deleteMode, deleteRule, loadVoiceDna, rejectTrait,
