@@ -21,7 +21,16 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useCapturedClaims } from "@/hooks/useCapturedClaims";
 import { SECTORS } from "@/constants/sectors";
-import { EVIDENCE, SIGNAL, POST_NOUN, nEvidence, nPosts, nSignals } from "@/constants/vocabulary";
+import { POST_NOUN, countNoun, nEvidence, nPosts, nPostsParts, nSignals } from "@/constants/vocabulary";
+
+/**
+ * The address row's post count. The numeral is styled, so it comes from the
+ * dictionary in PARTS — never from a hand-written singular/plural ternary.
+ */
+const postsLine = (n: number, mono: (v: React.ReactNode) => React.ReactNode): React.ReactNode => {
+  const p = nPostsParts(n, "en");
+  return <>{p.digit ? <>{mono(num(Number(p.digit)))}{p.post}</> : p.pre} read</>;
+};
 import { initThemeFromStorage } from "@/lib/applyTheme";
 import {
   readToken, loadSession, saveSession, clearToken, claimSession,
@@ -1950,10 +1959,10 @@ const Onboarding = () => {
       },
     });
     const figures = [
-      ...(evidenceShown ? [{ value: num(evidenceShown), label: `${EVIDENCE.many} captured` }] : []),
+      ...(evidenceShown ? [{ value: num(evidenceShown), label: `${countNoun(evidenceShown, "evidence")} captured` }] : []),
       ...(Object.keys(scores).length
         ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
-      ...(signalsTotal ? [{ value: num(signalsTotal), label: `${SIGNAL.many} found` }] : []),
+      ...(signalsTotal ? [{ value: num(signalsTotal), label: `${countNoun(signalsTotal, "signal")} found` }] : []),
     ];
     setReveal(built ? { ...built, figures } : built);
     setRevealPending(false);
@@ -1997,10 +2006,10 @@ const Onboarding = () => {
       });
       if (d) {
         const figures = [
-          ...(evidenceShown ? [{ value: num(evidenceShown), label: `${EVIDENCE.many} captured` }] : []),
+          ...(evidenceShown ? [{ value: num(evidenceShown), label: `${countNoun(evidenceShown, "evidence")} captured` }] : []),
           ...(Object.keys(scores).length
             ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
-          ...(signalsTotal ? [{ value: num(signalsTotal), label: `${SIGNAL.many} found` }] : []),
+          ...(signalsTotal ? [{ value: num(signalsTotal), label: `${countNoun(signalsTotal, "signal")} found` }] : []),
         ];
         setReveal({ ...d, figures });
       }
@@ -2674,7 +2683,7 @@ const Onboarding = () => {
   if (screen === 1) {
     const mono = (v: React.ReactNode) => <span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{v}</span>;
     const rows: { key: string; label: string; line: React.ReactNode; done: boolean; drop: boolean }[] = [
-      { key: "p", label: POST_NOUN.Many, line: <>{mono(num(upPosts))} {upPosts === 1 ? POST_NOUN.one : POST_NOUN.many} read</>, done: !!postsRead, drop: readDone && !postsRead },
+      { key: "p", label: POST_NOUN.Many, line: postsLine(upPosts, mono), done: !!postsRead, drop: readDone && !postsRead },
       { key: "w", label: "Your own writing", line: <>{mono(num(upWords))} words of your own writing</>, done: !!ownWords, drop: readDone && !ownWords },
       { key: "s", label: "Sector", line: <>Sector · {mono(sector)}</>, done: !!sector, drop: readDone && !sector },
       { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
@@ -4051,7 +4060,6 @@ const Onboarding = () => {
 
   /* 13 — FULL-BLEED BLUE */
   if (screen === 13) {
-    const shareFooter = { posts: postsRead ?? 0, saved: claims.length };
     const caption = suggestedCaption(postsRead ?? 0);
     const liveCaption = captionDraft.trim() || caption;
     /* one rasterisation at a time: post, download and report all read the same DOM node */
@@ -4108,7 +4116,7 @@ const Onboarding = () => {
     content = (
       <BlueShell onExit={saveAndExit}>
         <div style={{ inlineSize: "100%", maxInlineSize: "var(--ob-max)", marginInline: "auto" }}>
-          {reveal ? <RevealCard data={reveal} footer={shareFooter} /> : revealLoading ? (
+          {reveal ? <RevealCard data={reveal} /> : revealLoading ? (
             /* A wait like any other: named stage, real counter, and a door
                after a minute. The read may already be in the database — while
                we are still asking, we say nothing about where it is. */
@@ -4141,7 +4149,7 @@ const Onboarding = () => {
                offset — an absolute node inside a relative box rasterises. */
             <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
               <div style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
-                <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+                <RevealCard ref={shareRef} data={reveal} forExport />
               </div>
             </div>
           ) : null}
@@ -4214,7 +4222,6 @@ const Onboarding = () => {
   if (screen === SHARE_SCREEN) {
     const caption = suggestedCaption(postsRead ?? 0);
     const liveCaption = captionDraft.trim() || caption;
-    const shareFooter = { posts: postsRead ?? 0, saved: claims.length };
     const busy = sharing || posting || buildingReport || savingDraft;
 
     const downloadCard = async () => {
@@ -4279,7 +4286,7 @@ const Onboarding = () => {
         {reveal ? (
           <div style={{ position: "relative", width: 0, height: 0, overflow: "visible" }} aria-hidden>
             <div style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }}>
-              <RevealCard ref={shareRef} data={reveal} footer={shareFooter} forExport />
+              <RevealCard ref={shareRef} data={reveal} forExport />
             </div>
           </div>
         ) : null}

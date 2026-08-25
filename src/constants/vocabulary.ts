@@ -200,6 +200,30 @@ export const nPosts = (n: number, lang: VocabLang): string =>
     few: (x) => `${x} منشورات`, many: (x) => `${x} منشوراً`,
   }) : `${n} post${n === 1 ? "" : "s"}`;
 
+/**
+ * THE BARE NOUN, AGREEING WITH A COUNT — for surfaces that show the numeral
+ * somewhere else (a big Counter figure, a mono digit, a chart value) and need
+ * only the word beside it. This is the sanctioned replacement for
+ * `n === 1 ? X_NOUN.one : X_NOUN.many` at a call site.
+ *
+ * English only for now: every current caller is an English label. An Arabic
+ * surface must use the full `nEvidence` / `nSignals` / `nPostsParts` forms,
+ * because Arabic agreement changes the numeral's own wording too.
+ */
+export type CountKind = "capture" | "source" | "evidence" | "signal" | "page" | "draft" | "post";
+
+const NOUN_BY_KIND: Record<CountKind, { one: string; many: string }> = {
+  capture:  { one: "capture", many: "captures" },
+  source:   { one: "source",  many: "sources" },
+  evidence: { one: "piece of evidence", many: "pieces of evidence" },
+  signal:   { one: "signal",  many: "signals" },
+  page:     { one: "page",    many: "pages" },
+  draft:    { one: "draft",   many: "drafts" },
+  post:     { one: "post",    many: "posts" },
+};
+
+export const countNoun = (n: number, kind: CountKind): string =>
+  n === 1 ? NOUN_BY_KIND[kind].one : NOUN_BY_KIND[kind].many;
 
 
 /** Evidence and sources in one line — the pair every signal surface states. */
@@ -237,6 +261,25 @@ export function evidencePartsEn(n: number): CountParts {
 /** The evidence count, split so the caller can style the numeral. */
 export const nEvidenceParts = (n: number, lang: VocabLang): CountParts =>
   lang === "ar" ? evidencePartsAr(n) : evidencePartsEn(n);
+
+export function postsPartsAr(n: number): CountParts {
+  if (n === 1) return worded("منشور واحد");
+  if (n === 2) return worded("منشوران");
+  return numbered(n, n <= 10 ? " منشورات" : " منشوراً");
+}
+
+export function postsPartsEn(n: number): CountParts {
+  return numbered(n, ` post${n === 1 ? "" : "s"}`);
+}
+
+/**
+ * The post count, split so the caller can style the numeral — the ONLY
+ * sanctioned way to render a mono numeral beside the post noun. A call site
+ * must never write `n === 1 ? POST_NOUN.one : POST_NOUN.many`: that is
+ * hand-pluralisation wearing an identifier, and the gate now flags it.
+ */
+export const nPostsParts = (n: number, lang: VocabLang): CountParts =>
+  lang === "ar" ? postsPartsAr(n) : postsPartsEn(n);
 
 /** Append a trailing clause to a parts object without touching the numeral. */
 export const withTail = (parts: CountParts, tail: string): CountParts =>

@@ -112,7 +112,7 @@ const JSX_PATTERN = new RegExp(
 /** A call that already goes through the dictionary is the CORRECT shape —
  *  `{nSources(n, lang)} behind this signal` is what the gate is asking for. Its
  *  SPAN is blanked out; the rest of the line is still scanned. */
-const DICTIONARY_CALL = /\b(?:nSources|nCaptures|nEvidence|nSignals|nPages|nDrafts|nPosts|evidenceAndSources|sourceCount(?:En|Ar)|captureCount(?:En|Ar)|evidenceCount(?:En|Ar)|signalCount(?:En|Ar)|cardCounts)\s*\((?:[^()]|\([^()]*\))*\)/g;
+const DICTIONARY_CALL = /\b(?:nSources|nCaptures|nEvidence|nSignals|nPages|nDrafts|nPosts|evidenceAndSources|sourceCount(?:En|Ar)|captureCount(?:En|Ar)|evidenceCount(?:En|Ar)|signalCount(?:En|Ar)|cardCounts|countNoun)\s*\((?:[^()]|\([^()]*\))*\)/g;
 
 /** Replace every dictionary call with spaces, preserving offsets. */
 function blankDictionaryCalls(line) {
@@ -172,8 +172,20 @@ function findHit(rawLine) {
   }
   const j = line.match(JSX_PATTERN);
   if (j && !/[=<>]/.test(j[0])) return j[0].trim();
+  // A noun hidden behind an identifier is the same hand-rolled plural:
+  //   `n === 1 ? POST_NOUN.one : POST_NOUN.many`
+  // No quoted literal, so neither scan above can see it. On a counting line,
+  // reading a `.one` / `.many` / `.singular` / `.plural` member off a *_NOUN
+  // dictionary object means the call site is pluralising by hand instead of
+  // asking for the parts.
+  const noun = line.match(NOUN_MEMBER);
+  if (noun && counting) return noun[0].trim();
   return null;
 }
+
+/** `POST_NOUN.one`, `EVIDENCE.many`, `SignalNoun.plural` … */
+const NOUN_MEMBER =
+  /\b[A-Za-z_][A-Za-z0-9_]*\s*\.\s*(?:one|many|One|Many|singular|plural)\b/;
 
 /** Pull quoted literals that sit inside a template literal span. A plain regex
  *  literal scan consumes the whole backtick span first, so the nested

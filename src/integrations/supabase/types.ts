@@ -6497,9 +6497,10 @@ export type Database = {
           title: string
         }[]
       }
-      home_record_timeline:
-        | { Args: { p_uid?: string }; Returns: Json }
-        | { Args: { p_tz?: string; p_uid?: string }; Returns: Json }
+      home_record_timeline: {
+        Args: { p_tz?: string; p_uid?: string }
+        Returns: Json
+      }
       identity_kind: { Args: { p_user_id: string }; Returns: string }
       is_current_user_admin: { Args: never; Returns: boolean }
       is_customer: { Args: { p_user_id: string }; Returns: boolean }

@@ -46,13 +46,6 @@ export interface RevealData {
   provenance?: { read?: string; subjects?: string; softGround?: string };
 }
 
-export interface RevealFooter {
-  /** How many of the member's own posts were read. */
-  posts: number;
-  /** How many things the member saved. */
-  saved: number;
-}
-
 /** The caption offered alongside the exported image. */
 export const suggestedCaption = (posts: number): string =>
   `I let something read my last ${posts ? nPosts(posts, "en") : `few ${POST_NOUN.many}`} and tell me how my work actually lands. ` +
@@ -269,8 +262,8 @@ const RVC_CSS = `
 
 const RevealCard = forwardRef<
   HTMLDivElement,
-  { data: RevealData; footer?: RevealFooter; forExport?: boolean; emptyFiguresLine?: string }
->(({ data, footer, forExport = false, emptyFiguresLine = EMPTY_POSTS_LINE }, ref) => forExport ? (
+  { data: RevealData; forExport?: boolean; emptyFiguresLine?: string }
+>(({ data, forExport = false, emptyFiguresLine = EMPTY_POSTS_LINE }, ref) => forExport ? (
   /* ── the shareable frame: one fixed 1080 × 1350 image, nothing that scrolls ── */
   <div
     ref={ref}
@@ -414,7 +407,6 @@ const RevealCard = forwardRef<
       <span style={{ fontFamily: OB.mono, fontSize: 18, letterSpacing: "0.06em", opacity: 0.88 }}>
         {signatureText(data)}<SignatureDate data={data} size={18} />
       </span>
-      {footer ? null : null}
     </div>
     </div>
   </div>

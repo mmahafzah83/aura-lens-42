@@ -6,7 +6,7 @@ import {
   type RecordBucket, type RecordMilestone, type RecordPublished,
 } from "@/hooks/useRecordTimeline";
 import { ProvenanceMark } from "@/components/systemb";
-import { nEvidence, nSignals, nCaptures, nDrafts, nPosts, EVIDENCE, SIGNAL } from "@/constants/vocabulary";
+import { nEvidence, nSignals, nCaptures, nDrafts, nPosts, countNoun } from "@/constants/vocabulary";
 
 /**
  * THE RECORD — what has actually happened, compressed by age.
@@ -577,8 +577,8 @@ export const RecordLens: React.FC<RecordLensProps> = ({
       <div style={{ borderBlockStart: "1px solid var(--rule-divider)", padding: "16px 20px", display: "grid", gap: 10 }}>
         <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))" }}>
           <Counter n={daysOnRecord ?? "—"} label="days using Aura" />
-          <Counter n={t.fragmentsTotal} label={`${EVIDENCE.many.toLowerCase()} captured`} />
-          <Counter n={t.themesTotal} label={`${SIGNAL.many} found in them`} />
+          <Counter n={t.fragmentsTotal} label={`${countNoun(t.fragmentsTotal, "evidence")} captured`} />
+          <Counter n={t.themesTotal} label={`${countNoun(t.themesTotal, "signal")} found in them`} />
           <Counter n={`${nightsProduced}/7`} label="nights Aura found something to write" />
           <Counter n={t.publishedTotal} label="posts live on LinkedIn" blue />
           <Counter n={t.publishedThroughAura} label="written with Aura" blue />
