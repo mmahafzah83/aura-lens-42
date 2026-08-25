@@ -237,10 +237,36 @@ async function firecrawlSearchWithRetry(
 
 /* ── main ── */
 
+/**
+ * RETIRED — switched off behind a flag, not deleted (house rule).
+ *
+ * WHY: this function only ever returned Google search-result snippets, not the
+ * member's real posts, and it produced 119 junk rows that had to be excluded
+ * from every honest count by `text_is_snippet`. The real door is
+ * `linkedin-fetch-posts` (Apify), which works. The existing rows are left in
+ * place; only the machine that makes more is stopped.
+ *
+ * TO RE-ENABLE: set the secret DISCOVERY_ENABLED=true. Nothing else is needed —
+ * the code below is untouched.
+ */
+const DISCOVERY_ENABLED = (Deno.env.get("DISCOVERY_ENABLED") || "").toLowerCase() === "true";
+
 Deno.serve(withObserve("discover-linkedin-posts", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  if (!DISCOVERY_ENABLED) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        retired: true,
+        error: "Post discovery is retired: it returned search-result snippets, not real posts. Use linkedin-fetch-posts.",
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
 
   const logs: { step: string; detail: string; ts: string }[] = [];
   const log = (step: string, detail: string) => {
