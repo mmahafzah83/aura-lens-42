@@ -37,8 +37,9 @@ export default function WhatWorked({
   const model = modelOverride ?? state.data;
 
   // postsRead, correctionsApplied, proposalsConfirmed, proposalsRejected are kept on the model
-  // but no longer rendered here; they left with the "Getting better" panel because activity
+  // but no longer rendered here; they left with the removed chart panel because activity
   // counters are not a member-facing result.
+
 
   if (!model) return null;
 
