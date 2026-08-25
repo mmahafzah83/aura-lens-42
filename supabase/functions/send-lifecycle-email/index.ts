@@ -91,7 +91,7 @@ function buildEmail(
         ${signoff(name, level)}`
       : `
         ${heading(`${name}, your signal graph is waiting.`)}
-        <p style="margin:0 0 18px;">The captures you've made are being analyzed — signals emerge when Aura detects recurring signals across multiple sources.</p>
+        <p style="margin:0 0 18px;">The captures you've made are being analyzed. A signal forms when the same idea shows up across several of the things you save.</p>
         <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
         ${ctaButton(BRAND, "Capture something", `${APP_URL}/dashboard`)}
         ${signoff(name, level)}`;
