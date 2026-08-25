@@ -536,9 +536,19 @@ export default function YourVoice({
           });
         }}
       />
+      </CollapseBlock>
 
-      {/* 5 — rules */}
+      {/* 5 — rules. A suggestion is a decision waiting, so it opens by default. */}
+      <CollapseBlock
+        id="voice-rules"
+        label="Rules"
+        summary={rulesLine}
+        controlLabel="Open"
+        open={isGroupOpen("rules")}
+        onToggle={() => setGroup("rules", !isGroupOpen("rules"))}
+      >
       <VoiceRules
+
         rules={dna.rules}
         suggestions={dna.suggestions}
         canSuggest={model.overview.corpusCount >= 20}
