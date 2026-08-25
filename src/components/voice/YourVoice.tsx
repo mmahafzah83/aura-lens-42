@@ -19,6 +19,8 @@ import VoiceRules from "@/components/voice/VoiceRules";
 import VariationEngine from "@/components/voice/VariationEngine";
 import WhatWorked from "@/components/voice/WhatWorked";
 import InfoTooltip from "@/components/voice/InfoTooltip";
+import CollapseBlock, { CollapseStyles, loadCollapseState, saveCollapseState } from "@/components/common/CollapseBlock";
+
 import {
   AMBER_TEXT, BLUE, CYAN, CYAN_TEXT, GREEN, INK, LINE, MUTED, NIGHT, NIGHT_LINE, NIGHT_MUTED,
   RADIUS, RED, SURFACE, TYPE, WHITE, cardStyle, ghostButton, microLabel, monoNum, primaryButton,
@@ -26,8 +28,9 @@ import {
 import { REPETITION_GATES } from "@/lib/voiceGates";
 import { useCachedVoice, invalidateVoiceCache } from "@/lib/voiceCache";
 import {
-  loadVoiceOverview, dismissRecommendation, readinessSentence, HOOK_LABEL,
+  loadVoiceOverview, dismissRecommendation, readinessSentence, variationSummary, HOOK_LABEL,
   READINESS_LABEL, READINESS_ORDER, type VoiceOverviewModel, type Readiness,
+
 } from "@/lib/voiceOverview";
 import {
   MODE_DEFS, addRule, confirmTrait, createMode, deleteMode, deleteRule, loadVoiceDna, rejectTrait,
@@ -208,6 +211,26 @@ export default function YourVoice({
   const [busy, setBusy] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
+  // Collapse state lives above every early return, and is remembered per member.
+  const storeKey = userId ? `aura:yourvoice:groups:${userId}` : null;
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => loadCollapseState(storeKey));
+  const setGroup = useCallback((id: string, value: boolean) => {
+    setOpenGroups((prev) => {
+      const next = { ...prev, [id]: value };
+      saveCollapseState(storeKey, next);
+      return next;
+    });
+  }, [storeKey]);
+  const setAllGroups = useCallback((ids: string[], value: boolean) => {
+    setOpenGroups((prev) => {
+      const next = { ...prev };
+      for (const id of ids) next[id] = value;
+      saveCollapseState(storeKey, next);
+      return next;
+    });
+  }, [storeKey]);
+
+
   const key = modelOverride || !userId ? null : `voice:yourvoice:${userId}:${profileId ?? "active"}`;
   const loader = useCallback(async (): Promise<YourVoiceModel> => {
     const [overview, dna] = await Promise.all([
@@ -286,6 +309,58 @@ export default function YourVoice({
   const reco = ov.recommendation;
   const showReco = !ov.recommendationDismissed && !dismissed && !nothingRead && reco.key !== "none";
 
+  /* ── the one-line readings. Every figure is already loaded; if a figure is
+     unknown the line says so in words rather than printing a zero. ───────── */
+  const healthCards = buildHealth(ov);
+  const healthWeak = healthCards.some((h) => h.band === "weak");
+  const readPart = ov.corpusCount === 0
+    ? "Nothing read from your posts yet"
+    : `Read from ${ov.corpusCount} of your posts`;
+  const freshPart = ov.freshnessDays === null
+    ? "no dated post yet"
+    : `newest ${ov.freshnessDays} ${ov.freshnessDays === 1 ? "day" : "days"} ago`;
+  const markerPart = ov.computableComputed === 0
+    ? "no markers measured yet"
+    : `${ov.computableHigh} of ${ov.computableComputed} markers measured`;
+  const openingPart = ov.diversity === null
+    ? "opening variety not measured yet"
+    : `openings vary ${Math.round(ov.diversity)}%`;
+  const healthLine = `${readPart} · ${freshPart} · ${markerPart} · ${openingPart}`;
+
+  const modesSet = dna.modes.filter((m) => m.profileId);
+  const activeMode = modesSet.find((m) => m.profileId === dna.activeProfileId);
+  const modesLine = `${modesSet.length} ${modesSet.length === 1 ? "mode" : "modes"} · ${activeMode ? activeMode.label : "no mode chosen"}`;
+
+  const countKind = (k: string) => dna.rules.filter((r) => r.kind === k).length;
+  const waiting = dna.suggestions.length;
+  const rulesLine = `${countKind("always")} always · ${countKind("never")} never · ${countKind("anchor")} anchors · ${waiting} waiting for you`;
+
+  const variationLine = variationSummary(dna) ?? "Opening variety is not measured yet.";
+
+  const unconfirmedProposal = dna.traits.some((t) => t.source === "aura" && !t.last_confirmed_at && t.value !== null);
+
+  const groupSummary = (traits: DnaTrait[]) => {
+    const measured = traits.filter((t) => t.value !== null);
+    if (measured.length === 0) return "Nothing measured yet in this group.";
+    const names = measured.map((t) => t.display_name.toLowerCase()).join(", ");
+    return `${names.replace(/^./, (c) => c.toUpperCase())} — ${measured.length} of ${traits.length} read from your posts`;
+  };
+
+  /** A group with something waiting for the member opens by default. */
+  const attention: Record<string, boolean> = {
+    health: healthWeak,
+    modes: false,
+    rules: waiting > 0,
+    variation: false,
+    worked: unconfirmedProposal,
+  };
+  for (const [group, traits] of grouped) {
+    attention[`believe:${group}`] = traits.some((t) => t.source === "aura" && !t.last_confirmed_at && t.value !== null);
+  }
+  const groupIds = Object.keys(attention);
+  const isGroupOpen = (id: string) => openGroups[id] ?? attention[id] ?? false;
+
+
   if (nothingRead) {
     return (
       <div style={cardStyle}>
@@ -300,7 +375,18 @@ export default function YourVoice({
 
   return (
     <div dir="ltr" style={{ color: INK }}>
-      {/* 1 — readiness */}
+      <CollapseStyles />
+
+      {/* Open or close the whole pane in one press. */}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBlockEnd: 10 }}>
+        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, true)}>Expand all</button>
+        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, false)}>Collapse all</button>
+      </div>
+
+      <div className="cb-grid">
+      {/* 1 — readiness and health: one block. The hero stays open; the four
+          cards sit behind one live reading. */}
+      <div className="cb-span">
       <section style={{ background: NIGHT, borderRadius: RADIUS.hero, padding: "20px 22px", display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
         <VoiceMicBadge size={56} />
         <div style={{ flex: 1, minInlineSize: 240 }}>
@@ -316,12 +402,25 @@ export default function YourVoice({
       </section>
 
       {/* 2 — health */}
-      <div className="vo-health" style={{ marginBlockStart: 12 }}>
-        {buildHealth(ov).map((h) => <HealthCard key={h.label} h={h} />)}
+      <div style={{ marginBlockStart: 12 }}>
+        <CollapseBlock
+          id="voice-health"
+          label="Voice health"
+          summary={healthLine}
+          controlLabel="Details"
+          open={isGroupOpen("health")}
+          onToggle={() => setGroup("health", !isGroupOpen("health"))}
+        >
+          <div className="vo-health" style={{ marginBlockStart: 4, marginBlockEnd: 4 }}>
+            {healthCards.map((h) => <HealthCard key={h.label} h={h} />)}
+          </div>
+        </CollapseBlock>
+      </div>
       </div>
 
       {showReco && (
-        <div style={{ ...cardStyle, marginBlockStart: 12 }}>
+        <div className="cb-span" style={{ ...cardStyle }}>
+
           <div style={microLabel}>Top recommendation</div>
           <p dir="auto" style={{ fontSize: TYPE.bodyLg, lineHeight: 1.6, color: INK, marginBlock: "8px 0" }}>{reco.text}</p>
           <div style={{ display: "flex", gap: 8, marginBlockStart: 12, flexWrap: "wrap" }}>
@@ -341,19 +440,27 @@ export default function YourVoice({
         </div>
       )}
 
-      {/* 3 — the spectrums */}
-      <header style={{ marginBlockStart: 20 }}>
+      {/* 3 — the spectrums, one collapsible group each */}
+      <header className="cb-span" style={{ marginBlockStart: 8 }}>
         <h2 style={{ fontSize: TYPE.section, fontWeight: 600, color: INK, margin: 0 }}>
           What Aura believes about how you write
         </h2>
-        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "4px 10px" }}>
+        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "4px 0" }}>
           Drag any marker to correct it. Aura keeps learning the ones you leave alone.
         </p>
       </header>
-      <div style={cardStyle}>
-        {grouped.map(([group, traits]) => (
-          <div key={group} style={{ marginBlockEnd: 8 }}>
-            <div style={microLabel}>{GROUP_LABEL[group] ?? group}</div>
+      {grouped.map(([group, traits]) => (
+        <CollapseBlock
+          key={group}
+          id={`believe-${group}`}
+          label={GROUP_LABEL[group] ?? group}
+          summary={groupSummary(traits)}
+          controlLabel="Adjust"
+          open={isGroupOpen(`believe:${group}`)}
+          onToggle={() => setGroup(`believe:${group}`, !isGroupOpen(`believe:${group}`))}
+        >
+          <div style={{ marginBlockEnd: 8 }}>
+
             {traits.map((t) => (
               <SpectrumRow
                 key={t.trait_key}
@@ -394,11 +501,20 @@ export default function YourVoice({
               />
             ))}
           </div>
-        ))}
-      </div>
+        </CollapseBlock>
+      ))}
 
       {/* 4 — modes */}
+      <CollapseBlock
+        id="voice-modes"
+        label="Voice modes"
+        summary={modesLine}
+        controlLabel="Open"
+        open={isGroupOpen("modes")}
+        onToggle={() => setGroup("modes", !isGroupOpen("modes"))}
+      >
       <VoiceModes
+
         modes={dna.modes}
         activeProfileId={dna.activeProfileId}
         busy={busy}
@@ -423,9 +539,19 @@ export default function YourVoice({
           });
         }}
       />
+      </CollapseBlock>
 
-      {/* 5 — rules */}
+      {/* 5 — rules. A suggestion is a decision waiting, so it opens by default. */}
+      <CollapseBlock
+        id="voice-rules"
+        label="Rules"
+        summary={rulesLine}
+        controlLabel="Open"
+        open={isGroupOpen("rules")}
+        onToggle={() => setGroup("rules", !isGroupOpen("rules"))}
+      >
       <VoiceRules
+
         rules={dna.rules}
         suggestions={dna.suggestions}
         canSuggest={model.overview.corpusCount >= 20}
@@ -476,14 +602,27 @@ export default function YourVoice({
           () => reorderRules(userId as string, dna.activeProfileId, ordered),
         )}
       />
+      </CollapseBlock>
 
       {/* 6 — variation, the only copy in the product */}
-      <VariationEngine model={dna} busy={busy} onMutate={(run) => void mutate(dna, run)} />
+      <CollapseBlock
+        id="voice-variation"
+        label="How you open and close"
+        summary={variationLine}
+        controlLabel="Open"
+        open={isGroupOpen("variation")}
+        onToggle={() => setGroup("variation", !isGroupOpen("variation"))}
+      >
+        <VariationEngine model={dna} busy={busy} onMutate={(run) => void mutate(dna, run)} />
+      </CollapseBlock>
 
       {/* 7 — what worked: the voice measured against its own results */}
       <WhatWorked
         userId={userId}
         traits={dna.traits}
+        collapsed={!isGroupOpen("worked")}
+        onToggleCollapse={() => setGroup("worked", !isGroupOpen("worked"))}
+
         onConfirm={(t) => {
           if (!t.id) return;
           void mutate(
@@ -499,6 +638,8 @@ export default function YourVoice({
           );
         }}
       />
+      </div>
     </div>
+
   );
 }

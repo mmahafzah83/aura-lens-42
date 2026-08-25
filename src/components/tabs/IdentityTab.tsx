@@ -13,6 +13,7 @@ import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import ReportVersions from "@/components/identity/ReportVersions";
 import BrandReportSection from "@/components/identity/BrandReportSection";
+import { CollapseStyles } from "@/components/common/CollapseBlock";
 import SectionError from "@/components/ui/section-error";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { useAuthReady } from "@/hooks/useAuthReady";
@@ -1362,10 +1363,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {pane === "show" && (
       <div style={SHOW_STACK}>
+        <CollapseStyles />
         <div>
           <SectionHeader label="What you can show" />
           <p style={PANE_SUBLINE}>Everything here is yours to download or send.</p>
         </div>
+
 
         <ErrorBoundary>
           <BrandReportSection

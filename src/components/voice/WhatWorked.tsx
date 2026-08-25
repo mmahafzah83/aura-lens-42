@@ -8,6 +8,7 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import InfoTooltip from "@/components/voice/InfoTooltip";
+import CollapseBlock from "@/components/common/CollapseBlock";
 import {
   AMBER_FILL, AMBER_TEXT, GREEN, INK, LINE, MUTED, RADIUS, TAP, TYPE, WHITE, cardStyle, chipStyle,
   ghostButton, microLabel, monoNum,
@@ -21,7 +22,7 @@ import {
 import type { DnaTrait } from "@/lib/voiceDna";
 
 export default function WhatWorked({
-  userId, traits, onConfirm, onReject, modelOverride,
+  userId, traits, onConfirm, onReject, modelOverride, collapsed = false, onToggleCollapse,
 }: {
   userId: string | null;
   traits: DnaTrait[];
@@ -29,7 +30,11 @@ export default function WhatWorked({
   onReject: (t: DnaTrait) => void;
   /** Harness only. */
   modelOverride?: WhatWorkedModel;
+  /** Collapse is owned by the page, so the pane can remember it. */
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
+
   const [saving, setSaving] = useState(false);
   const key = modelOverride || !userId ? null : `voice:whatworked:${userId}`;
   const loader = useCallback(() => loadWhatWorked(userId as string), [userId]);
@@ -82,9 +87,15 @@ export default function WhatWorked({
     }
   };
 
-  return (
-    <section style={{ marginBlockStart: 16 }}>
-      <div style={cardStyle}>
+  const headline = n === 0
+    ? "Aura has nothing to compare yet."
+    : `Aura compared your last ${n} ${n === 1 ? "post" : "posts"} against your own average.`;
+  const wrapped = Boolean(onToggleCollapse);
+
+  const body = (
+    <section style={{ marginBlockStart: wrapped ? 0 : 16 }}>
+      <div style={wrapped ? { ...cardStyle, border: "none", padding: 0 } : cardStyle}>
+
         {/* header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ maxInlineSize: 520 }}>
@@ -185,4 +196,19 @@ export default function WhatWorked({
       </div>
     </section>
   );
+
+  if (!wrapped) return body;
+  return (
+    <CollapseBlock
+      id="what-worked"
+      label="What worked"
+      summary={headline}
+      controlLabel="Open"
+      open={!collapsed}
+      onToggle={onToggleCollapse as () => void}
+    >
+      {body}
+    </CollapseBlock>
+  );
 }
+

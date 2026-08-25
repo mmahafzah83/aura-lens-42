@@ -94,6 +94,9 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
   const [building, setBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  /** Older versions stay folded until asked for. */
+  const [showOlder, setShowOlder] = useState(false);
+
 
   const load = useCallback(async (selectCurrent: boolean) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -171,29 +174,53 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
       {/* Pills + primary action */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {loaded && rows.length > 1 ? (
-          <div style={PILL_ROW}>
-            {rows.map((r) => {
-              const active = r.id === selected?.id;
-              return (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => setSelectedId(r.id)}
-                  aria-pressed={active}
-                  style={{
-                    ...PILL_BASE,
-                    background: active ? ACTION : CARD,
-                    color: active ? "#FFFFFF" : MUTED,
-                    border: active ? `1px solid ${ACTION}` : `1px solid ${BORDER}`,
-                  }}
-                >
-                  <span style={{ fontFamily: MONO }}>v{r.version}</span>
-                  <span style={{ fontFamily: MONO }}>{fmtDate(r.created_at)}</span>
-                </button>
-              );
-            })}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* Only the current version is on show; the rest are one row away. */}
+            <button
+              type="button"
+              onClick={() => setShowOlder((v) => !v)}
+              aria-expanded={showOlder}
+              aria-controls="report-earlier-versions"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                minHeight: 44, width: "100%", padding: "0 2px", background: "none",
+                border: 0, cursor: "pointer", textAlign: "start", fontSize: 13, color: MUTED,
+              }}
+            >
+              <span style={{ fontFamily: MONO }}>
+                {rows.length - 1} earlier {rows.length - 1 === 1 ? "version" : "versions"}
+              </span>
+              <span aria-hidden style={{ transform: showOlder ? "rotate(180deg)" : "none" }}>▾</span>
+            </button>
+            <div id="report-earlier-versions" hidden={!showOlder}>
+              {showOlder ? (
+                <div style={PILL_ROW}>
+                  {rows.map((r) => {
+                    const active = r.id === selected?.id;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setSelectedId(r.id)}
+                        aria-pressed={active}
+                        style={{
+                          ...PILL_BASE,
+                          background: active ? ACTION : CARD,
+                          color: active ? "#FFFFFF" : MUTED,
+                          border: active ? `1px solid ${ACTION}` : `1px solid ${BORDER}`,
+                        }}
+                      >
+                        <span style={{ fontFamily: MONO }}>v{r.version}</span>
+                        <span style={{ fontFamily: MONO }}>{fmtDate(r.created_at)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : null}
+
 
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
           <button type="button" style={{ ...PRIMARY_BTN, opacity: building ? 0.6 : 1 }} disabled={building} onClick={handleNewVersion}>
