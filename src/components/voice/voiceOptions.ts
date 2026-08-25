@@ -71,7 +71,62 @@ export const CLOSER_LIBRARY: string[] = CLOSER_OPTIONS.map((o) => o.label).conca
   "A single instruction",
   "The cost of doing nothing",
   "One sentence naming the next decision",
+  "Close on a figure",
 ]);
+
+/**
+ * THE CLOSER ROUND-TRIP.
+ *
+ * `allowed_endings` is a CONTROLLED column: the writer only understands six
+ * ending keys. This screen shows human labels, and for months it wrote those
+ * labels straight into the column, where the writer's own filter dropped every
+ * one of them — the member picked closers and nothing changed. Labels are
+ * translated to keys on the way in and back to labels on the way out, so a
+ * choice made here survives the round trip.
+ */
+export const CLOSER_KEY_BY_LABEL: Record<string, string> = {
+  "Uncomfortable question": "question",
+  "Suspended sentence": "hanging_line",
+  "Reframe": "reframe",
+  "Equation": "equation",
+  "A single instruction": "signature",
+  "One sentence naming the next decision": "signature",
+  "The cost of doing nothing": "reframe",
+  "Close on a figure": "number",
+};
+
+export const CLOSER_LABEL_BY_KEY: Record<string, string> = {
+  question: "Uncomfortable question",
+  hanging_line: "Suspended sentence",
+  reframe: "Reframe",
+  equation: "Equation",
+  signature: "A single instruction",
+  number: "Close on a figure",
+};
+
+/** Labels (or already-stored keys) in — controlled ending keys out, deduplicated. */
+export function closerKeysFromLabels(labels: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of labels ?? []) {
+    const v = String(raw ?? "").trim();
+    if (!v) continue;
+    const key = CLOSER_LABEL_BY_KEY[v] ? v : CLOSER_KEY_BY_LABEL[v];
+    if (key && !out.includes(key)) out.push(key);
+  }
+  return out;
+}
+
+/** Stored keys out of the column, back to the labels this screen shows. */
+export function closerLabelsFromKeys(keys: string[]): string[] {
+  const out: string[] = [];
+  for (const raw of keys ?? []) {
+    const v = String(raw ?? "").trim();
+    if (!v) continue;
+    const label = CLOSER_LABEL_BY_KEY[v] ?? (CLOSER_KEY_BY_LABEL[v] ? v : "");
+    if (label && !out.includes(label)) out.push(label);
+  }
+  return out;
+}
 
 /**
  * ONE table of moves. This used to be a free-text list maintained here, in

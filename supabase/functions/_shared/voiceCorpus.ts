@@ -21,7 +21,16 @@ export const MIN_POST_CHARS = 50;
  * defaults INTO the corpus — that is how carousel drafts and search snippets
  * came within one missing stamp of teaching Aura how the member writes.
  */
-export const CORPUS_SOURCE_TYPES = ["imported", "linkedin_export", "linkedin_own"] as const;
+export const CORPUS_SOURCE_TYPES = [
+  "imported",
+  "linkedin_export",
+  "linkedin_own",
+  // A post the member pasted by URL, or captured from their own feed with the
+  // extension. Both are the member's own writing arriving by a different door.
+  "manual_url",
+  "browser_capture",
+] as const;
+
 
 /**
  * True when this row is the member's own written post.
@@ -55,4 +64,17 @@ export function isOwnWriting(row: {
 /** The columns every corpus query must select for `isOwnWriting` to be true. */
 export const CORPUS_COLUMNS =
   "post_text, authorship, acquisition, source_type, voice_corpus_status, text_is_snippet";
+
+/**
+ * A post's language, read off the text itself — `linkedin_posts` carries no
+ * language column, and a member's own posts are the one place we cannot ask.
+ */
+export function corpusLang(text: string): "ar" | "en" {
+  const t = String(text ?? "");
+  const arabic = (t.match(/[\u0600-\u06FF]/g) ?? []).length;
+  const latin = (t.match(/[A-Za-z]/g) ?? []).length;
+  return arabic > latin ? "ar" : "en";
+}
+
+
 

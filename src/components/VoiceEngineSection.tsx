@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import {
   TONE_OPTIONS, RHYTHM_OPTIONS, EMOJI_OPTIONS, LANGUAGE_OPTIONS, STRUCTURE_OPTIONS,
   OPENER_OPTIONS, CLOSER_OPTIONS, OPENER_LIBRARY, CLOSER_LIBRARY, MOVES_LIBRARY,
+  closerKeysFromLabels, closerLabelsFromKeys,
   optionLabel, optionExample, type VoiceOption,
 } from "@/components/voice/voiceOptions";
 import { composeSample, GENERIC_SAMPLE, type VoiceSpec } from "@/lib/voiceSample";
@@ -373,7 +374,8 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
   const lengthSet = Number.isFinite(Number(prefs.length_max)) && Number(prefs.length_max) > 0;
   const lengthVal = lengthSet ? Number(prefs.length_max) : 1400;
   const openerBank = list(prefs.openings);
-  const closerBank = list(row?.allowed_endings);
+  // The column stores controlled ending keys; this screen speaks labels.
+  const closerBank = closerLabelsFromKeys(list(row?.allowed_endings));
   const moves = list(row?.storytelling_patterns);
   const alwaysRules = list(vocab.use);
   const neverRules = list(vocab.avoid);
@@ -683,7 +685,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
                 onToggle={() => toggle("closer_bank")}
                 onReset={() => write({ allowed_endings: [] }, { allowed_endings: row?.allowed_endings ?? [] }, "Changed: Closer bank → cleared — sample rewritten below.")}>
                 <ListEditor items={closerBank} library={CLOSER_LIBRARY}
-                  onChange={(next) => write({ allowed_endings: next }, { allowed_endings: row?.allowed_endings ?? [] }, "Changed: Closer bank order — sample rewritten below.")} />
+                  onChange={(next) => write({ allowed_endings: closerKeysFromLabels(next) }, { allowed_endings: row?.allowed_endings ?? [] }, "Changed: Closer bank order — sample rewritten below.")} />
               </VoiceRow>
 
               <VoiceRow label="Signature moves" value={moves.join(" · ")} open={openRow === "moves"}

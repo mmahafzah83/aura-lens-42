@@ -30,6 +30,14 @@ import {
   type MoveId,
   type PastShape,
 } from "../_shared/contentDNA.ts";
+// The member's own distribution, and the ceilings a draft is held to.
+import {
+  fidelityCheck,
+  distributionPromptBlock,
+  MIN_DIST_CORPUS,
+  type Distribution,
+} from "../_shared/voiceDistribution.ts";
+
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
@@ -149,6 +157,13 @@ interface VoicePrefs {
   story_mix?: Record<string, number>;
   anti_ai?: boolean;
   banned_phrases?: string[];
+  /* The five the Voice screen writes and this function used to ignore
+     completely — a member set them and nothing downstream ever read them. */
+  rhythm?: string;
+  structure?: string;
+  opener?: string;
+  closer?: string;
+  language_mode?: "en" | "ar" | "mixed";
 }
 
 function readPrefs(voiceProfile: any): VoicePrefs {
@@ -173,6 +188,13 @@ function readPrefs(voiceProfile: any): VoicePrefs {
     if (Object.keys(mix).length) out.story_mix = mix;
   }
   if (typeof o.anti_ai === "boolean") out.anti_ai = o.anti_ai;
+  for (const k of ["rhythm", "structure", "opener", "closer"] as const) {
+    const v = String(o[k] ?? "").trim();
+    if (v) (out as Record<string, unknown>)[k] = v;
+  }
+  if (o.language_mode === "en" || o.language_mode === "ar" || o.language_mode === "mixed") {
+    out.language_mode = o.language_mode;
+  }
   if (Array.isArray(o.banned_phrases)) {
     const list = o.banned_phrases.map((x) => String(x ?? "").trim()).filter(Boolean);
     if (list.length) out.banned_phrases = list;
@@ -281,6 +303,54 @@ function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string 
     lines.push(ar
       ? `الافتتاحية — إلزامي: يجب أن يفتتح المنشور بإحدى هذه الطرق: ${named}. لهذا المنشور تحديداً: ${humanOpening(String(pick), true)}.`
       : `OPENING — hard rule: the post must open in one of these styles: ${named}. For THIS post: ${humanOpening(String(pick), false)}.`);
+  }
+
+  // RHYTHM · STRUCTURE · OPENER · CLOSER · LANGUAGE MODE — the five choices the
+  // Voice screen has always saved and the writer never read. Each is a
+  // guidance line, not a shape override: rotation still decides the shape.
+  const RHYTHM: Record<string, [string, string]> = {
+    clipped: ["Short sentences. One idea each. Full stops over commas.", "جمل قصيرة. فكرة واحدة في كل جملة. النقطة قبل الفاصلة."],
+    balanced: ["Mixed sentence lengths — a long line, then a short one that lands it.", "طول متنوع للجمل — سطر طويل يتبعه سطر قصير يحسم المعنى."],
+    flowing: ["Longer connected sentences that carry the thought through.", "جمل أطول ومتصلة تحمل الفكرة إلى نهايتها."],
+  };
+  const STRUCTURE: Record<string, [string, string]> = {
+    tension_insight: ["Order: name the tension, then the insight that resolves it.", "الترتيب: اذكر التوتر أولاً، ثم البصيرة التي تحلّه."],
+    claim_three_proofs: ["Order: one claim, then three concrete proofs.", "الترتيب: ادّعاء واحد، ثم ثلاثة إثباتات ملموسة."],
+    story_lesson: ["Order: a short scene first, the lesson last.", "الترتيب: مشهد قصير أولاً، والدرس في النهاية."],
+  };
+  const OPENER: Record<string, [string, string]> = {
+    claim: ["Open on a claim a peer would argue with.", "افتح بادّعاء قد يعارضه نظير في المجال."],
+    number: ["Open on a specific number.", "افتح برقم محدد."],
+    story: ["Open on one short concrete scene.", "افتح بمشهد واحد قصير وملموس."],
+    question: ["Open on an uncomfortable question.", "افتح بسؤال غير مريح."],
+  };
+  const CLOSER: Record<string, [string, string]> = {
+    question: ["Close on an uncomfortable question.", "اختم بسؤال غير مريح."],
+    suspended: ["Close on a suspended line that stops rather than concludes.", "اختم بسطر معلّق يتوقف ولا يستنتج."],
+    reframe: ["Close by reframing what the post was really about.", "اختم بإعادة تأطير لما كان المنشور عنه فعلاً."],
+    equation: ["Close on a plain equation of the parts that matter.", "اختم بمعادلة بسيطة للعناصر المهمة."],
+  };
+  const prefLine = (table: Record<string, [string, string]>, key: string | undefined, en: string, arLabel: string) => {
+    const hit = key ? table[key] : undefined;
+    if (!hit) return;
+    lines.push(ar ? `${arLabel}: ${hit[1]}` : `${en}: ${hit[0]}`);
+  };
+  prefLine(RHYTHM, prefs.rhythm, "RHYTHM", "الإيقاع");
+  prefLine(STRUCTURE, prefs.structure, "STRUCTURE", "البناء");
+  prefLine(OPENER, prefs.opener, "OPENER", "الافتتاحية المختارة");
+  prefLine(CLOSER, prefs.closer, "CLOSER", "الخاتمة المختارة");
+  if (prefs.language_mode === "mixed") {
+    lines.push(ar
+      ? "اللغة — الكاتب يكتب بمزيج: يمكن أن يظهر مصطلح إنجليزي واحد أو اثنان حيث يستخدمهما فعلاً، والباقي عربي."
+      : "LANGUAGE — this writer mixes: one or two Arabic terms may appear where they genuinely use them, the rest English.");
+  } else if (prefs.language_mode === "en") {
+    lines.push(ar
+      ? "اللغة — الكاتب إنجليزي أصلاً: حافظ على مصطلحاته الإنجليزية كما هي."
+      : "LANGUAGE — English throughout. No second-language garnish.");
+  } else if (prefs.language_mode === "ar") {
+    lines.push(ar
+      ? "اللغة — عربية بالكامل: لا كلمات إنجليزية إطلاقاً."
+      : "LANGUAGE — the writer works in Arabic; keep English out of the finished post except for proper names.");
   }
 
   if (prefs.story_mix) {
@@ -650,11 +720,37 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
           .eq("made_by", "aura")
           .neq("status", "discarded")
           .order("created_at", { ascending: false })
-          .limit(5);
+          // Ten, because the distribution check measures a RUN of drafts, not
+          // the last one. Rotation still reads only the five most recent.
+          .limit(10);
         recentDrafts = (recentRows || []) as any[];
       } catch (_e) {
         // A history read must never cost a member their draft.
       }
+      /** The last ten drafts as text — the window the fidelity ceilings run on. */
+      const recentBodies: string[] = recentDrafts
+        .map((r) => String(r.body ?? ""))
+        .filter((t) => t.trim().length > 0);
+
+      /**
+       * HOW THIS MEMBER ACTUALLY WRITES. Rung 1 of the precedence ladder in
+       * `contentDNA.ts`: shares measured from their own posts, which no run of
+       * drafts may exceed by more than twenty points. Absent, or fewer than
+       * eight own posts, and nothing here can reject a draft.
+       */
+      let voiceDist: Distribution | null = null;
+      try {
+        const { data: distRow } = await supabase
+          .from("voice_distribution")
+          .select("corpus_n, open_type_share, land_type_share, move_share, marker_rate, length_p25, length_p50, length_p75")
+          .eq("user_id", effectiveUserId)
+          .eq("language", effectiveLanguage === "ar" ? "ar" : "en")
+          .maybeSingle();
+        voiceDist = (distRow as any) ?? null;
+      } catch (_e) {
+        // Same rule: a measurement read never costs a member their draft.
+      }
+
 
       /**
        * SIBLING AWARENESS — a batch that writes three drafts in a loop makes
@@ -672,13 +768,14 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
        * this one array, so the three levels can never disagree about what "the
        * last two drafts" were.
        */
-      const historyShapes: PastShape[] = recentDrafts.map((r) => ({
+      const historyShapes: PastShape[] = recentDrafts.slice(0, 5).map((r) => ({
         move_id: r.move_id ?? null,
         beats: Array.isArray(r.beats) ? r.beats : null,
         hook_style: r.hook_style ?? null,
         ending_type: r.ending_type ?? null,
         opening: r.body ?? null,
       }));
+
       const pastShapes: PastShape[] = [
         ...siblingShapes.map((s) => ({
           move_id: s?.move_id ?? null,
@@ -751,6 +848,15 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         return "\n\n" + (effectiveLanguage === "ar" ? "منع التكرار:" : "NO-REPEAT:") + " " + bits.join(" ");
       })();
 
+      /**
+       * The member's real proportions, stated to the model BEFORE it writes.
+       * Prevention is cheaper than a regeneration — the ceiling below is what
+       * happens when this is ignored.
+       */
+      const distributionBlock = distributionPromptBlock(voiceDist, effectiveLanguage === "ar");
+
+
+
 
       // Language + voice handling
       let voiceSection: string;
@@ -782,7 +888,7 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       } else {
         voiceSection = buildVoiceContext(voiceProfile, chosenOpening);
       }
-      voiceSection += recentPatternBlock;
+      voiceSection += recentPatternBlock + distributionBlock;
       // Only rules the member wrote or explicitly accepted. A suggested rule
       // is a proposal and must never reach the model.
       const activeRules = effectiveUserId ? await loadActiveMemberRules(supabase, effectiveUserId) : [];
@@ -1247,75 +1353,134 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       // repeats too, the draft still ships — a member is never blocked — but it
       // ships FLAGGED (`shape_repeat`) and logged at `high`, never silently.
       let rotationRepeat: string | null = null;
+      /** Why a shipped draft drifted from the member's own proportions. */
+      let voiceFidelityFlags: string[] = [];
+      /** 0–100. Null when the member has no distribution to be measured against. */
+      let voiceMatch: number | null = null;
       {
-        const repeatOf = (text: string): string | null => {
-          if (opensOnBannedWord(text)) {
-            return "opens_on_banned_word";
-          }
-          const six = firstSixWords(text);
-          if (six && avoidOpeningTexts.some((prev) => firstSixWords(prev) === six)) {
-            return `same_first_six_words:"${six}"`;
-          }
-          // L1 — the MOVE this post was written as must not be one of the last two.
-          if (avoidMoves.includes(moveId)) {
-            return `repeated_move:${moveId}`;
-          }
-          // L2 — and it must not march in the same order as the previous draft.
-          if (sameBeats(beatsForThisPost, previousBeats)) {
-            return `repeated_beats:${beatsForThisPost.join(">")}`;
-          }
-          const producedOpen = openTypeOfHook(hookStyleOf(text));
-          if (producedOpen && avoidOpenTypes.includes(producedOpen)) {
-            return `repeated_open_type:${producedOpen}`;
-          }
-          const producedLand = landTypeOfEnding(endingTypeOf(text));
-          if (producedLand && avoidLandTypes.slice(0, 1).includes(producedLand)) {
-            return `repeated_land_type:${producedLand}`;
-          }
-          return null;
+        /**
+         * THE ONE WRITE-TIME SHAPE CHECK. Rotation repetition and distribution
+         * drift are the same question — "is this draft the shape it was
+         * supposed to be?" — so they are ONE function with ONE regeneration.
+         * A second, separate gate would be a second opinion, and two gates that
+         * disagree is how a member ends up with a draft neither of them wanted.
+         */
+        const verdictOf = (text: string) => {
+          const rotation = ((): string | null => {
+            if (opensOnBannedWord(text)) {
+              return "opens_on_banned_word";
+            }
+            const six = firstSixWords(text);
+            if (six && avoidOpeningTexts.some((prev) => firstSixWords(prev) === six)) {
+              return `same_first_six_words:"${six}"`;
+            }
+            // L1 — the MOVE this post was written as must not be one of the last two.
+            if (avoidMoves.includes(moveId)) {
+              return `repeated_move:${moveId}`;
+            }
+            // L2 — and it must not march in the same order as the previous draft.
+            if (sameBeats(beatsForThisPost, previousBeats)) {
+              return `repeated_beats:${beatsForThisPost.join(">")}`;
+            }
+            const producedOpen = openTypeOfHook(hookStyleOf(text));
+            if (producedOpen && avoidOpenTypes.includes(producedOpen)) {
+              return `repeated_open_type:${producedOpen}`;
+            }
+            const producedLand = landTypeOfEnding(endingTypeOf(text));
+            if (producedLand && avoidLandTypes.slice(0, 1).includes(producedLand)) {
+              return `repeated_land_type:${producedLand}`;
+            }
+            return null;
+          })();
+          // Rung 1 of the ladder: the member's own ceilings. Habits being
+          // DROPPED come back as an instruction, never as a rejection.
+          const fidelity = fidelityCheck({
+            dist: voiceDist,
+            recent: recentBodies,
+            candidate: text,
+            lang: isAr ? "ar" : "en",
+          });
+          return {
+            rotation,
+            fidelity,
+            failed: Boolean(rotation) || !fidelity.ok,
+            reasons: [rotation, ...fidelity.violations].filter(Boolean) as string[],
+          };
         };
 
-        const firstRepeat = repeatOf(content);
-        if (firstRepeat) {
+        const first = verdictOf(content);
+        // A draft that passes still carries the voice note, so the score below
+        // reflects the check that actually ran.
+        const scoreOf = (v: ReturnType<typeof verdictOf>) =>
+          v.fidelity.reason === "no_distribution"
+            ? null
+            : Math.max(0, 100 - 25 * v.fidelity.violations.length - (v.rotation ? 25 : 0));
+        voiceMatch = scoreOf(first);
+
+        if (first.failed) {
           const avoidWords = [...new Set(avoidOpeningTexts.map(firstSixWords).filter(Boolean))].slice(0, 5);
           const moveLabel = isAr ? MOVES[moveId].label_ar : MOVES[moveId].label_en;
-          const rotDirective = isAr
-            ? `\n\nإعادة كتابة إلزامية — الشكل مكرر (${firstRepeat}).\n- نوع المنشور المطلوب: ${moveLabel}، بترتيب الحركات: ${beatsForThisPost.join(" ← ")}.\n- ابدأ البوست بنوع افتتاح "${openType}" كما هو محدد أعلاه.\n- لا تبدأ بكلمة "معظم" ولا بأي من هذه الكلمات: ${avoidWords.map((w) => `"${w}"`).join("، ")}.\n- غيّر الكلمات الست الأولى تماماً. أبقِ الجوهر والأدلة كما هي.`
-            : `\n\nMANDATORY REWRITE — the shape repeats a recent draft (${firstRepeat}).\n- The kind of post required: ${moveLabel}, in this beat order: ${beatsForThisPost.join(" → ")}.\n- Open in the "${openType}" OPEN type named above, and close in the "${landType}" LAND type.\n- Do not begin with the word "Most", and not with any of these: ${avoidWords.map((w) => `"${w}"`).join(", ")}.\n- Change the first six words entirely. Keep the substance and the evidence.`;
-          const rotRaw = await callModel(rotDirective);
+          const rotBit = first.rotation
+            ? (isAr
+              ? `\n\nإعادة كتابة إلزامية — الشكل مكرر (${first.rotation}).\n- نوع المنشور المطلوب: ${moveLabel}، بترتيب الحركات: ${beatsForThisPost.join(" ← ")}.\n- ابدأ البوست بنوع افتتاح "${openType}" كما هو محدد أعلاه.\n- لا تبدأ بكلمة "معظم" ولا بأي من هذه الكلمات: ${avoidWords.map((w) => `"${w}"`).join("، ")}.\n- غيّر الكلمات الست الأولى تماماً. أبقِ الجوهر والأدلة كما هي.`
+              : `\n\nMANDATORY REWRITE — the shape repeats a recent draft (${first.rotation}).\n- The kind of post required: ${moveLabel}, in this beat order: ${beatsForThisPost.join(" → ")}.\n- Open in the "${openType}" OPEN type named above, and close in the "${landType}" LAND type.\n- Do not begin with the word "Most", and not with any of these: ${avoidWords.map((w) => `"${w}"`).join(", ")}.\n- Change the first six words entirely. Keep the substance and the evidence.`)
+            : "";
+          if (first.fidelity.violations.length) {
+            console.warn(
+              "[generate-authority-content] voice fidelity —",
+              `violations: ${first.fidelity.violations.join(" | ")};`,
+              `running: ${JSON.stringify(first.fidelity.running)}`,
+            );
+          }
+          // ONE regeneration, carrying both corrections at once.
+          const rotRaw = await callModel(rotBit + first.fidelity.directive);
           const rotCand = rotRaw ? hygiene(stripLabels(stripLeadingScaffold(rotRaw))) : "";
-          const secondRepeat = rotCand ? repeatOf(rotCand) : "regenerate_failed";
-          if (rotCand && !secondRepeat) {
+          const second = rotCand ? verdictOf(rotCand) : null;
+          if (rotCand && second && !second.failed) {
             content = rotCand;
+            voiceMatch = scoreOf(second);
           } else {
+            // Never blocked, never silent: the better of the two ships FLAGGED.
             if (rotCand) content = rotCand;
-            rotationRepeat = secondRepeat || firstRepeat;
-            warnings.push("rotation_repeat");
+            const final = second ?? first;
+            voiceMatch = rotCand ? scoreOf(final) : voiceMatch;
+            if (final.rotation) {
+              rotationRepeat = final.rotation;
+              warnings.push("rotation_repeat");
+            }
+            if (final.fidelity.violations.length) {
+              voiceFidelityFlags = final.fidelity.violations;
+              warnings.push("voice_fidelity_drift");
+            }
             try {
               const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
               await admin.from("ef_error_log").insert({
                 function_name: "generate-authority-content",
                 severity: "high",
-                error_message: `ROTATION_REPEAT ${rotationRepeat} user=${effectiveUserId}`,
+                error_message: `SHAPE_CHECK ${(final.reasons.join(",") || "regenerate_failed")} user=${effectiveUserId}`,
                 context: {
-                  stage: "rotation_enforcement",
+                  stage: "shape_enforcement",
                   user_id: effectiveUserId,
                   move_id: moveId,
                   beats: beatsForThisPost,
                   open_type: openType,
                   land_type: landType,
                   basis: shape.basis,
-                  first_repeat: firstRepeat,
-                  after_retry: secondRepeat,
+                  first_reasons: first.reasons,
+                  after_retry: second ? second.reasons : ["regenerate_failed"],
+                  running_shares: final.fidelity.running,
+                  corpus_n: voiceDist?.corpus_n ?? null,
+                  enforced: (voiceDist?.corpus_n ?? 0) >= MIN_DIST_CORPUS,
                   first_six_words: firstSixWords(content),
                 },
               });
             } catch (e) {
-              console.error("[generate-authority-content] rotation log failed:", (e as Error).message);
+              console.error("[generate-authority-content] shape log failed:", (e as Error).message);
             }
           }
         }
       }
+
 
 
 
@@ -1467,6 +1632,13 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         land_type: landType,
         collapsed: collapseThisPost,
         rotation_repeat: rotationRepeat,
+        // Does this sound like the member? 0–100, null when they have fewer
+        // than eight of their own posts to be measured against.
+        voice_match: voiceMatch,
+        // Set only when a draft shipped despite drifting — never silent.
+        voice_fidelity_flags: voiceFidelityFlags.length ? voiceFidelityFlags : null,
+        voice_distribution_corpus_n: voiceDist?.corpus_n ?? null,
+
 
         opening_words: firstSixWords(content),
         unsourced_numbers_removed: unsourcedRemoved,

@@ -877,6 +877,8 @@ export type Database = {
           type: string
           updated_at: string
           user_id: string
+          voice_fidelity_flags: string[] | null
+          voice_match: number | null
         }
         Insert: {
           arrived_by?: string
@@ -901,6 +903,8 @@ export type Database = {
           type: string
           updated_at?: string
           user_id: string
+          voice_fidelity_flags?: string[] | null
+          voice_match?: number | null
         }
         Update: {
           arrived_by?: string
@@ -925,6 +929,8 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id?: string
+          voice_fidelity_flags?: string[] | null
+          voice_match?: number | null
         }
         Relationships: [
           {
@@ -5135,6 +5141,57 @@ export type Database = {
         }
         Update: {
           layout?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      voice_distribution: {
+        Row: {
+          computed_at: string
+          corpus_n: number
+          created_at: string
+          id: string
+          land_type_share: Json | null
+          language: string
+          length_p25: number | null
+          length_p50: number | null
+          length_p75: number | null
+          marker_rate: Json | null
+          move_share: Json | null
+          open_type_share: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          computed_at?: string
+          corpus_n?: number
+          created_at?: string
+          id?: string
+          land_type_share?: Json | null
+          language: string
+          length_p25?: number | null
+          length_p50?: number | null
+          length_p75?: number | null
+          marker_rate?: Json | null
+          move_share?: Json | null
+          open_type_share?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          computed_at?: string
+          corpus_n?: number
+          created_at?: string
+          id?: string
+          land_type_share?: Json | null
+          language?: string
+          length_p25?: number | null
+          length_p50?: number | null
+          length_p75?: number | null
+          marker_rate?: Json | null
+          move_share?: Json | null
+          open_type_share?: Json | null
           updated_at?: string
           user_id?: string
         }
