@@ -6490,7 +6490,7 @@ export type Database = {
         Returns: boolean
       }
       home_record_themes: {
-        Args: { p_from: string; p_to: string; p_uid?: string }
+        Args: { p_from: string; p_to: string; p_tz?: string; p_uid?: string }
         Returns: {
           created_at: string
           id: string

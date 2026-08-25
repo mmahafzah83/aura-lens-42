@@ -586,7 +586,7 @@ export const RecordLens: React.FC<RecordLensProps> = ({
         </div>
         {t.publishedReturned < t.publishedTotal && (
           <Muted style={{ fontSize: 12.5 }}>
-            Showing your most recent {t.publishedReturned} posts.
+            Showing your most recent {nPosts(t.publishedReturned, "en")}.
           </Muted>
         )}
       </div>

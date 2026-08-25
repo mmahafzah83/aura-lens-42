@@ -56,6 +56,9 @@ const NOUNS_EN = [
   "capture", "captures",
   "evidence",
   "signal", "signals",
+  "draft", "drafts",
+  "post", "posts",
+  "page", "pages",
 ];
 
 /** The same nouns in Arabic, in the forms the number-agreement ladder produces. */
@@ -65,7 +68,11 @@ const NOUNS_AR = [
   "التقاطات", "التقاطاً", "التقاطا", "التقاطان", "التقاط",
   "إشارات", "إشارة", "إشارتان",
   "أدلة", "الأدلة",
+  "مسودات", "مسودتان", "مسودة",
+  "منشورات", "منشوراً", "منشورا", "منشوران", "منشور",
+  "صفحات", "صفحتان", "صفحة",
 ];
+
 
 const AR_LETTER = "\\u0600-\\u06FF";
 /** One boundary-safe alternation covering both scripts. */
@@ -95,7 +102,7 @@ const JSX_PATTERN = new RegExp(
 /** A call that already goes through the dictionary is the CORRECT shape —
  *  `{nSources(n, lang)} behind this signal` is what the gate is asking for. Its
  *  SPAN is blanked out; the rest of the line is still scanned. */
-const DICTIONARY_CALL = /\b(?:nSources|nCaptures|nEvidence|nSignals|evidenceAndSources|sourceCount(?:En|Ar)|captureCount(?:En|Ar)|evidenceCount(?:En|Ar)|signalCount(?:En|Ar)|cardCounts)\s*\((?:[^()]|\([^()]*\))*\)/g;
+const DICTIONARY_CALL = /\b(?:nSources|nCaptures|nEvidence|nSignals|nPages|nDrafts|nPosts|evidenceAndSources|sourceCount(?:En|Ar)|captureCount(?:En|Ar)|evidenceCount(?:En|Ar)|signalCount(?:En|Ar)|cardCounts)\s*\((?:[^()]|\([^()]*\))*\)/g;
 
 /** Replace every dictionary call with spaces, preserving offsets. */
 function blankDictionaryCalls(line) {
@@ -173,9 +180,8 @@ const EXEMPT = [
  * hit that must be migrated when Round 2B lands.
  */
 const ROUND_2B = [
-  // TODO round-2b
-  "src/components/home/",
-  "src/hooks/useHomeAddress.ts",
+  // TODO round-2b — home/ and useHomeAddress.ts are MIGRATED and no longer
+  // deferred; the gate now polices them for real.
   "src/components/momentum/",
   "src/pages/Onboarding.tsx",
   "src/components/onboarding/",
@@ -202,6 +208,16 @@ const LATER_ROUNDS = [
   "src/pages/LandingV2.tsx",
   "src/pages/TrendDetail.tsx",
   "src/utils/",
+  // Surfaced by the three NEW nouns (draft / post / page) added this round.
+  // Every one is a real hit in a surface outside Home — voice, settings, market,
+  // widgets, import. Reported every run, migrated in a later round.
+  "src/components/settings/",
+  "src/components/voice/",
+  "src/components/widgets/",
+  "src/components/tabs/",
+  "src/lib/",
+  "src/pages/Assessment.tsx",
+  "src/pages/LinkedInImport.tsx",
 ];
 
 /** Single-file surfaces outside this round (flat components directory). */
@@ -212,7 +228,11 @@ const LATER_FILES = [
   "LinkedInProfileAnalyzer.tsx", "MilestonesSection.tsx", "ReportDocument.tsx",
   "SignalExplorer.tsx", "SignalGraph.tsx", "SignalsRadar.tsx",
   "StrategicEvolutionMap.tsx", "TierCeremonyModal.tsx", "AuditResultsView.tsx",
+  // draft / post / page nouns, out of this round:
+  "DocumentUpload.tsx", "LinkedInDraftPanel.tsx", "LinkedInImportCard.tsx",
+  "VoiceEngineSection.tsx",
 ].map((f) => LATER_FILES_PREFIX + f);
+
 
 const SKIP_DIRS = new Set(["__tests__", "__fixtures__", "node_modules"]);
 

@@ -4,7 +4,7 @@ import type { HomeFacts, HomeMove } from "@/hooks/useHomeAddress";
 import { WIDGET_DEFS } from "@/components/widgets/widgetData";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import { WidgetBody } from "@/components/widgets/WidgetCards";
-import { nSignals, nEvidence, nPages, nDrafts, velocityWord } from "@/constants/vocabulary";
+import { nSignals, nEvidence, nPages, nDrafts, CAPTURE, velocityWord } from "@/constants/vocabulary";
 import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
 export type ShelfKey = "moves" | "stand" | "own" | "night" | "widgets";
@@ -50,7 +50,7 @@ export function buildShelf(
       // `signals_active` — rows in `strategic_signals`. The dictionary owns the noun.
       fact: themes > 0
         ? `${nSignals(themes, "en")} live`
-        : "No signals yet. They form once you have captured a handful of things.",
+        : `No signals yet. They form once you have a handful of ${CAPTURE.nounPlural}.`,
     },
     {
       key: "night",
@@ -66,8 +66,9 @@ export function buildShelf(
     {
       key: "widgets",
       title: "Your widgets",
+      // `drafts_total` — draft rows. The dictionary owns that noun too.
       fact: widgetsOn > 0
-        ? `${widgetsOn} number${widgetsOn === 1 ? "" : "s"} on the shelf${drafts ? ` · ${drafts} draft${drafts === 1 ? "" : "s"} waiting` : ""}`
+        ? `${widgetsOn} number${widgetsOn === 1 ? "" : "s"} on the shelf${drafts ? ` · ${nDrafts(drafts, "en")} waiting` : ""}`
         : "Nothing pinned yet. Choose the numbers you want to watch.",
     },
   ];
@@ -174,7 +175,7 @@ export const OwnCard: React.FC<{
       {!loading && !failed && themes.length === 0 && (
         <div style={{ padding: "12px 20px", display: "grid", gap: 6 }}>
           <Body>No signals yet.</Body>
-          <Muted>A signal forms when several things you capture point the same way.</Muted>
+          <Muted>A signal forms when several captures point the same way.</Muted>
         </div>
       )}
       {themes.map((t) => (

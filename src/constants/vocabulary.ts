@@ -12,6 +12,12 @@
  *   page / pages              صفحة     rows in `agent_findings` — pages AURA went
  *                                      and read overnight. NOT the member's own
  *                                      sources, NOT captures, NEVER "reading(s)".
+ *   draft / drafts            مسودة    draft rows in `linkedin_posts` /
+ *                                      `content_items` — text Aura wrote that the
+ *                                      member has not published.
+ *   post / posts              منشور    rows in `post_provenance` — what the member
+ *                                      actually published.
+
 
  *
  * Chain: entries (1) → source_registry (1) → evidence_fragments (many) → backs a signal.
