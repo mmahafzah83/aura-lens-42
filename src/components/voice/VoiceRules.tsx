@@ -353,7 +353,7 @@ export default function VoiceRules({
               disabled={busy || !draft.trim()}
               onClick={() => { onAdd(open, draft.trim()); setDraft(""); }}
             >
-              Add rule
+              Add
             </button>
           </div>
         </div>

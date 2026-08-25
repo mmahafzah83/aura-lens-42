@@ -447,7 +447,16 @@ export default function YourVoice({
         onAdd={(kind, text) => {
           if (!userId) return;
           const rank = dna.rules.filter((r) => r.kind === kind).length;
-          void mutate(dna, () => addRule(userId, dna.activeProfileId, kind, text, rank));
+          const optimistic: DnaRule = {
+            id: `pending-${crypto.randomUUID()}`,
+            kind,
+            text,
+            source: "user",
+            status: "active",
+            rank,
+            times_applied: 0,
+          };
+          void mutate({ ...dna, rules: [...dna.rules, optimistic] }, () => addRule(userId, dna.activeProfileId, kind, text, rank));
         }}
         onEdit={(id, text) => void mutate(
           { ...dna, rules: dna.rules.map((r) => (r.id === id ? { ...r, text } : r)) },
