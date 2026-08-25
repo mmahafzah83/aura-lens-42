@@ -204,7 +204,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
               Built by Aura from your captures, assessments, and signals.
             </p>
             <p className="text-xs text-muted-foreground">
-              These shape your content and voice. Publish on your themes using the suggestions below.
+              These shape your content and voice. Publish on the work you keep returning to using the suggestions below.
             </p>
             {level && (
               <p className="text-xs text-muted-foreground">
@@ -335,12 +335,12 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
             </div>
           )}
 
-          {/* Generated timestamp */}
-          {identity.generated_at && (
-            <p className="text-xs text-muted-foreground text-right">
-              Last analyzed: {new Date(identity.generated_at).toLocaleDateString()}
-            </p>
-          )}
+          {/* Generated timestamp — never undated: if no date was stored, say so. */}
+          <p className="text-xs text-muted-foreground text-right">
+            {identity.generated_at
+              ? `Last analyzed: ${new Date(identity.generated_at).toLocaleDateString()}`
+              : "Last analyzed: no date was recorded for this reading."}
+          </p>
         </div>
       )}
     </div>

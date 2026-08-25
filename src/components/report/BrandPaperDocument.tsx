@@ -438,7 +438,7 @@ function SpaceSheet({ bp, n, total }: { bp: BrandPaper; n: number; total: number
         {topics.length > 0 ? (
           <div style={{ marginTop: 28 }}>
             <MonoLabel color={T.spot} size={11}>
-              {`Your ${spellCount(Math.min(topics.length, 3)).toLowerCase()} ${topics.length === 1 ? "topic" : "topics"}`}
+              {"What you write about"}
             </MonoLabel>
             <div style={{ marginTop: 10, borderBottom: `1px solid ${T.rule}` }}>
               {topics.slice(0, 3).map((t, i) => (

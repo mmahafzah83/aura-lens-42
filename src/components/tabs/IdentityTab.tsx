@@ -1140,7 +1140,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <div>
           <SectionHeader label="Profile intelligence" />
           <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
-            What Aura has noticed about you lately, and topics ready when you are.
+            What Aura has noticed about you lately, and the work you keep returning to, ready when you are.
           </p>
         </div>
       )}
@@ -1368,6 +1368,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <BrandReportSection
           results={profile?.brand_assessment_results}
           hasAssessment={!!profile?.brand_assessment_completed_at}
+          assessedAt={profile?.brand_assessment_completed_at}
           onCompleteAssessment={() => setBrandOpen(true)}
         />
 
@@ -1407,9 +1408,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         />
       )}
 
-      <ErrorBoundary>
-        <ReadShape />
-      </ErrorBoundary>
+      {pane === "appear" && (
+        <ErrorBoundary>
+          <ReadShape />
+        </ErrorBoundary>
+      )}
     </div>
   );
 };

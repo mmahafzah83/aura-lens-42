@@ -614,7 +614,7 @@ export default function HowYouAppear({ userId }: { userId: string | null }) {
         <section id="how-you-appear-gap" style={cardStyle}>
           <SectionHeader label="WHAT YOU WRITE ABOUT VS WHAT YOUR PROFILE SAYS" />
           <p style={{ fontSize: 13.5, color: INK, margin: "0 0 12px", lineHeight: 1.6 }}>
-            You write about <span style={dashStyle}>{totalThemes}</span> recurring subjects. Your profile carries{" "}
+            You write about <span style={dashStyle}>{totalThemes}</span> strands of the work you keep returning to. Your profile carries{" "}
             <span style={dashStyle}>{carriedOfShown}</span> of the <span style={dashStyle}>{shown}</span> biggest
             {partialOfShown > 0 ? (
               <> and half-carries <span style={dashStyle}>{partialOfShown}</span></>

@@ -155,11 +155,17 @@ const BANNED_PHRASES = [
   "authority",
   "personal brand",
   "trajectory",
+  // Prose-level bans — a list of the member's recurring work is never called
+  // these, with or without a number beside it.
+  "subjects",
+  "topics",
+  "themes",
 ];
 const BANNED_RE = new RegExp(`\\b(?:${BANNED_PHRASES.join("|")})\\b`, "i");
 const BANNED_ENFORCED = [
   "src/components/voice/",
   "src/components/studio/",
+  "src/components/identity/",
   "src/lib/voiceDna.ts",
   "src/lib/voiceOverview.ts",
 ];
@@ -332,7 +338,6 @@ const LATER_ROUNDS = [
   "src/components/admin/",
   "src/components/analytics/",
   "src/components/ask/",
-  "src/components/identity/",
   "src/components/influence/",
   "src/components/rail/",
   "src/components/report/",

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { nSignals } from "@/constants/vocabulary";
 
 interface ThemeDatum { theme: string; count: number; }
 interface Props { themes: ThemeDatum[]; }
@@ -72,7 +73,7 @@ export default function TerritoryMap({ themes }: Props) {
               key={i}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
-              title={`${b.label} · ${b.count} signal${b.count === 1 ? "" : "s"}`}
+              title={`${b.label} · ${nSignals(b.count, "en")}`}
               style={{
                 position: "absolute",
                 left: b.pos.x - b.r,

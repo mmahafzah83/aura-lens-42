@@ -182,7 +182,7 @@ const OurStory = () => {
         </p>
 
         <p style={body}>
-          It holds up a mirror — reading your work back to you and naming what is yours: your themes, your strengths, the outline of you the years had blurred.
+          It holds up a mirror — reading your work back to you and naming what is yours: the work you keep returning to, your strengths, the outline of you the years had blurred.
         </p>
 
         <p style={body}>
