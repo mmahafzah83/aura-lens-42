@@ -339,7 +339,7 @@ serve(withObserve("lifecycle-emails", async (req) => {
       .maybeSingle();
     if (!existing) {
       const list = founderDigest
-        .map(x => `<li style="margin:4px 0;color:${INK_SOFT};">${escapeHtml(x.email)} — ${countNoun(x.captures, "capture")}: ${x.captures}, 0 signals</li>`)
+        .map(x => `<li style="margin:4px 0;color:${INK_SOFT};">${escapeHtml(x.email)} — ${x.captures} ${countNoun(x.captures, "capture")}, 0 signals</li>`)
         .join("");
       const body = `
         <p style="font-family:${BODY};font-size:15px;color:${INK};margin:0 0 12px;">Pipeline smell — S4 users (captures ≥ 3, signals = 0):</p>

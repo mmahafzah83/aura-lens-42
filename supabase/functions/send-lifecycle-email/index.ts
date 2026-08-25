@@ -403,11 +403,17 @@ serve(withObserve("send-lifecycle-email", async (req) => {
 
     // Posts confirmed on LinkedIn in last 30 days (via LinkedIn sync)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const { count: publishedCount } = await admin
+    // POSTS, not metric rows: linkedin_post_metrics holds one row per snapshot
+    // per post, so a raw count says "twelve posts" when there are three.
+    const { data: metricRows } = await admin
       .from("linkedin_post_metrics")
-      .select("id", { count: "exact", head: true })
+      .select("post_id")
       .eq("user_id", user_id)
-      .gte("snapshot_date", thirtyDaysAgo);
+      .gte("snapshot_date", thirtyDaysAgo)
+      .limit(5000);
+    const publishedCount = new Set(
+      (metricRows ?? []).map((r: any) => r.post_id).filter(Boolean),
+    ).size;
 
     // Recent trend (last 7 days, not dismissed, top by final_score)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
