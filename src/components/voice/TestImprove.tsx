@@ -515,7 +515,7 @@ export default function TestImprove({ userId, onWrite, onNavigate, modelOverride
 
       {/* ── PART E — variation, referenced not repeated ─────────────────── */}
       {summary && (
-        <Collapsible title="How you start a post">
+        <Collapsible title="How you open a post">
           <p style={{ fontSize: TYPE.body, color: INK, lineHeight: 1.65, marginBlock: "0 10px" }}>{summary}</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <button

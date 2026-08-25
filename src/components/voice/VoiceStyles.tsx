@@ -78,6 +78,15 @@ export default function VoiceStyles() {
         .ta-row { grid-template-columns: 1fr; gap: 6px; }
       }
 
+      /* Opener and closer rows. The label truncates rather than pushing the
+         row wider than the card; below 420px the row stacks. */
+      .ve-row { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+      .ve-tail { display: flex; align-items: center; gap: 10px; justify-content: flex-end; flex-wrap: wrap; min-inline-size: 0; }
+      @media (max-width: 420px) {
+        .ve-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+        .ve-tail { justify-content: flex-start; }
+      }
+
       .night-line { border-color: ${NIGHT_LINE}; }
 
       @keyframes auraBlink { 0%, 100% { opacity: 1 } 50% { opacity: .25 } }
