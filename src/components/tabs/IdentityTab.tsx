@@ -1365,27 +1365,33 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <p style={PANE_SUBLINE}>Everything here is yours to download or send.</p>
         </div>
 
-        <BrandReportSection
-          results={profile?.brand_assessment_results}
-          hasAssessment={!!profile?.brand_assessment_completed_at}
-          assessedAt={profile?.brand_assessment_completed_at}
-          onCompleteAssessment={() => setBrandOpen(true)}
-        />
-
-        {profile?.brand_assessment_completed_at ? (
-          <ReportVersions
-            firstName={profile?.first_name}
-            lastName={profile?.last_name}
+        <ErrorBoundary>
+          <BrandReportSection
+            results={profile?.brand_assessment_results}
+            hasAssessment={!!profile?.brand_assessment_completed_at}
+            assessedAt={profile?.brand_assessment_completed_at}
             onCompleteAssessment={() => setBrandOpen(true)}
           />
+        </ErrorBoundary>
+
+        {profile?.brand_assessment_completed_at ? (
+          <ErrorBoundary>
+            <ReportVersions
+              firstName={profile?.first_name}
+              lastName={profile?.last_name}
+              onCompleteAssessment={() => setBrandOpen(true)}
+            />
+          </ErrorBoundary>
         ) : null}
 
-        <AuraCardPanel
-          onNavigateAssessment={() => setBrandOpen(true)}
-          onNavigateAudit={() => setAuditOpen(true)}
-          onNavigatePhoto={() => navigate("/settings?tab=account")}
-          onNavigateSettings={() => { window.location.href = "/settings#location"; }}
-        />
+        <ErrorBoundary>
+          <AuraCardPanel
+            onNavigateAssessment={() => setBrandOpen(true)}
+            onNavigatePhoto={() => navigate("/settings?tab=account")}
+            onNavigateSettings={() => { window.location.href = "/settings#location"; }}
+          />
+        </ErrorBoundary>
+
       </div>
       )}
 
