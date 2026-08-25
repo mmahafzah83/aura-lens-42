@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { nEvidence } from "@/constants/vocabulary";
+import { nEvidence, nSources } from "@/constants/vocabulary";
+import { normaliseText } from "../../supabase/functions/_shared/textMatch";
+
 
 /**
  * useHomeAddress — today's chief-of-staff address.
