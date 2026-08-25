@@ -4,7 +4,7 @@ import type { HomeFacts, HomeMove } from "@/hooks/useHomeAddress";
 import { WIDGET_DEFS } from "@/components/widgets/widgetData";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import { WidgetBody } from "@/components/widgets/WidgetCards";
-import { nSignals, nEvidence, velocityWord } from "@/constants/vocabulary";
+import { nSignals, nEvidence, nPages, nDrafts, velocityWord } from "@/constants/vocabulary";
 import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
 export type ShelfKey = "moves" | "stand" | "own" | "night" | "widgets";
@@ -47,18 +47,22 @@ export function buildShelf(
     {
       key: "own",
       title: "What you own",
+      // `signals_active` — rows in `strategic_signals`. The dictionary owns the noun.
       fact: themes > 0
-        ? `${themes} live ${themes === 1 ? "signal" : "signals"}`
+        ? `${nSignals(themes, "en")} live`
         : "No signals yet. They form once you have captured a handful of things.",
     },
     {
       key: "night",
       title: "While you slept",
+      // Bare numbers said nothing. `sources_read` is `agent_findings` rows —
+      // PAGES Aura read, never the member's sources (Ruling 1).
       fact: ln
-        ? `${ln.sources_read} read · ${ln.drafts_written} written`
+        ? `${nPages(ln.sources_read, "en")} read · ${nDrafts(ln.drafts_written, "en")} written`
         : "Aura has not run for you yet. It reads overnight.",
       machine: true,
     },
+
     {
       key: "widgets",
       title: "Your widgets",
@@ -195,7 +199,13 @@ export const OwnCard: React.FC<{
   </Card>
 );
 
-export const NightCard: React.FC<{ facts: HomeFacts | null; onOpen: () => void }> = ({ facts, onOpen }) => {
+export const NightCard: React.FC<{
+  facts: HomeFacts | null;
+  onOpen: () => void;
+  /** Distinct signals the night's pages actually join to (Ruling 2). Null while
+      unknown; 0 means the line does not render at all. */
+  strengthened?: number | null;
+}> = ({ facts, onOpen, strengthened }) => {
   const ln = facts?.last_night;
   return (
     <Card style={{ padding: 0 }}>
@@ -207,14 +217,19 @@ export const NightCard: React.FC<{ facts: HomeFacts | null; onOpen: () => void }
       <div style={{ padding: "18px 20px", display: "grid", gap: 10 }}>
         {ln ? (
           <>
-            <Body>Read {ln.sources_read} {ln.sources_read === 1 ? "source" : "sources"}.</Body>
-            <Body>Strengthened {nSignals(ln.themes_strengthened, "en")}.</Body>
+            {/* `sources_read` counts `agent_findings` rows: pages Aura read. */}
+            <Body>Read {nPages(ln.sources_read, "en")} overnight.</Body>
+            {/* Only real, openable signals earn this line. No join, no line. */}
+            {!!strengthened && strengthened > 0 && (
+              <Body>Strengthened {nSignals(strengthened, "en")}.</Body>
+            )}
             <Body>
               {ln.drafts_written > 0
-                ? `Wrote ${ln.drafts_written} draft${ln.drafts_written === 1 ? "" : "s"}.`
+                ? `Wrote ${nDrafts(ln.drafts_written, "en")}.`
                 : "Wrote nothing — there was nothing worth writing."}
             </Body>
           </>
+
         ) : (
           <>
             <Body>Aura has not run for you yet.</Body>

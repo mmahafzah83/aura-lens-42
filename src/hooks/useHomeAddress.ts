@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { nEvidence } from "@/constants/vocabulary";
+import { nEvidence, nSources } from "@/constants/vocabulary";
+import { normaliseText } from "../../supabase/functions/_shared/textMatch";
+
 
 /**
  * useHomeAddress — today's chief-of-staff address.
@@ -205,6 +207,63 @@ export function useReadChips(userId: string | null | undefined, facts: HomeFacts
   if (profile && profile.answers > 0) chips.push({ key: "as", label: `${profile.answers} answers` });
   if (profile?.calibrated) chips.push({ key: "cal", label: "Your calibration" });
   if (facts?.fragments_total) chips.push({ key: "fr", label: nEvidence(facts.fragments_total, "en") });
-  if (facts?.distinct_sources) chips.push({ key: "src", label: `${facts.distinct_sources} sources` });
+  // `distinct_sources` is a head count of `source_registry` for this member —
+  // verified in the `home-address` function — so "sources" is the right word and
+  // only needed the dictionary formatter.
+  if (facts?.distinct_sources) chips.push({ key: "src", label: nSources(facts.distinct_sources, "en") });
   return { chips, failed, refresh };
+}
+
+
+// ── Ruling 2: signals the night actually strengthened ──────────────────────
+//
+// `last_night.themes_strengthened` counts distinct theme STRINGS on
+// `agent_findings`; most of them match no signal a member could open. This hook
+// does the real join instead: last 24h of `agent_findings.themes` against the
+// member's `strategic_signals` (`theme_tags` overlap or a title match), matched
+// on the shared normaliser, and counts DISTINCT SIGNALS. Zero means the caller
+// renders nothing — there is no fallback to the raw theme count.
+
+export function useSignalsStrengthened(userId: string | null | undefined): number | null {
+  const [n, setN] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    (async () => {
+      try {
+        const since = new Date(Date.now() - 86_400_000).toISOString();
+        const [{ data: findings, error: fErr }, { data: signals, error: sErr }] = await Promise.all([
+          supabase.from("agent_findings").select("themes")
+            .eq("user_id", userId).gte("created_at", since).limit(500),
+          supabase.from("strategic_signals").select("id, signal_title, theme_tags")
+            .eq("user_id", userId).limit(1000),
+        ]);
+        if (fErr || sErr) throw fErr || sErr;
+
+        const themes = new Set<string>();
+        for (const f of (findings ?? []) as any[]) {
+          for (const t of (f.themes ?? []) as string[]) {
+            const k = normaliseText(String(t));
+            if (k) themes.add(k);
+          }
+        }
+        const hit = new Set<string>();
+        for (const s of (signals ?? []) as any[]) {
+          const keys = [
+            normaliseText(String(s.signal_title ?? "")),
+            ...((s.theme_tags ?? []) as string[]).map((t) => normaliseText(String(t))),
+          ].filter(Boolean);
+          if (keys.some((k) => themes.has(k))) hit.add(s.id);
+        }
+        if (alive) setN(hit.size);
+      } catch (e) {
+        console.warn("[useSignalsStrengthened] join failed", e);
+        if (alive) setN(null);
+      }
+    })();
+    return () => { alive = false; };
+  }, [userId]);
+
+  return n;
 }

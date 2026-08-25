@@ -227,8 +227,15 @@ export const T = {
   hubSignalsEvidence: (n: number, lang: Lang): CountParts =>
     withTail(
       nEvidenceParts(n, lang),
-      lang === "ar" ? " خلف ما رتّبناه لك." : " stand behind what we ranked for you.",
+      // English agrees with the count; the Arabic tail is verb-less and agrees
+      // with all four forms, so it never branches.
+      lang === "ar"
+        ? " خلف ما رتّبناه لك."
+        : n === 1
+        ? " stands behind what we ranked for you."
+        : " stand behind what we ranked for you.",
     ),
+
   hubSignalsEmpty: { en: "Nothing saved behind your subjects yet.", ar: "لا مواد محفوظة خلف مواضيعك بعد." },
 
   hubSignalsAction: { en: "Choose a signal", ar: "اختر إشارة" },
