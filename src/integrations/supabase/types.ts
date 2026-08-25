@@ -438,6 +438,9 @@ export type Database = {
           created_at: string
           example_posts: Json
           id: string
+          in_voice_lands: string[] | null
+          in_voice_moves: string[] | null
+          in_voice_opens: string[] | null
           is_primary: boolean
           language: string
           mode_key: string | null
@@ -456,6 +459,9 @@ export type Database = {
           created_at?: string
           example_posts?: Json
           id?: string
+          in_voice_lands?: string[] | null
+          in_voice_moves?: string[] | null
+          in_voice_opens?: string[] | null
           is_primary?: boolean
           language?: string
           mode_key?: string | null
@@ -474,6 +480,9 @@ export type Database = {
           created_at?: string
           example_posts?: Json
           id?: string
+          in_voice_lands?: string[] | null
+          in_voice_moves?: string[] | null
+          in_voice_opens?: string[] | null
           is_primary?: boolean
           language?: string
           mode_key?: string | null
