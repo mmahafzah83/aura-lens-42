@@ -117,7 +117,7 @@ function Sparkline({
 
       {/* the baseline, named on the chart itself */}
       <line x1={PAD_L} x2={W - PAD_R} y1={base} y2={base} stroke={NIGHT_MUTED} strokeWidth="1" />
-      <text x={PAD_L + 2} y={base + 12} fill={NIGHT_MUTED} fontFamily={MONO} fontSize="9">your average</text>
+      <text x={PAD_L + 2} y={base - 5} fill={NIGHT_MUTED} fontFamily={MONO} fontSize="9">your average</text>
 
       <path d={line} fill="none" stroke={CYAN} strokeWidth="1.5" strokeLinejoin="round" />
 
