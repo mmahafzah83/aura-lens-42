@@ -220,11 +220,12 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
         ) : null}
       </header>
 
-      {/* Desktop jump-nav — hidden on phones (Tailwind md breakpoint) */}
+      {/* Jump index — one wrapping row of small links, at every width. */}
       {blocks.length > 1 ? (
         <nav
           aria-label="Report sections"
-          className="hidden md:flex"
+          className="flex"
+
           style={{
             flexWrap: "wrap",
             gap: 6,
