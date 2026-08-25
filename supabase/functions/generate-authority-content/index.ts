@@ -842,21 +842,29 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         if (chosen) postTypeInstruction = `\n\n${chosen}`;
       }
 
-      // The ending is a rotatable value the profile allows — never an
-      // instruction read out of a style field.
-      // Bias away from the ending the member just used, where an alternative exists.
+      /**
+       * The close is now decided in ONE place: the rotated LAND type. The old
+       * `pickEnding()` draw is derived FROM it rather than competing with it, so
+       * the shape check (`endingShapeOk`) and the prompt can never disagree —
+       * and no post type mandates a question any more.
+       */
+      const LAND_TO_ENDING: Record<LandType, string> = {
+        statement: "suspended",
+        question: "question",
+        contrast: "reframe",
+        invitation: "cta",
+        consequence: "number",
+      };
+      const allowedEndings: string[] = Array.isArray(voiceProfile?.allowed_endings) ? voiceProfile!.allowed_endings : [];
       const chosenEnding = (() => {
-        const first = pickEnding(voiceProfile?.allowed_endings);
-        if (!recentEndingType || first !== recentEndingType) return first;
-        for (let i = 0; i < 6; i++) {
-          const next = pickEnding(voiceProfile?.allowed_endings);
-          if (next !== recentEndingType) return next;
-        }
-        return first;
+        const derived = LAND_TO_ENDING[landType];
+        if (!allowedEndings.length || allowedEndings.includes(derived)) return derived;
+        // The member has narrowed the pool; respect it and fall back to a draw.
+        return pickEnding(voiceProfile?.allowed_endings);
       })();
       const endingDirective = effectiveLanguage === "ar"
-        ? `\n\nالخاتمة لهذا البوست: ${ENDING_DIRECTIVE_AR[chosenEnding]}`
-        : `\n\nENDING FOR THIS POST: ${ENDING_DIRECTIVE_EN[chosenEnding]}`;
+        ? `\n\nالخاتمة لهذا البوست: ${ENDING_DIRECTIVE_AR[chosenEnding] || LAND_SPECS[landType].def_ar}`
+        : `\n\nENDING FOR THIS POST: ${ENDING_DIRECTIVE_EN[chosenEnding] || LAND_SPECS[landType].def_en}`;
 
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
