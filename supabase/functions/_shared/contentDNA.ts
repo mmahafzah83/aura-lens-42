@@ -611,25 +611,29 @@ export function deriveInVoiceSubsets(profile: unknown): SubsetDerivation {
   ) as LandType[];
   for (const o of [...moveOpens, ...OPEN_TYPES]) {
     if (opens.length >= 3) break;
-    if (!opens.includes(o)) { opens.push(o); widened = true; }
+    if (!opens.includes(o)) { opens.push(o); typesWidened = true; }
   }
   for (const l of [...moveLands, ...LAND_TYPES]) {
     if (lands.length >= 3) break;
-    if (!lands.includes(l)) { lands.push(l); widened = true; }
+    if (!lands.includes(l)) { lands.push(l); typesWidened = true; }
   }
 
-  const log = widened
-    ? `[voice-subset] widened to floor of three: derived ${derivedCount} move(s) → ` +
-      `moves=[${moveSet.join(", ")}] opens=[${opens.join(", ")}] lands=[${lands.join(", ")}]`
+  const parts: string[] = [];
+  if (movesWidened) parts.push(`moves: derived ${derivedCount}, widened to ${moveSet.length}`);
+  if (typesWidened) parts.push(`opens/lands widened to the floor of three`);
+  const log = parts.length
+    ? `[voice-subset] ${parts.join("; ")} → moves=[${moveSet.join(", ")}] ` +
+      `opens=[${opens.join(", ")}] lands=[${lands.join(", ")}]`
     : "";
 
   return {
     subset: { moves: moveSet, opens, lands },
     basis: "voice",
-    widened,
+    widened: movesWidened,
     log,
   };
 }
+
 
 /** Least-recently-used first: never seen beats long ago beats used just now. */
 function lruOrder<T extends string>(pool: readonly T[], usedMostRecentFirst: readonly (T | null)[], seed: number): T[] {
