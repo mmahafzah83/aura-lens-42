@@ -18,7 +18,9 @@ import {
   firstSixWords,
   shouldCollapse,
   selectShape,
+  deriveInVoiceSubsets,
   hasLearnedVoice,
+
   opensOnBannedWord,
   sameBeats,
   resolveMove,
