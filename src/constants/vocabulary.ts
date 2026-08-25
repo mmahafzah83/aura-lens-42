@@ -143,6 +143,48 @@ export const nEvidence = (n: number, lang: VocabLang): string =>
 export const nSignals = (n: number, lang: VocabLang): string =>
   lang === "ar" ? signalCountAr(n) : signalCountEn(n);
 
+// ── the fifth word: pages Aura read overnight ──────────────────────────────
+//
+// `agent_findings` is one row per URL Aura went and read on its own. Those are
+// NOT `source_registry` rows and NOT the member's material, so they may never
+// be called "sources" (that word belongs to the member) nor "captures" nor
+// "readings" (banned). They are PAGES.
+
+export const PAGE_NOUN = { one: "page", many: "pages", One: "Page", Many: "Pages" } as const;
+
+export function pageCountAr(n: number): string {
+  return arabicCount(n, {
+    one: "صفحة واحدة",
+    two: "صفحتان",
+    few: (x) => `${x} صفحات`,
+    many: (x) => `${x} صفحة`,
+  });
+}
+
+export function pageCountEn(n: number): string {
+  return `${n} ${n === 1 ? PAGE_NOUN.one : PAGE_NOUN.many}`;
+}
+
+/** Pages Aura read overnight. Only permitted source: `agent_findings` rows. */
+export const nPages = (n: number, lang: VocabLang): string =>
+  lang === "ar" ? pageCountAr(n) : pageCountEn(n);
+
+/** Drafts Aura wrote — `linkedin_posts` / `content_items` rows in draft state. */
+export const nDrafts = (n: number, lang: VocabLang): string =>
+  lang === "ar" ? arabicCount(n, {
+    one: "مسودة واحدة", two: "مسودتان",
+    few: (x) => `${x} مسودات`, many: (x) => `${x} مسودة`,
+  }) : `${n} draft${n === 1 ? "" : "s"}`;
+
+/** Posts the member published — `post_provenance` rows. */
+export const nPosts = (n: number, lang: VocabLang): string =>
+  lang === "ar" ? arabicCount(n, {
+    one: "منشور واحد", two: "منشوران",
+    few: (x) => `${x} منشورات`, many: (x) => `${x} منشوراً`,
+  }) : `${n} post${n === 1 ? "" : "s"}`;
+
+
+
 /** Evidence and sources in one line — the pair every signal surface states. */
 export const evidenceAndSources = (evidence: number, sources: number, lang: VocabLang): string =>
   `${nEvidence(evidence, lang)} · ${nSources(sources, lang)}`;
