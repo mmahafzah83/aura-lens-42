@@ -8,7 +8,7 @@ import AuraLogo from "@/components/brand/AuraLogo";
 import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
 import HomeMasthead from "@/components/home/HomeMasthead";
 import {
-  useHomeAddress, useReadChips,
+  useHomeAddress, useReadChips, useSignalsStrengthened,
   type HomeMove,
 } from "@/hooks/useHomeAddress";
 import { MONO, Kicker, Card, Body, Muted, ActButton, Skeleton, ReadFailure } from "./homeAtoms";
@@ -72,6 +72,8 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
   const address = useHomeAddress(userId);
   const facts = address.facts;
   const { chips, failed: chipsFailed, refresh: refreshChips } = useReadChips(userId, facts);
+  // Ruling 2: the real join, not the raw theme-string count.
+  const strengthened = useSignalsStrengthened(userId);
 
   const { layout, metrics, failed: widgetsFailed, reload: reloadWidgets } = useWidgetData(userId);
   const [themes, setThemes] = useState<OwnedTheme[]>([]);
