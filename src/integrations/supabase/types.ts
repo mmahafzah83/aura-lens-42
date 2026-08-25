@@ -5424,49 +5424,58 @@ export type Database = {
       voice_rules: {
         Row: {
           active: boolean
+          check: Json | null
           created_at: string
           decided_at: string | null
           evidence: Json | null
           id: string
           kind: string
+          last_applied_at: string | null
           profile_id: string | null
           rank: number
           source: string
           status: string
           suggested_at: string | null
           text: string
+          times_applied: number
           updated_at: string
           user_id: string
         }
         Insert: {
           active?: boolean
+          check?: Json | null
           created_at?: string
           decided_at?: string | null
           evidence?: Json | null
           id?: string
           kind: string
+          last_applied_at?: string | null
           profile_id?: string | null
           rank?: number
           source?: string
           status?: string
           suggested_at?: string | null
           text: string
+          times_applied?: number
           updated_at?: string
           user_id: string
         }
         Update: {
           active?: boolean
+          check?: Json | null
           created_at?: string
           decided_at?: string | null
           evidence?: Json | null
           id?: string
           kind?: string
+          last_applied_at?: string | null
           profile_id?: string | null
           rank?: number
           source?: string
           status?: string
           suggested_at?: string | null
           text?: string
+          times_applied?: number
           updated_at?: string
           user_id?: string
         }
