@@ -139,10 +139,22 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
     });
   }, [r, workPairs]);
 
+  /** Every block starts closed. A closed row still says what it holds. */
   const [open, setOpen] = useState<Record<string, boolean>>({});
-  const isOpen = (id: string, idx: number) => open[id] ?? idx < 2;
-  const toggle = (id: string, idx: number) =>
-    setOpen((prev) => ({ ...prev, [id]: !(prev[id] ?? idx < 2) }));
+  const isOpen = (id: string) => open[id] ?? false;
+  const toggle = (id: string) => setOpen((prev) => ({ ...prev, [id]: !(prev[id] ?? false) }));
+
+  /** The first few words of a block's own content, truncated — no new text. */
+  const preview = (b: Block): string => {
+    const raw = b.kind === "prose"
+      ? b.parts.filter(Boolean).join(" ")
+      : b.kind === "chips"
+        ? b.items.join(", ")
+        : b.pairs.map((p) => p.heading || p.body).filter(Boolean).join(", ");
+    const flat = raw.replace(/\s+/g, " ").trim();
+    return flat.length > 90 ? `${flat.slice(0, 90).trimEnd()}…` : flat;
+  };
+
 
   const cardStyle: React.CSSProperties = SHELL;
 
