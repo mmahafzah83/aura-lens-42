@@ -349,7 +349,7 @@ export function fidelityCheck(opts: {
   for (const k of dropMarkers) {
     lines.push(isAr
       ? `- لا تستخدم ${MARKER_NAMES[k].ar} في هذا المنشور.`
-      : `- Do not use ${MARKER_NAMES[k].en} in this post.`);
+      : `- Do not use ${MARKER_NAMES[k].en} in this post.`);  // vocab-ok — model directive, never shown to a member
   }
   const lengthViolation = violations.find((v) => v.startsWith("length_out_of_band"));
   if (lengthViolation && length_band) {
@@ -386,6 +386,6 @@ export function distributionPromptBlock(dist: Distribution | null | undefined, i
       .map(([k, v]) => `${k} ${Math.round(v * 100)}%`).join(", ");
   const marks = Object.entries(dist.marker_rate ?? {}).map(([k, v]) => `${k} ${Math.round(Number(v) * 100)}%`).join(", ");
   return isAr
-    ? `\n\nكيف يكتب هذا العضو فعلاً (من ${dist.corpus_n} منشوراً بقلمه):\n- الافتتاحات: ${top(dist.open_type_share)}\n- الخواتيم: ${top(dist.land_type_share)}\n- العلامات: ${marks}\n- الطول المعتاد: نحو ${dist.length_p50} حرفاً.\nلا تبالغ في أي عادة من هذه: النسبة هي الأسلوب، لا العادة وحدها.`
-    : `\n\nHOW THIS MEMBER ACTUALLY WRITES (from ${dist.corpus_n} posts they wrote themselves):\n- Opens: ${top(dist.open_type_share)}\n- Closes: ${top(dist.land_type_share)}\n- Markers: ${marks}\n- Usual length: about ${dist.length_p50} characters.\nDo not exaggerate any one of these habits. The PROPORTION is the voice, not the habit.`;
+    ? `\n\nكيف يكتب هذا العضو فعلاً (من ${dist.corpus_n} منشوراً بقلمه):\n- الافتتاحات: ${top(dist.open_type_share)}\n- الخواتيم: ${top(dist.land_type_share)}\n- العلامات: ${marks}\n- الطول المعتاد: نحو ${dist.length_p50} حرفاً.\nلا تبالغ في أي عادة من هذه: النسبة هي الأسلوب، لا العادة وحدها.`  // vocab-ok — model directive, never shown to a member
+    : `\n\nHOW THIS MEMBER ACTUALLY WRITES (from ${dist.corpus_n} posts they wrote themselves):\n- Opens: ${top(dist.open_type_share)}\n- Closes: ${top(dist.land_type_share)}\n- Markers: ${marks}\n- Usual length: about ${dist.length_p50} characters.\nDo not exaggerate any one of these habits. The PROPORTION is the voice, not the habit.`;  // vocab-ok — model directive, never shown to a member
 }
