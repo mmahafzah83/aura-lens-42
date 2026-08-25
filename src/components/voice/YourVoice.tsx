@@ -306,6 +306,58 @@ export default function YourVoice({
   const reco = ov.recommendation;
   const showReco = !ov.recommendationDismissed && !dismissed && !nothingRead && reco.key !== "none";
 
+  /* ── the one-line readings. Every figure is already loaded; if a figure is
+     unknown the line says so in words rather than printing a zero. ───────── */
+  const healthCards = buildHealth(ov);
+  const healthWeak = healthCards.some((h) => h.band === "weak");
+  const readPart = ov.corpusCount === 0
+    ? "Nothing read from your posts yet"
+    : `Read from ${ov.corpusCount} of your posts`;
+  const freshPart = ov.freshnessDays === null
+    ? "no dated post yet"
+    : `newest ${ov.freshnessDays} ${ov.freshnessDays === 1 ? "day" : "days"} ago`;
+  const markerPart = ov.computableComputed === 0
+    ? "no markers measured yet"
+    : `${ov.computableHigh} of ${ov.computableComputed} markers measured`;
+  const openingPart = ov.diversity === null
+    ? "opening variety not measured yet"
+    : `openings vary ${Math.round(ov.diversity)}%`;
+  const healthLine = `${readPart} · ${freshPart} · ${markerPart} · ${openingPart}`;
+
+  const modesSet = dna.modes.filter((m) => m.profileId);
+  const activeMode = modesSet.find((m) => m.profileId === dna.activeProfileId);
+  const modesLine = `${modesSet.length} ${modesSet.length === 1 ? "mode" : "modes"} · ${activeMode ? activeMode.label : "no mode chosen"}`;
+
+  const countKind = (k: string) => dna.rules.filter((r) => r.kind === k).length;
+  const waiting = dna.suggestions.length;
+  const rulesLine = `${countKind("always")} always · ${countKind("never")} never · ${countKind("anchor")} anchors · ${waiting} waiting for you`;
+
+  const variationLine = variationSummary(dna) ?? "Opening variety is not measured yet.";
+
+  const unconfirmedProposal = dna.traits.some((t) => t.source === "aura" && !t.last_confirmed_at && t.value !== null);
+
+  const groupSummary = (traits: DnaTrait[]) => {
+    const measured = traits.filter((t) => t.value !== null);
+    if (measured.length === 0) return "Nothing measured yet in this group.";
+    const names = measured.map((t) => t.display_name.toLowerCase()).join(", ");
+    return `${names.replace(/^./, (c) => c.toUpperCase())} — ${measured.length} of ${traits.length} read from your posts`;
+  };
+
+  /** A group with something waiting for the member opens by default. */
+  const attention: Record<string, boolean> = {
+    health: healthWeak,
+    modes: false,
+    rules: waiting > 0,
+    variation: false,
+    worked: unconfirmedProposal,
+  };
+  for (const [group, traits] of grouped) {
+    attention[`believe:${group}`] = traits.some((t) => t.source === "aura" && !t.last_confirmed_at && t.value !== null);
+  }
+  const groupIds = Object.keys(attention);
+  const isGroupOpen = (id: string) => openGroups[id] ?? attention[id] ?? false;
+
+
   if (nothingRead) {
     return (
       <div style={cardStyle}>
