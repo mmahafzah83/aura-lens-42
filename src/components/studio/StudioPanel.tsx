@@ -1372,9 +1372,15 @@ export default function StudioPanel({
           context: target.insight || "",
           language: useLang,
           signal_id: target.id || undefined,
-          ...(angle && angle.trim()
-            ? { extra_instruction: `Write from THIS angle only: ${angle.trim()}` }
-            : {}),
+          // The refine path rewrites the draft in place; it never re-topics it.
+          ...(refine && refine.instruction.trim() && refine.draft.trim()
+            ? {
+              rewrite_instruction: refine.instruction.trim(),
+              current_draft: refine.draft,
+            }
+            : (angle && angle.trim()
+              ? { extra_instruction: `Write from THIS angle only: ${angle.trim()}` }
+              : {})),
           stream: false,
         }),
       });
