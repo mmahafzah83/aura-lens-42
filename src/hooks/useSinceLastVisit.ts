@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { countProvenance } from "@/lib/postProvenance";
+import { nEvidence, nPosts, nSignals } from "@/constants/vocabulary";
 
 /**
  * Since-your-last-visit — one baseline, one moment in time.
@@ -60,8 +61,6 @@ function deltaIsSane(delta: number, total: number, where: string): boolean {
   }
   return true;
 }
-
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 export function useSinceLastVisit(userId: string | null | undefined): SinceLastVisit {
   const [state, setState] = useState<SinceLastVisit>({
@@ -133,11 +132,11 @@ export function useSinceLastVisit(userId: string | null | undefined): SinceLastV
       const title = t.s.signal_title;
       let text: string;
       if (!t.sane || t.delta === 0) {
-        text = `${t.total} ${plural(t.total, "source", "sources")} now back ${title}.`;
+        text = `${nEvidence(t.total, "en")} now back ${title}.`;
       } else if (t.delta > SOURCE_DELTA_CEILING) {
-        text = `${title} kept growing — ${t.total} ${plural(t.total, "source", "sources")} now back this signal.`;
+        text = `${title} kept growing — ${nEvidence(t.total, "en")} now back this signal.`;
       } else {
-        text = `You captured ${t.delta} more ${plural(t.delta, "source", "sources")} about ${title} — ${t.total} now back this theme.`;
+        text = `You added ${nEvidence(t.delta, "en")} to ${title} — ${nEvidence(t.total, "en")} now back this signal.`;
       }
       return {
         key, text,
@@ -173,8 +172,8 @@ export function useSinceLastVisit(userId: string | null | undefined): SinceLastV
       rows.push({
         key: "themes",
         text: fresh.length > THEME_DELTA_CEILING
-          ? `Your reading opened new themes — ${strengthening} ${plural(strengthening, "is", "are")} already strengthening.`
-          : `Your reading opened ${fresh.length} new ${plural(fresh.length, "signal", "signals")} Aura now tracks for you.`,
+          ? `Your reading opened new signals — ${strengthening === 1 ? "one is" : `${nSignals(strengthening, "en")} are`} already strengthening.`
+          : `Your reading opened ${nSignals(fresh.length, "en")} Aura now tracks for you.`,
         actionLabel: "See what's new",
         action: { kind: "tab", tab: "intelligence" },
       });
@@ -187,7 +186,7 @@ export function useSinceLastVisit(userId: string | null | undefined): SinceLastV
     if (publishedSince > 0 && rows.length < 3) {
       rows.push({
         key: "published",
-        text: `You published ${publishedSince} ${plural(publishedSince, "post", "posts")} on LinkedIn since then.`,
+        text: `You published ${nPosts(publishedSince, "en")} on LinkedIn since then.`,
         actionLabel: "See how they are doing",
         action: { kind: "tab", tab: "influence" },
       });

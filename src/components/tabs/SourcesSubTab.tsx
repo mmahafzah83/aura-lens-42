@@ -6,7 +6,7 @@ import {
   Loader2, Zap, ChevronDown, ChevronUp, ExternalLink, Pencil, Download, BookOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { nSources } from "@/constants/vocabulary";
+import { nPages, nSources } from "@/constants/vocabulary";
 import { toast } from "sonner";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -1024,7 +1024,7 @@ const SourcesSubTab = ({
             const isReady = isDoc && DOC_SUCCESS_STATUSES.has((docStatus || "").toLowerCase());
             const docSizeLabel = isDoc ? formatBytes(entry.file_size) : null;
             const docTypeLabel = isDoc && isReady ? (entry.file_type || "FILE").toString().toUpperCase() : null;
-            const docPagesLabel = isDoc && isReady && entry.page_count ? `${entry.page_count} ${entry.page_count === 1 ? "page" : "pages"}` : null;
+            const docPagesLabel = isDoc && isReady && entry.page_count ? nPages(entry.page_count, "en") : null;
             const canDownload = (isDoc && !!entry.file_url) || (entry.type === "image" && !!entry.image_url);
             const preview = isDoc
               ? (isReady ? (entry.summary || "").slice(0, 120) : "")
@@ -1100,7 +1100,7 @@ const SourcesSubTab = ({
                                 : docStatus === "pending"
                                   ? "Queued…"
                                   : entry.pages_total && entry.pages_total > 0
-                                    ? `Reading — ${entry.pages_read ?? 0} of ${entry.pages_total} pages`
+                                    ? `Reading — ${entry.pages_read ?? 0} of ${nPages(entry.pages_total, "en")}`
                                     : "Reading…"}
                             </p>
                             <span style={{ color: "var(--glass-2)", fontSize: 12 }}>· Started {relativeTime(entry.created_at)}</span>

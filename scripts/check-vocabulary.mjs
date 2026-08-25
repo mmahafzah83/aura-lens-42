@@ -22,10 +22,11 @@
  *      Arabic nouns count too (مصدر / مصادر / قطعة / قطع / التقاط / إشارة …);
  *      `\b` does not work on Arabic script, so those use explicit lookarounds
  *      for a non-Arabic-letter boundary.
- *   2. A literal that is NOTHING BUT a count noun — `"source"` / `"sources"` —
- *      when the line puts it in a counting context: a ternary, an assignment to
- *      a label/name/title/text key, or a number-bearing identifier on the same
- *      line. This is the original bug: `entryCount === 1 ? "source" : "sources"`.
+  *   2. A literal that is NOTHING BUT a count noun — `"source"` / `"sources"` —
+  *      when the line puts it in a counting context: a ternary, an assignment to
+  *      a label/name/title/text key, or a number-bearing identifier on the same
+  *      line. This includes quoted literals nested inside a template literal,
+  *      because `${n} ${n === 1 ? "page" : "pages"}` is the same original bug.
  *
  * WHAT IT ALLOWS
  *   - A correct dictionary call. Each call's span is BLANKED OUT of the line
@@ -150,6 +151,10 @@ function findHit(rawLine) {
   line = line.replace(/\b[\w-]+=\{\s*-?\d+(?:\.\d+)?\s*\}/g, (m) => " ".repeat(m.length));
 
   const counting = isCountContext(line);
+  for (const lit of nestedLiteralsOfTemplates(line)) {
+    const bare = lit.trim();
+    if (BARE_NOUN.test(bare) && counting) return bare;
+  }
   for (const lit of literalsOf(line)) {
     const bare = lit.trim();
     // A literal that IS a noun is never exempted by CODE_LIKE.
@@ -166,6 +171,23 @@ function findHit(rawLine) {
   const j = line.match(JSX_PATTERN);
   if (j && !/[=<>]/.test(j[0])) return j[0].trim();
   return null;
+}
+
+/** Pull quoted literals that sit inside a template literal span. A plain regex
+ *  literal scan consumes the whole backtick span first, so the nested
+ *  `"page" : "pages"` pair in `${n} ${n === 1 ? "page" : "pages"}` used to be
+ *  invisible to the bare-noun check. */
+function nestedLiteralsOfTemplates(line) {
+  const out = [];
+  const templateRe = /`([^`]*)`/g;
+  const quotedRe = /'([^'\\]*(?:\\.[^'\\]*)*)'|"([^"\\]*(?:\\.[^"\\]*)*)"/g;
+  let tmpl;
+  while ((tmpl = templateRe.exec(line))) {
+    const body = tmpl[1] ?? "";
+    let q;
+    while ((q = quotedRe.exec(body))) out.push(q[1] ?? q[2] ?? "");
+  }
+  return out;
 }
 
 /** Pull every string / template literal out of one line. */
@@ -235,6 +257,7 @@ const LATER_FILES = [
   "src/components/SignalsRadar.tsx",
   "src/components/StrategicEvolutionMap.tsx",
   "src/components/TierCeremonyModal.tsx",
+  "src/components/TodaysStatus.tsx",
   "src/components/AuditResultsView.tsx",
   // draft / post / page nouns, out of this round:
   "src/components/DocumentUpload.tsx",
@@ -245,7 +268,6 @@ const LATER_FILES = [
   "src/components/settings/LinkedInAddressCard.tsx",
   "src/components/settings/YourLinkedInCard.tsx",
   "src/components/tabs/MarketTab.tsx",
-  "src/components/tabs/SourcesSubTab.tsx",
   "src/components/voice/SpectrumRow.tsx",
   "src/components/voice/TeachAura.tsx",
   "src/components/voice/TeachAuraCoverage.tsx",
