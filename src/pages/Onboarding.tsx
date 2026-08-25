@@ -1541,6 +1541,21 @@ const Onboarding = () => {
       setPostsState(postsOutcome);
       setPostsRead(postsOutcome.status === "ok" ? postsOutcome.count : null);
 
+      /* LEARNING STARTS AT SIGN-UP. The posts are read, so Aura reads the
+         patterns in them straight away. No spinner, no screen, no blocking:
+         a failure here is logged and the member carries on. */
+      if (postsOutcome.status === "ok" && postsOutcome.count > 0) {
+        try {
+          const { error: classifyErr } = await supabase.functions.invoke("voice-classify-posts", { body: {} });
+          if (classifyErr) console.warn("voice-classify-posts failed", classifyErr);
+        } catch (e) { console.warn("voice-classify-posts failed", e); }
+        try {
+          const { error: traitsErr } = await supabase.functions.invoke("voice-compute-traits", { body: {} });
+          if (traitsErr) console.warn("voice-compute-traits failed", traitsErr);
+        } catch (e) { console.warn("voice-compute-traits failed", e); }
+      }
+
+
       if (userId) {
         setOwnWords(await loadOwnWordsCount(userId));
       } else {
