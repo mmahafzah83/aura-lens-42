@@ -4,7 +4,7 @@ import type { HomeFacts, HomeMove } from "@/hooks/useHomeAddress";
 import { WIDGET_DEFS } from "@/components/widgets/widgetData";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import { WidgetBody } from "@/components/widgets/WidgetCards";
-import { nSignals, nEvidence, nPages, nDrafts, velocityWord } from "@/constants/vocabulary";
+import { nSignals, nEvidence, nPages, nDrafts, CAPTURE, velocityWord } from "@/constants/vocabulary";
 import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
 export type ShelfKey = "moves" | "stand" | "own" | "night" | "widgets";
@@ -175,7 +175,7 @@ export const OwnCard: React.FC<{
       {!loading && !failed && themes.length === 0 && (
         <div style={{ padding: "12px 20px", display: "grid", gap: 6 }}>
           <Body>No signals yet.</Body>
-          <Muted>A signal forms when several things you capture point the same way.</Muted>
+          <Muted>A signal forms when several captures point the same way.</Muted>
         </div>
       )}
       {themes.map((t) => (
