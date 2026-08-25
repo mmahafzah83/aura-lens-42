@@ -1,6 +1,13 @@
 /**
  * THE DICTIONARY — the single source of member-facing count nouns, bilingual.
  *
+ * TWIN OF: `supabase/functions/_shared/vocabulary.ts`, which exists because
+ * edge functions cannot import from `src/`. The two files must stay identical
+ * from `export type VocabLang` onwards — `scripts/check-vocabulary.mjs`
+ * compares the actual exported noun strings and Arabic forms and FAILS THE
+ * BUILD if they diverge. Edit one, edit the other.
+ *
+ *
  * THE LAW. One meaning per word, one DB field per word:
  *
  *   capture / captures        التقاط   rows in `entries` (a thing the member saved)
