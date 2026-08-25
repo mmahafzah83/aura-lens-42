@@ -132,7 +132,7 @@ export function readinessSentence(m: VoiceOverviewModel): string {
       return `Aura drafts reliably in your voice. ${word(m.topStyleCount).replace(/^./, (c) => c.toUpperCase())} of your last ${word(m.windowClassified)} classified posts opened the same way — that is what stands between you and a voice the market can tell apart.`;
     }
     if (m.diversity !== null && m.diversity < REPETITION_GATES.diversityFloor) {
-      return `Aura drafts reliably in your voice. Your openers only vary ${pct(m.diversity)} across your last ${m.windowSize} posts — 60% is the bar for a voice the market can tell apart.`;
+      return `Aura drafts reliably in your voice. Your openers only vary ${pct(m.diversity)} across your last ${m.windowClassified} classified posts — 60% is the bar for a voice the market can tell apart.`;
     }
     if (m.diversity === null) {
       return `Aura drafts reliably in your voice, from ${m.corpusCount} posts. Opener variety cannot be measured yet — ${m.windowClassified} of your last ${m.windowSize} posts have a labelled opener, and 8 are needed.`;
