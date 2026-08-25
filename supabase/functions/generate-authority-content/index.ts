@@ -866,13 +866,23 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         ? `\n\nالخاتمة لهذا البوست: ${ENDING_DIRECTIVE_AR[chosenEnding] || LAND_SPECS[landType].def_ar}`
         : `\n\nENDING FOR THIS POST: ${ENDING_DIRECTIVE_EN[chosenEnding] || LAND_SPECS[landType].def_en}`;
 
+      /**
+       * The collapse: fewer than 4 pieces of evidence (or a short preferred
+       * length) merges PROOF and SO-WHAT into one beat — a 4-beat post. Never an
+       * empty beat, never a padded one.
+       */
+      const collapseThisPost = shouldCollapse({
+        evidenceCount: groundingFragments.length,
+        lengthMax: Number((voiceProfile as any)?.length_max) || null,
+      });
+
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
-${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription, register: effectiveRegister, closeOnQuestion: chosenEnding === "question" })}
+${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription, register: effectiveRegister, openType, landType, collapse: collapseThisPost })}${recentPatternBlock}
 
 ${groundingContext}
 
-${hookFramework}
+${audienceNote}
 
 ${voiceSection}
 
@@ -885,28 +895,22 @@ ${frameworkInstruction}
 ${extraInstruction}${flashAddendum}${endingDirective}
 
 Write with conviction. No generic statements. Every line should demonstrate strategic depth.
-
-BANNED VOCABULARY — never use these words or phrases:
-delve, tapestry, landscape (figurative), navigate, realm, beacon, synergy, leverage (as verb), utilize, facilitate, cutting-edge, game-changing, groundbreaking, revolutionary, dive deep, unpack, double down, move the needle, it's worth noting, it goes without saying, in today's rapidly changing world, at the end of the day, not just X but Y, serves as a testament, at its core, let's dive in, here's what you need to know, trajectory (use 'growth' instead).
-
-Rewrite any sentence that uses these with concrete, specific language.${postTypeInstruction}${
+${postTypeInstruction}${
   isFlash
     ? (variationNum === 1
-        ? "\n\nWrite as a CONTRARIAN — challenge what the sector believes. Open with a provocative claim."
+        ? "\n\nAngle: CONTRARIAN — challenge what the sector believes."
         : variationNum === 2
-        ? (effectiveLanguage === "ar"
-            ? "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'هناك نمط لم يلاحظه أحد...'"
-            : "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'There's a pattern no one has noticed...'")
+        ? "\n\nAngle: PATTERN REVEALER — expose a hidden structural pattern."
         : variationNum === 3
-        ? "\n\nWrite as a PRACTITIONER — share a specific operational tension from real project experience. Open with a scene."
+        ? "\n\nAngle: PRACTITIONER — a specific operational tension from real project experience."
         : "")
         : ""
 }
 
 ===
-FINAL OUTPUT RULE (highest priority): Your entire response is the finished post and nothing else. The first character you output is the first character of the hook. Write nothing before the hook and nothing after the closing question — no setup, no notes, no labels of any kind, in any language.
+FINAL OUTPUT RULE (highest priority): Your entire response is the finished post and nothing else. The first character you output is the first character of the OPEN beat. Write nothing before it and nothing after the LAND line — no setup, no notes, no labels of any kind, in any language.
 
-قاعدة الإخراج النهائية: ردّك بالكامل هو البوست النهائي ولا شيء غيره. أول حرف تكتبه هو أول حرف من الـ Hook. لا تكتب أي شيء قبل الـ Hook ولا بعد السؤال الختامي — بأي لغة.`;
+قاعدة الإخراج النهائية: ردّك بالكامل هو البوست النهائي ولا شيء غيره. أول حرف تكتبه هو أول حرف من الافتتاح. لا تكتب أي شيء قبل الافتتاح ولا بعد سطر الخاتمة — بأي لغة.`;
 
       const userMessageContent = (() => {
         const themeStr = typeof theme === "string" ? theme.trim() : "";
