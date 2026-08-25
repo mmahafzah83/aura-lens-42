@@ -1004,7 +1004,20 @@ ${postTypeInstruction}${
 ===
 FINAL OUTPUT RULE (highest priority): Your entire response is the finished post and nothing else. The first character you output is the first character of the OPEN beat. Write nothing before it and nothing after the LAND line — no setup, no notes, no labels of any kind, in any language.
 
-قاعدة الإخراج النهائية: ردّك بالكامل هو البوست النهائي ولا شيء غيره. أول حرف تكتبه هو أول حرف من الافتتاح. لا تكتب أي شيء قبل الافتتاح ولا بعد سطر الخاتمة — بأي لغة.`;
+قاعدة الإخراج النهائية: ردّك بالكامل هو البوست النهائي ولا شيء غيره. أول حرف تكتبه هو أول حرف من الافتتاح. لا تكتب أي شيء قبل الافتتاح ولا بعد سطر الخاتمة — بأي لغة.
+
+OUTPUT FORMAT — absolute, overrides every other instruction. Emit the finished post and nothing else, wrapped exactly like this:
+<<<POST>>>
+the post
+<<<END>>>
+Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement of the brief, no headings, no labels, no commentary.
+
+صيغة الإخراج — قاعدة مطلقة تتقدم على كل تعليمة أخرى. أخرج البوست النهائي ولا شيء غيره، محصوراً هكذا تماماً:
+<<<POST>>>
+البوست
+<<<END>>>
+لا شيء قبل <<<POST>>>. لا شيء بعد <<<END>>>. لا تحليل، ولا إعادة صياغة للمطلوب، ولا عناوين، ولا تسميات، ولا تعليقات.`;
+
 
       const userMessageContent = (() => {
         const themeStr = typeof theme === "string" ? theme.trim() : "";
@@ -1031,7 +1044,13 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       // One place the model is called, so a corrective regeneration runs the
       // exact same prompt with an added directive.
       const MODEL_USED = "claude-sonnet-4-5-20250929";
-      const callModel = async (extraDirective = ""): Promise<string | null> => {
+      const baseMaxTokens = memberPrefs.length_max
+        ? Math.max(512, Math.min(4096, Math.ceil(memberPrefs.length_max / 3) + 256))
+        : 4096;
+      const callModel = async (
+        extraDirective = "",
+        maxTokensOverride?: number,
+      ): Promise<{ text: string; stop_reason: string | null } | null> => {
         const response = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: {
@@ -1042,9 +1061,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           body: JSON.stringify({
             model: MODEL_USED,
             // A member-set length ceiling also sizes the call (~4 chars/token).
-            max_tokens: memberPrefs.length_max
-              ? Math.max(512, Math.min(4096, Math.ceil(memberPrefs.length_max / 3) + 256))
-              : 4096,
+            max_tokens: maxTokensOverride ?? baseMaxTokens,
             system: systemPrompt + (extraDirective ? `\n\n${extraDirective}` : ""),
             messages: [
               { role: "user", content: userMessageContent },
@@ -1067,118 +1084,102 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
             output_tokens: json.usage?.output_tokens,
           }));
         } catch (_) { /* non-blocking */ }
-        return (json.content || []).map((c: any) => c.text || "").join("") || "";
+        return {
+          text: (json.content || []).map((c: any) => c.text || "").join("") || "",
+          stop_reason: typeof json.stop_reason === "string" ? json.stop_reason : null,
+        };
       };
 
-      const firstPass = await callModel();
-      if (firstPass === null) {
+      /**
+       * Law #85 — the output contract. The model marks the finished post with
+       * sentinels; anything outside them is the model talking to itself and is
+       * never text a member sees. A missing CLOSE also proves truncation.
+       */
+      type Extracted = { ok: true; text: string } | { ok: false; reason: "no_open" | "no_close" | "empty" };
+      const OPEN = "<<<POST>>>", CLOSE = "<<<END>>>";
+      const extractPost = (raw: string): Extracted => {
+        if (!raw || !raw.trim()) return { ok: false, reason: "empty" };
+        const o = raw.indexOf(OPEN);
+        if (o === -1) return { ok: false, reason: "no_open" };
+        const c = raw.indexOf(CLOSE, o + OPEN.length);
+        if (c === -1) return { ok: false, reason: "no_close" };
+        const t = raw.slice(o + OPEN.length, c).trim();
+        return t.length > 0 ? { ok: true, text: t } : { ok: false, reason: "empty" };
+      };
+
+      type ContractReason = "no_open" | "no_close" | "empty" | "max_tokens";
+      const HARDENED_REMINDER =
+        "Your previous response broke the output format. Emit ONLY the post between <<<POST>>> and <<<END>>>.";
+
+      const logContractViolation = async (reason: string, raw: string) => {
+        try {
+          const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+          await admin.from("output_leak_log").insert({
+            user_id: effectiveUserId,
+            function_name: "generate-authority-content",
+            language: effectiveLanguage,
+            leak_stage: reason,
+            first_lines: (raw || "").slice(0, 300),
+          });
+        } catch (_) { /* never block */ }
+      };
+
+      const judge = (
+        res: { text: string; stop_reason: string | null },
+      ): { ok: true; text: string } | { ok: false; reason: ContractReason } => {
+        // Truncation is a contract violation regardless of sentinels.
+        if (res.stop_reason === "max_tokens") return { ok: false, reason: "max_tokens" };
+        const ex = extractPost(res.text);
+        return ex.ok ? { ok: true, text: ex.text } : { ok: false, reason: ex.reason };
+      };
+
+      /**
+       * Every model call goes through here. Returns null only on transport
+       * failure (unchanged behaviour); otherwise a contract verdict after at
+       * most one hardened retry.
+       */
+      const callContract = async (
+        extraDirective = "",
+      ): Promise<{ ok: true; text: string } | { ok: false; reason: ContractReason; raw: string } | null> => {
+        const first = await callModel(extraDirective);
+        if (first === null) return null;
+        const v1 = judge(first);
+        if (v1.ok) return v1;
+        console.warn("[generate-authority-content] output contract violation —", v1.reason);
+        const retryTokens = v1.reason === "max_tokens"
+          ? Math.min(8192, baseMaxTokens * 2)
+          : undefined;
+        const second = await callModel(
+          `${extraDirective ? `${extraDirective}\n\n` : ""}${HARDENED_REMINDER}`,
+          retryTokens,
+        );
+        if (second === null) return { ok: false, reason: v1.reason, raw: first.text };
+        const v2 = judge(second);
+        if (v2.ok) return v2;
+        return { ok: false, reason: v2.reason, raw: second.text };
+      };
+
+
+      const firstRes = await callContract();
+      if (firstRes === null) {
         await closeRun("failed", "ai_error");
         return new Response(JSON.stringify({ success: false, error: "AI error" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      let content = firstPass;
-      const rawContent = content;
-
-      // Generic scaffold stripper — trigger-based, positive rules only.
-      const TRIGGER = /(system\s*initial|budget|token|thinking|^```)/i;
-      const KEY_VALUE_SHAPE = /^[A-Za-z][A-Za-z0-9 _-]{0,40}:\s?\S/;
-      const ARABIC = /[\u0600-\u06FF]/;
-      const SENTENCE_END = /[.!?…؟]$/;
-
-      const stripLeadingScaffold = (text: string): string => {
-        const raw = text.replace(/^\uFEFF/, "");
-        const lines = raw.split("\n");
-        // Trigger: any of the first 20 lines matches the trigger regex.
-        let triggered = false;
-        for (let k = 0; k < Math.min(lines.length, 20); k++) {
-          if (TRIGGER.test(lines[k].trim())) { triggered = true; break; }
-        }
-        if (!triggered) return text;
-
-        let i = 0, removed = 0, inFence = false;
-        const MAX_REMOVE = 30;
-        while (i < lines.length && removed < MAX_REMOVE) {
-          const rawLine = lines[i];
-          const t = rawLine.trim();
-          // (b) fence handling
-          if (/^```/.test(t)) { inFence = !inFence; i++; removed++; continue; }
-          if (inFence) { i++; removed++; continue; }
-          // (a) empty
-          if (t === "") { i++; removed++; continue; }
-
-          const stripped = t.replace(/^[-*•◆↳]\s*/, "");
-          const wordCount = stripped.split(/\s+/).filter(Boolean).length;
-
-          // Absolute stops (must come first)
-          if (ARABIC.test(stripped)) break;
-          if (SENTENCE_END.test(stripped)) break;
-
-          // (c) KEY: value shape (optionally with bullet prefix), english key ≤5 words —
-          // check BEFORE the prose-length heuristic so long values don't slip through.
-          const kvMatch = stripped.match(/^([A-Za-z][A-Za-z0-9 _-]{0,60}):\s?\S/);
-          if (kvMatch) {
-            const keyWords = kvMatch[1].trim().split(/\s+/).filter(Boolean).length;
-            if (keyWords <= 5) { i++; removed++; continue; }
-          }
-          // (d) bare label ≤4 english words, no sentence punctuation, ascii only
-          if (/^[A-Za-z][A-Za-z0-9 _-]*$/.test(stripped) && wordCount <= 4) {
-            i++; removed++; continue;
-          }
-          // Prose heuristic (last)
-          if (wordCount >= 6) break;
-          break;
-        }
-        const rest = lines.slice(i).join("\n").trim();
-        return rest.length > 0 ? rest : text;
-      };
-
-      const preStripTriggered = (() => {
-        const first20 = rawContent.split("\n").slice(0, 20);
-        return first20.some((l) => TRIGGER.test(l.trim()));
-      })();
-
-      content = stripLeadingScaffold(content);
-
-      // Post-strip leak detection
-      const POST_STRIP_KV = /^[A-Za-z][A-Za-z0-9 _-]{0,40}:\s?\S/;
-      const first3 = content.split("\n").slice(0, 3);
-      const postStripLeak = first3.some((l) => {
-        const t = l.trim();
-        return TRIGGER.test(t) || POST_STRIP_KV.test(t);
-      });
-
-      if (preStripTriggered || postStripLeak) {
-        try {
-          const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-          const rows: any[] = [];
-          if (preStripTriggered) {
-            rows.push({
-              user_id: effectiveUserId,
-              function_name: "generate-authority-content",
-              language: effectiveLanguage,
-              leak_stage: "pre_strip",
-              first_lines: rawContent.split("\n").slice(0, 3).join("\n").slice(0, 300),
-            });
-          }
-          if (postStripLeak) {
-            rows.push({
-              user_id: effectiveUserId,
-              function_name: "generate-authority-content",
-              language: effectiveLanguage,
-              leak_stage: "post_strip",
-              first_lines: first3.join("\n").slice(0, 300),
-            });
-          }
-          const p = admin.from("output_leak_log").insert(rows).then(() => {}, () => {});
-          // @ts-ignore EdgeRuntime is available in Supabase runtime
-          if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
-            // @ts-ignore
-            EdgeRuntime.waitUntil(p);
-          }
-        } catch (_) { /* never block */ }
+      if (!firstRes.ok) {
+        // FAIL CLOSED — a broken contract is never handed to a member.
+        await logContractViolation(firstRes.reason, firstRes.raw);
+        await closeRun("failed", "contract_violation");
+        return new Response(
+          JSON.stringify({ success: false, error_code: "contract_violation", reason: firstRes.reason }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
+      const firstPass = firstRes.text;
+      let content = firstPass;
+
       const stripLabels = (text: string): string => text
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[-—–:：]\s*(?:English|Arabic|عربي(?:ة)?|إنجليزي(?:ة)?)\s*\n?/i, '')
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[:：\-—]?\s*\n?/i, '')
@@ -1263,8 +1264,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           `grounded: ${preGate.grounded_number};`,
           `ending(${chosenEnding}): ${preGate.ending_ok}`,
         );
-        const reaskRaw = await callModel(directive);
-        const reask = reaskRaw ? hygiene(stripLabels(stripLeadingScaffold(reaskRaw))) : "";
+        const reaskRes = await callContract(directive);
+        const reask = reaskRes && reaskRes.ok ? hygiene(stripLabels(reaskRes.text)) : "";
+
         if (reask) {
           const after = selfCheck(reask);
           const scoreOf = (c: typeof after) =>
@@ -1303,8 +1305,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- لا تذكر اسم أي شركة أو جهة أو شخص أو تاريخ محدد غير وارد حرفياً في الأدلة. إن لم يرد الاسم في الأدلة، اكتب الجملة بلا اسم.${unsourcedEntities.length ? `\n- احذف تحديداً: ${unsourcedEntities.join("، ")}` : ""}\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
           : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Do not name any organisation, person or specific date that is not present verbatim in the supplied evidence. If the name is not in the evidence, write the sentence without it.${unsourcedEntities.length ? `\n- Specifically remove: ${unsourcedEntities.join(", ")}` : ""}\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
 
-        const retryRaw = await callModel(corrective);
-        const candidate = retryRaw ? hygiene(stripLabels(stripLeadingScaffold(retryRaw))) : "";
+        const retry = await callContract(corrective);
+        const candidate = retry && retry.ok ? hygiene(stripLabels(retry.text)) : "";
+
         const candidateUnsourced = candidate ? findUnsourcedNumbers(candidate, evidenceText) : ["retry_failed"];
         const candidateEntities = candidate ? findUnsourcedEntities(candidate, evidenceText) : ["retry_failed"];
         const candidateIntegrity = candidate ? checkTextIntegrity(candidate, isAr) : { ok: false, issues: ["retry_failed"] };
@@ -1433,8 +1436,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
             );
           }
           // ONE regeneration, carrying both corrections at once.
-          const rotRaw = await callModel(rotBit + first.fidelity.directive);
-          const rotCand = rotRaw ? hygiene(stripLabels(stripLeadingScaffold(rotRaw))) : "";
+          const rot = await callContract(rotBit + first.fidelity.directive);
+          const rotCand = rot && rot.ok ? hygiene(stripLabels(rot.text)) : "";
+
           const second = rotCand ? verdictOf(rotCand) : null;
           if (rotCand && second && !second.failed) {
             content = rotCand;
