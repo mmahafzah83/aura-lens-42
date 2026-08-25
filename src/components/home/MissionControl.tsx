@@ -58,6 +58,7 @@ export default function MissionControl({
           .select("example_posts")
           .eq("user_id", userId)
           .eq("is_primary", true)
+          .eq("mode_key", "default")
           .maybeSingle(),
       ]);
 

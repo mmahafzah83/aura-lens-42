@@ -69,6 +69,9 @@ Deno.serve(async (req) => {
         .from("authority_voice_profiles")
         .select("id, is_primary, created_at")
         .eq("user_id", userId)
+        // Measurement always writes to the member's own voice — the default
+        // row. A mode's traits are set by createMode and by the member.
+        .eq("mode_key", "default")
         .order("is_primary", { ascending: false })
         .order("created_at", { ascending: true })
         .limit(1)

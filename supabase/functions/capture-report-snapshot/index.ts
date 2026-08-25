@@ -148,7 +148,7 @@ async function buildIdentityReport(db: any, userId: string): Promise<Record<stri
     db.from("linkedin_posts").select("framework_type").eq("user_id", userId).not("framework_type", "is", null),
     db.from("authority_voice_profiles")
       .select("tone, preferred_structures, storytelling_patterns, vocabulary_preferences")
-      .eq("user_id", userId).eq("is_primary", true).maybeSingle(),
+      .eq("user_id", userId).eq("is_primary", true).eq("mode_key", "default").maybeSingle(),
     // The LinkedIn address lives on linkedin_connections — the profile columns are deprecated.
     db.from("linkedin_connections").select("handle").eq("user_id", userId).maybeSingle(),
   ]);

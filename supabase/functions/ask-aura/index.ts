@@ -122,6 +122,7 @@ serve(withObserve("ask-aura", async (req) => {
           .select("tone, preferred_structures, storytelling_patterns")
           .eq("user_id", user_id)
           .eq("is_primary", true)
+          .eq("mode_key", "default")
           .maybeSingle() as any,
       ),
       safe(
