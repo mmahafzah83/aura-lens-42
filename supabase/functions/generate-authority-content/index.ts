@@ -305,6 +305,54 @@ function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string 
       : `OPENING — hard rule: the post must open in one of these styles: ${named}. For THIS post: ${humanOpening(String(pick), false)}.`);
   }
 
+  // RHYTHM · STRUCTURE · OPENER · CLOSER · LANGUAGE MODE — the five choices the
+  // Voice screen has always saved and the writer never read. Each is a
+  // guidance line, not a shape override: rotation still decides the shape.
+  const RHYTHM: Record<string, [string, string]> = {
+    clipped: ["Short sentences. One idea each. Full stops over commas.", "جمل قصيرة. فكرة واحدة في كل جملة. النقطة قبل الفاصلة."],
+    balanced: ["Mixed sentence lengths — a long line, then a short one that lands it.", "طول متنوع للجمل — سطر طويل يتبعه سطر قصير يحسم المعنى."],
+    flowing: ["Longer connected sentences that carry the thought through.", "جمل أطول ومتصلة تحمل الفكرة إلى نهايتها."],
+  };
+  const STRUCTURE: Record<string, [string, string]> = {
+    tension_insight: ["Order: name the tension, then the insight that resolves it.", "الترتيب: اذكر التوتر أولاً، ثم البصيرة التي تحلّه."],
+    claim_three_proofs: ["Order: one claim, then three concrete proofs.", "الترتيب: ادّعاء واحد، ثم ثلاثة إثباتات ملموسة."],
+    story_lesson: ["Order: a short scene first, the lesson last.", "الترتيب: مشهد قصير أولاً، والدرس في النهاية."],
+  };
+  const OPENER: Record<string, [string, string]> = {
+    claim: ["Open on a claim a peer would argue with.", "افتح بادّعاء قد يعارضه نظير في المجال."],
+    number: ["Open on a specific number.", "افتح برقم محدد."],
+    story: ["Open on one short concrete scene.", "افتح بمشهد واحد قصير وملموس."],
+    question: ["Open on an uncomfortable question.", "افتح بسؤال غير مريح."],
+  };
+  const CLOSER: Record<string, [string, string]> = {
+    question: ["Close on an uncomfortable question.", "اختم بسؤال غير مريح."],
+    suspended: ["Close on a suspended line that stops rather than concludes.", "اختم بسطر معلّق يتوقف ولا يستنتج."],
+    reframe: ["Close by reframing what the post was really about.", "اختم بإعادة تأطير لما كان المنشور عنه فعلاً."],
+    equation: ["Close on a plain equation of the parts that matter.", "اختم بمعادلة بسيطة للعناصر المهمة."],
+  };
+  const prefLine = (table: Record<string, [string, string]>, key: string | undefined, en: string, arLabel: string) => {
+    const hit = key ? table[key] : undefined;
+    if (!hit) return;
+    lines.push(ar ? `${arLabel}: ${hit[1]}` : `${en}: ${hit[0]}`);
+  };
+  prefLine(RHYTHM, prefs.rhythm, "RHYTHM", "الإيقاع");
+  prefLine(STRUCTURE, prefs.structure, "STRUCTURE", "البناء");
+  prefLine(OPENER, prefs.opener, "OPENER", "الافتتاحية المختارة");
+  prefLine(CLOSER, prefs.closer, "CLOSER", "الخاتمة المختارة");
+  if (prefs.language_mode === "mixed") {
+    lines.push(ar
+      ? "اللغة — الكاتب يكتب بمزيج: يمكن أن يظهر مصطلح إنجليزي واحد أو اثنان حيث يستخدمهما فعلاً، والباقي عربي."
+      : "LANGUAGE — this writer mixes: one or two Arabic terms may appear where they genuinely use them, the rest English.");
+  } else if (prefs.language_mode === "en") {
+    lines.push(ar
+      ? "اللغة — الكاتب إنجليزي أصلاً: حافظ على مصطلحاته الإنجليزية كما هي."
+      : "LANGUAGE — English throughout. No second-language garnish.");
+  } else if (prefs.language_mode === "ar") {
+    lines.push(ar
+      ? "اللغة — عربية بالكامل: لا كلمات إنجليزية إطلاقاً."
+      : "LANGUAGE — the writer works in Arabic; keep English out of the finished post except for proper names.");
+  }
+
   if (prefs.story_mix) {
     const entries = Object.entries(prefs.story_mix);
     if (entries.length) {
