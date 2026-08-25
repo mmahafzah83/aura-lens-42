@@ -25,6 +25,8 @@ const fmtDate = (iso: string | null) =>
 
 type Filter = "all" | "aside" | "arabic" | "old";
 
+const setAsideLabel = (reason: string | null) => reason ? `Set aside · ${reason}` : "Set aside";
+
 export default function TeachAuraReview({
   posts, includedCount, excludedCount, ambiguous, onApplied,
 }: {
@@ -42,11 +44,13 @@ export default function TeachAuraReview({
   const [busy, setBusy] = useState(false);
 
   const stateOf = (p: CorpusPost): CorpusState => queued[p.id] ?? p.state;
+  const countsNow = (p: CorpusPost): boolean =>
+    stateOf(p) === "included" && (p.countsTowardVoice || p.setAsideReason === "You set this aside");
 
   const filtered = useMemo(() => {
     const cutoff = new Date("2024-01-01").getTime();
     return posts.filter((p) => {
-      if (filter === "aside") return stateOf(p) !== "included";
+      if (filter === "aside") return !countsNow(p);
       if (filter === "arabic") return p.isArabic;
       if (filter === "old") return p.publishedAt !== null && new Date(p.publishedAt).getTime() < cutoff;
       return true;
@@ -83,7 +87,16 @@ export default function TeachAuraReview({
     }
   };
 
-  const answer = `Aura read ${includedCount} of your posts and set aside ${excludedCount} reposts and comments.`;
+  const reasonCounts = posts.reduce<Record<string, number>>((acc, p) => {
+    if (p.countsTowardVoice || !p.setAsideReason) return acc;
+    acc[p.setAsideReason] = (acc[p.setAsideReason] ?? 0) + 1;
+    return acc;
+  }, {});
+  const topReasons = Object.entries(reasonCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([reason, count]) => `${reason} (${count})`);
+  const answer = `Aura read ${includedCount} of your own posts.${excludedCount > 0 ? ` It set aside ${excludedCount}${topReasons.length ? `: ${topReasons.join(", ")}.` : "."}` : ""}`;
 
   return (
     <section style={{ marginBlockStart: 20 }}>
@@ -105,7 +118,7 @@ export default function TeachAuraReview({
               const s = stateOf(p);
               return (
                 <div key={p.id} className="ta-row" style={{ padding: "10px 0", borderBlockStart: `1px solid ${LINE}` }}>
-                  <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{fmtDate(p.publishedAt)}</span>
+                  <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{fmtDate(p.publishedAt)} · {p.sourceLabel}</span>
                   <p dir="auto" style={{ fontSize: TYPE.body, color: INK, margin: 0, lineHeight: 1.5, overflowWrap: "anywhere" }}>
                     {p.excerpt}…
                   </p>
@@ -159,7 +172,8 @@ export default function TeachAuraReview({
             <div style={{ marginBlockStart: 10, border: `1px solid ${LINE}`, borderRadius: 12, overflow: "hidden" }}>
               {slice.map((p, i) => {
                 const s = stateOf(p);
-                const chip = STATE_CHIP[s];
+                const counted = countsNow(p);
+                const chip = counted ? STATE_CHIP.included : STATE_CHIP.excluded;
                 const changed = queued[p.id] !== undefined;
                 return (
                   <label
@@ -178,7 +192,7 @@ export default function TeachAuraReview({
                         aria-label={`Set aside the post from ${fmtDate(p.publishedAt)}`}
                         style={{ inlineSize: 18, blockSize: 18 }}
                       />
-                      <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{fmtDate(p.publishedAt)}</span>
+                      <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>{fmtDate(p.publishedAt)} · {p.sourceLabel}</span>
                     </span>
                     <span style={{ minInlineSize: 0 }}>
                       <span dir="auto" style={{ display: "block", fontSize: TYPE.body, color: INK, lineHeight: 1.5, overflowWrap: "anywhere" }}>
@@ -186,10 +200,10 @@ export default function TeachAuraReview({
                       </span>
                       <span style={{ fontSize: TYPE.caption, color: MUTED }}>
                         {p.hookStyle ? HOOK_LABEL[p.hookStyle] ?? p.hookStyle : "Not classified yet"}
-                        {s === "auto_excluded" && p.reason ? ` · ${p.reason}` : ""}
+                        {!counted && p.setAsideReason ? ` · ${p.setAsideReason}` : ""}
                       </span>
                     </span>
-                    <span style={chipStyle(chip.fg, chip.bg, chip.border)}>{chip.label}</span>
+                    <span style={chipStyle(chip.fg, chip.bg, chip.border)}>{counted ? chip.label : setAsideLabel(p.setAsideReason)}</span>
                   </label>
                 );
               })}

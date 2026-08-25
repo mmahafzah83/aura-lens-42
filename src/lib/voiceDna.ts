@@ -134,6 +134,7 @@ export function variationSentence(m: VoiceDnaModel): string | null {
     topShare: m.topShare,
     topStyleKey: m.topStyleKey,
     topStyleCount: m.topStyleCount,
+    windowClassified: m.windowClassified,
     windowSize: m.windowSize,
     windowDist: m.windowDist,
   });

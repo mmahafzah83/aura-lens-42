@@ -79,7 +79,7 @@ export interface VoiceOverviewModel {
   windowDist: Record<string, number>;
   /** 0–100, null when the window holds fewer than 8 classified posts */
   diversity: number | null;
-  /** share of the window taken by the single most-used real opener, 0–100 */
+  /** share of classified window posts taken by the single most-used real opener, 0–100 */
   topShare: number | null;
   topStyleKey: string | null;
   topStyleCount: number | null;
@@ -129,10 +129,10 @@ export function readinessSentence(m: VoiceOverviewModel): string {
   if (m.readiness === "reliable") {
     // Binding constraint first: repetition, then breadth, then measurement.
     if (m.topShare !== null && m.topShare > REPETITION_GATES.topShareCeiling && m.topStyleKey && m.topStyleCount) {
-      return `Aura drafts reliably in your voice. ${word(m.topStyleCount).replace(/^./, (c) => c.toUpperCase())} of your last ${word(m.windowSize)} posts opened the same way — that is what stands between you and a voice the market can tell apart.`;
+      return `Aura drafts reliably in your voice. ${word(m.topStyleCount).replace(/^./, (c) => c.toUpperCase())} of your last ${word(m.windowClassified)} classified posts opened the same way — that is what stands between you and a voice the market can tell apart.`;
     }
     if (m.diversity !== null && m.diversity < REPETITION_GATES.diversityFloor) {
-      return `Aura drafts reliably in your voice. Your openers only vary ${pct(m.diversity)} across your last ${m.windowSize} posts — 60% is the bar for a voice the market can tell apart.`;
+      return `Aura drafts reliably in your voice. Your openers only vary ${pct(m.diversity)} across your last ${m.windowClassified} classified posts — 60% is the bar for a voice the market can tell apart.`;
     }
     if (m.diversity === null) {
       return `Aura drafts reliably in your voice, from ${m.corpusCount} posts. Opener variety cannot be measured yet — ${m.windowClassified} of your last ${m.windowSize} posts have a labelled opener, and 8 are needed.`;
@@ -144,7 +144,7 @@ export function readinessSentence(m: VoiceOverviewModel): string {
   }
   // distinctive — both gates already passed, so the numbers can be stated plainly.
   if (m.topShare !== null && m.topStyleKey && m.topStyleCount) {
-    return `Aura drafts in a voice the market can tell apart: ${pct(m.diversity)} opener variety across your last ${m.windowSize} posts, and your most-used opener — ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — accounts for only ${m.topStyleCount} of them.`;
+    return `Aura drafts in a voice the market can tell apart: ${pct(m.diversity)} opener variety across your last ${m.windowClassified} classified posts, and your most-used opener — ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — accounts for only ${m.topStyleCount} of them.`;
   }
   return `Aura drafts in a voice the market can tell apart, from ${m.corpusCount} posts.`;
 }
@@ -168,12 +168,13 @@ export function repetitionSentence(m: {
   topShare: number | null;
   topStyleKey: string | null;
   topStyleCount: number | null;
+  windowClassified: number;
   windowSize: number;
   windowDist: Record<string, number>;
 }): string | null {
   if (m.topShare === null || m.topShare <= REPETITION_GATES.topShareBinding || !m.topStyleKey || !m.topStyleCount) return null;
   const alt = leastUsedHook(m.windowDist);
-  return `${m.topStyleCount} of your last ${m.windowSize} posts open with ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — ${Math.round(m.topShare)}% of the window. Try opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} next time; you have used it ${m.windowDist[alt ?? ""] ?? 0} times in these ${m.windowSize} posts.`;
+  return `${m.topStyleCount} of your last ${m.windowClassified} classified posts open with ${HOOK_LABEL[m.topStyleKey] ?? m.topStyleKey} — ${Math.round(m.topShare)}% of the window. Try opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} next time; you have used it ${m.windowDist[alt ?? ""] ?? 0} times in these ${m.windowClassified} classified posts.`;
 }
 
 /** Priority order is fixed: first match wins. Every branch carries a real number. */
@@ -188,7 +189,7 @@ export function buildRecommendation(m: Omit<VoiceOverviewModel, "recommendation"
     const alt = leastUsedHook(m.windowDist);
     return {
       key: "diversity",
-      text: `Your openers vary ${Math.round(m.diversity)}% across your last ${m.windowSize} posts; ${REPETITION_GATES.diversityFloor}% is the bar. Opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} would widen it — you have used it ${m.windowDist[alt ?? ""] ?? 0} times in this window.`,
+      text: `Your openers vary ${Math.round(m.diversity)}% across your last ${m.windowClassified} classified posts; ${REPETITION_GATES.diversityFloor}% is the bar. Opening with ${HOOK_LABEL[alt ?? "question"] ?? "a question"} would widen it — you have used it ${m.windowDist[alt ?? ""] ?? 0} times in this window.`,
       actionLabel: "See your spectrums",
       actionTab: "voice",
     };

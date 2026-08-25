@@ -57,9 +57,13 @@ export interface CorpusPost {
   id: string;
   publishedAt: string | null;
   excerpt: string;
+  textLength: number;
   hookStyle: string | null;
   state: CorpusState;
   reason: string | null;
+  countsTowardVoice: boolean;
+  sourceLabel: string;
+  setAsideReason: string | null;
   /** true when the text is mostly Arabic — used by the review filters. */
   isArabic: boolean;
 }
@@ -110,16 +114,10 @@ function statusFor(count: number, threshold: number): CoverageStatus {
 
 export const PAGE_SIZE = 20;
 
-export async function loadTeachAura(userId: string, page = 0): Promise<TeachAuraModel> {
+export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAuraModel> {
   const [address, postsRes, docsRes, voiceRes, textlessRes] = await Promise.all([
     loadLinkedInAddress(userId),
-    supabase
-      .from("linkedin_posts")
-      .select("id, published_at, created_at, post_text, hook_style, voice_corpus_status, voice_corpus_reason")
-      .eq("user_id", userId)
-      .not("post_text", "is", null)
-      .order("published_at", { ascending: false, nullsFirst: false })
-      .limit(500),
+    supabase.rpc("voice_corpus_review", { p_user_id: userId }),
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase
       .from("authority_voice_profiles")
@@ -138,37 +136,37 @@ export async function loadTeachAura(userId: string, page = 0): Promise<TeachAura
   ]);
 
   if (postsRes.error) throw new Error(postsRes.error.message);
-  const rows = (postsRes.data || []).filter((r: any) => String(r.post_text || "").trim().length > 0);
+  const rows = postsRes.data || [];
 
   const posts: CorpusPost[] = rows.map((r: any) => {
-    const raw = String(r.voice_corpus_status || "included");
-    const state: CorpusState =
-      raw === "excluded" || raw === "auto_excluded" ? (raw as CorpusState) : "included";
-    const text = String(r.post_text || "").trim();
+    const countsTowardVoice = Boolean(r.counts_toward_voice);
+    const fullText = String(r.excerpt || "").trim();
+    const setAsideReason = (r.set_aside_reason as string | null) ?? null;
     return {
       id: String(r.id),
       publishedAt: (r.published_at as string | null) || (r.created_at as string | null),
-      excerpt: text.slice(0, 90),
+      excerpt: fullText.slice(0, 90),
+      textLength: fullText.length,
       hookStyle: (r.hook_style as string | null) ?? null,
-      state,
-      reason: (r.voice_corpus_reason as string | null) ?? null,
-      isArabic: isArabicText(text),
+      state: countsTowardVoice ? "included" : "excluded",
+      reason: setAsideReason,
+      countsTowardVoice,
+      sourceLabel: String(r.source_label || "Unknown source"),
+      setAsideReason,
+      isArabic: isArabicText(fullText),
     };
   });
 
-  const included = rows.filter(
-    (r: any) => String(r.voice_corpus_status || "included") === "included",
-  );
+  const included = posts.filter((p) => p.countsTowardVoice);
   const cutoff = Date.now() - 90 * 86_400_000;
 
   const counts: Record<CoverageKey, number> = { arabic: 0, english: 0, long: 0, short: 0, recent: 0 };
-  for (const r of included) {
-    const text = String(r.post_text || "").trim();
-    if (isArabicText(text)) counts.arabic += 1;
+  for (const p of included) {
+    if (p.isArabic) counts.arabic += 1;
     else counts.english += 1;
-    if (text.length > 1500) counts.long += 1;
-    if (text.length < 800) counts.short += 1;
-    const when = r.published_at || r.created_at;
+    if (p.textLength > 1500) counts.long += 1;
+    if (p.textLength < 800) counts.short += 1;
+    const when = p.publishedAt;
     if (when && new Date(when).getTime() >= cutoff) counts.recent += 1;
   }
 
@@ -191,8 +189,8 @@ export async function loadTeachAura(userId: string, page = 0): Promise<TeachAura
   return {
     address,
     includedCount: included.length,
-    excludedCount: rows.length - included.length,
-    classifiedCount: included.filter((r: any) => r.hook_style).length,
+    excludedCount: posts.length - included.length,
+    classifiedCount: included.filter((p) => p.hookStyle).length,
     documentCount: docsRes.count ?? 0,
     pastedCount: Array.isArray(examples) ? examples.length : 0,
     coverage,
