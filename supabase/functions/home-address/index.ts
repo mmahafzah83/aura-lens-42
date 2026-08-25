@@ -12,6 +12,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { logEfError } from "../_shared/observe.ts";
+// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts). Every member-facing
+// count noun in this file comes from `countNoun` — never hand-written.
+import { countNoun } from "../_shared/vocabulary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -355,21 +358,21 @@ const LEAK = /\b[a-z][a-z0-9]*_[a-z0-9_]+\b|\b[a-z][a-z0-9_]*\.[a-z][a-z0-9_]+\b
 function fallbackWhy(key: string, f: Facts): string {
   switch (key) {
     case "publish_draft":
-      return `You have ${nw(f.drafts_total)} ${plural(f.drafts_total, "draft", "drafts")} waiting and ` +
+      return `You have ${nw(f.drafts_total)} ${countNoun(f.drafts_total, "draft")} waiting and ` +
         (f.published_through_aura > 0
           ? `only ${nw(f.published_through_aura)} ${plural(f.published_through_aura, "has", "have")} ever gone out.`
           : "none of them has ever gone out.");
     case "draft_from_signal":
-      return `${cap(nw(f.signals_never_published_from))} of your themes have never produced a post, and your ` +
-        `strongest has ${nw(f.top_signal?.fragment_count ?? 0)} fragments behind it.`;
+      return `${cap(nw(f.signals_never_published_from))} of your live ${countNoun(f.signals_never_published_from, "signal")} have never produced a post, and your ` +
+        `strongest has ${nw(f.top_signal?.fragment_count ?? 0)} ${countNoun(f.top_signal?.fragment_count ?? 0, "evidence")} behind it.`;
     case "capture":
       return f.captures_this_week > 0
-        ? `You have kept ${nw(f.captures_this_week)} ${plural(f.captures_this_week, "thing", "things")} this week, ` +
+        ? `You have captured ${nw(f.captures_this_week)} ${countNoun(f.captures_this_week, "capture")} this week, ` +
           `${nw(f.captures_total)} in all, and nothing today.`
-        : `Nothing has been kept this week. Your record holds ${nw(f.captures_total)} ${plural(f.captures_total, "thing", "things")} in total.`;
+        : `Nothing has been captured this week. Your record holds ${nw(f.captures_total)} ${countNoun(f.captures_total, "capture")} in total.`;
     case "connect_linkedin":
       return f.published_total > 0
-        ? `You have published ${nw(f.published_total)} ${plural(f.published_total, "post", "posts")} and Aura cannot see how any of them landed.`
+        ? `You have published ${nw(f.published_total)} ${countNoun(f.published_total, "post")} and Aura cannot see how any of them landed.`
         : "Aura cannot see how anything you post lands, so it cannot learn from it.";
     case "fill_facet":
       return `Your reading for ${f.facets_dormant[0] ?? "one part of the picture"} has nothing behind it yet.`;
@@ -416,7 +419,7 @@ function chooseMoves(f: Facts): Move[] {
   if (!f.captured_today) {
     c.push({
       key: "capture",
-      title: "Capture one thing you read today",
+      title: "Capture something you read today",
       what: "Paste a link, a report or a post you disagreed with.",
       why: fallbackWhy("capture", f),
       how: "Use the capture box on Home. A link is enough.",
@@ -483,7 +486,7 @@ const SYSTEM_PROMPT = `You are Aura, this person's chief of staff. You have read
 
 SUBSTANCE
 Say one thing. An address is not a recap of the file. Pick the single most useful observation and build four to six sentences around it.
-Three numbers maximum in the whole address, and a number earns its place only if it changes what they do today. Counts of fragments or sources change nothing; leave them out.
+Three numbers maximum in the whole address, and a number earns its place only if it changes what they do today. Counts of evidence or sources change nothing; leave them out.
 Name a specific thing, never a category. A named signal beats a count of signals.
 Build on tension, not description. The shape is: here is what you have, here is what is missing, here is the decision. The tension is given to you in the input — use it, do not hunt for another.
 Close on the decision, not the task. Your final sentence must point at the one move given to you as THE MOVE, by name, and at no other action — but say it in your own words. Never repeat the move's wording verbatim, and never phrase it as a list of steps.
@@ -520,7 +523,7 @@ Four days is long enough to think about it. Publish it, or kill it."
 
 Day three, one capture:
 "Three days in, and you've given me one thing to read.
-Enough to start, not enough to be right about you. The theme I pulled from it — governance inside transformation programmes — may or may not be yours. I'd want two or three more before I'd stake a post on it.
+Enough to start, not enough to be right about you. The signal I pulled from it — governance inside transformation programmes — may or may not be yours. I'd want two or three more before I'd stake a post on it.
 Send me something today. Anything you'd have forwarded to a colleague."
 
 Day one, nothing captured:
@@ -596,7 +599,7 @@ const small = (n: number) => (n <= 10 ? WORD[n] : String(n));
 function buildFactPhrases(f: Facts, move: Move | null): string[] {
   const p: string[] = [];
   const ts = f.top_signal;
-  // A long theme title read twice makes the address sound stitched.
+  // A long signal title read twice makes the address sound stitched.
   const shortTitle = (t: string) => {
     const words = String(t).split(/\s+/);
     return words.length > 7 ? `${words.slice(0, 7).join(" ")}…` : String(t);
@@ -606,9 +609,9 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
     const title = shortTitle(ts.title);
     const month = monthOf(ts.first_fragment_date);
     const n = ts.fragment_count ?? 0;
-    if (n > 0 && month) p.push(`${n} fragments on "${title}" since ${month}`);
-    else if (n > 0) p.push(`${n} fragments on "${title}"`);
-    else p.push(`a theme called "${title}"`);
+    if (n > 0 && month) p.push(`${n} ${countNoun(n, "evidence")} on "${title}" since ${month}`);
+    else if (n > 0) p.push(`${n} ${countNoun(n, "evidence")} on "${title}"`);
+    else p.push(`a signal called "${title}"`);
     if (ts.gained_last_7d) p.push(`new evidence for "${title}" arrived this week`);
     if (ts.velocity === "accelerating") p.push(`"${title}" is growing faster than anything else in your record`);
   }
@@ -616,13 +619,13 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
   if ((f.signals_never_published_from ?? 0) > 0 && ts?.title) {
     p.push(`nothing published yet from "${shortTitle(ts.title)}"`);
   } else if ((f.signals_never_published_from ?? 0) > 0) {
-    p.push(`${small(f.signals_never_published_from)} live ${f.signals_never_published_from === 1 ? "theme" : "themes"} you have never published from`);
+    p.push(`${small(f.signals_never_published_from)} live ${countNoun(f.signals_never_published_from, "signal")} you have never published from`);
   }
 
   const nsd = f.last_night?.newest_signal_draft;
   if (nsd?.title) p.push(`a draft already written on "${String(nsd.title).slice(0, 70)}"`);
   else if ((f.drafts_total ?? 0) > 0) {
-    p.push(`${small(f.drafts_total)} ${f.drafts_total === 1 ? "draft" : "drafts"} written and unpublished`);
+    p.push(`${small(f.drafts_total)} ${countNoun(f.drafts_total, "draft")} written and unpublished`);
   }
 
   const lastPub = daysAgoFrom(f.last_publish_attempt);
@@ -637,7 +640,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
   // The two figures, never merged: live on LinkedIn, then made with Aura.
   if ((f.published_total ?? 0) > 0) {
     p.push(
-      `${small(f.published_total)} ${f.published_total === 1 ? "post" : "posts"} live on LinkedIn and ${small(f.published_through_aura ?? 0)} of them made with Aura`,
+      `${small(f.published_total)} ${countNoun(f.published_total, "post")} live on LinkedIn and ${small(f.published_through_aura ?? 0)} of them made with Aura`,
     );
   }
 
@@ -645,13 +648,13 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
   if (typeof w === "number" && w < 4) {
     p.push(`${small(4 - w)} of your last four weeks had no capture of any kind`);
   } else if (w === 4) {
-    p.push(`you captured something, on one subject or another, in each of the last four weeks`);
+    p.push(`you captured something, on one signal or another, in each of the last four weeks`);
   }
 
   if (!f.captured_today && (f.captures_total ?? 0) > 0) p.push(`nothing new of any kind has come in today`);
   if ((f.captures_total ?? 0) === 0) p.push(`nothing captured yet, so nothing here sounds like you`);
   else if ((f.captures_this_week ?? 0) > 0) {
-    p.push(`${small(f.captures_this_week)} ${f.captures_this_week === 1 ? "thing" : "things"} captured this week across all subjects`);
+    p.push(`${small(f.captures_this_week)} ${countNoun(f.captures_this_week, "capture")} captured this week`);
   }
 
   if ((f.facets_dormant?.length ?? 0) > 0) {
@@ -659,7 +662,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
   }
 
   const sr = f.last_night?.sources_read ?? 0;
-  if (sr > 0) p.push(`Aura read ${small(sr)} ${sr === 1 ? "source" : "sources"} for you overnight`);
+  if (sr > 0) p.push(`Aura read ${small(sr)} ${countNoun(sr, "page")} for you overnight`);
 
   if (f.tier && f.next_band_name && f.points_to_next_band != null) {
     p.push(`${f.points_to_next_band} ${f.points_to_next_band === 1 ? "point" : "points"} between ${f.tier} and ${f.next_band_name}`);
