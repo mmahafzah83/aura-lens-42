@@ -8,17 +8,21 @@
  * A failed read is reported as a failed read. It is never shown as an empty
  * corpus, which is a different and much more alarming thing to tell someone.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { loadTeachAura, MIN_POSTS_FOR_COVERAGE, type TeachAuraModel } from "@/lib/teachAura";
+import {
+  loadTeachAura, MIN_POSTS_FOR_COVERAGE, splitPastedPosts, addOwnWriting, addAdmiredPost, removeAdmiredPost,
+  ADMIRED_CAP, type TeachAuraModel,
+} from "@/lib/teachAura";
+import { saveLinkedInAddress } from "@/lib/linkedinAddress";
 import TeachAuraCoverage from "@/components/voice/TeachAuraCoverage";
 import TeachAuraReview from "@/components/voice/TeachAuraReview";
 import { useCachedVoice, invalidateVoiceCache } from "@/lib/voiceCache";
 import {
-  BLUE, GREEN, INK, LINE, MUTED, TYPE, cardStyle, chipStyle, ghostButton, microLabel, monoNum, primaryButton,
+  AMBER_TEXT, BLUE, GREEN, INK, LINE, MUTED, RED, TYPE, cardStyle, chipStyle, ghostButton, microLabel, monoNum, primaryButton,
 } from "@/components/voice/tokens";
 
 /** The three stages of a re-read, named so the member knows what's happening. */
@@ -137,6 +141,92 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       setStage(null);
     }
   }, [model, state]);
+
+
+  /* ── the controls this page offers ─────────────────────────────────────── */
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [pasteText, setPasteText] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addReport, setAddReport] = useState<string | null>(null);
+  const [admiredText, setAdmiredText] = useState("");
+  const [admiredSource, setAdmiredSource] = useState("");
+  const [addingAdmired, setAddingAdmired] = useState(false);
+  const [addressInput, setAddressInput] = useState("");
+  const [savingAddress, setSavingAddress] = useState(false);
+
+  const addWriting = useCallback(async (posts: string[]) => {
+    setAdding(true);
+    setAddReport(null);
+    try {
+      const r = await addOwnWriting(posts);
+      const parts = [`${r.admitted} added.`];
+      if (r.tooShort > 0) parts.push(`${r.tooShort} rejected — under 200 characters, too short to read a style from.`);
+      if (r.wrongSource > 0) parts.push(`${r.wrongSource} rejected — they did not pass the own-writing rule.`);
+      setAddReport(parts.join(" "));
+      setPasteText("");
+      invalidateVoiceCache("voice:");
+      await state.reload(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't add that writing.");
+    } finally {
+      setAdding(false);
+    }
+  }, [state]);
+
+  const onFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = (e.target.files || [])[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      await addWriting(splitPastedPosts(text));
+    } catch {
+      toast.error("Couldn't read that file. Use a .txt or .md file.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }, [addWriting]);
+
+  const addAdmired = useCallback(async () => {
+    if (!userId) return;
+    setAddingAdmired(true);
+    try {
+      await addAdmiredPost(userId, admiredText, admiredSource);
+      setAdmiredText("");
+      setAdmiredSource("");
+      invalidateVoiceCache("voice:");
+      await state.reload(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't save that.");
+    } finally {
+      setAddingAdmired(false);
+    }
+  }, [userId, admiredText, admiredSource, state]);
+
+  const dropAdmired = useCallback(async (index: number) => {
+    if (!userId) return;
+    try {
+      await removeAdmiredPost(userId, index);
+      invalidateVoiceCache("voice:");
+      await state.reload(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't remove that.");
+    }
+  }, [userId, state]);
+
+  const saveAddress = useCallback(async () => {
+    if (!userId) return;
+    setSavingAddress(true);
+    try {
+      await saveLinkedInAddress(userId, addressInput);
+      setAddressInput("");
+      invalidateVoiceCache("voice:");
+      await state.reload(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't save that address.");
+    } finally {
+      setSavingAddress(false);
+    }
+  }, [userId, addressInput, state]);
 
 
   if (!userId) return <Card><span style={{ fontSize: TYPE.body, color: MUTED }}>Sign in to see what Aura read.</span></Card>;
