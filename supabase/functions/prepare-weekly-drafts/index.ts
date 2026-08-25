@@ -230,6 +230,14 @@ Deno.serve(async (req) => {
         }
 
         // 5+6) Generate + insert
+        /**
+         * SIBLING AWARENESS. These three drafts are three independent calls to
+         * the generator, so without this each one is written as if it were the
+         * only one — which is how a single member ended up with seven drafts
+         * all opening on the same word. Every shape produced in this run is
+         * threaded into the next call so draft 2 and 3 cannot repeat draft 1.
+         */
+        const siblingShapes: Array<{ hook_style: string | null; ending_type: string | null; opening: string }> = [];
         for (let i = 0; i < candidates.length; i++) {
           const signal = candidates[i];
           const isLast = i === candidates.length - 1;
