@@ -437,19 +437,27 @@ export default function YourVoice({
         </div>
       )}
 
-      {/* 3 — the spectrums */}
-      <header style={{ marginBlockStart: 20 }}>
+      {/* 3 — the spectrums, one collapsible group each */}
+      <header className="cb-span" style={{ marginBlockStart: 8 }}>
         <h2 style={{ fontSize: TYPE.section, fontWeight: 600, color: INK, margin: 0 }}>
           What Aura believes about how you write
         </h2>
-        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "4px 10px" }}>
+        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "4px 0" }}>
           Drag any marker to correct it. Aura keeps learning the ones you leave alone.
         </p>
       </header>
-      <div style={cardStyle}>
-        {grouped.map(([group, traits]) => (
-          <div key={group} style={{ marginBlockEnd: 8 }}>
-            <div style={microLabel}>{GROUP_LABEL[group] ?? group}</div>
+      {grouped.map(([group, traits]) => (
+        <CollapseBlock
+          key={group}
+          id={`believe-${group}`}
+          label={GROUP_LABEL[group] ?? group}
+          summary={groupSummary(traits)}
+          controlLabel="Adjust"
+          open={isGroupOpen(`believe:${group}`)}
+          onToggle={() => setGroup(`believe:${group}`, !isGroupOpen(`believe:${group}`))}
+        >
+          <div style={{ marginBlockEnd: 8 }}>
+
             {traits.map((t) => (
               <SpectrumRow
                 key={t.trait_key}
