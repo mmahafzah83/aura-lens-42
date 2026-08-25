@@ -325,7 +325,7 @@ export default function MomentumPage() {
                   You do · about two minutes
                 </div>
                 <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "4px 0 0" }}>
-                  Read one thing and press one button.
+                  Read one page and press one button.
                 </p>
               </div>
             </div>
@@ -390,13 +390,13 @@ export default function MomentumPage() {
           <Card>
             <div style={{ display: "grid", gap: 10 }}>
               <FunnelRow
-                label={CAPTURE.nounPlural.replace(/^c/, "C")}
+                label={CAPTURE.NounPlural}
                 value={funnel.captures}
                 note="everything you've saved"
                 width={100}
               />
               <FunnelRow
-                label={`${CAPTURE.nounPlural.replace(/^c/, "C")} used in a ${SIGNAL.one}`}
+                label={`${CAPTURE.NounPlural} used in a ${SIGNAL.one}`}
                 value={funnel.used_in_signal}
                 note={`${pct(funnel.used_in_signal, funnel.captures)}% of your ${CAPTURE.nounPlural}`}
                 width={pct(funnel.used_in_signal, funnel.captures)}

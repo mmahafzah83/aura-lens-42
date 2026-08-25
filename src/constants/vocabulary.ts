@@ -44,7 +44,13 @@ export const EVIDENCE = {
   Many: "Evidence",
 } as const;
 
-export const CAPTURE = { verbPast: "captured", noun: "capture", nounPlural: "captures" } as const;
+export const CAPTURE = {
+  verbPast: "captured",
+  noun: "capture",
+  nounPlural: "captures",
+  Noun: "Capture",
+  NounPlural: "Captures",
+} as const;
 
 export const SOURCE = { one: "source", many: "sources", One: "Source", Many: "Sources" } as const;
 
