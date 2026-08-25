@@ -19,7 +19,6 @@ import {
   shouldCollapse,
   selectShape,
   deriveInVoiceSubsets,
-  hasLearnedVoice,
 
   opensOnBannedWord,
   sameBeats,
