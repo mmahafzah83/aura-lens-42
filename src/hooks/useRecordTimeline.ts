@@ -131,7 +131,11 @@ export function useThemeTitles() {
 
   const load = useCallback(async (key: string, from: string, to: string) => {
     setCache((c) => (c[key] ? c : { ...c, [key]: { titles: [], loading: true } }));
-    const { data } = await (supabase.rpc as any)("home_record_themes", { p_from: from, p_to: to });
+    // #163 — the chip's NUMBER comes from `home_record_timeline`, which buckets
+    // by the member's local day. The reveal must bucket the same way or it can
+    // show more rows than the number promised, so it gets the same `p_tz`.
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    const { data } = await (supabase.rpc as any)("home_record_themes", { p_from: from, p_to: to, p_tz: tz });
     const titles = (Array.isArray(data) ? data : []).map((r: any) => String(r.title ?? "")).filter(Boolean);
     setCache((c) => ({ ...c, [key]: { titles, loading: false } }));
   }, []);
