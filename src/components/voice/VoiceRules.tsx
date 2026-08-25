@@ -128,6 +128,7 @@ function Suggestions({
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <span dir="auto" style={{ fontSize: TYPE.body, color: INK, lineHeight: 1.5 }}>{r.text}</span>
                 <span style={chipStyle(MUTED, SURFACE, LINE)}>{KIND_LABEL[r.kind]}</span>
+                {r.kind === "never" && !r.check ? <span style={chipStyle(MUTED, SURFACE, LINE)}>Guidance only</span> : null}
               </div>
               <Evidence rule={r} />
             </div>

@@ -440,8 +440,12 @@ export default function YourVoice({
         )}
         onLookForPatterns={(sources) => void mutate(dna, async () => {
           const res = await runSuggestRules(sources);
+          const sourceSummary = Object.entries(res.by_source ?? {})
+            .filter(([, count]) => count > 0)
+            .map(([source, count]) => `${source}: ${count}`)
+            .join(" · ");
           toast.success(res.written > 0
-            ? `Aura found ${res.written} ${res.written === 1 ? "pattern" : "patterns"} in your writing.`
+            ? `Aura found ${res.written} ${res.written === 1 ? "pattern" : "patterns"}${sourceSummary ? ` — ${sourceSummary}` : ""}.`
             : "Nothing new — Aura found no pattern it could evidence.");
         })}
         onAdd={(kind, text) => {
