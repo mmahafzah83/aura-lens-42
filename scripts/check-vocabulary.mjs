@@ -58,45 +58,48 @@ const DICT = "src/constants/vocabulary.ts";
 const DICT_TWIN = "supabase/functions/_shared/vocabulary.ts";
 
 /**
- * The twin's SIGNATURE — the actual strings a member could read, not the
- * docblocks: every Arabic literal in the file, plus the English noun table,
- * plus the exported formatter names. Two files with the same signature cannot
- * say a different word to a member.
+ * The twin's BODY — everything from `export type VocabLang` onwards, comments
+ * stripped and blank lines dropped. Compared CHARACTER FOR CHARACTER, because
+ * set-comparing extracted tokens was blind to two real divergences:
+ *   a) a swapped mapping in NOUN_BY_KIND (`page: {one:"draft"}`) keeps the set
+ *      of strings byte-identical while countNoun() returns the wrong word in
+ *      every live email function;
+ *   b) English inside a template literal (`piece${…}s of evidence`) never
+ *      matched the `key: "value"` shape at all.
+ * The slice excludes the file headers, which legitimately differ.
  */
-function vocabularySignature(text) {
+function vocabularyBody(text) {
   const code = stripComments(text);
-  const body = code.slice(Math.max(0, code.indexOf("export type VocabLang")));
-  const arabic = [...body.matchAll(/["'`]([^"'`]*[\u0600-\u06FF][^"'`]*)["'`]/g)]
-    .map((m) => m[1].trim());
-  const english = [...body.matchAll(/\b(one|two|many|few|noun|nounPlural|One|Many|NounPlural)\s*:\s*"([^"]+)"/g)]
-    .map((m) => `${m[1]}=${m[2]}`);
-  const exports = [...body.matchAll(/export (?:const|function) ([A-Za-z0-9_]+)/g)].map((m) => m[1]);
-  const uniqSorted = (a) => [...new Set(a)].sort();
-  return {
-    arabic: uniqSorted(arabic),
-    english: uniqSorted(english),
-    exports: uniqSorted(exports),
-  };
+  const i = code.indexOf("export type VocabLang");
+  const body = code.slice(Math.max(0, i));
+  return body
+    .split("\n")
+    .map((l) => l.replace(/\s+$/, ""))
+    .filter((l) => l.trim() !== "");
 }
 
 /** Fails the build when the dictionary and its Deno twin drift apart. */
 export function checkTwin() {
-  const problems = [];
   let a, b;
   try {
-    a = vocabularySignature(readFileSync(join(ROOT, DICT), "utf8"));
-    b = vocabularySignature(readFileSync(join(ROOT, DICT_TWIN), "utf8"));
+    a = vocabularyBody(readFileSync(join(ROOT, DICT), "utf8"));
+    b = vocabularyBody(readFileSync(join(ROOT, DICT_TWIN), "utf8"));
   } catch (e) {
     return [`cannot read the dictionary or its twin: ${e.message}`];
   }
-  for (const key of ["arabic", "english", "exports"]) {
-    const onlyClient = a[key].filter((x) => !b[key].includes(x));
-    const onlyTwin = b[key].filter((x) => !a[key].includes(x));
-    for (const x of onlyClient) problems.push(`${key}: "${x}" is in ${DICT} but not in ${DICT_TWIN}`);
-    for (const x of onlyTwin) problems.push(`${key}: "${x}" is in ${DICT_TWIN} but not in ${DICT}`);
+  const n = Math.max(a.length, b.length);
+  for (let k = 0; k < n; k++) {
+    if (a[k] === b[k]) continue;
+    return [
+      `the dictionary and its Deno twin have diverged — first difference at body line ${k + 1}:`,
+      `  ${DICT}:      ${a[k] === undefined ? "<end of file>" : a[k].trim()}`,
+      `  ${DICT_TWIN}: ${b[k] === undefined ? "<end of file>" : b[k].trim()}`,
+      `  they must stay identical from "export type VocabLang" onwards — edit one, edit the other.`,
+    ];
   }
-  return problems;
+  return [];
 }
+
 
 
 /** Banned member-facing nouns, plus the seven legitimate ones (which still may
