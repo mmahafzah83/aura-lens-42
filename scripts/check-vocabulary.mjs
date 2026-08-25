@@ -257,6 +257,7 @@ const LATER_FILES = [
   "src/components/SignalsRadar.tsx",
   "src/components/StrategicEvolutionMap.tsx",
   "src/components/TierCeremonyModal.tsx",
+  "src/components/TodaysStatus.tsx",
   "src/components/AuditResultsView.tsx",
   // draft / post / page nouns, out of this round:
   "src/components/DocumentUpload.tsx",
