@@ -17,8 +17,17 @@ import {
   landTypeOfEnding,
   firstSixWords,
   shouldCollapse,
+  selectShape,
+  hasLearnedVoice,
+  opensOnBannedWord,
+  sameBeats,
+  resolveMove,
+  MOVES,
+  MOVE_IDS,
   type OpenType,
   type LandType,
+  type MoveId,
+  type PastShape,
 } from "../_shared/contentDNA.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
@@ -44,15 +53,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const FRAMEWORK_PROMPTS: Record<string, string> = {
-  hook_insight_question: "Structure this content using the Hook → Insight → Question framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
-  slap: "Structure this content using the SLAP (Stop, Look, Act, Purchase) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
-  bab: "Structure this content using the BAB (Before, After, Bridge) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
-  pas: "Structure this content using the PAS (Problem, Agitate, Solution) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
-  wwh: "Structure this content using the WWH (What, Why, How) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
-  chef: "Structure this content using the CHEF (Curate, Heat, Enhance, Feed) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
-  story_lesson_question: "Structure this content using the Story → Lesson → Question framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
-};
+/* FRAMEWORK_PROMPTS and POST_TYPE_INSTRUCTIONS_* are gone. Both were tables of
+   "what kind of post this is" that competed with each other and with the client's
+   own list. There is now ONE such table — MOVES in `_shared/contentDNA.ts` — and
+   the ids these two used resolve onto it through `resolveMove()`. */
 
 /**
  * The Arabic layer. It carries IDENTITY, REGISTER, worked formatting examples
@@ -113,7 +117,7 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 قواعد افتتاح البوست:
 - لا تبدأ البوست أبداً بكلمة "منشور" أو "منشور LinkedIn" أو أي تسمية للصيغة. ابدأ بالافتتاح مباشرة.
 - الافتتاح يتبع نوع الافتتاح المحدد لهذا البوست أعلاه، ولا شيء غيره.
-- مثال خاطئ: "منشور LinkedIn معظم مشاريع التحول الرقمي..."
+- مثال خاطئ: "منشور LinkedIn — مشاريع التحول الرقمي..." (لا تسبق الافتتاح بأي تسمية للصيغة)
 
 قواعد التنسيق الصارمة:
 - لا تستخدم "---" كفاصل بين الأقسام. استخدم سطراً فارغاً.
@@ -615,8 +619,9 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         framework_summary: `Write a concise framework summary: problem it solves, when to use it, the steps, and strategic value. Under 500 words.`,
       };
 
-      // Framework instruction
-      const frameworkInstruction = framework && FRAMEWORK_PROMPTS[framework] ? `\n\n${FRAMEWORK_PROMPTS[framework]}` : "";
+      /* A requested framework is no longer a prompt of its own: it resolves to a
+         MOVE, and the MOVE supplies the shape. One table, one instruction. */
+      const requestedMove = resolveMove(framework) || resolveMove(typeof post_type === "string" ? post_type : null);
 
       // Extra instruction (e.g. for short version rewrite)
       const extraInstruction = extra_instruction ? `\n\n${extra_instruction}` : "";
@@ -635,11 +640,11 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
        * is not a shape the member saw. Five most recent, no minimum count: one
        * prior draft is enough to avoid repeating it.
        */
-      let recentDrafts: Array<{ hook_style: string | null; ending_type: string | null; body: string | null }> = [];
+      let recentDrafts: Array<{ move_id: string | null; beats: string[] | null; hook_style: string | null; ending_type: string | null; body: string | null }> = [];
       try {
         const { data: recentRows } = await supabase
           .from("content_items")
-          .select("hook_style, ending_type, body, created_at")
+          .select("move_id, beats, hook_style, ending_type, body, created_at")
           .eq("user_id", effectiveUserId)
           .eq("made_by", "aura")
           .neq("status", "discarded")
@@ -657,26 +662,31 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
        * all opening on the same word. The caller threads what it has already
        * produced in this run through `sibling_shapes`.
        */
-      const siblingShapes: Array<{ hook_style?: string | null; ending_type?: string | null; opening?: string | null }> =
+      const siblingShapes: PastShape[] =
         Array.isArray((params as any)?.sibling_shapes) ? (params as any).sibling_shapes : [];
 
-      const recentHookStyle = recentDrafts.find((r) => r.hook_style)?.hook_style || null;
-      const recentEndingType = recentDrafts.find((r) => r.ending_type)?.ending_type || null;
-
-      /** Every OPEN/LAND type seen in the last three drafts, siblings first. */
-      const avoidOpenTypes: (OpenType | null)[] = [
-        ...siblingShapes.map((s) => openTypeOfHook(s?.hook_style ?? null)),
-        ...recentDrafts.slice(0, 3).map((r) => openTypeOfHook(r.hook_style)),
+      /**
+       * THE PAST, as one ordered list: this run's siblings first (they are the
+       * most recent shapes that exist), then history. Every rotation level reads
+       * this one array, so the three levels can never disagree about what "the
+       * last two drafts" were.
+       */
+      const pastShapes: PastShape[] = [
+        ...siblingShapes.map((s) => ({
+          move_id: s?.move_id ?? null,
+          beats: Array.isArray(s?.beats) ? s.beats : null,
+          hook_style: s?.hook_style ?? null,
+          ending_type: s?.ending_type ?? null,
+          opening: s?.opening ?? null,
+        })),
+        ...recentDrafts.map((r) => ({
+          move_id: r.move_id ?? null,
+          beats: Array.isArray(r.beats) ? r.beats : null,
+          hook_style: r.hook_style ?? null,
+          ending_type: r.ending_type ?? null,
+          opening: r.body ?? null,
+        })),
       ];
-      const avoidLandTypes: (LandType | null)[] = [
-        ...siblingShapes.map((s) => landTypeOfEnding(s?.ending_type ?? null)),
-        ...recentDrafts.slice(0, 3).map((r) => landTypeOfEnding(r.ending_type)),
-      ];
-      /** The literal openings this post must not reproduce. */
-      const avoidOpeningTexts: string[] = [
-        ...siblingShapes.map((s) => String(s?.opening || "")),
-        ...recentDrafts.map((r) => String(r.body || "")),
-      ].filter((t) => firstSixWords(t).length > 0);
 
       /**
        * Precedence 1: a learned voice profile with observed opening habits
@@ -692,6 +702,7 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         contrast: "contrarian",
         dialogue: "scene",
       };
+
       const openWeights: Record<string, number> | undefined = (() => {
         const list = memberPrefs.openings || [];
         if (!list.length) return undefined;
@@ -714,18 +725,70 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         return Object.keys(w).length >= 2 ? w : undefined;
       })();
 
+      /**
+       * MOVE weights: what this member's own drafts actually did. Only consulted
+       * when a voice exists — see the first principle at the top of contentDNA.
+       */
+      const moveWeights: Record<string, number> | undefined = (() => {
+        const w: Record<string, number> = {};
+        for (const r of recentDrafts) {
+          const m = resolveMove(r.move_id ?? null);
+          if (m) w[m] = (w[m] || 0) + 1;
+        }
+        const structures = Array.isArray((voiceProfile as any)?.preferred_structures)
+          ? (voiceProfile as any).preferred_structures
+          : [];
+        for (const s of structures) {
+          const m = resolveMove(String(s));
+          if (m) w[m] = (w[m] || 0) + 2;
+        }
+        return Object.keys(w).length ? w : undefined;
+      })();
+
       const seed = rotationSeed(
         effectiveUserId,
         signal_id || topic || "",
         siblingShapes.length,
         new Date().toISOString().slice(0, 10),
       );
-      const openType: OpenType = rotateType(OPEN_TYPES, { avoid: avoidOpenTypes, seed, weights: openWeights });
-      const landType: LandType = rotateType(LAND_TYPES, { avoid: avoidLandTypes, seed: seed + 7, weights: landWeights });
+
+      /**
+       * ONE selector, three levels — MOVE, then beat order, then OPEN/LAND. With
+       * a learned voice it collapses to the single no-immediate-repeat guard.
+       */
+      const memberHasVoice = hasLearnedVoice(voiceProfile);
+      const shape = selectShape({
+        hasVoice: memberHasVoice,
+        past: pastShapes,
+        seed,
+        moveWeights,
+        openWeights,
+        landWeights,
+        requestedMove,
+      });
+      const moveId: MoveId = shape.move;
+      const beatsForThisPost = shape.beats;
+      const openType: OpenType = shape.openType;
+      const landType: LandType = shape.landType;
+      const avoidOpenTypes = shape.avoidOpenTypes;
+      const avoidLandTypes = shape.avoidLandTypes;
+      const avoidOpeningTexts = shape.avoidOpeningTexts;
+      /** The two moves that must not come round again, and the previous shape. */
+      const avoidMoves = pastShapes
+        .slice(0, memberHasVoice ? 1 : 2)
+        .map((p) => resolveMove(p.move_id ?? null))
+        .filter(Boolean) as MoveId[];
+      const previousBeats = pastShapes[0]?.beats ?? null;
 
       const recentPatternBlock = (() => {
         const bannedOpens = [...new Set(avoidOpenTypes.filter(Boolean))] as OpenType[];
         const bits: string[] = [];
+        if (avoidMoves.length) {
+          const names = avoidMoves.map((m) => (effectiveLanguage === "ar" ? MOVES[m].label_ar : MOVES[m].label_en));
+          bits.push(effectiveLanguage === "ar"
+            ? `أنواع منشورات استُخدمت للتو — ممنوعة هنا: ${names.join("، ")}.`
+            : `Kinds of post just used — banned here: ${names.join(", ")}.`);
+        }
         if (bannedOpens.length) {
           bits.push(effectiveLanguage === "ar"
             ? `أنواع افتتاح مستهلكة في آخر المسودات — ممنوعة هنا: ${bannedOpens.join("، ")}.`
@@ -740,6 +803,7 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         if (!bits.length) return "";
         return "\n\n" + (effectiveLanguage === "ar" ? "منع التكرار:" : "NO-REPEAT:") + " " + bits.join(" ");
       })();
+
 
       // Language + voice handling
       let voiceSection: string;
@@ -811,36 +875,13 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         }
       }
 
-      // ── Post-type instruction (Flash 2x4 grid) ──
-      const POST_TYPE_INSTRUCTIONS_EN: Record<string, string> = {
-        reveal: "Open by exposing a truth the industry avoids. The hook must make the reader uncomfortable.",
-        pattern: "Open by naming a recurring pattern you've observed across multiple organizations or projects.",
-        tension: "Open by naming a specific contradiction the reader lives with daily. Do not solve it immediately — sit in the tension.",
-        win: "Open with a concrete result or milestone. Be specific — name the number, the client type, or the outcome. No vague claims.",
-        prediction: "Open with a bold, specific prediction about where the sector is heading in the next 2-3 years.",
-        framework: "Open by introducing a model or approach. Give it a name. Explain the 3-4 steps or elements.",
-        lesson: "Open with a moment from real experience. Name the situation, then extract the transferable lesson.",
-        inspiration: "Open with a perspective that reframes how the reader sees their work or field. Elevate, don't lecture.",
-      };
-      const POST_TYPE_INSTRUCTIONS_AR: Record<string, string> = {
-        "كشف": "ابدأ بكشف حقيقة يتجنبها القطاع. يجب أن يشعر القارئ بعدم الارتياح من السطر الأول.",
-        "نمط": "ابدأ بتسمية نمط متكرر لاحظته في عدة جهات أو مشاريع.",
-        "خلل": "ابدأ بتسمية تناقض حقيقي يعيشه القارئ يومياً. لا تحله فوراً — ابقَ في التوتر.",
-        "إنجاز": "ابدأ بنتيجة ملموسة. كن محدداً — اذكر الرقم أو نوع العميل أو الأثر.",
-        "تنبؤ": "ابدأ بتنبؤ جريء ومحدد عن وجهة القطاع في السنتين أو الثلاث القادمة.",
-        "إطار": "ابدأ بتقديم نموذج أو منهجية. أعطها اسماً. اشرح الخطوات أو العناصر الثلاثة أو الأربعة.",
-        "درس": "ابدأ بلحظة من تجربة حقيقية. سمّ الموقف ثم استخرج الدرس القابل للتطبيق.",
-        "إلهام": "ابدأ بمنظور يُعيد تأطير كيفية رؤية القارئ لعمله أو مجاله.",
-      };
-      const postTypeStr = typeof post_type === "string" ? post_type.trim() : "";
-      let postTypeInstruction = "";
-      if (postTypeStr) {
-        const enKey = postTypeStr.toLowerCase();
-        const arHit = POST_TYPE_INSTRUCTIONS_AR[postTypeStr];
-        const enHit = POST_TYPE_INSTRUCTIONS_EN[enKey];
-        const chosen = effectiveLanguage === "ar" ? (arHit || enHit) : (enHit || arHit);
-        if (chosen) postTypeInstruction = `\n\n${chosen}`;
-      }
+      /* The 8 Flash post types used to live here as their own instruction table,
+         with the acronym frameworks above them and the client's move library on
+         the other side of the wire — three tables, one job. They are now aliases
+         onto MOVES (`resolveMove`), the MOVE is chosen by `selectShape` above,
+         and the instruction the model receives is `buildMoveDirective`. Nothing
+         to add here. */
+      const postTypeInstruction = "";
 
       /**
        * The close is now decided in ONE place: the rotated LAND type. The old
@@ -878,7 +919,7 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
 
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
-${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription, register: effectiveRegister, openType, landType, collapse: collapseThisPost })}${recentPatternBlock}
+${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription, register: effectiveRegister, move: moveId, openType, landType, collapse: collapseThisPost })}${recentPatternBlock}
 
 ${groundingContext}
 
@@ -1250,19 +1291,31 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       if (!integrity.ok) warnings.push("integrity_issues");
       if (bansEmoji && containsEmoji(content)) warnings.push("emoji_present");
 
-      // ── ROTATION ENFORCEMENT ─────────────────────────────────────────────
+      // ── ROTATION ENFORCEMENT — ALL THREE LEVELS ──────────────────────────
       // A prompt sentence is not enforcement; this check is. The produced draft
-      // is classified and compared against the member's last five drafts (and
-      // this run's siblings) on BOTH shape and literal opening words. One
-      // regeneration naming exactly what to avoid; if the retry repeats too, the
-      // draft still ships — a member is never blocked — but the repetition is
-      // logged at `high` so it is visible instead of silent.
+      // is compared against the member's last five drafts (and this run's
+      // siblings) on the MOVE, on the beat order, on the OPEN type and on the
+      // literal opening words — plus the outright ban on opening with "Most" /
+      // "معظم". One regeneration naming exactly what was violated; if the retry
+      // repeats too, the draft still ships — a member is never blocked — but it
+      // ships FLAGGED (`shape_repeat`) and logged at `high`, never silently.
       let rotationRepeat: string | null = null;
       {
         const repeatOf = (text: string): string | null => {
+          if (opensOnBannedWord(text)) {
+            return "opens_on_banned_word";
+          }
           const six = firstSixWords(text);
           if (six && avoidOpeningTexts.some((prev) => firstSixWords(prev) === six)) {
             return `same_first_six_words:"${six}"`;
+          }
+          // L1 — the MOVE this post was written as must not be one of the last two.
+          if (avoidMoves.includes(moveId)) {
+            return `repeated_move:${moveId}`;
+          }
+          // L2 — and it must not march in the same order as the previous draft.
+          if (sameBeats(beatsForThisPost, previousBeats)) {
+            return `repeated_beats:${beatsForThisPost.join(">")}`;
           }
           const producedOpen = openTypeOfHook(hookStyleOf(text));
           if (producedOpen && avoidOpenTypes.includes(producedOpen)) {
@@ -1278,9 +1331,10 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         const firstRepeat = repeatOf(content);
         if (firstRepeat) {
           const avoidWords = [...new Set(avoidOpeningTexts.map(firstSixWords).filter(Boolean))].slice(0, 5);
+          const moveLabel = isAr ? MOVES[moveId].label_ar : MOVES[moveId].label_en;
           const rotDirective = isAr
-            ? `\n\nإعادة كتابة إلزامية — الافتتاح مكرر (${firstRepeat}).\n- ابدأ البوست بنوع افتتاح "${openType}" كما هو محدد أعلاه.\n- لا تبدأ بأي من هذه الكلمات: ${avoidWords.map((w) => `"${w}"`).join("، ")}.\n- غيّر الكلمات الست الأولى تماماً. أبقِ الجوهر والأدلة كما هي.`
-            : `\n\nMANDATORY REWRITE — the opening repeats a recent draft (${firstRepeat}).\n- Open in the "${openType}" OPEN type named above, and close in the "${landType}" LAND type.\n- Do not begin with any of these: ${avoidWords.map((w) => `"${w}"`).join(", ")}.\n- Change the first six words entirely. Keep the substance and the evidence.`;
+            ? `\n\nإعادة كتابة إلزامية — الشكل مكرر (${firstRepeat}).\n- نوع المنشور المطلوب: ${moveLabel}، بترتيب الحركات: ${beatsForThisPost.join(" ← ")}.\n- ابدأ البوست بنوع افتتاح "${openType}" كما هو محدد أعلاه.\n- لا تبدأ بكلمة "معظم" ولا بأي من هذه الكلمات: ${avoidWords.map((w) => `"${w}"`).join("، ")}.\n- غيّر الكلمات الست الأولى تماماً. أبقِ الجوهر والأدلة كما هي.`
+            : `\n\nMANDATORY REWRITE — the shape repeats a recent draft (${firstRepeat}).\n- The kind of post required: ${moveLabel}, in this beat order: ${beatsForThisPost.join(" → ")}.\n- Open in the "${openType}" OPEN type named above, and close in the "${landType}" LAND type.\n- Do not begin with the word "Most", and not with any of these: ${avoidWords.map((w) => `"${w}"`).join(", ")}.\n- Change the first six words entirely. Keep the substance and the evidence.`;
           const rotRaw = await callModel(rotDirective);
           const rotCand = rotRaw ? hygiene(stripLabels(stripLeadingScaffold(rotRaw))) : "";
           const secondRepeat = rotCand ? repeatOf(rotCand) : "regenerate_failed";
@@ -1299,8 +1353,11 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
                 context: {
                   stage: "rotation_enforcement",
                   user_id: effectiveUserId,
+                  move_id: moveId,
+                  beats: beatsForThisPost,
                   open_type: openType,
                   land_type: landType,
+                  basis: shape.basis,
                   first_repeat: firstRepeat,
                   after_retry: secondRepeat,
                   first_six_words: firstSixWords(content),
@@ -1311,6 +1368,8 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
             }
           }
         }
+      }
+
       }
 
       // ── QUALITY GATE ─────────────────────────────────────────────────────
@@ -1440,7 +1499,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         content,
         success: true,
         provenance,
-        framework_used: (framework && FRAMEWORK_PROMPTS[framework]) ? framework : null,
+        framework_used: resolveMove(framework) ? framework : null,
         quality_gate: gatePayload,
         blocked: gateBlocked,
         gate_result_id: gateResultId,
@@ -1451,11 +1510,17 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         requested_ending: chosenEnding,
         chosen_opening: chosenOpening,
         // The rotation, handed back so the caller can store it and so siblings
-        // in the same batch can be told what not to repeat.
+        // in the same batch can be told what not to repeat. All three levels
+        // travel together — a caller that stores only the OPEN type leaves the
+        // next run unable to rotate the MOVE.
+        move_id: moveId,
+        beats: beatsForThisPost,
+        rotation_basis: shape.basis,
         open_type: openType,
         land_type: landType,
         collapsed: collapseThisPost,
         rotation_repeat: rotationRepeat,
+
         opening_words: firstSixWords(content),
         unsourced_numbers_removed: unsourcedRemoved,
         unsourced_entities_removed: unsourcedEntitiesRemoved,

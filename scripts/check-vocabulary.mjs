@@ -57,50 +57,59 @@ const FUNCTIONS = join(ROOT, "supabase", "functions");
 const DICT = "src/constants/vocabulary.ts";
 const DICT_TWIN = "supabase/functions/_shared/vocabulary.ts";
 
-/**
- * The twin's BODY — everything from `export type VocabLang` onwards, comments
- * stripped and blank lines dropped. Compared CHARACTER FOR CHARACTER, because
- * set-comparing extracted tokens was blind to two real divergences:
- *   a) a swapped mapping in NOUN_BY_KIND (`page: {one:"draft"}`) keeps the set
- *      of strings byte-identical while countNoun() returns the wrong word in
- *      every live email function;
- *   b) English inside a template literal (`piece${…}s of evidence`) never
- *      matched the `key: "value"` shape at all.
- * The slice excludes the file headers, which legitimately differ.
- */
-function vocabularyBody(text) {
+/** The MOVES table and ITS Deno twin. Same problem, same remedy: the client
+ *  cannot import from `supabase/functions/_shared/`, so the one table of "what
+ *  kind of post this is" is mirrored — and a mirror with no gate is exactly the
+ *  bug this file exists to prevent. */
+const MOVES_MIRROR = "src/constants/moves.ts";
+const MOVES_TWIN = "supabase/functions/_shared/moves.ts";
+
+/** Generic body slice: everything from `marker` onwards, comments stripped and
+ *  blank lines dropped, so the two file headers may legitimately differ. */
+function twinBody(text, marker) {
   const code = stripComments(text);
-  const i = code.indexOf("export type VocabLang");
-  const body = code.slice(Math.max(0, i));
-  return body
+  const i = code.indexOf(marker);
+  return code
+    .slice(Math.max(0, i))
     .split("\n")
     .map((l) => l.replace(/\s+$/, ""))
     .filter((l) => l.trim() !== "");
 }
 
-/** Fails the build when the dictionary and its Deno twin drift apart. */
-export function checkTwin() {
+function vocabularyBody(text) {
+  return twinBody(text, "export type VocabLang");
+}
+
+/** Fails the build when a file and its twin drift apart, character for
+ *  character, from `marker` onwards. */
+function compareTwin(fileA, fileB, marker, label) {
   let a, b;
   try {
-    a = vocabularyBody(readFileSync(join(ROOT, DICT), "utf8"));
-    b = vocabularyBody(readFileSync(join(ROOT, DICT_TWIN), "utf8"));
+    a = twinBody(readFileSync(join(ROOT, fileA), "utf8"), marker);
+    b = twinBody(readFileSync(join(ROOT, fileB), "utf8"), marker);
   } catch (e) {
-    return [`cannot read the dictionary or its twin: ${e.message}`];
+    return [`cannot read ${label} or its twin: ${e.message}`];
   }
   const n = Math.max(a.length, b.length);
   for (let k = 0; k < n; k++) {
     if (a[k] === b[k]) continue;
     return [
-      `the dictionary and its Deno twin have diverged — first difference at body line ${k + 1}:`,
-      `  ${DICT}:      ${a[k] === undefined ? "<end of file>" : a[k].trim()}`,
-      `  ${DICT_TWIN}: ${b[k] === undefined ? "<end of file>" : b[k].trim()}`,
-      `  they must stay identical from "export type VocabLang" onwards — edit one, edit the other.`,
+      `${label} and its twin have diverged — first difference at body line ${k + 1}:`,
+      `  ${fileA}: ${a[k] === undefined ? "<end of file>" : a[k].trim()}`,
+      `  ${fileB}: ${b[k] === undefined ? "<end of file>" : b[k].trim()}`,
+      `  they must stay identical from "${marker}" onwards — edit one, edit the other.`,
     ];
   }
   return [];
 }
 
-
+/** Both twins, checked the same way. */
+export function checkTwin() {
+  return [
+    ...compareTwin(DICT, DICT_TWIN, "export type VocabLang", "the dictionary"),
+    ...compareTwin(MOVES_MIRROR, MOVES_TWIN, "export type MoveBeat", "the MOVES table"),
+  ];
+}
 
 /** Banned member-facing nouns, plus the seven legitimate ones (which still may
  *  not be hand-written next to a number). */

@@ -1,3 +1,4 @@
+import { MOVES, MOVE_IDS } from "@/constants/moves";
 /**
  * Curated option sets for the Voice & Writing tab.
  *
@@ -72,16 +73,15 @@ export const CLOSER_LIBRARY: string[] = CLOSER_OPTIONS.map((o) => o.label).conca
   "One sentence naming the next decision",
 ]);
 
-export const MOVES_LIBRARY: string[] = [
-  "Name the number before the narrative",
-  "Concede the counter-argument, then close it",
-  "Use one operational detail as proof",
-  "Contrast the board view with the field view",
-  "Cite a regulator, not a vendor",
-  "End on the decision, not the summary",
-  "Refuse the buzzword and say the plain thing",
-  "Anchor the claim to a date",
-];
+/**
+ * ONE table of moves. This used to be a free-text list maintained here, in
+ * `POST_TYPE_INSTRUCTIONS_EN` and in `FRAMEWORK_PROMPTS` — three answers to the
+ * same question. It now derives from the mirrored MOVES table, which the
+ * vocabulary gate holds character-identical to its Deno twin.
+ */
+export const MOVES_LIBRARY: string[] = MOVE_IDS.map((id) => MOVES[id].label_en);
+
+export const MOVES_LIBRARY_AR: string[] = MOVE_IDS.map((id) => MOVES[id].label_ar);
 
 export const optionLabel = (opts: VoiceOption[], id: string): string =>
   opts.find((o) => o.id === id)?.label ?? "";

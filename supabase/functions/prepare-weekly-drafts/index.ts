@@ -237,7 +237,18 @@ Deno.serve(async (req) => {
          * all opening on the same word. Every shape produced in this run is
          * threaded into the next call so draft 2 and 3 cannot repeat draft 1.
          */
-        const siblingShapes: Array<{ hook_style: string | null; ending_type: string | null; opening: string }> = [];
+        /**
+         * The three drafts of one run must see each other, on all three rotation
+         * levels. Passing only the opening back meant draft 2 could repeat draft
+         * 1's MOVE and beat order and still pass.
+         */
+        const siblingShapes: Array<{
+          move_id: string | null;
+          beats: string[] | null;
+          hook_style: string | null;
+          ending_type: string | null;
+          opening: string;
+        }> = [];
         for (let i = 0; i < candidates.length; i++) {
           const signal = candidates[i];
           const isLast = i === candidates.length - 1;
@@ -340,6 +351,10 @@ Deno.serve(async (req) => {
                 // carries its own fingerprint.
                 hook_style: json?.hook_style ?? null,
                 ending_type: json?.ending_type ?? null,
+                move_id: json?.move_id ?? null,
+                beats: Array.isArray(json?.beats) ? json.beats : null,
+                // A draft that shipped a repeat ships FLAGGED, never silently.
+                shape_repeat: json?.rotation_repeat ?? null,
                 generation_params: {
                   source: "weekly_ready",
                   week: weekTag,
@@ -368,6 +383,8 @@ Deno.serve(async (req) => {
             await writeLineage(admin, "content_items", created.id, contributions);
 
             siblingShapes.push({
+              move_id: json?.move_id ?? null,
+              beats: Array.isArray(json?.beats) ? json.beats : null,
               hook_style: json?.hook_style ?? null,
               ending_type: json?.ending_type ?? null,
               opening: String(json?.opening_words || content).slice(0, 200),
