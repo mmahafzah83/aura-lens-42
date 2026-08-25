@@ -826,7 +826,7 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       } else {
         voiceSection = buildVoiceContext(voiceProfile, chosenOpening);
       }
-      voiceSection += recentPatternBlock;
+      voiceSection += recentPatternBlock + distributionBlock;
       // Only rules the member wrote or explicitly accepted. A suggested rule
       // is a proposal and must never reach the model.
       const activeRules = effectiveUserId ? await loadActiveMemberRules(supabase, effectiveUserId) : [];
