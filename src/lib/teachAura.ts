@@ -68,14 +68,53 @@ export interface CorpusPost {
   isArabic: boolean;
 }
 
+/** Whether Aura can still read this member's LinkedIn. */
+export type ConnectionState = "connected" | "needs_reconnect" | "not_set";
+
+/** An example Aura kept, labelled by where it actually came from. */
+export interface KeptExample {
+  content: string;
+  sourceLabel: string;
+  addedAt: string | null;
+  /** true when the member added it themselves — a paste or an upload. */
+  memberAdded: boolean;
+}
+
+/** A post the member admires. Reference only — never material Aura reuses. */
+export interface AdmiredPost {
+  content: string;
+  source: string | null;
+  addedAt: string | null;
+}
+
+/** Sources on an `example_posts` entry that mean "the member added this". */
+const MEMBER_ADDED_SOURCES = ["teach", "paste", "upload", "member_added"];
+
+export const EXAMPLE_SOURCE_LABEL = (source: unknown): string => {
+  const s = String(source ?? "").trim();
+  if (!s) return "Unknown source";
+  if (MEMBER_ADDED_SOURCES.includes(s)) return "Added by you";
+  if (s === "linkedin_export") return "From your LinkedIn export";
+  if (s === "linkedin_own" || s === "imported") return "Your post";
+  return "Unknown source";
+};
+
+/** Aura will hold this many admired posts and no more. */
+export const ADMIRED_CAP = 10;
+
 export interface TeachAuraModel {
   address: LinkedInAddress;
+  connectionState: ConnectionState;
   /** Own posts Aura counted, and the ones it set aside. */
   includedCount: number;
   excludedCount: number;
   classifiedCount: number;
   documentCount: number;
-  pastedCount: number;
+  /** Examples Aura kept from the member's posts, with their true source. */
+  examples: KeptExample[];
+  /** Examples the member added themselves — the honest "you added" figure. */
+  addedByYouCount: number;
+  admired: AdmiredPost[];
   coverage: CoverageRow[];
   posts: CorpusPost[];
   totalPosts: number;
@@ -90,7 +129,11 @@ export interface TeachAuraModel {
    * 160 is a labelling job nobody finishes.
    */
   ambiguous: CorpusPost[];
+  /** Negative verdicts in the last 14 days, and what they disagreed on. */
+  negativeVerdicts: number;
+  negativeDimension: string | null;
 }
+
 /** How many uncertain items the member is ever asked about at once. */
 export const MAX_AMBIGUOUS = 8;
 
