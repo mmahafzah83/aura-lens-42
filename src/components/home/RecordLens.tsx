@@ -6,7 +6,7 @@ import {
   type RecordBucket, type RecordMilestone, type RecordPublished,
 } from "@/hooks/useRecordTimeline";
 import { ProvenanceMark } from "@/components/systemb";
-import { nEvidence, nSignals, nCaptures, nDrafts, nPosts, EVIDENCE, SIGNAL, countNoun } from "@/constants/vocabulary";
+import { nEvidence, nSignals, nCaptures, nDrafts, nPosts, countNoun } from "@/constants/vocabulary";
 
 /**
  * THE RECORD — what has actually happened, compressed by age.
