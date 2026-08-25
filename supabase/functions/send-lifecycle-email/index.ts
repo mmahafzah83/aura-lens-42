@@ -3,6 +3,8 @@ import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { logError } from "../_shared/logError.ts";
 import {
+// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
+import { countNoun } from "../_shared/vocabulary.ts";
   renderEmail, heading as h1, paragraph, note, signature,
   INK, INK_SOFT, INK_FAINT, CANVAS, ACCENT, BODY as BODY_FONT_STACK, MONO,
 } from "../_shared/emailTemplate.ts";
@@ -83,13 +85,13 @@ function buildEmail(
     const body = top
       ? `
         ${heading(`${name}, your signal graph is forming.`)}
-        <p style="margin:0 0 18px;">Aura detected ${signalCount} pattern${signalCount === 1 ? "" : "s"} from your captures. Your strongest right now: <strong>${top.signal_title}</strong>.</p>
-        <p style="margin:0 0 18px;">This is the topic where your intelligence runs deepest. One more capture on this topic strengthens the signal. Two more and Aura can generate a post that sounds like you wrote it.</p>
+        <p style="margin:0 0 18px;">Aura detected ${signalCount} ${countNoun(signalCount, "signal")} from your captures. Your strongest right now: <strong>${top.signal_title}</strong>.</p>
+        <p style="margin:0 0 18px;">This is where your intelligence runs deepest. One more capture strengthens the signal. Two more and Aura can generate a post that sounds like you wrote it.</p>
         ${ctaButton(BRAND, "See your signals", `${APP_URL}/dashboard?tab=intelligence`)}
         ${signoff(name, level)}`
       : `
         ${heading(`${name}, your signal graph is waiting.`)}
-        <p style="margin:0 0 18px;">The captures you've made are being analyzed — signals emerge when Aura detects recurring themes across multiple sources.</p>
+        <p style="margin:0 0 18px;">The captures you've made are being analyzed — signals emerge when Aura detects recurring signals across multiple sources.</p>
         <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
         ${ctaButton(BRAND, "Capture something", `${APP_URL}/dashboard`)}
         ${signoff(name, level)}`;
@@ -99,8 +101,8 @@ function buildEmail(
   if (type === "day3") {
     const subject = "The market moved this week — here's what matters to you";
     const trendLine = recentTrend
-      ? `The market conversation in ${focus} shifted — '<strong>${recentTrend.headline}</strong>' (via ${recentTrend.source}). You have ${signalCount} active signal${signalCount === 1 ? "" : "s"} tracking this space.`
-      : `Aura is watching ${focus} for fresh market movement. You have ${signalCount} active signal${signalCount === 1 ? "" : "s"} ready to anchor your next post.`;
+      ? `The market conversation in ${focus} shifted — '<strong>${recentTrend.headline}</strong>' (via ${recentTrend.source}). You have ${signalCount} live ${countNoun(signalCount, "signal")} tracking this space.`
+      : `Aura is watching ${focus} for fresh market movement. You have ${signalCount} live ${countNoun(signalCount, "signal")} ready to anchor your next post.`;
     const d3 = topSignals[0];
     const day3Href = d3?.id
       ? `${APP_URL}/dashboard?tab=authority&signal=${encodeURIComponent(d3.id)}`
@@ -122,12 +124,12 @@ function buildEmail(
       ? `Your strongest right now: <strong>${top.signal_title}</strong>.`
       : "No leading signal yet — a few more captures and signals start to form.";
     const fadingLine = fadingCount > 0
-      ? `${fadingCount} signal${fadingCount === 1 ? "" : "s"} fading — they need fresh evidence.`
+      ? `${fadingCount} ${countNoun(fadingCount, "signal")} fading — they need fresh evidence.`
       : "No signals fading.";
     const trendLine = recentTrend ? `<strong>${recentTrend.headline}</strong> (${recentTrend.source}).` : "Quiet in your tracked sources.";
     const body = `
       ${heading("Your brief")}
-      <p style="margin:0 0 14px;">${signalCount} active signal${signalCount === 1 ? "" : "s"}. ${topLine} ${fadingLine} ${publishedCount} post${publishedCount === 1 ? "" : "s"} on LinkedIn.</p>
+      <p style="margin:0 0 14px;">${signalCount} live ${countNoun(signalCount, "signal")}. ${topLine} ${fadingLine} ${publishedCount} ${countNoun(publishedCount, "post")} on LinkedIn.</p>
       <p style="margin:0 0 14px;">Imprint: <strong>${score ?? 0}</strong>${tier ? ` (${tier})` : ""}.</p>
       <p style="margin:0 0 18px;">Recent market movement: ${trendLine}</p>
       <p style="margin:0 0 18px;">Your signals are ready to publish from.</p>
@@ -203,7 +205,7 @@ function buildEmail(
   const f1 = fadingSignals[0];
   const f2 = fadingSignals[1];
   const topFadingTitle = f1?.signal_title || "leading";
-  const subject = `Your ${topFadingTitle} signal is decaying`;
+  const subject = `Your ${topFadingTitle} signal is decaying`; // vocab-ok: one named signal, not a count
   const f1Line = f1
     ? `Your strongest right now: <strong>${f1.signal_title}</strong>. It needs fresh evidence.`
     : "Your strongest signals are losing freshness.";

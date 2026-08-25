@@ -15,6 +15,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { adminUserIds } from "../_shared/adminRole.ts";
 import {
+// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
+import { countNoun } from "../_shared/vocabulary.ts";
   renderEmail,
   heading as headingHtml,
   quote as quoteBlock,
@@ -129,7 +131,7 @@ function buildEmail(opts: {
     typeof nSources === "number" && nSources > 0;
 
   const preheader = haveCounts
-    ? `${nReadings} readings you saved. One post. Four minutes.`
+    ? `${nReadings} ${countNoun(nReadings, "evidence")} you saved. One post. Four minutes.`
     : `One post. Four minutes.`;
 
   const namePrefix = firstName ? `${escapeHtml(firstName)} — you` : "You";
@@ -144,7 +146,7 @@ function buildEmail(opts: {
 
   // One idea per line. Each <p> stands on its own so the eye lands on a beat.
   const line1 = haveCounts
-    ? `${namePrefix} saved ${nReadings} readings on ${shortTopicEsc}${whenSuffix}.`
+    ? `${namePrefix} saved ${nReadings} ${countNoun(nReadings, "evidence")} on ${shortTopicEsc}${whenSuffix}.`
     : `${namePrefix} kept a finding on ${shortTopicEsc}.`;
   const line2 = `Nobody asked you to. That was your judgment, not an algorithm's.`;
   const line3 = `Aura put that judgment into a post, written the way you write.`;
@@ -582,7 +584,7 @@ serve(async (req) => {
         await admin.from("ef_error_log").insert({
           function_name: "draft-ready-email",
           severity: "high",
-          error_message: `DRAFT_READY_EMAIL user_not_found user=${pick.user_id} draft=${pick.draft_id}`,
+          error_message: `DRAFT_READY_EMAIL user_not_found user=${pick.user_id} draft=${pick.draft_id}`, // vocab-ok: internal log, not member-facing
           user_id: pick.user_id,
           context: { draft_id: pick.draft_id },
         });
