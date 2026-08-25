@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { nCaptures, nEvidence, nSources, nSignals, evidenceAndSources, CAPTURE, EVIDENCE, SIGNAL, countNoun } from "@/constants/vocabulary";
+import { nCaptures, nEvidence, nSources, nSignals, evidenceAndSources, CAPTURE, countNoun } from "@/constants/vocabulary";
 import { loadSignalSources, warnIfDrifted, type SignalSourceRow } from "@/lib/signalSources";
 import { toast } from "sonner";
 // Sources now live in the Library tab.
