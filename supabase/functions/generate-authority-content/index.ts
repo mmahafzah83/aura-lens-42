@@ -19,6 +19,7 @@ import {
   shouldCollapse,
   selectShape,
   deriveInVoiceSubsets,
+  FULL_SUBSET,
 
   opensOnBannedWord,
   sameBeats,
@@ -49,6 +50,7 @@ import { splitForPrompt, enforcedRuleTexts } from "../_shared/voiceRules.ts";
 import { PROMPT_VERSION, type Contribution, type GenerationProvenance } from "../_shared/provenance.ts";
 import { loadActiveMemberRules, memberRulesBlock } from "../_shared/memberRules.ts";
 import { endingTypeOf, hookStyleOf } from "../_shared/fingerprint.ts";
+import { buildGrounding } from "../_shared/grounding.ts";
 import {
   checkTextIntegrity,
   neutralizeRtlMarkers,
