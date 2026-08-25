@@ -134,8 +134,8 @@ const DNA_THIN: VoiceDnaModel = {
     },
   ],
   modes: [
-    { key: "executive", label: "Executive", blurb: "For board notes and results — shorter, harder on evidence.", profileId: null, readiness: null, needsEvidence: false },
-    { key: "personal", label: "Personal", blurb: "For the story only you can tell — warmer, less data.", profileId: null, readiness: null, needsEvidence: false },
+    { key: "executive", label: "Executive", blurb: "For board notes and results — shorter, harder on evidence.", profileId: null, readiness: null, needsEvidence: false, language: null, removable: false },
+    { key: "personal", label: "Personal", blurb: "For the story only you can tell — warmer, less data.", profileId: null, readiness: null, needsEvidence: false, language: null, removable: false },
   ],
   rules: [],
   // A proposal, not a rule — the strip renders it with its evidence line.
