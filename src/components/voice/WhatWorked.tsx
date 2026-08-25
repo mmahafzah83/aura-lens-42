@@ -195,4 +195,19 @@ export default function WhatWorked({
       </div>
     </section>
   );
+
+  if (!wrapped) return body;
+  return (
+    <CollapseBlock
+      id="what-worked"
+      label="What worked"
+      summary={headline}
+      controlLabel="Open"
+      open={!collapsed}
+      onToggle={onToggleCollapse as () => void}
+    >
+      {body}
+    </CollapseBlock>
+  );
 }
+
