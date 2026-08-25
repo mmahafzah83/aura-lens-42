@@ -7104,6 +7104,10 @@ export type Database = {
         Returns: Json
       }
       identity_kind: { Args: { p_user_id: string }; Returns: string }
+      increment_voice_rule_applied: {
+        Args: { p_applied_at?: string; p_rule_id: string }
+        Returns: undefined
+      }
       is_current_user_admin: { Args: never; Returns: boolean }
       is_customer: { Args: { p_user_id: string }; Returns: boolean }
       join_read_queue: {
