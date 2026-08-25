@@ -10,9 +10,13 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { isAdmin } from "../_shared/adminRole.ts";
-import { isOwnWriting, CORPUS_COLUMNS } from "../_shared/voiceCorpus.ts";
+import { isOwnWriting, CORPUS_COLUMNS, corpusLang } from "../_shared/voiceCorpus.ts";
 // Trait arithmetic lives in ONE module, shared with client-side voice_fidelity.
 import { measure } from "../_shared/voiceMeasure.ts";
+// How the member ACTUALLY distributes their shapes — the ceilings the writer
+// is later held to. Same module the generator checks against.
+import { computeDistribution, MIN_DIST_CORPUS } from "../_shared/voiceDistribution.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -149,6 +153,42 @@ Deno.serve(async (req) => {
       written[key] = m.value;
     }
 
+    // --- the distribution: how this member actually spreads their shapes ---
+    // Per language, because the same person opens differently in Arabic. Below
+    // MIN_DIST_CORPUS posts every share is written NULL, so the writer falls
+    // back to plain rotation instead of obeying noise.
+    const byLang: Record<"ar" | "en", string[]> = { ar: [], en: [] };
+    for (const t of texts) byLang[corpusLang(t)].push(t);
+    const distributions: Record<string, unknown> = {};
+    for (const lang of ["en", "ar"] as const) {
+      const dist = computeDistribution(byLang[lang]);
+      // Nothing at all in this language: no row, no empty shell.
+      if (dist.corpus_n === 0) continue;
+      const { error: dErr } = await admin.from("voice_distribution").upsert({
+        user_id: userId,
+        language: lang,
+        corpus_n: dist.corpus_n,
+        computed_at: new Date().toISOString(),
+        open_type_share: dist.open_type_share,
+        land_type_share: dist.land_type_share,
+        move_share: dist.move_share,
+        marker_rate: dist.marker_rate,
+        length_p25: dist.length_p25,
+        length_p50: dist.length_p50,
+        length_p75: dist.length_p75,
+      }, { onConflict: "user_id,language" });
+      if (dErr) throw new Error(`distribution upsert ${lang} failed: ${dErr.message}`);
+      distributions[lang] = {
+        corpus_n: dist.corpus_n,
+        enforced: dist.corpus_n >= MIN_DIST_CORPUS,
+        open_type_share: dist.open_type_share,
+        land_type_share: dist.land_type_share,
+        marker_rate: dist.marker_rate,
+        length_p50: dist.length_p50,
+      };
+    }
+
+
     // readiness, computed from real data by the DB
     const { data: readiness } = await admin.rpc("voice_profile_readiness", { p_profile_id: profileId });
     if (readiness) {
@@ -192,7 +232,9 @@ Deno.serve(async (req) => {
       posts_used,
       posts_excluded,
       values: written,
+      distributions,
       readiness: readiness ?? null,
+
     });
   } catch (error) {
     console.error("voice-compute-traits error:", error);

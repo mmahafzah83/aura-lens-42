@@ -19,7 +19,27 @@
 // voice they are the member's own range. There is no branch that skips rotation.
 // A derivation that yields fewer than three moves is widened to three by
 // `deriveInVoiceSubsets` (and logged) — never generate from a subset of one.
+//
+// THE PRECEDENCE LADDER — what decides a post's shape, in order. Read top down;
+// the first rung that has something to say wins, and the ones below it decide
+// what is left.
+//
+//   1. DISTRIBUTION CEILINGS (`voiceDistribution.ts`, needs >= 8 own posts)
+//      No shape may run more than 20 percentage points above the share the
+//      member's own writing gives it. This rung can only ever REMOVE a shape
+//      from play — it never picks one.
+//   2. THE IN-VOICE SUBSET (`deriveInVoiceSubsets`, needs a voice profile)
+//      The member's own range: which moves, opens and lands are theirs.
+//   3. ROTATION INSIDE THAT SUBSET (`selectShape`, L1 → L2 → L3)
+//      L1 never repeat the last shape, L2 exhaust the subset before reuse,
+//      L3 break literal opening repeats.
+//   4. PLAIN ROTATION over the full tables — no distribution, no voice.
+//
+// Rungs 1 and 2 are optional; rung 3 always runs. There is no configuration in
+// which a shape is chosen without rotation.
 // ═════════════════════════════════════════════════════════════════════════════
+
+
 
 //
 // Aura Content DNA — THE writing algorithm. One structure, one MOVES table, one
