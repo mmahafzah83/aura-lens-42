@@ -1250,6 +1250,69 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       if (!integrity.ok) warnings.push("integrity_issues");
       if (bansEmoji && containsEmoji(content)) warnings.push("emoji_present");
 
+      // ── ROTATION ENFORCEMENT ─────────────────────────────────────────────
+      // A prompt sentence is not enforcement; this check is. The produced draft
+      // is classified and compared against the member's last five drafts (and
+      // this run's siblings) on BOTH shape and literal opening words. One
+      // regeneration naming exactly what to avoid; if the retry repeats too, the
+      // draft still ships — a member is never blocked — but the repetition is
+      // logged at `high` so it is visible instead of silent.
+      let rotationRepeat: string | null = null;
+      {
+        const repeatOf = (text: string): string | null => {
+          const six = firstSixWords(text);
+          if (six && avoidOpeningTexts.some((prev) => firstSixWords(prev) === six)) {
+            return `same_first_six_words:"${six}"`;
+          }
+          const producedOpen = openTypeOfHook(hookStyleOf(text));
+          if (producedOpen && avoidOpenTypes.includes(producedOpen)) {
+            return `repeated_open_type:${producedOpen}`;
+          }
+          const producedLand = landTypeOfEnding(endingTypeOf(text));
+          if (producedLand && avoidLandTypes.slice(0, 1).includes(producedLand)) {
+            return `repeated_land_type:${producedLand}`;
+          }
+          return null;
+        };
+
+        const firstRepeat = repeatOf(content);
+        if (firstRepeat) {
+          const avoidWords = [...new Set(avoidOpeningTexts.map(firstSixWords).filter(Boolean))].slice(0, 5);
+          const rotDirective = isAr
+            ? `\n\nإعادة كتابة إلزامية — الافتتاح مكرر (${firstRepeat}).\n- ابدأ البوست بنوع افتتاح "${openType}" كما هو محدد أعلاه.\n- لا تبدأ بأي من هذه الكلمات: ${avoidWords.map((w) => `"${w}"`).join("، ")}.\n- غيّر الكلمات الست الأولى تماماً. أبقِ الجوهر والأدلة كما هي.`
+            : `\n\nMANDATORY REWRITE — the opening repeats a recent draft (${firstRepeat}).\n- Open in the "${openType}" OPEN type named above, and close in the "${landType}" LAND type.\n- Do not begin with any of these: ${avoidWords.map((w) => `"${w}"`).join(", ")}.\n- Change the first six words entirely. Keep the substance and the evidence.`;
+          const rotRaw = await callModel(rotDirective);
+          const rotCand = rotRaw ? hygiene(stripLabels(stripLeadingScaffold(rotRaw))) : "";
+          const secondRepeat = rotCand ? repeatOf(rotCand) : "regenerate_failed";
+          if (rotCand && !secondRepeat) {
+            content = rotCand;
+          } else {
+            if (rotCand) content = rotCand;
+            rotationRepeat = secondRepeat || firstRepeat;
+            warnings.push("rotation_repeat");
+            try {
+              const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+              await admin.from("ef_error_log").insert({
+                function_name: "generate-authority-content",
+                severity: "high",
+                error_message: `ROTATION_REPEAT ${rotationRepeat} user=${effectiveUserId}`,
+                context: {
+                  stage: "rotation_enforcement",
+                  user_id: effectiveUserId,
+                  open_type: openType,
+                  land_type: landType,
+                  first_repeat: firstRepeat,
+                  after_retry: secondRepeat,
+                  first_six_words: firstSixWords(content),
+                },
+              });
+            } catch (e) {
+              console.error("[generate-authority-content] rotation log failed:", (e as Error).message);
+            }
+          }
+        }
+      }
+
       // ── QUALITY GATE ─────────────────────────────────────────────────────
       // D125: the gate runs LAST, after every corrective rewrite, so the stored
       // verdict always describes the exact text the member receives. It uses a
