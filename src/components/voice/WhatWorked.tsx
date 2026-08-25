@@ -36,9 +36,8 @@ export default function WhatWorked({
   const state = useCachedVoice<WhatWorkedModel>(key, loader);
   const model = modelOverride ?? state.data;
 
-  // postsRead, correctionsApplied, proposalsConfirmed, proposalsRejected are kept on the model
-  // but no longer rendered here; they left with the removed chart panel because activity
-  // counters are not a member-facing result.
+  // postsRead, correctionsApplied, proposalsConfirmed, proposalsRejected left with the removed chart panel because activity counters are not a member-facing result; they remain on the model for other surfaces.
+
 
 
   if (!model) return null;
