@@ -158,17 +158,19 @@ function statusFor(count: number, threshold: number): CoverageStatus {
 export const PAGE_SIZE = 20;
 
 export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAuraModel> {
-  const [address, postsRes, docsRes, voiceRes, textlessRes] = await Promise.all([
+  const [address, postsRes, docsRes, voiceRes, textlessRes, connRes, feedbackRes] = await Promise.all([
     loadLinkedInAddress(userId),
     supabase.rpc("voice_corpus_review", { p_user_id: userId }),
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    // Every default-mode row: examples live per language, and both languages
+    // are the same member's voice.
     supabase
       .from("authority_voice_profiles")
-      .select("example_posts")
+      .select("example_posts, admired_posts, is_primary, updated_at")
       .eq("user_id", userId)
-      .eq("is_primary", true)
       .eq("mode_key", "default")
-      .maybeSingle(),
+      .order("is_primary", { ascending: false })
+      .order("updated_at", { ascending: false }),
     // Engagement is known, the words were never saved. Aura can see these did
     // well and cannot read why.
     supabase
@@ -177,6 +179,14 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
       .eq("user_id", userId)
       .is("post_text", null)
       .gt("engagement_score", 0),
+    // Connection state, read where the address lives.
+    supabase.from("linkedin_connections").select("handle, access_token").eq("user_id", userId).maybeSingle(),
+    supabase
+      .from("voice_feedback")
+      .select("verdict, applied_changes, created_at")
+      .eq("user_id", userId)
+      .gte("created_at", new Date(Date.now() - 14 * 86_400_000).toISOString())
+      .order("created_at", { ascending: false }),
   ]);
 
   if (postsRes.error) throw new Error(postsRes.error.message);
@@ -222,7 +232,42 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
     status: statusFor(counts[key], COVERAGE_THRESHOLDS[key]),
   }));
 
-  const examples = (voiceRes.data as any)?.example_posts;
+  const profileRows = (voiceRes.data as any[]) || [];
+  const examples: KeptExample[] = profileRows.flatMap((row) =>
+    (Array.isArray(row?.example_posts) ? row.example_posts : []).map((e: any) => {
+      const source = e?.source ?? null;
+      return {
+        content: String(e?.content ?? "").trim(),
+        sourceLabel: EXAMPLE_SOURCE_LABEL(source),
+        addedAt: (e?.added_at as string | null) ?? null,
+        memberAdded: MEMBER_ADDED_SOURCES.includes(String(source ?? "")),
+      };
+    }),
+  ).filter((e: KeptExample) => e.content.length > 0);
+
+  const admiredRow = profileRows.find((r) => Array.isArray(r?.admired_posts) && r.admired_posts.length > 0)
+    ?? profileRows[0];
+  const admired: AdmiredPost[] = (Array.isArray(admiredRow?.admired_posts) ? admiredRow.admired_posts : [])
+    .map((a: any) => ({
+      content: String(a?.content ?? "").trim(),
+      source: (a?.source as string | null) ?? null,
+      addedAt: (a?.added_at as string | null) ?? null,
+    }))
+    .filter((a: AdmiredPost) => a.content.length > 0);
+
+  const conn = (connRes.data as any) || null;
+  const connectionState: ConnectionState = !address.handle && !conn?.handle
+    ? "not_set"
+    : String(conn?.access_token ?? "").length > 0
+      ? "connected"
+      : "needs_reconnect";
+
+  const negatives = ((feedbackRes.data as any[]) || [])
+    .filter((r) => r.verdict === "partly" || r.verdict === "not_me");
+  const dimension = negatives
+    .flatMap((r) => (Array.isArray(r.applied_changes) ? r.applied_changes : []))
+    .map((c: any) => String(c?.trait_key ?? "").replace(/_/g, " "))
+    .find(Boolean) ?? null;
 
   const ambiguous = posts
     .filter((p) =>
@@ -236,7 +281,12 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
     excludedCount: posts.length - included.length,
     classifiedCount: included.filter((p) => p.hookStyle).length,
     documentCount: docsRes.count ?? 0,
-    pastedCount: Array.isArray(examples) ? examples.length : 0,
+    connectionState,
+    examples,
+    addedByYouCount: examples.filter((e) => e.memberAdded).length,
+    admired,
+    negativeVerdicts: negatives.length,
+    negativeDimension: dimension,
     coverage,
     // The whole list; the page filters and pages it client-side so a filter
     // change costs nothing.
