@@ -2365,6 +2365,28 @@ export default function StudioPanel({
   /** The on-screen previews report nothing. */
   const ignoreFit = useCallback((_i: number, _s: FitState) => {}, []);
 
+  /* The modes this member owns in the writing language. Read-only here — the
+     Voice surface is where a mode is created or removed. */
+  useEffect(() => {
+    let cancelled = false;
+    if (!userId) { setVoiceModes([]); return; }
+    void (async () => {
+      const { data } = await supabase
+        .from("authority_voice_profiles")
+        .select("mode_key, mode_label")
+        .eq("user_id", userId)
+        .eq("language", writeLang);
+      if (cancelled) return;
+      const rows = (data ?? []).filter((r) => typeof r.mode_key === "string") as Array<{ mode_key: string; mode_label: string | null }>;
+      const list = rows
+        .map((r) => ({ key: r.mode_key, label: r.mode_label || (r.mode_key === "default" ? "Your voice" : r.mode_key) }))
+        .sort((a, b) => (a.key === "default" ? -1 : b.key === "default" ? 1 : a.label.localeCompare(b.label)));
+      setVoiceModes(list);
+      setVoiceMode((cur) => (list.some((m) => m.key === cur) ? cur : "default"));
+    })();
+    return () => { cancelled = true; };
+  }, [userId, writeLang]);
+
   /* ---------- content wrapper --------------------------------------
    * Page content only: no height, no page padding, no page background — the
    * Aura shell owns those. DIRECTION, however, is the panel's own: the shell
@@ -2638,28 +2660,6 @@ export default function StudioPanel({
   /* The ranked card for the chosen subject, so the confirm screen can show the
      same reason line the card showed. */
   const chosenCard = choice?.id ? (cards.find((c) => c.signalId === choice.id) ?? null) : null;
-
-  /* The modes this member owns in the writing language. Read-only here — the
-     Voice surface is where a mode is created or removed. */
-  useEffect(() => {
-    let cancelled = false;
-    if (!userId) { setVoiceModes([]); return; }
-    void (async () => {
-      const { data } = await supabase
-        .from("authority_voice_profiles")
-        .select("mode_key, mode_label")
-        .eq("user_id", userId)
-        .eq("language", writeLang);
-      if (cancelled) return;
-      const rows = (data ?? []).filter((r) => typeof r.mode_key === "string") as Array<{ mode_key: string; mode_label: string | null }>;
-      const list = rows
-        .map((r) => ({ key: r.mode_key, label: r.mode_label || (r.mode_key === "default" ? "Your voice" : r.mode_key) }))
-        .sort((a, b) => (a.key === "default" ? -1 : b.key === "default" ? 1 : a.label.localeCompare(b.label)));
-      setVoiceModes(list);
-      setVoiceMode((cur) => (list.some((m) => m.key === cur) ? cur : "default"));
-    })();
-    return () => { cancelled = true; };
-  }, [userId, writeLang]);
 
   /* ONE language control, ONE state. Rendered on the hub, subject, paste and
      confirm screens; every one of them is this same element, so there is no
