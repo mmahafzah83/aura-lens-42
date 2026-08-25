@@ -298,7 +298,7 @@ const KnowledgeIntelligenceEngine = () => {
           {themes.length === 0 ? (
             <div className="glass-card rounded-2xl p-10 text-center">
               <AlertCircle className="w-8 h-8 text-muted-foreground/15 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground/40">Not enough data to detect your themes yet.</p>
+              <p className="text-sm text-muted-foreground/40">Not enough data to detect the work you keep returning to yet.</p>
             </div>
           ) : (
             themes.map((theme, i) => (
