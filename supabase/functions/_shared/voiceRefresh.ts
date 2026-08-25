@@ -245,6 +245,10 @@ export async function refreshVoiceProfiles(db: any, userId: string): Promise<Ref
       await db.from("authority_voice_profiles").insert({
         user_id: userId,
         language: lang,
+        // Without a mode_key the Voice surface skips the row entirely
+        // (`voiceDna.ts`: `if (!p.mode_key) continue;`) — an invisible profile
+        // that can never receive traits.
+        mode_key: "default",
         is_primary: false,
         example_posts: examples,
         vocabulary_preferences: nextVocab,

@@ -85,14 +85,23 @@ export default function TeachAura({ userId }: { userId: string | null }) {
   const recompute = useCallback(async () => {
     const before = await snapshotTraits(userId);
     // Awaited: the "what moved" line must not race the function that moves it.
-    const { error } = await supabase.functions.invoke("voice-compute-traits", { body: {} });
+    const { data: res, error } = await supabase.functions.invoke("voice-compute-traits", { body: {} });
     if (error) {
       toast.error("Aura couldn't re-read your patterns just now. Your changes were saved.");
     } else {
       const after = await snapshotTraits(userId);
       const moved = Object.keys(after).filter((k) => before[k] !== undefined && before[k] !== after[k]);
-      if (moved.length === 0) toast.message("Nothing moved — those posts weren't changing your voice.");
-      else {
+      const lockedSkipped = Number((res as any)?.traits_skipped_locked ?? 0);
+      const written = Number((res as any)?.traits_written ?? moved.length);
+      if (moved.length === 0) {
+        /* A locked marker is a decision the member made — never report it as
+           "your posts didn't matter". */
+        if (written === 0 && lockedSkipped > 0) {
+          toast.message("Nothing changed — you've locked every marker. Unlock one to let Aura adjust it.");
+        } else {
+          toast.message("Nothing moved — those posts weren't changing your voice.");
+        }
+      } else {
         const k = moved[0];
         toast.success(`That changed ${k.replace(/_/g, " ")} from ${before[k]}% to ${after[k]}%.`);
       }
@@ -112,8 +121,14 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       setStage(1);
       await supabase.functions.invoke("voice-classify-posts", { body: {} });
       setStage(2);
-      await supabase.functions.invoke("voice-compute-traits", { body: {} });
-      toast.success("Aura re-read your posts.");
+      const { data: traits } = await supabase.functions.invoke("voice-compute-traits", { body: {} });
+      const lockedSkipped = Number((traits as any)?.traits_skipped_locked ?? 0);
+      const written = Number((traits as any)?.traits_written ?? 0);
+      if (written === 0 && lockedSkipped > 0) {
+        toast.message("Nothing changed — you've locked every marker. Unlock one to let Aura adjust it.");
+      } else {
+        toast.success("Aura re-read your posts.");
+      }
       invalidateVoiceCache("voice:");
       await state.reload(true);
     } catch (e) {
@@ -122,6 +137,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       setStage(null);
     }
   }, [model, state]);
+
 
   if (!userId) return <Card><span style={{ fontSize: TYPE.body, color: MUTED }}>Sign in to see what Aura read.</span></Card>;
   if (state.loading && !model) {
