@@ -1665,7 +1665,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         hook_style: hookStyleOf(content),
         requested_ending: chosenEnding,
         evidence_has_number: evidenceHasNumber,
-        guarded_after_rotation: true,
+        guarded_after_rotation: guardedAfterRotation,
         chosen_opening: chosenOpening,
         // The rotation, handed back so the caller can store it and so siblings
         // in the same batch can be told what not to repeat. All three levels
