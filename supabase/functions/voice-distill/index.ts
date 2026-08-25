@@ -672,14 +672,45 @@ Deno.serve(async (req) => {
         allowed_endings: (existing as any)?.allowed_endings ?? [],
       });
 
+      /**
+       * THE MEMBER'S RANGE — voice narrows the range, rotation still runs inside
+       * it. Derived here from the distilled structures/patterns plus how their
+       * own example posts actually open and close, then persisted so the writing
+       * engine rotates through THIS member's moves instead of all eight. The
+       * derivation widens itself to a floor of three and logs when it does; a
+       * subset of one would legally produce twelve near-identical posts.
+       */
+      const exampleBodies: string[] = (() => {
+        const raw = (existing as any)?.example_posts;
+        if (!Array.isArray(raw)) return [];
+        return raw
+          .map((e: any) => (typeof e === "string" ? e : String(e?.text ?? e?.body ?? "")))
+          .filter((t: string) => t.trim().length > 0);
+      })();
+      const observedOpens = [...new Set(exampleBodies.map((t) => hookStyleOf(t)))];
+      const observedLands = [...new Set(exampleBodies.map((t) => endingTypeOf(t)))];
+      const range = deriveInVoiceSubsets({
+        tone: style.tone,
+        preferred_structures: style.preferred_structures,
+        storytelling_patterns: style.storytelling_patterns,
+        example_posts: exampleBodies,
+        in_voice_opens: observedOpens,
+        in_voice_lands: observedLands,
+      });
+      if (range.log) console.log(`voice-distill[${L}]: ${range.log}`);
+
       const writePayload = {
         tone: style.tone,
         preferred_structures: style.preferred_structures,
         storytelling_patterns: style.storytelling_patterns,
         vocabulary_preferences: style.vocabulary_preferences,
         allowed_endings: style.allowed_endings,
+        in_voice_moves: [...range.subset.moves],
+        in_voice_opens: [...range.subset.opens],
+        in_voice_lands: [...range.subset.lands],
         updated_at: new Date().toISOString(),
       };
+
 
       if (existing) {
         const { error: updErr } = await supabase
