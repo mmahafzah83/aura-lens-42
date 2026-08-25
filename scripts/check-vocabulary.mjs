@@ -165,6 +165,7 @@ const BANNED_RE = new RegExp(`\\b(?:${BANNED_PHRASES.join("|")})\\b`, "i");
 const BANNED_ENFORCED = [
   "src/components/voice/",
   "src/components/studio/",
+  "src/components/identity/",
   "src/lib/voiceDna.ts",
   "src/lib/voiceOverview.ts",
 ];
