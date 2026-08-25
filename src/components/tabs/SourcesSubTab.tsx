@@ -52,12 +52,12 @@ const FILTER_LABELS: { key: FilterKey; label: string; typeMatch?: string }[] = [
   { key: "document", label: "Documents", typeMatch: "document" },
 ];
 
-const TYPE_BADGES: Record<string, { label: string; color: string }> = {
-  link: { label: "URL", color: "var(--act)" },
-  image: { label: "IMAGE", color: "var(--success)" },
-  text: { label: "NOTE", color: "var(--warning-text)" },
-  voice: { label: "VOICE", color: "var(--brand)" },
-  document: { label: "DOC", color: "var(--machine-text)" },
+const TYPE_BADGES: Record<string, { label: string; color: string; background: string; border: string }> = {
+  link: { label: "URL", color: "var(--act)", background: "var(--act-tint)", border: "var(--brand-line)" },
+  image: { label: "IMAGE", color: "var(--success-text)", background: "var(--success-tint)", border: "var(--border-default)" },
+  text: { label: "NOTE", color: "var(--warning-text)", background: "var(--deadline-tint)", border: "var(--border-default)" },
+  voice: { label: "VOICE", color: "var(--act)", background: "var(--act-tint)", border: "var(--brand-line)" },
+  document: { label: "DOC", color: "var(--machine-text)", background: "var(--machine-tint)", border: "var(--border-default)" },
 };
 
 const TypeBadge = ({ type }: { type: string }) => {
@@ -66,7 +66,7 @@ const TypeBadge = ({ type }: { type: string }) => {
   return (
     <span style={{
       fontSize: 12, fontWeight: 600, padding: "2px 7px", borderRadius: 3,
-      background: `${b.color}1f`, color: b.color, border: `0.5px solid ${b.color}66`,
+      background: b.background, color: b.color, border: `0.5px solid ${b.border}`,
       letterSpacing: "0.04em",
     }}>{b.label}</span>
   );
