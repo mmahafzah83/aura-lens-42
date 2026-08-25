@@ -144,7 +144,7 @@ export default function MissionControl({
             return (
               <div
                 key={item.id}
-                className="flex animate-fade-up-in v23-tap v23-focus"
+                className={`flex animate-fade-up-in${clickable ? " v23-tap v23-focus" : ""}`}
                 onClick={clickable ? () => handleNudge(item) : undefined}
                 role={clickable ? "button" : undefined}
                 tabIndex={clickable ? 0 : undefined}
