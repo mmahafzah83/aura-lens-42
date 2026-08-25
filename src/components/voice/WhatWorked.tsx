@@ -86,9 +86,15 @@ export default function WhatWorked({
     }
   };
 
-  return (
-    <section style={{ marginBlockStart: 16 }}>
-      <div style={cardStyle}>
+  const headline = n === 0
+    ? "Aura has nothing to compare yet."
+    : `Aura compared your last ${n} ${n === 1 ? "post" : "posts"} against your own average.`;
+  const wrapped = Boolean(onToggleCollapse);
+
+  const body = (
+    <section style={{ marginBlockStart: wrapped ? 0 : 16 }}>
+      <div style={wrapped ? { ...cardStyle, border: "none", padding: 0 } : cardStyle}>
+
         {/* header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ maxInlineSize: 520 }}>
