@@ -50,7 +50,7 @@ export function buildShelf(
       // `signals_active` — rows in `strategic_signals`. The dictionary owns the noun.
       fact: themes > 0
         ? `${nSignals(themes, "en")} live`
-        : "No signals yet. They form once you have captured a handful of things.",
+        : `No signals yet. They form once you have a handful of ${CAPTURE.nounPlural}.`,
     },
     {
       key: "night",
