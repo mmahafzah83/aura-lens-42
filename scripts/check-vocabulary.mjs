@@ -102,7 +102,7 @@ const JSX_PATTERN = new RegExp(
 /** A call that already goes through the dictionary is the CORRECT shape —
  *  `{nSources(n, lang)} behind this signal` is what the gate is asking for. Its
  *  SPAN is blanked out; the rest of the line is still scanned. */
-const DICTIONARY_CALL = /\b(?:nSources|nCaptures|nEvidence|nSignals|evidenceAndSources|sourceCount(?:En|Ar)|captureCount(?:En|Ar)|evidenceCount(?:En|Ar)|signalCount(?:En|Ar)|cardCounts)\s*\((?:[^()]|\([^()]*\))*\)/g;
+const DICTIONARY_CALL = /\b(?:nSources|nCaptures|nEvidence|nSignals|nPages|nDrafts|nPosts|evidenceAndSources|sourceCount(?:En|Ar)|captureCount(?:En|Ar)|evidenceCount(?:En|Ar)|signalCount(?:En|Ar)|cardCounts)\s*\((?:[^()]|\([^()]*\))*\)/g;
 
 /** Replace every dictionary call with spaces, preserving offsets. */
 function blankDictionaryCalls(line) {
@@ -180,9 +180,8 @@ const EXEMPT = [
  * hit that must be migrated when Round 2B lands.
  */
 const ROUND_2B = [
-  // TODO round-2b
-  "src/components/home/",
-  "src/hooks/useHomeAddress.ts",
+  // TODO round-2b — home/ and useHomeAddress.ts are MIGRATED and no longer
+  // deferred; the gate now polices them for real.
   "src/components/momentum/",
   "src/pages/Onboarding.tsx",
   "src/components/onboarding/",
