@@ -1290,7 +1290,17 @@ export default function StudioPanel({
   }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
 
   /* ---------- step 2: the words ----------------------------------- */
-  const generate = useCallback(async (picked?: Choice, langOverride?: Lang, angle?: string) => {
+  /**
+   * REFINE IS NOT REGENERATION (Law #86). When `refine` is supplied the request
+   * carries the member's live editor text plus a rewrite instruction; the angle
+   * parameter — and its "Write from THIS angle only" framing — is never used.
+   */
+  const generate = useCallback(async (
+    picked?: Choice,
+    langOverride?: Lang,
+    angle?: string,
+    refine?: { instruction: string; draft: string },
+  ) => {
     const target = picked ?? choice;
     if (!target) return;
     const runId = ++genRunId.current;
