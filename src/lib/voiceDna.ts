@@ -110,6 +110,9 @@ export interface DnaRule {
   status?: string;
   /** Where a suggestion came from: post ids, a count and the sentence to show. */
   evidence?: { post_ids?: string[]; count?: number; total?: number; note?: string; derivation?: string } | null;
+  check?: { kind: "phrase" | "opening" | "ending" | "marker"; value: string } | null;
+  last_applied_at?: string | null;
+  times_applied?: number;
 }
 
 export interface VoiceDnaModel {
@@ -168,7 +171,7 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
     supabase.rpc("voice_top_style_share", { p_user_id: userId }),
     supabase
       .from("voice_rules")
-      .select("id, kind, text, source, rank, status, evidence")
+      .select("id, kind, text, source, rank, status, evidence, check, last_applied_at, times_applied")
       .eq("user_id", userId)
       .eq("active", true)
       .in("status", ["active", "suggested"])
@@ -397,15 +400,20 @@ export async function deleteMode(profileId: string) {
 
 /* ── rules ───────────────────────────────────────────────────────────────── */
 
-export async function addRule(userId: string, profileId: string | null, kind: DnaRule["kind"], text: string, rank: number) {
+export async function addRule(userId: string, _profileId: string | null, kind: DnaRule["kind"], text: string, rank: number) {
   const { error } = await supabase
     .from("voice_rules")
-    .insert({ user_id: userId, profile_id: profileId, kind, text, source: "user", rank, status: "active" });
+    .insert({ user_id: userId, kind, text, source: "user", rank, status: "active" });
   if (error) throw error;
 }
 
 export async function updateRuleText(id: string, text: string) {
   const { error } = await supabase.from("voice_rules").update({ text }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateRuleKind(id: string, kind: DnaRule["kind"]) {
+  const { error } = await supabase.from("voice_rules").update({ kind }).eq("id", id);
   if (error) throw error;
 }
 
@@ -415,10 +423,10 @@ export async function deleteRule(id: string) {
 }
 
 /** One round trip, not one per rule. */
-export async function reorderRules(userId: string, profileId: string | null, ordered: DnaRule[]) {
+export async function reorderRules(userId: string, _profileId: string | null, ordered: DnaRule[]) {
   if (ordered.length === 0) return;
   const rows = ordered.map((r, i) => ({
-    id: r.id, user_id: userId, profile_id: profileId, kind: r.kind, text: r.text, source: r.source, rank: i,
+    id: r.id, user_id: userId, kind: r.kind, text: r.text, source: r.source, rank: i,
   }));
   const { error } = await supabase.from("voice_rules").upsert(rows, { onConflict: "id" });
   if (error) throw error;
@@ -445,10 +453,19 @@ export async function dismissSuggestion(id: string) {
 }
 
 /** The gateway runs only when the member asks, never on a render. */
-export async function runSuggestRules(): Promise<{ written: number; posts_read?: number }> {
+export type RuleSource = "openings" | "endings" | "phrases" | "structure" | "absences";
+
+export async function runSuggestRules(sources: RuleSource[]): Promise<{
+  written: number;
+  posts_read?: number;
+  sources_run?: RuleSource[];
+  by_source?: Record<string, number>;
+}> {
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) throw new Error("Sign in to look for patterns.");
-  const { data, error } = await supabase.functions.invoke("voice-suggest-rules", { body: {} });
+  const { data, error } = await supabase.functions.invoke("voice-suggest-rules", { body: { sources } });
   if (error) throw error;
-  return (data ?? { written: 0 }) as { written: number; posts_read?: number };
+  return (data ?? { written: 0 }) as {
+    written: number; posts_read?: number; sources_run?: RuleSource[]; by_source?: Record<string, number>;
+  };
 }
