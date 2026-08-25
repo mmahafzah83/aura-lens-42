@@ -50,6 +50,54 @@ import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
+const FUNCTIONS = join(ROOT, "supabase", "functions");
+
+/** The dictionary and its Deno twin. Emails are the one surface that cannot
+ *  import from `src/`, so the twin is copied — and policed here. */
+const DICT = "src/constants/vocabulary.ts";
+const DICT_TWIN = "supabase/functions/_shared/vocabulary.ts";
+
+/**
+ * The twin's SIGNATURE — the actual strings a member could read, not the
+ * docblocks: every Arabic literal in the file, plus the English noun table,
+ * plus the exported formatter names. Two files with the same signature cannot
+ * say a different word to a member.
+ */
+function vocabularySignature(text) {
+  const code = stripComments(text);
+  const body = code.slice(Math.max(0, code.indexOf("export type VocabLang")));
+  const arabic = [...body.matchAll(/["'`]([^"'`]*[\u0600-\u06FF][^"'`]*)["'`]/g)]
+    .map((m) => m[1].trim());
+  const english = [...body.matchAll(/\b(one|two|many|few|noun|nounPlural|One|Many|NounPlural)\s*:\s*"([^"]+)"/g)]
+    .map((m) => `${m[1]}=${m[2]}`);
+  const exports = [...body.matchAll(/export (?:const|function) ([A-Za-z0-9_]+)/g)].map((m) => m[1]);
+  const uniqSorted = (a) => [...new Set(a)].sort();
+  return {
+    arabic: uniqSorted(arabic),
+    english: uniqSorted(english),
+    exports: uniqSorted(exports),
+  };
+}
+
+/** Fails the build when the dictionary and its Deno twin drift apart. */
+export function checkTwin() {
+  const problems = [];
+  let a, b;
+  try {
+    a = vocabularySignature(readFileSync(join(ROOT, DICT), "utf8"));
+    b = vocabularySignature(readFileSync(join(ROOT, DICT_TWIN), "utf8"));
+  } catch (e) {
+    return [`cannot read the dictionary or its twin: ${e.message}`];
+  }
+  for (const key of ["arabic", "english", "exports"]) {
+    const onlyClient = a[key].filter((x) => !b[key].includes(x));
+    const onlyTwin = b[key].filter((x) => !a[key].includes(x));
+    for (const x of onlyClient) problems.push(`${key}: "${x}" is in ${DICT} but not in ${DICT_TWIN}`);
+    for (const x of onlyTwin) problems.push(`${key}: "${x}" is in ${DICT_TWIN} but not in ${DICT}`);
+  }
+  return problems;
+}
+
 
 /** Banned member-facing nouns, plus the seven legitimate ones (which still may
  *  not be hand-written next to a number). */
@@ -214,10 +262,12 @@ function literalsOf(line) {
   return out;
 }
 
-/** Files exempt entirely — only the dictionary itself. */
+/** Files exempt entirely — only the dictionary and its Deno twin. */
 const EXEMPT = [
-  "src/constants/vocabulary.ts",          // the dictionary
+  DICT,       // the dictionary
+  DICT_TWIN,  // its Deno twin, policed by checkTwin() instead
 ];
+
 
 /**
  * ROUND 2B — reported, not fixed in this build. Every one of these is a real
@@ -294,6 +344,39 @@ const LATER_FILES = [
   "src/lib/publishFailure.ts",
   "src/lib/voiceOutcomes.ts",
   "src/lib/voiceOverview.ts",
+  // ── EDGE FUNCTIONS — Round 2B Part 3 ────────────────────────────────────
+  // Every member-facing sender is MIGRATED (home-address, send-lifecycle-email,
+  // draft-ready-email, lifecycle-emails, weekly-progress-summary,
+  // weekly-influence-brief, auras-read, onboarding-read-link). The files below
+  // are named one by one — no directory prefixes — with the reason each is not
+  // member-facing text:
+  "supabase/functions/_shared/confidence.ts",              // internal scoring comment/string
+  "supabase/functions/_shared/publishTelemetry.ts",        // telemetry payload
+  "supabase/functions/_shared/readEvidence.ts",            // model context, never rendered
+  "supabase/functions/_shared/voiceRefresh.ts",            // server log
+  "supabase/functions/admin-console/index.ts",             // admin console
+  "supabase/functions/admin-digest/index.ts",              // founder digest, admin-only
+  "supabase/functions/api-health-sentinel/index.ts",       // ops alert
+  "supabase/functions/ask-aura/index.ts",                  // LLM context block
+  "supabase/functions/aura-health-audit/index.ts",         // ops audit
+  "supabase/functions/aura-ops-report/index.ts",           // ops report, admin-only
+  "supabase/functions/calculate-aura-score/index.ts",       // score internals
+  "supabase/functions/chat-aura/index.ts",                 // LLM context block (VAULT STATS)
+  "supabase/functions/classify-posts/index.ts",            // LLM instruction
+  "supabase/functions/daily-briefing/index.ts",            // LLM instruction
+  "supabase/functions/detect-signals-v2/index.ts",         // server log
+  "supabase/functions/discover-linkedin-posts/index.ts",   // server log
+  "supabase/functions/draft-profile-copy/index.ts",        // server log
+  "supabase/functions/founder-daily-brief/index.ts",       // founder brief, admin-only
+  "supabase/functions/generate-impact-narrative/index.ts", // LLM context block
+  "supabase/functions/generate-market-mirror/index.ts",    // LLM context block
+  "supabase/functions/import-linkedin-export/index.ts",    // import summary toast, later round
+  "supabase/functions/ingest-document/index.ts",           // OCR instruction to the model
+  "supabase/functions/linkedin-sync/index.ts",             // server log
+  "supabase/functions/prepare-weekly-drafts/index.ts",     // server log
+  "supabase/functions/qa-sentinel/index.ts",               // QA harness
+  "supabase/functions/strategic-advisor/index.ts",         // LLM context block
+  "supabase/functions/voice-suggest-rules/index.ts",       // LLM context block
 ];
 
 
@@ -320,12 +403,18 @@ function stripComments(text) {
     .join("\n");
 }
 
-/** Scan the whole tree. Returns { hits, deferred }. */
+/** Scan `src/` AND `supabase/functions/` — emails are member-facing text too,
+ *  and they are the one surface that cannot import the dictionary from `src/`.
+ *  Returns { hits, deferred, twin }. */
 export function runVocabularyCheck() {
   const hits = [];
   const deferred = [];
 
-  for (const file of walk(SRC)) {
+  const roots = [SRC, FUNCTIONS].filter((d) => {
+    try { return statSync(d).isDirectory(); } catch { return false; }
+  });
+
+  for (const root of roots) for (const file of walk(root)) {
     const rel = relative(ROOT, file).replace(/\\/g, "/");
     if (EXEMPT.includes(rel)) continue;
     const raw = readFileSync(file, "utf8");
@@ -343,7 +432,7 @@ export function runVocabularyCheck() {
       else hits.push(hit);
     });
   }
-  return { hits, deferred };
+  return { hits, deferred, twin: checkTwin() };
 }
 
 const say = (h) => `  ${h.rel}:${h.line}\n    ${h.text}\n    ↳ hand-written count noun: "${h.match}" — use the formatter from src/constants/vocabulary.ts`;
@@ -351,20 +440,27 @@ const say = (h) => `  ${h.rel}:${h.line}\n    ${h.text}\n    ↳ hand-written co
 /** Report to the console; return the failing hits. Used by the CLI and by the
  *  Vite plugin in vite.config.ts (which throws on a non-empty result). */
 export function reportVocabularyCheck({ quiet = false } = {}) {
-  const { hits, deferred } = runVocabularyCheck();
+  const { hits, deferred, twin } = runVocabularyCheck();
   if (deferred.length && !quiet) {
     console.log(`\nVOCABULARY — ${deferred.length} deferred hit(s) in files outside this round (allowlisted):`);
     for (const h of deferred) console.log(say(h));
   }
+  const failures = [...hits];
+  if (twin.length) {
+    console.error(`\nVOCABULARY TWIN DIVERGED — ${DICT} and ${DICT_TWIN} do not say the same words:`);
+    for (const p of twin) console.error(`  ${p}`);
+    failures.push({ rel: DICT_TWIN, line: 1, text: "twin divergence", match: "twin" });
+  }
   if (hits.length) {
     console.error(`\nVOCABULARY GATE FAILED — ${hits.length} hand-written count noun(s):`);
     for (const h of hits) console.error(say(h));
-    console.error("\nuse the formatter from src/constants/vocabulary.ts\n");
-  } else if (!quiet) {
-    console.log(`\nVOCABULARY GATE OK — no hand-written count nouns outside the deferred allowlist.\n`);
+    console.error("\nuse the formatter from src/constants/vocabulary.ts (or its Deno twin in edge functions)\n");
+  } else if (!twin.length && !quiet) {
+    console.log(`\nVOCABULARY GATE OK — no hand-written count nouns outside the deferred allowlist; dictionary and twin agree.\n`);
   }
-  return hits;
+  return failures;
 }
+
 
 // CLI
 if (process.argv[1] && process.argv[1].endsWith("check-vocabulary.mjs")) {

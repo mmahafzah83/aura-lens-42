@@ -162,7 +162,7 @@ Deno.serve(withObserve("onboarding-read-link", async (req) => {
       const banned = await loadBannedWords(svc);
       const clean = fragments.filter((f) => !hasBanned(`${f.title} ${f.content}`, banned));
       if (clean.length !== fragments.length) {
-        console.info(`[onboarding-read-link] dropped ${fragments.length - clean.length} fragment(s) on banned vocabulary`);
+        console.info(`[onboarding-read-link] dropped ${fragments.length - clean.length} fragment(s) on banned vocabulary`); // vocab-ok: server log, never member-facing
       }
       fragments = clean;
     } catch (e) {

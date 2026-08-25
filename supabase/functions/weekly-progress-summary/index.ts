@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
+import { countNoun } from "../_shared/vocabulary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,8 +90,8 @@ Deno.serve(async (req) => {
       if (imprint === 0 && captures === 0 && posts === 0) continue;
 
       const deltaLabel = delta > 0 ? `up ${delta}` : delta < 0 ? `down ${Math.abs(delta)}` : "steady";
-      const capturesLabel = `${captures} capture${captures === 1 ? "" : "s"}`;
-      const postsLabel = `${posts} post${posts === 1 ? "" : "s"} published`;
+      const capturesLabel = `${captures} ${countNoun(captures, "capture")}`;
+      const postsLabel = `${posts} ${countNoun(posts, "post")} published`;
       const goalLine = profile.north_star_goal
         ? ` Keep pushing toward: "${profile.north_star_goal}".`
         : "";

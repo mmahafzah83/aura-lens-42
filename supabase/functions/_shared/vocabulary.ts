@@ -1,41 +1,14 @@
 /**
- * THE DICTIONARY — the single source of member-facing count nouns, bilingual.
+ * THE DICTIONARY — DENO TWIN.
  *
- * TWIN OF: `supabase/functions/_shared/vocabulary.ts`, which exists because
- * edge functions cannot import from `src/`. The two files must stay identical
- * from `export type VocabLang` onwards — `scripts/check-vocabulary.mjs`
- * compares the actual exported noun strings and Arabic forms and FAILS THE
- * BUILD if they diverge. Edit one, edit the other.
+ * TWIN OF: `src/constants/vocabulary.ts`. That file is the twin of this one.
+ * They must stay character-identical from `export type VocabLang` onwards:
+ * `scripts/check-vocabulary.mjs` compares the actual exported noun strings and
+ * Arabic forms of both files and FAILS THE BUILD if they diverge.
  *
- *
- * THE LAW. One meaning per word, one DB field per word:
- *
- *   capture / captures        التقاط   rows in `entries` (a thing the member saved)
- *   source / sources          مصدر     rows in `source_registry`, or
- *                                      `strategic_signals.unique_orgs` for one signal
- *   piece(s) of evidence      قطعة     rows in `evidence_fragments`, or
- *                                      `strategic_signals.fragment_count` for one signal
- *   signal / signals          إشارة    rows in `strategic_signals`
- *   page / pages              صفحة     rows in `agent_findings` — pages AURA went
- *                                      and read overnight — or `documents.page_count`
- *                                      / `pages_total`, pages of a file the member
- *                                      uploaded. NOT the member's own sources, NOT
- *                                      captures, NEVER "reading(s)".
- *   draft / drafts            مسودة    draft rows in `linkedin_posts` /
- *                                      `content_items` — text Aura wrote that the
- *                                      member has not published.
- *   post / posts              منشور    rows in `post_provenance` — what the member
- *                                      actually published.
-
-
- *
- * Chain: entries (1) → source_registry (1) → evidence_fragments (many) → backs a signal.
- *
- * BANNED as member-facing nouns for these concepts: fragment(s), theme(s),
- * topic(s), subject(s), claim(s), thing(s), item(s), reading(s).
- *
- * Never re-inline a count noun in a component — import a formatter from here.
- * `scripts/check-vocabulary.mjs` fails the build when one is hand-written.
+ * This copy exists because `supabase/functions/` cannot import from `src/`.
+ * Pure functions, no imports, no Deno APIs — exactly like `_shared/textMatch.ts`.
+ * Edit one, edit the other.
  */
 
 export type VocabLang = "en" | "ar";

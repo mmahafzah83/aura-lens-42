@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { applyPublishedFilter, filterPublishedRows } from "../_shared/postProvenance.ts";
+// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
+import { countNoun } from "../_shared/vocabulary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,8 +113,8 @@ Avg engagement rate this week: ${thisWeekEngRate.toFixed(2)}% (vs ${prevWeekEngR
 ${authScores.length > 0 ? `Imprint: ${Math.round(Number(authScores[0].authority_score))}` : ""}
 ${authScores.length > 0 ? `Strategic resonance: ${Math.round(Number(authScores[0].strategic_resonance_score))}` : ""}
 
-Top theme: ${topTheme ? `"${topTheme[0]}" (${topTheme[1].count} posts, ${(topTheme[1].totalEng / topTheme[1].count).toFixed(1)}% avg eng)` : "No theme data"}
-Top format: ${topFormat ? `"${topFormat[0]}" (${topFormat[1].count} posts, ${(topFormat[1].totalEng / topFormat[1].count).toFixed(1)}% avg eng)` : "No format data"}
+Top angle: ${topTheme ? `"${topTheme[0]}" (${topTheme[1].count} ${countNoun(topTheme[1].count, "post")}, ${(topTheme[1].totalEng / topTheme[1].count).toFixed(1)}% avg eng)` : "No angle data"}
+Top format: ${topFormat ? `"${topFormat[0]}" (${topFormat[1].count} ${countNoun(topFormat[1].count, "post")}, ${(topFormat[1].totalEng / topFormat[1].count).toFixed(1)}% avg eng)` : "No format data"}
 Best performing post: ${topPost ? `"${topPost.hook || topPost.title || topPost.post_text?.slice(0, 80) || "—"}" (${Number(topPost.engagement_score || 0).toFixed(1)}% eng, ${topPost.like_count} reactions, ${topPost.comment_count} comments)` : "None"}
 
 All posts this week:

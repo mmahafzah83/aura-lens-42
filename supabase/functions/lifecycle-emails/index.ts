@@ -6,6 +6,8 @@ import {
   renderEmail, quote, divider,
   INK, INK_SOFT, INK_FAINT, BODY, MONO, ARABIC,
 } from "../_shared/emailTemplate.ts";
+// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
+import { countNoun } from "../_shared/vocabulary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,19 +38,19 @@ const EN: Record<MessageKey, Msg> = {
     cta: { href: DASHBOARD_URL, label: "Start with this →" },
     render: ({ firstName }) => `
       <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,"}</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">You already read the things that matter in your field. That's the hard part — and you've done it for years.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">You already read what matters in your field. That's the hard part — and you've done it for years.</p>
       <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">Aura's job is the part you never had time for: turning that reading into presence, without adding a task to your week.</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 22px;">It just needs one source to begin. Here's one from your field to start with — capture it, and watch your radar come alive.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 22px;">It just needs one capture to begin. Here's one from your field to start with — capture it, and watch your radar come alive.</p>
       <p style="font-family:${MONO};font-size:11px;color:${INK_FAINT};margin:0 0 8px;">Takes 20 seconds. The first one is the only one that feels like effort.</p>
     `,
   },
   M3: {
     subject: "You're one step from the moment Aura earns its place",
-    cta: { href: DASHBOARD_URL, label: "Add a source →" },
+    cta: { href: DASHBOARD_URL, label: "Add a capture →" },
     render: ({ firstName }) => `
       <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,"}</p>
       <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">You've started — and Aura's already reading you.</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">Right now it's holding a pattern it can almost name. Two more sources this week and it surfaces your first signal: a piece of your own thinking, made visible.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">Right now it's holding a pattern it can almost name. Two more captures this week and it surfaces your first signal: a piece of your own thinking, made visible.</p>
       <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 22px;">Most people never see this part. The ones who do tend to keep going — because that's the moment it stops being an app and starts being yours.</p>
     `,
   },
@@ -337,7 +339,7 @@ serve(withObserve("lifecycle-emails", async (req) => {
       .maybeSingle();
     if (!existing) {
       const list = founderDigest
-        .map(x => `<li style="margin:4px 0;color:${INK_SOFT};">${escapeHtml(x.email)} — ${x.captures} captures, 0 signals</li>`)
+        .map(x => `<li style="margin:4px 0;color:${INK_SOFT};">${escapeHtml(x.email)} — ${x.captures} ${countNoun(x.captures, "capture")}, 0 signals</li>`)
         .join("");
       const body = `
         <p style="font-family:${BODY};font-size:15px;color:${INK};margin:0 0 12px;">Pipeline smell — S4 users (captures ≥ 3, signals = 0):</p>
