@@ -1291,75 +1291,134 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       // repeats too, the draft still ships — a member is never blocked — but it
       // ships FLAGGED (`shape_repeat`) and logged at `high`, never silently.
       let rotationRepeat: string | null = null;
+      /** Why a shipped draft drifted from the member's own proportions. */
+      let voiceFidelityFlags: string[] = [];
+      /** 0–100. Null when the member has no distribution to be measured against. */
+      let voiceMatch: number | null = null;
       {
-        const repeatOf = (text: string): string | null => {
-          if (opensOnBannedWord(text)) {
-            return "opens_on_banned_word";
-          }
-          const six = firstSixWords(text);
-          if (six && avoidOpeningTexts.some((prev) => firstSixWords(prev) === six)) {
-            return `same_first_six_words:"${six}"`;
-          }
-          // L1 — the MOVE this post was written as must not be one of the last two.
-          if (avoidMoves.includes(moveId)) {
-            return `repeated_move:${moveId}`;
-          }
-          // L2 — and it must not march in the same order as the previous draft.
-          if (sameBeats(beatsForThisPost, previousBeats)) {
-            return `repeated_beats:${beatsForThisPost.join(">")}`;
-          }
-          const producedOpen = openTypeOfHook(hookStyleOf(text));
-          if (producedOpen && avoidOpenTypes.includes(producedOpen)) {
-            return `repeated_open_type:${producedOpen}`;
-          }
-          const producedLand = landTypeOfEnding(endingTypeOf(text));
-          if (producedLand && avoidLandTypes.slice(0, 1).includes(producedLand)) {
-            return `repeated_land_type:${producedLand}`;
-          }
-          return null;
+        /**
+         * THE ONE WRITE-TIME SHAPE CHECK. Rotation repetition and distribution
+         * drift are the same question — "is this draft the shape it was
+         * supposed to be?" — so they are ONE function with ONE regeneration.
+         * A second, separate gate would be a second opinion, and two gates that
+         * disagree is how a member ends up with a draft neither of them wanted.
+         */
+        const verdictOf = (text: string) => {
+          const rotation = ((): string | null => {
+            if (opensOnBannedWord(text)) {
+              return "opens_on_banned_word";
+            }
+            const six = firstSixWords(text);
+            if (six && avoidOpeningTexts.some((prev) => firstSixWords(prev) === six)) {
+              return `same_first_six_words:"${six}"`;
+            }
+            // L1 — the MOVE this post was written as must not be one of the last two.
+            if (avoidMoves.includes(moveId)) {
+              return `repeated_move:${moveId}`;
+            }
+            // L2 — and it must not march in the same order as the previous draft.
+            if (sameBeats(beatsForThisPost, previousBeats)) {
+              return `repeated_beats:${beatsForThisPost.join(">")}`;
+            }
+            const producedOpen = openTypeOfHook(hookStyleOf(text));
+            if (producedOpen && avoidOpenTypes.includes(producedOpen)) {
+              return `repeated_open_type:${producedOpen}`;
+            }
+            const producedLand = landTypeOfEnding(endingTypeOf(text));
+            if (producedLand && avoidLandTypes.slice(0, 1).includes(producedLand)) {
+              return `repeated_land_type:${producedLand}`;
+            }
+            return null;
+          })();
+          // Rung 1 of the ladder: the member's own ceilings. Habits being
+          // DROPPED come back as an instruction, never as a rejection.
+          const fidelity = fidelityCheck({
+            dist: voiceDist,
+            recent: recentBodies,
+            candidate: text,
+            lang: isAr ? "ar" : "en",
+          });
+          return {
+            rotation,
+            fidelity,
+            failed: Boolean(rotation) || !fidelity.ok,
+            reasons: [rotation, ...fidelity.violations].filter(Boolean) as string[],
+          };
         };
 
-        const firstRepeat = repeatOf(content);
-        if (firstRepeat) {
+        const first = verdictOf(content);
+        // A draft that passes still carries the voice note, so the score below
+        // reflects the check that actually ran.
+        const scoreOf = (v: ReturnType<typeof verdictOf>) =>
+          v.fidelity.reason === "no_distribution"
+            ? null
+            : Math.max(0, 100 - 25 * v.fidelity.violations.length - (v.rotation ? 25 : 0));
+        voiceMatch = scoreOf(first);
+
+        if (first.failed) {
           const avoidWords = [...new Set(avoidOpeningTexts.map(firstSixWords).filter(Boolean))].slice(0, 5);
           const moveLabel = isAr ? MOVES[moveId].label_ar : MOVES[moveId].label_en;
-          const rotDirective = isAr
-            ? `\n\nإعادة كتابة إلزامية — الشكل مكرر (${firstRepeat}).\n- نوع المنشور المطلوب: ${moveLabel}، بترتيب الحركات: ${beatsForThisPost.join(" ← ")}.\n- ابدأ البوست بنوع افتتاح "${openType}" كما هو محدد أعلاه.\n- لا تبدأ بكلمة "معظم" ولا بأي من هذه الكلمات: ${avoidWords.map((w) => `"${w}"`).join("، ")}.\n- غيّر الكلمات الست الأولى تماماً. أبقِ الجوهر والأدلة كما هي.`
-            : `\n\nMANDATORY REWRITE — the shape repeats a recent draft (${firstRepeat}).\n- The kind of post required: ${moveLabel}, in this beat order: ${beatsForThisPost.join(" → ")}.\n- Open in the "${openType}" OPEN type named above, and close in the "${landType}" LAND type.\n- Do not begin with the word "Most", and not with any of these: ${avoidWords.map((w) => `"${w}"`).join(", ")}.\n- Change the first six words entirely. Keep the substance and the evidence.`;
-          const rotRaw = await callModel(rotDirective);
+          const rotBit = first.rotation
+            ? (isAr
+              ? `\n\nإعادة كتابة إلزامية — الشكل مكرر (${first.rotation}).\n- نوع المنشور المطلوب: ${moveLabel}، بترتيب الحركات: ${beatsForThisPost.join(" ← ")}.\n- ابدأ البوست بنوع افتتاح "${openType}" كما هو محدد أعلاه.\n- لا تبدأ بكلمة "معظم" ولا بأي من هذه الكلمات: ${avoidWords.map((w) => `"${w}"`).join("، ")}.\n- غيّر الكلمات الست الأولى تماماً. أبقِ الجوهر والأدلة كما هي.`
+              : `\n\nMANDATORY REWRITE — the shape repeats a recent draft (${first.rotation}).\n- The kind of post required: ${moveLabel}, in this beat order: ${beatsForThisPost.join(" → ")}.\n- Open in the "${openType}" OPEN type named above, and close in the "${landType}" LAND type.\n- Do not begin with the word "Most", and not with any of these: ${avoidWords.map((w) => `"${w}"`).join(", ")}.\n- Change the first six words entirely. Keep the substance and the evidence.`)
+            : "";
+          if (first.fidelity.violations.length) {
+            console.warn(
+              "[generate-authority-content] voice fidelity —",
+              `violations: ${first.fidelity.violations.join(" | ")};`,
+              `running: ${JSON.stringify(first.fidelity.running)}`,
+            );
+          }
+          // ONE regeneration, carrying both corrections at once.
+          const rotRaw = await callModel(rotBit + first.fidelity.directive);
           const rotCand = rotRaw ? hygiene(stripLabels(stripLeadingScaffold(rotRaw))) : "";
-          const secondRepeat = rotCand ? repeatOf(rotCand) : "regenerate_failed";
-          if (rotCand && !secondRepeat) {
+          const second = rotCand ? verdictOf(rotCand) : null;
+          if (rotCand && second && !second.failed) {
             content = rotCand;
+            voiceMatch = scoreOf(second);
           } else {
+            // Never blocked, never silent: the better of the two ships FLAGGED.
             if (rotCand) content = rotCand;
-            rotationRepeat = secondRepeat || firstRepeat;
-            warnings.push("rotation_repeat");
+            const final = second ?? first;
+            voiceMatch = rotCand ? scoreOf(final) : voiceMatch;
+            if (final.rotation) {
+              rotationRepeat = final.rotation;
+              warnings.push("rotation_repeat");
+            }
+            if (final.fidelity.violations.length) {
+              voiceFidelityFlags = final.fidelity.violations;
+              warnings.push("voice_fidelity_drift");
+            }
             try {
               const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
               await admin.from("ef_error_log").insert({
                 function_name: "generate-authority-content",
                 severity: "high",
-                error_message: `ROTATION_REPEAT ${rotationRepeat} user=${effectiveUserId}`,
+                error_message: `SHAPE_CHECK ${(final.reasons.join(",") || "regenerate_failed")} user=${effectiveUserId}`,
                 context: {
-                  stage: "rotation_enforcement",
+                  stage: "shape_enforcement",
                   user_id: effectiveUserId,
                   move_id: moveId,
                   beats: beatsForThisPost,
                   open_type: openType,
                   land_type: landType,
                   basis: shape.basis,
-                  first_repeat: firstRepeat,
-                  after_retry: secondRepeat,
+                  first_reasons: first.reasons,
+                  after_retry: second ? second.reasons : ["regenerate_failed"],
+                  running_shares: final.fidelity.running,
+                  corpus_n: voiceDist?.corpus_n ?? null,
+                  enforced: (voiceDist?.corpus_n ?? 0) >= MIN_DIST_CORPUS,
                   first_six_words: firstSixWords(content),
                 },
               });
             } catch (e) {
-              console.error("[generate-authority-content] rotation log failed:", (e as Error).message);
+              console.error("[generate-authority-content] shape log failed:", (e as Error).message);
             }
           }
         }
       }
+
 
 
 
