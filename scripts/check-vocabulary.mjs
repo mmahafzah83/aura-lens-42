@@ -64,7 +64,8 @@ const DICT_TWIN = "supabase/functions/_shared/vocabulary.ts";
  * say a different word to a member.
  */
 function vocabularySignature(text) {
-  const body = text.slice(Math.max(0, text.indexOf("export type VocabLang")));
+  const code = stripComments(text);
+  const body = code.slice(Math.max(0, code.indexOf("export type VocabLang")));
   const arabic = [...body.matchAll(/["'`]([^"'`]*[\u0600-\u06FF][^"'`]*)["'`]/g)]
     .map((m) => m[1].trim());
   const english = [...body.matchAll(/\b(one|two|many|few|noun|nounPlural|One|Many|NounPlural)\s*:\s*"([^"]+)"/g)]
