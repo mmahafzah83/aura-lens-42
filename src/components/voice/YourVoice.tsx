@@ -599,14 +599,27 @@ export default function YourVoice({
           () => reorderRules(userId as string, dna.activeProfileId, ordered),
         )}
       />
+      </CollapseBlock>
 
       {/* 6 — variation, the only copy in the product */}
-      <VariationEngine model={dna} busy={busy} onMutate={(run) => void mutate(dna, run)} />
+      <CollapseBlock
+        id="voice-variation"
+        label="How you open and close"
+        summary={variationLine}
+        controlLabel="Open"
+        open={isGroupOpen("variation")}
+        onToggle={() => setGroup("variation", !isGroupOpen("variation"))}
+      >
+        <VariationEngine model={dna} busy={busy} onMutate={(run) => void mutate(dna, run)} />
+      </CollapseBlock>
 
       {/* 7 — what worked: the voice measured against its own results */}
       <WhatWorked
         userId={userId}
         traits={dna.traits}
+        collapsed={!isGroupOpen("worked")}
+        onToggleCollapse={() => setGroup("worked", !isGroupOpen("worked"))}
+
         onConfirm={(t) => {
           if (!t.id) return;
           void mutate(
