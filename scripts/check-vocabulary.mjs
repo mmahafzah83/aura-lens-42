@@ -261,10 +261,12 @@ function literalsOf(line) {
   return out;
 }
 
-/** Files exempt entirely — only the dictionary itself. */
+/** Files exempt entirely — only the dictionary and its Deno twin. */
 const EXEMPT = [
-  "src/constants/vocabulary.ts",          // the dictionary
+  DICT,       // the dictionary
+  DICT_TWIN,  // its Deno twin, policed by checkTwin() instead
 ];
+
 
 /**
  * ROUND 2B — reported, not fixed in this build. Every one of these is a real
