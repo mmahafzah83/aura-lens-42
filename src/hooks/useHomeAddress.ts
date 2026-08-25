@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { nEvidence, nSources } from "@/constants/vocabulary";
-import { normaliseText } from "../../supabase/functions/_shared/textMatch";
+
 
 
 /**
