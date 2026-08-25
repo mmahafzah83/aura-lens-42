@@ -2531,7 +2531,7 @@ export default function StudioPanel({
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <ButtonPrimary
               onClick={() => {
-                void generate(undefined, undefined, askRefine);
+                void generate(undefined, undefined, undefined, { instruction: askRefine, draft: content });
                 setAskRefine(null);
               }}
               style={{ minHeight: 44 }}
