@@ -369,12 +369,18 @@ function stripComments(text) {
     .join("\n");
 }
 
-/** Scan the whole tree. Returns { hits, deferred }. */
+/** Scan `src/` AND `supabase/functions/` — emails are member-facing text too,
+ *  and they are the one surface that cannot import the dictionary from `src/`.
+ *  Returns { hits, deferred, twin }. */
 export function runVocabularyCheck() {
   const hits = [];
   const deferred = [];
 
-  for (const file of walk(SRC)) {
+  const roots = [SRC, FUNCTIONS].filter((d) => {
+    try { return statSync(d).isDirectory(); } catch { return false; }
+  });
+
+  for (const root of roots) for (const file of walk(root)) {
     const rel = relative(ROOT, file).replace(/\\/g, "/");
     if (EXEMPT.includes(rel)) continue;
     const raw = readFileSync(file, "utf8");
@@ -392,7 +398,7 @@ export function runVocabularyCheck() {
       else hits.push(hit);
     });
   }
-  return { hits, deferred };
+  return { hits, deferred, twin: checkTwin() };
 }
 
 const say = (h) => `  ${h.rel}:${h.line}\n    ${h.text}\n    ↳ hand-written count noun: "${h.match}" — use the formatter from src/constants/vocabulary.ts`;
@@ -400,20 +406,27 @@ const say = (h) => `  ${h.rel}:${h.line}\n    ${h.text}\n    ↳ hand-written co
 /** Report to the console; return the failing hits. Used by the CLI and by the
  *  Vite plugin in vite.config.ts (which throws on a non-empty result). */
 export function reportVocabularyCheck({ quiet = false } = {}) {
-  const { hits, deferred } = runVocabularyCheck();
+  const { hits, deferred, twin } = runVocabularyCheck();
   if (deferred.length && !quiet) {
     console.log(`\nVOCABULARY — ${deferred.length} deferred hit(s) in files outside this round (allowlisted):`);
     for (const h of deferred) console.log(say(h));
   }
+  const failures = [...hits];
+  if (twin.length) {
+    console.error(`\nVOCABULARY TWIN DIVERGED — ${DICT} and ${DICT_TWIN} do not say the same words:`);
+    for (const p of twin) console.error(`  ${p}`);
+    failures.push({ rel: DICT_TWIN, line: 1, text: "twin divergence", match: "twin" });
+  }
   if (hits.length) {
     console.error(`\nVOCABULARY GATE FAILED — ${hits.length} hand-written count noun(s):`);
     for (const h of hits) console.error(say(h));
-    console.error("\nuse the formatter from src/constants/vocabulary.ts\n");
-  } else if (!quiet) {
-    console.log(`\nVOCABULARY GATE OK — no hand-written count nouns outside the deferred allowlist.\n`);
+    console.error("\nuse the formatter from src/constants/vocabulary.ts (or its Deno twin in edge functions)\n");
+  } else if (!twin.length && !quiet) {
+    console.log(`\nVOCABULARY GATE OK — no hand-written count nouns outside the deferred allowlist; dictionary and twin agree.\n`);
   }
-  return hits;
+  return failures;
 }
+
 
 // CLI
 if (process.argv[1] && process.argv[1].endsWith("check-vocabulary.mjs")) {
