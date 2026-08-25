@@ -215,14 +215,19 @@ export function useReadChips(userId: string | null | undefined, facts: HomeFacts
 }
 
 
-// ── Ruling 2: signals the night actually strengthened ──────────────────────
+// ── Ruling 2 (corrected): signals the night actually strengthened ──────────
 //
-// `last_night.themes_strengthened` counts distinct theme STRINGS on
-// `agent_findings`; most of them match no signal a member could open. This hook
-// does the real join instead: last 24h of `agent_findings.themes` against the
-// member's `strategic_signals` (`theme_tags` overlap or a title match), matched
-// on the shared normaliser, and counts DISTINCT SIGNALS. Zero means the caller
-// renders nothing — there is no fallback to the raw theme count.
+// A signal was strengthened when NEW EVIDENCE LANDED ON IT. That is one
+// indexed column — `strategic_signals.last_evidence_at` inside the window — and
+// it needs no text matching at all.
+//
+// The previous theme-overlap join was wrong: `theme_tags` are broad category
+// labels attached to most of the corpus, so one generic overnight theme swept in
+// the whole library (72 signals out of 71 active). Category co-membership is not
+// evidence that anything was strengthened. Only `status = 'active'` signals
+// count — a member must be able to open what we claim.
+//
+// Zero (or null) means the caller renders nothing. There is no fallback.
 
 export function useSignalsStrengthened(userId: string | null | undefined): number | null {
   const [n, setN] = useState<number | null>(null);
@@ -233,32 +238,16 @@ export function useSignalsStrengthened(userId: string | null | undefined): numbe
     (async () => {
       try {
         const since = new Date(Date.now() - 86_400_000).toISOString();
-        const [{ data: findings, error: fErr }, { data: signals, error: sErr }] = await Promise.all([
-          supabase.from("agent_findings").select("themes")
-            .eq("user_id", userId).gte("created_at", since).limit(500),
-          supabase.from("strategic_signals").select("id, signal_title, theme_tags")
-            .eq("user_id", userId).limit(1000),
-        ]);
-        if (fErr || sErr) throw fErr || sErr;
-
-        const themes = new Set<string>();
-        for (const f of (findings ?? []) as any[]) {
-          for (const t of (f.themes ?? []) as string[]) {
-            const k = normaliseText(String(t));
-            if (k) themes.add(k);
-          }
-        }
-        const hit = new Set<string>();
-        for (const s of (signals ?? []) as any[]) {
-          const keys = [
-            normaliseText(String(s.signal_title ?? "")),
-            ...((s.theme_tags ?? []) as string[]).map((t) => normaliseText(String(t))),
-          ].filter(Boolean);
-          if (keys.some((k) => themes.has(k))) hit.add(s.id);
-        }
-        if (alive) setN(hit.size);
+        const { data, error } = await supabase
+          .from("strategic_signals")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("status", "active")
+          .gt("last_evidence_at", since);
+        if (error) throw error;
+        if (alive) setN((data ?? []).length);
       } catch (e) {
-        console.warn("[useSignalsStrengthened] join failed", e);
+        console.warn("[useSignalsStrengthened] count failed", e);
         if (alive) setN(null);
       }
     })();
@@ -267,3 +256,4 @@ export function useSignalsStrengthened(userId: string | null | undefined): numbe
 
   return n;
 }
+
