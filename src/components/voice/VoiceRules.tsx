@@ -15,6 +15,7 @@ import {
 } from "@/components/voice/tokens";
 import type { DnaRule } from "@/lib/voiceDna";
 import type { RuleSource } from "@/lib/voiceDna";
+import { nDrafts, nPosts } from "@/constants/vocabulary";
 
 export const RULE_KINDS = [
   { kind: "always" as const, label: "Always", colour: GREEN, empty: "No rules yet. Aura will propose some as it reads more of your writing." },
@@ -51,7 +52,7 @@ function Evidence({ rule }: { rule: DnaRule }) {
     ? "Never appears in your writing"
     : derivation === "model"
       ? "Aura's reading"
-      : `Counted in ${count} of your posts`;
+      : `Counted in ${nPosts(count, "en")}`;
 
   const toggle = async () => {
     const next = !open;
@@ -250,7 +251,7 @@ export default function VoiceRules({
                        <div style={{ marginBlockStart: 4, display: "flex", gap: 6, flexWrap: "wrap" }}>
                          <SourceTag source={r.source} />
                          {r.kind === "never" && !r.check ? <span style={chipStyle(MUTED, SURFACE, LINE)}>Guidance only</span> : null}
-                         <span style={chipStyle(MUTED, SURFACE, LINE)}>Used in {r.times_applied ?? 0} drafts</span>
+                         <span style={chipStyle(MUTED, SURFACE, LINE)}>Used in {nDrafts(r.times_applied ?? 0, "en")}</span>
                        </div>
                     </li>
                   ))}
@@ -313,7 +314,7 @@ export default function VoiceRules({
                   />
                   <SourceTag source={r.source} />
                   {r.kind === "never" && !r.check ? <span style={chipStyle(MUTED, SURFACE, LINE)}>Guidance only</span> : null}
-                  <span style={chipStyle(MUTED, SURFACE, LINE)}>Used in {r.times_applied ?? 0} drafts</span>
+                  <span style={chipStyle(MUTED, SURFACE, LINE)}>Used in {nDrafts(r.times_applied ?? 0, "en")}</span>
                   <select aria-label={`Move rule to another bucket: ${r.text}`} className="v-focusable" value={r.kind} disabled={busy}
                     onChange={(event) => onKindChange(r.id, event.target.value as DnaRule["kind"])}
                     style={{ minBlockSize: TAP, border: `1px solid ${LINE}`, borderRadius: RADIUS.button, background: WHITE, color: INK, paddingInline: 8 }}>
