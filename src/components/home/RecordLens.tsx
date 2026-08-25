@@ -6,7 +6,7 @@ import {
   type RecordBucket, type RecordMilestone, type RecordPublished,
 } from "@/hooks/useRecordTimeline";
 import { ProvenanceMark } from "@/components/systemb";
-import { nEvidence, nSignals, EVIDENCE, SIGNAL } from "@/constants/vocabulary";
+import { nEvidence, nSignals, nCaptures, nDrafts, nPosts, EVIDENCE, SIGNAL } from "@/constants/vocabulary";
 
 /**
  * THE RECORD — what has actually happened, compressed by age.
@@ -61,7 +61,6 @@ export function postTitle(raw: string | null | undefined): string {
   return `${(space > 40 ? cut.slice(0, space) : cut).replace(/[,;:.\-—\s]+$/, "")}…`;
 };
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 // ── row model ──────────────────────────────────────────────────────────────
 
@@ -190,8 +189,8 @@ const YearStrip: React.FC<{ months: RecordBucket[]; onPick: (key: string) => voi
           return (
             <button
               key={m.d} type="button" onClick={() => onPick(m.d)}
-              title={`${monthLabel(m.d)} — ${m.cap} captured, ${m.pub} posted`}
-              aria-label={`${monthLabel(m.d)}: ${m.cap} captured, ${m.pub} posted`}
+              title={`${monthLabel(m.d)} — ${nCaptures(m.cap, "en")} captured, ${nPosts(m.pub, "en")} posted`}
+              aria-label={`${monthLabel(m.d)}: ${nCaptures(m.cap, "en")} captured, ${nPosts(m.pub, "en")} posted`}
               style={{
                 display: "grid", gap: 5, justifyItems: "center", background: "none", border: 0,
                 padding: 0, cursor: "pointer", fontFamily: "var(--font-body)",
@@ -533,19 +532,19 @@ export const RecordLens: React.FC<RecordLensProps> = ({
                     <>
                       {b.cap > 0 && (
                         <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>
-                          You captured {plural(b.cap, "thing", "things")}.
+                          You captured {nCaptures(b.cap, "en")}.
                         </p>
                       )}
                       {b.drafts > 0 && (
                         <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>
-                          Aura wrote {plural(b.drafts, "draft", "drafts")}.
+                          Aura wrote {nDrafts(b.drafts, "en")}.
                         </p>
                       )}
                     </>
                   ) : (
                     <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>
-                      Captured {b.cap} · Aura wrote {b.drafts} ·{" "}
-                      <strong style={{ color: "var(--act)", fontWeight: 700 }}>You published {b.pub}</strong>
+                      Captured {nCaptures(b.cap, "en")} · Aura wrote {nDrafts(b.drafts, "en")} ·{" "}
+                      <strong style={{ color: "var(--act)", fontWeight: 700 }}>You published {nPosts(b.pub, "en")}</strong>
                     </p>
                   )}
                   {pubs.slice(0, 4).map((p) => <PublishedLine key={p.id} p={p} />)}
