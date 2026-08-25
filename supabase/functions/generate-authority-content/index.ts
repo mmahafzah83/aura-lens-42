@@ -1450,6 +1450,13 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         hook_style: hookStyleOf(content),
         requested_ending: chosenEnding,
         chosen_opening: chosenOpening,
+        // The rotation, handed back so the caller can store it and so siblings
+        // in the same batch can be told what not to repeat.
+        open_type: openType,
+        land_type: landType,
+        collapsed: collapseThisPost,
+        rotation_repeat: rotationRepeat,
+        opening_words: firstSixWords(content),
         unsourced_numbers_removed: unsourcedRemoved,
         unsourced_entities_removed: unsourcedEntitiesRemoved,
         unsourced_entity_values: unsourcedEntities,
