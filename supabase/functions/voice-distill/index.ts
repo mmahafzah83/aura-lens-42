@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
       console.warn("voice-distill: no authentic corpus — skipping distillation for", user_id, rejected);
       await logNoCorpus("any");
       return new Response(
-        JSON.stringify({ success: true, skipped: true, reason: "no_authentic_corpus", rejected, posts_analyzed: 0 }),
+        JSON.stringify({ success: true, skipped: true, reason: "no_authentic_corpus", rejected, admitted: adHocReport?.admitted ?? null, posts_analyzed: 0 }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -326,7 +326,7 @@ Deno.serve(async (req) => {
       console.warn("voice-distill: no authentic corpus after grouping —", user_id, rejected);
       await logNoCorpus("any");
       return new Response(
-        JSON.stringify({ success: true, skipped: true, reason: "no_authentic_corpus", rejected, posts_analyzed: 0 }),
+        JSON.stringify({ success: true, skipped: true, reason: "no_authentic_corpus", rejected, admitted: adHocReport?.admitted ?? null, posts_analyzed: 0 }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -917,6 +917,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        admitted: adHocReport?.admitted ?? null,
+        rejected: adHocReport ? adHocReport.rejected : null,
         posts_analyzed: lastPostsAnalyzed,
         distilled_languages: distilledLanguages,
         primary_language: distilledLanguages.length > 0 ? dominant : null,
