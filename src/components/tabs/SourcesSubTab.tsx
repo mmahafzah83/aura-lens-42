@@ -53,11 +53,11 @@ const FILTER_LABELS: { key: FilterKey; label: string; typeMatch?: string }[] = [
 ];
 
 const TYPE_BADGES: Record<string, { label: string; color: string }> = {
-  link: { label: "URL", color: "#5b8def" },
+  link: { label: "URL", color: "var(--act)" },
   image: { label: "IMAGE", color: "var(--success)" },
   text: { label: "NOTE", color: "var(--warning-text)" },
   voice: { label: "VOICE", color: "var(--brand)" },
-  document: { label: "DOC", color: "#7F77DD" },
+  document: { label: "DOC", color: "var(--machine-text)" },
 };
 
 const TypeBadge = ({ type }: { type: string }) => {
@@ -222,13 +222,13 @@ function humanizeDocError(raw: string | null | undefined): { headline: string; d
 const DeleteDialog = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) =>
   createPortal(
     <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.8)" }} onClick={onCancel} />
+      <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--surface-inverse) 80%, transparent)" }} onClick={onCancel} />
       <div style={{ position: "relative", background: "var(--surface-ink-subtle)", borderRadius: 16, padding: 24, width: 360, maxWidth: "90vw", border: "1px solid var(--hair)" }}>
         <p style={{ color: "var(--glass)", fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Delete this source?</p>
         <p style={{ color: "var(--glass-2)", fontSize: 14, margin: "0 0 20px" }}>This cannot be undone.</p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <button onClick={onCancel} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid var(--hair)", background: "transparent", color: "var(--glass-2)", fontSize: 14, cursor: "pointer" }}>Cancel</button>
-          <button onClick={onConfirm} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "var(--error)", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Delete</button>
+          <button onClick={onConfirm} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "var(--error)", color: "var(--text-inverse)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Delete</button>
         </div>
       </div>
     </div>,
@@ -479,7 +479,7 @@ const ExpandedSource = ({
 
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
             {entry.skill_pillar && (
-              <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 10, background: "rgba(197,165,90,0.1)", color: "var(--brand)" }}>{entry.skill_pillar}</span>
+              <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 10, background: "var(--act-tint)", color: "var(--act)" }}>{entry.skill_pillar}</span>
             )}
             {entry.framework_tag && (
               <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 10, background: "var(--surface-ink-subtle)", color: "var(--glass-2)", border: "1px solid var(--hair)" }}>{entry.framework_tag}</span>
@@ -927,7 +927,7 @@ const SourcesSubTab = ({
     <div>
       {/* Header count */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <div className="w-8 h-8 rounded-lg" style={{ background: "rgba(197,165,90,0.1)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(197,165,90,0.15)" }}>
+        <div className="w-8 h-8 rounded-lg" style={{ background: "var(--act-tint)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--brand-line)" }}>
           <FileUp className="w-4 h-4" style={{ color: "var(--brand)" }} />
         </div>
         <h2 style={{ color: "var(--glass-2)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Sources</h2>
@@ -975,7 +975,7 @@ const SourcesSubTab = ({
                 style={{
                   flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
                   cursor: "pointer", whiteSpace: "nowrap",
-                  background: isActive ? "rgba(197,165,90,0.15)" : "var(--surface-ink-raised)",
+                  background: isActive ? "var(--act-tint)" : "var(--surface-ink-raised)",
                   color: isActive ? "var(--brand)" : "var(--glass-2)",
                   border: `1px solid ${isActive ? "var(--brand)" : "var(--hair)"}`,
                   opacity: isEmpty && !isActive ? 0.5 : 1,
@@ -1082,7 +1082,7 @@ const SourcesSubTab = ({
                   style={{ padding: 16, cursor: isDoc ? "default" : "pointer" }}
                 >
                   <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(197,165,90,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--surface-subtle)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <EntryIcon size={16} style={{ color: "var(--brand)" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0, paddingRight: 60 }}>

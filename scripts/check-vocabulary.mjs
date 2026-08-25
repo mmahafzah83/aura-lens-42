@@ -175,7 +175,8 @@ function findHit(rawLine) {
   // A noun hidden behind an identifier is the same hand-rolled plural:
   //   `n === 1 ? POST_NOUN.one : POST_NOUN.many`
   // No quoted literal, so neither scan above can see it. On a counting line,
-  // reading a `.one` / `.many` / `.singular` / `.plural` member off a *_NOUN
+  // reading a `.one` / `.many` / `.singular` / `.plural` / `.nounPlural`
+  // member off a *_NOUN
   // dictionary object means the call site is pluralising by hand instead of
   // asking for the parts.
   const noun = line.match(NOUN_MEMBER);
@@ -183,9 +184,9 @@ function findHit(rawLine) {
   return null;
 }
 
-/** `POST_NOUN.one`, `EVIDENCE.many`, `SignalNoun.plural` … */
+/** `POST_NOUN.one`, `EVIDENCE.many`, `SignalNoun.plural`, `CAPTURE.noun` … */
 const NOUN_MEMBER =
-  /\b[A-Za-z_][A-Za-z0-9_]*\s*\.\s*(?:one|many|One|Many|singular|plural)\b/;
+  /\b[A-Za-z_][A-Za-z0-9_]*\s*\.\s*(?:one|many|One|Many|singular|plural|noun|nounPlural|Noun|NounPlural)\b/;
 
 /** Pull quoted literals that sit inside a template literal span. A plain regex
  *  literal scan consumes the whole backtick span first, so the nested

@@ -21,16 +21,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useCapturedClaims } from "@/hooks/useCapturedClaims";
 import { SECTORS } from "@/constants/sectors";
-import { POST_NOUN, countNoun, nEvidence, nPosts, nPostsParts, nSignals } from "@/constants/vocabulary";
-
-/**
- * The address row's post count. The numeral is styled, so it comes from the
- * dictionary in PARTS — never from a hand-written singular/plural ternary.
- */
-const postsLine = (n: number, mono: (v: React.ReactNode) => React.ReactNode): React.ReactNode => {
-  const p = nPostsParts(n, "en");
-  return <>{p.digit ? <>{mono(num(Number(p.digit)))}{p.post}</> : p.pre} read</>;
-};
+import { POST_NOUN, countNoun, nEvidence, nPosts, nPostsParts } from "@/constants/vocabulary";
 import { initThemeFromStorage } from "@/lib/applyTheme";
 import {
   readToken, loadSession, saveSession, clearToken, claimSession,
@@ -86,6 +77,16 @@ import {
   SEAT_ONE_JOB, SEAT_HOW_LABEL, SEAT_CONSTRAINT, SEAT_CTA_SECONDARY, SEAT_RESERVE_NOTE,
 } from "@/lib/seatCopy";
 import { BRAND, ONBOARDING_INTRO, ENDING, WALL, AFTER_KEEP } from "@/constants/language";
+
+
+/**
+ * The address row's post count. The numeral is styled, so it comes from the
+ * dictionary in PARTS — never from a hand-written singular/plural ternary.
+ */
+const postsLine = (n: number, mono: (v: React.ReactNode) => React.ReactNode): React.ReactNode => {
+  const p = nPostsParts(n, "en");
+  return <>{p.digit ? <>{mono(num(Number(p.digit)))}{p.post}</> : p.pre} read</>;
+};
 
 
 /* ──────────────────────────────── tokens & copy ─────────────────────────── */

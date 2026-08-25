@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { nCaptures, nEvidence, nSources, nSignals, evidenceAndSources, CAPTURE, countNoun } from "@/constants/vocabulary";
+import { nCaptures, nEvidence, nSources, nSignals, evidenceAndSources, countNoun } from "@/constants/vocabulary";
 import { loadSignalSources, warnIfDrifted, type SignalSourceRow } from "@/lib/signalSources";
 import { toast } from "sonner";
 // Sources now live in the Library tab.
@@ -1630,7 +1630,7 @@ const Header = ({ entryCount, evidenceCount, signalsCount }: { entryCount: numbe
           The first number is entries + documents — things the member saved —
           so it is CAPTURES, never sources. Sources live in source_registry. */}
       {[
-        { val: entryCount, label: entryCount === 1 ? CAPTURE.noun : CAPTURE.nounPlural, color: "var(--brand)" },
+        { val: entryCount, label: countNoun(entryCount, "capture"), color: "var(--brand)" },
         { val: evidenceCount, label: countNoun(evidenceCount, "evidence"), color: "var(--act)" },
         { val: signalsCount, label: countNoun(signalsCount, "signal"), color: "var(--act)" },
       ].map((s, i, arr) => (
