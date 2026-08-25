@@ -7251,6 +7251,19 @@ export type Database = {
           schedule: string
         }[]
       }
+      voice_corpus_review: {
+        Args: { p_user_id: string }
+        Returns: {
+          counts_toward_voice: boolean
+          created_at: string
+          excerpt: string
+          hook_style: string
+          id: string
+          published_at: string
+          set_aside_reason: string
+          source_label: string
+        }[]
+      }
       voice_corpus_stats: {
         Args: { p_user_id: string }
         Returns: {

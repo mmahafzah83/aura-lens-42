@@ -151,7 +151,7 @@ export function buildHealth(m: VoiceOverviewModel): Health[] {
     unit: "%",
     secondary: m.topShare === null || !topName || m.topStyleCount === null
       ? undefined
-      : `Top opener ${Math.round(m.topShare)}% — ${topName}, ${m.topStyleCount} of ${m.windowSize}`,
+      : `Top opener ${Math.round(m.topShare)}% — ${topName}, ${m.topStyleCount} of ${m.windowClassified}`,
     explain: m.diversity === null
       ? `Opener variety needs ${REPETITION_GATES.minClassified} classified posts in your recent window. You have ${m.windowClassified}.`
       : `How much your openers vary. Distinctive needs ${REPETITION_GATES.diversityFloor}% diversity and no single opener above ${REPETITION_GATES.topShareCeiling}%.`,
