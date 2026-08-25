@@ -2674,7 +2674,7 @@ const Onboarding = () => {
   if (screen === 1) {
     const mono = (v: React.ReactNode) => <span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{v}</span>;
     const rows: { key: string; label: string; line: React.ReactNode; done: boolean; drop: boolean }[] = [
-      { key: "p", label: "Posts", line: <>{mono(num(upPosts))} {upPosts === 1 ? POST_NOUN.one : POST_NOUN.many} read</>, done: !!postsRead, drop: readDone && !postsRead },
+      { key: "p", label: POST_NOUN.Many, line: <>{mono(num(upPosts))} {upPosts === 1 ? POST_NOUN.one : POST_NOUN.many} read</>, done: !!postsRead, drop: readDone && !postsRead },
       { key: "w", label: "Your own writing", line: <>{mono(num(upWords))} words of your own writing</>, done: !!ownWords, drop: readDone && !ownWords },
       { key: "s", label: "Sector", line: <>Sector · {mono(sector)}</>, done: !!sector, drop: readDone && !sector },
       { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
