@@ -21,7 +21,7 @@ export const MIN_POST_CHARS = 50;
  * defaults INTO the corpus — that is how carousel drafts and search snippets
  * came within one missing stamp of teaching Aura how the member writes.
  */
-export const CORPUS_SOURCE_TYPES = ["imported", "linkedin_export"] as const;
+export const CORPUS_SOURCE_TYPES = ["imported", "linkedin_export", "linkedin_own"] as const;
 
 /**
  * True when this row is the member's own written post.
