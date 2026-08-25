@@ -1433,8 +1433,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
             );
           }
           // ONE regeneration, carrying both corrections at once.
-          const rotRaw = await callModel(rotBit + first.fidelity.directive);
-          const rotCand = rotRaw ? hygiene(stripLabels(stripLeadingScaffold(rotRaw))) : "";
+          const rot = await callContract(rotBit + first.fidelity.directive);
+          const rotCand = rot && rot.ok ? hygiene(stripLabels(rot.text)) : "";
+
           const second = rotCand ? verdictOf(rotCand) : null;
           if (rotCand && second && !second.failed) {
             content = rotCand;
