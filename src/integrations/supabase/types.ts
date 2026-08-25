@@ -847,6 +847,7 @@ export type Database = {
       content_items: {
         Row: {
           arrived_by: string
+          beats: string[] | null
           body: string
           confidence: string
           created_at: string
@@ -857,8 +858,10 @@ export type Database = {
           language: string
           made_by: string
           model_used: string | null
+          move_id: string | null
           produced_by: string | null
           prompt_version: string | null
+          shape_repeat: string | null
           signal_id: string | null
           status: string
           title: string
@@ -868,6 +871,7 @@ export type Database = {
         }
         Insert: {
           arrived_by?: string
+          beats?: string[] | null
           body?: string
           confidence?: string
           created_at?: string
@@ -878,8 +882,10 @@ export type Database = {
           language?: string
           made_by?: string
           model_used?: string | null
+          move_id?: string | null
           produced_by?: string | null
           prompt_version?: string | null
+          shape_repeat?: string | null
           signal_id?: string | null
           status?: string
           title?: string
@@ -889,6 +895,7 @@ export type Database = {
         }
         Update: {
           arrived_by?: string
+          beats?: string[] | null
           body?: string
           confidence?: string
           created_at?: string
@@ -899,8 +906,10 @@ export type Database = {
           language?: string
           made_by?: string
           model_used?: string | null
+          move_id?: string | null
           produced_by?: string | null
           prompt_version?: string | null
+          shape_repeat?: string | null
           signal_id?: string | null
           status?: string
           title?: string

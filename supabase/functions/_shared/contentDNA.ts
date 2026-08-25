@@ -1,20 +1,71 @@
-// Aura Content DNA — THE writing algorithm. One structure, one banned list, one
-// formatting rule, one rotation table. Posts, carousels, newsletters and the
-// quality gate all import from here.
+// ═════════════════════════════════════════════════════════════════════════════
+// FIRST PRINCIPLE OF THIS FILE — VOICE SUPERSEDES ROTATION.
+//
+//   Rotation is scaffolding. Its only job is to stop repetition while Aura knows
+//   nothing about this member. The moment a member has a learned voice
+//   (`authority_voice_profiles` row with usable `tone` / `preferred_structures` /
+//   `storytelling_patterns` / `example_posts`), that voice decides MOVE, beat
+//   order, OPEN and LAND — and rotation drops to a single guard: do not repeat
+//   the exact same MOVE twice in a row. Nothing else.
+//   Range is not randomness. A member who always opens with a question and
+//   always lands on a number is not a bug to be corrected — that is their voice,
+//   and once we know it, we follow it.
+//
+// Enforced in code by `selectShape({ hasVoice })` below: with a voice, only the
+// no-immediate-repeat guard runs; without one, the full three-level rotation of
+// §2 runs.
+// ═════════════════════════════════════════════════════════════════════════════
+//
+// Aura Content DNA — THE writing algorithm. One structure, one MOVES table, one
+// banned list, one formatting rule, one rotation. Posts, carousels, newsletters
+// and the quality gate all import from here.
 //
 // Anything that defines HOW a post is shaped belongs in this file and nowhere
 // else. A second structure definition anywhere in the codebase is a bug: the
 // generator used to be handed three of them at once (a 6-step engine, a 4-step
-// hook framework and a 7-step Arabic spec) plus three different banned lists,
-// and 47 of 80 drafts opened with the same word because two of those specs
-// mandated a contrarian opener on every single post.
+// hook framework and a 7-step Arabic spec) plus three different banned lists and
+// three competing tables of post kinds, and 47 of 80 drafts opened with the same
+// word because two of those specs mandated a contrarian opener on every post.
 
 export type DNALang = "ar" | "en";
 
 export type DNATexture = "clean" | "daheeh" | "qawarish";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 0. THE MOVES TABLE — the one table of post kinds, re-exported here so every
+//    caller reaches the writing algorithm through a single import. It lives in
+//    `moves.ts` because it is mirrored to the client under a twin check.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import {
+  MOVES,
+  MOVE_IDS,
+  MOVE_ALIASES,
+  resolveMove,
+  moveLabels,
+  sameBeats,
+  type MoveId,
+  type MoveBeat,
+  type MoveSpec,
+  type MoveRhythm,
+} from "./moves.ts";
+
+export {
+  MOVES,
+  MOVE_IDS,
+  MOVE_ALIASES,
+  resolveMove,
+  moveLabels,
+  sameBeats,
+  type MoveId,
+  type MoveBeat,
+  type MoveSpec,
+  type MoveRhythm,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 1. THE STRUCTURE — six beats, collapsible to four. Language-independent.
+//    The beats are a SET the post must satisfy; the ORDER comes from the MOVE.
 //    Only the register changes between English and Arabic; the beats do not.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -41,35 +92,87 @@ export function shouldCollapse(opts: { evidenceCount?: number; lengthMax?: numbe
   return false;
 }
 
-const STRUCTURE_EN = (collapse: boolean, openLine: string, landLine: string) =>
-  `THE STRUCTURE — ${collapse ? "four" : "six"} beats, in this order. This is the only structure. Never label the beats in the output.
+/** What each beat asks for, in the member's language. The OPEN/LAND lines are
+ *  injected because they carry the rotated type for this specific post. */
+const BEAT_TEXT_EN: Record<MoveBeat, string> = {
+  OPEN: "the entry.",
+  GROUND: "what is genuinely happening. Concede it: this is real and underway.",
+  TURN: "the flaw underneath. Name the illusion first (\"everything looks fine because…\"), then break it.",
+  PROOF: "the specific evidence. The part only this member's captures can supply.",
+  "SO-WHAT": "what it changes for the reader.",
+  LAND: "the close.",
+};
 
-1. OPEN — the entry. ${openLine}
-2. GROUND — what is genuinely happening. Concede it: this is real and underway.
-3. TURN — the flaw underneath. Name the illusion first ("everything looks fine because…"), then break it.
-${collapse
-  ? `4. PROOF + SO-WHAT — one merged beat: the specific evidence AND what it changes for the reader. Only what this member's captures actually supply.
-5. LAND — the close. ${landLine}`
-  : `4. PROOF — the specific evidence. The part only this member's captures can supply.
-5. SO-WHAT — what it changes for the reader.
-6. LAND — the close. ${landLine}`}
+const BEAT_LABEL_AR: Record<MoveBeat, string> = {
+  OPEN: "الافتتاح",
+  GROUND: "الأرضية",
+  TURN: "المنعطف",
+  PROOF: "الدليل",
+  "SO-WHAT": "الأثر",
+  LAND: "الخاتمة",
+};
 
-Never emit an empty beat and never pad one. If the material does not support a beat, tighten the post — do not fill the space.`;
+const BEAT_TEXT_AR: Record<MoveBeat, string> = {
+  OPEN: "المدخل.",
+  GROUND: "ما يجري فعلاً. اعترف به: هذا حقيقي وجارٍ.",
+  TURN: "الخلل تحت السطح. سمِّ الوهم أولاً (\"كل شيء يبدو على ما يرام لأن…\") ثم اكسره.",
+  PROOF: "الدليل المحدد. الجزء الذي لا تستطيع توفيره إلا التقاطات هذا العضو.",
+  "SO-WHAT": "ما يغيّره ذلك للقارئ.",
+  LAND: "الخاتمة.",
+};
 
-const STRUCTURE_AR = (collapse: boolean, openLine: string, landLine: string) =>
-  `هيكل المنشور — ${collapse ? "أربع" : "ست"} حركات بهذا الترتيب. لا هيكل آخر. لا تكتب أسماء الحركات في المخرج.
+/**
+ * The structure block, built FROM the move's beat ordering. Two posts with
+ * different moves therefore march in different orders — which is the whole
+ * point: rotating only the first line leaves seven posts with one architecture.
+ *
+ * `collapse` merges PROOF and SO-WHAT wherever they sit in the ordering; if the
+ * move has no SO-WHAT beat there is nothing to merge and the flag is a no-op.
+ */
+export function buildBeatStructure(
+  lang: DNALang,
+  beats: readonly MoveBeat[],
+  openLine: string,
+  landLine: string,
+  collapse: boolean,
+): string {
+  const ar = lang === "ar";
+  let seq: MoveBeat[] = [...beats];
+  const merged = collapse && seq.includes("PROOF") && seq.includes("SO-WHAT");
+  if (merged) seq = seq.filter((b) => b !== "SO-WHAT");
 
-1. الافتتاح — المدخل. ${openLine}
-2. الأرضية — ما يجري فعلاً. اعترف به: هذا حقيقي وجارٍ.
-3. المنعطف — الخلل تحت السطح. سمِّ الوهم أولاً ("كل شيء يبدو على ما يرام لأن…") ثم اكسره.
-${collapse
-  ? `4. الدليل + الأثر — حركة واحدة مدمجة: الدليل المحدد وما يغيّره للقارئ. لا شيء خارج ما التقطه هذا العضو فعلاً.
-5. الخاتمة — ${landLine}`
-  : `4. الدليل — الدليل المحدد. الجزء الذي لا تستطيع توفيره إلا التقاطات هذا العضو.
-5. الأثر — ما يغيّره ذلك للقارئ.
-6. الخاتمة — ${landLine}`}
+  const lines = seq.map((b, i) => {
+    const n = i + 1;
+    if (ar) {
+      const label = b === "PROOF" && merged ? "الدليل + الأثر" : BEAT_LABEL_AR[b];
+      let text = BEAT_TEXT_AR[b];
+      if (b === "PROOF" && merged) text = "حركة واحدة مدمجة: الدليل المحدد وما يغيّره للقارئ. لا شيء خارج ما التقطه هذا العضو فعلاً.";
+      if (b === "OPEN") text = `${text} ${openLine}`;
+      if (b === "LAND") text = `${text} ${landLine}`;
+      return `${n}. ${label} — ${text}`;
+    }
+    const label = b === "PROOF" && merged ? "PROOF + SO-WHAT" : b;
+    let text = BEAT_TEXT_EN[b];
+    if (b === "PROOF" && merged) text = "one merged beat: the specific evidence AND what it changes for the reader. Only what this member's captures actually supply.";
+    if (b === "OPEN") text = `${text} ${openLine}`;
+    if (b === "LAND") text = `${text} ${landLine}`;
+    return `${n}. ${label} — ${text}`;
+  });
+
+  if (ar) {
+    return `هيكل هذا المنشور — ${seq.length} حركات بهذا الترتيب بالضبط. لا هيكل آخر ولا إعادة ترتيب. لا تكتب أسماء الحركات في المخرج.
+
+${lines.join("\n")}${seq.includes("LAND") ? "" : "\n\nهذه الحركة بلا حركة خاتمة: انتهِ عند الحركة الأخيرة أعلاه ولا تضف سطراً ختامياً."}
 
 لا تُخرج حركة فارغة ولا تحشُها. إن لم تسمح المادة بحركة، اضغط المنشور ولا تملأ الفراغ.`;
+  }
+  return `THE STRUCTURE OF THIS POST — ${seq.length} beats, in exactly this order. This is the only structure and it may not be reordered. Never label the beats in the output.
+
+${lines.join("\n")}${seq.includes("LAND") ? "" : "\n\nThis move has NO LAND beat: stop at the last beat above and do not add a closing line."}
+
+Never emit an empty beat and never pad one. If the material does not support a beat, tighten the post — do not fill the space.`;
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. ROTATION — the OPEN and LAND tables. Enforced after generation, not only
@@ -303,6 +406,190 @@ export function buildRotationDirective(
   };
 }
 
+/** The MOVE block: what this post DOES, and how it is written. */
+export function buildMoveDirective(lang: DNALang, move: MoveId): string {
+  const m = MOVES[move];
+  const rhythmEN: Record<MoveRhythm, string> = {
+    prose: "Rhythm: continuous prose. No bullet list — the paragraphs carry it.",
+    line_broken: "Rhythm: short broken lines, one idea per line. No bullet list.",
+    list_bearing: "Rhythm: the middle of the post carries a short list (◆). The OPEN and the close stay in plain lines.",
+  };
+  const rhythmAR: Record<MoveRhythm, string> = {
+    prose: "الإيقاع: نص متصل. بلا قائمة — الفقرات تحمل المنشور.",
+    line_broken: "الإيقاع: أسطر قصيرة مقطّعة، فكرة واحدة لكل سطر. بلا قائمة.",
+    list_bearing: "الإيقاع: وسط المنشور يحمل قائمة قصيرة (◆). الافتتاح والخاتمة يبقيان أسطراً عادية.",
+  };
+  if (lang === "ar") {
+    return `نوع هذا المنشور (الحركة): ${m.label_ar} — ${m.whatItDoes_ar}
+
+${m.guidance_ar}
+
+${rhythmAR[m.rhythm]}
+
+مثال على النبرة (لا تنسخه): ${m.ex_ar}`;
+  }
+  return `THE MOVE FOR THIS POST: ${m.label_en} — ${m.whatItDoes}
+
+${m.guidance}
+
+${rhythmEN[m.rhythm]}
+
+Tone example (do not copy it): ${m.ex_en}`;
+}
+
+/**
+ * The one literal word ban. 47 of 80 existing drafts opened on "Most" because
+ * the retired hook framework instructed a "most people believe X" opener on
+ * every post. The instruction is gone; the ban stays, because the models learned
+ * the habit from the corpus, not only from the prompt.
+ */
+export const OPENING_WORD_BAN_EN = `BANNED OPENING WORD: the post must NOT begin with the word "Most" — not "Most leaders", not "Most organisations", not "Most of the time". Nothing that starts with "Most". Begin on the OPEN type named above instead.`;
+
+export const OPENING_WORD_BAN_AR = `كلمة افتتاح ممنوعة: لا يجوز أن يبدأ المنشور بكلمة "معظم" — لا "معظم القادة" ولا "معظم المؤسسات" ولا أي صيغة تبدأ بها. ابدأ بنوع الافتتاح المحدد أعلاه.`;
+
+/** True when a produced draft opens on the banned word, in either language. */
+export function opensOnBannedWord(text: string): boolean {
+  const line = String(text ?? "").split("\n").map((l) => l.trim()).find(Boolean) ?? "";
+  const first = line.replace(/^[^\p{L}\p{N}]+/u, "").split(/\s+/)[0] || "";
+  const w = first.toLowerCase().replace(/[^\p{L}]/gu, "");
+  return w === "most" || w === "معظم";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2b. THE SELECTOR — rotation on THREE levels, and the voice override.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PastShape {
+  move_id?: string | null;
+  beats?: readonly string[] | null;
+  hook_style?: string | null;
+  ending_type?: string | null;
+  /** The draft body, or just its opening — `firstSixWords` handles both. */
+  opening?: string | null;
+}
+
+export interface ChosenShape {
+  move: MoveId;
+  beats: readonly MoveBeat[];
+  openType: OpenType;
+  landType: LandType;
+  /** Which rules actually decided this shape — logged, and useful in tests. */
+  basis: "voice" | "rotation";
+  avoidOpenTypes: (OpenType | null)[];
+  avoidLandTypes: (LandType | null)[];
+  avoidOpeningTexts: string[];
+}
+
+/**
+ * `past[0]` is the most recent shape; this run's siblings come first, then
+ * history. `hasVoice` is the switch described at the top of this file:
+ *
+ *   hasVoice === true  → the voice decides. Only L1's no-immediate-repeat guard
+ *                        survives (do not use the same MOVE twice in a row).
+ *   hasVoice === false → the full ladder:
+ *                        L1 MOVE       — not in the last TWO shapes
+ *                        L2 BEAT ORDER — never the same beats array as the
+ *                                        immediately previous shape; re-select
+ *                                        at L1 if it collides
+ *                        L3 OPEN/LAND  — OPEN not in the last THREE; first six
+ *                                        words not matching any of the last FIVE
+ */
+export function selectShape(opts: {
+  hasVoice: boolean;
+  past: readonly PastShape[];
+  seed: number;
+  /** The member's observed distribution, when a voice profile supplies one. */
+  moveWeights?: Record<string, number>;
+  openWeights?: Record<string, number>;
+  landWeights?: Record<string, number>;
+  /** A move the caller asked for explicitly (a picked framework or post type). */
+  requestedMove?: string | null;
+}): ChosenShape {
+  const past = (opts.past || []).filter(Boolean);
+  const pastMoves = past.map((p) => resolveMove(p.move_id ?? null));
+
+  const avoidOpenTypes: (OpenType | null)[] = past.slice(0, 3).map((p) => openTypeOfHook(p.hook_style ?? null));
+  const avoidLandTypes: (LandType | null)[] = past.slice(0, 3).map((p) => landTypeOfEnding(p.ending_type ?? null));
+  const avoidOpeningTexts: string[] = past
+    .slice(0, 5)
+    .map((p) => String(p.opening || ""))
+    .filter((t) => firstSixWords(t).length > 0);
+
+  const explicit = resolveMove(opts.requestedMove ?? null);
+
+  // ── L1: the MOVE ──────────────────────────────────────────────────────────
+  const voiceOnlyBan = pastMoves.slice(0, 1).filter(Boolean) as MoveId[];
+  const rotationBan = pastMoves.slice(0, 2).filter(Boolean) as MoveId[];
+  const banned = opts.hasVoice ? voiceOnlyBan : rotationBan;
+
+  let move: MoveId;
+  if (explicit && !voiceOnlyBan.includes(explicit)) {
+    // A member who asked for a kind of post gets it, unless it repeats the last.
+    move = explicit;
+  } else {
+    move = rotateType(MOVE_IDS, {
+      avoid: banned,
+      seed: opts.seed,
+      weights: opts.hasVoice ? opts.moveWeights : undefined,
+    });
+  }
+
+  // ── L2: the beat order comes WITH the move ────────────────────────────────
+  // Two consecutive drafts must not march the same way. Re-select at L1 when
+  // the shape collides, walking the table rather than reaching for randomness.
+  const prevBeats = past[0]?.beats ?? null;
+  if (!opts.hasVoice && sameBeats(MOVES[move].beats, prevBeats)) {
+    const pool = MOVE_IDS.filter((m) => !banned.includes(m) && !sameBeats(MOVES[m].beats, prevBeats));
+    if (pool.length) move = pool[opts.seed % pool.length];
+  }
+  const spec = MOVES[move];
+
+  // ── L3: OPEN and LAND, inside what the move allows ────────────────────────
+  const opens = (spec.opens.filter((o) => (OPEN_TYPES as readonly string[]).includes(o)) as OpenType[]);
+  const lands = (spec.lands.filter((l) => (LAND_TYPES as readonly string[]).includes(l)) as LandType[]);
+  const openPool = opens.length ? opens : [...OPEN_TYPES];
+  const landPool = lands.length ? lands : [...LAND_TYPES];
+
+  const openType = rotateType(openPool, {
+    avoid: opts.hasVoice ? avoidOpenTypes.slice(0, 1) : avoidOpenTypes,
+    seed: opts.seed,
+    weights: opts.openWeights,
+  });
+  const landType = rotateType(landPool, {
+    avoid: opts.hasVoice ? avoidLandTypes.slice(0, 1) : avoidLandTypes,
+    seed: opts.seed + 7,
+    weights: opts.landWeights,
+  });
+
+  return {
+    move,
+    beats: spec.beats,
+    openType,
+    landType,
+    basis: opts.hasVoice ? "voice" : "rotation",
+    avoidOpenTypes,
+    avoidLandTypes,
+    avoidOpeningTexts,
+  };
+}
+
+/**
+ * Does this member have a learned voice? One definition, used by the selector
+ * and by the generator, so "hasVoice" can never mean two different things.
+ */
+export function hasLearnedVoice(profile: unknown): boolean {
+  const p = profile as Record<string, unknown> | null | undefined;
+  if (!p) return false;
+  const filled = (v: unknown) =>
+    (typeof v === "string" && v.trim().length > 0) || (Array.isArray(v) && v.length > 0);
+  return (
+    filled(p.tone) ||
+    filled(p.preferred_structures) ||
+    filled(p.storytelling_patterns) ||
+    filled(p.example_posts)
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. NUMBER INTEGRITY — the credibility guardrail. NON-NEGOTIABLE.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -428,9 +715,9 @@ export const QAWARISH_TEXTURE = `TEXTURE (optional depth — apply lightly, stay
 // 8. VOICE PRECEDENCE — what the voice layer may and may not touch.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const VOICE_PRECEDENCE = `VOICE PROFILE PRECEDENCE: the voice profile adjusts TONE, VOCABULARY FLAVOUR and the OPENING DISTRIBUTION it is weighted toward. It NEVER overrides THE STRUCTURE, the OPEN/LAND types chosen for this post, the REGISTER, the FORMATTING rules, the BANNED list, or NUMBER INTEGRITY — those are structural and always win.`;
+export const VOICE_PRECEDENCE = `VOICE PROFILE PRECEDENCE: when a learned voice exists it decides the MOVE, the beat order, the OPEN and the LAND, plus TONE and VOCABULARY FLAVOUR — rotation only stops the same MOVE running twice in a row. What the voice NEVER overrides: the REGISTER, the FORMATTING rules, the BANNED list, the banned opening word, and NUMBER INTEGRITY — those are structural and always win.`;
 
-export const OUTPUT_CONTRACT = `OUTPUT CONTRACT (absolute): Your entire response is the finished post and nothing else. The first character you output is the first character of the OPEN. Do not write anything before the OPEN or after the LAND line — no setup, no notes, no labels of any kind, in any language.`;
+export const OUTPUT_CONTRACT = `OUTPUT CONTRACT (absolute): Your entire response is the finished post and nothing else. The first character you output is the first character of the first beat. Do not write anything before it or after the final beat — no setup, no notes, no labels of any kind, in any language.`;
 
 export function buildContentDNA(opts: {
   lang: DNALang;
@@ -438,6 +725,8 @@ export function buildContentDNA(opts: {
   readerDescription?: string;
   /** The register this post must be written in, already scoped to `lang`. */
   register?: string;
+  /** The MOVE for THIS post — it supplies the beat order. */
+  move: MoveId;
   /** The rotated entry type for THIS post. */
   openType: OpenType;
   /** The rotated close type for THIS post. */
@@ -450,6 +739,7 @@ export function buildContentDNA(opts: {
     texture = "clean",
     readerDescription,
     register: reg,
+    move,
     openType,
     landType,
     collapse = false,
@@ -457,13 +747,14 @@ export function buildContentDNA(opts: {
 
   const register = lang === "ar" ? buildRegisterAR(readerDescription, reg) : buildRegisterEN(readerDescription, reg);
   const rot = buildRotationDirective(lang, openType, landType);
-  const structure = lang === "ar"
-    ? STRUCTURE_AR(collapse, rot.openLine, rot.landLine)
-    : STRUCTURE_EN(collapse, rot.openLine, rot.landLine);
+  const spec = MOVES[move];
+  const structure = buildBeatStructure(lang, spec.beats, rot.openLine, rot.landLine, collapse);
 
   const parts = [
+    buildMoveDirective(lang, move),
     structure,
     rot.block,
+    lang === "ar" ? OPENING_WORD_BAN_AR : OPENING_WORD_BAN_EN,
     NUMBER_INTEGRITY,
     register,
     lang === "ar" ? FORMATTING_AR : FORMATTING_EN,
@@ -472,7 +763,8 @@ export function buildContentDNA(opts: {
     OUTPUT_CONTRACT,
   ];
 
-  if (texture !== "clean") parts.splice(6, 0, QAWARISH_TEXTURE);
+  if (texture !== "clean") parts.splice(8, 0, QAWARISH_TEXTURE);
 
   return parts.join("\n\n");
 }
+
