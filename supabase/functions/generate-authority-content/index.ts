@@ -1004,7 +1004,20 @@ ${postTypeInstruction}${
 ===
 FINAL OUTPUT RULE (highest priority): Your entire response is the finished post and nothing else. The first character you output is the first character of the OPEN beat. Write nothing before it and nothing after the LAND line — no setup, no notes, no labels of any kind, in any language.
 
-قاعدة الإخراج النهائية: ردّك بالكامل هو البوست النهائي ولا شيء غيره. أول حرف تكتبه هو أول حرف من الافتتاح. لا تكتب أي شيء قبل الافتتاح ولا بعد سطر الخاتمة — بأي لغة.`;
+قاعدة الإخراج النهائية: ردّك بالكامل هو البوست النهائي ولا شيء غيره. أول حرف تكتبه هو أول حرف من الافتتاح. لا تكتب أي شيء قبل الافتتاح ولا بعد سطر الخاتمة — بأي لغة.
+
+OUTPUT FORMAT — absolute, overrides every other instruction. Emit the finished post and nothing else, wrapped exactly like this:
+<<<POST>>>
+the post
+<<<END>>>
+Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement of the brief, no headings, no labels, no commentary.
+
+صيغة الإخراج — قاعدة مطلقة تتقدم على كل تعليمة أخرى. أخرج البوست النهائي ولا شيء غيره، محصوراً هكذا تماماً:
+<<<POST>>>
+البوست
+<<<END>>>
+لا شيء قبل <<<POST>>>. لا شيء بعد <<<END>>>. لا تحليل، ولا إعادة صياغة للمطلوب، ولا عناوين، ولا تسميات، ولا تعليقات.`;
+
 
       const userMessageContent = (() => {
         const themeStr = typeof theme === "string" ? theme.trim() : "";
