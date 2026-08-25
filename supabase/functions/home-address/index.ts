@@ -721,7 +721,7 @@ function computeTension(f: Facts, move: Move | null): { strength: string; gap: s
   }
   if (f.top_signal && (f.signals_never_published_from ?? 0) > 0) {
     return {
-      strength: `Their strongest theme is "${f.top_signal.title}", and the evidence behind it keeps arriving.`,
+      strength: `Their strongest signal is "${f.top_signal.title}", and the evidence behind it keeps arriving.`,
       gap: "They have never published anything from it.",
     };
   }
@@ -732,7 +732,7 @@ function computeTension(f: Facts, move: Move | null): { strength: string; gap: s
     };
   }
   return {
-    strength: "The record is current and the themes are holding.",
+    strength: "The record is current and the signals are holding.",
     gap: `The next thing missing is ${move?.title ?? "a decision on what to say next"}.`,
   };
 }
