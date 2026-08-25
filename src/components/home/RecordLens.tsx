@@ -189,8 +189,8 @@ const YearStrip: React.FC<{ months: RecordBucket[]; onPick: (key: string) => voi
           return (
             <button
               key={m.d} type="button" onClick={() => onPick(m.d)}
-              title={`${monthLabel(m.d)} — ${nCaptures(m.cap, "en")} captured, ${nPosts(m.pub, "en")} posted`}
-              aria-label={`${monthLabel(m.d)}: ${nCaptures(m.cap, "en")} captured, ${nPosts(m.pub, "en")} posted`}
+              title={`${monthLabel(m.d)} — ${nCaptures(m.cap, "en")}, ${nPosts(m.pub, "en")} posted`}
+              aria-label={`${monthLabel(m.d)}: ${nCaptures(m.cap, "en")}, ${nPosts(m.pub, "en")} posted`}
               style={{
                 display: "grid", gap: 5, justifyItems: "center", background: "none", border: 0,
                 padding: 0, cursor: "pointer", fontFamily: "var(--font-body)",

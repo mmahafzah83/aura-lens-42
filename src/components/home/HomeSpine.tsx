@@ -217,7 +217,9 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
         />
       );
     }
-    if (onStage === "night") return <NightCard facts={facts} onOpen={() => onSwitchTab("overnight")} />;
+    if (onStage === "night") return (
+      <NightCard facts={facts} strengthened={strengthened} onOpen={() => onSwitchTab("overnight")} />
+    );
     if (onStage === "widgets") return (
       <WidgetsCard
         layout={layout} metrics={metrics} failed={widgetsFailed} onRetry={reloadWidgets}
