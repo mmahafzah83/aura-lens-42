@@ -3451,6 +3451,42 @@ export type Database = {
           },
         ]
       }
+      member_issue_reports: {
+        Row: {
+          app_version: string | null
+          component_stack: string | null
+          created_at: string
+          id: string
+          kind: string
+          message: string
+          route: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          app_version?: string | null
+          component_stack?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          message: string
+          route?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          app_version?: string | null
+          component_stack?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          message?: string
+          route?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       metric_targets: {
         Row: {
           baseline_on: string | null
