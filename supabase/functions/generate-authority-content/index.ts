@@ -1303,8 +1303,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- لا تذكر اسم أي شركة أو جهة أو شخص أو تاريخ محدد غير وارد حرفياً في الأدلة. إن لم يرد الاسم في الأدلة، اكتب الجملة بلا اسم.${unsourcedEntities.length ? `\n- احذف تحديداً: ${unsourcedEntities.join("، ")}` : ""}\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
           : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Do not name any organisation, person or specific date that is not present verbatim in the supplied evidence. If the name is not in the evidence, write the sentence without it.${unsourcedEntities.length ? `\n- Specifically remove: ${unsourcedEntities.join(", ")}` : ""}\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
 
-        const retryRaw = await callModel(corrective);
-        const candidate = retryRaw ? hygiene(stripLabels(stripLeadingScaffold(retryRaw))) : "";
+        const retry = await callContract(corrective);
+        const candidate = retry && retry.ok ? hygiene(stripLabels(retry.text)) : "";
+
         const candidateUnsourced = candidate ? findUnsourcedNumbers(candidate, evidenceText) : ["retry_failed"];
         const candidateEntities = candidate ? findUnsourcedEntities(candidate, evidenceText) : ["retry_failed"];
         const candidateIntegrity = candidate ? checkTextIntegrity(candidate, isAr) : { ok: false, issues: ["retry_failed"] };
