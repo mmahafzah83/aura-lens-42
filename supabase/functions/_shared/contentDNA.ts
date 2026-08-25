@@ -1,20 +1,26 @@
 // ═════════════════════════════════════════════════════════════════════════════
-// FIRST PRINCIPLE OF THIS FILE — VOICE SUPERSEDES ROTATION.
+// FIRST PRINCIPLE OF THIS FILE — VOICE NARROWS THE RANGE, ROTATION RUNS INSIDE IT.
 //
-//   Rotation is scaffolding. Its only job is to stop repetition while Aura knows
-//   nothing about this member. The moment a member has a learned voice
-//   (`authority_voice_profiles` row with usable `tone` / `preferred_structures` /
-//   `storytelling_patterns` / `example_posts`), that voice decides MOVE, beat
-//   order, OPEN and LAND — and rotation drops to a single guard: do not repeat
-//   the exact same MOVE twice in a row. Nothing else.
-//   Range is not randomness. A member who always opens with a question and
-//   always lands on a number is not a bug to be corrected — that is their voice,
-//   and once we know it, we follow it.
+//   Voice does not select a shape. Voice selects a SUBSET.
+//   From the MOVES table, the voice profile (`authority_voice_profiles`:
+//   `in_voice_moves` / `in_voice_opens` / `in_voice_lands`, or those arrays
+//   carried inside `preferred_structures`, derived from `example_posts` +
+//   `storytelling_patterns` when the voice is distilled) marks which moves are
+//   in-voice for this member — typically three to five of the eight, never one.
+//   Rotation then runs the full L1/L2/L3 rules over that subset instead of over
+//   all eight. Same for OPEN types and LAND types: the voice marks which are the
+//   member's, rotation cycles through them.
+//   Range is not randomness — and it is not sameness either. Rotation's job
+//   before voice is to avoid repetition. After voice its job is to exhaust the
+//   member's own range before returning to any part of it.
 //
-// Enforced in code by `selectShape({ hasVoice })` below: with a voice, only the
-// no-immediate-repeat guard runs; without one, the full three-level rotation of
-// §2 runs.
+// Enforced in code by `selectShape(history, siblings, subset)` below: ONE code
+// path. With no voice the three subset arrays are simply the full tables; with a
+// voice they are the member's own range. There is no branch that skips rotation.
+// A derivation that yields fewer than three moves is widened to three by
+// `deriveInVoiceSubsets` (and logged) — never generate from a subset of one.
 // ═════════════════════════════════════════════════════════════════════════════
+
 //
 // Aura Content DNA — THE writing algorithm. One structure, one MOVES table, one
 // banned list, one formatting rule, one rotation. Posts, carousels, newsletters
