@@ -671,6 +671,13 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
        * this one array, so the three levels can never disagree about what "the
        * last two drafts" were.
        */
+      const historyShapes: PastShape[] = recentDrafts.map((r) => ({
+        move_id: r.move_id ?? null,
+        beats: Array.isArray(r.beats) ? r.beats : null,
+        hook_style: r.hook_style ?? null,
+        ending_type: r.ending_type ?? null,
+        opening: r.body ?? null,
+      }));
       const pastShapes: PastShape[] = [
         ...siblingShapes.map((s) => ({
           move_id: s?.move_id ?? null,
@@ -679,14 +686,9 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
           ending_type: s?.ending_type ?? null,
           opening: s?.opening ?? null,
         })),
-        ...recentDrafts.map((r) => ({
-          move_id: r.move_id ?? null,
-          beats: Array.isArray(r.beats) ? r.beats : null,
-          hook_style: r.hook_style ?? null,
-          ending_type: r.ending_type ?? null,
-          opening: r.body ?? null,
-        })),
+        ...historyShapes,
       ];
+
 
       /**
        * VOICE NARROWS THE RANGE — it does not pick the shape. The profile marks
