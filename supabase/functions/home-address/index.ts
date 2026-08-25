@@ -375,7 +375,7 @@ function fallbackWhy(key: string, f: Facts): string {
         ? `You have published ${nw(f.published_total)} ${countNoun(f.published_total, "post")} and Aura cannot see how any of them landed.`
         : "Aura cannot see how anything you post lands, so it cannot learn from it.";
     case "fill_facet":
-      return `Your reading for ${f.facets_dormant[0] ?? "one part of the picture"} has nothing behind it yet.`;
+      return `Your picture of ${f.facets_dormant[0] ?? "one part of your work"} has nothing behind it yet.`;
     default:
       return "This is the shortest route from where you are to something published.";
   }
@@ -648,7 +648,7 @@ function buildFactPhrases(f: Facts, move: Move | null): string[] {
   if (typeof w === "number" && w < 4) {
     p.push(`${small(4 - w)} of your last four weeks had no capture of any kind`);
   } else if (w === 4) {
-    p.push(`you captured something, on one signal or another, in each of the last four weeks`);
+    p.push(`you captured something in each of the last four weeks`);
   }
 
   if (!f.captured_today && (f.captures_total ?? 0) > 0) p.push(`nothing new of any kind has come in today`);
