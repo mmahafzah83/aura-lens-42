@@ -187,16 +187,46 @@ export default function WhatWorked({
   modelOverride?: WhatWorkedModel;
 }) {
   const [saving, setSaving] = useState(false);
+  const [active, setActive] = useState<number | null>(null);
+  const [previews, setPreviews] = useState<Record<string, string>>({});
   const key = modelOverride || !userId ? null : `voice:whatworked:${userId}`;
   const loader = useCallback(() => loadWhatWorked(userId as string), [userId]);
   const state = useCachedVoice<WhatWorkedModel>(key, loader);
   const model = modelOverride ?? state.data;
 
+  const shown = useMemo(() => (model?.outcomes ?? []).slice(-20), [model]);
+  const ids = shown.map((o) => o.post_id).join(",");
+
+  /* the tooltip has to name the post, so the text is read once for the drawn window */
+  useEffect(() => {
+    const list = ids ? ids.split(",") : [];
+    if (list.length === 0) return;
+    let live = true;
+    void (async () => {
+      const [li, ci] = await Promise.all([
+        supabase.from("linkedin_posts").select("id, post_text").in("id", list),
+        supabase.from("content_items").select("id, body").in("id", list),
+      ]);
+      if (!live) return;
+      const map: Record<string, string> = {};
+      for (const r of li.data ?? []) if (r.post_text) map[r.id] = r.post_text;
+      for (const r of ci.data ?? []) if (!map[r.id] && r.body) map[r.id] = r.body;
+      setPreviews(map);
+    })();
+    return () => { live = false; };
+  }, [ids]);
+
   if (!model) return null;
 
   const name = (k: string) => traits.find((t) => t.trait_key === k)?.display_name ?? k;
   const n = model.outcomes.length;
-  const spark = model.outcomes.slice(-20).map((o) => o.performance_index as number);
+  const points: Point[] = shown.map((o) => ({
+    v: o.performance_index as number,
+    date: o.published_at,
+    preview: (previews[o.post_id] ?? "").replace(/\s+/g, " ").trim().slice(0, 60),
+  }));
+  const spark = points.map((p) => p.v);
+
   const proposals = traits.filter((t) => t.source === "aura" && !t.last_confirmed_at && t.value !== null);
 
   const rows = [
