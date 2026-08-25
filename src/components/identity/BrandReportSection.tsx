@@ -267,35 +267,46 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
         </nav>
       ) : null}
 
-      {/* Accordion */}
-      <div>
+      {/* Accordion — two columns above 900px, open blocks span both. */}
+      <div className="cb-grid">
         {blocks.map((b, idx) => {
-          const openNow = isOpen(b.id, idx);
+          const openNow = isOpen(b.id);
+          const line = preview(b);
           return (
             <div
               key={b.id}
               id={`brand-report-${b.id}`}
+              className={openNow ? "cb-span" : undefined}
               style={{ borderTop: `0.5px solid ${idx === 0 ? RULE : RULE_SOFT}` }}
             >
               <button
                 type="button"
-                onClick={() => toggle(b.id, idx)}
+                onClick={() => toggle(b.id)}
                 aria-expanded={openNow}
+                aria-controls={`brand-report-${b.id}-panel`}
                 style={{
                   width: "100%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: 10,
-                  padding: "14px 0",
+                  minHeight: 44,
+                  padding: "12px 0",
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
                   textAlign: "left",
                 }}
               >
-                <span style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: SPOT }}>
-                  {b.label}
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontFamily: MONO, fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: SPOT }}>
+                    {b.label}
+                  </span>
+                  {!openNow && line ? (
+                    <span style={{ display: "block", fontSize: 13, lineHeight: 1.5, color: INK2, marginTop: 4, ...textStyle(line) }}>
+                      {line}
+                    </span>
+                  ) : null}
                 </span>
                 <ChevronDown
                   size={14}
@@ -309,7 +320,8 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
               </button>
 
               {openNow ? (
-                <div style={{ paddingBottom: 20 }}>
+                <div id={`brand-report-${b.id}-panel`} style={{ paddingBottom: 20 }}>
+
                   {b.kind === "prose"
                     ? b.parts
                         .filter(Boolean)
