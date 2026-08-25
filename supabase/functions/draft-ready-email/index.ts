@@ -130,8 +130,10 @@ function buildEmail(opts: {
     typeof nReadings === "number" && nReadings > 0 &&
     typeof nSources === "number" && nSources > 0;
 
+  // ACTOR HONESTY: nReadings counts `evidence_fragments` — what AURA extracted.
+  // The member saved captures, so the verb must belong to Aura, not to them.
   const preheader = haveCounts
-    ? `${nReadings} ${countNoun(nReadings, "evidence")} you saved. One post. Four minutes.`
+    ? `${nReadings} ${countNoun(nReadings, "evidence")} Aura pulled from what you saved. One post. Four minutes.`
     : `One post. Four minutes.`;
 
   const namePrefix = firstName ? `${escapeHtml(firstName)} — you` : "You";
@@ -145,8 +147,11 @@ function buildEmail(opts: {
   const shortTopicEsc = escapeHtml(shortTopicClean);
 
   // One idea per line. Each <p> stands on its own so the eye lands on a beat.
+  // The count is `evidence_fragments`, which Aura extracted — so Aura is the
+  // actor here. The member's own act was the capture.
+  const nameLead = firstName ? `${escapeHtml(firstName)} — Aura` : "Aura";
   const line1 = haveCounts
-    ? `${namePrefix} saved ${nReadings} ${countNoun(nReadings, "evidence")} on ${shortTopicEsc}${whenSuffix}.`
+    ? `${nameLead} pulled ${nReadings} ${countNoun(nReadings, "evidence")} out of what you saved on ${shortTopicEsc}${whenSuffix}.`
     : `${namePrefix} kept a finding on ${shortTopicEsc}.`;
   const line2 = `Nobody asked you to. That was your judgment, not an algorithm's.`;
   const line3 = `Aura put that judgment into a post, written the way you write.`;
