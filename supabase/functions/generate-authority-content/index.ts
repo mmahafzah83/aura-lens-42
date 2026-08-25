@@ -1571,9 +1571,14 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
           const scaled = o <= 10 ? Math.round(o * 10) : Math.round(o);
           return Math.min(100, Math.max(0, scaled));
         })(),
-        pass: (gateResult.pass === true) || (gateResult.pass === undefined && (() => { const o=Number(gateResult.overall??0); const scaled=o<=10?Math.round(o*10):Math.round(o); return scaled>=70; })()),
+        // The fallback obeys the judge's own rule: a draft with an unsourced
+        // number never passes on score alone.
+        pass: (gateResult.pass === true) || (gateResult.pass === undefined && gateResult?.assertions?.grounded_number !== false && (() => { const o=Number(gateResult.overall??0); const scaled=o<=10?Math.round(o*10):Math.round(o); return scaled>=70; })()),
         assertions: gateResult.assertions || null,
         grounded_number: gateResult.assertions?.grounded_number ?? null,
+        // Law #86 — carried through so the Advisor can tell "checked and failed"
+        // from "never measured".
+        grounding_available: gateResult.grounding_available ?? null,
         scores: gateResult.scores,
         verdict: gateResult.verdict,
         weaknesses: Array.isArray(gateResult.weaknesses) ? gateResult.weaknesses : [],
