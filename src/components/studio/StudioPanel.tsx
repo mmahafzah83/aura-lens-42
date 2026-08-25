@@ -260,6 +260,11 @@ export default function StudioPanel({
   const [lang, setLang] = useState<Lang>("en");
   const [writeLang, setWriteLang] = useState<Lang>("en");
 
+  /* Voice modes the member actually owns, for the language being written in.
+     The default voice is always first and is the default selection. */
+  const [voiceModes, setVoiceModes] = useState<Array<{ key: string; label: string }>>([]);
+  const [voiceMode, setVoiceMode] = useState<string>("default");
+
   const [posture, setPosture] = useState<Posture>(() => readStoredPosture() ?? "editor");
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -1371,6 +1376,9 @@ export default function StudioPanel({
           topic: target.title,
           context: target.insight || "",
           language: useLang,
+          // A mode is the same voice tuned for one job; absent, the member's
+          // default voice is used exactly as before.
+          mode_key: voiceMode,
           signal_id: target.id || undefined,
           // The refine path rewrites the draft in place; it never re-topics it.
           ...(refine && refine.instruction.trim() && refine.draft.trim()
@@ -2631,6 +2639,28 @@ export default function StudioPanel({
      same reason line the card showed. */
   const chosenCard = choice?.id ? (cards.find((c) => c.signalId === choice.id) ?? null) : null;
 
+  /* The modes this member owns in the writing language. Read-only here — the
+     Voice surface is where a mode is created or removed. */
+  useEffect(() => {
+    let cancelled = false;
+    if (!userId) { setVoiceModes([]); return; }
+    void (async () => {
+      const { data } = await supabase
+        .from("authority_voice_profiles")
+        .select("mode_key, mode_label")
+        .eq("user_id", userId)
+        .eq("language", writeLang);
+      if (cancelled) return;
+      const rows = (data ?? []).filter((r) => typeof r.mode_key === "string") as Array<{ mode_key: string; mode_label: string | null }>;
+      const list = rows
+        .map((r) => ({ key: r.mode_key, label: r.mode_label || (r.mode_key === "default" ? "Your voice" : r.mode_key) }))
+        .sort((a, b) => (a.key === "default" ? -1 : b.key === "default" ? 1 : a.label.localeCompare(b.label)));
+      setVoiceModes(list);
+      setVoiceMode((cur) => (list.some((m) => m.key === cur) ? cur : "default"));
+    })();
+    return () => { cancelled = true; };
+  }, [userId, writeLang]);
+
   /* ONE language control, ONE state. Rendered on the hub, subject, paste and
      confirm screens; every one of them is this same element, so there is no
      second source of truth for the writing language. */
@@ -2664,6 +2694,36 @@ export default function StudioPanel({
           );
         })}
       </div>
+      {voiceModes.length > 1 && (
+        <div style={{ marginBlockStart: 12 }}>
+          <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px" }}>
+            {lang === "ar" ? "أي نبرة؟" : "Which voice?"}
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {voiceModes.map((m) => {
+              const on = voiceMode === m.key;
+              return (
+                <button
+                  key={m.key}
+                  type="button"
+                  className="v23-tap v23-focus"
+                  aria-pressed={on}
+                  onClick={() => setVoiceMode(m.key)}
+                  style={{
+                    minHeight: 44, padding: "0 16px", borderRadius: 8, cursor: "pointer",
+                    fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
+                    background: on ? "var(--act-tint)" : "var(--surface-subtle)",
+                    color: on ? "var(--act-hover)" : "var(--text-secondary)",
+                    border: `1px solid ${on ? "var(--act)" : "var(--border-default)"}`,
+                  }}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 
