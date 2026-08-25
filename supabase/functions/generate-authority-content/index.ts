@@ -1570,6 +1570,13 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         land_type: landType,
         collapsed: collapseThisPost,
         rotation_repeat: rotationRepeat,
+        // Does this sound like the member? 0–100, null when they have fewer
+        // than eight of their own posts to be measured against.
+        voice_match: voiceMatch,
+        // Set only when a draft shipped despite drifting — never silent.
+        voice_fidelity_flags: voiceFidelityFlags.length ? voiceFidelityFlags : null,
+        voice_distribution_corpus_n: voiceDist?.corpus_n ?? null,
+
 
         opening_words: firstSixWords(content),
         unsourced_numbers_removed: unsourcedRemoved,
