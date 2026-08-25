@@ -9,6 +9,10 @@
  *   piece(s) of evidence      قطعة     rows in `evidence_fragments`, or
  *                                      `strategic_signals.fragment_count` for one signal
  *   signal / signals          إشارة    rows in `strategic_signals`
+ *   page / pages              صفحة     rows in `agent_findings` — pages AURA went
+ *                                      and read overnight. NOT the member's own
+ *                                      sources, NOT captures, NEVER "reading(s)".
+
  *
  * Chain: entries (1) → source_registry (1) → evidence_fragments (many) → backs a signal.
  *
