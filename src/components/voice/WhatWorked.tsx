@@ -360,25 +360,42 @@ export default function WhatWorked({
         </p>
       </div>
 
-      {/* compounding */}
+      {/* compounding — the reading first, then the picture */}
       <div style={{ background: NIGHT, borderRadius: RADIUS.card, padding: 16, marginBlockStart: 12 }}>
         <div style={{ ...microLabel, color: NIGHT_MUTED }}>Getting better</div>
-        <h3 style={{ fontSize: TYPE.title, fontWeight: 600, color: WHITE, margin: "6px 0 0" }}>
+        <h3 style={{ fontSize: TYPE.title, fontWeight: 600, color: NIGHT_TEXT, margin: "6px 0 0", lineHeight: 1.5 }}>
+          {trendSentence(model.outcomes.map((o) => o.performance_index as number))}
+        </h3>
+        <div style={{ fontSize: TYPE.caption, color: NIGHT_MUTED, marginBlockStart: 4 }}>
           {model.learningSinceDays === null
             ? "Aura hasn't started learning your voice yet."
             : `Aura has been learning your voice for ${model.learningSinceDays} ${model.learningSinceDays === 1 ? "day" : "days"}.`}
-        </h3>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBlockStart: 14 }}>
-          <Stat label="Posts read" value={String(model.postsRead)} />
-          <Stat label="Corrections applied" value={String(model.correctionsApplied)} />
-          <Stat label="Proposals confirmed" value={String(model.proposalsConfirmed)} />
-          <Stat label="Proposals rejected" value={String(model.proposalsRejected)} />
         </div>
+
         {spark.length >= 2 ? (
-          <div style={{ marginBlockStart: 14 }}>
-            <Sparkline values={spark} />
+          <div style={{ marginBlockStart: 14, position: "relative" }}>
+            <Sparkline points={points} active={active} setActive={setActive} />
+            {active !== null && points[active] && (
+              <div
+                role="status"
+                style={{
+                  position: "absolute", insetBlockStart: 0,
+                  insetInlineStart: `${Math.min(66, (active / Math.max(1, points.length - 1)) * 78)}%`,
+                  background: NIGHT_RAISED, border: `1px solid ${NIGHT_LINE}`, borderRadius: RADIUS.button,
+                  padding: "6px 8px", maxInlineSize: 210, pointerEvents: "none", zIndex: 2,
+                }}
+              >
+                <div style={{ ...monoNum, fontSize: TYPE.micro, color: NIGHT_MUTED }}>{shortDate(points[active].date)}</div>
+                <div style={{ ...monoNum, fontSize: TYPE.body, color: NIGHT_TEXT }}>
+                  {mult(points[active].v)} your average
+                </div>
+                <div style={{ fontSize: TYPE.caption, color: NIGHT_MUTED, lineHeight: 1.5, marginBlockStart: 2 }}>
+                  {points[active].preview || "No text saved for this post."}
+                </div>
+              </div>
+            )}
             <div style={{ ...monoNum, fontSize: TYPE.caption, color: NIGHT_MUTED, marginBlockStart: 4 }}>
-              Last {spark.length} posts · dashed line is your own average
+              {shortDate(points[0].date)} → {shortDate(points[points.length - 1].date)} · your last {points.length} settled posts
             </div>
           </div>
         ) : (
@@ -386,7 +403,25 @@ export default function WhatWorked({
             The performance line appears once Aura has settled figures for two or more of your posts.
           </p>
         )}
+
+        {model.postsRead === 0 && model.correctionsApplied === 0 && model.proposalsConfirmed === 0 && model.proposalsRejected === 0 ? (
+          <p style={{ fontSize: TYPE.small, color: NIGHT_MUTED, lineHeight: 1.6, marginBlock: "14px 0 0" }}>
+            Nothing to count yet — Aura hasn't been given a correction or a proposal.
+          </p>
+        ) : (
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBlockStart: 14 }}>
+            <Stat label="Posts read" value={model.postsRead} term="Posts read"
+              body="How many of your own posts Aura has read while learning your voice." />
+            <Stat label="Times you corrected Aura" value={model.correctionsApplied} term="Times you corrected Aura"
+              body="Edits you made to a draft that Aura kept as a change to how it writes for you." />
+            <Stat label="Aura's suggestions you accepted" value={model.proposalsConfirmed} term="Suggestions you accepted"
+              body="Changes Aura proposed to your voice settings that you confirmed." />
+            <Stat label="Aura's suggestions you turned down" value={model.proposalsRejected} term="Suggestions you turned down"
+              body="Changes Aura proposed to your voice settings that you rejected." />
+          </div>
+        )}
       </div>
+
     </section>
   );
 }
