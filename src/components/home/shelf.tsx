@@ -47,18 +47,22 @@ export function buildShelf(
     {
       key: "own",
       title: "What you own",
+      // `signals_active` — rows in `strategic_signals`. The dictionary owns the noun.
       fact: themes > 0
-        ? `${themes} live ${themes === 1 ? "signal" : "signals"}`
+        ? `${nSignals(themes, "en")} live`
         : "No signals yet. They form once you have captured a handful of things.",
     },
     {
       key: "night",
       title: "While you slept",
+      // Bare numbers said nothing. `sources_read` is `agent_findings` rows —
+      // PAGES Aura read, never the member's sources (Ruling 1).
       fact: ln
-        ? `${ln.sources_read} read · ${ln.drafts_written} written`
+        ? `${nPages(ln.sources_read, "en")} read · ${nDrafts(ln.drafts_written, "en")} written`
         : "Aura has not run for you yet. It reads overnight.",
       machine: true,
     },
+
     {
       key: "widgets",
       title: "Your widgets",
