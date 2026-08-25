@@ -157,6 +157,13 @@ interface VoicePrefs {
   story_mix?: Record<string, number>;
   anti_ai?: boolean;
   banned_phrases?: string[];
+  /* The five the Voice screen writes and this function used to ignore
+     completely — a member set them and nothing downstream ever read them. */
+  rhythm?: string;
+  structure?: string;
+  opener?: string;
+  closer?: string;
+  language_mode?: "en" | "ar" | "mixed";
 }
 
 function readPrefs(voiceProfile: any): VoicePrefs {
@@ -181,6 +188,13 @@ function readPrefs(voiceProfile: any): VoicePrefs {
     if (Object.keys(mix).length) out.story_mix = mix;
   }
   if (typeof o.anti_ai === "boolean") out.anti_ai = o.anti_ai;
+  for (const k of ["rhythm", "structure", "opener", "closer"] as const) {
+    const v = String(o[k] ?? "").trim();
+    if (v) (out as Record<string, unknown>)[k] = v;
+  }
+  if (o.language_mode === "en" || o.language_mode === "ar" || o.language_mode === "mixed") {
+    out.language_mode = o.language_mode;
+  }
   if (Array.isArray(o.banned_phrases)) {
     const list = o.banned_phrases.map((x) => String(x ?? "").trim()).filter(Boolean);
     if (list.length) out.banned_phrases = list;
