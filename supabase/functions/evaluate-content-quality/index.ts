@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { ENDING_SHAPE_DESC, type EndingType } from "../_shared/voiceStyle.ts";
+import { buildGrounding } from "../_shared/grounding.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +28,7 @@ serve(async (req) => {
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const bearerToken = authHeader.replace("Bearer ", "").trim();
   const isServiceRole = !!SERVICE_ROLE && bearerToken === SERVICE_ROLE;
+  let requesterUserId: string | null = null;
   if (!isServiceRole) {
     const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
     const { data, error } = await sb.auth.getUser(bearerToken);
@@ -35,13 +37,14 @@ serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    requesterUserId = data.user.id;
   }
 
   try {
     const startedAt = Date.now();
     const {
       post_text, language, signal_title, voice_tone, user_sector,
-      target_register, grounding_text, content_kind, expected_ending,
+      target_register, grounding_text, content_kind, expected_ending, signal_id,
     } = await req.json();
 
     if (!post_text) {
@@ -66,6 +69,49 @@ serve(async (req) => {
     }
 
     const isArabic = language === "ar";
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const admin = SERVICE_ROLE ? createClient(SUPABASE_URL, SERVICE_ROLE) : null;
+    let resolvedGroundingText = typeof grounding_text === "string" ? grounding_text.trim() : "";
+    let groundingAvailable = resolvedGroundingText.length > 0;
+
+    if (!groundingAvailable && admin && typeof signal_id === "string" && signal_id.trim()) {
+      try {
+        let sigQuery = admin.from("strategic_signals")
+          .select("id, user_id, signal_title, explanation, strategic_implications, what_it_means_for_you, confidence, supporting_evidence_ids")
+          .eq("id", signal_id.trim());
+        if (requesterUserId) sigQuery = sigQuery.eq("user_id", requesterUserId);
+        const { data: sigData } = await sigQuery.maybeSingle();
+        if (sigData) {
+          const evidenceIds = Array.isArray((sigData as any).supporting_evidence_ids)
+            ? (sigData as any).supporting_evidence_ids.filter(Boolean)
+            : [];
+          const provenanceRows: any[] = [];
+          for (let i = 0; i < evidenceIds.length; i += 100) {
+            const { data: batch } = await admin.from("evidence_fragments")
+              .select("id, title, content, metadata, confidence")
+              .eq("user_id", (sigData as any).user_id)
+              .in("id", evidenceIds.slice(i, i + 100));
+            if (batch) provenanceRows.push(...batch);
+          }
+          const byConfidence = [...provenanceRows].sort((a, b) => Number(b?.confidence ?? 0) - Number(a?.confidence ?? 0));
+          const selected = byConfidence.slice(0, 6);
+          const digitBearing = byConfidence.find((f: any) => /[0-9٠-٩۰-۹]/.test(`${f?.title || ""} ${f?.content || ""} ${JSON.stringify(f?.metadata || "")}`));
+          if (digitBearing && !selected.some((f: any) => f?.id === digitBearing.id)) {
+            selected.splice(Math.max(0, selected.length - 1), selected.length ? 1 : 0, digitBearing);
+          }
+          resolvedGroundingText = buildGrounding({
+            signal: sigData as any,
+            fragments: selected,
+            provenanceRows,
+            context: null,
+            topic: signal_title ?? null,
+          });
+          groundingAvailable = resolvedGroundingText.trim().length > 0;
+        }
+      } catch (e) {
+        console.warn("[evaluate-content-quality] grounding resolve failed:", (e as Error).message);
+      }
+    }
 
     // D121 — the judge must know which close the generator was ordered to write.
     const ending = (ENDING_SHAPE_DESC as Record<string, string>)[String(expected_ending ?? "")]
@@ -82,12 +128,9 @@ serve(async (req) => {
       String(language ?? ""),
       String(target_register ?? ""),
       String(user_sector ?? ""),
-      String(grounding_text ?? ""),
+      String(resolvedGroundingText ?? ""),
       String(expected_ending ?? ""),
     ].join("\u0000"));
-
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const admin = SERVICE_ROLE ? createClient(SUPABASE_URL, SERVICE_ROLE) : null;
 
     // Unchanged text is never re-judged.
     if (admin) {
@@ -115,7 +158,7 @@ Score each dimension 0-10:
 5. SIGNAL_DEPTH: If grounded in a signal, does the post actually demonstrate insight from that signal? (0 = generic take, 10 = couldn't have written this without the signal)
 ${isArabic ? `6. ARABIC_QUALITY: Is this written in the target register stated below${target_register ? ` (${target_register})` : ""}? Not bureaucratic, not off-register? Technical terms in English? (0 = translation artifact, 10 = native in that register)` : '6. ENGLISH_QUALITY: Native-sounding? No awkward constructions? (0 = non-native patterns, 10 = polished native)'}
 
-${"\n═══ DAHEEH STRUCTURAL ASSERTIONS (report each true/false, with a one-line reason) ═══\n- payoff_withheld: the core insight/number is NOT in the first two lines — tension is built before the reveal.\n- villain_named: the post names a specific misconception or wrong belief it corrects.\n" + endingRule + "\n- one_number_max: the post uses AT MOST one primary statistic (extra raw numbers = weaker).\n- grounded_number: EVERY specific statistic in the post can be traced to the GROUNDING below. If any number is NOT supported by the grounding, this is FALSE and you MUST list the unsupported number in weaknesses. If the post has no statistics at all, set grounded_number = true.\n- register_match: The TARGET REGISTER is stated below. Is the text written in that register? Judge the register the post was WRITTEN FOR — a post in the stated register is a match even if you would have phrased it differently. Only set FALSE if tokens belong to a different variety or a different language from the stated register, and list those exact tokens in weaknesses. If no target register was provided, set TRUE.\n- domain_match: The READER DOMAIN and the GROUNDING are stated below. Is the post anchored in the reader's domain, or in a domain present in the grounding? If it is anchored in a domain present in neither, set FALSE and name that foreign domain in weaknesses. If no reader domain was provided, set TRUE.\n\nTARGET REGISTER: " + (target_register || "(none provided)") + "\nINSTRUCTED CLOSE: " + (ending ? ENDING_SHAPE_DESC[ending] : "(none provided)") + "\nREADER DOMAIN: " + (user_sector || "(none provided)") + "\n\nGROUNDING (the only facts/numbers the post may use):\n" + (grounding_text || "(none provided — treat any specific statistic as ungrounded unless it is clearly illustrative)") + "\n"}
+${"\n═══ DAHEEH STRUCTURAL ASSERTIONS (report each true/false, with a one-line reason) ═══\n- payoff_withheld: the core insight/number is NOT in the first two lines — tension is built before the reveal.\n- villain_named: the post names a specific misconception or wrong belief it corrects.\n" + endingRule + "\n- one_number_max: the post uses AT MOST one primary statistic (extra raw numbers = weaker).\n- grounded_number: " + (groundingAvailable ? "EVERY specific statistic in the post can be traced to the GROUNDING below. If any number is NOT supported by the grounding, this is FALSE and you MUST list the unsupported number in weaknesses. If the post has no statistics at all, set grounded_number = true." : "NOT MEASURED. Set grounded_number = null because no grounding was available.") + "\n- register_match: The TARGET REGISTER is stated below. Is the text written in that register? Judge the register the post was WRITTEN FOR — a post in the stated register is a match even if you would have phrased it differently. Only set FALSE if tokens belong to a different variety or a different language from the stated register, and list those exact tokens in weaknesses. If no target register was provided, set TRUE.\n- domain_match: The READER DOMAIN and the GROUNDING are stated below. Is the post anchored in the reader's domain, or in a domain present in the grounding? If it is anchored in a domain present in neither, set FALSE and name that foreign domain in weaknesses. If no reader domain was provided, set TRUE.\n\nTARGET REGISTER: " + (target_register || "(none provided)") + "\nINSTRUCTED CLOSE: " + (ending ? ENDING_SHAPE_DESC[ending] : "(none provided)") + "\nREADER DOMAIN: " + (user_sector || "(none provided)") + "\n\nGROUNDING (the only facts/numbers the post may use):\n" + (resolvedGroundingText || "(none provided — grounded_number is unmeasured, not failed)") + "\n"}
 
 Return JSON:
 {
@@ -173,6 +216,11 @@ Return JSON:
     result.judge_model = JUDGE_MODEL;
     result.content_hash = cacheKey;
     result.expected_ending = expected_ending ?? null;
+    result.grounding_available = groundingAvailable;
+    if (!groundingAvailable) {
+      result.assertions = result.assertions && typeof result.assertions === "object" ? result.assertions : {};
+      result.assertions.grounded_number = null;
+    }
     if (ending && ending !== "question" && result?.assertions) {
       // The generator was ordered not to end on a question — not applicable.
       result.assertions.ends_on_question = true;

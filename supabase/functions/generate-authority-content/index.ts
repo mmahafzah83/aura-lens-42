@@ -19,7 +19,6 @@ import {
   shouldCollapse,
   selectShape,
   deriveInVoiceSubsets,
-
   opensOnBannedWord,
   sameBeats,
   resolveMove,
@@ -49,6 +48,7 @@ import { splitForPrompt, enforcedRuleTexts } from "../_shared/voiceRules.ts";
 import { PROMPT_VERSION, type Contribution, type GenerationProvenance } from "../_shared/provenance.ts";
 import { loadActiveMemberRules, memberRulesBlock } from "../_shared/memberRules.ts";
 import { endingTypeOf, hookStyleOf } from "../_shared/fingerprint.ts";
+import { buildGrounding } from "../_shared/grounding.ts";
 import {
   checkTextIntegrity,
   neutralizeRtlMarkers,
@@ -273,7 +273,7 @@ const AI_SLOP_AR = [
  * nothing has been set, so an untouched profile produces the same prompt it
  * produced before this existed.
  */
-function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string | null): string {
+function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string | null, evidenceHasNumber = true): string {
   const prefs = readPrefs(voiceProfile);
   const lines: string[] = [];
 
@@ -337,7 +337,7 @@ function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string 
   };
   prefLine(RHYTHM, prefs.rhythm, "RHYTHM", "الإيقاع");
   prefLine(STRUCTURE, prefs.structure, "STRUCTURE", "البناء");
-  prefLine(OPENER, prefs.opener, "OPENER", "الافتتاحية المختارة");
+  prefLine(OPENER, !evidenceHasNumber && prefs.opener === "number" ? undefined : prefs.opener, "OPENER", "الافتتاحية المختارة");
   prefLine(CLOSER, prefs.closer, "CLOSER", "الخاتمة المختارة");
   if (prefs.language_mode === "mixed") {
     lines.push(ar
@@ -380,7 +380,7 @@ function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string 
   return "\n" + (ar ? "اختيارات الكاتب الصريحة — تتقدّم على أي استنتاج:" : "WRITER'S EXPLICIT CHOICES — these outrank anything inferred:") + "\n" + lines.join("\n") + "\n";
 }
 
-function buildVoiceContext(voiceProfile: any, chosenOpening?: string | null): string {
+function buildVoiceContext(voiceProfile: any, chosenOpening?: string | null, evidenceHasNumber = true): string {
   if (!voiceProfile) return "No voice profile set — use analytical, calm confidence tone.";
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
@@ -400,10 +400,10 @@ ${useRules.soft.length || avoidRules.soft.length ? `Soft guidance only — infer
 Vocabulary notes: ${vp.notes || ""}
 Avoid patterns not present in the user's examples. Match their sentence length, paragraph density, and rhetorical style.
 Mimic rhythm, interests, and boldness from the examples — never register or slang. The DNA register always outranks example mimicry.
-${buildPrefsBlock(voiceProfile, false, chosenOpening)}`;
+${buildPrefsBlock(voiceProfile, false, chosenOpening, evidenceHasNumber)}`;
 }
 
-function buildArabicVoiceContext(voiceProfile: any, chosenOpening?: string | null): string {
+function buildArabicVoiceContext(voiceProfile: any, chosenOpening?: string | null, evidenceHasNumber = true): string {
   if (!voiceProfile) return "";
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
@@ -421,7 +421,7 @@ ${avoidRules.hard.length ? `تجنّب هذه الأنماط — ملاحظة ف
 ${useRules.soft.length || avoidRules.soft.length ? `إرشاد مرن فقط (مستنتج وغير مؤكد من الكاتب): يُفضَّل ${JSON.stringify(useRules.soft)}، ويُبتعد عن ${JSON.stringify(avoidRules.soft)}` : ""}
 ${vp.notes ? `ملاحظات حول المفردات: ${vp.notes}` : ""}
 اكتب بحيث يعكس الناتج هذا الصوت تحديداً، لا صوتاً عاماً.
-${buildPrefsBlock(voiceProfile, true, chosenOpening)}`;
+${buildPrefsBlock(voiceProfile, true, chosenOpening, evidenceHasNumber)}`;
 }
 
 function buildIdentityContext(profile: any): string {
@@ -591,7 +591,7 @@ serve(withObserve("generate-authority-content", async (req) => {
     if (action === "generate_content") {
       run = await startRun(undefined, { id: runIdFrom(params), operation: "studio_generate", user_id: effectiveUserId });
       run.mark(GATHER);
-      const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme, signal_id, post_id } = params;
+      const { content_type, topic, context, language, framework, extra_instruction, rewrite_instruction, current_draft, flash, stream, variation, lang, sector, post_type, theme, signal_id, post_id } = params;
       // A verdict must be joinable to the post it judged, whenever the caller
       // already has one.
       const requestedPostId = typeof post_id === "string" && post_id ? post_id : null;
@@ -621,9 +621,15 @@ serve(withObserve("generate-authority-content", async (req) => {
               .select("id, title, content, metadata, confidence")
               .eq("user_id", effectiveUserId)
               .in("id", evidenceIds)
-              .order("confidence", { ascending: false })
-              .limit(6);
-            groundingFragments = fragData || [];
+              .order("confidence", { ascending: false });
+            const candidates = fragData || [];
+            const hasDigit = (f: any) => /[0-9٠-٩۰-۹]/.test(`${f?.title || ""} ${f?.content || ""} ${JSON.stringify(f?.metadata || "")}`);
+            const selected = candidates.slice(0, 6);
+            const digitBearing = candidates.find(hasDigit);
+            if (digitBearing && !selected.some((f: any) => f?.id === digitBearing.id)) {
+              selected.splice(Math.max(0, selected.length - 1), selected.length ? 1 : 0, digitBearing);
+            }
+            groundingFragments = selected;
             // Provenance needs the WHOLE chain, not the six shown to the model.
             for (let i = 0; i < evidenceIds.length; i += 100) {
               const { data: batch } = await supabase.from("evidence_fragments")
@@ -665,24 +671,14 @@ serve(withObserve("generate-authority-content", async (req) => {
         console.warn("[generate-authority-content] grounding fetch failed:", (e as Error).message);
       }
 
-      const groundingContext = (() => {
-        if (!groundingSignal && groundingFragments.length === 0) return "";
-        const sigLine = groundingSignal
-          ? `SIGNAL: ${groundingSignal.signal_title || ""} — ${groundingSignal.explanation || ""} — implications: ${typeof groundingSignal.strategic_implications === "string" ? groundingSignal.strategic_implications : JSON.stringify(groundingSignal.strategic_implications || "")}`
-          : "";
-        const fragLines = groundingFragments
-          .map((f: any) => `- ${(f.title ? f.title + ": " : "")}${(f.content || "").toString().slice(0, 400)}`)
-          .filter(Boolean)
-          .join("\n");
-        return `GROUNDED EVIDENCE — this is the ONLY source you may draw facts and numbers from:
-
-${sigLine}
-
-EVIDENCE:
-${fragLines}
-
-If this evidence contains no usable number, write the post WITHOUT a number.`;
-      })();
+      const groundingString = buildGrounding({
+        signal: groundingSignal,
+        fragments: groundingFragments,
+        provenanceRows,
+        context,
+        topic,
+      });
+      const evidenceHasNumber = /[0-9٠-٩۰-۹]/.test(groundingString);
 
       const formatInstructions: Record<string, string> = {
         post: `Write a LinkedIn post (scroll-stopping hook → insight → framework/key points → closing question). Short paragraphs, spaced lines. Mobile-readable.`,
@@ -694,12 +690,21 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
          MOVE, and the MOVE supplies the shape. One table, one instruction. */
       const requestedMove = resolveMove(framework) || resolveMove(typeof post_type === "string" ? post_type : null);
 
-      // Extra instruction (e.g. for short version rewrite)
-      const extraInstruction = extra_instruction ? `\n\n${extra_instruction}` : "";
+      // Extra instruction (e.g. for angle selection), or the Advisor rewrite path.
+      const rewriteInstruction = typeof rewrite_instruction === "string" ? rewrite_instruction.trim() : "";
+      const currentDraftText = typeof current_draft === "string" ? current_draft.trim() : "";
+      const extraInstruction = rewriteInstruction && currentDraftText
+        ? (effectiveLanguage === "ar"
+          ? `\n\nإعادة كتابة دقيقة للمسودة الحالية — إلزامي:\n- أعد نفس المنشور مع تغيير الجزء الفاشل فقط: ${rewriteInstruction}\n- أبقِ كل سطر آخر كما هو حرفياً قدر الإمكان.\n- لا تبدأ من موضوع جديد. لا تضف زاوية جديدة.\n\nالمسودة الحالية:\n${currentDraftText}`
+          : `\n\nPRECISE REWRITE OF THE CURRENT DRAFT — mandatory:\n- Return the same post with only the failing part changed: ${rewriteInstruction}\n- Keep every other line word for word wherever possible.\n- Do not start from a new topic. Do not add a new angle.\n\nCURRENT DRAFT:\n${currentDraftText}`)
+        : (extra_instruction ? `\n\n${extra_instruction}` : "");
 
       // One opening per generation, drawn from what the member allows.
       const memberPrefs = readPrefs(voiceProfile);
-      const chosenOpening = pickOpening(memberPrefs.openings);
+      const allowedOpeningPrefs = evidenceHasNumber
+        ? memberPrefs.openings
+        : memberPrefs.openings?.filter((o) => !["number", "number_first", "specific_number"].includes(String(o)));
+      const chosenOpening = pickOpening(allowedOpeningPrefs);
 
       /**
        * VARIATION LOOKBACK — repointed at `content_items`.
@@ -805,7 +810,15 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         new Date().toISOString().slice(0, 10),
       );
 
-      const shape = selectShape(historyShapes, siblingShapes, derivation.subset, {
+      const shapeSubset = evidenceHasNumber
+        ? derivation.subset
+        : {
+          ...derivation.subset,
+          opens: derivation.subset.opens.filter((o) => o !== "specific_number").length
+            ? derivation.subset.opens.filter((o) => o !== "specific_number")
+            : OPEN_TYPES.filter((o) => o !== "specific_number"),
+        };
+      const shape = selectShape(historyShapes, siblingShapes, shapeSubset, {
         seed,
         requestedMove,
       });
@@ -882,11 +895,11 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         }
         // Arabic-native prompt replaces voice section
         voiceSection = voiceProfile
-          ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile, chosenOpening)
+          ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile, chosenOpening, evidenceHasNumber)
           : arabicBase;
         // If a specific framework is selected, use it; otherwise Arabic defaults to PAS/BAB (already in ARABIC_VOICE_PROMPT)
       } else {
-        voiceSection = buildVoiceContext(voiceProfile, chosenOpening);
+        voiceSection = buildVoiceContext(voiceProfile, chosenOpening, evidenceHasNumber);
       }
       voiceSection += recentPatternBlock + distributionBlock;
       // Only rules the member wrote or explicitly accepted. A suggested rule
@@ -952,13 +965,16 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       const allowedEndings: string[] = Array.isArray(voiceProfile?.allowed_endings) ? voiceProfile!.allowed_endings : [];
       const chosenEnding = (() => {
         const derived = LAND_TO_ENDING[landType];
-        if (!allowedEndings.length || allowedEndings.includes(derived)) return derived;
+        const endingPool = evidenceHasNumber ? allowedEndings : allowedEndings.filter((e) => e !== "number");
+        if (!evidenceHasNumber && derived === "number") return "statement";
+        if (!endingPool.length || endingPool.includes(derived)) return derived;
         // The member has narrowed the pool; respect it and fall back to a draw.
-        return pickEnding(voiceProfile?.allowed_endings);
+        const picked = pickEnding(endingPool);
+        return !evidenceHasNumber && picked === "number" ? "statement" : picked;
       })();
       const endingDirective = effectiveLanguage === "ar"
-        ? `\n\nالخاتمة لهذا البوست: ${ENDING_DIRECTIVE_AR[chosenEnding] || LAND_SPECS[landType].def_ar}`
-        : `\n\nENDING FOR THIS POST: ${ENDING_DIRECTIVE_EN[chosenEnding] || LAND_SPECS[landType].def_en}`;
+        ? `\n\nالخاتمة لهذا البوست: ${chosenEnding === "statement" ? LAND_SPECS.statement.def_ar : (ENDING_DIRECTIVE_AR[chosenEnding] || LAND_SPECS[landType].def_ar)}`
+        : `\n\nENDING FOR THIS POST: ${chosenEnding === "statement" ? LAND_SPECS.statement.def_en : (ENDING_DIRECTIVE_EN[chosenEnding] || LAND_SPECS[landType].def_en)}`;
 
       /**
        * The collapse: fewer than 4 pieces of evidence (or a short preferred
@@ -974,7 +990,7 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
 
 ${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription, register: effectiveRegister, move: moveId, openType, landType, collapse: collapseThisPost })}${recentPatternBlock}
 
-${groundingContext}
+${groundingString}
 
 ${audienceNote}
 
@@ -1205,27 +1221,6 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
 
       content = stripLabels(content);
 
-      // Provenance guard: a member is never handed a number the system cannot
-      // trace back to the evidence that drove this generation.
-      const evidenceText = [
-        groundingSignal?.signal_title || "",
-        groundingSignal?.explanation || "",
-        groundingSignal?.what_it_means_for_you || "",
-        typeof groundingSignal?.strategic_implications === "string"
-          ? groundingSignal.strategic_implications
-          : JSON.stringify(groundingSignal?.strategic_implications || ""),
-        ...groundingFragments.map((f: any) => `${f.title || ""} ${f.content || ""}`),
-        // The full evidence chain — a figure the member captured is sourced,
-        // whatever the six fragments shown to the model happened to contain.
-        ...provenanceRows.map((f: any) => {
-          const meta = f.metadata && typeof f.metadata === "object" ? f.metadata : {};
-          const quote = (meta as any).source_quote;
-          const quoteText = Array.isArray(quote) ? quote.join(" ") : (quote ? String(quote) : "");
-          return `${f.title || ""} ${f.content || ""} ${quoteText}`;
-        }),
-        typeof context === "string" ? context : "",
-        typeof topic === "string" ? topic : "",
-      ].join("\n");
       const isAr = effectiveLanguage === "ar";
       // Only a ban the member's own edits confirmed is enforced mechanically.
       // An inferred "never uses emoji" must not strip emoji they deliberately keep.
@@ -1260,7 +1255,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         const figures = primaryFigureCount(text);
         return {
           one_number_max: figures <= 1,
-          grounded_number: findUnsourcedNumbers(text, evidenceText).length === 0,
+          grounded_number: findUnsourcedNumbers(text, groundingString).length === 0,
           ending_ok: endingShapeOk(text, chosenEnding),
           figures,
         };
@@ -1299,10 +1294,10 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
       let unsourcedRemoved = 0;
       let unsourcedEntitiesRemoved = 0;
       const warnings: string[] = [];
-      let unsourced = findUnsourcedNumbers(content, evidenceText);
+      let unsourced = findUnsourcedNumbers(content, groundingString);
       // A fabricated organisation, person or date costs a member exactly what a
       // fabricated figure costs them. Same evidence set, same one-retry rule.
-      let unsourcedEntities = findUnsourcedEntities(content, evidenceText);
+      let unsourcedEntities = findUnsourcedEntities(content, groundingString);
       let integrity = checkTextIntegrity(content, isAr);
 
       // A number the evidence cannot account for is never cut out in place —
@@ -1325,8 +1320,8 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         if (retry && !retry.ok) return await failContractViolation(retry);
         const candidate = retry && retry.ok ? hygiene(stripLabels(retry.text)) : "";
 
-        const candidateUnsourced = candidate ? findUnsourcedNumbers(candidate, evidenceText) : ["retry_failed"];
-        const candidateEntities = candidate ? findUnsourcedEntities(candidate, evidenceText) : ["retry_failed"];
+        const candidateUnsourced = candidate ? findUnsourcedNumbers(candidate, groundingString) : ["retry_failed"];
+        const candidateEntities = candidate ? findUnsourcedEntities(candidate, groundingString) : ["retry_failed"];
         const candidateIntegrity = candidate ? checkTextIntegrity(candidate, isAr) : { ok: false, issues: ["retry_failed"] };
 
         if (candidate && candidateUnsourced.length === 0 && candidateEntities.length === 0 && candidateIntegrity.ok) {
@@ -1338,7 +1333,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
           // A member is never blocked — the best available text is returned with
           // a warning describing what could not be fixed.
           const base = candidate || content;
-          const guarded = stripUnsourcedNumbers(base, evidenceText);
+          const guarded = stripUnsourcedNumbers(base, groundingString);
           const cleaned = hygiene(guarded.text);
           // Provenance outranks style, but it downgrades the draft, never
           // destroys it: if the guard emptied the text, keep the fuller draft.
@@ -1354,8 +1349,8 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
             Array.isArray(candidateEntities) ? candidateEntities.filter((e) => e !== "retry_failed").length : 0,
           );
         }
-        unsourced = findUnsourcedNumbers(content, evidenceText);
-        unsourcedEntities = findUnsourcedEntities(content, evidenceText);
+        unsourced = findUnsourcedNumbers(content, groundingString);
+        unsourcedEntities = findUnsourcedEntities(content, groundingString);
         integrity = checkTextIntegrity(content, isAr);
       }
 
@@ -1504,6 +1499,23 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
       }
 
 
+      // Law #86 — the number guard runs after rotation/voice rewrites, so the
+      // returned draft is the text that was checked.
+      content = hygiene(content);
+      const finalNumberGuard = stripUnsourcedNumbers(content, groundingString);
+      if (finalNumberGuard.removed > 0) {
+        content = hygiene(finalNumberGuard.text);
+        unsourcedRemoved += finalNumberGuard.removed;
+        if (!warnings.includes("unsourced_numbers")) warnings.push("unsourced_numbers");
+      }
+      unsourced = findUnsourcedNumbers(content, groundingString);
+      unsourcedEntities = findUnsourcedEntities(content, groundingString);
+      integrity = checkTextIntegrity(content, isAr);
+      if (unsourced.length > 0 && !warnings.includes("unsourced_numbers")) warnings.push("unsourced_numbers");
+      if (unsourcedEntities.length > 0 && !warnings.includes("unsourced_entities")) warnings.push("unsourced_entities");
+      if (!integrity.ok && !warnings.includes("integrity_issues")) warnings.push("integrity_issues");
+
+
 
 
       // ── QUALITY GATE ─────────────────────────────────────────────────────
@@ -1522,9 +1534,10 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
             voice_tone: voiceProfile?.tone || null,
             user_sector: profile?.sector_focus || null,
             target_register: effectiveRegister,
-            grounding_text: groundingContext || null,
+            grounding_text: groundingString || null,
             content_kind: "post",
             expected_ending: chosenEnding,
+            signal_id: signal_id || null,
           },
           ...((isCron || isServiceRole)
             ? { headers: { Authorization: `Bearer ${SERVICE_ROLE}` } }
@@ -1642,6 +1655,8 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         ending_type: endingTypeOf(content),
         hook_style: hookStyleOf(content),
         requested_ending: chosenEnding,
+        evidence_has_number: evidenceHasNumber,
+        guarded_after_rotation: true,
         chosen_opening: chosenOpening,
         // The rotation, handed back so the caller can store it and so siblings
         // in the same batch can be told what not to repeat. All three levels
