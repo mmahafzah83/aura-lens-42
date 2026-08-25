@@ -141,11 +141,11 @@ function deterministic(posts: Post[], sources: Set<SourceKey>): Candidate[] {
     { probe: /what (are|do) your thoughts|let me know in the comments|thoughts\?\s*$/i,
       text: `Never close with "What are your thoughts?"`, check: { kind: "ending", value: "What are your thoughts?" } },
     { probe: /(^|\n)\s*(✅|✔️|☑️)/,
-      text: "Never use a checkmark list.", check: { kind: "marker", value: "✅" } },
+      text: "Never use a checkmark list.", check: { kind: "marker", value: "✅|✔️|☑️" } },
     { probe: /(^|\n)\s*(🚀|💡|🔥)/,
-      text: "Never open with a motivational emoji.", check: { kind: "opening", value: "🚀" } },
+      text: "Never open with a motivational emoji.", check: { kind: "opening", value: "🚀|💡|🔥" } },
     { probe: /(#\w+[^\n]*){3,}/,
-      text: "Never end with a block of hashtags.", check: { kind: "marker", value: "###" } },
+      text: "Never end with a block of hashtags.", check: null as unknown as RuleCheck },
   ];
   for (const a of sources.has("absences") ? ABSENT : []) {
     const used = posts.filter((p) => a.probe.test(p.text));

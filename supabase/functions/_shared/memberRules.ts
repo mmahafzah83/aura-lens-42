@@ -77,9 +77,10 @@ export function neverRuleViolations(text: string, rules: MemberRule[]): MemberRu
     if (rule.kind !== "never" || !rule.check?.value) return false;
     const value = normalise(rule.check.value);
     if (!value) return false;
-    if (rule.check.kind === "opening") return (lines[0] ?? "").startsWith(value);
+    const values = value.split("|").map((part) => part.trim()).filter(Boolean);
+    if (rule.check.kind === "opening") return values.some((part) => (lines[0] ?? "").startsWith(part));
     if (rule.check.kind === "ending") return (lines[lines.length - 1] ?? "").includes(value);
-    return body.includes(value);
+    return values.some((part) => body.includes(part));
   });
 }
 
