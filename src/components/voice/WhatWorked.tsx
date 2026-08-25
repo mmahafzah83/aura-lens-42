@@ -8,6 +8,7 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import InfoTooltip from "@/components/voice/InfoTooltip";
+import CollapseBlock from "@/components/common/CollapseBlock";
 import {
   AMBER_FILL, AMBER_TEXT, GREEN, INK, LINE, MUTED, RADIUS, TAP, TYPE, WHITE, cardStyle, chipStyle,
   ghostButton, microLabel, monoNum,
