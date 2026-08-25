@@ -1070,115 +1070,26 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         return (json.content || []).map((c: any) => c.text || "").join("") || "";
       };
 
-      const firstPass = await callModel();
-      if (firstPass === null) {
+      const firstRes = await callContract();
+      if (firstRes === null) {
         await closeRun("failed", "ai_error");
         return new Response(JSON.stringify({ success: false, error: "AI error" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      let content = firstPass;
-      const rawContent = content;
-
-      // Generic scaffold stripper — trigger-based, positive rules only.
-      const TRIGGER = /(system\s*initial|budget|token|thinking|^```)/i;
-      const KEY_VALUE_SHAPE = /^[A-Za-z][A-Za-z0-9 _-]{0,40}:\s?\S/;
-      const ARABIC = /[\u0600-\u06FF]/;
-      const SENTENCE_END = /[.!?…؟]$/;
-
-      const stripLeadingScaffold = (text: string): string => {
-        const raw = text.replace(/^\uFEFF/, "");
-        const lines = raw.split("\n");
-        // Trigger: any of the first 20 lines matches the trigger regex.
-        let triggered = false;
-        for (let k = 0; k < Math.min(lines.length, 20); k++) {
-          if (TRIGGER.test(lines[k].trim())) { triggered = true; break; }
-        }
-        if (!triggered) return text;
-
-        let i = 0, removed = 0, inFence = false;
-        const MAX_REMOVE = 30;
-        while (i < lines.length && removed < MAX_REMOVE) {
-          const rawLine = lines[i];
-          const t = rawLine.trim();
-          // (b) fence handling
-          if (/^```/.test(t)) { inFence = !inFence; i++; removed++; continue; }
-          if (inFence) { i++; removed++; continue; }
-          // (a) empty
-          if (t === "") { i++; removed++; continue; }
-
-          const stripped = t.replace(/^[-*•◆↳]\s*/, "");
-          const wordCount = stripped.split(/\s+/).filter(Boolean).length;
-
-          // Absolute stops (must come first)
-          if (ARABIC.test(stripped)) break;
-          if (SENTENCE_END.test(stripped)) break;
-
-          // (c) KEY: value shape (optionally with bullet prefix), english key ≤5 words —
-          // check BEFORE the prose-length heuristic so long values don't slip through.
-          const kvMatch = stripped.match(/^([A-Za-z][A-Za-z0-9 _-]{0,60}):\s?\S/);
-          if (kvMatch) {
-            const keyWords = kvMatch[1].trim().split(/\s+/).filter(Boolean).length;
-            if (keyWords <= 5) { i++; removed++; continue; }
-          }
-          // (d) bare label ≤4 english words, no sentence punctuation, ascii only
-          if (/^[A-Za-z][A-Za-z0-9 _-]*$/.test(stripped) && wordCount <= 4) {
-            i++; removed++; continue;
-          }
-          // Prose heuristic (last)
-          if (wordCount >= 6) break;
-          break;
-        }
-        const rest = lines.slice(i).join("\n").trim();
-        return rest.length > 0 ? rest : text;
-      };
-
-      const preStripTriggered = (() => {
-        const first20 = rawContent.split("\n").slice(0, 20);
-        return first20.some((l) => TRIGGER.test(l.trim()));
-      })();
-
-      content = stripLeadingScaffold(content);
-
-      // Post-strip leak detection
-      const POST_STRIP_KV = /^[A-Za-z][A-Za-z0-9 _-]{0,40}:\s?\S/;
-      const first3 = content.split("\n").slice(0, 3);
-      const postStripLeak = first3.some((l) => {
-        const t = l.trim();
-        return TRIGGER.test(t) || POST_STRIP_KV.test(t);
-      });
-
-      if (preStripTriggered || postStripLeak) {
-        try {
-          const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-          const rows: any[] = [];
-          if (preStripTriggered) {
-            rows.push({
-              user_id: effectiveUserId,
-              function_name: "generate-authority-content",
-              language: effectiveLanguage,
-              leak_stage: "pre_strip",
-              first_lines: rawContent.split("\n").slice(0, 3).join("\n").slice(0, 300),
-            });
-          }
-          if (postStripLeak) {
-            rows.push({
-              user_id: effectiveUserId,
-              function_name: "generate-authority-content",
-              language: effectiveLanguage,
-              leak_stage: "post_strip",
-              first_lines: first3.join("\n").slice(0, 300),
-            });
-          }
-          const p = admin.from("output_leak_log").insert(rows).then(() => {}, () => {});
-          // @ts-ignore EdgeRuntime is available in Supabase runtime
-          if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
-            // @ts-ignore
-            EdgeRuntime.waitUntil(p);
-          }
-        } catch (_) { /* never block */ }
+      if (!firstRes.ok) {
+        // FAIL CLOSED — a broken contract is never handed to a member.
+        await logContractViolation(firstRes.reason, firstRes.raw);
+        await closeRun("failed", "contract_violation");
+        return new Response(
+          JSON.stringify({ success: false, error_code: "contract_violation", reason: firstRes.reason }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
+      const firstPass = firstRes.text;
+      let content = firstPass;
+
       const stripLabels = (text: string): string => text
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[-—–:：]\s*(?:English|Arabic|عربي(?:ة)?|إنجليزي(?:ة)?)\s*\n?/i, '')
         .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[:：\-—]?\s*\n?/i, '')
