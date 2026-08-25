@@ -155,6 +155,11 @@ const BANNED_PHRASES = [
   "authority",
   "personal brand",
   "trajectory",
+  // Prose-level bans — a list of the member's recurring work is never called
+  // these, with or without a number beside it.
+  "subjects",
+  "topics",
+  "themes",
 ];
 const BANNED_RE = new RegExp(`\\b(?:${BANNED_PHRASES.join("|")})\\b`, "i");
 const BANNED_ENFORCED = [
