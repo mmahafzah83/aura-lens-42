@@ -169,7 +169,7 @@ function buildEmail(opts: {
 
   let ps = "";
   if (velocityStatus === "accelerating") {
-    ps = `<p style="font-size:13px;line-height:1.55;margin:22px 0 0;color:${INK_FAINT};">P.S. — ${escapeHtml(shortTopicClean)} is moving right now. The people reading about it this week are the ones who will remember who said it first.</p>`;
+    ps = `<p style="font-size:13px;line-height:1.55;margin:22px 0 0;color:${INK_FAINT};">P.S. — ${escapeHtml(shortTopicClean)} is moving right now. The people paying attention this week are the ones who will remember who said it first.</p>`;
   }
 
   const body = `

@@ -75,7 +75,7 @@ function buildEmail(
   const tierMessage = (() => {
     const t = (tier || "").toLowerCase();
     if (t.includes("presence")) return "You're in the top tier. Maintain your edge.";
-    if (t.includes("strategist")) return "You're reading the market — patterns are forming.";
+    if (t.includes("strategist")) return "You're tracking the market — patterns are forming.";
     return "You're building your intelligence foundation.";
   })();
 
@@ -91,7 +91,7 @@ function buildEmail(
         ${signoff(name, level)}`
       : `
         ${heading(`${name}, your signal graph is waiting.`)}
-        <p style="margin:0 0 18px;">The captures you've made are being analyzed. A signal forms when the same idea shows up across several of the things you save.</p>
+        <p style="margin:0 0 18px;">The captures you've made are being analyzed. A signal forms when the same idea shows up across several of your captures.</p>
         <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
         ${ctaButton(BRAND, "Capture something", `${APP_URL}/dashboard`)}
         ${signoff(name, level)}`;

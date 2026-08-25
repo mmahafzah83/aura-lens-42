@@ -39,7 +39,7 @@ const EN: Record<MessageKey, Msg> = {
     render: ({ firstName }) => `
       <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,"}</p>
       <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">You already read what matters in your field. That's the hard part — and you've done it for years.</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">Aura's job is the part you never had time for: turning that reading into presence, without adding a task to your week.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">Aura's job is the part you never had time for: turning what you save into presence, without adding a task to your week.</p>
       <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 22px;">It just needs one capture to begin. Here's one from your field to start with — capture it, and watch your radar come alive.</p>
       <p style="font-family:${MONO};font-size:11px;color:${INK_FAINT};margin:0 0 8px;">Takes 20 seconds. The first one is the only one that feels like effort.</p>
     `,
@@ -49,7 +49,7 @@ const EN: Record<MessageKey, Msg> = {
     cta: { href: DASHBOARD_URL, label: "Add a capture →" },
     render: ({ firstName }) => `
       <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,"}</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">You've started — and Aura's already reading you.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">You've started — and Aura is already processing your captures.</p>
       <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">Right now it's holding a pattern it can almost name. Two more captures this week and it surfaces your first signal: a piece of your own thinking, made visible.</p>
       <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 22px;">Most people never see this part. The ones who do tend to keep going — because that's the moment it stops being an app and starts being yours.</p>
     `,
@@ -59,9 +59,9 @@ const EN: Record<MessageKey, Msg> = {
     cta: { href: INTELLIGENCE_URL, label: "See your signal →" },
     render: ({ firstName, signalTitle }) => `
       <p style="font-family:${BODY};font-size:15px;line-height:1.7;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,"}</p>
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 14px;">Here it is — the first pattern Aura pulled from your own reading:</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 14px;">Here it is — the first pattern Aura pulled from your own captures:</p>
       ${quote(`"${escapeHtml(signalTitle || "your first signal")}"`)}
-      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">This is the thing: you already knew it. You'd just never said it out loud, in public, where it builds your standing. Aura did the noticing so you don't have to.</p>
+      <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 16px;">Here is the point: you already knew it. You'd just never said it out loud, in public, where it builds your standing. Aura did the noticing so you don't have to.</p>
       <p style="font-family:${BODY};font-size:15px;line-height:1.75;color:${INK_SOFT};margin:0 0 22px;">Your next move is the satisfying one — a post drawn from this signal, in your voice, ready in a minute.</p>
       <p style="font-family:${MONO};font-size:11px;color:${INK_FAINT};margin:0 0 8px;">This is what every week can feel like now.</p>
     `,
@@ -77,20 +77,20 @@ const AR: Record<MessageKey, Msg> = {
       <div dir="rtl" lang="ar" style="text-align:right;">
         <p style="font-size:15px;line-height:1.85;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `أهلاً ${escapeHtml(firstName)}،` : "أهلاً بك،"}</p>
         <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">أنت أصلاً تقرأ ما يهم في مجالك — وهذا هو الجزء الصعب، ومارسته لسنوات.</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">مهمة Aura هي الجزء الذي لم يسعفك الوقت له: تحويل هذه القراءة إلى حضور، دون أن تضيف مهمة جديدة إلى أسبوعك.</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 22px;">تحتاج فقط مصدراً واحداً للبداية. إليك واحداً من مجالك — التقطه، وسترى رادارك يبدأ بالنبض.</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">مهمة Aura هي الجزء الذي لم يسعفك الوقت له: تحويل ما تحفظه إلى حضور، دون أن تضيف مهمة جديدة إلى أسبوعك.</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 22px;">تحتاج فقط التقاطاً واحداً للبداية. إليك واحداً من مجالك — التقطه، وسترى رادارك يبدأ بالنبض.</p>
         <p style="font-family:${MONO};font-size:11px;color:${INK_FAINT};margin:0 0 8px;">لا تستغرق أكثر من ٢٠ ثانية. الأول فقط هو الذي يحتاج جهداً.</p>
       </div>
     `,
   },
   M3: {
-    cta: { href: DASHBOARD_URL, label: "أضف مصدراً ←" },
+    cta: { href: DASHBOARD_URL, label: "أضف التقاطاً ←" },
     subject: "خطوة واحدة تفصلك عن اللحظة التي تُثبت فيها Aura مكانتها",
     render: ({ firstName }) => `
       <div dir="rtl" lang="ar" style="text-align:right;">
         <p style="font-size:15px;line-height:1.85;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `أهلاً ${escapeHtml(firstName)}،` : "أهلاً بك،"}</p>
         <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">لقد بدأت — و Aura تقرأك من الآن.</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">الآن هي تمسك بنمط تكاد تسميه. مصدران إضافيان هذا الأسبوع، وستُخرج لك أول إشارة: قطعة من تفكيرك أنت، تصبح مرئية.</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">الآن هي تمسك بنمط تكاد تسميه. التقاطان إضافيان هذا الأسبوع، وستُخرج لك أول إشارة: قطعة من تفكيرك أنت، تصبح مرئية.</p>
         <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 22px;">أغلب الناس لا يصلون إلى هنا. ومن يصل، يكمل — لأن هذه اللحظة تتوقف فيها Aura عن كونها تطبيقاً وتصبح لك.</p>
       </div>
     `,
@@ -101,7 +101,7 @@ const AR: Record<MessageKey, Msg> = {
     render: ({ firstName, signalTitle }) => `
       <div dir="rtl" lang="ar" style="text-align:right;">
         <p style="font-size:15px;line-height:1.85;color:${INK};font-weight:600;margin:0 0 18px;">${firstName ? `أهلاً ${escapeHtml(firstName)}،` : "أهلاً بك،"}</p>
-        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 14px;">ها هو — أول نمط استخرجته Aura من قراءتك:</p>
+        <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 14px;">ها هو — أول نمط استخرجته Aura من التقاطاتك:</p>
         ${quote(`"${escapeHtml(signalTitle || "إشارتك الأولى")}"`, true)}
         <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 16px;">هذا هو المفتاح: كنت تعرفه أصلاً، لكنك لم تقله بصوت عالٍ، علناً، بالشكل الذي يبني مكانتك. Aura لاحظت عنك.</p>
         <p style="font-size:15px;line-height:1.9;color:${INK_SOFT};margin:0 0 22px;">خطوتك التالية هي الأكثر متعة — منشور مستخرج من هذه الإشارة، بصوتك، جاهز خلال دقيقة.</p>
