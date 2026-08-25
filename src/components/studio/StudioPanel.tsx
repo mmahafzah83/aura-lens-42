@@ -1444,7 +1444,7 @@ export default function StudioPanel({
       window.clearTimeout(timer);
       if (runId === genRunId.current) { setGenerating(false); setBusyMessage(null); }
     }
-  }, [choice, writeLang, lang, applyGate]);
+  }, [choice, writeLang, lang, applyGate, voiceMode]);
 
 
   /* Four short ways into the same subject. Optional, additive: it never
