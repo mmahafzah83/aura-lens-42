@@ -73,9 +73,11 @@ function Evidence({ rule }: { rule: DnaRule }) {
         onClick={() => { if (!absent) void toggle(); }}
         aria-expanded={open}
         style={{
-          background: "none", border: "none", padding: "4px 0", cursor: !absent && ids.length ? "pointer" : "default",
-          fontSize: TYPE.caption, color: MUTED, textDecoration: !absent && ids.length ? "underline" : "none",
+          ...chipStyle(MUTED, SURFACE, LINE), marginBlockStart: 4,
+          cursor: !absent && ids.length ? "pointer" : "default",
+          textDecoration: !absent && ids.length ? "underline" : "none",
           textUnderlineOffset: 3, fontFamily: "inherit",
+          opacity: absent ? 0.72 : 1,
         }}
       >
         {note}
