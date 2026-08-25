@@ -1263,8 +1263,9 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           `grounded: ${preGate.grounded_number};`,
           `ending(${chosenEnding}): ${preGate.ending_ok}`,
         );
-        const reaskRaw = await callModel(directive);
-        const reask = reaskRaw ? hygiene(stripLabels(stripLeadingScaffold(reaskRaw))) : "";
+        const reaskRes = await callContract(directive);
+        const reask = reaskRes && reaskRes.ok ? hygiene(stripLabels(reaskRes.text)) : "";
+
         if (reask) {
           const after = selfCheck(reask);
           const scoreOf = (c: typeof after) =>
