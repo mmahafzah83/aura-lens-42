@@ -94,6 +94,9 @@ export default function ReportVersions({ firstName, lastName, onCompleteAssessme
   const [building, setBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  /** Older versions stay folded until asked for. */
+  const [showOlder, setShowOlder] = useState(false);
+
 
   const load = useCallback(async (selectCurrent: boolean) => {
     const { data: { session } } = await supabase.auth.getSession();
