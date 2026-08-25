@@ -338,7 +338,6 @@ const LATER_ROUNDS = [
   "src/components/admin/",
   "src/components/analytics/",
   "src/components/ask/",
-  "src/components/identity/",
   "src/components/influence/",
   "src/components/rail/",
   "src/components/report/",
