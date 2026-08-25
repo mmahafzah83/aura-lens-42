@@ -247,22 +247,40 @@ export default function TeachAura({ userId }: { userId: string | null }) {
     );
   }
 
-  /* Genuinely nothing connected. No zeros, no inline form. */
+  /* Nothing connected. No zeros — and the action is here, not a link away. */
   if (!model || !model.address.handle) {
     return (
       <Card>
         <div style={{ fontSize: TYPE.section, fontWeight: 600, color: INK }}>
           Aura hasn't read anything you've written yet.
         </div>
-        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, marginBlock: "8px 14px" }}>
+        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, marginBlock: "8px 12px" }}>
           Add your LinkedIn address and Aura learns your voice from your own posts.
         </p>
-        <Link to="/settings?tab=connections" style={{ ...primaryButton, display: "inline-block", textDecoration: "none" }}>
-          Add your LinkedIn address
-        </Link>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <input
+            value={addressInput}
+            onChange={(e) => setAddressInput(e.target.value)}
+            placeholder="linkedin.com/in/your-name"
+            aria-label="Your LinkedIn address"
+            style={{
+              flex: "1 1 220px", minBlockSize: 44, padding: "0 12px", fontSize: TYPE.body,
+              border: `1px solid ${LINE}`, borderRadius: 8, color: INK, background: "#FFFFFF",
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => void saveAddress()}
+            disabled={savingAddress || !addressInput.trim()}
+            style={{ ...primaryButton, minBlockSize: 44, opacity: savingAddress || !addressInput.trim() ? 0.6 : 1 }}
+          >
+            {savingAddress ? "Saving…" : "Save address"}
+          </button>
+        </div>
       </Card>
     );
   }
+
 
   const noPosts = model.totalPosts === 0;
 
