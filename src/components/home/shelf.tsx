@@ -4,7 +4,7 @@ import type { HomeFacts, HomeMove } from "@/hooks/useHomeAddress";
 import { WIDGET_DEFS } from "@/components/widgets/widgetData";
 import type { WidgetLayout, WidgetMetrics } from "@/components/widgets/widgetData";
 import { WidgetBody } from "@/components/widgets/WidgetCards";
-import { nSignals, nEvidence, velocityWord } from "@/constants/vocabulary";
+import { nSignals, nEvidence, nPages, nDrafts, velocityWord } from "@/constants/vocabulary";
 import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 
 export type ShelfKey = "moves" | "stand" | "own" | "night" | "widgets";
