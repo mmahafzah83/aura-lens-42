@@ -211,11 +211,9 @@ const EXEMPT = [
  * hit that must be migrated when Round 2B lands.
  */
 const ROUND_2B = [
-  // TODO round-2b — home/ and useHomeAddress.ts are MIGRATED and no longer
-  // deferred; the gate now polices them for real.
-  "src/components/momentum/",
-  "src/pages/Onboarding.tsx",
-  "src/components/onboarding/",
+  // Round 2B is complete for the client surfaces: home/, useHomeAddress.ts,
+  // SourcesSubTab.tsx, momentum/ and the onboarding journey are all MIGRATED
+  // and policed for real. Nothing is deferred under this round any more.
 ];
 
 /**
