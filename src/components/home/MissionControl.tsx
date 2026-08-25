@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
+import { nEvidence } from "@/constants/vocabulary";
 
 interface RhythmItem {
   id: "capture" | "publish" | "voice";
@@ -69,7 +70,7 @@ export default function MissionControl({
       const voiceTrained = Array.isArray(examples) && examples.length >= 2;
 
       const publishDesc = topSignalTitle
-        ? `Your ${topSignalTitle} signal has ${topSignalFragments ?? 0} fragment${(topSignalFragments ?? 0) === 1 ? "" : "s"}. Share your perspective.`
+        ? `Your ${topSignalTitle} signal has ${nEvidence(topSignalFragments ?? 0, "en")} behind it. Share your perspective.`
         : "Draft a LinkedIn post from your strongest signal.";
 
       setItems([
