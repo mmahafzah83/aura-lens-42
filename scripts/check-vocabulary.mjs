@@ -208,6 +208,16 @@ const LATER_ROUNDS = [
   "src/pages/LandingV2.tsx",
   "src/pages/TrendDetail.tsx",
   "src/utils/",
+  // Surfaced by the three NEW nouns (draft / post / page) added this round.
+  // Every one is a real hit in a surface outside Home — voice, settings, market,
+  // widgets, import. Reported every run, migrated in a later round.
+  "src/components/settings/",
+  "src/components/voice/",
+  "src/components/widgets/",
+  "src/components/tabs/",
+  "src/lib/",
+  "src/pages/Assessment.tsx",
+  "src/pages/LinkedInImport.tsx",
 ];
 
 /** Single-file surfaces outside this round (flat components directory). */
@@ -218,7 +228,11 @@ const LATER_FILES = [
   "LinkedInProfileAnalyzer.tsx", "MilestonesSection.tsx", "ReportDocument.tsx",
   "SignalExplorer.tsx", "SignalGraph.tsx", "SignalsRadar.tsx",
   "StrategicEvolutionMap.tsx", "TierCeremonyModal.tsx", "AuditResultsView.tsx",
+  // draft / post / page nouns, out of this round:
+  "DocumentUpload.tsx", "LinkedInDraftPanel.tsx", "LinkedInImportCard.tsx",
+  "VoiceEngineSection.tsx",
 ].map((f) => LATER_FILES_PREFIX + f);
+
 
 const SKIP_DIRS = new Set(["__tests__", "__fixtures__", "node_modules"]);
 
