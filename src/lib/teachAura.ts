@@ -338,3 +338,82 @@ export async function setCorpusStates(postIds: string[], next: CorpusState): Pro
     .in("id", postIds);
   if (error) throw new Error(error.message);
 }
+/* ── controls the page offers ────────────────────────────────────────────── */
+
+/** Split a pasted block into posts: blank line or a rule between them. */
+export const splitPastedPosts = (text: string): string[] =>
+  String(text ?? "").split(/\n\s*-{3,}\s*\n|\n{2,}/).map((s) => s.trim()).filter(Boolean);
+
+export interface AddWritingResult {
+  admitted: number;
+  tooShort: number;
+  wrongSource: number;
+}
+
+/**
+ * Add the member's own writing — a paste or an uploaded .txt/.md.
+ *
+ * Everything goes through `voice-distill` stamped `member_added`, which is the
+ * only branch that writes rows the one corpus rule will admit. Nothing here
+ * decides for itself what counts as the member's writing.
+ */
+export async function addOwnWriting(posts: string[]): Promise<AddWritingResult> {
+  if (posts.length === 0) throw new Error("Add at least one post first.");
+  const { data, error } = await supabase.functions.invoke("voice-distill", {
+    body: { posts, store_samples: true, source: "member_added" },
+  });
+  if (error) throw new Error(error.message);
+  if ((data as any)?.error) throw new Error(String((data as any).error));
+  const rejected = (data as any)?.rejected ?? {};
+  return {
+    admitted: Number((data as any)?.admitted ?? 0),
+    tooShort: Number(rejected.too_short ?? 0),
+    wrongSource: Number(rejected.wrong_source ?? 0),
+  };
+}
+
+/** The default-mode row that holds this member's admired posts. */
+async function admiredRowId(userId: string): Promise<{ id: string; list: AdmiredPost[] }> {
+  const { data, error } = await supabase
+    .from("authority_voice_profiles")
+    .select("id, admired_posts")
+    .eq("user_id", userId)
+    .eq("mode_key", "default")
+    .order("is_primary", { ascending: false })
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Aura has no voice profile for you yet — read your posts first.");
+  const list = (Array.isArray((data as any).admired_posts) ? (data as any).admired_posts : []).map((a: any) => ({
+    content: String(a?.content ?? "").trim(),
+    source: (a?.source as string | null) ?? null,
+    addedAt: (a?.added_at as string | null) ?? null,
+  })).filter((a: AdmiredPost) => a.content);
+  return { id: String((data as any).id), list };
+}
+
+/** Add a post the member admires. Someone else's writing, held as reference. */
+export async function addAdmiredPost(userId: string, content: string, source: string): Promise<void> {
+  const text = String(content ?? "").trim();
+  if (text.length < 50) throw new Error("That is too short to learn a tone from.");
+  const { id, list } = await admiredRowId(userId);
+  const next = [{ content: text, source: source.trim() || null, added_at: new Date().toISOString() }, ...list]
+    .slice(0, ADMIRED_CAP);
+  const { error } = await supabase
+    .from("authority_voice_profiles")
+    .update({ admired_posts: next, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/** Remove one admired post by its position in the list on screen. */
+export async function removeAdmiredPost(userId: string, index: number): Promise<void> {
+  const { id, list } = await admiredRowId(userId);
+  const next = list.filter((_, i) => i !== index);
+  const { error } = await supabase
+    .from("authority_voice_profiles")
+    .update({ admired_posts: next, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
