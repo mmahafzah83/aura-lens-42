@@ -498,11 +498,20 @@ export default function YourVoice({
               />
             ))}
           </div>
-        ))}
-      </div>
+        </CollapseBlock>
+      ))}
 
       {/* 4 — modes */}
+      <CollapseBlock
+        id="voice-modes"
+        label="Voice modes"
+        summary={modesLine}
+        controlLabel="Open"
+        open={isGroupOpen("modes")}
+        onToggle={() => setGroup("modes", !isGroupOpen("modes"))}
+      >
       <VoiceModes
+
         modes={dna.modes}
         activeProfileId={dna.activeProfileId}
         busy={busy}
