@@ -96,6 +96,9 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
         .from("content_items")
         .select("id, type, body, language, status, generation_params, created_at")
         .eq("user_id", user.id)
+        // Only live work. A discarded row (including the archived house-voice
+        // drafts) must never render here with a live "Review" button.
+        .in("status", ["draft", "published"])
         .gte("created_at", startOfThisWeekIso())
         .order("created_at", { ascending: true });
       if (error) throw error;
