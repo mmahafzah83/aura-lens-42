@@ -70,7 +70,7 @@ export default function MissionControl({
       const voiceTrained = Array.isArray(examples) && examples.length >= 2;
 
       const publishDesc = topSignalTitle
-        ? `Your ${topSignalTitle} signal has ${nEvidence(topSignalFragments ?? 0, "en")} behind it. Share your perspective.`
+        ? `Your signal “${topSignalTitle}” has ${nEvidence(topSignalFragments ?? 0, "en")} behind it. Share your perspective.`
         : "Draft a LinkedIn post from your strongest signal.";
 
       setItems([
