@@ -650,11 +650,37 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
           .eq("made_by", "aura")
           .neq("status", "discarded")
           .order("created_at", { ascending: false })
-          .limit(5);
+          // Ten, because the distribution check measures a RUN of drafts, not
+          // the last one. Rotation still reads only the five most recent.
+          .limit(10);
         recentDrafts = (recentRows || []) as any[];
       } catch (_e) {
         // A history read must never cost a member their draft.
       }
+      /** The last ten drafts as text — the window the fidelity ceilings run on. */
+      const recentBodies: string[] = recentDrafts
+        .map((r) => String(r.body ?? ""))
+        .filter((t) => t.trim().length > 0);
+
+      /**
+       * HOW THIS MEMBER ACTUALLY WRITES. Rung 1 of the precedence ladder in
+       * `contentDNA.ts`: shares measured from their own posts, which no run of
+       * drafts may exceed by more than twenty points. Absent, or fewer than
+       * eight own posts, and nothing here can reject a draft.
+       */
+      let voiceDist: Distribution | null = null;
+      try {
+        const { data: distRow } = await supabase
+          .from("voice_distribution")
+          .select("corpus_n, open_type_share, land_type_share, move_share, marker_rate, length_p25, length_p50, length_p75")
+          .eq("user_id", effectiveUserId)
+          .eq("language", effectiveLanguage === "ar" ? "ar" : "en")
+          .maybeSingle();
+        voiceDist = (distRow as any) ?? null;
+      } catch (_e) {
+        // Same rule: a measurement read never costs a member their draft.
+      }
+
 
       /**
        * SIBLING AWARENESS — a batch that writes three drafts in a loop makes
