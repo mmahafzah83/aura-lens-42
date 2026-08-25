@@ -118,7 +118,7 @@ Top format: ${topFormat ? `"${topFormat[0]}" (${topFormat[1].count} ${countNoun(
 Best performing post: ${topPost ? `"${topPost.hook || topPost.title || topPost.post_text?.slice(0, 80) || "—"}" (${Number(topPost.engagement_score || 0).toFixed(1)}% eng, ${topPost.like_count} reactions, ${topPost.comment_count} comments)` : "None"}
 
 All posts this week:
-${posts.map((p: any, i: number) => `${i + 1}. "${p.hook || p.title || p.post_text?.slice(0, 60) || "—"}" | theme: ${p.theme || "—"} | format: ${p.framework_type || p.format_type || "—"} | eng: ${Number(p.engagement_score || 0).toFixed(1)}% | reactions: ${p.like_count} | comments: ${p.comment_count}`).join("\n")}
+${posts.map((p: any, i: number) => `${i + 1}. "${p.hook || p.title || p.post_text?.slice(0, 60) || "—"}" | angle: ${p.theme || "—"} | format: ${p.framework_type || p.format_type || "—"} | eng: ${Number(p.engagement_score || 0).toFixed(1)}% | reactions: ${p.like_count} | comments: ${p.comment_count}`).join("\n")}
 `.trim();
 
     const systemPrompt = `You are Aura, a chief strategy advisor for executive thought leaders. You produce weekly influence briefs that feel like calm, authoritative advisory memos — not growth hacking tips.
@@ -135,7 +135,7 @@ Your brief MUST follow this exact JSON structure with these 5 sections:
     "action": "One specific publishable content asset to create next",
     "reasoning": "Why this move compounds presence based on evidence",
     "format_suggestion": "carousel|article|framework|pov_post|infographic",
-    "theme_suggestion": "The topic to focus on"
+    "theme_suggestion": "The signal or angle to focus on"
   },
   "confidence": 0.0 to 1.0
 }

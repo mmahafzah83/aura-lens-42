@@ -410,7 +410,7 @@ function chooseMoves(f: Facts): Move[] {
       what: "Take your strongest unpublished signal into the composer and draft from it.",
       why: fallbackWhy("draft_from_signal", f),
       how: "Open the signal, read the evidence behind it, then send it to the composer.",
-      outcome: "The reading you have already done becomes something publishable.",
+      outcome: "The work you have already saved becomes something publishable.",
       cta_route: "/dashboard?tab=signals",
       est_minutes: 12,
     });
@@ -419,11 +419,11 @@ function chooseMoves(f: Facts): Move[] {
   if (!f.captured_today) {
     c.push({
       key: "capture",
-      title: "Capture something you read today",
+      title: "Capture a link you read today",
       what: "Paste a link, a report or a post you disagreed with.",
       why: fallbackWhy("capture", f),
       how: "Use the capture box on Home. A link is enough.",
-      outcome: "Aura has something new to read tonight.",
+      outcome: "Aura has a fresh capture to work from tonight.",
       cta_route: "/dashboard?tab=home",
       est_minutes: 2,
     });
@@ -485,9 +485,9 @@ const OPENINGS = [
 const SYSTEM_PROMPT = `You are Aura, this person's chief of staff. You have read their LinkedIn, their assessment, their calibration and everything they have captured. You write them one short address each morning. You sound like a sharp colleague who has already done the reading — never a coach, never a chatbot, never an analyst.
 
 SUBSTANCE
-Say one thing. An address is not a recap of the file. Pick the single most useful observation and build four to six sentences around it.
+Say one point. An address is not a recap of the file. Pick the single most useful observation and build four to six sentences around it.
 Three numbers maximum in the whole address, and a number earns its place only if it changes what they do today. Counts of evidence or sources change nothing; leave them out.
-Name a specific thing, never a category. A named signal beats a count of signals.
+Name a specific signal or draft, never a category. A named signal beats a count of signals.
 Build on tension, not description. The shape is: here is what you have, here is what is missing, here is the decision. The tension is given to you in the input — use it, do not hunt for another.
 Close on the decision, not the task. Your final sentence must point at the one move given to you as THE MOVE, by name, and at no other action — but say it in your own words. Never repeat the move's wording verbatim, and never phrase it as a list of steps.
 
@@ -505,8 +505,8 @@ EVIDENCE — VERBATIM ONLY
 You are given a short list of EVIDENCE PHRASES. They are written in code, they are correct, and each one already carries its own scope.
 You must reproduce two or three of them VERBATIM — character for character, word for word. Do not reword, shorten, expand, pluralise or re-order the words inside a phrase.
 You may place a phrase anywhere in a sentence and punctuate around it, and you may capitalise its first letter if it starts a sentence.
-You may NOT attach a qualifier that narrows a phrase's subject — never add "on this theme", "on this topic", "on that signal", "on this transformation" or anything like it to a phrase that does not already contain it.
-Every other word you write is connective tissue and must make no factual claim of its own: no figures, no dates, no counts, no claims about what they did or did not do beyond what a phrase already states.
+You may NOT attach a qualifier that narrows a phrase's scope — never add "on this angle", "on that signal", "on this transformation" or anything like it to a phrase that does not already contain it.
+Every other word you write is connective tissue and must make no factual statement of its own: no figures, no dates, no counts, no statements about what they did or did not do beyond what a phrase already states.
 You do not have the underlying data. If it is not in a phrase, you do not know it.
 The address must still read as one continuous thought, not a list of clauses.
 
@@ -522,13 +522,13 @@ There's a draft from Tuesday that says it well enough.
 Four days is long enough to think about it. Publish it, or kill it."
 
 Day three, one capture:
-"Three days in, and you've given me one thing to read.
+"Three days in, and you've given me one link to read.
 Enough to start, not enough to be right about you. The signal I pulled from it — governance inside transformation programmes — may or may not be yours. I'd want two or three more before I'd stake a post on it.
 Send me something today. Anything you'd have forwarded to a colleague."
 
 Day one, nothing captured:
 "I've read your LinkedIn and your assessment, so I know the shape of you: transformation, governance, the Gulf.
-What I don't have is what you're reading right now — and that's the part that makes a post sound like you, rather than about you.
+What I don't have is what you're saving right now — and that's the part that makes a post sound like you, rather than about you.
 One link. That's the whole ask today."
 
 Return plain markdown. No headings, no bullet lists, no preamble.`;
@@ -710,7 +710,7 @@ function computeTension(f: Facts, move: Move | null): { strength: string; gap: s
   if ((f.captures_total ?? 0) === 0) {
     return {
       strength: "Their profile and assessment already describe the shape of their work.",
-      gap: "Nothing they are reading has reached Aura, so nothing here sounds like them yet.",
+      gap: "Nothing they are saving has reached Aura, so nothing here sounds like them yet.",
     };
   }
   if ((f.drafts_total ?? 0) > 0 && (f.published_through_aura ?? 0) === 0) {
@@ -733,7 +733,7 @@ function computeTension(f: Facts, move: Move | null): { strength: string; gap: s
   }
   return {
     strength: "The record is current and the signals are holding.",
-    gap: `The next thing missing is ${move?.title ?? "a decision on what to say next"}.`,
+    gap: `The next decision missing is ${move?.title ?? "what to say next"}.`,
   };
 }
 
@@ -837,11 +837,11 @@ const upperFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** The plain sentence that names today's decision, in the member's language. */
 function decisionSentence(move: Move | null): string {
-  if (!move) return `The decision today is simple: send me one thing you read.`;
+  if (!move) return `The decision today is simple: send me one link you read.`;
   const byKey: Record<string, string> = {
     publish_draft: `The decision today is whether that draft goes out or gets killed.`,
     draft_from_signal: `The decision today is whether you write from it.`,
-    capture: `The decision today is to send me one thing you read.`,
+    capture: `The decision today is to send me one link you read.`,
     connect_linkedin: `The decision today is to connect LinkedIn so your posts report back.`,
     fill_facet: `The decision today is which of those blanks you fill first.`,
   };
@@ -854,7 +854,7 @@ function decisionSentence(move: Move | null): string {
  */
 function fallbackAddress(f: Facts, move: Move | null, phrases: string[]): string {
   if ((f.captures_total ?? 0) === 0) {
-    return `I know the shape of your work from your profile and your assessment. What I do not have is what you are reading right now, and that is the part that makes a post sound like you. One link is enough. Send me something today.`;
+    return `I know the shape of your work from your profile and your assessment. What I do not have is what you are saving right now, and that is the part that makes a post sound like you. One link is enough. Send me a capture today.`;
   }
   const [a, b] = phrases;
   if (!a) return decisionSentence(move);
@@ -902,7 +902,7 @@ Tension (use this, do not look for another):
 - gap: ${tension.gap}
 
 THE MOVE — your closing sentence must point at this and nothing else:
-${move ? `${move.title} — ${move.what}` : "No move is available; close on capturing one thing they read today."}
+${move ? `${move.title} — ${move.what}` : "No move is available; close on capturing one link they read today."}
 
 EVIDENCE PHRASES — reproduce two or three of these VERBATIM, character for character. They are the only facts and the only figures you have, and each already carries its own scope:
 ${phrases.map((s) => `- ${s}`).join("\n") || "- (no evidence yet)"}`;

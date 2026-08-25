@@ -75,7 +75,7 @@ function buildEmail(
   const tierMessage = (() => {
     const t = (tier || "").toLowerCase();
     if (t.includes("presence")) return "You're in the top tier. Maintain your edge.";
-    if (t.includes("strategist")) return "You're reading the market — patterns are forming.";
+    if (t.includes("strategist")) return "You're tracking the market — patterns are forming.";
     return "You're building your intelligence foundation.";
   })();
 
