@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.99.3";
 import { applyPublishedFilter, filterPublishedRows } from "../_shared/postProvenance.ts";
+// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
+import { countNoun } from "../_shared/vocabulary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,7 +99,7 @@ function buildFallbackItems(context: AuraContext) {
     items.push({
       action_type: "PUBLISH",
       title: trimTitle(`Publish ${topSignal.signal_title}`),
-      reason: `${topSignal.signal_title} has ${topSignal.fragment_count ?? 0} fragments. Turn it into a post now.`,
+      reason: `${topSignal.signal_title} has ${topSignal.fragment_count ?? 0} ${countNoun(topSignal.fragment_count ?? 0, "evidence")}. Turn it into a post now.`,
       urgency: "HIGH",
       destination: "/publish",
       signal_id: topSignal.id,
