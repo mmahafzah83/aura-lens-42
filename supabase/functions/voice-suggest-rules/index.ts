@@ -49,6 +49,30 @@ const normalise = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "")
 
 const sentences = (t: string) => t.split(/(?<=[.!?؟])\s+|\n+/).map((s) => s.trim()).filter(Boolean);
 
+const PRESCRIPTION = /\b(?:instead|must be|should be)\b|;\s*success must|(?:^|\s)(?:بل|وإنما)(?:\s|$)/iu;
+const DOUBLE_NEGATIVE = /^(?:never|do not|don't)\s+(?:ignore|omit|forget|overlook|fail to)\b/i;
+
+/** One instruction, one behaviour. Never rules must be defensible and checkable. */
+export function validateCandidate(candidate: Candidate): Candidate | null {
+  const text = candidate.text.replace(/\s+/g, " ").trim();
+  if (!text || sentences(text).length > 1 || /;/.test(text)) return null;
+  if (candidate.kind !== "never") return { ...candidate, text };
+  if (DOUBLE_NEGATIVE.test(text) || PRESCRIPTION.test(text)) {
+    const positive = text
+      .replace(/^(?:never|do not|don't)\s+(?:ignore|omit|forget|overlook)\s+/i, "Always address ")
+      .replace(/^(?:never|do not|don't)\s+fail to\s+/i, "Always ");
+    return positive === text ? null : { ...candidate, kind: "always", text: positive, check: null };
+  }
+  // A Never without a deterministic test is guidance, not a mechanically
+  // enforced Never. Quoted text is the only model inference safe to turn into
+  // a phrase test; deterministic probes already supply their own typed check.
+  if (!candidate.check) {
+    const quote = text.match(/["“«']([^"”»']{2,100})["”»']/)?.[1]?.trim();
+    candidate = { ...candidate, check: quote ? { kind: "phrase", value: quote } : null };
+  }
+  return { ...candidate, text };
+}
+
 interface Post { id: string; text: string }
 
 /* ── pass 1: things that can be counted ──────────────────────────────────── */
@@ -257,9 +281,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    const ruleCandidates = deterministic(posts, sources);
+    const ruleCandidates = deterministic(posts, sources).map(validateCandidate).filter((c): c is Candidate => Boolean(c));
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    const modelCandidates = apiKey && (sources.has("openings") || sources.has("structure")) ? await modelPass(posts, apiKey) : [];
+    const modelCandidates = apiKey && (sources.has("openings") || sources.has("structure"))
+      ? (await modelPass(posts, apiKey)).map(validateCandidate).filter((c): c is Candidate => Boolean(c))
+      : [];
 
     const chosen: Candidate[] = [];
     for (const c of [...ruleCandidates, ...modelCandidates]) {
