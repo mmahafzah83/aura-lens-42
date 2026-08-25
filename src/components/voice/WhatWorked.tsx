@@ -43,7 +43,7 @@ export function trendSentence(values: number[]): string {
 
 /* ── sparkline — a true shape, diverging around the member's own average ─── */
 
-const W = 320, H = 132, PAD_L = 10, PAD_R = 44, PAD_T = 16, PAD_B = 22;
+const W = 320, H = 132, PAD_L = 10, PAD_R = 34, PAD_T = 18, PAD_B = 26;
 
 /** Cap the drawn scale at the 90th percentile (floor 1.4) so one post cannot flatten the rest. */
 function percentile(sorted: number[], p: number) {
@@ -117,7 +117,7 @@ function Sparkline({
 
       {/* the baseline, named on the chart itself */}
       <line x1={PAD_L} x2={W - PAD_R} y1={base} y2={base} stroke={NIGHT_MUTED} strokeWidth="1" />
-      <text x={W - PAD_R + 4} y={base + 3} fill={NIGHT_MUTED} fontFamily={MONO} fontSize="9">your average</text>
+      <text x={PAD_L + 2} y={base + 12} fill={NIGHT_MUTED} fontFamily={MONO} fontSize="9">your average</text>
 
       <path d={line} fill="none" stroke={CYAN} strokeWidth="1.5" strokeLinejoin="round" />
 
