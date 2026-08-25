@@ -208,6 +208,26 @@ export default function YourVoice({
   const [busy, setBusy] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
+  // Collapse state lives above every early return, and is remembered per member.
+  const storeKey = userId ? `aura:yourvoice:groups:${userId}` : null;
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => loadCollapseState(storeKey));
+  const setGroup = useCallback((id: string, value: boolean) => {
+    setOpenGroups((prev) => {
+      const next = { ...prev, [id]: value };
+      saveCollapseState(storeKey, next);
+      return next;
+    });
+  }, [storeKey]);
+  const setAllGroups = useCallback((ids: string[], value: boolean) => {
+    setOpenGroups((prev) => {
+      const next = { ...prev };
+      for (const id of ids) next[id] = value;
+      saveCollapseState(storeKey, next);
+      return next;
+    });
+  }, [storeKey]);
+
+
   const key = modelOverride || !userId ? null : `voice:yourvoice:${userId}:${profileId ?? "active"}`;
   const loader = useCallback(async (): Promise<YourVoiceModel> => {
     const [overview, dna] = await Promise.all([
