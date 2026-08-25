@@ -19,8 +19,6 @@ import {
   shouldCollapse,
   selectShape,
   deriveInVoiceSubsets,
-  FULL_SUBSET,
-
   opensOnBannedWord,
   sameBeats,
   resolveMove,
@@ -275,7 +273,7 @@ const AI_SLOP_AR = [
  * nothing has been set, so an untouched profile produces the same prompt it
  * produced before this existed.
  */
-function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string | null): string {
+function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string | null, evidenceHasNumber = true): string {
   const prefs = readPrefs(voiceProfile);
   const lines: string[] = [];
 
@@ -339,7 +337,7 @@ function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string 
   };
   prefLine(RHYTHM, prefs.rhythm, "RHYTHM", "الإيقاع");
   prefLine(STRUCTURE, prefs.structure, "STRUCTURE", "البناء");
-  prefLine(OPENER, prefs.opener, "OPENER", "الافتتاحية المختارة");
+  prefLine(OPENER, !evidenceHasNumber && prefs.opener === "number" ? undefined : prefs.opener, "OPENER", "الافتتاحية المختارة");
   prefLine(CLOSER, prefs.closer, "CLOSER", "الخاتمة المختارة");
   if (prefs.language_mode === "mixed") {
     lines.push(ar
@@ -382,7 +380,7 @@ function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string 
   return "\n" + (ar ? "اختيارات الكاتب الصريحة — تتقدّم على أي استنتاج:" : "WRITER'S EXPLICIT CHOICES — these outrank anything inferred:") + "\n" + lines.join("\n") + "\n";
 }
 
-function buildVoiceContext(voiceProfile: any, chosenOpening?: string | null): string {
+function buildVoiceContext(voiceProfile: any, chosenOpening?: string | null, evidenceHasNumber = true): string {
   if (!voiceProfile) return "No voice profile set — use analytical, calm confidence tone.";
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
@@ -402,10 +400,10 @@ ${useRules.soft.length || avoidRules.soft.length ? `Soft guidance only — infer
 Vocabulary notes: ${vp.notes || ""}
 Avoid patterns not present in the user's examples. Match their sentence length, paragraph density, and rhetorical style.
 Mimic rhythm, interests, and boldness from the examples — never register or slang. The DNA register always outranks example mimicry.
-${buildPrefsBlock(voiceProfile, false, chosenOpening)}`;
+${buildPrefsBlock(voiceProfile, false, chosenOpening, evidenceHasNumber)}`;
 }
 
-function buildArabicVoiceContext(voiceProfile: any, chosenOpening?: string | null): string {
+function buildArabicVoiceContext(voiceProfile: any, chosenOpening?: string | null, evidenceHasNumber = true): string {
   if (!voiceProfile) return "";
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
@@ -423,7 +421,7 @@ ${avoidRules.hard.length ? `تجنّب هذه الأنماط — ملاحظة ف
 ${useRules.soft.length || avoidRules.soft.length ? `إرشاد مرن فقط (مستنتج وغير مؤكد من الكاتب): يُفضَّل ${JSON.stringify(useRules.soft)}، ويُبتعد عن ${JSON.stringify(avoidRules.soft)}` : ""}
 ${vp.notes ? `ملاحظات حول المفردات: ${vp.notes}` : ""}
 اكتب بحيث يعكس الناتج هذا الصوت تحديداً، لا صوتاً عاماً.
-${buildPrefsBlock(voiceProfile, true, chosenOpening)}`;
+${buildPrefsBlock(voiceProfile, true, chosenOpening, evidenceHasNumber)}`;
 }
 
 function buildIdentityContext(profile: any): string {
