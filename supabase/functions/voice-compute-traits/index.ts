@@ -93,6 +93,27 @@ Deno.serve(async (req) => {
     const posts_used = texts.length;
     const posts_excluded = (rows ?? []).length - posts_used;
 
+    /**
+     * A draft the member rewrote is the member writing. The edited half of
+     * every edit pair joins the measured corpus, so correcting a draft moves
+     * the voice itself and not only the rules distilled from it.
+     */
+    const { data: editRows } = await admin
+      .from("linkedin_posts")
+      .select("original_generated_text, post_text")
+      .eq("user_id", userId)
+      .not("original_generated_text", "is", null)
+      .not("edited_at", "is", null)
+      .order("edited_at", { ascending: false })
+      .limit(50);
+    const editedTexts = (editRows ?? [])
+      .map((r) => ({ original: String(r.original_generated_text ?? ""), edited: String(r.post_text ?? "") }))
+      .filter((p) => p.original.trim() && p.edited.trim() && p.original !== p.edited)
+      .map((p) => p.edited);
+    const edit_pairs_used = editedTexts.length;
+    for (const t of editedTexts) texts.push(t);
+
+
     // --- registry ---
     const { data: registry, error: regErr } = await admin
       .from("voice_trait_registry")
