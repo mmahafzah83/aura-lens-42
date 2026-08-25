@@ -568,7 +568,8 @@ export function deriveInVoiceSubsets(profile: unknown): SubsetDerivation {
   }
 
   const derivedCount = moveSet.length;
-  let widened = false;
+  let movesWidened = false;
+  let typesWidened = false;
   while (moveSet.length < 3) {
     const candidate = MOVE_IDS
       .filter((m) => !moveSet.includes(m))
@@ -579,8 +580,9 @@ export function deriveInVoiceSubsets(profile: unknown): SubsetDerivation {
       })[0];
     if (!candidate) break;
     moveSet.push(candidate);
-    widened = true;
+    movesWidened = true;
   }
+
 
   // ── OPEN and LAND ────────────────────────────────────────────────────────
   const openHints = bag("in_voice_opens");
