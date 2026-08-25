@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { nSignals } from "@/constants/vocabulary";
 
 interface ThemeDatum { theme: string; count: number; }
 interface Props { themes: ThemeDatum[]; }

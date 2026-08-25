@@ -24,7 +24,7 @@ export const T = {
   },
   helpDrawsHead: { en: "What it draws on", ar: "على ماذا تعتمد" },
   helpDrawsBody: {
-    en: "Only your own material: the articles and notes you saved, and the subjects Aura found in them. Nobody else's work is used.",
+    en: "Only your own material: the articles and notes you saved, and the work you keep returning to that Aura found in them. Nobody else's work is used.",
     ar: "على موادك أنت فقط: المقالات والملاحظات التي حفظتها، والمواضيع التي وجدتها أورا فيها. لا تُستخدم مواد أي شخص آخر.",
   },
   helpVoiceHead: { en: "How your voice was captured", ar: "كيف التقطنا صوتك" },
@@ -236,7 +236,7 @@ export const T = {
         : " stand behind what we ranked for you.",
     ),
 
-  hubSignalsEmpty: { en: "Nothing saved behind your subjects yet.", ar: "لا مواد محفوظة خلف مواضيعك بعد." },
+  hubSignalsEmpty: { en: "Nothing saved behind the work you keep returning to yet.", ar: "لا مواد محفوظة خلف ما تعود إليه في عملك بعد." },
 
   hubSignalsAction: { en: "Choose a signal", ar: "اختر إشارة" },
   hubElseAction: { en: "Type a subject", ar: "اكتب موضوعًا" },
@@ -568,7 +568,7 @@ export const T = {
 
   // Every subject lives in Signals; the composer hands off there.
   browseInSignals: { en: "Browse everything in Signals", ar: "تصفّح كل شيء في الإشارات" },
-  subjectsUnreadable: { en: "We could not read your subjects just now.", ar: "لم نتمكن من قراءة مواضيعك الآن." },
+  subjectsUnreadable: { en: "We could not read the work you keep returning to just now.", ar: "لم نتمكن من قراءة ما تعود إليه في عملك الآن." },
   subjectsRetry: { en: "Try again", ar: "حاول مرة أخرى" },
   nothingNewToRank: { en: "Nothing new to rank right now — here is everything you have.", ar: "لا جديد لترتيبه الآن — هذه كل مواضيعك." },
 
