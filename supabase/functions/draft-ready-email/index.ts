@@ -15,14 +15,14 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { adminUserIds } from "../_shared/adminRole.ts";
 import {
-// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
-import { countNoun } from "../_shared/vocabulary.ts";
   renderEmail,
   heading as headingHtml,
   quote as quoteBlock,
   INK_SOFT as INK_BODY,
   INK_FAINT,
 } from "../_shared/emailTemplate.ts";
+// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
+import { countNoun } from "../_shared/vocabulary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

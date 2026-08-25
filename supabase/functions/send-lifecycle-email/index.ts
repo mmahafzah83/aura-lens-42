@@ -3,11 +3,11 @@ import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { logError } from "../_shared/logError.ts";
 import {
-// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
-import { countNoun } from "../_shared/vocabulary.ts";
   renderEmail, heading as h1, paragraph, note, signature,
   INK, INK_SOFT, INK_FAINT, CANVAS, ACCENT, BODY as BODY_FONT_STACK, MONO,
 } from "../_shared/emailTemplate.ts";
+// THE DICTIONARY (Deno twin of src/constants/vocabulary.ts) — count nouns only from here.
+import { countNoun } from "../_shared/vocabulary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
