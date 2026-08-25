@@ -7,7 +7,7 @@ import { filterPublishedRows, postEffectiveDate } from "@/lib/postProvenance";
 import { RecordLens } from "@/components/home/RecordLens";
 import { useHomeAddress } from "@/hooks/useHomeAddress";
 import { ReadFailure } from "@/components/home/homeAtoms";
-import { SIGNAL, CAPTURE } from "@/constants/vocabulary";
+import { SIGNAL, CAPTURE, nCaptures, nPosts, nSignals } from "@/constants/vocabulary";
 
 /**
  * MOMENTUM — V23 `s-mo`.
@@ -122,7 +122,7 @@ export default function MomentumPage() {
     const since = startOfWeek(new Date());
     since.setDate(since.getDate() - (WEEKS - 1) * 7);
 
-    const [funnelRes, entriesRes, postsRes, scoreRes, msRes, prefRes, sigLiveRes, sigMergedRes] = await Promise.all([
+    const [funnelRes, entriesRes, postsRes, scoreRes, msRes, prefRes, sigMergedRes] = await Promise.all([
       supabase.rpc("momentum_funnel" as any),
       supabase.from("entries").select("created_at").eq("user_id", uid).gte("created_at", since.toISOString()),
       supabase
@@ -146,17 +146,12 @@ export default function MomentumPage() {
         .from("strategic_signals")
         .select("id", { count: "exact", head: true })
         .eq("user_id", uid)
-        .in("status", ["active", "dormant"]),
-      supabase
-        .from("strategic_signals")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", uid)
         .eq("status", "merged"),
     ]);
 
     // Loading, empty and failed are three different things. A failed read
     // says so and never overwrites figures already on screen.
-    const anyError = [funnelRes, entriesRes, postsRes, scoreRes, msRes, prefRes, sigLiveRes, sigMergedRes]
+    const anyError = [funnelRes, entriesRes, postsRes, scoreRes, msRes, prefRes, sigMergedRes]
       .map((r: any) => r?.error).find(Boolean);
     if (anyError) {
       console.warn("[MomentumPage] read failed", anyError);
@@ -172,7 +167,7 @@ export default function MomentumPage() {
         ? {
             captures: Number(f.captures) || 0,
             used_in_signal: Number(f.used_in_signal) || 0,
-            signals: sigLiveRes.count ?? (Number(f.signals) || 0),
+            signals: Number(f.signals) || 0,
             mergedSignals: sigMergedRes.count ?? 0,
             publishedThroughAura: Number(f.published_through_aura) || 0,
             publishedSentFromAura: Number(f.published_sent_from_aura) || 0,
@@ -330,7 +325,7 @@ export default function MomentumPage() {
                   You do · about two minutes
                 </div>
                 <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "4px 0 0" }}>
-                  Read one thing and press one button.
+                  Read one page and press one button.
                 </p>
               </div>
             </div>
@@ -349,8 +344,8 @@ export default function MomentumPage() {
               return (
                 <div
                   key={w.start.toISOString()}
-                  title={`Week of ${weekLabel(w.start)} — ${w.captures} ${CAPTURE.nounPlural}, ${w.posts} published`}
-                  aria-label={`Week of ${weekLabel(w.start)}: ${w.captures} ${CAPTURE.nounPlural}, ${w.posts} published`}
+                  title={`Week of ${weekLabel(w.start)} — ${nCaptures(w.captures, "en")}, ${nPosts(w.posts, "en")} published`}
+                  aria-label={`Week of ${weekLabel(w.start)}: ${nCaptures(w.captures, "en")}, ${nPosts(w.posts, "en")} published`}
                   style={{
                     width: 34,
                     height: 34,
@@ -394,11 +389,16 @@ export default function MomentumPage() {
           <SectionLabel>What you've built</SectionLabel>
           <Card>
             <div style={{ display: "grid", gap: 10 }}>
-              <FunnelRow label="Captures" value={funnel.captures} note="everything you've captured" width={100} />
               <FunnelRow
-                label="Used in a signal"
+                label={CAPTURE.NounPlural}
+                value={funnel.captures}
+                note="everything you've saved"
+                width={100}
+              />
+              <FunnelRow
+                label={`${CAPTURE.NounPlural} used in a ${SIGNAL.one}`}
                 value={funnel.used_in_signal}
-                note={`${pct(funnel.used_in_signal, funnel.captures)}% of captures`}
+                note={`${pct(funnel.used_in_signal, funnel.captures)}% of your ${CAPTURE.nounPlural}`}
                 width={pct(funnel.used_in_signal, funnel.captures)}
               />
               <FunnelRow
@@ -407,7 +407,7 @@ export default function MomentumPage() {
                 note={`patterns across your ${CAPTURE.nounPlural}`}
                 aside={
                   funnel.mergedSignals > 0
-                    ? `${funnel.mergedSignals} later merged into stronger ones`
+                    ? `${nSignals(funnel.mergedSignals, "en")} later merged into stronger ones`
                     : undefined
                 }
                 width={Math.min(100, pct(funnel.signals, Math.max(funnel.captures, funnel.signals)))}
@@ -415,7 +415,7 @@ export default function MomentumPage() {
               <FunnelRow
                 label="Made with Aura"
                 value={funnel.publishedThroughAura}
-                note={`${pct(funnel.publishedThroughAura, funnel.signals)}% of signals`}
+                note={`${pct(funnel.publishedThroughAura, funnel.signals)}% of your ${SIGNAL.many}`}
                 width={pct(funnel.publishedThroughAura, Math.max(funnel.signals, 1))}
               />
             </div>

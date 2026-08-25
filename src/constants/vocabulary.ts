@@ -10,8 +10,10 @@
  *                                      `strategic_signals.fragment_count` for one signal
  *   signal / signals          إشارة    rows in `strategic_signals`
  *   page / pages              صفحة     rows in `agent_findings` — pages AURA went
- *                                      and read overnight. NOT the member's own
- *                                      sources, NOT captures, NEVER "reading(s)".
+ *                                      and read overnight — or `documents.page_count`
+ *                                      / `pages_total`, pages of a file the member
+ *                                      uploaded. NOT the member's own sources, NOT
+ *                                      captures, NEVER "reading(s)".
  *   draft / drafts            مسودة    draft rows in `linkedin_posts` /
  *                                      `content_items` — text Aura wrote that the
  *                                      member has not published.
@@ -42,7 +44,13 @@ export const EVIDENCE = {
   Many: "Evidence",
 } as const;
 
-export const CAPTURE = { verbPast: "captured", noun: "capture", nounPlural: "captures" } as const;
+export const CAPTURE = {
+  verbPast: "captured",
+  noun: "capture",
+  nounPlural: "captures",
+  Noun: "Capture",
+  NounPlural: "Captures",
+} as const;
 
 export const SOURCE = { one: "source", many: "sources", One: "Source", Many: "Sources" } as const;
 
@@ -181,6 +189,9 @@ export const nDrafts = (n: number, lang: VocabLang): string =>
     one: "مسودة واحدة", two: "مسودتان",
     few: (x) => `${x} مسودات`, many: (x) => `${x} مسودة`,
   }) : `${n} draft${n === 1 ? "" : "s"}`;
+
+/** The bare noun, for lines that style the numeral separately (mono digit). */
+export const POST_NOUN = { one: "post", many: "posts", One: "Post", Many: "Posts" } as const;
 
 /** Posts the member published — `post_provenance` rows. */
 export const nPosts = (n: number, lang: VocabLang): string =>

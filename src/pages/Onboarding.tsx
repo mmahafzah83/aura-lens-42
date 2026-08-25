@@ -21,6 +21,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 import { useCountUp } from "@/hooks/useCountUp";
 import { useCapturedClaims } from "@/hooks/useCapturedClaims";
 import { SECTORS } from "@/constants/sectors";
+import { EVIDENCE, SIGNAL, POST_NOUN, nEvidence, nPosts, nSignals } from "@/constants/vocabulary";
 import { initThemeFromStorage } from "@/lib/applyTheme";
 import {
   readToken, loadSession, saveSession, clearToken, claimSession,
@@ -518,7 +519,7 @@ function outcomeOf(settled: PromiseSettledResult<unknown>): PostsOutcome {
 function emptyPostsLine(o: Extract<PostsOutcome, { status: "ok" }>): string {
   const bits = [
     o.skipped_reshares ? `${o.skipped_reshares} reshares of other people's posts` : "",
-    o.skipped_empty ? `${o.skipped_empty} posts with no text of their own` : "",
+    o.skipped_empty ? `${nPosts(o.skipped_empty, "en")} with no text of their own` : "",
   ].filter(Boolean);
   if (!bits.length) return "Your profile opened, but LinkedIn showed no posts on it yet.";
   return `Your profile opened. LinkedIn showed ${bits.join(" and ")} — nothing written in your own words yet.`;
@@ -623,6 +624,14 @@ const Onboarding = () => {
   const [suggestDead, setSuggestDead] = useState(false);
   const [readStep, setReadStep] = useState(0);
   const [claims, setClaims] = useState<Claim[]>([]);
+  /* `claims` is only what this beat pulled out (one link) or, on a resume, the
+     top three rows. It is NEVER the member's total. Anything that prints a
+     total reads these exact head counts instead. */
+  const [evidenceTotal, setEvidenceTotal] = useState<number | null>(null);
+  const [signalsTotal, setSignalsTotal] = useState<number | null>(null);
+  /* What the member is actually told: the exact count when we have it, and the
+     rows in hand only while anonymous (there is no table to count yet). */
+  const evidenceShown = evidenceTotal ?? claims.length;
   const [captureSince, setCaptureSince] = useState<string | null>(null);
   const [watching, setWatching] = useState(false);
   const { claims: liveClaims, slow: claimsSlow } = useCapturedClaims({ userId, sinceIso: captureSince, active: watching });
@@ -1941,10 +1950,10 @@ const Onboarding = () => {
       },
     });
     const figures = [
-      ...(claims.length ? [{ value: num(claims.length), label: "evidence captured" }] : []),
+      ...(evidenceShown ? [{ value: num(evidenceShown), label: `${EVIDENCE.many} captured` }] : []),
       ...(Object.keys(scores).length
         ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
-      ...(built?.subjects.length ? [{ value: num(built.subjects.length), label: "signals found" }] : []),
+      ...(signalsTotal ? [{ value: num(signalsTotal), label: `${SIGNAL.many} found` }] : []),
     ];
     setReveal(built ? { ...built, figures } : built);
     setRevealPending(false);
@@ -1988,10 +1997,10 @@ const Onboarding = () => {
       });
       if (d) {
         const figures = [
-          ...(claims.length ? [{ value: num(claims.length), label: "evidence captured" }] : []),
+          ...(evidenceShown ? [{ value: num(evidenceShown), label: `${EVIDENCE.many} captured` }] : []),
           ...(Object.keys(scores).length
             ? [{ value: num(Object.keys(scores).length), label: "strengths, in your words" }] : []),
-          ...(d.subjects.length ? [{ value: num(d.subjects.length), label: "signals found" }] : []),
+          ...(signalsTotal ? [{ value: num(signalsTotal), label: `${SIGNAL.many} found` }] : []),
         ];
         setReveal({ ...d, figures });
       }
@@ -2001,7 +2010,7 @@ const Onboarding = () => {
       setRevealLoading(false);
     });
     return () => { cancelled = true; window.clearTimeout(timeout); };
-  }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
+  }, [screen, readRaw, userId, postsRead, evidenceShown, signalsTotal, scores, dims]);
 
 
   /* ── finishing ── */
@@ -2452,16 +2461,37 @@ const Onboarding = () => {
   /* The one truth about the shelf. Every badge, on every screen, reads from
      here — a badge is only lit by work the member actually did, and no figure
      is ever invented. */
+  /* Exact totals, straight off the two tables. Head counts only — no rows. */
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      const [ev, sig] = await Promise.all([
+        (supabase.from("evidence_fragments" as any) as any)
+          .select("id", { count: "exact", head: true }).eq("user_id", userId),
+        supabase.from("strategic_signals").select("id", { count: "exact", head: true })
+          .eq("user_id", userId).in("status", ["active", "dormant"]),
+      ]);
+      if (cancelled) return;
+      if (!ev.error) setEvidenceTotal(ev.count ?? 0);
+      if (!sig.error) setSignalsTotal(sig.count ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, [userId, screen, claims.length]);
+
   const shelfState = useMemo(() => {
     const ratings = Object.keys(scores).length;
-    const subjects = reveal?.subjects?.length ?? 0;
+    const readWritten = (reveal?.subjects?.length ?? 0) > 0;
     return [
       { unlocked: Boolean(postsRead) || readDone, figure: postsRead ? num(postsRead) : "✓" },
-      { unlocked: claims.length > 0, figure: num(claims.length) },
+      { unlocked: evidenceShown > 0, figure: num(evidenceShown) },
       { unlocked: ratings > 0, figure: num(ratings) },
-      { unlocked: subjects > 0, figure: subjects > 0 ? num(subjects) : undefined },
+      /* The read being written is what lights this badge; the figure on it is a
+         real `strategic_signals` count, never the read's own sentences. So a
+         member told a number can go and open exactly that many. */
+      { unlocked: readWritten, figure: signalsTotal && signalsTotal > 0 ? num(signalsTotal) : undefined },
     ] as { unlocked: boolean; figure?: string | number }[];
-  }, [postsRead, readDone, claims.length, scores, reveal]);
+  }, [postsRead, readDone, evidenceShown, scores, reveal, signalsTotal]);
 
   /* ───────────────────────── password & identity ───────────────────────── */
 
@@ -2644,7 +2674,7 @@ const Onboarding = () => {
   if (screen === 1) {
     const mono = (v: React.ReactNode) => <span style={{ fontFamily: OB.mono, fontWeight: 600 }}>{v}</span>;
     const rows: { key: string; label: string; line: React.ReactNode; done: boolean; drop: boolean }[] = [
-      { key: "p", label: "Posts", line: <>{mono(num(upPosts))} posts read</>, done: !!postsRead, drop: readDone && !postsRead },
+      { key: "p", label: POST_NOUN.Many, line: <>{mono(num(upPosts))} {upPosts === 1 ? POST_NOUN.one : POST_NOUN.many} read</>, done: !!postsRead, drop: readDone && !postsRead },
       { key: "w", label: "Your own writing", line: <>{mono(num(upWords))} words of your own writing</>, done: !!ownWords, drop: readDone && !ownWords },
       { key: "s", label: "Sector", line: <>Sector · {mono(sector)}</>, done: !!sector, drop: readDone && !sector },
       { key: "b", label: "Level", line: <>Level · {mono(bandLabel)}</>, done: !!bandLabel, drop: readDone && !bandLabel },
@@ -2657,7 +2687,7 @@ const Onboarding = () => {
       ...(liProfile?.skills_count ? [{ v: liProfile.skills_count, l: "skills on record" }] : []),
     ];
     const readJustNow = [
-      postsRead ? `${num(postsRead)} posts` : "",
+      postsRead ? nPosts(postsRead, "en") : "",
       ownWords ? `${num(ownWords)} words` : "",
       "read just now",
     ].filter(Boolean).join(" · ");
@@ -3945,15 +3975,15 @@ const Onboarding = () => {
         <p style={{ ...bodyLight, marginBlockStart: 20 }}>
           {proof && proof.posts > 0 ? (
             <>
-              I have {num(proof.posts)} of your posts and {num(proof.words)} words in your own voice
+              I have {nPosts(proof.posts, "en")} of yours and {num(proof.words)} words in your own voice
               {proof.pctWithNumber !== null ? `, ${proof.pctWithNumber}% of them carrying a real number` : ""}
-              {claims.length ? `, plus ${num(claims.length)} things you captured` : ""}. That is what I write from — not a
+              {evidenceShown ? `, plus ${nEvidence(evidenceShown, "en")} you captured` : ""}. That is what I write from — not a
               template.
             </>
           ) : (
             <>
               {EMPTY_POSTS_LINE}
-              {claims.length ? ` I already have ${num(claims.length)} ${claims.length === 1 ? "thing" : "things"} you captured and your own answers on file.` : " I already have your own answers on file."}
+              {evidenceShown ? ` I already have ${nEvidence(evidenceShown, "en")} you captured and your own answers on file.` : " I already have your own answers on file."}
             </>
           )}
         </p>

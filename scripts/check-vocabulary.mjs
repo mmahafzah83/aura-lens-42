@@ -9,7 +9,9 @@
  *   piece of evidence = rows in `evidence_fragments`, or
  *                       `strategic_signals.fragment_count` for one signal
  *   signal = rows in `strategic_signals`
- *   page = rows in `agent_findings` (pages Aura read overnight)
+ *   page = rows in `agent_findings` (pages Aura read overnight), or
+ *          `documents.page_count` / `pages_total` (pages of a file the member
+ *          uploaded)
  *   draft = draft rows in `linkedin_posts` / `content_items`
  *   post = rows in `post_provenance` (what the member published)
  * "fragment", "theme", "topic", "subject", "claim", "thing", "item" and
@@ -209,11 +211,9 @@ const EXEMPT = [
  * hit that must be migrated when Round 2B lands.
  */
 const ROUND_2B = [
-  // TODO round-2b — home/ and useHomeAddress.ts are MIGRATED and no longer
-  // deferred; the gate now polices them for real.
-  "src/components/momentum/",
-  "src/pages/Onboarding.tsx",
-  "src/components/onboarding/",
+  // Round 2B is complete for the client surfaces: home/, useHomeAddress.ts,
+  // SourcesSubTab.tsx, momentum/ and the onboarding journey are all MIGRATED
+  // and policed for real. Nothing is deferred under this round any more.
 ];
 
 /**

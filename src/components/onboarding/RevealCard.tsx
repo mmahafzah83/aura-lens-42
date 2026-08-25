@@ -2,6 +2,7 @@
  * RevealCard — screen 13. Full-bleed blue, the member's read of the market,
  * and the same card is what gets exported when they share it.
  */
+import { POST_NOUN, nPosts } from "@/constants/vocabulary";
 import { forwardRef, useEffect, useState } from "react";
 import { OB, RADIUS, EASE, reducedMotion } from "./tokens";
 
@@ -54,7 +55,7 @@ export interface RevealFooter {
 
 /** The caption offered alongside the exported image. */
 export const suggestedCaption = (posts: number): string =>
-  `I let something read my last ${posts || "few"} posts and tell me how my work actually lands. ` +
+  `I let something read my last ${posts ? nPosts(posts, "en") : `few ${POST_NOUN.many}`} and tell me how my work actually lands. ` +
   `This is what came back. Curious what yours would say.`;
 
 /**
