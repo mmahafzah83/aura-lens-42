@@ -30,6 +30,14 @@ import {
   type MoveId,
   type PastShape,
 } from "../_shared/contentDNA.ts";
+// The member's own distribution, and the ceilings a draft is held to.
+import {
+  fidelityCheck,
+  distributionPromptBlock,
+  MIN_DIST_CORPUS,
+  type Distribution,
+} from "../_shared/voiceDistribution.ts";
+
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
