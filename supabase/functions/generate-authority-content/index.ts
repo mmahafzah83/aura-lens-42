@@ -786,6 +786,15 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
         return "\n\n" + (effectiveLanguage === "ar" ? "منع التكرار:" : "NO-REPEAT:") + " " + bits.join(" ");
       })();
 
+      /**
+       * The member's real proportions, stated to the model BEFORE it writes.
+       * Prevention is cheaper than a regeneration — the ceiling below is what
+       * happens when this is ignored.
+       */
+      const distributionBlock = distributionPromptBlock(voiceDist, effectiveLanguage === "ar");
+
+
+
 
       // Language + voice handling
       let voiceSection: string;
