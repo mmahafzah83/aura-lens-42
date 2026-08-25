@@ -199,7 +199,13 @@ export const OwnCard: React.FC<{
   </Card>
 );
 
-export const NightCard: React.FC<{ facts: HomeFacts | null; onOpen: () => void }> = ({ facts, onOpen }) => {
+export const NightCard: React.FC<{
+  facts: HomeFacts | null;
+  onOpen: () => void;
+  /** Distinct signals the night's pages actually join to (Ruling 2). Null while
+      unknown; 0 means the line does not render at all. */
+  strengthened?: number | null;
+}> = ({ facts, onOpen, strengthened }) => {
   const ln = facts?.last_night;
   return (
     <Card style={{ padding: 0 }}>
@@ -211,14 +217,19 @@ export const NightCard: React.FC<{ facts: HomeFacts | null; onOpen: () => void }
       <div style={{ padding: "18px 20px", display: "grid", gap: 10 }}>
         {ln ? (
           <>
-            <Body>Read {ln.sources_read} {ln.sources_read === 1 ? "source" : "sources"}.</Body>
-            <Body>Strengthened {nSignals(ln.themes_strengthened, "en")}.</Body>
+            {/* `sources_read` counts `agent_findings` rows: pages Aura read. */}
+            <Body>Read {nPages(ln.sources_read, "en")} overnight.</Body>
+            {/* Only real, openable signals earn this line. No join, no line. */}
+            {!!strengthened && strengthened > 0 && (
+              <Body>Strengthened {nSignals(strengthened, "en")}.</Body>
+            )}
             <Body>
               {ln.drafts_written > 0
-                ? `Wrote ${ln.drafts_written} draft${ln.drafts_written === 1 ? "" : "s"}.`
+                ? `Wrote ${nDrafts(ln.drafts_written, "en")}.`
                 : "Wrote nothing — there was nothing worth writing."}
             </Body>
           </>
+
         ) : (
           <>
             <Body>Aura has not run for you yet.</Body>
