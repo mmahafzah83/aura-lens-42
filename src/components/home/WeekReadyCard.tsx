@@ -72,13 +72,13 @@ const LABEL_STYLE: React.CSSProperties = {
   fontWeight: 600,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
-  color: "var(--brand, #B08D3A)",
+  color: "var(--act)",
   margin: 0,
 };
 
 const DIVIDER: React.CSSProperties = {
   height: 0,
-  borderTop: "0.5px solid var(--brand-line, rgba(6,112,196,0.22))",
+  borderTop: "1px solid var(--rule-divider)",
   margin: "10px 0",
 };
 
@@ -137,11 +137,11 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
     <AuraCard variant="default" hover="none" className="aura-card-entry">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Sparkles aria-hidden style={{ width: 13, height: 13, color: "var(--brand, #B08D3A)" }} />
+          <Sparkles aria-hidden style={{ width: 13, height: 13, color: "var(--act)" }} />
           <h3 style={LABEL_STYLE}>Your week, ready</h3>
         </div>
         {!loading && rows.length > 0 && (
-          <span style={{ fontSize: 12, color: "var(--ink-3, #6b6155)" }}>
+          <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
             {shippedCount} of {rows.length} shipped this week
           </span>
         )}
@@ -150,12 +150,12 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
       <div style={DIVIDER} />
 
       {loading ? (
-        <div style={{ fontSize: 13, color: "var(--ink-3, #6b6155)", padding: "8px 0" }}>
+        <div style={{ fontSize: 13, color: "var(--text-secondary)", padding: "8px 0" }}>
           Loading this week's drafts…
         </div>
       ) : rows.length === 0 ? (
         <div style={{ padding: "8px 0" }}>
-          <p style={{ fontSize: 14, color: "var(--ink, #1a1612)", margin: "0 0 12px 0", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: "var(--text-primary)", margin: "0 0 12px 0", lineHeight: 1.5 }}>
             Your drafts for this week aren't prepared yet.
           </p>
           <Button
@@ -193,7 +193,7 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
                       style={{
                         fontSize: 14,
                         fontWeight: 600,
-                        color: "var(--ink, #1a1612)",
+                        color: "var(--text-primary)",
                         lineHeight: 1.35,
                         textDecoration: isShipped ? "line-through" : "none",
                       }}
@@ -205,7 +205,7 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
                         dir="auto"
                         style={{
                           fontSize: 12,
-                          color: "var(--ink-3, #6b6155)",
+                          color: "var(--text-secondary)",
                           marginTop: 3,
                           overflow: "hidden",
                           textOverflow: "ellipsis",
@@ -224,8 +224,8 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
                         fontWeight: 600,
                         padding: "1px 7px",
                         borderRadius: 999,
-                        border: "0.5px solid var(--brand-line, rgba(6,112,196,0.22))",
-                        color: "var(--ink-3, #6b6155)",
+                        border: "1px solid var(--border-default)",
+                        color: "var(--text-secondary)",
                         background: "transparent",
                       }}
                     >
@@ -240,7 +240,7 @@ export default function WeekReadyCard({ onOpenDraft }: WeekReadyCardProps) {
                           gap: 4,
                           fontSize: 11,
                           fontWeight: 600,
-                          color: "var(--brand, #B08D3A)",
+                          color: "var(--act)",
                         }}
                       >
                         <Check className="w-3.5 h-3.5" />
