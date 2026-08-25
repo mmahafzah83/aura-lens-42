@@ -318,6 +318,8 @@ export default function StudioPanel({
   const angleRunId = useRef(0);
   /** The exact text Aura last generated. Anything else is the member's own. */
   const generatedTextRef = useRef<string | null>(null);
+  /** The generator's voice-match reading for the draft on screen. */
+  const voiceMatchRef = useRef<number | null>(null);
   // Figures the provenance guard removed from the last generation.
   const unsourcedRemovedRef = useRef<number>(0);
   // Organisations, people and dates the provenance guard could not source.
@@ -1323,6 +1325,8 @@ export default function StudioPanel({
         endingType: typeof json?.ending_type === "string" ? json.ending_type : undefined,
         hookStyle: typeof json?.hook_style === "string" ? json.hook_style : undefined,
       };
+      // Does it sound like them — the generator's own reading, stored with the row.
+      voiceMatchRef.current = typeof json?.voice_match === "number" ? json.voice_match : null;
       const generated = fixArabicDirectionalSymbols(stripMarkdown(String(text)), useLang);
       setContent(generated);
       generatedTextRef.current = generated;
@@ -1587,6 +1591,7 @@ export default function StudioPanel({
           unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
         }),
         ...fingerprintFields(fingerprintRef.current),
+        ...(voiceMatchRef.current !== null ? { voice_match: voiceMatchRef.current } : {}),
         ...provenanceFields(provenanceRef.current),
         ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
       } as any)
@@ -1668,6 +1673,8 @@ export default function StudioPanel({
             unsourcedEntitiesRemoved: unsourcedEntitiesRemovedRef.current,
           }),
           ...fingerprintFields(fingerprintRef.current),
+          ...(voiceMatchRef.current !== null ? { voice_match: voiceMatchRef.current } : {}),
+        ...(voiceMatchRef.current !== null ? { voice_match: voiceMatchRef.current } : {}),
           ...provenanceFields(provenanceRef.current),
           ...(editFields(generatedOriginal, content).edited_at ? editFields(generatedOriginal, content) : {}),
         } as any)
