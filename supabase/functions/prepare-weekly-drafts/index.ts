@@ -355,6 +355,9 @@ Deno.serve(async (req) => {
                 beats: Array.isArray(json?.beats) ? json.beats : null,
                 // A draft that shipped a repeat ships FLAGGED, never silently.
                 shape_repeat: json?.rotation_repeat ?? null,
+                // Does it sound like them, and did it ship flagged.
+                voice_match: typeof json?.voice_match === "number" ? json.voice_match : null,
+                voice_fidelity_flags: Array.isArray(json?.voice_fidelity_flags) ? json.voice_fidelity_flags : null,
                 generation_params: {
                   source: "weekly_ready",
                   week: weekTag,
