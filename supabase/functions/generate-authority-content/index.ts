@@ -880,7 +880,7 @@ ${identityContext}
 
 ${formatInstructions[content_type] || formatInstructions.post}
 ${langLabel}
-${frameworkInstruction}
+${/* The MOVE directive inside buildContentDNA is the only kind-of-post instruction. */ ""}
 ${extraInstruction}${flashAddendum}${endingDirective}
 
 Write with conviction. No generic statements. Every line should demonstrate strategic depth.
