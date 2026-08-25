@@ -57,6 +57,7 @@ export interface CorpusPost {
   id: string;
   publishedAt: string | null;
   excerpt: string;
+  textLength: number;
   hookStyle: string | null;
   state: CorpusState;
   reason: string | null;
@@ -139,19 +140,20 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
 
   const posts: CorpusPost[] = rows.map((r: any) => {
     const countsTowardVoice = Boolean(r.counts_toward_voice);
-    const excerpt = String(r.excerpt || "").trim();
+    const fullText = String(r.excerpt || "").trim();
     const setAsideReason = (r.set_aside_reason as string | null) ?? null;
     return {
       id: String(r.id),
       publishedAt: (r.published_at as string | null) || (r.created_at as string | null),
-      excerpt,
+      excerpt: fullText.slice(0, 90),
+      textLength: fullText.length,
       hookStyle: (r.hook_style as string | null) ?? null,
       state: countsTowardVoice ? "included" : "excluded",
       reason: setAsideReason,
       countsTowardVoice,
       sourceLabel: String(r.source_label || "Unknown source"),
       setAsideReason,
-      isArabic: isArabicText(excerpt),
+      isArabic: isArabicText(fullText),
     };
   });
 
@@ -162,8 +164,8 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
   for (const p of included) {
     if (p.isArabic) counts.arabic += 1;
     else counts.english += 1;
-    if (p.excerpt.length > 1500) counts.long += 1;
-    if (p.excerpt.length < 800) counts.short += 1;
+    if (p.textLength > 1500) counts.long += 1;
+    if (p.textLength < 800) counts.short += 1;
     const when = p.publishedAt;
     if (when && new Date(when).getTime() >= cutoff) counts.recent += 1;
   }
