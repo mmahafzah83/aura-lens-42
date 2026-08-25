@@ -46,7 +46,7 @@ import { stripUnsourcedNumbers, findUnsourcedNumbers } from "../_shared/numberGu
 import { findUnsourcedEntities } from "../_shared/entityGuard.ts";
 import { splitForPrompt, enforcedRuleTexts } from "../_shared/voiceRules.ts";
 import { PROMPT_VERSION, type Contribution, type GenerationProvenance } from "../_shared/provenance.ts";
-import { loadActiveMemberRules, memberRulesBlock } from "../_shared/memberRules.ts";
+import { loadActiveMemberRules, markMemberRulesApplied, memberRulesBlock, neverRuleViolations } from "../_shared/memberRules.ts";
 import { endingTypeOf, hookStyleOf } from "../_shared/fingerprint.ts";
 import { buildGrounding } from "../_shared/grounding.ts";
 import {
@@ -924,6 +924,12 @@ serve(withObserve("generate-authority-content", async (req) => {
       const activeRules = effectiveUserId ? await loadActiveMemberRules(supabase, effectiveUserId) : [];
       const rulesBlock = memberRulesBlock(activeRules);
       if (rulesBlock) voiceSection += `\n\n${rulesBlock}`;
+      // Exactly once per draft request: retries reuse the same prompt decision
+      // and never increment rule effects a second time.
+      if (activeRules.length > 0) {
+        const ruleAdmin = createClient(SUPABASE_URL, SERVICE_ROLE);
+        await markMemberRulesApplied(ruleAdmin, activeRules);
+      }
 
       const sectorContextLabel = `${(typeof sector === "string" && sector.trim()) || profile?.sector_focus || "their own"} context`;
       /**
@@ -1432,11 +1438,13 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
             candidate: text,
             lang: isAr ? "ar" : "en",
           });
+          const neverViolations = neverRuleViolations(text, activeRules);
           return {
             rotation,
             fidelity,
-            failed: Boolean(rotation) || !fidelity.ok,
-            reasons: [rotation, ...fidelity.violations].filter(Boolean) as string[],
+            neverViolations,
+            failed: Boolean(rotation) || !fidelity.ok || neverViolations.length > 0,
+            reasons: [rotation, ...fidelity.violations, ...neverViolations.map((rule) => `never_rule:${rule.text}`)].filter(Boolean) as string[],
           };
         };
 
@@ -1457,6 +1465,11 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
               ? `\n\nإعادة كتابة إلزامية — الشكل مكرر (${first.rotation}).\n- نوع المنشور المطلوب: ${moveLabel}، بترتيب الحركات: ${beatsForThisPost.join(" ← ")}.\n- ابدأ البوست بنوع افتتاح "${openType}" كما هو محدد أعلاه.\n- لا تبدأ بكلمة "معظم" ولا بأي من هذه الكلمات: ${avoidWords.map((w) => `"${w}"`).join("، ")}.\n- غيّر الكلمات الست الأولى تماماً. أبقِ الجوهر والأدلة كما هي.`
               : `\n\nMANDATORY REWRITE — the shape repeats a recent draft (${first.rotation}).\n- The kind of post required: ${moveLabel}, in this beat order: ${beatsForThisPost.join(" → ")}.\n- Open in the "${openType}" OPEN type named above, and close in the "${landType}" LAND type.\n- Do not begin with the word "Most", and not with any of these: ${avoidWords.map((w) => `"${w}"`).join(", ")}.\n- Change the first six words entirely. Keep the substance and the evidence.`)
             : "";
+          const neverBit = first.neverViolations.length
+            ? (isAr
+              ? `\n- لا تخالف هذه القواعد: ${first.neverViolations.map((rule) => `"${rule.text}"`).join("، ")}.`
+              : `\n- Do not violate these member rules: ${first.neverViolations.map((rule) => `"${rule.text}"`).join(", ")}.`)
+            : "";
           if (first.fidelity.violations.length) {
             console.warn(
               "[generate-authority-content] voice fidelity —",
@@ -1465,7 +1478,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
             );
           }
           // ONE regeneration, carrying both corrections at once.
-          const rot = await callContract("rotation", rotBit + first.fidelity.directive);
+          const rot = await callContract("rotation", rotBit + neverBit + first.fidelity.directive);
           if (rot && !rot.ok) return await failContractViolation(rot);
           const rotCand = rot && rot.ok ? hygiene(stripLabels(rot.text)) : "";
 
@@ -1485,6 +1498,9 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
             if (final.fidelity.violations.length) {
               voiceFidelityFlags = final.fidelity.violations;
               warnings.push("voice_fidelity_drift");
+            }
+            if (final.neverViolations.length) {
+              warnings.push("member_never_rule_violation");
             }
             try {
               const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
