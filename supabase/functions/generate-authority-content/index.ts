@@ -1500,7 +1500,10 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
 
 
       // Law #86 — the number guard runs after rotation/voice rewrites, so the
-      // returned draft is the text that was checked.
+      // returned draft is the text that was checked. The flag is MEASURED: it
+      // is set only after the guard has actually read the final text, so a
+      // regression in ordering turns the assertion red on its own.
+      let guardedAfterRotation = false;
       content = hygiene(content);
       const finalNumberGuard = stripUnsourcedNumbers(content, groundingString);
       if (finalNumberGuard.removed > 0) {
@@ -1509,6 +1512,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         if (!warnings.includes("unsourced_numbers")) warnings.push("unsourced_numbers");
       }
       unsourced = findUnsourcedNumbers(content, groundingString);
+      guardedAfterRotation = true;
       unsourcedEntities = findUnsourcedEntities(content, groundingString);
       integrity = checkTextIntegrity(content, isAr);
       if (unsourced.length > 0 && !warnings.includes("unsourced_numbers")) warnings.push("unsourced_numbers");
