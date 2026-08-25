@@ -190,6 +190,9 @@ export const nDrafts = (n: number, lang: VocabLang): string =>
     few: (x) => `${x} مسودات`, many: (x) => `${x} مسودة`,
   }) : `${n} draft${n === 1 ? "" : "s"}`;
 
+/** The bare noun, for lines that style the numeral separately (mono digit). */
+export const POST_NOUN = { one: "post", many: "posts", One: "Post", Many: "Posts" } as const;
+
 /** Posts the member published — `post_provenance` rows. */
 export const nPosts = (n: number, lang: VocabLang): string =>
   lang === "ar" ? arabicCount(n, {
