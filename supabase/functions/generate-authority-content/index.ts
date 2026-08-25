@@ -36,6 +36,14 @@ const FRAMEWORK_PROMPTS: Record<string, string> = {
   story_lesson_question: "Structure this content using the Story → Lesson → Question framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
 };
 
+/**
+ * The Arabic layer. It carries IDENTITY, REGISTER, worked formatting examples
+ * and hashtags — and nothing else. The structure is not defined here: it lives
+ * once, in `contentDNA`, and it is language-independent. This prompt used to
+ * carry its own competing 7-beat spec, its own banned list, its own "always end
+ * on a question" mandate and a worked example that opened on "معظم" — which is
+ * how 47 of 80 Arabic and English drafts came to open with the same word.
+ */
 const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura. مهمتك كتابة منشورات LinkedIn عربية باسم {{name}}، {{role}} المتخصص في {{sector}}.
 
 هويتك في الكتابة:
@@ -48,16 +56,7 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 الكلمات التقنية تبقى بالإنجليزية: AI، KPI، dashboard، API، roadmap.
 لا عامية كاملة، لا لغة إعلامية رسمية.
 
-هيكل البوست الإلزامي — بهذا الترتيب:
-1. Hook — جملة صادمة أو واقعية (سطر أو سطرين فقط)
-2. Reality — وصف شيء القارئ يعيشه داخل جهته
-3. Illusion — "كل شيء يبدو على ما يرام"
-4. Break — كسر التوقع: "لكن..."
-5. Truth — السبب الأعمق الحقيقي
-6. Impact — الأثر: تعب أكثر، قيمة أقل، أو العكس
-7. Question — سؤال محدد، غير مريح، يعلق في الذهن
-
-التنسيق البصري — إلزامي في كل بوست:
+الهيكل: اتبع "هيكل المنشور" الوارد أعلاه حرفياً — هو الهيكل الوحيد. لا تضف حركات ولا تعد ترتيبها.
 
 قواعد الأسطر:
 - سطر فارغ بين كل فكرة رئيسية
@@ -65,8 +64,8 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 
 للقوائم والنقاط — استخدم:
 ◆ للنقاط الرئيسية في القائمة
-↳ للتفاصيل والتوضيح تحت أي نقطة
 - للنقاط الثانوية البسيطة
+ولا تستخدم ↳ في العربية إطلاقاً.
 
 للأرقام المتسلسلة — استخدم:
 1. أو ١. للخطوات المرتبة
@@ -78,45 +77,25 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 ❌ للخطأ الشائع أو ما لا يجب
 
 لا تستخدم أكثر من 2-3 إيموجي في البوست كله.
-لا تضع إيموجي في الـ Hook أو الـ Question — فقط في منتصف البوست.
+لا تضع إيموجي في الافتتاح ولا في سطر الخاتمة — فقط في منتصف البوست.
 
-مثال على التنسيق الصحيح:
+مثال على التنسيق الصحيح (مثال تنسيق فقط — لا تنسخ افتتاحه ولا خاتمته):
 المشكلة ليست في غياب الخطة.
 المشكلة في أن أحداً لا يملكها.
 
 ◆ الفريق التنفيذي وافق على الاستراتيجية
-↳ لكن لا أحد يعرف من يقود التنفيذ
+- لكن لا أحد يعرف من يقود التنفيذ
 
 ◆ الإدارة الوسطى تنتظر التوجيه
-↳ لأن الأولويات تتغير كل ربع
-
-◆ الجميع مشغول
-↳ لكن لا أحد يتقدم
+- لأن الأولويات تتغير كل ربع
 
 📍 الخطة بلا مالك ليست خطة.
 هي وثيقة.
 
-دعني أسألك:
-كم مبادرة في جهتك لها راعٍ رسمي... ولا مالك حقيقي؟
-
-ممنوع منعاً باتاً:
-- "في عالم اليوم المتغير"
-- "لا شك أن التحول الرقمي أصبح ضرورة"
-- "يسعدني أن أشارككم"
-- "إيماناً منا بأهمية"
-- "وفي هذا السياق"
-- "ما رأيكم؟" / "شاركونا أفكاركم"
-- فقرات طويلة / تحفيز فارغ
-- ممكن / ربما / غالباً / leverage / optimize / cutting-edge / حلول مبتكرة
-- "لا يخفى على أحد" / "من نافلة القول" / "تجدر الإشارة إلى" / "مما لا شك فيه"
-- "في هذا السياق" / "من الضروري أن ندرك" / "على صعيد آخر" / "يُعد من أهم"
-- أي جملة أطول من 15 كلمة
-
-قواعد افتتاح البوست (إلزامية):
-- لا تبدأ البوست أبداً بكلمة "منشور" أو "منشور LinkedIn" أو أي تسمية للصيغة. ابدأ بالـ Hook مباشرة.
-- السطر الأول يجب أن يكون كسراً للنمط: ادعاء جريء، رقم محدد، سؤال استفزازي، أو مشهد قصير.
+قواعد افتتاح البوست:
+- لا تبدأ البوست أبداً بكلمة "منشور" أو "منشور LinkedIn" أو أي تسمية للصيغة. ابدأ بالافتتاح مباشرة.
+- الافتتاح يتبع نوع الافتتاح المحدد لهذا البوست أعلاه، ولا شيء غيره.
 - مثال خاطئ: "منشور LinkedIn معظم مشاريع التحول الرقمي..."
-- مثال صحيح: "معظم مشاريع التحول الرقمي تنجح في العرض التقديمي وتفشل في التشغيل."
 
 قواعد التنسيق الصارمة:
 - لا تستخدم "---" كفاصل بين الأقسام. استخدم سطراً فارغاً.
@@ -124,17 +103,12 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 - لا تستخدم "POST" أو "منشور LinkedIn" كعنوان داخل النص.
 - اجعل الجمل قصيرة (أقل من 12 كلمة)، كل جملة في سطر مستقل.
 
-تنويع الهيكل (لا تستخدم نفس الهيكل دائماً — إذا كان framework غير محدد، اختر عشوائياً):
-- البنية أ — سلسلة الرؤى: خطاف → إعادة إطار → 3 كتل رؤية → خاتمة حادة → سؤال
-- البنية ب — قائمة مرقمة: خطاف → لماذا الآن → 5 نقاط مرقمة → خلاصة → سؤال
-- البنية ج — قصة: مشهد قصير (2-3 أسطر) → الدرس → إطار مستخلص → تطبيق → سؤال
-
 الهاشتاقات — 3 فقط في نهاية البوست:
 - واحد لقطاع القارئ: استخدم قطاع المستخدم من ملفه الشخصي (sector_focus) بصيغة هاشتاق عربي مناسب. إن لم يوجد قطاع، استخدم #التحول_الرقمي
 - واحد جغرافي: #السعودية أو #الخليج أو #رؤية2030
 - واحد للجمهور: #قيادة أو #التحول_المؤسسي
 
-أيضاً: اقرأ voice_profile المرفق واستخدم preferred_structures و storytelling_patterns و vocabulary_preferences منه لتشكيل البوست.
+أيضاً: اقرأ voice_profile المرفق واستخدم storytelling_patterns و vocabulary_preferences منه لتلوين النبرة والمفردات — لا لتغيير الهيكل.
 البوست الناتج يجب أن يعكس هذا الصوت تحديداً، لا صوتاً عاماً.
 
 الإخراج: البوست مباشرة فقط — بدون مقدمة أو عنوان أو تفسير.`;
@@ -634,41 +608,119 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       const chosenOpening = pickOpening(memberPrefs.openings);
 
       /**
-       * Variation: never repeat the shape of the member's most recent post.
-       * Silence is the correct output when there is not enough history — a
-       * fabricated constraint is worse than none. Never blocks generation.
+       * VARIATION LOOKBACK — repointed at `content_items`.
+       *
+       * This read used to query `linkedin_posts`, where Aura's drafts have
+       * never lived, so it had literally never once seen the thing it exists to
+       * differ from. Aura's drafts are `content_items` rows with
+       * `made_by='aura'`; discarded rows are excluded because an archived draft
+       * is not a shape the member saw. Five most recent, no minimum count: one
+       * prior draft is enough to avoid repeating it.
        */
-      let recentHookStyle: string | null = null;
-      let recentEndingType: string | null = null;
+      let recentDrafts: Array<{ hook_style: string | null; ending_type: string | null; body: string | null }> = [];
       try {
         const { data: recentRows } = await supabase
-          .from("linkedin_posts")
-          .select("hook_style, ending_type, framework_type")
+          .from("content_items")
+          .select("hook_style, ending_type, body, created_at")
           .eq("user_id", effectiveUserId)
+          .eq("made_by", "aura")
+          .neq("status", "discarded")
           .order("created_at", { ascending: false })
           .limit(5);
-        const rows = (recentRows || []).filter((r: any) => r.hook_style || r.ending_type || r.framework_type);
-        if (rows.length >= 3) {
-          recentHookStyle = (rows.find((r: any) => r.hook_style)?.hook_style as string) || null;
-          recentEndingType = (rows.find((r: any) => r.ending_type)?.ending_type as string) || null;
-        }
+        recentDrafts = (recentRows || []) as any[];
       } catch (_e) {
         // A history read must never cost a member their draft.
       }
-      const recentPatternBlock = (() => {
-        const bits: string[] = [];
-        if (recentHookStyle) {
-          bits.push(effectiveLanguage === "ar"
-            ? `آخر منشور فُتح بنمط "${recentHookStyle}" — لا تعِد استخدامه هذه المرة.`
-            : `The last post opened with a "${recentHookStyle}" hook — do not reuse it this time.`);
+
+      /**
+       * SIBLING AWARENESS — a batch that writes three drafts in a loop makes
+       * three independent calls. Without this, draft 2 and 3 cannot know what
+       * draft 1 opened with, which is why one member ended up with seven drafts
+       * all opening on the same word. The caller threads what it has already
+       * produced in this run through `sibling_shapes`.
+       */
+      const siblingShapes: Array<{ hook_style?: string | null; ending_type?: string | null; opening?: string | null }> =
+        Array.isArray((params as any)?.sibling_shapes) ? (params as any).sibling_shapes : [];
+
+      const recentHookStyle = recentDrafts.find((r) => r.hook_style)?.hook_style || null;
+      const recentEndingType = recentDrafts.find((r) => r.ending_type)?.ending_type || null;
+
+      /** Every OPEN/LAND type seen in the last three drafts, siblings first. */
+      const avoidOpenTypes: (OpenType | null)[] = [
+        ...siblingShapes.map((s) => openTypeOfHook(s?.hook_style ?? null)),
+        ...recentDrafts.slice(0, 3).map((r) => openTypeOfHook(r.hook_style)),
+      ];
+      const avoidLandTypes: (LandType | null)[] = [
+        ...siblingShapes.map((s) => landTypeOfEnding(s?.ending_type ?? null)),
+        ...recentDrafts.slice(0, 3).map((r) => landTypeOfEnding(r.ending_type)),
+      ];
+      /** The literal openings this post must not reproduce. */
+      const avoidOpeningTexts: string[] = [
+        ...siblingShapes.map((s) => String(s?.opening || "")),
+        ...recentDrafts.map((r) => String(r.body || "")),
+      ].filter((t) => firstSixWords(t).length > 0);
+
+      /**
+       * Precedence 1: a learned voice profile with observed opening habits
+       * weights the pool toward what the member really does.
+       */
+      const PREF_TO_OPEN: Record<string, OpenType> = {
+        number_first: "specific_number",
+        contrarian_claim: "contrarian",
+        scene: "scene",
+        question: "question",
+        confession: "confession",
+        observation: "scene",
+        contrast: "contrarian",
+        dialogue: "scene",
+      };
+      const openWeights: Record<string, number> | undefined = (() => {
+        const list = memberPrefs.openings || [];
+        if (!list.length) return undefined;
+        const w: Record<string, number> = {};
+        for (const o of list) {
+          const t = PREF_TO_OPEN[o];
+          if (t) w[t] = (w[t] || 0) + 1;
         }
-        if (recentEndingType) {
+        return Object.keys(w).length ? w : undefined;
+      })();
+      const landWeights: Record<string, number> | undefined = (() => {
+        const allowed = Array.isArray(voiceProfile?.allowed_endings) ? voiceProfile!.allowed_endings : [];
+        const w: Record<string, number> = {};
+        for (const e of allowed) {
+          const t = landTypeOfEnding(
+            String(e) === "hanging_line" || String(e) === "signature" ? "suspended" : String(e),
+          );
+          if (t) w[t] = (w[t] || 0) + 1;
+        }
+        return Object.keys(w).length >= 2 ? w : undefined;
+      })();
+
+      const seed = rotationSeed(
+        effectiveUserId,
+        signal_id || topic || "",
+        siblingShapes.length,
+        new Date().toISOString().slice(0, 10),
+      );
+      const openType: OpenType = rotateType(OPEN_TYPES, { avoid: avoidOpenTypes, seed, weights: openWeights });
+      const landType: LandType = rotateType(LAND_TYPES, { avoid: avoidLandTypes, seed: seed + 7, weights: landWeights });
+
+      const recentPatternBlock = (() => {
+        const bannedOpens = [...new Set(avoidOpenTypes.filter(Boolean))] as OpenType[];
+        const bits: string[] = [];
+        if (bannedOpens.length) {
           bits.push(effectiveLanguage === "ar"
-            ? `وانتهى بخاتمة من نوع "${recentEndingType}" — اختر خاتمة مختلفة.`
-            : `It closed with a "${recentEndingType}" ending — choose a different close.`);
+            ? `أنواع افتتاح مستهلكة في آخر المسودات — ممنوعة هنا: ${bannedOpens.join("، ")}.`
+            : `OPEN types already used in the most recent drafts — banned here: ${bannedOpens.join(", ")}.`);
+        }
+        if (avoidOpeningTexts.length) {
+          const shown = avoidOpeningTexts.slice(0, 5).map((t) => `"${firstSixWords(t)}"`).join(" / ");
+          bits.push(effectiveLanguage === "ar"
+            ? `ولا يجوز أن تبدأ الكلمات الست الأولى بأي من هذه: ${shown}.`
+            : `The first six words must not match any of these: ${shown}.`);
         }
         if (!bits.length) return "";
-        return "\n\n" + (effectiveLanguage === "ar" ? "النمط الأخير:" : "RECENT PATTERN:") + " " + bits.join(" ");
+        return "\n\n" + (effectiveLanguage === "ar" ? "منع التكرار:" : "NO-REPEAT:") + " " + bits.join(" ");
       })();
 
       // Language + voice handling

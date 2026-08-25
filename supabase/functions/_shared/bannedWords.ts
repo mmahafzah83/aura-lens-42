@@ -1,17 +1,26 @@
 /**
- * THE SINGLE SOURCE for banned vocabulary in generated member-facing copy.
+ * THE MATCHER for banned vocabulary in generated member-facing copy.
  *
- * The list itself is data: it lives in admin_settings.banned_words and is
- * edited on the admin screen. This file is the matcher and the fallback.
- * A local list anywhere else is a bug.
+ * The list itself is NOT defined here any more. There is exactly one banned
+ * list in the system — `contentDNA.BANNED_TERMS_EN`, the same list the writing
+ * prompt is built from — so a word the generator is told never to write is the
+ * same word this matcher rejects. The editable override still lives in
+ * admin_settings.banned_words; this file is the matcher and the fallback.
  */
 
+import { BANNED_TERMS_EN } from "./contentDNA.ts";
+
+/**
+ * The canonical list, plus the two terms that are only ever wrong in
+ * member-facing copy (a verb sense and a self-description), not in a prompt.
+ */
 export const DEFAULT_BANNED_WORDS: string[] = [
-  "authority", "trajectory", "personal brand", "thought leader", "leverage",
-  "utilize", "facilitate", "unlock", "elevate", "empower", "seamless",
-  "game-changing", "passionate", "results-driven", "proven track record",
-  "I'm excited to", "with over X years of experience",
+  ...BANNED_TERMS_EN,
+  "authority",
+  "leverage",
+  "with over X years of experience",
 ];
+
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 

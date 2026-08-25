@@ -1,46 +1,311 @@
-// Aura Content DNA — single source of truth for all content generators.
-
-// Import from posts, carousel, newsletter, and the quality gate.
-
-// Change the method HERE; every generator updates together. Never inline-duplicate these rules.
+// Aura Content DNA — THE writing algorithm. One structure, one banned list, one
+// formatting rule, one rotation table. Posts, carousels, newsletters and the
+// quality gate all import from here.
+//
+// Anything that defines HOW a post is shaped belongs in this file and nowhere
+// else. A second structure definition anywhere in the codebase is a bug: the
+// generator used to be handed three of them at once (a 6-step engine, a 4-step
+// hook framework and a 7-step Arabic spec) plus three different banned lists,
+// and 47 of 80 drafts opened with the same word because two of those specs
+// mandated a contrarian opener on every single post.
 
 export type DNALang = "ar" | "en";
 
 export type DNATexture = "clean" | "daheeh" | "qawarish";
 
-// 1. THE ENGINE — information as plot; the payoff is never the opening.
-//
-// D121: step 6 used to mandate an uncomfortable QUESTION on every post, while
-// the per-post ENDING directive appended later told five of six endings NOT to
-// end on a question. The generator was handed both instructions and then marked
-// wrong for obeying the later one. The close step is now shape-neutral by
-// default; the question mandate is only emitted when the chosen ending IS the
-// question ending.
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. THE STRUCTURE — six beats, collapsible to four. Language-independent.
+//    Only the register changes between English and Arabic; the beats do not.
+// ─────────────────────────────────────────────────────────────────────────────
 
-export function buildEngine(closeOnQuestion = false): string {
-  return `CONTENT ENGINE — every piece follows this arc:
+export const STRUCTURE_BEATS = [
+  "OPEN",
+  "GROUND",
+  "TURN",
+  "PROOF",
+  "SO-WHAT",
+  "LAND",
+] as const;
+export type StructureBeat = (typeof STRUCTURE_BEATS)[number];
 
-1. HOOK — open on a tension, paradox, or counterintuitive claim. Never open with the conclusion or "today I want to talk about".
-
-2. SCENE — a concrete, specific situation the reader recognizes (show, don't tell). Not an abstraction.
-
-3. VILLAIN — name the misconception the reader secretly believes ("everyone thinks X… it's not X").
-
-4. PAYOFF — release the tension with the core insight. If, and only if, the provided evidence contains a real number, anchor the payoff on that number (see NUMBER INTEGRITY). If the evidence contains no number, anchor the payoff on a concrete specific instead — a named mechanism, a sequence, or a consequence. A post with no number is a correct and complete post; never manufacture one to satisfy this step.
-
-5. REFRAME — zoom out; connect the small thing to something larger.
-
-6. ${closeOnQuestion
-    ? `UNCOMFORTABLE QUESTION — close on a question the reader carries into the week. Never "what do you think?".`
-    : `CLOSE — land the post in the exact shape named by the ENDING FOR THIS POST directive below. That directive is the only authority on how this post ends.`}
-
-Test: if the key insight is in the first two lines, move it down and build tension in front of it.`;
+/**
+ * PROOF and SO-WHAT merge into a single beat when the signal is thin or the
+ * member reads short. One structure serves the long evidence-rich post and the
+ * fast phone-read post.
+ */
+export function shouldCollapse(opts: { evidenceCount?: number; lengthMax?: number | null }): boolean {
+  const n = Number(opts.evidenceCount);
+  if (Number.isFinite(n) && n < 4) return true;
+  const len = Number(opts.lengthMax);
+  if (Number.isFinite(len) && len > 0 && len <= 900) return true;
+  return false;
 }
 
-/** Default engine — shape-neutral close. */
-export const ENGINE = buildEngine(false);
+const STRUCTURE_EN = (collapse: boolean, openLine: string, landLine: string) =>
+  `THE STRUCTURE — ${collapse ? "four" : "six"} beats, in this order. This is the only structure. Never label the beats in the output.
 
-// 2. NUMBER INTEGRITY — the credibility guardrail. NON-NEGOTIABLE.
+1. OPEN — the entry. ${openLine}
+2. GROUND — what is genuinely happening. Concede it: this is real and underway.
+3. TURN — the flaw underneath. Name the illusion first ("everything looks fine because…"), then break it.
+${collapse
+  ? `4. PROOF + SO-WHAT — one merged beat: the specific evidence AND what it changes for the reader. Only what this member's captures actually supply.
+5. LAND — the close. ${landLine}`
+  : `4. PROOF — the specific evidence. The part only this member's captures can supply.
+5. SO-WHAT — what it changes for the reader.
+6. LAND — the close. ${landLine}`}
+
+Never emit an empty beat and never pad one. If the material does not support a beat, tighten the post — do not fill the space.`;
+
+const STRUCTURE_AR = (collapse: boolean, openLine: string, landLine: string) =>
+  `هيكل المنشور — ${collapse ? "أربع" : "ست"} حركات بهذا الترتيب. لا هيكل آخر. لا تكتب أسماء الحركات في المخرج.
+
+1. الافتتاح — المدخل. ${openLine}
+2. الأرضية — ما يجري فعلاً. اعترف به: هذا حقيقي وجارٍ.
+3. المنعطف — الخلل تحت السطح. سمِّ الوهم أولاً ("كل شيء يبدو على ما يرام لأن…") ثم اكسره.
+${collapse
+  ? `4. الدليل + الأثر — حركة واحدة مدمجة: الدليل المحدد وما يغيّره للقارئ. لا شيء خارج ما التقطه هذا العضو فعلاً.
+5. الخاتمة — ${landLine}`
+  : `4. الدليل — الدليل المحدد. الجزء الذي لا تستطيع توفيره إلا التقاطات هذا العضو.
+5. الأثر — ما يغيّره ذلك للقارئ.
+6. الخاتمة — ${landLine}`}
+
+لا تُخرج حركة فارغة ولا تحشُها. إن لم تسمح المادة بحركة، اضغط المنشور ولا تملأ الفراغ.`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. ROTATION — the OPEN and LAND tables. Enforced after generation, not only
+//    in the prompt. See `openTypeOfHook` / `landTypeOfEnding` below.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const OPEN_TYPES = [
+  "contrarian",
+  "specific_number",
+  "scene",
+  "question",
+  "confession",
+  "prediction",
+] as const;
+export type OpenType = (typeof OPEN_TYPES)[number];
+
+export interface TypeSpec {
+  def_en: string;
+  def_ar: string;
+  ex_en: string;
+  ex_ar: string;
+}
+
+export const OPEN_SPECS: Record<OpenType, TypeSpec> = {
+  contrarian: {
+    def_en: "state a position against what the sector believes.",
+    def_ar: "اطرح موقفاً يخالف ما يعتقده القطاع.",
+    ex_en: "The transformation office is not slowing delivery down. It is the only thing holding it together.",
+    ex_ar: "مكتب التحول لا يُبطئ التنفيذ. هو الشيء الوحيد الذي يمسكه.",
+  },
+  specific_number: {
+    def_en: "open on one figure that appears verbatim in the evidence.",
+    def_ar: "افتح برقم واحد وارد حرفياً في الأدلة.",
+    ex_en: "Nine of the eleven dashboards were built for a decision nobody makes any more.",
+    ex_ar: "تسع لوحات من إحدى عشرة بُنيت لقرار لم يعد أحد يتخذه.",
+  },
+  scene: {
+    def_en: "open inside a short concrete scene — a room, a moment, two lines.",
+    def_ar: "افتح داخل مشهد قصير ملموس — غرفة، لحظة، سطران.",
+    ex_en: "The steering meeting ran forty minutes. Nobody mentioned the customer once.",
+    ex_ar: "استمر اجتماع التوجيه أربعين دقيقة. لم يُذكر العميل مرة واحدة.",
+  },
+  question: {
+    def_en: "open on one specific question the reader cannot answer comfortably.",
+    def_ar: "افتح بسؤال واحد محدد لا يستطيع القارئ الإجابة عنه بارتياح.",
+    ex_en: "Who owns the number on slide four?",
+    ex_ar: "من يملك الرقم في الشريحة الرابعة؟",
+  },
+  confession: {
+    def_en: "open by admitting something you got wrong.",
+    def_ar: "افتح باعتراف بخطأ وقعت فيه.",
+    ex_en: "I recommended the platform. Two years on, I would recommend the opposite.",
+    ex_ar: "أنا من أوصى بالمنصة. بعد عامين، أوصي بالعكس.",
+  },
+  prediction: {
+    def_en: "open on a specific, dateable claim about what happens next.",
+    def_ar: "افتح بادعاء محدد وقابل للتأريخ عمّا سيحدث تالياً.",
+    ex_en: "Within two budget cycles, this team will be asked to defend a system it never chose.",
+    ex_ar: "خلال دورتَي ميزانية، سيُطلب من هذا الفريق الدفاع عن نظام لم يختره.",
+  },
+};
+
+export const LAND_TYPES = [
+  "statement",
+  "question",
+  "contrast",
+  "invitation",
+  "consequence",
+] as const;
+export type LandType = (typeof LAND_TYPES)[number];
+
+export const LAND_SPECS: Record<LandType, TypeSpec> = {
+  statement: {
+    def_en: "close on one short declarative line. Do NOT end on a question.",
+    def_ar: "اختم بسطر تقريري قصير واحد. لا تختم بسؤال.",
+    ex_en: "A plan with no owner is a document.",
+    ex_ar: "الخطة بلا مالك ليست خطة. هي وثيقة.",
+  },
+  question: {
+    def_en: "close on one specific, uncomfortable question. Never \"what do you think?\".",
+    def_ar: "اختم بسؤال واحد محدد وغير مريح. لا تستخدم \"ما رأيكم؟\".",
+    ex_en: "Which of your dashboards would you switch off tomorrow?",
+    ex_ar: "أي لوحة من لوحاتك تُطفئها غداً؟",
+  },
+  contrast: {
+    def_en: "close by setting the opening claim against its opposite. Do NOT end on a question.",
+    def_ar: "اختم بمقابلة الادعاء الافتتاحي بنقيضه. لا تختم بسؤال.",
+    ex_en: "Structure for measurement. No structure for the decision.",
+    ex_ar: "بنية للقياس، بلا بنية للقرار.",
+  },
+  invitation: {
+    def_en: "close by naming one thing the reader can do this week. Do NOT end on a question.",
+    def_ar: "اختم بتسمية شيء واحد يستطيع القارئ فعله هذا الأسبوع. لا تختم بسؤال.",
+    ex_en: "Take the oldest report on your desk and ask who reads it.",
+    ex_ar: "خُذ أقدم تقرير على مكتبك واسأل من يقرأه.",
+  },
+  consequence: {
+    def_en: "close on what follows if nothing changes. Do NOT end on a question.",
+    def_ar: "اختم بما سيحدث إن لم يتغير شيء. لا تختم بسؤال.",
+    ex_en: "The cost does not arrive as a budget line. It arrives as a quarter of silence.",
+    ex_ar: "التكلفة لا تأتي كبند في الميزانية. تأتي كربع من الصمت.",
+  },
+};
+
+/** A stable non-cryptographic hash so "rotate deterministically" really is deterministic. */
+export function rotationSeed(...parts: (string | number | null | undefined)[]): number {
+  const s = parts.map((p) => String(p ?? "")).join("|");
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+}
+
+/**
+ * Selection rule, in order of precedence:
+ *  1. `weights` — the member's observed opening distribution, when a learned
+ *     voice profile supplies one: the pool is biased toward what they really do.
+ *  2. Otherwise rotate deterministically over the table, skipping `avoid`
+ *     (every type used in that member's last three drafts).
+ *  3. `avoid[0]` — the immediately previous type — is never selectable. Ever.
+ */
+export function rotateType<T extends string>(
+  all: readonly T[],
+  opts: { avoid?: readonly (T | null | undefined)[]; seed?: number; weights?: Record<string, number> } = {},
+): T {
+  const avoid = new Set((opts.avoid || []).filter(Boolean) as T[]);
+  const seed = Number.isFinite(Number(opts.seed)) ? Math.floor(Number(opts.seed)) : 0;
+
+  let pool = all.filter((t) => !avoid.has(t));
+  // Never fewer than two choices: drop the oldest bans first, but the most
+  // recent one (index 0) survives every relaxation.
+  if (pool.length === 0) {
+    const mostRecent = (opts.avoid || []).filter(Boolean)[0] as T | undefined;
+    pool = all.filter((t) => t !== mostRecent);
+  }
+  if (pool.length === 0) pool = [...all];
+
+  const w = opts.weights;
+  if (w) {
+    const weighted = pool.filter((t) => Number(w[t]) > 0);
+    if (weighted.length > 0) {
+      const total = weighted.reduce((a, t) => a + Number(w[t]), 0);
+      let tick = seed % Math.max(1, Math.round(total * 100));
+      for (const t of weighted) {
+        tick -= Math.round(Number(w[t]) * 100);
+        if (tick < 0) return t;
+      }
+      return weighted[seed % weighted.length];
+    }
+  }
+  return pool[seed % pool.length];
+}
+
+/**
+ * The bridge between the rotation table and `fingerprint.ts`, which classifies
+ * what was actually produced. `announcement` / `other` carry no OPEN meaning,
+ * so they collapse to null and the first-six-words check does the work instead.
+ */
+export function openTypeOfHook(hook: string | null | undefined): OpenType | null {
+  switch (String(hook ?? "")) {
+    case "contrarian_claim": return "contrarian";
+    case "number_first": return "specific_number";
+    case "short_story": return "scene";
+    case "question": return "question";
+    case "experience_led": return "confession";
+    default: return null;
+  }
+}
+
+export function landTypeOfEnding(ending: string | null | undefined): LandType | null {
+  switch (String(ending ?? "")) {
+    case "question": return "question";
+    case "cta": return "invitation";
+    case "reframe": return "contrast";
+    case "number":
+    case "equation": return "consequence";
+    case "suspended": return "statement";
+    default: return null;
+  }
+}
+
+/** The literal opening, normalised: the repetition test a member actually sees. */
+export function firstSixWords(text: string): string {
+  const line = String(text ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .find(Boolean) ?? "";
+  return line
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 6)
+    .join(" ");
+}
+
+export function sameOpeningWords(a: string, b: string): boolean {
+  const x = firstSixWords(a);
+  const y = firstSixWords(b);
+  return x.length > 0 && x === y;
+}
+
+export function buildRotationDirective(
+  lang: DNALang,
+  open: OpenType,
+  land: LandType,
+): { openLine: string; landLine: string; block: string } {
+  const o = OPEN_SPECS[open];
+  const l = LAND_SPECS[land];
+  if (lang === "ar") {
+    return {
+      openLine: `نوع الافتتاح لهذا المنشور: ${open} — ${o.def_ar}`,
+      landLine: `نوع الخاتمة لهذا المنشور: ${land} — ${l.def_ar}`,
+      block: `الافتتاح والخاتمة لهذا المنشور — إلزامي، ولا يجوز استبدالهما:
+- الافتتاح (${open}): ${o.def_ar}
+  مثال: ${o.ex_ar}
+- الخاتمة (${land}): ${l.def_ar}
+  مثال: ${l.ex_ar}`,
+    };
+  }
+  return {
+    openLine: `OPEN TYPE for this post: ${open} — ${o.def_en}`,
+    landLine: `LAND TYPE for this post: ${land} — ${l.def_en}`,
+    block: `OPEN AND LAND FOR THIS POST — mandatory, not interchangeable:
+- OPEN (${open}): ${o.def_en}
+  Example: ${o.ex_en}
+- LAND (${land}): ${l.def_en}
+  Example: ${l.ex_en}`,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. NUMBER INTEGRITY — the credibility guardrail. NON-NEGOTIABLE.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const NUMBER_INTEGRITY = `NUMBER INTEGRITY (absolute — credibility is the entire product):
 
@@ -52,7 +317,9 @@ export const NUMBER_INTEGRITY = `NUMBER INTEGRITY (absolute — credibility is t
 
 - A real sourced number beats an impressive invented one. When unsure, omit the number and keep the insight.`;
 
-// 3. REGISTER
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. REGISTER
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const REGISTER_AR = `اللغة: عربية احترافية معاصرة — واضحة ومباشرة، كأنك تحدث مديرًا لا تكتب مقالًا. ليست عامية، وليست فصحى بيروقراطية.
 
@@ -88,27 +355,64 @@ export function buildRegisterAR(readerDescription?: string, register?: string): 
   return `السجل المستهدف (إلزامي — كل سطر يُكتب به): ${reg}.\n\n${REGISTER_AR}\n\n- الكتابة موجّهة إلى: ${reader}.`;
 }
 
-// 4. FORMATTING
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. FORMATTING — settled once. ◆ and ↳ are permitted in English; Arabic uses
+//    ◆ only, never ↳, because the arrow points the wrong way in RTL.
+// ─────────────────────────────────────────────────────────────────────────────
 
-export const FORMATTING = `FORMATTING:
+export const FORMATTING_EN = `FORMATTING:
 
 - ◆ for main points, ↳ for sub-points. One idea per line, blank line between ideas.
 
-- Section markers 📍/⚠️/✅/❌ — max 2–3 total, NEVER in the Hook or the closing line.
+- Section markers 📍/⚠️/✅/❌ — max 2–3 total, NEVER in the OPEN or the LAND line.
 
-- No markdown (#, **, ---), no format labels ("POST"/"منشور LinkedIn"), no code fences.`;
+- No markdown (#, **, ---), no format labels ("POST"/"منشور LinkedIn"), no code fences.
 
-// 5. BANNED — merged AI-tells (EN + AR)
+- Never use markdown bold or asterisks: no **double asterisks** and no *single asterisks* — LinkedIn renders them literally. For emphasis use a line break or ALL-CAPS, sparingly. Numbered lists ("1. ") are fine. Never use "---" or "***" as a separator; use one blank line.`;
+
+export const FORMATTING_AR = `التنسيق:
+
+- ◆ للنقاط الرئيسية. لا تستخدم ↳ أبداً في العربية — السهم يشير في الاتجاه الخاطئ داخل نص من اليمين إلى اليسار. للتفاصيل استخدم سطراً جديداً أو "-".
+
+- فكرة واحدة في كل سطر، وسطر فارغ بين الأفكار.
+
+- علامات بصرية 📍/⚠️/✅/❌ — اثنتان أو ثلاث كحد أقصى، ولا تظهر أبداً في الافتتاح ولا في سطر الخاتمة.
+
+- لا markdown (#، **، ---)، ولا تسميات صيغة ("منشور LinkedIn"/"POST")، ولا أسوار كود.
+
+- ممنوع النجوم للتشديد: لا **نجمتان** ولا *نجمة واحدة* — LinkedIn يعرضها حرفياً. للتشديد استخدم سطراً جديداً. القوائم المرقمة ("1. " أو "١. ") مقبولة. لا تستخدم "---" فاصلاً، استخدم سطراً فارغاً.`;
+
+/** Back-compat name for importers that only ever wanted the English block. */
+export const FORMATTING = FORMATTING_EN;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. THE BANNED LIST — canonical, and the only one. It is the union of the
+//    three lists that used to disagree with each other.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Machine-matchable terms. `_shared/bannedWords.ts` matches on exactly these. */
+export const BANNED_TERMS_EN: string[] = [
+  "delve", "tapestry", "navigate", "realm", "beacon", "synergy", "utilize", "facilitate",
+  "holistic", "robust", "comprehensive", "cutting-edge", "game-changing", "groundbreaking",
+  "revolutionary", "unprecedented", "paradigm", "dive deep", "unpack", "double down",
+  "move the needle", "it's worth noting", "it goes without saying", "at the end of the day",
+  "serves as a testament", "at its core", "let's dive in", "here's what you need to know",
+  "in today's rapidly changing world", "trajectory", "unlock", "elevate", "empower",
+  "seamless", "passionate", "results-driven", "proven track record", "thought leader",
+  "personal brand", "I'm excited to",
+];
 
 export const BANNED = `BANNED — never use:
 
-EN: delve, tapestry, landscape (figurative), navigate, realm, beacon, synergy, leverage (verb), utilize, facilitate, holistic, robust, comprehensive, cutting-edge, game-changing, groundbreaking, revolutionary, unprecedented, paradigm, dive deep, unpack, double down, move the needle, "it's worth noting", "at the end of the day", "not just X but Y", "serves as a testament", "at its core", trajectory (use "growth").
+EN: delve, tapestry, landscape (figurative), navigate, realm, beacon, synergy, leverage (verb), utilize, facilitate, holistic, robust, comprehensive, cutting-edge, game-changing, groundbreaking, revolutionary, unprecedented, paradigm, dive deep, unpack, double down, move the needle, "it's worth noting", "it goes without saying", "at the end of the day", "not just X but Y", "serves as a testament", "at its core", "let's dive in", "here's what you need to know", "in today's rapidly changing world", unlock, elevate, empower, seamless, passionate, results-driven, "proven track record", "thought leader", "personal brand", "I'm excited to", trajectory (use "growth").
 
-AR: "في عالم اليوم المتغير", "لا شك أن", "يسعدني أن أشارككم", "وفي هذا السياق", "لا يخفى على أحد", "من نافلة القول", "تجدر الإشارة إلى", "مما لا شك فيه", "من الضروري أن ندرك", "يُعد من أهم", "ما رأيكم؟", "شاركونا", "بذكاء" في بداية الجملة, "الجزر/الصوامع الرقمية".
+AR: "في عالم اليوم المتغير", "لا شك أن", "يسعدني أن أشارككم", "إيماناً منا بأهمية", "وفي هذا السياق", "لا يخفى على أحد", "من نافلة القول", "تجدر الإشارة إلى", "مما لا شك فيه", "من الضروري أن ندرك", "على صعيد آخر", "يُعد من أهم", "ما رأيكم؟", "شاركونا أفكاركم", "حلول مبتكرة", "بذكاء" في بداية الجملة, "الجزر/الصوامع الرقمية".
 
-Also: no sentence longer than ~15 words.`;
+Also: no sentence longer than ~15 words. Rewrite any sentence that uses a banned term with concrete, specific language.`;
 
-// 6. QAWARISH TEXTURE — optional literary layer; take the technique, stay professional.
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. TEXTURE — optional literary layer; take the technique, stay professional.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const QAWARISH_TEXTURE = `TEXTURE (optional depth — apply lightly, stay professional):
 
@@ -120,11 +424,13 @@ export const QAWARISH_TEXTURE = `TEXTURE (optional depth — apply lightly, stay
 
 - Trust the reader: do NOT spell out the takeaway — let them land it.`;
 
-// 7. VOICE PRECEDENCE — stops the voice layer from re-introducing drift.
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. VOICE PRECEDENCE — what the voice layer may and may not touch.
+// ─────────────────────────────────────────────────────────────────────────────
 
-export const VOICE_PRECEDENCE = `VOICE PROFILE PRECEDENCE: the voice profile adjusts TONE and VOCABULARY FLAVOR only. It NEVER overrides the ENGINE, REGISTER, FORMATTING, BANNED list, or NUMBER INTEGRITY — those are structural and always win.`;
+export const VOICE_PRECEDENCE = `VOICE PROFILE PRECEDENCE: the voice profile adjusts TONE, VOCABULARY FLAVOUR and the OPENING DISTRIBUTION it is weighted toward. It NEVER overrides THE STRUCTURE, the OPEN/LAND types chosen for this post, the REGISTER, the FORMATTING rules, the BANNED list, or NUMBER INTEGRITY — those are structural and always win.`;
 
-export const OUTPUT_CONTRACT = `OUTPUT CONTRACT (absolute): Your entire response is the finished post and nothing else. The first character you output is the first character of the hook. Do not write anything before the hook or after the closing line — no setup, no notes, no labels of any kind, in any language.`;
+export const OUTPUT_CONTRACT = `OUTPUT CONTRACT (absolute): Your entire response is the finished post and nothing else. The first character you output is the first character of the OPEN. Do not write anything before the OPEN or after the LAND line — no setup, no notes, no labels of any kind, in any language.`;
 
 export function buildContentDNA(opts: {
   lang: DNALang;
@@ -132,18 +438,41 @@ export function buildContentDNA(opts: {
   readerDescription?: string;
   /** The register this post must be written in, already scoped to `lang`. */
   register?: string;
-  /** True only when the chosen ending for this post IS the question ending. */
-  closeOnQuestion?: boolean;
+  /** The rotated entry type for THIS post. */
+  openType: OpenType;
+  /** The rotated close type for THIS post. */
+  landType: LandType;
+  /** True when PROOF and SO-WHAT merge into one beat. */
+  collapse?: boolean;
 }): string {
-
-  const { lang, texture = "clean", readerDescription, register: reg, closeOnQuestion = false } = opts;
+  const {
+    lang,
+    texture = "clean",
+    readerDescription,
+    register: reg,
+    openType,
+    landType,
+    collapse = false,
+  } = opts;
 
   const register = lang === "ar" ? buildRegisterAR(readerDescription, reg) : buildRegisterEN(readerDescription, reg);
+  const rot = buildRotationDirective(lang, openType, landType);
+  const structure = lang === "ar"
+    ? STRUCTURE_AR(collapse, rot.openLine, rot.landLine)
+    : STRUCTURE_EN(collapse, rot.openLine, rot.landLine);
 
-  const parts = [buildEngine(closeOnQuestion), NUMBER_INTEGRITY, register, FORMATTING, BANNED, VOICE_PRECEDENCE, OUTPUT_CONTRACT];
+  const parts = [
+    structure,
+    rot.block,
+    NUMBER_INTEGRITY,
+    register,
+    lang === "ar" ? FORMATTING_AR : FORMATTING_EN,
+    BANNED,
+    VOICE_PRECEDENCE,
+    OUTPUT_CONTRACT,
+  ];
 
-  if (texture !== "clean") parts.splice(5, 0, QAWARISH_TEXTURE);
+  if (texture !== "clean") parts.splice(6, 0, QAWARISH_TEXTURE);
 
   return parts.join("\n\n");
-
 }
