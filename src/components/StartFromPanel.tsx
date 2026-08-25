@@ -148,6 +148,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             .select("tone, example_posts")
             .eq("user_id", user.id)
             .eq("is_primary", true)
+            .eq("mode_key", "default")
             .maybeSingle(),
         ]);
         const examplePosts = (voiceRes?.data as any)?.example_posts;

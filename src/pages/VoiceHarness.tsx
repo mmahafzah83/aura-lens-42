@@ -111,12 +111,13 @@ const STATES: { title: string; model: VoiceOverviewModel }[] = [
 
 /* ── Voice DNA states ────────────────────────────────────────────────────── */
 const DNA_EMPTY: VoiceDnaModel = {
-  hasProfile: false, activeProfileId: null, traits: [], modes: [], rules: [], suggestions: [],
+  hasProfile: false, activeProfileId: null, activeLanguage: null, traits: [], modes: [], rules: [], suggestions: [],
   windowSize: 0, windowClassified: 0, windowDist: {}, endingDist: {}, endingClassified: 0,
   diversity: null, topShare: null, topStyleKey: null, topStyleCount: null,
 };
 
 const DNA_THIN: VoiceDnaModel = {
+  activeLanguage: "en",
   hasProfile: true,
   activeProfileId: "p1",
   traits: [
@@ -133,8 +134,8 @@ const DNA_THIN: VoiceDnaModel = {
     },
   ],
   modes: [
-    { key: "executive", label: "Executive", blurb: "For board notes and results — shorter, harder on evidence.", profileId: null, readiness: null, needsEvidence: false },
-    { key: "personal", label: "Personal", blurb: "For the story only you can tell — warmer, less data.", profileId: null, readiness: null, needsEvidence: false },
+    { key: "executive", label: "Executive", blurb: "For board notes and results — shorter, harder on evidence.", profileId: null, readiness: null, needsEvidence: false, language: null, removable: false },
+    { key: "personal", label: "Personal", blurb: "For the story only you can tell — warmer, less data.", profileId: null, readiness: null, needsEvidence: false, language: null, removable: false },
   ],
   rules: [],
   // A proposal, not a rule — the strip renders it with its evidence line.

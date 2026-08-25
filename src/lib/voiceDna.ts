@@ -48,11 +48,10 @@ export interface ModeDef {
 
 export const MODE_DEFS: ModeDef[] = [
   { key: "executive", label: "Executive", blurb: "For board notes and results — shorter, harder on evidence.", shifts: { length: -8, pace: 6, evidence_density: 8 } },
-  { key: "thought_leadership", label: "Thought leadership", blurb: "For arguments you want quoted — longer, more claim than data.", shifts: { length: 8, evidence_density: -4 } },
+  { key: "thought_leadership", label: "Ideas worth quoting", blurb: "For arguments you want quoted — longer, more claim than data.", shifts: { length: 8, evidence_density: -4 } },
   { key: "educational", label: "Educational", blurb: "For explaining something — slower, more worked detail.", shifts: { pace: -6, evidence_density: 6, length: 5 } },
   { key: "personal", label: "Personal", blurb: "For the story only you can tell — warmer, less data.", shifts: { evidence_density: -8, length: -4 } },
   { key: "contrarian", label: "Contrarian", blurb: "For the position nobody else will take — clipped, evidence up front.", shifts: { pace: 8, length: -6, evidence_density: 4 } },
-  { key: "arabic", label: "Arabic", blurb: "For writing in Arabic — the same voice, in your other language.", shifts: { language_mix: 10 } },
 ];
 
 /** A mode may only move a trait inside the range the member's own posts prove. */
@@ -93,6 +92,10 @@ export interface DnaMode {
   blurb: string;
   profileId: string | null;
   readiness: string | null;
+  /** The language of the row behind this card, when the row exists. */
+  language: string | null;
+  /** A member may only remove a mode they created — never default, never primary. */
+  removable: boolean;
   /** true when a preset shift had to be clamped back into the proven band */
   needsEvidence: boolean;
 }
@@ -112,6 +115,8 @@ export interface DnaRule {
 export interface VoiceDnaModel {
   hasProfile: boolean;
   activeProfileId: string | null;
+  /** The language of the active row — a mode is created in the same language. */
+  activeLanguage: string;
   traits: DnaTrait[];
   modes: DnaMode[];
   rules: DnaRule[];
@@ -146,7 +151,7 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
   const [{ data: profiles }, { data: registry }, windowRes, diversityRes, topRes, { data: ruleRows }] = await Promise.all([
     supabase
       .from("authority_voice_profiles")
-      .select("id, mode_key, mode_label, readiness, updated_at, is_primary")
+      .select("id, mode_key, mode_label, readiness, updated_at, is_primary, language")
       .eq("user_id", userId)
       // A member can hold more than one row per mode_key, one per language.
       // The primary row is their canonical voice and must win even if another row was written last.
@@ -242,6 +247,7 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
       key: "default", label: legacy.mode_label || "Your default voice",
       blurb: "The voice Aura uses when you have not asked for anything else.",
       profileId: legacy.id, readiness: legacy.readiness ?? null, needsEvidence: false,
+      language: (legacy as { language?: string | null }).language ?? null, removable: false,
     });
   }
   for (const def of MODE_DEFS) {
@@ -249,12 +255,15 @@ export async function loadVoiceDna(userId: string, wantProfileId?: string | null
     modes.push({
       key: def.key, label: def.label, blurb: def.blurb,
       profileId: p?.id ?? null, readiness: p?.readiness ?? null, needsEvidence: false,
+      language: (p as { language?: string | null } | undefined)?.language ?? null,
+      removable: Boolean(p) && !p?.is_primary,
     });
   }
 
   return {
     hasProfile: Boolean(active),
     activeProfileId: active?.id ?? null,
+    activeLanguage: (active as { language?: string | null } | null)?.language === "ar" ? "ar" : "en",
     traits,
     modes,
     rules: ((ruleRows ?? []) as DnaRule[]).filter((r) => (r.status ?? "active") === "active"),
@@ -331,11 +340,13 @@ export async function rejectTrait(userId: string, profileId: string, trait: DnaT
  * Create a mode. Its traits start from the member's measured values and are
  * clamped into the band their own posts prove — a mode never invents a register.
  */
-export async function createMode(userId: string, def: ModeDef, baseTraits: DnaTrait[]) {
+export async function createMode(userId: string, def: ModeDef, baseTraits: DnaTrait[], language: string) {
   const { data: profile, error } = await supabase
     .from("authority_voice_profiles")
-    // A new mode is never primary — one primary per member, always.
-    .insert({ user_id: userId, mode_key: def.key, mode_label: def.label, readiness: "forming", is_primary: false })
+    // A new mode is never primary — one primary per member, always. The
+    // language is carried over from the profile it is based on: uniqueness is
+    // (user_id, mode_key, language), so a missing language collides.
+    .insert({ user_id: userId, language, mode_key: def.key, mode_label: def.label, readiness: "forming", is_primary: false })
     .select("id")
     .single();
   if (error) throw error;
@@ -361,6 +372,27 @@ export async function createMode(userId: string, def: ModeDef, baseTraits: DnaTr
     await supabase.from("authority_voice_profiles").update({ readiness: "forming" }).eq("id", profile.id);
   }
   return { profileId: profile.id as string, needsEvidence };
+}
+
+/**
+ * Remove a mode the member created. Traits first — they hang off the profile.
+ * Default and primary rows are the member's voice itself and are never removed.
+ */
+export async function deleteMode(profileId: string) {
+  const { data: row, error: readErr } = await supabase
+    .from("authority_voice_profiles")
+    .select("id, mode_key, is_primary")
+    .eq("id", profileId)
+    .maybeSingle();
+  if (readErr) throw readErr;
+  if (!row) return;
+  if (row.is_primary || row.mode_key === "default") {
+    throw new Error("Your default voice cannot be removed.");
+  }
+  const delTraits = await supabase.from("voice_traits").delete().eq("profile_id", profileId);
+  if (delTraits.error) throw delTraits.error;
+  const del = await supabase.from("authority_voice_profiles").delete().eq("id", profileId);
+  if (del.error) throw del.error;
 }
 
 /* ── rules ───────────────────────────────────────────────────────────────── */

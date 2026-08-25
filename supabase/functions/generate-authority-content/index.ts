@@ -511,13 +511,30 @@ serve(withObserve("generate-authority-content", async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    // A mode is the member's own voice tuned for one job. It is a separate row
+    // with the same (user_id, language); absent a mode_key the request means
+    // the member's default voice, exactly as before.
+    const requestedMode = typeof (params as { mode_key?: unknown }).mode_key === "string"
+      && (params as { mode_key: string }).mode_key.trim()
+      ? (params as { mode_key: string }).mode_key.trim()
+      : "default";
+    let modeFallback = false;
+
     // Load voice profile and diagnostic profile in parallel
-    const [voiceRes, profileRes] = await Promise.all([
-      supabase.from("authority_voice_profiles").select("*").eq("user_id", effectiveUserId).eq("language", effectiveLanguage).maybeSingle(),
+    let [voiceRes, profileRes] = await Promise.all([
+      supabase.from("authority_voice_profiles").select("*").eq("user_id", effectiveUserId).eq("language", effectiveLanguage).eq("mode_key", requestedMode).maybeSingle(),
       supabase.from("diagnostic_profiles")
         .select("first_name, identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal, level, target_register, audit_interpretation, brand_assessment_results")
         .eq("user_id", effectiveUserId).maybeSingle(),
     ]);
+
+    // The mode does not exist in this language: fall back to the member's
+    // default voice for that language and say so in the response.
+    if (requestedMode !== "default" && !voiceRes.data) {
+      voiceRes = await supabase.from("authority_voice_profiles").select("*")
+        .eq("user_id", effectiveUserId).eq("language", effectiveLanguage).eq("mode_key", "default").maybeSingle();
+      modeFallback = true;
+    }
 
     // A voice profile describes HOW the member writes. Even if an older row
     // still carries a figure or an ending mandate, it is scrubbed here before
@@ -1666,6 +1683,8 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         requested_ending: chosenEnding,
         evidence_has_number: evidenceHasNumber,
         guarded_after_rotation: guardedAfterRotation,
+        mode_key: requestedMode,
+        ...(modeFallback ? { mode_fallback: true } : {}),
         chosen_opening: chosenOpening,
         // The rotation, handed back so the caller can store it and so siblings
         // in the same batch can be told what not to repeat. All three levels

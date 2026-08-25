@@ -8,6 +8,7 @@ import { READINESS_LABEL, READINESS_ORDER, type Readiness } from "@/lib/voiceOve
 import {
   BLUE, CYAN, INK, LINE, MUTED, RADIUS, SURFACE, TYPE, WHITE, cardStyle, chipStyle, microLabel, monoNum,
 } from "@/components/voice/tokens";
+import InfoTooltip from "@/components/voice/InfoTooltip";
 import type { DnaMode } from "@/lib/voiceDna";
 
 function MiniRail({ readiness }: { readiness: string | null }) {
@@ -22,17 +23,24 @@ function MiniRail({ readiness }: { readiness: string | null }) {
 }
 
 export default function VoiceModes({
-  modes, activeProfileId, busy, onSelect, onCreate,
+  modes, activeProfileId, busy, onSelect, onCreate, onRemove,
 }: {
   modes: DnaMode[];
   activeProfileId: string | null;
   busy: boolean;
   onSelect: (profileId: string) => void;
   onCreate: (key: string) => void;
+  onRemove: (mode: DnaMode) => void;
 }) {
   return (
     <section style={{ marginBlockStart: 16 }}>
-      <div style={microLabel}>Voice modes</div>
+      <div style={{ ...microLabel, display: "flex", alignItems: "center", gap: 6 }}>
+        <span>Voice modes</span>
+        <InfoTooltip
+          term="Voice modes"
+          body="A mode is the same voice, tuned for one job. It shifts a few of your markers — never outside the range your own posts prove — and you pick it in the composer when you write. Your default voice is unchanged."
+        />
+      </div>
       <div className="vd-modes" role="radiogroup" aria-label="Voice modes" style={{ marginBlockStart: 10 }}>
         {modes.map((m) => {
           const set = Boolean(m.profileId);
@@ -70,9 +78,21 @@ export default function VoiceModes({
               {set && <MiniRail readiness={m.readiness} />}
               <p style={{ fontSize: TYPE.small, color: MUTED, lineHeight: 1.5, marginBlockStart: 8, marginBlockEnd: 10 }}>{m.blurb}</p>
               {set ? (
-                <span style={{ ...monoNum, fontSize: TYPE.caption, color: on ? BLUE : MUTED }}>
-                  {on ? "Showing this mode" : "Press to show this mode"}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <span style={{ ...monoNum, fontSize: TYPE.caption, color: on ? BLUE : MUTED }}>
+                    {on ? "Showing this mode" : "Press to show this mode"}
+                  </span>
+                  {m.removable && (
+                    <button
+                      type="button"
+                      className="vd-act"
+                      disabled={busy}
+                      onClick={(e) => { e.stopPropagation(); onRemove(m); }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
               ) : (
                 <button
                   type="button"

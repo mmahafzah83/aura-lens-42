@@ -229,7 +229,8 @@ Deno.serve(async (req) => {
       admin.from("strategic_signals").select("theme_tags").eq("user_id", targetUserId).limit(500),
       admin.from("authority_voice_profiles")
         .select("tone, preferred_structures, storytelling_patterns")
-        .eq("user_id", targetUserId).maybeSingle(),
+        .eq("user_id", targetUserId).eq("mode_key", "default")
+        .order("is_primary", { ascending: false }).limit(1).maybeSingle(),
     ]);
 
     // ONE predicate for "the member wrote this", imported, never copied.

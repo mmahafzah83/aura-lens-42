@@ -124,6 +124,7 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
       .select("example_posts")
       .eq("user_id", userId)
       .eq("is_primary", true)
+      .eq("mode_key", "default")
       .maybeSingle(),
     // Engagement is known, the words were never saved. Aura can see these did
     // well and cannot read why.

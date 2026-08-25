@@ -149,6 +149,7 @@ export async function voice_fidelity(sample_text: string, user_id: string, profi
       .from("authority_voice_profiles")
       .select("id")
       .eq("user_id", user_id)
+      .eq("mode_key", "default")
       .order("is_primary", { ascending: false })
       .limit(1)
       .maybeSingle();

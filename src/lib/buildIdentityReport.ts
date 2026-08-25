@@ -262,6 +262,7 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
       .select("tone, preferred_structures, storytelling_patterns, vocabulary_preferences")
       .eq("user_id", userId)
       .eq("is_primary", true)
+      .eq("mode_key", "default")
       .maybeSingle(),
     // The LinkedIn address lives on linkedin_connections — the profile columns are deprecated.
     supabase.from("linkedin_connections").select("handle").eq("user_id", userId).maybeSingle(),

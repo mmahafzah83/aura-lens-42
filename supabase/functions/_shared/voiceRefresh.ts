@@ -160,6 +160,9 @@ export async function refreshVoiceProfiles(db: any, userId: string): Promise<Ref
       .select("id, example_posts, vocabulary_preferences, is_primary")
       .eq("user_id", userId)
       .eq("language", lang)
+      // The member's voice for this language is the default row; modes are
+      // separate rows and are never refreshed from measurement.
+      .eq("mode_key", "default")
       .order("is_primary", { ascending: false })
       .limit(1)
       .maybeSingle();

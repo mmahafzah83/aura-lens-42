@@ -224,6 +224,7 @@ async function readContext(db: any, signalId: string, userId: string): Promise<S
       "language, is_primary, tone, preferred_structures, storytelling_patterns, example_posts, vocabulary_preferences",
     )
     .eq("user_id", userId)
+    .eq("mode_key", "default")
     .order("is_primary", { ascending: false });
 
   const { data: profile } = await db

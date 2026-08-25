@@ -290,6 +290,9 @@ Deno.serve(async (req) => {
             .select("id, example_posts")
             .eq("user_id", user_id)
             .eq("language", L)
+            // "this member's voice for this language" is the default row.
+            // Modes are separate rows and must never be distilled into.
+            .eq("mode_key", "default")
             .maybeSingle();
           const existingSamples: any[] = Array.isArray(rowL?.example_posts)
             ? (rowL!.example_posts as any[])
@@ -306,7 +309,8 @@ Deno.serve(async (req) => {
               .from("authority_voice_profiles")
               .update({ example_posts: trimmed, updated_at: new Date().toISOString() })
               .eq("user_id", user_id)
-              .eq("language", L);
+              .eq("language", L)
+              .eq("mode_key", "default");
             if (upErr) console.warn(`voice-distill[${L}]: store_samples update failed`, upErr.message);
           } else {
             // Mirror the distill-target insert rules: is_primary only when the
@@ -323,6 +327,7 @@ Deno.serve(async (req) => {
               .insert({
                 user_id,
                 language: L,
+                mode_key: "default",
                 is_primary: !primaryCheck,
                 example_posts: trimmed,
                 updated_at: new Date().toISOString(),
@@ -384,6 +389,7 @@ Deno.serve(async (req) => {
           .select("example_posts")
           .eq("user_id", user_id)
           .eq("language", requestedLang)
+          .eq("mode_key", "default")
           .maybeSingle();
         const examples: any[] = Array.isArray(profL?.example_posts) ? profL!.example_posts : [];
         const seen = new Set<string>();
@@ -428,6 +434,7 @@ Deno.serve(async (req) => {
             .select("example_posts")
             .eq("user_id", user_id)
             .eq("language", L)
+            .eq("mode_key", "default")
             .maybeSingle();
           const examples: any[] = Array.isArray(profL?.example_posts) ? profL!.example_posts : [];
           const exampleTexts: string[] = examples
@@ -611,6 +618,7 @@ Deno.serve(async (req) => {
         .select("id, tone, vocabulary_preferences, allowed_endings")
         .eq("user_id", user_id)
         .eq("language", L)
+        .eq("mode_key", "default")
         .maybeSingle();
 
       if (existErr) {
@@ -720,7 +728,8 @@ Deno.serve(async (req) => {
           .from("authority_voice_profiles")
           .update(writePayload)
           .eq("user_id", user_id)
-          .eq("language", L);
+          .eq("language", L)
+          .eq("mode_key", "default");
         if (updErr) {
           console.error(`voice-distill[${L}]: update failed`, updErr);
           try {
@@ -740,7 +749,7 @@ Deno.serve(async (req) => {
       } else {
         const { error: insErr } = await supabase
           .from("authority_voice_profiles")
-          .insert({ user_id, language: L, is_primary: false, ...writePayload });
+          .insert({ user_id, language: L, mode_key: "default", is_primary: false, ...writePayload });
         if (insErr) {
           console.error(`voice-distill[${L}]: insert failed`, insErr);
           try {
@@ -808,7 +817,9 @@ Deno.serve(async (req) => {
         .from("authority_voice_profiles")
         .update({ is_primary: true })
         .eq("user_id", user_id)
-        .eq("language", dominant);
+        .eq("language", dominant)
+        // Only the default row may be primary; a mode is never the member's voice.
+        .eq("mode_key", "default");
       if (promErr) {
         console.error("voice-distill: promote-dominant failed", promErr);
       }

@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
       .from("authority_voice_profiles")
       .select("id")
       .eq("user_id", userId)
+      .eq("mode_key", "default")
       .order("is_primary", { ascending: false })
       .order("created_at", { ascending: true })
       .limit(1)
