@@ -143,3 +143,49 @@ export const optionLabel = (opts: VoiceOption[], id: string): string =>
 
 export const optionExample = (opts: VoiceOption[], id: string): string =>
   opts.find((o) => o.id === id)?.example ?? "";
+
+/**
+ * THE OPENER AND CLOSER ROUND-TRIP — one dictionary, both directions.
+ *
+ * The screen and the database used two different words for the same style:
+ * a member's saved `story` could never match the UI's `short_story`, and a
+ * `hanging_line` could never match `suspended`. Every read and every write in
+ * the variation section goes through this map; there is no second copy.
+ *
+ * `other` is the bucket for posts Aura could not classify. It is not a style a
+ * member can choose, so both directions reject it.
+ */
+const OPENER_STORED_BY_UI: Record<string, string> = { short_story: "story" };
+const OPENER_UI_BY_STORED: Record<string, string> = { story: "short_story" };
+const ENDING_STORED_BY_UI: Record<string, string> = { suspended: "hanging_line", cta: "signature" };
+const ENDING_UI_BY_STORED: Record<string, string> = { hanging_line: "suspended", signature: "cta" };
+
+const clean = (v: unknown) => String(v ?? "").trim();
+
+/** UI opener key → the key stored in `vocabulary_preferences.prefs.openings`. */
+export function storedOpenerKey(uiKey: string): string | null {
+  const k = clean(uiKey);
+  if (!k || k === "other") return null;
+  return OPENER_STORED_BY_UI[k] ?? k;
+}
+
+/** Stored opener key → the key this screen shows. */
+export function uiOpenerKey(storedKey: string): string | null {
+  const k = clean(storedKey);
+  if (!k || k === "other") return null;
+  return OPENER_UI_BY_STORED[k] ?? k;
+}
+
+/** UI ending key → the key stored in `allowed_endings`. */
+export function storedEndingKey(uiKey: string): string | null {
+  const k = clean(uiKey);
+  if (!k || k === "other") return null;
+  return ENDING_STORED_BY_UI[k] ?? k;
+}
+
+/** Stored ending key → the key this screen shows. */
+export function uiEndingKey(storedKey: string): string | null {
+  const k = clean(storedKey);
+  if (!k || k === "other") return null;
+  return ENDING_UI_BY_STORED[k] ?? k;
+}
