@@ -1031,7 +1031,13 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       // One place the model is called, so a corrective regeneration runs the
       // exact same prompt with an added directive.
       const MODEL_USED = "claude-sonnet-4-5-20250929";
-      const callModel = async (extraDirective = ""): Promise<string | null> => {
+      const baseMaxTokens = memberPrefs.length_max
+        ? Math.max(512, Math.min(4096, Math.ceil(memberPrefs.length_max / 3) + 256))
+        : 4096;
+      const callModel = async (
+        extraDirective = "",
+        maxTokensOverride?: number,
+      ): Promise<{ text: string; stop_reason: string | null } | null> => {
         const response = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: {
@@ -1042,9 +1048,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
           body: JSON.stringify({
             model: MODEL_USED,
             // A member-set length ceiling also sizes the call (~4 chars/token).
-            max_tokens: memberPrefs.length_max
-              ? Math.max(512, Math.min(4096, Math.ceil(memberPrefs.length_max / 3) + 256))
-              : 4096,
+            max_tokens: maxTokensOverride ?? baseMaxTokens,
             system: systemPrompt + (extraDirective ? `\n\n${extraDirective}` : ""),
             messages: [
               { role: "user", content: userMessageContent },
@@ -1067,8 +1071,81 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
             output_tokens: json.usage?.output_tokens,
           }));
         } catch (_) { /* non-blocking */ }
-        return (json.content || []).map((c: any) => c.text || "").join("") || "";
+        return {
+          text: (json.content || []).map((c: any) => c.text || "").join("") || "",
+          stop_reason: typeof json.stop_reason === "string" ? json.stop_reason : null,
+        };
       };
+
+      /**
+       * Law #85 — the output contract. The model marks the finished post with
+       * sentinels; anything outside them is the model talking to itself and is
+       * never text a member sees. A missing CLOSE also proves truncation.
+       */
+      type Extracted = { ok: true; text: string } | { ok: false; reason: "no_open" | "no_close" | "empty" };
+      const OPEN = "<<<POST>>>", CLOSE = "<<<END>>>";
+      const extractPost = (raw: string): Extracted => {
+        if (!raw || !raw.trim()) return { ok: false, reason: "empty" };
+        const o = raw.indexOf(OPEN);
+        if (o === -1) return { ok: false, reason: "no_open" };
+        const c = raw.indexOf(CLOSE, o + OPEN.length);
+        if (c === -1) return { ok: false, reason: "no_close" };
+        const t = raw.slice(o + OPEN.length, c).trim();
+        return t.length > 0 ? { ok: true, text: t } : { ok: false, reason: "empty" };
+      };
+
+      type ContractReason = "no_open" | "no_close" | "empty" | "max_tokens";
+      const HARDENED_REMINDER =
+        "Your previous response broke the output format. Emit ONLY the post between <<<POST>>> and <<<END>>>.";
+
+      const logContractViolation = async (reason: string, raw: string) => {
+        try {
+          const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+          await admin.from("output_leak_log").insert({
+            user_id: effectiveUserId,
+            function_name: "generate-authority-content",
+            language: effectiveLanguage,
+            leak_stage: reason,
+            first_lines: (raw || "").slice(0, 300),
+          });
+        } catch (_) { /* never block */ }
+      };
+
+      const judge = (
+        res: { text: string; stop_reason: string | null },
+      ): { ok: true; text: string } | { ok: false; reason: ContractReason } => {
+        // Truncation is a contract violation regardless of sentinels.
+        if (res.stop_reason === "max_tokens") return { ok: false, reason: "max_tokens" };
+        const ex = extractPost(res.text);
+        return ex.ok ? { ok: true, text: ex.text } : { ok: false, reason: ex.reason };
+      };
+
+      /**
+       * Every model call goes through here. Returns null only on transport
+       * failure (unchanged behaviour); otherwise a contract verdict after at
+       * most one hardened retry.
+       */
+      const callContract = async (
+        extraDirective = "",
+      ): Promise<{ ok: true; text: string } | { ok: false; reason: ContractReason; raw: string } | null> => {
+        const first = await callModel(extraDirective);
+        if (first === null) return null;
+        const v1 = judge(first);
+        if (v1.ok) return v1;
+        console.warn("[generate-authority-content] output contract violation —", v1.reason);
+        const retryTokens = v1.reason === "max_tokens"
+          ? Math.min(8192, baseMaxTokens * 2)
+          : undefined;
+        const second = await callModel(
+          `${extraDirective ? `${extraDirective}\n\n` : ""}${HARDENED_REMINDER}`,
+          retryTokens,
+        );
+        if (second === null) return { ok: false, reason: v1.reason, raw: first.text };
+        const v2 = judge(second);
+        if (v2.ok) return v2;
+        return { ok: false, reason: v2.reason, raw: second.text };
+      };
+
 
       const firstRes = await callContract();
       if (firstRes === null) {
