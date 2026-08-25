@@ -895,11 +895,11 @@ serve(withObserve("generate-authority-content", async (req) => {
         }
         // Arabic-native prompt replaces voice section
         voiceSection = voiceProfile
-          ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile, chosenOpening)
+          ? arabicBase + "\n\n" + buildArabicVoiceContext(voiceProfile, chosenOpening, evidenceHasNumber)
           : arabicBase;
         // If a specific framework is selected, use it; otherwise Arabic defaults to PAS/BAB (already in ARABIC_VOICE_PROMPT)
       } else {
-        voiceSection = buildVoiceContext(voiceProfile, chosenOpening);
+        voiceSection = buildVoiceContext(voiceProfile, chosenOpening, evidenceHasNumber);
       }
       voiceSection += recentPatternBlock + distributionBlock;
       // Only rules the member wrote or explicitly accepted. A suggested rule
