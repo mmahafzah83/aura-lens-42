@@ -188,8 +188,64 @@ Deno.serve(async (req) => {
     const rejected = { generated: 0, too_short: 0, wrong_source: 0 };
     const GENERATED_SOURCE = ["aura", "generated"].join("_");
 
+    /** What a member-added paste did: how many passed, how many did not, why. */
+    let adHocReport: { admitted: number; rejected: typeof rejected } | null = null;
+
     if (useAdHoc) {
-      rawPosts = adHocPosts.slice(0, 40).map((t) => ({ post_text: t, engagement_score: null }));
+      /**
+       * A paste is voice evidence ONLY when the caller says plainly that the
+       * member wrote it, and only when it passes the same two checks every
+       * other row passes: the own-writing rule and the minimum length. The old
+       * branch skipped both, which let anything at all become voice evidence.
+       */
+      if (body?.source !== "member_added") {
+        return new Response(
+          JSON.stringify({ error: "unstamped_posts", details: "Pasted posts must be stamped source: 'member_added'." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const admitted: string[] = [];
+      for (const raw of adHocPosts.slice(0, 40)) {
+        const text = String(raw).trim();
+        if (text.length < MIN_EVIDENCE_CHARS) { rejected.too_short += 1; continue; }
+        // The same predicate the corpus uses, run against the row we are about
+        // to write — so nothing can be admitted here that the corpus would refuse.
+        const candidate = {
+          post_text: text,
+          authorship: "user_written",
+          acquisition: "imported",
+          source_type: "manual_url",
+          voice_corpus_status: "included",
+          text_is_snippet: false,
+        };
+        if (!isOwnWriting(candidate)) { rejected.wrong_source += 1; continue; }
+        admitted.push(text);
+      }
+
+      if (admitted.length > 0) {
+        // Stamped so the one corpus rule admits them as the member's own writing.
+        const { error: insErr } = await supabase.from("linkedin_posts").insert(
+          admitted.map((text) => ({
+            user_id,
+            post_text: text,
+            source_type: "manual_url",
+            tracking_status: "manual",
+            authorship: "user_written",
+            acquisition: "imported",
+            made_by: "member",
+            arrived_by: "entered_by_member",
+            confidence: "confirmed",
+            text_is_snippet: false,
+            voice_corpus_status: "included",
+            source_metadata: { added_via: "teach_aura_paste" },
+          })),
+        );
+        if (insErr) console.warn("voice-distill: member-added insert failed", insErr.message);
+      }
+
+      adHocReport = { admitted: admitted.length, rejected: { ...rejected } };
+      rawPosts = admitted.map((t) => ({ post_text: t, engagement_score: null }));
+
     } else {
       const { data: posts, error: postsErr } = await supabase
         .from("linkedin_posts")
