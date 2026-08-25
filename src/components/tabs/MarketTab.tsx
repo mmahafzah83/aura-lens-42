@@ -135,9 +135,10 @@ const MarketTab = () => {
       const pillars = pillarInput.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 3);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      await supabase.from("diagnostic_profiles" as any).update({
+      const { error } = await supabase.from("diagnostic_profiles" as any).update({
         brand_pillars: pillars,
       } as any).eq("user_id", session.user.id);
+      if (error) throw error;
       setBrandPillars(pillars);
       setEditingPillars(false);
       toast({ title: "Brand Pillars Updated" });

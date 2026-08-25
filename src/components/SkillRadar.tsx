@@ -148,8 +148,13 @@ const SkillRadar = () => {
 
     for (const pillar of Object.keys(targets)) {
       const hours = targets[pillar] || 100;
-      await (supabase.from("skill_targets" as any) as any).delete().eq("user_id", user.id).eq("pillar", pillar);
-      await (supabase.from("skill_targets" as any) as any).insert({ user_id: user.id, pillar, target_hours: hours });
+      const { error: delErr } = await (supabase.from("skill_targets" as any) as any).delete().eq("user_id", user.id).eq("pillar", pillar);
+      const { error: insErr } = delErr ? { error: delErr } as any : await (supabase.from("skill_targets" as any) as any).insert({ user_id: user.id, pillar, target_hours: hours });
+      if (delErr || insErr) {
+        setSaving(false);
+        toast({ title: "Couldn't save your targets", description: "Please try again.", variant: "destructive" });
+        return;
+      }
     }
 
     toast({ title: "Targets Saved", description: "12-month goals updated." });

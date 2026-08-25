@@ -484,9 +484,10 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate, sect
       };
       if (pillars.length > 0) updatePayload.brand_pillars = pillars;
 
-      await (supabase.from("diagnostic_profiles" as any) as any)
+      const { error: saveErr } = await (supabase.from("diagnostic_profiles" as any) as any)
         .update(updatePayload)
         .eq("user_id", user.id);
+      if (saveErr) throw new Error("We couldn't save your answers. Please try again.");
 
       // Freeze a new report edition. Non-blocking: a failure must never
       // break the user's flow, but capture-report-snapshot logs it.

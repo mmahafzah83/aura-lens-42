@@ -73,16 +73,19 @@ const NpsSurveyModal = () => {
     if (score === null || submitting || !userId) return;
     setSubmitting(true);
     try {
-      await supabase.from("beta_feedback").insert({
+      const { error } = await supabase.from("beta_feedback").insert({
         user_id: userId,
         rating: score,
         message: message.trim() || null,
         page: location.pathname,
         feedback_type: "nps",
       });
+      if (error) { setFailed("We couldn't send that. Please try again."); setSubmitting(false); return; }
+      setFailed(null);
       setThanks(true);
       setTimeout(() => setOpen(false), 2000);
     } catch {
+      setFailed("We couldn't send that. Please try again.");
       setSubmitting(false);
     }
   };

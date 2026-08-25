@@ -481,11 +481,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); return; }
-    await (supabase.from("diagnostic_profiles" as any) as any)
+    const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
       .update({ [field]: editValue }).eq("user_id", user.id);
+    setSaving(false);
+    if (error) { toast.error("We couldn't save that. Please try again."); return; }
     setProfile(prev => prev ? { ...prev, [field]: editValue } : prev);
     setEditingField(null);
-    setSaving(false);
     toast.success("Updated");
   };
 
@@ -502,8 +503,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       const publicUrl = urlData.publicUrl + "?t=" + Date.now();
-      await (supabase.from("diagnostic_profiles" as any) as any)
+      const { error: profErr } = await (supabase.from("diagnostic_profiles" as any) as any)
         .update({ avatar_url: publicUrl }).eq("user_id", user.id);
+      if (profErr) throw profErr;
       setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : prev);
       toast.success("Photo updated");
     } catch (err: any) {
