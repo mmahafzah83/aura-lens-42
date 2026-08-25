@@ -1500,7 +1500,10 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
 
 
       // Law #86 — the number guard runs after rotation/voice rewrites, so the
-      // returned draft is the text that was checked.
+      // returned draft is the text that was checked. The flag is MEASURED: it
+      // is set only after the guard has actually read the final text, so a
+      // regression in ordering turns the assertion red on its own.
+      let guardedAfterRotation = false;
       content = hygiene(content);
       const finalNumberGuard = stripUnsourcedNumbers(content, groundingString);
       if (finalNumberGuard.removed > 0) {
@@ -1509,6 +1512,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         if (!warnings.includes("unsourced_numbers")) warnings.push("unsourced_numbers");
       }
       unsourced = findUnsourcedNumbers(content, groundingString);
+      guardedAfterRotation = true;
       unsourcedEntities = findUnsourcedEntities(content, groundingString);
       integrity = checkTextIntegrity(content, isAr);
       if (unsourced.length > 0 && !warnings.includes("unsourced_numbers")) warnings.push("unsourced_numbers");
@@ -1567,9 +1571,14 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
           const scaled = o <= 10 ? Math.round(o * 10) : Math.round(o);
           return Math.min(100, Math.max(0, scaled));
         })(),
-        pass: (gateResult.pass === true) || (gateResult.pass === undefined && (() => { const o=Number(gateResult.overall??0); const scaled=o<=10?Math.round(o*10):Math.round(o); return scaled>=70; })()),
+        // The fallback obeys the judge's own rule: a draft with an unsourced
+        // number never passes on score alone.
+        pass: (gateResult.pass === true) || (gateResult.pass === undefined && gateResult?.assertions?.grounded_number !== false && (() => { const o=Number(gateResult.overall??0); const scaled=o<=10?Math.round(o*10):Math.round(o); return scaled>=70; })()),
         assertions: gateResult.assertions || null,
         grounded_number: gateResult.assertions?.grounded_number ?? null,
+        // Law #86 — carried through so the Advisor can tell "checked and failed"
+        // from "never measured".
+        grounding_available: gateResult.grounding_available ?? null,
         scores: gateResult.scores,
         verdict: gateResult.verdict,
         weaknesses: Array.isArray(gateResult.weaknesses) ? gateResult.weaknesses : [],
@@ -1656,7 +1665,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         hook_style: hookStyleOf(content),
         requested_ending: chosenEnding,
         evidence_has_number: evidenceHasNumber,
-        guarded_after_rotation: true,
+        guarded_after_rotation: guardedAfterRotation,
         chosen_opening: chosenOpening,
         // The rotation, handed back so the caller can store it and so siblings
         // in the same batch can be told what not to repeat. All three levels

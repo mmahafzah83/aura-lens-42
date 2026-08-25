@@ -1290,7 +1290,17 @@ export default function StudioPanel({
   }, [signalPrefill, onSignalPrefillConsumed, startNewPiece]);
 
   /* ---------- step 2: the words ----------------------------------- */
-  const generate = useCallback(async (picked?: Choice, langOverride?: Lang, angle?: string) => {
+  /**
+   * REFINE IS NOT REGENERATION (Law #86). When `refine` is supplied the request
+   * carries the member's live editor text plus a rewrite instruction; the angle
+   * parameter — and its "Write from THIS angle only" framing — is never used.
+   */
+  const generate = useCallback(async (
+    picked?: Choice,
+    langOverride?: Lang,
+    angle?: string,
+    refine?: { instruction: string; draft: string },
+  ) => {
     const target = picked ?? choice;
     if (!target) return;
     const runId = ++genRunId.current;
@@ -1362,9 +1372,15 @@ export default function StudioPanel({
           context: target.insight || "",
           language: useLang,
           signal_id: target.id || undefined,
-          ...(angle && angle.trim()
-            ? { extra_instruction: `Write from THIS angle only: ${angle.trim()}` }
-            : {}),
+          // The refine path rewrites the draft in place; it never re-topics it.
+          ...(refine && refine.instruction.trim() && refine.draft.trim()
+            ? {
+              rewrite_instruction: refine.instruction.trim(),
+              current_draft: refine.draft,
+            }
+            : (angle && angle.trim()
+              ? { extra_instruction: `Write from THIS angle only: ${angle.trim()}` }
+              : {})),
           stream: false,
         }),
       });
@@ -2491,7 +2507,7 @@ export default function StudioPanel({
             const ownWords =
               content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
             if (ownWords) { setAskRefine(directive); return; }
-            void generate(undefined, undefined, directive);
+            void generate(undefined, undefined, undefined, { instruction: directive, draft: content });
           }}
           onUseOpening={(line) => {
             const lines = content.split("\n");
@@ -2515,7 +2531,7 @@ export default function StudioPanel({
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <ButtonPrimary
               onClick={() => {
-                void generate(undefined, undefined, askRefine);
+                void generate(undefined, undefined, undefined, { instruction: askRefine, draft: content });
                 setAskRefine(null);
               }}
               style={{ minHeight: 44 }}
