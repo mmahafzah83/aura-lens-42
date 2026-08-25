@@ -111,12 +111,13 @@ const STATES: { title: string; model: VoiceOverviewModel }[] = [
 
 /* ── Voice DNA states ────────────────────────────────────────────────────── */
 const DNA_EMPTY: VoiceDnaModel = {
-  hasProfile: false, activeProfileId: null, traits: [], modes: [], rules: [], suggestions: [],
+  hasProfile: false, activeProfileId: null, activeLanguage: null, traits: [], modes: [], rules: [], suggestions: [],
   windowSize: 0, windowClassified: 0, windowDist: {}, endingDist: {}, endingClassified: 0,
   diversity: null, topShare: null, topStyleKey: null, topStyleCount: null,
 };
 
 const DNA_THIN: VoiceDnaModel = {
+  activeLanguage: "en",
   hasProfile: true,
   activeProfileId: "p1",
   traits: [
