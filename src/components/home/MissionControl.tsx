@@ -109,11 +109,11 @@ export default function MissionControl({
   const total = items.length;
 
   return (
-    <section style={{ borderTop: "0.5px solid hsl(var(--border) / 0.5)", paddingTop: 20 }}>
+    <section style={{ borderTop: "1px solid var(--rule-divider)", paddingTop: 20 }}>
       <div className="flex items-baseline justify-between" style={{ marginBottom: 4 }}>
         <span style={{
           fontSize: 11, fontWeight: 500, letterSpacing: "0.04em",
-          color: "hsl(var(--muted-foreground))", textTransform: "uppercase",
+          color: "var(--text-muted)", textTransform: "uppercase",
           display: "inline-flex", alignItems: "center", gap: 6,
         }}>
           This Week's Rhythm
@@ -125,12 +125,12 @@ export default function MissionControl({
           />
         </span>
         {total > 0 && (
-          <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
             {done} of {total}
           </span>
         )}
       </div>
-      <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginBottom: 12, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.5 }}>
         Three habits that compound your presence. Each ticks automatically when you do it.
       </div>
 
@@ -144,16 +144,16 @@ export default function MissionControl({
             return (
               <div
                 key={item.id}
-                className="flex animate-fade-up-in"
+                className="flex animate-fade-up-in v23-tap v23-focus"
                 onClick={clickable ? () => handleNudge(item) : undefined}
                 role={clickable ? "button" : undefined}
                 tabIndex={clickable ? 0 : undefined}
                 style={{
                   gap: 12, padding: "12px 14px",
-                  border: "0.5px solid hsl(var(--border) / 0.5)",
+                  border: "1px solid var(--rule-divider)",
                   borderRadius: 8,
                   alignItems: "flex-start",
-                  background: "hsl(var(--card))",
+                  background: "var(--surface-card)",
                   animationDelay: `${Math.min(i * 60, 480)}ms`,
                   animationFillMode: "backwards",
                   cursor: clickable ? "pointer" : "default",
@@ -163,25 +163,25 @@ export default function MissionControl({
                   aria-label={item.done ? "Completed" : "Pending"}
                   style={{
                     width: 18, height: 18, borderRadius: "50%",
-                    border: item.done ? "0" : "1.5px solid var(--ink-4)",
+                    border: item.done ? "0" : "1.5px solid var(--rule-outer)",
                     background: item.done ? "var(--success)" : "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     flexShrink: 0, marginTop: 1,
                   }}
                 >
-                  {item.done && <Check size={11} color="#fff" strokeWidth={3} />}
+                  {item.done && <Check size={11} color="var(--text-inverse)" strokeWidth={3} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
                     fontSize: 13, fontWeight: 500,
-                    color: item.done ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))",
+                    color: item.done ? "var(--text-muted)" : "var(--text-primary)",
                     textDecoration: item.done ? "line-through" : "none",
                     lineHeight: 1.4,
                   }}>
                     {item.title}
                   </div>
                   <div style={{
-                    fontSize: 11, color: "hsl(var(--muted-foreground))",
+                    fontSize: 11, color: "var(--text-muted)",
                     marginTop: 2, lineHeight: 1.45,
                   }}>
                     {item.description}

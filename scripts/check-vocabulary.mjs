@@ -2,11 +2,18 @@
  * VOCABULARY GATE — fails the build when a member-facing count noun is written
  * by hand instead of coming from the dictionary at src/constants/vocabulary.ts.
  *
- * THE LAW (see vocabulary.ts): capture = rows in `entries`, source = rows in
- * `source_registry` / `unique_orgs`, piece of evidence = rows in
- * `evidence_fragments` / `fragment_count`, signal = rows in
- * `strategic_signals`. "fragment", "theme", "topic", "subject", "claim",
- * "thing", "item" and "reading" are never member-facing nouns for these.
+ * THE LAW (see vocabulary.ts):
+ *   capture = rows in `entries`
+ *   source = rows in `source_registry`, or `strategic_signals.unique_orgs`
+ *            when scoped to one signal
+ *   piece of evidence = rows in `evidence_fragments`, or
+ *                       `strategic_signals.fragment_count` for one signal
+ *   signal = rows in `strategic_signals`
+ *   page = rows in `agent_findings` (pages Aura read overnight)
+ *   draft = draft rows in `linkedin_posts` / `content_items`
+ *   post = rows in `post_provenance` (what the member published)
+ * "fragment", "theme", "topic", "subject", "claim", "thing", "item" and
+ * "reading" are never member-facing nouns for these.
  *
  * WHAT IT FLAGS
  *   1. A count noun sitting next to a number — an interpolation (`${...}` /
@@ -41,7 +48,7 @@ import { join, relative } from "node:path";
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
 
-/** Banned member-facing nouns, plus the four legitimate ones (which still may
+/** Banned member-facing nouns, plus the seven legitimate ones (which still may
  *  not be hand-written next to a number). */
 const NOUNS_EN = [
   "fragment", "fragments",
@@ -208,30 +215,51 @@ const LATER_ROUNDS = [
   "src/pages/LandingV2.tsx",
   "src/pages/TrendDetail.tsx",
   "src/utils/",
-  // Surfaced by the three NEW nouns (draft / post / page) added this round.
-  // Every one is a real hit in a surface outside Home — voice, settings, market,
-  // widgets, import. Reported every run, migrated in a later round.
-  "src/components/settings/",
-  "src/components/voice/",
-  "src/components/widgets/",
-  "src/components/tabs/",
-  "src/lib/",
   "src/pages/Assessment.tsx",
   "src/pages/LinkedInImport.tsx",
 ];
 
-/** Single-file surfaces outside this round (flat components directory). */
-const LATER_FILES_PREFIX = "src/components/";
+/** Exact files outside this round. No parent directory is exempted. */
 const LATER_FILES = [
-  "AccountIntelligence.tsx", "AuthorityMomentumMap.tsx", "BrandAssessmentModal.tsx",
-  "KnowledgeIntelligenceEngine.tsx", "LinkedInConnector.tsx", "LinkedInExpertAdvisor.tsx",
-  "LinkedInProfileAnalyzer.tsx", "MilestonesSection.tsx", "ReportDocument.tsx",
-  "SignalExplorer.tsx", "SignalGraph.tsx", "SignalsRadar.tsx",
-  "StrategicEvolutionMap.tsx", "TierCeremonyModal.tsx", "AuditResultsView.tsx",
+  "src/components/AccountIntelligence.tsx",
+  "src/components/AuthorityMomentumMap.tsx",
+  "src/components/BrandAssessmentModal.tsx",
+  "src/components/KnowledgeIntelligenceEngine.tsx",
+  "src/components/LinkedInConnector.tsx",
+  "src/components/LinkedInExpertAdvisor.tsx",
+  "src/components/LinkedInProfileAnalyzer.tsx",
+  "src/components/MilestonesSection.tsx",
+  "src/components/ReportDocument.tsx",
+  "src/components/SignalExplorer.tsx",
+  "src/components/SignalGraph.tsx",
+  "src/components/SignalsRadar.tsx",
+  "src/components/StrategicEvolutionMap.tsx",
+  "src/components/TierCeremonyModal.tsx",
+  "src/components/AuditResultsView.tsx",
   // draft / post / page nouns, out of this round:
-  "DocumentUpload.tsx", "LinkedInDraftPanel.tsx", "LinkedInImportCard.tsx",
-  "VoiceEngineSection.tsx",
-].map((f) => LATER_FILES_PREFIX + f);
+  "src/components/DocumentUpload.tsx",
+  "src/components/LinkedInDraftPanel.tsx",
+  "src/components/LinkedInImportCard.tsx",
+  "src/components/VoiceEngineSection.tsx",
+  // Exact failures exposed when the five broad directory exemptions were removed.
+  "src/components/settings/LinkedInAddressCard.tsx",
+  "src/components/settings/YourLinkedInCard.tsx",
+  "src/components/tabs/MarketTab.tsx",
+  "src/components/tabs/SourcesSubTab.tsx",
+  "src/components/voice/SpectrumRow.tsx",
+  "src/components/voice/TeachAura.tsx",
+  "src/components/voice/TeachAuraCoverage.tsx",
+  "src/components/voice/TeachAuraReview.tsx",
+  "src/components/voice/VariationEngine.tsx",
+  "src/components/voice/WhatWorked.tsx",
+  "src/components/voice/YourVoice.tsx",
+  "src/components/widgets/WidgetCards.tsx",
+  "src/lib/marketRead.ts",
+  "src/lib/postProof.ts",
+  "src/lib/publishFailure.ts",
+  "src/lib/voiceOutcomes.ts",
+  "src/lib/voiceOverview.ts",
+];
 
 
 const SKIP_DIRS = new Set(["__tests__", "__fixtures__", "node_modules"]);

@@ -68,7 +68,7 @@ export function buildShelf(
       title: "Your widgets",
       // `drafts_total` — draft rows. The dictionary owns that noun too.
       fact: widgetsOn > 0
-        ? `${widgetsOn} number${widgetsOn === 1 ? "" : "s"} on the shelf${drafts ? ` · ${nDrafts(drafts, "en")} waiting` : ""}`
+        ? `${widgetsOn} pinned${drafts ? ` · ${nDrafts(drafts, "en")} waiting` : ""}`
         : "Nothing pinned yet. Choose the numbers you want to watch.",
     },
   ];
@@ -85,7 +85,7 @@ export const MovesCard: React.FC<{ moves: HomeMove[]; onGo: (route: string) => v
     {moves.length === 0 && (
       <div style={{ padding: "18px 20px", display: "grid", gap: 6 }}>
         <Body>Nothing worth your time today.</Body>
-        <Muted>Keep one thing you read and Aura writes tomorrow's list from it.</Muted>
+        <Muted>Keep something you read and Aura writes tomorrow's list from it.</Muted>
       </div>
     )}
     {moves.map((m, i) => (
