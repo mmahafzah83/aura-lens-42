@@ -1368,6 +1368,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <BrandReportSection
           results={profile?.brand_assessment_results}
           hasAssessment={!!profile?.brand_assessment_completed_at}
+          assessedAt={profile?.brand_assessment_completed_at}
           onCompleteAssessment={() => setBrandOpen(true)}
         />
 

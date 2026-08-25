@@ -360,6 +360,12 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
                       ))}
                     </ul>
                   ) : null}
+
+                  {b.id === "topics" ? (
+                    <p style={{ margin: "12px 0 0", fontFamily: MONO, fontSize: 11, letterSpacing: "0.06em", color: INK3 }}>
+                      {madeOn}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
             </div>
