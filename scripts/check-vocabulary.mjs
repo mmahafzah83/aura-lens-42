@@ -144,6 +144,37 @@ const NOUNS_AR = [
 ];
 
 
+/** BANNED PHRASES — member-facing marketing language the project does not use.
+ *  "Thought leadership" and its relatives describe a posture, not work; the
+ *  voice surfaces say "Ideas worth quoting" and "Your voice" instead.
+ *  Enforced on the surfaces this round owns; elsewhere it reports as deferred,
+ *  exactly like the earlier rounds, so the gate can tighten file by file. */
+const BANNED_PHRASES = [
+  "thought leadership",
+  "thought leader",
+  "authority",
+  "personal brand",
+  "trajectory",
+];
+const BANNED_RE = new RegExp(`\\b(?:${BANNED_PHRASES.join("|")})\\b`, "i");
+const BANNED_ENFORCED = [
+  "src/components/voice/",
+  "src/components/studio/",
+  "src/lib/voiceDna.ts",
+  "src/lib/voiceOverview.ts",
+];
+
+/** Only prose counts: a literal with a space in it. `generate-authority-content`
+ *  is an identifier, not a sentence, and is never a hit. */
+function findBannedPhrase(line) {
+  for (const lit of [...literalsOf(line), ...nestedLiteralsOfTemplates(line)]) {
+    if (!/\s/.test(lit)) continue;
+    const m = lit.match(BANNED_RE);
+    if (m) return m[0];
+  }
+  return null;
+}
+
 const AR_LETTER = "\\u0600-\\u06FF";
 /** One boundary-safe alternation covering both scripts. */
 const NOUN =
@@ -434,9 +465,15 @@ export function runVocabularyCheck() {
     const rawLines = raw.split("\n");
     stripped.split("\n").forEach((line, idx) => {
       if (/vocab-ok/.test(rawLines[idx] || "")) return;
-      const match = findHit(line);
+      const banned = findBannedPhrase(line);
+      const match = banned || findHit(line);
       if (!match) return;
-      const hit = { rel, line: idx + 1, text: (rawLines[idx] || "").trim().slice(0, 160), match };
+      const hit = { rel, line: idx + 1, text: (rawLines[idx] || "").trim().slice(0, 160), match, banned: Boolean(banned) };
+      if (banned) {
+        if (BANNED_ENFORCED.some((p) => rel.startsWith(p))) hits.push(hit);
+        else deferred.push(hit);
+        return;
+      }
       const later = ROUND_2B.some((p) => rel.startsWith(p))
         || LATER_ROUNDS.some((p) => rel.startsWith(p))
         || LATER_FILES.includes(rel);
@@ -447,7 +484,9 @@ export function runVocabularyCheck() {
   return { hits, deferred, twin: checkTwin() };
 }
 
-const say = (h) => `  ${h.rel}:${h.line}\n    ${h.text}\n    ↳ hand-written count noun: "${h.match}" — use the formatter from src/constants/vocabulary.ts`;
+const say = (h) => h.banned
+  ? `  ${h.rel}:${h.line}\n    ${h.text}\n    \u21b3 banned member-facing phrase: "${h.match}"`
+  : `  ${h.rel}:${h.line}\n    ${h.text}\n    ↳ hand-written count noun: "${h.match}" — use the formatter from src/constants/vocabulary.ts`;
 
 /** Report to the console; return the failing hits. Used by the CLI and by the
  *  Vite plugin in vite.config.ts (which throws on a non-empty result). */
