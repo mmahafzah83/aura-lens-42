@@ -66,8 +66,9 @@ export function buildShelf(
     {
       key: "widgets",
       title: "Your widgets",
+      // `drafts_total` — draft rows. The dictionary owns that noun too.
       fact: widgetsOn > 0
-        ? `${widgetsOn} number${widgetsOn === 1 ? "" : "s"} on the shelf${drafts ? ` · ${drafts} draft${drafts === 1 ? "" : "s"} waiting` : ""}`
+        ? `${widgetsOn} number${widgetsOn === 1 ? "" : "s"} on the shelf${drafts ? ` · ${nDrafts(drafts, "en")} waiting` : ""}`
         : "Nothing pinned yet. Choose the numbers you want to watch.",
     },
   ];
