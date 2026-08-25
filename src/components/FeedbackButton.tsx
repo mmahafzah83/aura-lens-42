@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { reportIssue } from "@/lib/reportIssue";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +20,7 @@ const FeedbackButton = () => {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [thanks, setThanks] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
@@ -40,27 +41,29 @@ const FeedbackButton = () => {
   const handleSubmit = async () => {
     if (submitting) return;
     setSubmitting(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from("beta_feedback").insert({
-        user_id: user?.id ?? null,
-        rating,
-        message: message.trim() || null,
-        page: location.pathname,
-        feedback_type: "general",
-      } as any);
-      setThanks(true);
-      setTimeout(() => {
-        setOpen(false);
-        setThanks(false);
-        setRating(null);
-        setMessage("");
-      }, 2000);
-    } catch (e) {
-      console.error("feedback submit failed", e);
-    } finally {
-      setSubmitting(false);
+    setFailed(null);
+    // An action that reports success must have verified success: the thank-you
+    // renders only after the function confirms the row landed.
+    const label = rating ? RATINGS.find((r) => r.rating === rating)?.label ?? String(rating) : null;
+    const res = await reportIssue({
+      kind: "feedback",
+      message: [label ? `Rating: ${label}` : null, message.trim() || null]
+        .filter(Boolean)
+        .join("\n") || "(no message)",
+      route: location.pathname,
+    });
+    setSubmitting(false);
+    if (!res.ok) {
+      setFailed("We couldn't send that. Your words are still here — try again.");
+      return;
     }
+    setThanks(true);
+    setTimeout(() => {
+      setOpen(false);
+      setThanks(false);
+      setRating(null);
+      setMessage("");
+    }, 2000);
   };
 
   return createPortal(
@@ -178,6 +181,10 @@ const FeedbackButton = () => {
                   marginBottom: 12,
                 }}
               />
+
+              {failed ? (
+                <p style={{ fontSize: 12, color: "#C0392B", marginBottom: 8 }}>{failed}</p>
+              ) : null}
 
               <Button
                 size="sm"

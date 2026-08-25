@@ -91,9 +91,10 @@ const ReviewQueuePanel = ({ onReviewComplete }: Props) => {
       }
 
       // Mark as reviewed
-      await (supabase.from("discovery_review_queue" as any) as any)
+      const { error: reviewErr } = await (supabase.from("discovery_review_queue" as any) as any)
         .update({ reviewed: true })
         .eq("id", candidate.id);
+      if (reviewErr) throw new Error("We couldn't save that decision. Please try again.");
 
       setCandidates(prev => prev.filter(c => c.id !== candidate.id));
       const actionLabel = action === "approve" ? "Approved" : action === "reject" ? "Rejected" : "Marked external";

@@ -17,7 +17,7 @@ import {
   FONT,
 } from "@/components/report/AuraPaper";
 import { AuraLogo } from "@/components/brand/AuraLogo";
-import type { BrandPaper } from "@/lib/buildBrandPaper";
+import { normaliseBrandPaper, type BrandPaper } from "@/lib/buildBrandPaper";
 
 const SHEET_W = 794;
 const SHEET_H = 1123;
@@ -675,7 +675,7 @@ function ClosingSheet({ bp, n, total, stats }: {
 
 // ── Root ───────────────────────────────────────────────────────────────
 export default function BrandPaperDocument({
-  paper,
+  paper: rawPaper,
   showClosing = true,
   stats = null,
 }: {
@@ -685,6 +685,9 @@ export default function BrandPaperDocument({
   /** Real counts from the snapshot's footprint — never invented. */
   stats?: PaperStats | null;
 }) {
+  // Frozen snapshots can predate any field on BrandPaper — normalise first so a
+  // missing array can never throw mid-render and blank "What you can show".
+  const paper = normaliseBrandPaper(rawPaper);
   const hasVoice = voiceSheetHasContent(paper);
   // A findings sheet with no findings is dropped, so the sheet count follows.
   const hasFindings = buildFindings(paper).length > 0;

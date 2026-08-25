@@ -127,13 +127,20 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null, hide
     const updated = { ...identity, [key]: editItems };
     setIdentity(updated);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ identity_intelligence: updated })
-        .eq("user_id", user.id);
+    if (!user) {
+      setSaving(false);
+      toast({ title: "Couldn't save", description: "Please sign in again.", variant: "destructive" });
+      return;
+    }
+    const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
+      .update({ identity_intelligence: updated })
+      .eq("user_id", user.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Couldn't save", description: "Please try again.", variant: "destructive" });
+      return;
     }
     setEditing(null);
-    setSaving(false);
     toast({ title: "Saved" });
   };
 

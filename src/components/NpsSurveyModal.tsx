@@ -28,6 +28,7 @@ const NpsSurveyModal = () => {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [thanks, setThanks] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
@@ -73,16 +74,19 @@ const NpsSurveyModal = () => {
     if (score === null || submitting || !userId) return;
     setSubmitting(true);
     try {
-      await supabase.from("beta_feedback").insert({
+      const { error } = await supabase.from("beta_feedback").insert({
         user_id: userId,
         rating: score,
         message: message.trim() || null,
         page: location.pathname,
         feedback_type: "nps",
       });
+      if (error) { setFailed("We couldn't send that. Please try again."); setSubmitting(false); return; }
+      setFailed(null);
       setThanks(true);
       setTimeout(() => setOpen(false), 2000);
     } catch {
+      setFailed("We couldn't send that. Please try again.");
       setSubmitting(false);
     }
   };
@@ -142,6 +146,10 @@ const NpsSurveyModal = () => {
             <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0, marginBottom: 18 }}>
               How likely are you to recommend Aura to a colleague?
             </p>
+
+            {failed ? (
+              <p style={{ fontSize: 12, color: "#C0392B", margin: "0 0 12px" }}>{failed}</p>
+            ) : null}
 
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 18 }}>
               {Array.from({ length: 11 }, (_, n) => {

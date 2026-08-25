@@ -161,13 +161,14 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
         setInterpretation(text);
 
         // Save to DB
-        await (supabase.from("diagnostic_profiles" as any) as any)
+        const { error: saveErr } = await (supabase.from("diagnostic_profiles" as any) as any)
           .update({
             audit_results: scores,
             audit_interpretation: text,
             audit_completed_at: new Date().toISOString(),
           })
           .eq("user_id", session.user.id);
+        if (saveErr) throw new Error("We couldn't save your results. Please try again.");
       } catch (e: any) {
         console.error("AI interpretation error:", e);
         toast({ title: "Analysis error", description: e.message, variant: "destructive" });
