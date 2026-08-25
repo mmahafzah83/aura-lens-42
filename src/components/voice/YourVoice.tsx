@@ -19,6 +19,8 @@ import VoiceRules from "@/components/voice/VoiceRules";
 import VariationEngine from "@/components/voice/VariationEngine";
 import WhatWorked from "@/components/voice/WhatWorked";
 import InfoTooltip from "@/components/voice/InfoTooltip";
+import CollapseBlock, { CollapseStyles, loadCollapseState, saveCollapseState } from "@/components/common/CollapseBlock";
+
 import {
   AMBER_TEXT, BLUE, CYAN, CYAN_TEXT, GREEN, INK, LINE, MUTED, NIGHT, NIGHT_LINE, NIGHT_MUTED,
   RADIUS, RED, SURFACE, TYPE, WHITE, cardStyle, ghostButton, microLabel, monoNum, primaryButton,
