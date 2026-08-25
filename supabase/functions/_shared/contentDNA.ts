@@ -462,7 +462,7 @@ export function opensOnBannedWord(text: string): boolean {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2b. THE SELECTOR — rotation on THREE levels, and the voice override.
+// 2b. THE SELECTOR — rotation on THREE levels, inside the voice's subset.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface PastShape {
@@ -474,45 +474,200 @@ export interface PastShape {
   opening?: string | null;
 }
 
+/** The range rotation is allowed to cycle through. Never narrower than three. */
+export interface ShapeSubset {
+  moves: readonly MoveId[];
+  opens: readonly OpenType[];
+  lands: readonly LandType[];
+}
+
 export interface ChosenShape {
   move: MoveId;
   beats: readonly MoveBeat[];
   openType: OpenType;
   landType: LandType;
-  /** Which rules actually decided this shape — logged, and useful in tests. */
+  /** Whether the subset came from a learned voice or is the full table. */
   basis: "voice" | "rotation";
+  subset: ShapeSubset;
   avoidOpenTypes: (OpenType | null)[];
   avoidLandTypes: (LandType | null)[];
   avoidOpeningTexts: string[];
 }
 
+/** The full tables — the subset used when nothing is known about the member. */
+export const FULL_SUBSET: ShapeSubset = {
+  moves: MOVE_IDS,
+  opens: OPEN_TYPES,
+  lands: LAND_TYPES,
+};
+
+/** How close two moves are: shared beats in the same position. Used to widen. */
+function beatAffinity(a: MoveId, b: MoveId): number {
+  const x = MOVES[a].beats;
+  const y = MOVES[b].beats;
+  let n = 0;
+  for (let i = 0; i < Math.min(x.length, y.length); i++) if (x[i] === y[i]) n++;
+  return n;
+}
+
+export interface SubsetDerivation {
+  subset: ShapeSubset;
+  basis: "voice" | "rotation";
+  /** True when the derivation had to be widened to reach the floor of three. */
+  widened: boolean;
+  /** Human-readable, logged by the caller. Empty when nothing was widened. */
+  log: string;
+}
+
 /**
- * `past[0]` is the most recent shape; this run's siblings come first, then
- * history. `hasVoice` is the switch described at the top of this file:
+ * Read the member's in-voice range off their voice profile. The three arrays may
+ * sit on the row itself or inside `preferred_structures` (JSONB). Anything that
+ * names a move by label, id or alias resolves through `resolveMove`, so a
+ * distilled voice that says "teardown of one case" still lands on a real move.
  *
- *   hasVoice === true  → the voice decides. Only L1's no-immediate-repeat guard
- *                        survives (do not use the same MOVE twice in a row).
- *   hasVoice === false → the full ladder:
- *                        L1 MOVE       — not in the last TWO shapes
- *                        L2 BEAT ORDER — never the same beats array as the
- *                                        immediately previous shape; re-select
- *                                        at L1 if it collides
- *                        L3 OPEN/LAND  — OPEN not in the last THREE; first six
- *                                        words not matching any of the last FIVE
+ * GUARD AGAINST COLLAPSE: fewer than three moves is widened to three with the
+ * nearest-adjacent moves from the MOVES table, and the widening is logged.
  */
-export function selectShape(opts: {
-  hasVoice: boolean;
-  past: readonly PastShape[];
-  seed: number;
-  /** The member's observed distribution, when a voice profile supplies one. */
-  moveWeights?: Record<string, number>;
-  openWeights?: Record<string, number>;
-  landWeights?: Record<string, number>;
-  /** A move the caller asked for explicitly (a picked framework or post type). */
-  requestedMove?: string | null;
-}): ChosenShape {
-  const past = (opts.past || []).filter(Boolean);
+export function deriveInVoiceSubsets(profile: unknown): SubsetDerivation {
+  const p = (profile ?? null) as Record<string, unknown> | null;
+  if (!p) return { subset: FULL_SUBSET, basis: "rotation", widened: false, log: "" };
+
+  const bag = (key: string): string[] => {
+    const direct = p[key];
+    const nested = (() => {
+      const ps = p.preferred_structures as unknown;
+      if (ps && typeof ps === "object" && !Array.isArray(ps)) return (ps as Record<string, unknown>)[key];
+      return null;
+    })();
+    const out: string[] = [];
+    for (const v of [direct, nested]) {
+      if (Array.isArray(v)) out.push(...v.map((x) => String(x ?? "").trim()).filter(Boolean));
+    }
+    return out;
+  };
+
+  // ── MOVES ────────────────────────────────────────────────────────────────
+  const moveHints = [
+    ...bag("in_voice_moves"),
+    ...(Array.isArray(p.preferred_structures) ? p.preferred_structures.map((s) => String(s ?? "")) : []),
+    ...(Array.isArray(p.storytelling_patterns) ? p.storytelling_patterns.map((s) => String(s ?? "")) : []),
+  ];
+  const moveSet: MoveId[] = [];
+  for (const h of moveHints) {
+    const m = resolveMove(h);
+    if (m && !moveSet.includes(m)) moveSet.push(m);
+  }
+
+  const hasAnyVoice = hasLearnedVoice(profile);
+  if (!hasAnyVoice && moveSet.length === 0) {
+    return { subset: FULL_SUBSET, basis: "rotation", widened: false, log: "" };
+  }
+  if (moveSet.length === 0) {
+    // A voice exists but names no move: the whole table is their range.
+    return { subset: FULL_SUBSET, basis: "voice", widened: false, log: "" };
+  }
+
+  const derivedCount = moveSet.length;
+  let widened = false;
+  while (moveSet.length < 3) {
+    const candidate = MOVE_IDS
+      .filter((m) => !moveSet.includes(m))
+      .sort((a, b) => {
+        const affA = Math.max(...moveSet.map((m) => beatAffinity(a, m)));
+        const affB = Math.max(...moveSet.map((m) => beatAffinity(b, m)));
+        return affB - affA || MOVE_IDS.indexOf(a) - MOVE_IDS.indexOf(b);
+      })[0];
+    if (!candidate) break;
+    moveSet.push(candidate);
+    widened = true;
+  }
+
+  // ── OPEN and LAND ────────────────────────────────────────────────────────
+  const openHints = bag("in_voice_opens");
+  const landHints = bag("in_voice_lands");
+  const asOpen = (s: string): OpenType | null =>
+    (OPEN_TYPES as readonly string[]).includes(s) ? (s as OpenType) : openTypeOfHook(s);
+  const asLand = (s: string): LandType | null =>
+    (LAND_TYPES as readonly string[]).includes(s) ? (s as LandType) : landTypeOfEnding(s);
+
+  const opens: OpenType[] = [];
+  for (const h of openHints) {
+    const o = asOpen(h);
+    if (o && !opens.includes(o)) opens.push(o);
+  }
+  const lands: LandType[] = [];
+  for (const h of landHints) {
+    const l = asLand(h);
+    if (l && !lands.includes(l)) lands.push(l);
+  }
+  // Widen OPEN/LAND to three from what the in-voice moves themselves allow.
+  const moveOpens = [...new Set(moveSet.flatMap((m) => MOVES[m].opens))].filter((o) =>
+    (OPEN_TYPES as readonly string[]).includes(o)
+  ) as OpenType[];
+  const moveLands = [...new Set(moveSet.flatMap((m) => MOVES[m].lands))].filter((l) =>
+    (LAND_TYPES as readonly string[]).includes(l)
+  ) as LandType[];
+  for (const o of [...moveOpens, ...OPEN_TYPES]) {
+    if (opens.length >= 3) break;
+    if (!opens.includes(o)) { opens.push(o); widened = true; }
+  }
+  for (const l of [...moveLands, ...LAND_TYPES]) {
+    if (lands.length >= 3) break;
+    if (!lands.includes(l)) { lands.push(l); widened = true; }
+  }
+
+  const log = widened
+    ? `[voice-subset] widened to floor of three: derived ${derivedCount} move(s) → ` +
+      `moves=[${moveSet.join(", ")}] opens=[${opens.join(", ")}] lands=[${lands.join(", ")}]`
+    : "";
+
+  return {
+    subset: { moves: moveSet, opens, lands },
+    basis: "voice",
+    widened,
+    log,
+  };
+}
+
+/** Least-recently-used first: never seen beats long ago beats used just now. */
+function lruOrder<T extends string>(pool: readonly T[], usedMostRecentFirst: readonly (T | null)[], seed: number): T[] {
+  const recency = (t: T) => {
+    const i = usedMostRecentFirst.findIndex((u) => u === t);
+    return i < 0 ? Number.POSITIVE_INFINITY : i;
+  };
+  const rotated = pool.map((_, i) => pool[(i + (seed % Math.max(1, pool.length))) % pool.length]);
+  return [...rotated].sort((a, b) => recency(b) - recency(a));
+}
+
+/**
+ * ONE code path for voice and no-voice. `history` is the member's recent drafts
+ * (most recent first); `siblings` are the drafts already produced in THIS run —
+ * they are more recent than any history row, so they lead the past. `subset` is
+ * the range rotation may cycle through: the full tables with no voice, the
+ * member's own range with one.
+ *
+ *   L1 MOVE       — not used within the last min(2, subset.moves.length - 1)
+ *                   shapes; least-recently-used inside the subset wins.
+ *   L2 BEAT ORDER — never the same beats array as the immediately previous shape.
+ *   L3 OPEN/LAND  — OPEN not in the last THREE; first six words not matching any
+ *                   of the last FIVE (enforced in the directive and after the
+ *                   fact by the post-generation check).
+ */
+export function selectShape(
+  history: readonly PastShape[],
+  siblings: readonly PastShape[],
+  subset: ShapeSubset = FULL_SUBSET,
+  opts: { seed?: number; requestedMove?: string | null } = {},
+): ChosenShape {
+  const seed = Number.isFinite(Number(opts.seed)) ? Math.abs(Math.floor(Number(opts.seed))) : 0;
+  const past = [...(siblings || []), ...(history || [])].filter(Boolean);
   const pastMoves = past.map((p) => resolveMove(p.move_id ?? null));
+
+  const movePool = (subset.moves?.length ? subset.moves : MOVE_IDS).filter((m) => !!MOVES[m]);
+  const openSubset = (subset.opens?.length ? subset.opens : OPEN_TYPES);
+  const landSubset = (subset.lands?.length ? subset.lands : LAND_TYPES);
+  const isVoice = movePool.length < MOVE_IDS.length || openSubset.length < OPEN_TYPES.length ||
+    landSubset.length < LAND_TYPES.length;
 
   const avoidOpenTypes: (OpenType | null)[] = past.slice(0, 3).map((p) => openTypeOfHook(p.hook_style ?? null));
   const avoidLandTypes: (LandType | null)[] = past.slice(0, 3).map((p) => landTypeOfEnding(p.ending_type ?? null));
@@ -521,58 +676,44 @@ export function selectShape(opts: {
     .map((p) => String(p.opening || ""))
     .filter((t) => firstSixWords(t).length > 0);
 
+  // ── L1: the MOVE — LRU inside the subset, banned window scaled to subset ──
+  const banWindow = Math.max(1, Math.min(2, movePool.length - 1));
+  const banned = pastMoves.slice(0, banWindow).filter(Boolean) as MoveId[];
+  const prevBeats = past[0]?.beats ?? null;
+
   const explicit = resolveMove(opts.requestedMove ?? null);
-
-  // ── L1: the MOVE ──────────────────────────────────────────────────────────
-  const voiceOnlyBan = pastMoves.slice(0, 1).filter(Boolean) as MoveId[];
-  const rotationBan = pastMoves.slice(0, 2).filter(Boolean) as MoveId[];
-  const banned = opts.hasVoice ? voiceOnlyBan : rotationBan;
-
   let move: MoveId;
-  if (explicit && !voiceOnlyBan.includes(explicit)) {
+  if (explicit && movePool.includes(explicit) && explicit !== pastMoves[0]) {
     // A member who asked for a kind of post gets it, unless it repeats the last.
     move = explicit;
   } else {
-    move = rotateType(MOVE_IDS, {
-      avoid: banned,
-      seed: opts.seed,
-      weights: opts.hasVoice ? opts.moveWeights : undefined,
-    });
-  }
-
-  // ── L2: the beat order comes WITH the move ────────────────────────────────
-  // Two consecutive drafts must not march the same way. Re-select at L1 when
-  // the shape collides, walking the table rather than reaching for randomness.
-  const prevBeats = past[0]?.beats ?? null;
-  if (!opts.hasVoice && sameBeats(MOVES[move].beats, prevBeats)) {
-    const pool = MOVE_IDS.filter((m) => !banned.includes(m) && !sameBeats(MOVES[m].beats, prevBeats));
-    if (pool.length) move = pool[opts.seed % pool.length];
+    const ordered = lruOrder(movePool, pastMoves, seed);
+    // L2 folded into L1: walk the LRU order and take the first move that is not
+    // banned and does not march the same beats as the previous shape.
+    move =
+      ordered.find((m) => !banned.includes(m) && !sameBeats(MOVES[m].beats, prevBeats)) ??
+      ordered.find((m) => !banned.includes(m)) ??
+      ordered.find((m) => m !== pastMoves[0]) ??
+      ordered[0];
   }
   const spec = MOVES[move];
 
-  // ── L3: OPEN and LAND, inside what the move allows ────────────────────────
-  const opens = (spec.opens.filter((o) => (OPEN_TYPES as readonly string[]).includes(o)) as OpenType[]);
-  const lands = (spec.lands.filter((l) => (LAND_TYPES as readonly string[]).includes(l)) as LandType[]);
-  const openPool = opens.length ? opens : [...OPEN_TYPES];
-  const landPool = lands.length ? lands : [...LAND_TYPES];
+  // ── L3: OPEN and LAND, inside the subset and inside what the move allows ──
+  const moveOpens = spec.opens.filter((o) => (openSubset as readonly string[]).includes(o)) as OpenType[];
+  const moveLands = spec.lands.filter((l) => (landSubset as readonly string[]).includes(l)) as LandType[];
+  const openPool = moveOpens.length ? moveOpens : [...openSubset];
+  const landPool = moveLands.length ? moveLands : [...landSubset];
 
-  const openType = rotateType(openPool, {
-    avoid: opts.hasVoice ? avoidOpenTypes.slice(0, 1) : avoidOpenTypes,
-    seed: opts.seed,
-    weights: opts.openWeights,
-  });
-  const landType = rotateType(landPool, {
-    avoid: opts.hasVoice ? avoidLandTypes.slice(0, 1) : avoidLandTypes,
-    seed: opts.seed + 7,
-    weights: opts.landWeights,
-  });
+  const openType = rotateType(openPool, { avoid: avoidOpenTypes, seed });
+  const landType = rotateType(landPool, { avoid: avoidLandTypes, seed: seed + 7 });
 
   return {
     move,
     beats: spec.beats,
     openType,
     landType,
-    basis: opts.hasVoice ? "voice" : "rotation",
+    basis: isVoice ? "voice" : "rotation",
+    subset: { moves: movePool, opens: openSubset, lands: landSubset },
     avoidOpenTypes,
     avoidLandTypes,
     avoidOpeningTexts,
@@ -580,14 +721,16 @@ export function selectShape(opts: {
 }
 
 /**
- * Does this member have a learned voice? One definition, used by the selector
- * and by the generator, so "hasVoice" can never mean two different things.
+ * Does this member have a learned voice? One definition, used by the subset
+ * derivation and by the generator, so "voice" can never mean two things.
  */
 export function hasLearnedVoice(profile: unknown): boolean {
   const p = profile as Record<string, unknown> | null | undefined;
   if (!p) return false;
   const filled = (v: unknown) =>
-    (typeof v === "string" && v.trim().length > 0) || (Array.isArray(v) && v.length > 0);
+    (typeof v === "string" && v.trim().length > 0) ||
+    (Array.isArray(v) && v.length > 0) ||
+    (!!v && typeof v === "object" && Object.keys(v as object).length > 0);
   return (
     filled(p.tone) ||
     filled(p.preferred_structures) ||
@@ -595,6 +738,7 @@ export function hasLearnedVoice(profile: unknown): boolean {
     filled(p.example_posts)
   );
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. NUMBER INTEGRITY — the credibility guardrail. NON-NEGOTIABLE.
