@@ -291,9 +291,18 @@ export default function TeachAura({ userId }: { userId: string | null }) {
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
           <div style={{ minWidth: 0, flex: "1 1 260px" }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>LinkedIn — @{model.address.handle}</span>
-              <span style={chipStyle(GREEN, "#EAF6F0", "#BFE3D3")}>Connected</span>
+              <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
+                Your LinkedIn posts — {model.includedCount} counted
+              </span>
+              <span style={{ fontSize: TYPE.body, color: MUTED }}>@{model.address.handle}</span>
+              {model.connectionState === "connected"
+                ? <span style={chipStyle(GREEN, "#EAF6F0", "#BFE3D3")}>Connected</span>
+                : <span style={chipStyle(AMBER_TEXT, "#FBF3E0", "#EBD8A8")}>Needs reconnect</span>}
             </div>
+            <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 0" }}>
+              These are the only posts that shape how Aura writes for you.
+            </p>
+
             <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 0" }}>
               {noPosts
                 ? "Connected, but Aura hasn't read any posts yet."
