@@ -2507,7 +2507,7 @@ export default function StudioPanel({
             const ownWords =
               content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
             if (ownWords) { setAskRefine(directive); return; }
-            void generate(undefined, undefined, directive);
+            void generate(undefined, undefined, undefined, { instruction: directive, draft: content });
           }}
           onUseOpening={(line) => {
             const lines = content.split("\n");
