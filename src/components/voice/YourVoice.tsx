@@ -30,7 +30,7 @@ import {
   READINESS_LABEL, READINESS_ORDER, type VoiceOverviewModel, type Readiness,
 } from "@/lib/voiceOverview";
 import {
-  MODE_DEFS, addRule, confirmTrait, createMode, deleteRule, loadVoiceDna, rejectTrait,
+  MODE_DEFS, addRule, confirmTrait, createMode, deleteMode, deleteRule, loadVoiceDna, rejectTrait,
   reorderRules, restoreLearned, setTraitLock, setTraitValue, updateRuleText,
   acceptSuggestion, dismissSuggestion, runSuggestRules,
   type DnaRule, type DnaTrait, type VoiceDnaModel,
@@ -233,7 +233,14 @@ export default function YourVoice({
     } catch (e) {
       console.error("[YourVoice] save failed", e);
       state.set(prev);
-      toast.error("Couldn't save that. Nothing was changed.");
+      // Say the real reason. A duplicate mode and a mode the database does not
+      // allow are two different member problems, not one generic failure.
+      const code = (e as { code?: string } | null)?.code;
+      const message = (e as { message?: string } | null)?.message;
+      if (code === "23505") toast.error("You already have that mode in this language.");
+      else if (code === "23514") toast.error("That mode isn't available yet.");
+      else if (message && message.startsWith("Your default voice")) toast.error(message);
+      else toast.error("Couldn't save that. Nothing was changed.");
     } finally {
       setBusy(false);
     }
@@ -400,11 +407,19 @@ export default function YourVoice({
           const def = MODE_DEFS.find((d) => d.key === k);
           if (!def || !userId) return;
           void mutate(dna, async () => {
-            const { profileId: created, needsEvidence } = await createMode(userId, def, dna.traits);
+            const { profileId: created, needsEvidence } = await createMode(userId, def, dna.traits, dna.activeLanguage);
             setProfileId(created);
             toast.success(needsEvidence
               ? `${def.label} created — some shifts were clamped to what your posts prove, so it needs evidence.`
               : `${def.label} created from your measured voice.`);
+          });
+        }}
+        onRemove={(m) => {
+          if (!m.profileId) return;
+          void mutate(dna, async () => {
+            await deleteMode(m.profileId as string);
+            if (dna.activeProfileId === m.profileId) setProfileId(null);
+            toast.success(`${m.label} removed. Your default voice is unchanged.`);
           });
         }}
       />
