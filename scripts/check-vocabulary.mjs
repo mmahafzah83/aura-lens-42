@@ -50,6 +50,53 @@ import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
+const FUNCTIONS = join(ROOT, "supabase", "functions");
+
+/** The dictionary and its Deno twin. Emails are the one surface that cannot
+ *  import from `src/`, so the twin is copied — and policed here. */
+const DICT = "src/constants/vocabulary.ts";
+const DICT_TWIN = "supabase/functions/_shared/vocabulary.ts";
+
+/**
+ * The twin's SIGNATURE — the actual strings a member could read, not the
+ * docblocks: every Arabic literal in the file, plus the English noun table,
+ * plus the exported formatter names. Two files with the same signature cannot
+ * say a different word to a member.
+ */
+function vocabularySignature(text) {
+  const body = text.slice(Math.max(0, text.indexOf("export type VocabLang")));
+  const arabic = [...body.matchAll(/["'`]([^"'`]*[\u0600-\u06FF][^"'`]*)["'`]/g)]
+    .map((m) => m[1].trim());
+  const english = [...body.matchAll(/\b(one|two|many|few|noun|nounPlural|One|Many|NounPlural)\s*:\s*"([^"]+)"/g)]
+    .map((m) => `${m[1]}=${m[2]}`);
+  const exports = [...body.matchAll(/export (?:const|function) ([A-Za-z0-9_]+)/g)].map((m) => m[1]);
+  const uniqSorted = (a) => [...new Set(a)].sort();
+  return {
+    arabic: uniqSorted(arabic),
+    english: uniqSorted(english),
+    exports: uniqSorted(exports),
+  };
+}
+
+/** Fails the build when the dictionary and its Deno twin drift apart. */
+export function checkTwin() {
+  const problems = [];
+  let a, b;
+  try {
+    a = vocabularySignature(readFileSync(join(ROOT, DICT), "utf8"));
+    b = vocabularySignature(readFileSync(join(ROOT, DICT_TWIN), "utf8"));
+  } catch (e) {
+    return [`cannot read the dictionary or its twin: ${e.message}`];
+  }
+  for (const key of ["arabic", "english", "exports"]) {
+    const onlyClient = a[key].filter((x) => !b[key].includes(x));
+    const onlyTwin = b[key].filter((x) => !a[key].includes(x));
+    for (const x of onlyClient) problems.push(`${key}: "${x}" is in ${DICT} but not in ${DICT_TWIN}`);
+    for (const x of onlyTwin) problems.push(`${key}: "${x}" is in ${DICT_TWIN} but not in ${DICT}`);
+  }
+  return problems;
+}
+
 
 /** Banned member-facing nouns, plus the seven legitimate ones (which still may
  *  not be hand-written next to a number). */
