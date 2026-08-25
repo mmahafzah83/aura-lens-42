@@ -629,6 +629,9 @@ const Onboarding = () => {
      total reads these exact head counts instead. */
   const [evidenceTotal, setEvidenceTotal] = useState<number | null>(null);
   const [signalsTotal, setSignalsTotal] = useState<number | null>(null);
+  /* What the member is actually told: the exact count when we have it, and the
+     rows in hand only while anonymous (there is no table to count yet). */
+  const evidenceShown = evidenceTotal ?? claims.length;
   const [captureSince, setCaptureSince] = useState<string | null>(null);
   const [watching, setWatching] = useState(false);
   const { claims: liveClaims, slow: claimsSlow } = useCapturedClaims({ userId, sinceIso: captureSince, active: watching });
@@ -2007,7 +2010,7 @@ const Onboarding = () => {
       setRevealLoading(false);
     });
     return () => { cancelled = true; window.clearTimeout(timeout); };
-  }, [screen, readRaw, userId, postsRead, claims.length, scores, dims]);
+  }, [screen, readRaw, userId, postsRead, evidenceShown, signalsTotal, scores, dims]);
 
 
   /* ── finishing ── */
@@ -2475,10 +2478,6 @@ const Onboarding = () => {
     })();
     return () => { cancelled = true; };
   }, [userId, screen, claims.length]);
-
-  /* What the member is actually told: the exact count when we have it, and the
-     rows in hand only while anonymous (there is no table to count yet). */
-  const evidenceShown = evidenceTotal ?? claims.length;
 
   const shelfState = useMemo(() => {
     const ratings = Object.keys(scores).length;
