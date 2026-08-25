@@ -21,7 +21,7 @@ import {
 import type { DnaTrait } from "@/lib/voiceDna";
 
 export default function WhatWorked({
-  userId, traits, onConfirm, onReject, modelOverride,
+  userId, traits, onConfirm, onReject, modelOverride, collapsed = false, onToggleCollapse,
 }: {
   userId: string | null;
   traits: DnaTrait[];
@@ -29,7 +29,11 @@ export default function WhatWorked({
   onReject: (t: DnaTrait) => void;
   /** Harness only. */
   modelOverride?: WhatWorkedModel;
+  /** Collapse is owned by the page, so the pane can remember it. */
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
+
   const [saving, setSaving] = useState(false);
   const key = modelOverride || !userId ? null : `voice:whatworked:${userId}`;
   const loader = useCallback(() => loadWhatWorked(userId as string), [userId]);
