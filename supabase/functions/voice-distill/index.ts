@@ -10,6 +10,9 @@ import {
 } from "../_shared/voiceRules.ts";
 import { sanitizeStyleFields } from "../_shared/voiceStyle.ts";
 import { isOwnWriting, CORPUS_COLUMNS } from "../_shared/voiceCorpus.ts";
+import { deriveInVoiceSubsets } from "../_shared/contentDNA.ts";
+import { hookStyleOf, endingTypeOf } from "../_shared/fingerprint.ts";
+
 
 /**
  * What the member actually did: every draft they rewrote, as the pair
