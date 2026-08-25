@@ -10,8 +10,10 @@
  *                                      `strategic_signals.fragment_count` for one signal
  *   signal / signals          إشارة    rows in `strategic_signals`
  *   page / pages              صفحة     rows in `agent_findings` — pages AURA went
- *                                      and read overnight. NOT the member's own
- *                                      sources, NOT captures, NEVER "reading(s)".
+ *                                      and read overnight — or `documents.page_count`
+ *                                      / `pages_total`, pages of a file the member
+ *                                      uploaded. NOT the member's own sources, NOT
+ *                                      captures, NEVER "reading(s)".
  *   draft / drafts            مسودة    draft rows in `linkedin_posts` /
  *                                      `content_items` — text Aura wrote that the
  *                                      member has not published.

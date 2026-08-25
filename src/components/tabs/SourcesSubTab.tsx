@@ -1141,7 +1141,7 @@ const SourcesSubTab = ({
                           <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: "rgba(127,119,221,0.12)", color: "#9b94e8", letterSpacing: "0.04em" }}>{docTypeLabel}</span>
                         )}
                         {docPagesLabel && (
-                          <span style={{ fontSize: 12, color: "#9b94e8", fontWeight: 500 }}>{docPagesLabel}</span>
+                          <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>{docPagesLabel}</span>
                         )}
                         {docSizeLabel && (
                           <span style={{ fontSize: 12, color: "#9b94e8", fontWeight: 500 }}>· {docSizeLabel}</span>

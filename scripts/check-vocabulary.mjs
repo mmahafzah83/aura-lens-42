@@ -9,7 +9,9 @@
  *   piece of evidence = rows in `evidence_fragments`, or
  *                       `strategic_signals.fragment_count` for one signal
  *   signal = rows in `strategic_signals`
- *   page = rows in `agent_findings` (pages Aura read overnight)
+ *   page = rows in `agent_findings` (pages Aura read overnight), or
+ *          `documents.page_count` / `pages_total` (pages of a file the member
+ *          uploaded)
  *   draft = draft rows in `linkedin_posts` / `content_items`
  *   post = rows in `post_provenance` (what the member published)
  * "fragment", "theme", "topic", "subject", "claim", "thing", "item" and
