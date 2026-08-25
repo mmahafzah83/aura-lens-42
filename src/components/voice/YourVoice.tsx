@@ -372,7 +372,18 @@ export default function YourVoice({
 
   return (
     <div dir="ltr" style={{ color: INK }}>
-      {/* 1 — readiness */}
+      <CollapseStyles />
+
+      {/* Open or close the whole pane in one press. */}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBlockEnd: 10 }}>
+        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, true)}>Expand all</button>
+        <button type="button" style={ghostButton} onClick={() => setAllGroups(groupIds, false)}>Collapse all</button>
+      </div>
+
+      <div className="cb-grid">
+      {/* 1 — readiness and health: one block. The hero stays open; the four
+          cards sit behind one live reading. */}
+      <div className="cb-span">
       <section style={{ background: NIGHT, borderRadius: RADIUS.hero, padding: "20px 22px", display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
         <VoiceMicBadge size={56} />
         <div style={{ flex: 1, minInlineSize: 240 }}>
@@ -388,12 +399,25 @@ export default function YourVoice({
       </section>
 
       {/* 2 — health */}
-      <div className="vo-health" style={{ marginBlockStart: 12 }}>
-        {buildHealth(ov).map((h) => <HealthCard key={h.label} h={h} />)}
+      <div style={{ marginBlockStart: 12 }}>
+        <CollapseBlock
+          id="voice-health"
+          label="Voice health"
+          summary={healthLine}
+          controlLabel="Details"
+          open={isGroupOpen("health")}
+          onToggle={() => setGroup("health", !isGroupOpen("health"))}
+        >
+          <div className="vo-health" style={{ marginBlockStart: 4, marginBlockEnd: 4 }}>
+            {healthCards.map((h) => <HealthCard key={h.label} h={h} />)}
+          </div>
+        </CollapseBlock>
+      </div>
       </div>
 
       {showReco && (
-        <div style={{ ...cardStyle, marginBlockStart: 12 }}>
+        <div className="cb-span" style={{ ...cardStyle }}>
+
           <div style={microLabel}>Top recommendation</div>
           <p dir="auto" style={{ fontSize: TYPE.bodyLg, lineHeight: 1.6, color: INK, marginBlock: "8px 0" }}>{reco.text}</p>
           <div style={{ display: "flex", gap: 8, marginBlockStart: 12, flexWrap: "wrap" }}>
