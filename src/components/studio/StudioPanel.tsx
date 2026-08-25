@@ -1370,11 +1370,23 @@ export default function StudioPanel({
       });
       const json = await res.json().catch(() => null);
       if (runId !== genRunId.current) return;
+      /* Law #85 — the model broke the output contract. The member's existing
+         draft is left exactly as it is; raw model text never reaches the box. */
+      if (json?.success === false && json?.error_code === "contract_violation") {
+        setGenErrorDetail(
+          lang === "ar"
+            ? "لم يتمكن Aura من إنتاج مسودة نظيفة — حاول مرة أخرى."
+            : "Aura couldn't produce a clean draft — try again.",
+        );
+        setGenError("failed");
+        return;
+      }
       if (!res.ok || !applyResult(json)) {
         setGenErrorDetail(typeof json?.error === "string" ? json.error : null);
         setGenError("failed");
         return;
       }
+
     } catch {
       /* The connection dropped, but the server may well have finished. The
          draft is stored on the run row: ask for it before saying anything went
