@@ -31,7 +31,7 @@ import {
 } from "@/lib/voiceOverview";
 import {
   MODE_DEFS, addRule, confirmTrait, createMode, deleteMode, deleteRule, loadVoiceDna, rejectTrait,
-  reorderRules, restoreLearned, setTraitLock, setTraitValue, updateRuleText,
+  reorderRules, restoreLearned, setTraitLock, setTraitValue, updateRuleKind, updateRuleText,
   acceptSuggestion, dismissSuggestion, runSuggestRules,
   type DnaRule, type DnaTrait, type VoiceDnaModel,
 } from "@/lib/voiceDna";
@@ -428,7 +428,7 @@ export default function YourVoice({
       <VoiceRules
         rules={dna.rules}
         suggestions={dna.suggestions}
-        canSuggest={dna.windowSize >= 20 || model.overview.corpusCount >= 20}
+        canSuggest={model.overview.corpusCount >= 20}
         busy={busy}
         onAccept={(r) => void mutate(
           { ...dna, rules: [...dna.rules, { ...r, status: "active" }], suggestions: dna.suggestions.filter((s) => s.id !== r.id) },
@@ -438,8 +438,8 @@ export default function YourVoice({
           { ...dna, suggestions: dna.suggestions.filter((s) => s.id !== r.id) },
           async () => { await dismissSuggestion(r.id); toast("Dismissed. Aura will not suggest that again."); },
         )}
-        onLookForPatterns={() => void mutate(dna, async () => {
-          const res = await runSuggestRules();
+        onLookForPatterns={(sources) => void mutate(dna, async () => {
+          const res = await runSuggestRules(sources);
           toast.success(res.written > 0
             ? `Aura found ${res.written} ${res.written === 1 ? "pattern" : "patterns"} in your writing.`
             : "Nothing new — Aura found no pattern it could evidence.");
@@ -452,6 +452,10 @@ export default function YourVoice({
         onEdit={(id, text) => void mutate(
           { ...dna, rules: dna.rules.map((r) => (r.id === id ? { ...r, text } : r)) },
           () => updateRuleText(id, text),
+        )}
+        onKindChange={(id, kind) => void mutate(
+          { ...dna, rules: dna.rules.map((r) => (r.id === id ? { ...r, kind } : r)) },
+          () => updateRuleKind(id, kind),
         )}
         onDelete={(id) => void mutate({ ...dna, rules: dna.rules.filter((r) => r.id !== id) }, () => deleteRule(id))}
         onReorder={(ordered: DnaRule[]) => void mutate(

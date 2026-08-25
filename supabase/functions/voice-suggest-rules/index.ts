@@ -32,12 +32,17 @@ const json = (body: unknown, status = 200) =>
 
 type Kind = "always" | "never" | "anchor";
 
+interface RuleCheck { kind: "phrase" | "opening" | "ending" | "marker"; value: string }
 interface Candidate {
   kind: Kind;
   text: string;
   evidence: { post_ids: string[]; count: number; total: number; note: string };
   derivation: "rule" | "model";
+  sourceKey: SourceKey;
+  check: RuleCheck | null;
 }
+type SourceKey = "openings" | "endings" | "phrases" | "structure" | "absences";
+const ALL_SOURCES: SourceKey[] = ["openings", "endings", "phrases", "structure", "absences"];
 
 /** Comparison form: case, punctuation and spacing carry no meaning here. */
 const normalise = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "").replace(/\s+/g, " ").trim();
@@ -48,14 +53,12 @@ interface Post { id: string; text: string }
 
 /* ── pass 1: things that can be counted ──────────────────────────────────── */
 
-function deterministic(posts: Post[]): Candidate[] {
+function deterministic(posts: Post[], sources: Set<SourceKey>): Candidate[] {
   const total = posts.length;
   const out: Candidate[] = [];
-  const hit = (kind: Kind, text: string, matched: Post[], note: string, derivation: "rule" | "model" = "rule") =>
-    out.push({
-      kind, text, derivation,
-      evidence: { post_ids: matched.slice(0, 40).map((p) => p.id), count: matched.length, total, note },
-    });
+  const hit = (kind: Kind, text: string, matched: Post[], note: string, sourceKey: SourceKey, check: RuleCheck | null = null) =>
+    out.push({ kind, text, derivation: "rule", sourceKey, check,
+      evidence: { post_ids: matched.slice(0, 40).map((p) => p.id), count: matched.length, total, note } });
 
   /* recurring phrases — 3-word windows carried across posts */
   const phrasePosts = new Map<string, Set<string>>();
@@ -74,10 +77,10 @@ function deterministic(posts: Post[]): Candidate[] {
     .filter(([, ids]) => ids.size / total >= PHRASE_SHARE && ids.size >= 3)
     .sort((a, b) => b[1].size - a[1].size)
     .slice(0, 2);
-  for (const [gram, ids] of phrases) {
+  for (const [gram, ids] of sources.has("phrases") ? phrases : []) {
     const matched = posts.filter((p) => ids.has(p.id));
     hit("anchor", `Keep the phrase "${gram}" — it runs through your writing.`, matched,
-      `In ${ids.size} of your ${total} posts`);
+      `In ${ids.size} of your ${total} posts`, "phrases");
   }
 
   /* structural habits */
@@ -88,15 +91,15 @@ function deterministic(posts: Post[]): Candidate[] {
   };
 
   const numberOpeners = posts.filter((p) => /[\d٠-٩]/.test(firstLine(p.text)));
-  if (numberOpeners.length / total >= HABIT_SHARE) {
+  if (sources.has("openings") && numberOpeners.length / total >= HABIT_SHARE) {
     hit("always", "Open with a number or a figure — that is how you start.", numberOpeners,
-      `In ${numberOpeners.length} of your ${total} posts`);
+      `In ${numberOpeners.length} of your ${total} posts`, "openings");
   }
 
   const questionEnders = posts.filter((p) => /[?؟]\s*$/.test(lastLine(p.text)));
-  if (questionEnders.length / total >= HABIT_SHARE) {
+  if (sources.has("endings") && questionEnders.length / total >= HABIT_SHARE) {
     hit("always", "End on a question, not a summary.", questionEnders,
-      `In ${questionEnders.length} of your ${total} posts`);
+      `In ${questionEnders.length} of your ${total} posts`, "endings");
   }
 
   const shortParas = posts.filter((p) => {
@@ -104,26 +107,26 @@ function deterministic(posts: Post[]): Candidate[] {
     if (paras.length < 2) return false;
     return paras.filter((x) => sentences(x).length <= 2).length / paras.length >= 0.8;
   });
-  if (shortParas.length / total >= HABIT_SHARE) {
+  if (sources.has("structure") && shortParas.length / total >= HABIT_SHARE) {
     hit("always", "Keep paragraphs to one or two sentences.", shortParas,
-      `In ${shortParas.length} of your ${total} posts`);
+      `In ${shortParas.length} of your ${total} posts`, "structure");
   }
 
   /* absences — generic LinkedIn habits the member has never once used */
-  const ABSENT: { probe: RegExp; text: string }[] = [
+  const ABSENT: { probe: RegExp; text: string; check: RuleCheck }[] = [
     { probe: /what (are|do) your thoughts|let me know in the comments|thoughts\?\s*$/i,
-      text: `Never close with "What are your thoughts?"` },
+      text: `Never close with "What are your thoughts?"`, check: { kind: "ending", value: "What are your thoughts?" } },
     { probe: /(^|\n)\s*(✅|✔️|☑️)/,
-      text: "Never use a checkmark list." },
+      text: "Never use a checkmark list.", check: { kind: "marker", value: "✅" } },
     { probe: /(^|\n)\s*(🚀|💡|🔥)/,
-      text: "Never open with a motivational emoji." },
+      text: "Never open with a motivational emoji.", check: { kind: "opening", value: "🚀" } },
     { probe: /(#\w+[^\n]*){3,}/,
-      text: "Never end with a block of hashtags." },
+      text: "Never end with a block of hashtags.", check: { kind: "marker", value: "###" } },
   ];
-  for (const a of ABSENT) {
+  for (const a of sources.has("absences") ? ABSENT : []) {
     const used = posts.filter((p) => a.probe.test(p.text));
     if (used.length === 0) {
-      hit("never", a.text, [], "Never appears in your writing");
+      hit("never", a.text, [], "Never appears in your writing", "absences", a.check);
     }
   }
 
@@ -179,7 +182,7 @@ async function modelPass(posts: Post[], apiKey: string): Promise<Candidate[]> {
     // No evidence, no suggestion. This is the rule that keeps the page honest.
     if (!text || ids.length < 3) continue;
     out.push({
-      kind, text, derivation: "model",
+      kind, text, derivation: "model", sourceKey: "structure", check: null,
       evidence: { post_ids: ids, count: ids.length, total: posts.length, note: `In ${ids.length} of your ${posts.length} posts` },
     });
   }
@@ -194,6 +197,9 @@ Deno.serve(async (req) => {
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const body = await req.json().catch(() => ({} as Record<string, unknown>));
+    const requested = Array.isArray(body.sources) ? body.sources.map(String) : ALL_SOURCES;
+    const sources = new Set<SourceKey>(requested.filter((s): s is SourceKey => ALL_SOURCES.includes(s as SourceKey)));
+    if (sources.size === 0) return json({ error: "Choose at least one source" }, 400);
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const isService = authHeader === `Bearer ${SERVICE_ROLE}`;
@@ -236,30 +242,37 @@ Deno.serve(async (req) => {
     /* what already exists — never duplicate, never re-suggest a recent dismissal */
     const { data: existing } = await admin
       .from("voice_rules")
-      .select("text, status, decided_at")
+      .select("text, kind, status, decided_at")
       .eq("user_id", userId);
 
     const cutoff = Date.now() - DISMISSAL_MEMORY_DAYS * 86_400_000;
-    const blocked = new Set<string>();
+    const blocked: { kind: Kind; text: string }[] = [];
     for (const r of existing ?? []) {
       const key = normalise(String(r.text ?? ""));
       if (!key) continue;
-      if (r.status === "active" || r.status === "suggested") blocked.add(key);
+      if (r.status === "active" || r.status === "suggested") blocked.push({ kind: r.kind as Kind, text: key });
       if (r.status === "dismissed") {
         const at = r.decided_at ? new Date(r.decided_at as string).getTime() : 0;
-        if (at >= cutoff) blocked.add(key);
+        if (at >= cutoff) blocked.push({ kind: r.kind as Kind, text: key });
       }
     }
 
-    const ruleCandidates = deterministic(posts);
+    const ruleCandidates = deterministic(posts, sources);
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    const modelCandidates = apiKey ? await modelPass(posts, apiKey) : [];
+    const modelCandidates = apiKey && (sources.has("openings") || sources.has("structure")) ? await modelPass(posts, apiKey) : [];
 
     const chosen: Candidate[] = [];
     for (const c of [...ruleCandidates, ...modelCandidates]) {
       const key = normalise(c.text);
-      if (blocked.has(key)) continue;
-      blocked.add(key);
+      const tokens = new Set(key.split(" ").filter(Boolean));
+      const near = blocked.some((b) => {
+        if (b.kind !== c.kind) return false;
+        const other = new Set(b.text.split(" ").filter(Boolean));
+        const overlap = [...tokens].filter((token) => other.has(token)).length;
+        return overlap / Math.max(1, Math.min(tokens.size, other.size)) >= 0.7;
+      });
+      if (near) continue;
+      blocked.push({ kind: c.kind, text: key });
       chosen.push(c);
       if (chosen.length >= MAX_SUGGESTIONS) break;
     }
@@ -276,20 +289,24 @@ Deno.serve(async (req) => {
           active: true,
           rank: 1000 + i,
           suggested_at: now,
-          evidence: { ...c.evidence, derivation: c.derivation },
+          evidence: { ...c.evidence, derivation: c.derivation, source: c.sourceKey },
+          check: c.kind === "never" ? c.check : null,
         })),
       );
       if (insErr) throw new Error(insErr.message);
     }
 
     const byKind: Record<string, number> = {};
-    for (const c of chosen) byKind[c.kind] = (byKind[c.kind] ?? 0) + 1;
+    const bySource: Record<string, number> = {};
+    for (const c of chosen) { byKind[c.kind] = (byKind[c.kind] ?? 0) + 1; bySource[c.sourceKey] = (bySource[c.sourceKey] ?? 0) + 1; }
 
     return json({
       user_id: userId,
       posts_read: posts.length,
       written: chosen.length,
       by_kind: byKind,
+      sources_run: [...sources],
+      by_source: bySource,
       rule_derived: chosen.filter((c) => c.derivation === "rule").length,
       model_derived: chosen.filter((c) => c.derivation === "model").length,
       suggestions: chosen.map((c) => ({ kind: c.kind, text: c.text, evidence: c.evidence.note, derivation: c.derivation })),
