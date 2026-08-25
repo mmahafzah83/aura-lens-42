@@ -37,13 +37,8 @@ const SECONDARY_BTN: React.CSSProperties = {
   color: SPOT,
 };
 
-// Skills variant is parked while we rework it. Flip to true to bring back
-// the VOICE / SKILLS toggle and render both variants.
-const SHOW_SKILLS = false;
-
 interface Readiness {
   assessment: boolean;
-  skills: boolean;
   photo: boolean;
   country: boolean;
   loaded: boolean;
@@ -64,9 +59,10 @@ export default function AuraCardPanel({
   onNavigateSettings,
   dir,
 }: Props) {
-  const [variant, setVariant] = useState<AuraCardVariant>("voice");
+  // The card has one variant. The skills variant and its radar were removed.
+  const variant: AuraCardVariant = "voice";
   const [readiness, setReadiness] = useState<Readiness>({
-    assessment: false, skills: false, photo: false, country: false, loaded: false,
+    assessment: false, photo: false, country: false, loaded: false,
   });
   const [busy, setBusy] = useState<null | "png" | "share">(null);
   const [readyAt, setReadyAt] = useState<string | null>(null);
@@ -88,7 +84,6 @@ export default function AuraCardPanel({
       const p: any = data || {};
       setReadiness({
         assessment: !!p.brand_assessment_completed_at,
-        skills: !!p.audit_completed_at,
         photo: !!p.avatar_url,
         country: !!p.country_code,
         loaded: true,
@@ -98,7 +93,7 @@ export default function AuraCardPanel({
     return () => { cancelled = true; };
   }, []);
 
-  const allReady = readiness.assessment && readiness.skills && readiness.photo && readiness.country;
+  const allReady = readiness.assessment && readiness.photo && readiness.country;
 
   // First time all 4 gates flip green AND we've never marked it before: celebrate once.
   useEffect(() => {
@@ -277,14 +272,6 @@ export default function AuraCardPanel({
       actionLabel: "Take the assessment",
     },
     {
-      key: "skills",
-      label: "Skills radar",
-      done: readiness.skills,
-      hint: "Calibrate your capability radar.",
-      action: onNavigateAudit,
-      actionLabel: "Calibrate skills",
-    },
-    {
       key: "photo",
       label: "Profile photo",
       done: readiness.photo,
@@ -318,32 +305,6 @@ export default function AuraCardPanel({
           </div>
         </div>
 
-        {/* Voice / Skills toggle */}
-        {SHOW_SKILLS && (
-          <div role="tablist" aria-label="Card variant" style={{ display: "inline-flex", border: `1px solid ${RULE}`, background: "transparent" }}>
-            {(["voice", "skills"] as const).map((v) => {
-              const active = variant === v;
-              return (
-                <button
-                  key={v}
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setVariant(v)}
-                  style={{
-                    fontFamily: MONO, fontSize: 11, letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                    padding: "8px 14px",
-                    background: active ? INK : "transparent",
-                    color: active ? PAPER : INK_2,
-                    border: 0, cursor: "pointer",
-                  }}
-                >
-                  {v}
-                </button>
-              );
-            })}
-          </div>
-        )}
       </header>
 
       {!readiness.loaded ? (
