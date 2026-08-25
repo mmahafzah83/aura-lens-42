@@ -442,6 +442,8 @@ const Dashboard = () => {
             .from("content_items" as any) as any)
             .select("id, body, language, type, generation_params")
             .eq("id", draftParam)
+            // A stale email link to a discarded draft must not reopen it.
+            .neq("status", "discarded")
             .maybeSingle();
           if (error) readError = error;
           if (!r) return null;

@@ -106,6 +106,8 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         supabase
           .from("content_items")
           .select("generation_params")
+          // Discarded work does not "use up" a signal.
+          .neq("status", "discarded")
           .order("created_at", { ascending: false })
           .limit(50),
         supabase

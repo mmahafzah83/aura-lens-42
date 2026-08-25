@@ -141,6 +141,11 @@ Deno.serve(async (req) => {
           .from("content_items")
           .select("id, generation_params")
           .eq("user_id", userId)
+          // A discarded draft is not a prepared week. Without this, archiving a
+          // week's drafts would look "already prepared" and the member would be
+          // silently skipped — or, read the other way, a rewrite could stack on
+          // top of rows somebody deliberately threw away.
+          .neq("status", "discarded")
           .gte("created_at", weekStartIso);
         const alreadyPrepared = (weekRows || []).some(
           (r: any) => r?.generation_params?.source === "weekly_ready"

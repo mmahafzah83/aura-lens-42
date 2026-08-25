@@ -2999,6 +2999,20 @@ export type Database = {
             foreignKeyName: "linkedin_post_metrics_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "member_own_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "linkedin_post_metrics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "member_published"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "linkedin_post_metrics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "post_provenance"
             referencedColumns: ["id"]
           },
@@ -3959,6 +3973,20 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "linkedin_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_events_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "member_own_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_events_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "member_published"
             referencedColumns: ["id"]
           },
           {
@@ -5148,6 +5176,20 @@ export type Database = {
             foreignKeyName: "voice_feedback_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "member_own_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_feedback_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "member_published"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_feedback_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "post_provenance"
             referencedColumns: ["id"]
           },
@@ -5273,6 +5315,20 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: true
             referencedRelation: "linkedin_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_post_outcomes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "member_own_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_post_outcomes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "member_published"
             referencedColumns: ["id"]
           },
           {
@@ -6042,6 +6098,462 @@ export type Database = {
           years_experience?: string | null
         }
         Relationships: []
+      }
+      member_drafts: {
+        Row: {
+          arrived_by: string | null
+          body: string | null
+          confidence: string | null
+          created_at: string | null
+          generation_params: Json | null
+          id: string | null
+          language: string | null
+          made_by: string | null
+          model_used: string | null
+          produced_by: string | null
+          prompt_version: string | null
+          signal_id: string | null
+          status: string | null
+          title: string | null
+          type: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          arrived_by?: string | null
+          body?: string | null
+          confidence?: string | null
+          created_at?: string | null
+          generation_params?: Json | null
+          id?: string | null
+          language?: string | null
+          made_by?: string | null
+          model_used?: string | null
+          produced_by?: string | null
+          prompt_version?: string | null
+          signal_id?: string | null
+          status?: string | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          arrived_by?: string | null
+          body?: string | null
+          confidence?: string | null
+          created_at?: string | null
+          generation_params?: Json | null
+          id?: string | null
+          language?: string | null
+          made_by?: string | null
+          model_used?: string | null
+          produced_by?: string | null
+          prompt_version?: string | null
+          signal_id?: string | null
+          status?: string | null
+          title?: string | null
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_items_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_signals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_own_posts: {
+        Row: {
+          acquisition: string | null
+          arrived_by: string | null
+          authorship: string | null
+          carousel_structure_type: string | null
+          claimed_at: string | null
+          comment_count: number | null
+          confidence: string | null
+          content_engine_output_type: string | null
+          content_type: string | null
+          created_at: string | null
+          cta_style: string | null
+          edit_distance: number | null
+          edited_at: string | null
+          ending_type: string | null
+          engagement_score: number | null
+          enriched_by: string[] | null
+          format_type: string | null
+          framework_type: string | null
+          hook: string | null
+          hook_style: string | null
+          id: string | null
+          like_count: number | null
+          linkedin_post_id: string | null
+          linkedin_url: string | null
+          made_by: string | null
+          media_type: string | null
+          model_used: string | null
+          moment_id: string | null
+          original_generated_text: string | null
+          post_text: string | null
+          post_url: string | null
+          produced_by: string | null
+          prompt_version: string | null
+          publish_attempted_at: string | null
+          published_at: string | null
+          published_confirmed_at: string | null
+          quality_score: Json | null
+          rejection_reason: string | null
+          repost_count: number | null
+          source_metadata: Json | null
+          source_signal_id: string | null
+          source_trust: number | null
+          source_type: string | null
+          stance: string | null
+          synced_at: string | null
+          text_is_snippet: boolean | null
+          theme: string | null
+          title: string | null
+          tone: string | null
+          topic_label: string | null
+          tracking_status: string | null
+          unsourced_entities_removed: number | null
+          unsourced_numbers_removed: number | null
+          user_id: string | null
+          visual_strategy_type: string | null
+          visual_style: string | null
+          voice_corpus_reason: string | null
+          voice_corpus_status: string | null
+          voice_match: number | null
+        }
+        Insert: {
+          acquisition?: string | null
+          arrived_by?: string | null
+          authorship?: string | null
+          carousel_structure_type?: string | null
+          claimed_at?: string | null
+          comment_count?: number | null
+          confidence?: string | null
+          content_engine_output_type?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          cta_style?: string | null
+          edit_distance?: number | null
+          edited_at?: string | null
+          ending_type?: string | null
+          engagement_score?: number | null
+          enriched_by?: string[] | null
+          format_type?: string | null
+          framework_type?: string | null
+          hook?: string | null
+          hook_style?: string | null
+          id?: string | null
+          like_count?: number | null
+          linkedin_post_id?: string | null
+          linkedin_url?: string | null
+          made_by?: string | null
+          media_type?: string | null
+          model_used?: string | null
+          moment_id?: string | null
+          original_generated_text?: string | null
+          post_text?: string | null
+          post_url?: string | null
+          produced_by?: string | null
+          prompt_version?: string | null
+          publish_attempted_at?: string | null
+          published_at?: string | null
+          published_confirmed_at?: string | null
+          quality_score?: Json | null
+          rejection_reason?: string | null
+          repost_count?: number | null
+          source_metadata?: Json | null
+          source_signal_id?: string | null
+          source_trust?: number | null
+          source_type?: string | null
+          stance?: string | null
+          synced_at?: string | null
+          text_is_snippet?: boolean | null
+          theme?: string | null
+          title?: string | null
+          tone?: string | null
+          topic_label?: string | null
+          tracking_status?: string | null
+          unsourced_entities_removed?: number | null
+          unsourced_numbers_removed?: number | null
+          user_id?: string | null
+          visual_strategy_type?: string | null
+          visual_style?: string | null
+          voice_corpus_reason?: string | null
+          voice_corpus_status?: string | null
+          voice_match?: number | null
+        }
+        Update: {
+          acquisition?: string | null
+          arrived_by?: string | null
+          authorship?: string | null
+          carousel_structure_type?: string | null
+          claimed_at?: string | null
+          comment_count?: number | null
+          confidence?: string | null
+          content_engine_output_type?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          cta_style?: string | null
+          edit_distance?: number | null
+          edited_at?: string | null
+          ending_type?: string | null
+          engagement_score?: number | null
+          enriched_by?: string[] | null
+          format_type?: string | null
+          framework_type?: string | null
+          hook?: string | null
+          hook_style?: string | null
+          id?: string | null
+          like_count?: number | null
+          linkedin_post_id?: string | null
+          linkedin_url?: string | null
+          made_by?: string | null
+          media_type?: string | null
+          model_used?: string | null
+          moment_id?: string | null
+          original_generated_text?: string | null
+          post_text?: string | null
+          post_url?: string | null
+          produced_by?: string | null
+          prompt_version?: string | null
+          publish_attempted_at?: string | null
+          published_at?: string | null
+          published_confirmed_at?: string | null
+          quality_score?: Json | null
+          rejection_reason?: string | null
+          repost_count?: number | null
+          source_metadata?: Json | null
+          source_signal_id?: string | null
+          source_trust?: number | null
+          source_type?: string | null
+          stance?: string | null
+          synced_at?: string | null
+          text_is_snippet?: boolean | null
+          theme?: string | null
+          title?: string | null
+          tone?: string | null
+          topic_label?: string | null
+          tracking_status?: string | null
+          unsourced_entities_removed?: number | null
+          unsourced_numbers_removed?: number | null
+          user_id?: string | null
+          visual_strategy_type?: string | null
+          visual_style?: string | null
+          voice_corpus_reason?: string | null
+          voice_corpus_status?: string | null
+          voice_match?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "linkedin_posts_source_signal_id_fkey"
+            columns: ["source_signal_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_signals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_published: {
+        Row: {
+          acquisition: string | null
+          arrived_by: string | null
+          authorship: string | null
+          carousel_structure_type: string | null
+          claimed_at: string | null
+          comment_count: number | null
+          confidence: string | null
+          content_engine_output_type: string | null
+          content_type: string | null
+          created_at: string | null
+          cta_style: string | null
+          edit_distance: number | null
+          edited_at: string | null
+          ending_type: string | null
+          engagement_score: number | null
+          enriched_by: string[] | null
+          format_type: string | null
+          framework_type: string | null
+          hook: string | null
+          hook_style: string | null
+          id: string | null
+          like_count: number | null
+          linkedin_post_id: string | null
+          linkedin_url: string | null
+          made_by: string | null
+          media_type: string | null
+          model_used: string | null
+          moment_id: string | null
+          original_generated_text: string | null
+          post_text: string | null
+          post_url: string | null
+          produced_by: string | null
+          prompt_version: string | null
+          publish_attempted_at: string | null
+          published_at: string | null
+          published_confirmed_at: string | null
+          quality_score: Json | null
+          rejection_reason: string | null
+          repost_count: number | null
+          source_metadata: Json | null
+          source_signal_id: string | null
+          source_trust: number | null
+          source_type: string | null
+          stance: string | null
+          synced_at: string | null
+          text_is_snippet: boolean | null
+          theme: string | null
+          title: string | null
+          tone: string | null
+          topic_label: string | null
+          tracking_status: string | null
+          unsourced_entities_removed: number | null
+          unsourced_numbers_removed: number | null
+          user_id: string | null
+          visual_strategy_type: string | null
+          visual_style: string | null
+          voice_corpus_reason: string | null
+          voice_corpus_status: string | null
+          voice_match: number | null
+        }
+        Insert: {
+          acquisition?: string | null
+          arrived_by?: string | null
+          authorship?: string | null
+          carousel_structure_type?: string | null
+          claimed_at?: string | null
+          comment_count?: number | null
+          confidence?: string | null
+          content_engine_output_type?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          cta_style?: string | null
+          edit_distance?: number | null
+          edited_at?: string | null
+          ending_type?: string | null
+          engagement_score?: number | null
+          enriched_by?: string[] | null
+          format_type?: string | null
+          framework_type?: string | null
+          hook?: string | null
+          hook_style?: string | null
+          id?: string | null
+          like_count?: number | null
+          linkedin_post_id?: string | null
+          linkedin_url?: string | null
+          made_by?: string | null
+          media_type?: string | null
+          model_used?: string | null
+          moment_id?: string | null
+          original_generated_text?: string | null
+          post_text?: string | null
+          post_url?: string | null
+          produced_by?: string | null
+          prompt_version?: string | null
+          publish_attempted_at?: string | null
+          published_at?: string | null
+          published_confirmed_at?: string | null
+          quality_score?: Json | null
+          rejection_reason?: string | null
+          repost_count?: number | null
+          source_metadata?: Json | null
+          source_signal_id?: string | null
+          source_trust?: number | null
+          source_type?: string | null
+          stance?: string | null
+          synced_at?: string | null
+          text_is_snippet?: boolean | null
+          theme?: string | null
+          title?: string | null
+          tone?: string | null
+          topic_label?: string | null
+          tracking_status?: string | null
+          unsourced_entities_removed?: number | null
+          unsourced_numbers_removed?: number | null
+          user_id?: string | null
+          visual_strategy_type?: string | null
+          visual_style?: string | null
+          voice_corpus_reason?: string | null
+          voice_corpus_status?: string | null
+          voice_match?: number | null
+        }
+        Update: {
+          acquisition?: string | null
+          arrived_by?: string | null
+          authorship?: string | null
+          carousel_structure_type?: string | null
+          claimed_at?: string | null
+          comment_count?: number | null
+          confidence?: string | null
+          content_engine_output_type?: string | null
+          content_type?: string | null
+          created_at?: string | null
+          cta_style?: string | null
+          edit_distance?: number | null
+          edited_at?: string | null
+          ending_type?: string | null
+          engagement_score?: number | null
+          enriched_by?: string[] | null
+          format_type?: string | null
+          framework_type?: string | null
+          hook?: string | null
+          hook_style?: string | null
+          id?: string | null
+          like_count?: number | null
+          linkedin_post_id?: string | null
+          linkedin_url?: string | null
+          made_by?: string | null
+          media_type?: string | null
+          model_used?: string | null
+          moment_id?: string | null
+          original_generated_text?: string | null
+          post_text?: string | null
+          post_url?: string | null
+          produced_by?: string | null
+          prompt_version?: string | null
+          publish_attempted_at?: string | null
+          published_at?: string | null
+          published_confirmed_at?: string | null
+          quality_score?: Json | null
+          rejection_reason?: string | null
+          repost_count?: number | null
+          source_metadata?: Json | null
+          source_signal_id?: string | null
+          source_trust?: number | null
+          source_type?: string | null
+          stance?: string | null
+          synced_at?: string | null
+          text_is_snippet?: boolean | null
+          theme?: string | null
+          title?: string | null
+          tone?: string | null
+          topic_label?: string | null
+          tracking_status?: string | null
+          unsourced_entities_removed?: number | null
+          unsourced_numbers_removed?: number | null
+          user_id?: string | null
+          visual_strategy_type?: string | null
+          visual_style?: string | null
+          voice_corpus_reason?: string | null
+          voice_corpus_status?: string | null
+          voice_match?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "linkedin_posts_source_signal_id_fkey"
+            columns: ["source_signal_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_signals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mirror_funnel: {
         Row: {
