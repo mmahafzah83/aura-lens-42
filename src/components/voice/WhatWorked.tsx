@@ -6,12 +6,14 @@
  * says plainly when there is no pattern. Nothing here is manufactured: when the
  * arithmetic returns nothing, the card says nothing was found.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import InfoTooltip from "@/components/voice/InfoTooltip";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  AMBER_FILL, AMBER_TEXT, CYAN, GREEN, INK, LINE, MUTED, NIGHT, NIGHT_LINE, NIGHT_MUTED,
-  RADIUS, SURFACE, TAP, TYPE, WHITE, cardStyle, chipStyle, ghostButton, microLabel, monoNum,
+  AMBER_FILL, AMBER_TEXT, CYAN, GREEN, INK, LINE, MONO, MUTED, NIGHT, NIGHT_LINE, NIGHT_MUTED,
+  NIGHT_RAISED, NIGHT_TEXT, RADIUS, SURFACE, TAP, TYPE, WHITE, cardStyle, chipStyle, ghostButton,
+  microLabel, monoNum,
 } from "@/components/voice/tokens";
 import { useCachedVoice } from "@/lib/voiceCache";
 import { OUTCOME_RULES } from "../../../supabase/functions/_shared/voiceOutcomes";
@@ -21,35 +23,156 @@ import {
 } from "@/lib/voiceOutcomes";
 import type { DnaTrait } from "@/lib/voiceDna";
 
-/* ── sparkline — bars and a line, never a cyan label ─────────────────────── */
+/* ── the reading, in words ───────────────────────────────────────────────── */
 
-function Sparkline({ values }: { values: number[] }) {
-  const w = 260, h = 48, pad = 4;
-  const max = Math.max(1.4, ...values);
+const mult = (v: number) => `${v.toFixed(1)}×`;
+const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
+
+/** Last five settled posts against the five before them. Never a direction without both numbers. */
+export function trendSentence(values: number[]): string {
+  if (values.length < 10) {
+    return `Aura needs ten settled posts before it can say whether you are getting better. It has ${values.length}.`;
+  }
+  const last5 = mean(values.slice(-5));
+  const prev5 = mean(values.slice(-10, -5));
+  const ratio = prev5 === 0 ? 1 : last5 / prev5;
+  if (ratio >= 1.15) return `Your last five posts did ${mult(last5)} your own average — up from ${mult(prev5)} before.`;
+  if (ratio <= 0.85) return `Your last five posts did ${mult(last5)} your own average, down from ${mult(prev5)}.`;
+  return "Your last five posts are level with your own average.";
+}
+
+/* ── sparkline — a true shape, diverging around the member's own average ─── */
+
+const W = 320, H = 132, PAD_L = 10, PAD_R = 44, PAD_T = 16, PAD_B = 22;
+
+/** Cap the drawn scale at the 90th percentile (floor 1.4) so one post cannot flatten the rest. */
+function percentile(sorted: number[], p: number) {
+  if (sorted.length === 0) return 0;
+  const i = (sorted.length - 1) * p;
+  const lo = Math.floor(i), hi = Math.ceil(i);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo);
+}
+
+interface Point { v: number; date: string | null; preview: string; }
+
+function Sparkline({
+  points, active, setActive,
+}: {
+  points: Point[];
+  active: number | null;
+  setActive: (i: number | null) => void;
+}) {
+  const values = points.map((p) => p.v);
+  const sorted = [...values].sort((a, b) => a - b);
+  const cap = Math.max(1.4, percentile(sorted, 0.9));
   const min = Math.min(0.6, ...values);
-  const x = (i: number) => pad + (i * (w - pad * 2)) / Math.max(1, values.length - 1);
-  const y = (v: number) => h - pad - ((v - min) / Math.max(0.01, max - min)) * (h - pad * 2);
-  const d = values.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const x = (i: number) => PAD_L + (i * (W - PAD_L - PAD_R)) / Math.max(1, values.length - 1);
+  const y = (v: number) => {
+    const c = Math.min(cap, Math.max(min, v));
+    return H - PAD_B - ((c - min) / Math.max(0.01, cap - min)) * (H - PAD_T - PAD_B);
+  };
+  const base = y(1);
+  const line = values.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const area = `${line} L${x(values.length - 1).toFixed(1)},${base.toFixed(1)} L${x(0).toFixed(1)},${base.toFixed(1)} Z`;
+  const last = values.length - 1;
+  const cid = "ww-above", cid2 = "ww-below";
+
   return (
     <svg
-      viewBox={`0 0 ${w} ${h}`} width="100%" height={h} role="img" preserveAspectRatio="none"
-      aria-label={`Performance against your own average across your last ${values.length} posts`}
+      viewBox={`0 0 ${W} ${H}`}
+      width="100%"
+      role="img"
+      style={{ display: "block", height: "auto", touchAction: "none" }}
+      aria-label={
+        active === null
+          ? `Your last ${values.length} settled posts against your own average. Use the arrow keys to read each post.`
+          : `Post ${active + 1} of ${values.length}: ${mult(values[active])} your own average.`
+      }
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+        e.preventDefault();
+        const cur = active ?? last;
+        setActive(Math.max(0, Math.min(last, cur + (e.key === "ArrowRight" ? 1 : -1))));
+      }}
+      onBlur={() => setActive(null)}
+      onMouseLeave={() => setActive(null)}
+      onMouseMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const px = ((e.clientX - r.left) / r.width) * W;
+        let best = 0;
+        for (let i = 1; i < values.length; i++) if (Math.abs(x(i) - px) < Math.abs(x(best) - px)) best = i;
+        setActive(best);
+      }}
     >
-      <line x1={pad} x2={w - pad} y1={y(1)} y2={y(1)} stroke={NIGHT_LINE} strokeWidth="1" strokeDasharray="3 3" />
-      <path d={d} fill="none" stroke={CYAN} strokeWidth="1.5" strokeLinejoin="round" />
-      {values.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r="2" fill={CYAN} />)}
+      <defs>
+        <clipPath id={cid}><rect x="0" y="0" width={W} height={base} /></clipPath>
+        <clipPath id={cid2}><rect x="0" y={base} width={W} height={H - base} /></clipPath>
+      </defs>
+
+      {/* above the member's own average — cyan, the good side */}
+      <path d={area} fill={CYAN} fillOpacity={0.18} clipPath={`url(#${cid})`} />
+      {/* below — a quiet night grey-blue, never an alarm colour */}
+      <path d={area} fill={NIGHT_MUTED} fillOpacity={0.12} clipPath={`url(#${cid2})`} />
+
+      {/* the baseline, named on the chart itself */}
+      <line x1={PAD_L} x2={W - PAD_R} y1={base} y2={base} stroke={NIGHT_MUTED} strokeWidth="1" />
+      <text x={W - PAD_R + 4} y={base + 3} fill={NIGHT_MUTED} fontFamily={MONO} fontSize="9">your average</text>
+
+      <path d={line} fill="none" stroke={CYAN} strokeWidth="1.5" strokeLinejoin="round" />
+
+      {active !== null && (
+        <line x1={x(active)} x2={x(active)} y1={PAD_T - 8} y2={H - PAD_B} stroke={NIGHT_LINE} strokeWidth="1" />
+      )}
+
+      {values.map((v, i) => {
+        const over = v > cap;
+        const above = v >= 1;
+        const isLast = i === last;
+        if (over) {
+          return (
+            <g key={i}>
+              <circle cx={x(i)} cy={y(v)} r="4" fill="none" stroke={CYAN} strokeWidth="1.5" />
+              <text x={x(i)} y={y(v) - 7} textAnchor="middle" fill={NIGHT_MUTED} fontFamily={MONO} fontSize="9">{mult(v)}</text>
+              <circle cx={x(i)} cy={y(v)} r="9" fill="transparent" />
+            </g>
+          );
+        }
+        return (
+          <g key={i}>
+            {isLast && <circle cx={x(i)} cy={y(v)} r="6" fill="none" stroke={NIGHT} strokeWidth="2" />}
+            <circle cx={x(i)} cy={y(v)} r={isLast ? 4 : 2.4} fill={above ? CYAN : NIGHT_MUTED} />
+            <circle cx={x(i)} cy={y(v)} r="9" fill="transparent" />
+          </g>
+        );
+      })}
+
+      {/* only the last point carries a number */}
+      <text
+        x={x(last) + 7} y={y(values[last]) + 3}
+        fill={NIGHT_MUTED} fontFamily={MONO} fontSize="10"
+      >{mult(values[last])}</text>
     </svg>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+const shortDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "no date saved";
+
+function Stat({ label, value, term, body }: { label: string; value: number; term: string; body: string }) {
   return (
     <div style={{ minInlineSize: 92 }}>
-      <div style={{ ...monoNum, fontSize: TYPE.title, fontWeight: 700, color: WHITE }}>{value}</div>
-      <div style={{ fontSize: TYPE.caption, color: NIGHT_MUTED, marginBlockStart: 2 }}>{label}</div>
+      <div style={{ ...monoNum, fontSize: TYPE.title, fontWeight: 700, color: value === 0 ? NIGHT_MUTED : WHITE }}>
+        {value === 0 ? "—" : String(value)}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 2, marginBlockStart: 2 }}>
+        <span style={{ fontSize: TYPE.caption, color: NIGHT_MUTED }}>{label}</span>
+        <InfoTooltip term={term} body={body} />
+      </div>
     </div>
   );
 }
+
 
 /* ── card ────────────────────────────────────────────────────────────────── */
 
