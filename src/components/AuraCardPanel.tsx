@@ -46,7 +46,6 @@ interface Readiness {
 
 interface Props {
   onNavigateAssessment?: () => void;
-  onNavigateAudit?: () => void;
   onNavigatePhoto?: () => void;
   onNavigateSettings?: () => void;
   dir?: "ltr" | "rtl";
@@ -54,7 +53,6 @@ interface Props {
 
 export default function AuraCardPanel({
   onNavigateAssessment,
-  onNavigateAudit,
   onNavigatePhoto,
   onNavigateSettings,
   dir,
@@ -77,7 +75,7 @@ export default function AuraCardPanel({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) { if (!cancelled) setReadiness((s) => ({ ...s, loaded: true })); return; }
       const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("brand_assessment_completed_at, audit_completed_at, avatar_url, country_code, aura_card_ready_at")
+        .select("brand_assessment_completed_at, avatar_url, country_code, aura_card_ready_at")
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -287,7 +285,7 @@ export default function AuraCardPanel({
       action: onNavigateSettings,
       actionLabel: "Open Settings",
     },
-  ], [readiness, onNavigateAssessment, onNavigateAudit, onNavigatePhoto, onNavigateSettings]);
+  ], [readiness, onNavigateAssessment, onNavigatePhoto, onNavigateSettings]);
 
   return (
     <section
