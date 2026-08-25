@@ -1370,7 +1370,7 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         }
       }
 
-      }
+
 
       // ── QUALITY GATE ─────────────────────────────────────────────────────
       // D125: the gate runs LAST, after every corrective rewrite, so the stored
