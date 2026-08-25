@@ -24,9 +24,10 @@ export type Lang = "en" | "ar";
 export type GatePayload = {
   scores?: Record<string, number>;
   overall?: number;
-  assertions?: Record<string, boolean>;
+  assertions?: Record<string, boolean | null>;
   improved_hook?: string;
   category?: string;
+  grounding_available?: boolean;
 } | null;
 
 const C = {
@@ -49,6 +50,7 @@ const C = {
   room: { en: "Fits the room", ar: "يناسب قارئك" },
   fresh: { en: "Freshness", ar: "التجديد" },
   freshSoon: { en: "measured once you've published a few", ar: "يُقاس بعد نشر عدد من المنشورات" },
+  notMeasured: { en: "Not measured for this draft.", ar: "لم تُقَس لهذه المسودة." },
   fixVoice: { en: "More my voice", ar: "اجعلها أقرب لصوتي" },
   fixNumber: { en: "Remove the unbacked number", ar: "احذف الرقم غير المدعوم" },
   fixHook: { en: "Use the stronger opening", ar: "استخدم الافتتاحية الأقوى" },
@@ -106,7 +108,7 @@ function barColourOf(v: number): string {
 type Row = {
   key: string;
   label: string;
-  value: number;
+  value: number | null;
   sentence: string;
   fix?: { label: string; run: () => void };
 };
@@ -166,6 +168,7 @@ const AdvisorCard: React.FC<Props> = ({ lang, text, initial, subject, signalId, 
         assertions: (data as any)?.assertions ?? {},
         improved_hook: typeof (data as any)?.improved_hook === "string" ? (data as any).improved_hook : undefined,
         category: (data as any)?.category,
+        grounding_available: (data as any)?.grounding_available,
       });
     } catch {
       setFailed(true);
@@ -181,6 +184,7 @@ const AdvisorCard: React.FC<Props> = ({ lang, text, initial, subject, signalId, 
     const ten = (k: string) => Math.round(Math.max(0, Math.min(10, Number(s[k]) || 0)) * 10);
 
     const voice = ten("voice");
+    const groundingUnmeasured = a.grounded_number == null || payload.grounding_available === false;
     const grounded = a.grounded_number === false ? 0 : ten("specificity");
     const opening = ten("hook");
     const depth = ten("signal_depth");
@@ -195,9 +199,9 @@ const AdvisorCard: React.FC<Props> = ({ lang, text, initial, subject, signalId, 
         fix: { label: C.fixVoice[lang], run: () => onRefine(lang === "ar" ? "أعد كتابتها بصوت الكاتب نفسه: نفس الإيقاع والمفردات التي يستخدمها، دون عبارات آلية." : "Rewrite this in the member's own voice: their rhythm and vocabulary, no machine phrasing.") },
       },
       {
-        key: "grounded", label: C.grounded[lang], value: grounded,
-        sentence: a.grounded_number === false ? SENTENCE.ungrounded.low[lang] : SENTENCE.grounded[band(grounded)][lang],
-        fix: a.grounded_number === false
+        key: "grounded", label: C.grounded[lang], value: groundingUnmeasured ? null : grounded,
+        sentence: groundingUnmeasured ? C.notMeasured[lang] : a.grounded_number === false ? SENTENCE.ungrounded.low[lang] : SENTENCE.grounded[band(grounded)][lang],
+        fix: groundingUnmeasured ? undefined : a.grounded_number === false
           ? { label: C.fixNumber[lang], run: () => onRefine(lang === "ar" ? "احذف أي رقم لا يسنده الدليل المرفق، ولا تستبدله برقم آخر." : "Remove every statistic that the supplied evidence does not support. Do not substitute another number.") }
           : { label: C.fixDepth[lang], run: () => onRefine(lang === "ar" ? "أضف تفصيلًا ملموسًا واحدًا مستمدًا من الدليل المرفق." : "Add one concrete detail drawn only from the supplied evidence.") },
       },
@@ -261,17 +265,18 @@ const AdvisorCard: React.FC<Props> = ({ lang, text, initial, subject, signalId, 
       {!checking && rows.length > 0 && (
         <div style={{ display: "grid", gap: 14 }}>
           {rows.map((r) => {
-            const colour = colourOf(r.value);
-            const barColour = barColourOf(r.value);
+            const unmeasured = r.value == null;
+            const colour = unmeasured ? "var(--text-muted)" : colourOf(r.value);
+            const barColour = unmeasured ? "var(--border-strong)" : barColourOf(r.value);
             return (
               <div key={r.key}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
                   <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-primary)" }}>{r.label}</span>
                   <span style={{ fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums", fontSize: 15, fontWeight: 600, color: colour }}>
-                    {r.value}
+                    {unmeasured ? "—" : r.value}
                   </span>
                 </div>
-                <Bar value={r.value} colour={barColour} />
+                <Bar value={unmeasured ? 0 : r.value} colour={barColour} />
                 <p style={{ fontSize: 12.5, lineHeight: rtl ? 1.9 : 1.7, color: "var(--text-secondary)", margin: "8px 0 0" }}>{r.sentence}</p>
                 {r.fix && (
                   <button
