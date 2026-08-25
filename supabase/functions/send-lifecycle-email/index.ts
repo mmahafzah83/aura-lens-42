@@ -405,6 +405,10 @@ serve(withObserve("send-lifecycle-email", async (req) => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     // POSTS, not metric rows: linkedin_post_metrics holds one row per snapshot
     // per post, so a raw count says "twelve posts" when there are three.
+    // CEILING, NAMED: 5000 snapshot rows. One row per post per day means this
+    // covers ~166 posts over a 30-day window; a member above that would be
+    // under-reported, so raise this (or move to a distinct-count RPC) if that
+    // ever becomes reachable.
     const { data: metricRows } = await admin
       .from("linkedin_post_metrics")
       .select("post_id")
