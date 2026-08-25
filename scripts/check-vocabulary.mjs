@@ -344,6 +344,39 @@ const LATER_FILES = [
   "src/lib/publishFailure.ts",
   "src/lib/voiceOutcomes.ts",
   "src/lib/voiceOverview.ts",
+  // ── EDGE FUNCTIONS — Round 2B Part 3 ────────────────────────────────────
+  // Every member-facing sender is MIGRATED (home-address, send-lifecycle-email,
+  // draft-ready-email, lifecycle-emails, weekly-progress-summary,
+  // weekly-influence-brief, auras-read, onboarding-read-link). The files below
+  // are named one by one — no directory prefixes — with the reason each is not
+  // member-facing text:
+  "supabase/functions/_shared/confidence.ts",              // internal scoring comment/string
+  "supabase/functions/_shared/publishTelemetry.ts",        // telemetry payload
+  "supabase/functions/_shared/readEvidence.ts",            // model context, never rendered
+  "supabase/functions/_shared/voiceRefresh.ts",            // server log
+  "supabase/functions/admin-console/index.ts",             // admin console
+  "supabase/functions/admin-digest/index.ts",              // founder digest, admin-only
+  "supabase/functions/api-health-sentinel/index.ts",       // ops alert
+  "supabase/functions/ask-aura/index.ts",                  // LLM context block
+  "supabase/functions/aura-health-audit/index.ts",         // ops audit
+  "supabase/functions/aura-ops-report/index.ts",           // ops report, admin-only
+  "supabase/functions/calculate-aura-score/index.ts",       // score internals
+  "supabase/functions/chat-aura/index.ts",                 // LLM context block (VAULT STATS)
+  "supabase/functions/classify-posts/index.ts",            // LLM instruction
+  "supabase/functions/daily-briefing/index.ts",            // LLM instruction
+  "supabase/functions/detect-signals-v2/index.ts",         // server log
+  "supabase/functions/discover-linkedin-posts/index.ts",   // server log
+  "supabase/functions/draft-profile-copy/index.ts",        // server log
+  "supabase/functions/founder-daily-brief/index.ts",       // founder brief, admin-only
+  "supabase/functions/generate-impact-narrative/index.ts", // LLM context block
+  "supabase/functions/generate-market-mirror/index.ts",    // LLM context block
+  "supabase/functions/import-linkedin-export/index.ts",    // import summary toast, later round
+  "supabase/functions/ingest-document/index.ts",           // OCR instruction to the model
+  "supabase/functions/linkedin-sync/index.ts",             // server log
+  "supabase/functions/prepare-weekly-drafts/index.ts",     // server log
+  "supabase/functions/qa-sentinel/index.ts",               // QA harness
+  "supabase/functions/strategic-advisor/index.ts",         // LLM context block
+  "supabase/functions/voice-suggest-rules/index.ts",       // LLM context block
 ];
 
 
