@@ -1124,12 +1124,21 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         } catch (_) { /* never block */ }
       };
 
+      type ContractStage = "first_pass" | "reask" | "corrective" | "rotation";
+      const stageExtractors: Record<ContractStage, (raw: string) => Extracted> = {
+        first_pass: (raw) => extractPost(raw),
+        reask: (raw) => extractPost(raw),
+        corrective: (raw) => extractPost(raw),
+        rotation: (raw) => extractPost(raw),
+      };
+
       const judge = (
         res: { text: string; stop_reason: string | null },
+        extractor: (raw: string) => Extracted,
       ): { ok: true; text: string } | { ok: false; reason: ContractReason } => {
         // Truncation is a contract violation regardless of sentinels.
         if (res.stop_reason === "max_tokens") return { ok: false, reason: "max_tokens" };
-        const ex = extractPost(res.text);
+        const ex = extractor(res.text);
         return ex.ok ? { ok: true, text: ex.text } : { ok: false, reason: ex.reason };
       };
 
@@ -1139,11 +1148,13 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
        * most one hardened retry.
        */
       const callContract = async (
+        stage: ContractStage,
         extraDirective = "",
       ): Promise<{ ok: true; text: string } | { ok: false; reason: ContractReason; raw: string } | null> => {
         const first = await callModel(extraDirective);
         if (first === null) return null;
-        const v1 = judge(first);
+        const extractor = stageExtractors[stage];
+        const v1 = judge(first, extractor);
         if (v1.ok) return v1;
         console.warn("[generate-authority-content] output contract violation —", v1.reason);
         const retryTokens = v1.reason === "max_tokens"
@@ -1154,13 +1165,23 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
           retryTokens,
         );
         if (second === null) return { ok: false, reason: v1.reason, raw: first.text };
-        const v2 = judge(second);
+        const v2 = judge(second, extractor);
         if (v2.ok) return v2;
         return { ok: false, reason: v2.reason, raw: second.text };
       };
 
+      const failContractViolation = async (v: { reason: ContractReason; raw: string }): Promise<Response> => {
+        // FAIL CLOSED — a broken contract is never handed to a member.
+        await logContractViolation(v.reason, v.raw);
+        await closeRun("failed", "contract_violation");
+        return new Response(
+          JSON.stringify({ success: false, error_code: "contract_violation", reason: v.reason }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      };
 
-      const firstRes = await callContract();
+
+      const firstRes = await callContract("first_pass");
       if (firstRes === null) {
         await closeRun("failed", "ai_error");
         return new Response(JSON.stringify({ success: false, error: "AI error" }), {
@@ -1169,13 +1190,7 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         });
       }
       if (!firstRes.ok) {
-        // FAIL CLOSED — a broken contract is never handed to a member.
-        await logContractViolation(firstRes.reason, firstRes.raw);
-        await closeRun("failed", "contract_violation");
-        return new Response(
-          JSON.stringify({ success: false, error_code: "contract_violation", reason: firstRes.reason }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        return await failContractViolation(firstRes);
       }
       const firstPass = firstRes.text;
       let content = firstPass;
@@ -1264,7 +1279,8 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
           `grounded: ${preGate.grounded_number};`,
           `ending(${chosenEnding}): ${preGate.ending_ok}`,
         );
-        const reaskRes = await callContract(directive);
+        const reaskRes = await callContract("reask", directive);
+        if (reaskRes && !reaskRes.ok) return await failContractViolation(reaskRes);
         const reask = reaskRes && reaskRes.ok ? hygiene(stripLabels(reaskRes.text)) : "";
 
         if (reask) {
@@ -1305,7 +1321,8 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
           ? `\n\nإعادة كتابة إلزامية:\n- لا تذكر أي رقم أو نسبة أو مبلغ أو تاريخ غير وارد حرفياً في الأدلة المرفقة. إن لم يكن الرقم في الأدلة، اكتب الجملة بلا رقم.\n- لا تذكر اسم أي شركة أو جهة أو شخص أو تاريخ محدد غير وارد حرفياً في الأدلة. إن لم يرد الاسم في الأدلة، اكتب الجملة بلا اسم.${unsourcedEntities.length ? `\n- احذف تحديداً: ${unsourcedEntities.join("، ")}` : ""}\n- كل جملة مكتملة. لا جملة تنتهي بحرف جر (منذ، على، من، في، عن، إلى، خلال).\n- لا سطر يبدأ بمسافة أو بعلامة ترقيم أو بشظية جملة.${bansEmoji ? "\n- ممنوع استخدام الإيموجي أو الرموز التعبيرية نهائياً." : ""}\n- لا تستخدم ↳ أو ↲ إطلاقاً.`
           : `\n\nMANDATORY REWRITE:\n- Do not state any figure, percentage, amount or date that is not present verbatim in the supplied evidence. If the number is not in the evidence, write the sentence without a number.\n- Do not name any organisation, person or specific date that is not present verbatim in the supplied evidence. If the name is not in the evidence, write the sentence without it.${unsourcedEntities.length ? `\n- Specifically remove: ${unsourcedEntities.join(", ")}` : ""}\n- Every sentence must be complete. No sentence may end on a preposition.\n- No line may start with whitespace, punctuation or an orphaned fragment.${bansEmoji ? "\n- Use no emoji or pictographic symbols at all." : ""}`;
 
-        const retry = await callContract(corrective);
+        const retry = await callContract("corrective", corrective);
+        if (retry && !retry.ok) return await failContractViolation(retry);
         const candidate = retry && retry.ok ? hygiene(stripLabels(retry.text)) : "";
 
         const candidateUnsourced = candidate ? findUnsourcedNumbers(candidate, evidenceText) : ["retry_failed"];
@@ -1436,7 +1453,8 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
             );
           }
           // ONE regeneration, carrying both corrections at once.
-          const rot = await callContract(rotBit + first.fidelity.directive);
+          const rot = await callContract("rotation", rotBit + first.fidelity.directive);
+          if (rot && !rot.ok) return await failContractViolation(rot);
           const rotCand = rot && rot.ok ? hygiene(stripLabels(rot.text)) : "";
 
           const second = rotCand ? verdictOf(rotCand) : null;
