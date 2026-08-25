@@ -171,7 +171,8 @@ Deno.serve(async (req) => {
       admin
         .from("authority_voice_profiles")
         .select("id, tone, example_posts, is_primary, updated_at")
-        .eq("user_id", user_id),
+        .eq("user_id", user_id)
+        .eq("mode_key", "default"),
       admin
         .from("strategic_signals")
         .select("id, status, lifecycle_tier, strength_score, updated_at")

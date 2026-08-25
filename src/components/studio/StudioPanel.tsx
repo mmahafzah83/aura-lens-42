@@ -1814,6 +1814,8 @@ export default function StudioPanel({
             .select("example_posts")
             .eq("user_id", userId)
             .eq("language", writeLang)
+            // Samples belong to the member's voice, not to a mode.
+            .eq("mode_key", "default")
             .maybeSingle();
           const existingExamples = Array.isArray((vp as any)?.example_posts) ? ((vp as any).example_posts as any[]) : [];
           const updated = [...existingExamples, content].slice(-10);
@@ -1822,7 +1824,8 @@ export default function StudioPanel({
               .from("authority_voice_profiles")
               .update({ example_posts: updated } as any)
               .eq("user_id", userId)
-              .eq("language", writeLang);
+              .eq("language", writeLang)
+              .eq("mode_key", "default");
           } else {
             const { data: anyRow } = await supabase
               .from("authority_voice_profiles")
@@ -1833,6 +1836,7 @@ export default function StudioPanel({
               user_id: userId,
               example_posts: updated,
               language: writeLang,
+              mode_key: "default",
               is_primary: !anyRow || anyRow.length === 0,
             } as any);
           }

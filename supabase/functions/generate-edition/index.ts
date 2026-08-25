@@ -514,6 +514,7 @@ serve(async (req) => {
       .select("tone, preferred_structures, storytelling_patterns, vocabulary_preferences, example_posts")
       .eq("user_id", targetUserId)
       .eq("language", lang)
+      .eq("mode_key", "default")
       .maybeSingle();
 
     const voiceBlock = `

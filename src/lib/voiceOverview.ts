@@ -301,6 +301,9 @@ export async function loadVoiceOverview(userId: string): Promise<VoiceOverviewMo
         .from("authority_voice_profiles")
         .select("id, readiness, updated_at")
         .eq("user_id", userId)
+        // The overview describes the member's voice — the default row, never a mode.
+        .eq("mode_key", "default")
+        .order("is_primary", { ascending: false })
         .order("updated_at", { ascending: false })
         .limit(1),
       supabase.from("voice_trait_registry").select("trait_key, display_name, computable, min_evidence, sort_order").eq("active", true),

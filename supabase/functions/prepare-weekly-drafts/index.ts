@@ -196,7 +196,8 @@ Deno.serve(async (req) => {
         const { data: voices } = await admin
           .from("authority_voice_profiles")
           .select("language, is_primary")
-          .eq("user_id", userId);
+          .eq("user_id", userId)
+          .eq("mode_key", "default");
         const primaryRow = (voices || []).find((v: any) => v.is_primary);
         const primaryLang: string = (primaryRow?.language as string) || "en";
         const secondaryRow = (voices || []).find(

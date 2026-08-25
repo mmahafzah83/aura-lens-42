@@ -326,7 +326,9 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
     const { data } = await supabase
       .from("authority_voice_profiles")
       .select("id, language, is_primary, example_posts, admired_posts, vocabulary_preferences, preferred_structures, storytelling_patterns, tone, allowed_endings, updated_at")
-      .eq("user_id", session.user.id);
+      .eq("user_id", session.user.id)
+      // This editor edits the member's voice rows, one per language — not modes.
+      .eq("mode_key", "default");
     setProfiles(Array.isArray(data) ? data : []);
     const { count } = await supabase
       .from("linkedin_posts")
@@ -431,7 +433,7 @@ const VoiceEngineSection = ({ onWrite }: { onWrite?: () => void } = {}) => {
         if (error) throw error;
       } else {
         const { error } = await supabase.from("authority_voice_profiles")
-          .insert({ user_id: session.user.id, language: "en", is_primary: true, ...stamped } as any);
+          .insert({ user_id: session.user.id, language: "en", mode_key: "default", is_primary: true, ...stamped } as any);
         if (error) throw error;
         await loadProfiles();
         return;

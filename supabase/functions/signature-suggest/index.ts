@@ -215,7 +215,8 @@ Deno.serve(async (req) => {
         .limit(5),
       admin.from("authority_voice_profiles")
         .select("tone, preferred_structures")
-        .eq("user_id", userId).maybeSingle(),
+        .eq("user_id", userId).eq("mode_key", "default")
+        .order("is_primary", { ascending: false }).limit(1).maybeSingle(),
       admin.from("linkedin_posts")
         .select(`${CORPUS_COLUMNS}, engagement_score, created_at`)
         .eq("user_id", userId)
