@@ -230,6 +230,14 @@ Deno.serve(async (req) => {
         }
 
         // 5+6) Generate + insert
+        /**
+         * SIBLING AWARENESS. These three drafts are three independent calls to
+         * the generator, so without this each one is written as if it were the
+         * only one — which is how a single member ended up with seven drafts
+         * all opening on the same word. Every shape produced in this run is
+         * threaded into the next call so draft 2 and 3 cannot repeat draft 1.
+         */
+        const siblingShapes: Array<{ hook_style: string | null; ending_type: string | null; opening: string }> = [];
         for (let i = 0; i < candidates.length; i++) {
           const signal = candidates[i];
           const isLast = i === candidates.length - 1;
@@ -287,6 +295,10 @@ Deno.serve(async (req) => {
                   language: draftLang,
                   stream: false,
                   user_id: userId,
+                  signal_id: signal.id,
+                  // What this run has already written — so this draft cannot
+                  // repeat its own siblings' opening.
+                  sibling_shapes: siblingShapes,
                 }),
               },
             );
@@ -323,6 +335,11 @@ Deno.serve(async (req) => {
                 confidence: "confirmed",
                 prompt_version: prov?.prompt_version ?? null,
                 model_used: prov?.model_used ?? null,
+                // Classified at write time, so the next generation can see the
+                // shape of this one. No backfill; from here on every draft
+                // carries its own fingerprint.
+                hook_style: json?.hook_style ?? null,
+                ending_type: json?.ending_type ?? null,
                 generation_params: {
                   source: "weekly_ready",
                   week: weekTag,
@@ -349,6 +366,12 @@ Deno.serve(async (req) => {
               contributions.push({ kind: "signal", id: signal.id, role: "topic" });
             }
             await writeLineage(admin, "content_items", created.id, contributions);
+
+            siblingShapes.push({
+              hook_style: json?.hook_style ?? null,
+              ending_type: json?.ending_type ?? null,
+              opening: String(json?.opening_words || content).slice(0, 200),
+            });
 
             draftsCreated++;
 

@@ -850,7 +850,9 @@ export type Database = {
           body: string
           confidence: string
           created_at: string
+          ending_type: string | null
           generation_params: Json
+          hook_style: string | null
           id: string
           language: string
           made_by: string
@@ -869,7 +871,9 @@ export type Database = {
           body?: string
           confidence?: string
           created_at?: string
+          ending_type?: string | null
           generation_params?: Json
+          hook_style?: string | null
           id?: string
           language?: string
           made_by?: string
@@ -888,7 +892,9 @@ export type Database = {
           body?: string
           confidence?: string
           created_at?: string
+          ending_type?: string | null
           generation_params?: Json
+          hook_style?: string | null
           id?: string
           language?: string
           made_by?: string

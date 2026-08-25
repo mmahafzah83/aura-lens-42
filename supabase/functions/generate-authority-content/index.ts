@@ -1,7 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { buildContentDNA, VOICE_PRECEDENCE, NUMBER_INTEGRITY, DEFAULT_REGISTER_EN, DEFAULT_REGISTER_AR } from "../_shared/contentDNA.ts";
+import {
+  buildContentDNA,
+  VOICE_PRECEDENCE,
+  NUMBER_INTEGRITY,
+  DEFAULT_REGISTER_EN,
+  DEFAULT_REGISTER_AR,
+  OPEN_TYPES,
+  LAND_TYPES,
+  OPEN_SPECS,
+  LAND_SPECS,
+  rotateType,
+  rotationSeed,
+  openTypeOfHook,
+  landTypeOfEnding,
+  firstSixWords,
+  shouldCollapse,
+  type OpenType,
+  type LandType,
+} from "../_shared/contentDNA.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
 import { startRun, runIdFrom, type RunHandle } from "../_shared/operationRun.ts";
@@ -36,6 +54,14 @@ const FRAMEWORK_PROMPTS: Record<string, string> = {
   story_lesson_question: "Structure this content using the Story → Lesson → Question framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
 };
 
+/**
+ * The Arabic layer. It carries IDENTITY, REGISTER, worked formatting examples
+ * and hashtags — and nothing else. The structure is not defined here: it lives
+ * once, in `contentDNA`, and it is language-independent. This prompt used to
+ * carry its own competing 7-beat spec, its own banned list, its own "always end
+ * on a question" mandate and a worked example that opened on "معظم" — which is
+ * how 47 of 80 Arabic and English drafts came to open with the same word.
+ */
 const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura. مهمتك كتابة منشورات LinkedIn عربية باسم {{name}}، {{role}} المتخصص في {{sector}}.
 
 هويتك في الكتابة:
@@ -48,16 +74,7 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 الكلمات التقنية تبقى بالإنجليزية: AI، KPI، dashboard، API، roadmap.
 لا عامية كاملة، لا لغة إعلامية رسمية.
 
-هيكل البوست الإلزامي — بهذا الترتيب:
-1. Hook — جملة صادمة أو واقعية (سطر أو سطرين فقط)
-2. Reality — وصف شيء القارئ يعيشه داخل جهته
-3. Illusion — "كل شيء يبدو على ما يرام"
-4. Break — كسر التوقع: "لكن..."
-5. Truth — السبب الأعمق الحقيقي
-6. Impact — الأثر: تعب أكثر، قيمة أقل، أو العكس
-7. Question — سؤال محدد، غير مريح، يعلق في الذهن
-
-التنسيق البصري — إلزامي في كل بوست:
+الهيكل: اتبع "هيكل المنشور" الوارد أعلاه حرفياً — هو الهيكل الوحيد. لا تضف حركات ولا تعد ترتيبها.
 
 قواعد الأسطر:
 - سطر فارغ بين كل فكرة رئيسية
@@ -65,8 +82,8 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 
 للقوائم والنقاط — استخدم:
 ◆ للنقاط الرئيسية في القائمة
-↳ للتفاصيل والتوضيح تحت أي نقطة
 - للنقاط الثانوية البسيطة
+ولا تستخدم ↳ في العربية إطلاقاً.
 
 للأرقام المتسلسلة — استخدم:
 1. أو ١. للخطوات المرتبة
@@ -78,45 +95,25 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 ❌ للخطأ الشائع أو ما لا يجب
 
 لا تستخدم أكثر من 2-3 إيموجي في البوست كله.
-لا تضع إيموجي في الـ Hook أو الـ Question — فقط في منتصف البوست.
+لا تضع إيموجي في الافتتاح ولا في سطر الخاتمة — فقط في منتصف البوست.
 
-مثال على التنسيق الصحيح:
+مثال على التنسيق الصحيح (مثال تنسيق فقط — لا تنسخ افتتاحه ولا خاتمته):
 المشكلة ليست في غياب الخطة.
 المشكلة في أن أحداً لا يملكها.
 
 ◆ الفريق التنفيذي وافق على الاستراتيجية
-↳ لكن لا أحد يعرف من يقود التنفيذ
+- لكن لا أحد يعرف من يقود التنفيذ
 
 ◆ الإدارة الوسطى تنتظر التوجيه
-↳ لأن الأولويات تتغير كل ربع
-
-◆ الجميع مشغول
-↳ لكن لا أحد يتقدم
+- لأن الأولويات تتغير كل ربع
 
 📍 الخطة بلا مالك ليست خطة.
 هي وثيقة.
 
-دعني أسألك:
-كم مبادرة في جهتك لها راعٍ رسمي... ولا مالك حقيقي؟
-
-ممنوع منعاً باتاً:
-- "في عالم اليوم المتغير"
-- "لا شك أن التحول الرقمي أصبح ضرورة"
-- "يسعدني أن أشارككم"
-- "إيماناً منا بأهمية"
-- "وفي هذا السياق"
-- "ما رأيكم؟" / "شاركونا أفكاركم"
-- فقرات طويلة / تحفيز فارغ
-- ممكن / ربما / غالباً / leverage / optimize / cutting-edge / حلول مبتكرة
-- "لا يخفى على أحد" / "من نافلة القول" / "تجدر الإشارة إلى" / "مما لا شك فيه"
-- "في هذا السياق" / "من الضروري أن ندرك" / "على صعيد آخر" / "يُعد من أهم"
-- أي جملة أطول من 15 كلمة
-
-قواعد افتتاح البوست (إلزامية):
-- لا تبدأ البوست أبداً بكلمة "منشور" أو "منشور LinkedIn" أو أي تسمية للصيغة. ابدأ بالـ Hook مباشرة.
-- السطر الأول يجب أن يكون كسراً للنمط: ادعاء جريء، رقم محدد، سؤال استفزازي، أو مشهد قصير.
+قواعد افتتاح البوست:
+- لا تبدأ البوست أبداً بكلمة "منشور" أو "منشور LinkedIn" أو أي تسمية للصيغة. ابدأ بالافتتاح مباشرة.
+- الافتتاح يتبع نوع الافتتاح المحدد لهذا البوست أعلاه، ولا شيء غيره.
 - مثال خاطئ: "منشور LinkedIn معظم مشاريع التحول الرقمي..."
-- مثال صحيح: "معظم مشاريع التحول الرقمي تنجح في العرض التقديمي وتفشل في التشغيل."
 
 قواعد التنسيق الصارمة:
 - لا تستخدم "---" كفاصل بين الأقسام. استخدم سطراً فارغاً.
@@ -124,17 +121,12 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 - لا تستخدم "POST" أو "منشور LinkedIn" كعنوان داخل النص.
 - اجعل الجمل قصيرة (أقل من 12 كلمة)، كل جملة في سطر مستقل.
 
-تنويع الهيكل (لا تستخدم نفس الهيكل دائماً — إذا كان framework غير محدد، اختر عشوائياً):
-- البنية أ — سلسلة الرؤى: خطاف → إعادة إطار → 3 كتل رؤية → خاتمة حادة → سؤال
-- البنية ب — قائمة مرقمة: خطاف → لماذا الآن → 5 نقاط مرقمة → خلاصة → سؤال
-- البنية ج — قصة: مشهد قصير (2-3 أسطر) → الدرس → إطار مستخلص → تطبيق → سؤال
-
 الهاشتاقات — 3 فقط في نهاية البوست:
 - واحد لقطاع القارئ: استخدم قطاع المستخدم من ملفه الشخصي (sector_focus) بصيغة هاشتاق عربي مناسب. إن لم يوجد قطاع، استخدم #التحول_الرقمي
 - واحد جغرافي: #السعودية أو #الخليج أو #رؤية2030
 - واحد للجمهور: #قيادة أو #التحول_المؤسسي
 
-أيضاً: اقرأ voice_profile المرفق واستخدم preferred_structures و storytelling_patterns و vocabulary_preferences منه لتشكيل البوست.
+أيضاً: اقرأ voice_profile المرفق واستخدم storytelling_patterns و vocabulary_preferences منه لتلوين النبرة والمفردات — لا لتغيير الهيكل.
 البوست الناتج يجب أن يعكس هذا الصوت تحديداً، لا صوتاً عاماً.
 
 الإخراج: البوست مباشرة فقط — بدون مقدمة أو عنوان أو تفسير.`;
@@ -634,41 +626,119 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       const chosenOpening = pickOpening(memberPrefs.openings);
 
       /**
-       * Variation: never repeat the shape of the member's most recent post.
-       * Silence is the correct output when there is not enough history — a
-       * fabricated constraint is worse than none. Never blocks generation.
+       * VARIATION LOOKBACK — repointed at `content_items`.
+       *
+       * This read used to query `linkedin_posts`, where Aura's drafts have
+       * never lived, so it had literally never once seen the thing it exists to
+       * differ from. Aura's drafts are `content_items` rows with
+       * `made_by='aura'`; discarded rows are excluded because an archived draft
+       * is not a shape the member saw. Five most recent, no minimum count: one
+       * prior draft is enough to avoid repeating it.
        */
-      let recentHookStyle: string | null = null;
-      let recentEndingType: string | null = null;
+      let recentDrafts: Array<{ hook_style: string | null; ending_type: string | null; body: string | null }> = [];
       try {
         const { data: recentRows } = await supabase
-          .from("linkedin_posts")
-          .select("hook_style, ending_type, framework_type")
+          .from("content_items")
+          .select("hook_style, ending_type, body, created_at")
           .eq("user_id", effectiveUserId)
+          .eq("made_by", "aura")
+          .neq("status", "discarded")
           .order("created_at", { ascending: false })
           .limit(5);
-        const rows = (recentRows || []).filter((r: any) => r.hook_style || r.ending_type || r.framework_type);
-        if (rows.length >= 3) {
-          recentHookStyle = (rows.find((r: any) => r.hook_style)?.hook_style as string) || null;
-          recentEndingType = (rows.find((r: any) => r.ending_type)?.ending_type as string) || null;
-        }
+        recentDrafts = (recentRows || []) as any[];
       } catch (_e) {
         // A history read must never cost a member their draft.
       }
-      const recentPatternBlock = (() => {
-        const bits: string[] = [];
-        if (recentHookStyle) {
-          bits.push(effectiveLanguage === "ar"
-            ? `آخر منشور فُتح بنمط "${recentHookStyle}" — لا تعِد استخدامه هذه المرة.`
-            : `The last post opened with a "${recentHookStyle}" hook — do not reuse it this time.`);
+
+      /**
+       * SIBLING AWARENESS — a batch that writes three drafts in a loop makes
+       * three independent calls. Without this, draft 2 and 3 cannot know what
+       * draft 1 opened with, which is why one member ended up with seven drafts
+       * all opening on the same word. The caller threads what it has already
+       * produced in this run through `sibling_shapes`.
+       */
+      const siblingShapes: Array<{ hook_style?: string | null; ending_type?: string | null; opening?: string | null }> =
+        Array.isArray((params as any)?.sibling_shapes) ? (params as any).sibling_shapes : [];
+
+      const recentHookStyle = recentDrafts.find((r) => r.hook_style)?.hook_style || null;
+      const recentEndingType = recentDrafts.find((r) => r.ending_type)?.ending_type || null;
+
+      /** Every OPEN/LAND type seen in the last three drafts, siblings first. */
+      const avoidOpenTypes: (OpenType | null)[] = [
+        ...siblingShapes.map((s) => openTypeOfHook(s?.hook_style ?? null)),
+        ...recentDrafts.slice(0, 3).map((r) => openTypeOfHook(r.hook_style)),
+      ];
+      const avoidLandTypes: (LandType | null)[] = [
+        ...siblingShapes.map((s) => landTypeOfEnding(s?.ending_type ?? null)),
+        ...recentDrafts.slice(0, 3).map((r) => landTypeOfEnding(r.ending_type)),
+      ];
+      /** The literal openings this post must not reproduce. */
+      const avoidOpeningTexts: string[] = [
+        ...siblingShapes.map((s) => String(s?.opening || "")),
+        ...recentDrafts.map((r) => String(r.body || "")),
+      ].filter((t) => firstSixWords(t).length > 0);
+
+      /**
+       * Precedence 1: a learned voice profile with observed opening habits
+       * weights the pool toward what the member really does.
+       */
+      const PREF_TO_OPEN: Record<string, OpenType> = {
+        number_first: "specific_number",
+        contrarian_claim: "contrarian",
+        scene: "scene",
+        question: "question",
+        confession: "confession",
+        observation: "scene",
+        contrast: "contrarian",
+        dialogue: "scene",
+      };
+      const openWeights: Record<string, number> | undefined = (() => {
+        const list = memberPrefs.openings || [];
+        if (!list.length) return undefined;
+        const w: Record<string, number> = {};
+        for (const o of list) {
+          const t = PREF_TO_OPEN[o];
+          if (t) w[t] = (w[t] || 0) + 1;
         }
-        if (recentEndingType) {
+        return Object.keys(w).length ? w : undefined;
+      })();
+      const landWeights: Record<string, number> | undefined = (() => {
+        const allowed = Array.isArray(voiceProfile?.allowed_endings) ? voiceProfile!.allowed_endings : [];
+        const w: Record<string, number> = {};
+        for (const e of allowed) {
+          const t = landTypeOfEnding(
+            String(e) === "hanging_line" || String(e) === "signature" ? "suspended" : String(e),
+          );
+          if (t) w[t] = (w[t] || 0) + 1;
+        }
+        return Object.keys(w).length >= 2 ? w : undefined;
+      })();
+
+      const seed = rotationSeed(
+        effectiveUserId,
+        signal_id || topic || "",
+        siblingShapes.length,
+        new Date().toISOString().slice(0, 10),
+      );
+      const openType: OpenType = rotateType(OPEN_TYPES, { avoid: avoidOpenTypes, seed, weights: openWeights });
+      const landType: LandType = rotateType(LAND_TYPES, { avoid: avoidLandTypes, seed: seed + 7, weights: landWeights });
+
+      const recentPatternBlock = (() => {
+        const bannedOpens = [...new Set(avoidOpenTypes.filter(Boolean))] as OpenType[];
+        const bits: string[] = [];
+        if (bannedOpens.length) {
           bits.push(effectiveLanguage === "ar"
-            ? `وانتهى بخاتمة من نوع "${recentEndingType}" — اختر خاتمة مختلفة.`
-            : `It closed with a "${recentEndingType}" ending — choose a different close.`);
+            ? `أنواع افتتاح مستهلكة في آخر المسودات — ممنوعة هنا: ${bannedOpens.join("، ")}.`
+            : `OPEN types already used in the most recent drafts — banned here: ${bannedOpens.join(", ")}.`);
+        }
+        if (avoidOpeningTexts.length) {
+          const shown = avoidOpeningTexts.slice(0, 5).map((t) => `"${firstSixWords(t)}"`).join(" / ");
+          bits.push(effectiveLanguage === "ar"
+            ? `ولا يجوز أن تبدأ الكلمات الست الأولى بأي من هذه: ${shown}.`
+            : `The first six words must not match any of these: ${shown}.`);
         }
         if (!bits.length) return "";
-        return "\n\n" + (effectiveLanguage === "ar" ? "النمط الأخير:" : "RECENT PATTERN:") + " " + bits.join(" ");
+        return "\n\n" + (effectiveLanguage === "ar" ? "منع التكرار:" : "NO-REPEAT:") + " " + bits.join(" ");
       })();
 
       // Language + voice handling
@@ -709,19 +779,13 @@ If this evidence contains no usable number, write the post WITHOUT a number.`;
       if (rulesBlock) voiceSection += `\n\n${rulesBlock}`;
 
       const sectorContextLabel = `${(typeof sector === "string" && sector.trim()) || profile?.sector_focus || "their own"} context`;
-      const hookFramework = `You are writing for ${readerDescription}. Always open with one of these two hook types:
-
-1. Contrarian truth: Challenge what the industry believes in one sentence under 20 words.
-2. Specific tension: Name a contradiction the reader lives with daily. Be specific to ${sectorContextLabel}.
-
-Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (in the exact shape named by ENDING FOR THIS POST below — that directive is the only authority on the close). Write in short paragraphs. One idea per line. No dense blocks.
-
-FORMATTING RULES (mandatory):
-- NEVER start the post with a format label like "POST", "LinkedIn Post", "منشور LinkedIn", or "BOOST". The very first line must be the hook content itself.
-- Do NOT use "---" or "***" as section separators. Use a single blank line.
-- Do NOT use "#" markdown headers. LinkedIn does not render markdown headers.
-- NEVER use markdown bold or asterisks. Do NOT wrap words in **double asterisks** or *single asterisks* — LinkedIn renders them literally. For emphasis, use line breaks, ALL-CAPS sparingly, or a leading bullet glyph. Numbered lists "1. " are acceptable. Bullet glyphs ◆ ↳ are acceptable.
-- No code fences, no horizontal rules, no markdown links.`;
+      /**
+       * What used to be `hookFramework` — a second, competing 4-step structure
+       * that MANDATED a contrarian opening on every post — is gone. Structure
+       * and formatting live once, in `contentDNA`. What remains here is only the
+       * audience note, which is context, not structure.
+       */
+      const audienceNote = `You are writing for ${readerDescription}. Ground every concrete detail in ${sectorContextLabel}. Never open with "I am excited" or "In today's world".`;
 
       const langLabel = effectiveLanguage === "ar"
         ? `اكتب المنشور بالكامل بالعربية. الأدلة والحقائق أدناه قد تكون بالإنجليزية — استخرج المعنى واكتبه بالعربية، ولا تنسخ أي جملة أو عبارة إنجليزية كما هي. تبقى بالإنجليزية المصطلحات التقنية فقط (AI, KPI, dashboard, API).`
@@ -778,29 +842,47 @@ FORMATTING RULES (mandatory):
         if (chosen) postTypeInstruction = `\n\n${chosen}`;
       }
 
-      // The ending is a rotatable value the profile allows — never an
-      // instruction read out of a style field.
-      // Bias away from the ending the member just used, where an alternative exists.
+      /**
+       * The close is now decided in ONE place: the rotated LAND type. The old
+       * `pickEnding()` draw is derived FROM it rather than competing with it, so
+       * the shape check (`endingShapeOk`) and the prompt can never disagree —
+       * and no post type mandates a question any more.
+       */
+      const LAND_TO_ENDING: Record<LandType, string> = {
+        statement: "suspended",
+        question: "question",
+        contrast: "reframe",
+        invitation: "cta",
+        consequence: "number",
+      };
+      const allowedEndings: string[] = Array.isArray(voiceProfile?.allowed_endings) ? voiceProfile!.allowed_endings : [];
       const chosenEnding = (() => {
-        const first = pickEnding(voiceProfile?.allowed_endings);
-        if (!recentEndingType || first !== recentEndingType) return first;
-        for (let i = 0; i < 6; i++) {
-          const next = pickEnding(voiceProfile?.allowed_endings);
-          if (next !== recentEndingType) return next;
-        }
-        return first;
+        const derived = LAND_TO_ENDING[landType];
+        if (!allowedEndings.length || allowedEndings.includes(derived)) return derived;
+        // The member has narrowed the pool; respect it and fall back to a draw.
+        return pickEnding(voiceProfile?.allowed_endings);
       })();
       const endingDirective = effectiveLanguage === "ar"
-        ? `\n\nالخاتمة لهذا البوست: ${ENDING_DIRECTIVE_AR[chosenEnding]}`
-        : `\n\nENDING FOR THIS POST: ${ENDING_DIRECTIVE_EN[chosenEnding]}`;
+        ? `\n\nالخاتمة لهذا البوست: ${ENDING_DIRECTIVE_AR[chosenEnding] || LAND_SPECS[landType].def_ar}`
+        : `\n\nENDING FOR THIS POST: ${ENDING_DIRECTIVE_EN[chosenEnding] || LAND_SPECS[landType].def_en}`;
+
+      /**
+       * The collapse: fewer than 4 pieces of evidence (or a short preferred
+       * length) merges PROOF and SO-WHAT into one beat — a 4-beat post. Never an
+       * empty beat, never a padded one.
+       */
+      const collapseThisPost = shouldCollapse({
+        evidenceCount: groundingFragments.length,
+        lengthMax: Number((voiceProfile as any)?.length_max) || null,
+      });
 
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
-${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription, register: effectiveRegister, closeOnQuestion: chosenEnding === "question" })}
+${buildContentDNA({ lang: effectiveLanguage === "ar" ? "ar" : "en", texture: effTexture, readerDescription, register: effectiveRegister, openType, landType, collapse: collapseThisPost })}${recentPatternBlock}
 
 ${groundingContext}
 
-${hookFramework}
+${audienceNote}
 
 ${voiceSection}
 
@@ -813,28 +895,22 @@ ${frameworkInstruction}
 ${extraInstruction}${flashAddendum}${endingDirective}
 
 Write with conviction. No generic statements. Every line should demonstrate strategic depth.
-
-BANNED VOCABULARY — never use these words or phrases:
-delve, tapestry, landscape (figurative), navigate, realm, beacon, synergy, leverage (as verb), utilize, facilitate, cutting-edge, game-changing, groundbreaking, revolutionary, dive deep, unpack, double down, move the needle, it's worth noting, it goes without saying, in today's rapidly changing world, at the end of the day, not just X but Y, serves as a testament, at its core, let's dive in, here's what you need to know, trajectory (use 'growth' instead).
-
-Rewrite any sentence that uses these with concrete, specific language.${postTypeInstruction}${
+${postTypeInstruction}${
   isFlash
     ? (variationNum === 1
-        ? "\n\nWrite as a CONTRARIAN — challenge what the sector believes. Open with a provocative claim."
+        ? "\n\nAngle: CONTRARIAN — challenge what the sector believes."
         : variationNum === 2
-        ? (effectiveLanguage === "ar"
-            ? "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'هناك نمط لم يلاحظه أحد...'"
-            : "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'There's a pattern no one has noticed...'")
+        ? "\n\nAngle: PATTERN REVEALER — expose a hidden structural pattern."
         : variationNum === 3
-        ? "\n\nWrite as a PRACTITIONER — share a specific operational tension from real project experience. Open with a scene."
+        ? "\n\nAngle: PRACTITIONER — a specific operational tension from real project experience."
         : "")
         : ""
 }
 
 ===
-FINAL OUTPUT RULE (highest priority): Your entire response is the finished post and nothing else. The first character you output is the first character of the hook. Write nothing before the hook and nothing after the closing question — no setup, no notes, no labels of any kind, in any language.
+FINAL OUTPUT RULE (highest priority): Your entire response is the finished post and nothing else. The first character you output is the first character of the OPEN beat. Write nothing before it and nothing after the LAND line — no setup, no notes, no labels of any kind, in any language.
 
-قاعدة الإخراج النهائية: ردّك بالكامل هو البوست النهائي ولا شيء غيره. أول حرف تكتبه هو أول حرف من الـ Hook. لا تكتب أي شيء قبل الـ Hook ولا بعد السؤال الختامي — بأي لغة.`;
+قاعدة الإخراج النهائية: ردّك بالكامل هو البوست النهائي ولا شيء غيره. أول حرف تكتبه هو أول حرف من الافتتاح. لا تكتب أي شيء قبل الافتتاح ولا بعد سطر الخاتمة — بأي لغة.`;
 
       const userMessageContent = (() => {
         const themeStr = typeof theme === "string" ? theme.trim() : "";
@@ -1174,6 +1250,69 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
       if (!integrity.ok) warnings.push("integrity_issues");
       if (bansEmoji && containsEmoji(content)) warnings.push("emoji_present");
 
+      // ── ROTATION ENFORCEMENT ─────────────────────────────────────────────
+      // A prompt sentence is not enforcement; this check is. The produced draft
+      // is classified and compared against the member's last five drafts (and
+      // this run's siblings) on BOTH shape and literal opening words. One
+      // regeneration naming exactly what to avoid; if the retry repeats too, the
+      // draft still ships — a member is never blocked — but the repetition is
+      // logged at `high` so it is visible instead of silent.
+      let rotationRepeat: string | null = null;
+      {
+        const repeatOf = (text: string): string | null => {
+          const six = firstSixWords(text);
+          if (six && avoidOpeningTexts.some((prev) => firstSixWords(prev) === six)) {
+            return `same_first_six_words:"${six}"`;
+          }
+          const producedOpen = openTypeOfHook(hookStyleOf(text));
+          if (producedOpen && avoidOpenTypes.includes(producedOpen)) {
+            return `repeated_open_type:${producedOpen}`;
+          }
+          const producedLand = landTypeOfEnding(endingTypeOf(text));
+          if (producedLand && avoidLandTypes.slice(0, 1).includes(producedLand)) {
+            return `repeated_land_type:${producedLand}`;
+          }
+          return null;
+        };
+
+        const firstRepeat = repeatOf(content);
+        if (firstRepeat) {
+          const avoidWords = [...new Set(avoidOpeningTexts.map(firstSixWords).filter(Boolean))].slice(0, 5);
+          const rotDirective = isAr
+            ? `\n\nإعادة كتابة إلزامية — الافتتاح مكرر (${firstRepeat}).\n- ابدأ البوست بنوع افتتاح "${openType}" كما هو محدد أعلاه.\n- لا تبدأ بأي من هذه الكلمات: ${avoidWords.map((w) => `"${w}"`).join("، ")}.\n- غيّر الكلمات الست الأولى تماماً. أبقِ الجوهر والأدلة كما هي.`
+            : `\n\nMANDATORY REWRITE — the opening repeats a recent draft (${firstRepeat}).\n- Open in the "${openType}" OPEN type named above, and close in the "${landType}" LAND type.\n- Do not begin with any of these: ${avoidWords.map((w) => `"${w}"`).join(", ")}.\n- Change the first six words entirely. Keep the substance and the evidence.`;
+          const rotRaw = await callModel(rotDirective);
+          const rotCand = rotRaw ? hygiene(stripLabels(stripLeadingScaffold(rotRaw))) : "";
+          const secondRepeat = rotCand ? repeatOf(rotCand) : "regenerate_failed";
+          if (rotCand && !secondRepeat) {
+            content = rotCand;
+          } else {
+            if (rotCand) content = rotCand;
+            rotationRepeat = secondRepeat || firstRepeat;
+            warnings.push("rotation_repeat");
+            try {
+              const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+              await admin.from("ef_error_log").insert({
+                function_name: "generate-authority-content",
+                severity: "high",
+                error_message: `ROTATION_REPEAT ${rotationRepeat} user=${effectiveUserId}`,
+                context: {
+                  stage: "rotation_enforcement",
+                  user_id: effectiveUserId,
+                  open_type: openType,
+                  land_type: landType,
+                  first_repeat: firstRepeat,
+                  after_retry: secondRepeat,
+                  first_six_words: firstSixWords(content),
+                },
+              });
+            } catch (e) {
+              console.error("[generate-authority-content] rotation log failed:", (e as Error).message);
+            }
+          }
+        }
+      }
+
       // ── QUALITY GATE ─────────────────────────────────────────────────────
       // D125: the gate runs LAST, after every corrective rewrite, so the stored
       // verdict always describes the exact text the member receives. It uses a
@@ -1311,6 +1450,13 @@ FINAL OUTPUT RULE (highest priority): Your entire response is the finished post 
         hook_style: hookStyleOf(content),
         requested_ending: chosenEnding,
         chosen_opening: chosenOpening,
+        // The rotation, handed back so the caller can store it and so siblings
+        // in the same batch can be told what not to repeat.
+        open_type: openType,
+        land_type: landType,
+        collapsed: collapseThisPost,
+        rotation_repeat: rotationRepeat,
+        opening_words: firstSixWords(content),
         unsourced_numbers_removed: unsourcedRemoved,
         unsourced_entities_removed: unsourcedEntitiesRemoved,
         unsourced_entity_values: unsourcedEntities,
