@@ -91,14 +91,30 @@ interface Props {
   results: Record<string, any> | null | undefined;
   hasAssessment: boolean;
   onCompleteAssessment: () => void;
+  /** `diagnostic_profiles.brand_assessment_completed_at` — the age of these lists. */
+  assessedAt?: string | null;
 }
 
-export default function BrandReportSection({ results, hasAssessment, onCompleteAssessment }: Props) {
+export default function BrandReportSection({ results, hasAssessment, onCompleteAssessment, assessedAt }: Props) {
   const r = results && typeof results === "object" ? results : null;
 
   const headline = asString(r?.primary_archetype);
   const secondary = asString(r?.secondary_archetype);
   const standfirst = asString(r?.positioning_statement);
+
+  /** One list only. `topics` and `content_pillars` are the same items in two
+   *  shapes, so `topics` wins (it carries a description) and the pillars are
+   *  the fallback for older rows. Nothing is truncated. */
+  const workPairs = useMemo<Pair[]>(() => {
+    if (!r) return [];
+    const fromTopics = asPairs(r.topics, "title", "description");
+    if (fromTopics.length > 0) return fromTopics;
+    return asStringList(r.content_pillars).map((t) => ({ heading: t, body: "" }));
+  }, [r]);
+
+  const madeOn = assessedAt
+    ? `From your brand assessment on ${new Date(assessedAt).toLocaleDateString()}.`
+    : "From your brand assessment. No date was recorded for it.";
 
   const blocks = useMemo<Block[]>(() => {
     if (!r) return [];
@@ -107,10 +123,10 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
       { id: "honest-truth", label: "The honest truth", kind: "prose", parts: [asString(r.honest_truth)] },
       { id: "only-you", label: "What only you can do", kind: "prose", parts: [asString(r.unique_capability), asString(r.zone_of_genius)] },
       { id: "space", label: "The space nobody else owns", kind: "prose", parts: [asString(r.uncontested_space)] },
-      { id: "topics", label: "Your topics", kind: "pairs", pairs: asPairs(r.topics, "title", "description") },
+      // Stable id — anything deep-linking to #brand-report-topics still lands here.
+      { id: "topics", label: "What you write about", kind: "pairs", pairs: workPairs },
       { id: "voice", label: "How you sound", kind: "prose", parts: [asString(r.voice_signature), asString(r.natural_tone)] },
       { id: "trust", label: "How you build trust", kind: "prose", parts: [asString(r.trust_pattern), asString(r.authority_style)] },
-      { id: "pillars", label: "Your content pillars", kind: "chips", items: asStringList(r.content_pillars) },
       { id: "grow", label: "Where to invest next", kind: "pairs", pairs: asPairs(r.invest_next, "area", "insight") },
       { id: "growth-areas", label: "Areas to strengthen", kind: "chips", items: asStringList(r.growth_areas) },
       { id: "barrier", label: "What is holding you back", kind: "prose", parts: [asString(r.key_barrier)] },
@@ -121,7 +137,7 @@ export default function BrandReportSection({ results, hasAssessment, onCompleteA
       if (b.kind === "chips") return b.items.length > 0;
       return b.pairs.length > 0;
     });
-  }, [r]);
+  }, [r, workPairs]);
 
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const isOpen = (id: string, idx: number) => open[id] ?? idx < 2;
