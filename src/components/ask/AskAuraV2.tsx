@@ -517,6 +517,33 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
             ))}
           </div>
         )}
+        {citedSourceRows.length > 0 && (
+          <div style={{ marginTop: 16 }} data-testid="ask-rail-sources">
+            {railLabel("Sources")}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {citedSourceRows.map(s => (
+                <button
+                  key={s.n}
+                  type="button"
+                  title={sourceDetail(s)}
+                  onClick={() => { if (s.url) window.open(s.url, "_blank", "noopener,noreferrer"); }}
+                  style={{
+                    textAlign: "left", background: "transparent", cursor: s.url ? "pointer" : "default",
+                    border: "1px solid var(--rule-outer)", borderRadius: 12, padding: "10px 12px",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                    <span style={{ ...MONO, fontSize: 10.5, color: "var(--machine-text)" }}>{s.n}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{s.title}</span>
+                  </div>
+                  <div style={{ ...MONO, fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                    {s.kind.replace(/_/g, " ")}{s.date ? ` · ${s.date}` : ""}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div>
