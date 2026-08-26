@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Check, Eye, Map as MapIcon, Trophy, Target as TargetIcon, Star, Camera, Mic } from "lucide-react";
+import { Pencil, Check, Eye, Map as MapIcon, Camera, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
