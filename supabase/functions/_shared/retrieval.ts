@@ -14,13 +14,19 @@
  */
 
 /** Fixed taxonomy. Later phases add 'brief' and 'figure' to the same union. */
-export type SourceKind = "document_chunk" | "evidence_fragment" | "entry" | "signal";
+export type SourceKind =
+  | "document_chunk"
+  | "evidence_fragment"
+  | "entry"
+  | "signal"
+  | "post";
 
 export const SOURCE_KINDS: SourceKind[] = [
   "document_chunk",
   "evidence_fragment",
   "entry",
   "signal",
+  "post",
 ];
 
 export interface RetrievedRow {
@@ -31,6 +37,10 @@ export interface RetrievedRow {
   url: string | null;
   occurred_at: string | null;
   rank: number;
+  /** Observability: keyword rank, vector distance and the fused RRF score. */
+  kw_rank: number | null;
+  vec_distance: number | null;
+  rrf: number | null;
   /** Source-specific fields; carries pipeline_version where the source stamps it. */
   metadata: (Record<string, unknown> & { pipeline_version?: number }) | null;
 }
@@ -39,6 +49,10 @@ export interface RetrieveOptions {
   limit?: number;
   kinds?: SourceKind[] | null;
   caller: string;
+  /** Set when the query was rewritten from a conversational follow-up. */
+  rewritten?: boolean;
+  /** The raw member message before any rewrite. */
+  originalQuery?: string;
 }
 
 export interface RetrievalResult {
@@ -85,6 +99,7 @@ function emptyByKind(): Record<SourceKind, RetrievedRow[]> {
     evidence_fragment: [],
     entry: [],
     signal: [],
+    post: [],
   };
 }
 
@@ -147,7 +162,11 @@ export async function retrieveContext(
       query: (query || "").slice(0, 2000),
       query_len: queryLen,
       result_count: 0,
-      kinds: kinds ? { requested: kinds } : null,
+      kinds: {
+        requested: kinds,
+        rewritten: opts.rewritten ?? false,
+        original_query: (opts.originalQuery ?? query ?? "").slice(0, 2000),
+      },
       top_rank: null,
       degraded: true,
       error: String(error.message ?? error).slice(0, 1000),
@@ -173,6 +192,8 @@ export async function retrieveContext(
     result_count: rows.length,
     kinds: {
       requested: kinds,
+      rewritten: opts.rewritten ?? false,
+      original_query: (opts.originalQuery ?? query ?? "").slice(0, 2000),
       returned: Object.fromEntries(
         (Object.keys(byKind) as SourceKind[]).map((k) => [k, byKind[k].length]),
       ),
