@@ -21,7 +21,8 @@ export type SourceKind =
   | "signal"
   | "post"
   | "learned_intelligence"
-  | "content_item";
+  | "content_item"
+  | "brief";
 
 export const SOURCE_KINDS: SourceKind[] = [
   "document_chunk",
@@ -31,6 +32,7 @@ export const SOURCE_KINDS: SourceKind[] = [
   "post",
   "learned_intelligence",
   "content_item",
+  "brief",
 ];
 
 export interface RetrievedRow {
@@ -106,6 +108,7 @@ function emptyByKind(): Record<SourceKind, RetrievedRow[]> {
     post: [],
     learned_intelligence: [],
     content_item: [],
+    brief: [],
   };
 }
 
