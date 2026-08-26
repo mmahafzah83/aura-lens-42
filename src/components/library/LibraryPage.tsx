@@ -24,6 +24,7 @@ type PublishedRow = {
   post_url: string | null;
   published_at: string | null;
   format_type: string | null;
+  source_metadata: unknown;
 };
 
 const firstLine = (text: string, max = 90) => {
