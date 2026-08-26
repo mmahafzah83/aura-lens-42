@@ -61,6 +61,7 @@ import { ensureTimezone } from "@/lib/ensureTimezone";
 
 import AnalyticsV2 from "@/components/analytics/AnalyticsV2";
 import LibraryPage from "@/components/library/LibraryPage";
+import DraftsPage from "@/components/drafts/DraftsPage";
 import OvernightPage from "@/components/overnight/OvernightPage";
 import MomentumPage from "@/components/momentum/MomentumPage";
 import WidgetsPage from "@/components/widgets/WidgetsPage";
@@ -84,6 +85,7 @@ const NAV_ITEMS = [
   { value: "home", label: "Home", pageHeader: "Home", icon: Compass, docTitle: "Aura — Home" },
   { value: "intelligence", label: "Signals", pageHeader: "Signals", icon: Shield, docTitle: "Aura — Signals" },
   { value: "library", label: "Library", pageHeader: "Library", icon: LibraryIcon, docTitle: "Aura — Library" },
+  { value: "drafts", label: "Drafts", pageHeader: "Drafts", icon: FileText, docTitle: "Aura — Drafts" },
   { value: "overnight", label: "The Overnight", pageHeader: "The Overnight", icon: Moon, docTitle: "Aura — The Overnight" },
   { value: "authority", label: "Composer", pageHeader: "Composer", icon: Crown, docTitle: "Aura — Composer" },
   { value: "influence", label: "Analytics", pageHeader: "Analytics", icon: TrendingUp, docTitle: "Aura — Analytics" },
@@ -1282,6 +1284,20 @@ const Dashboard = () => {
                       onOpenDraft={(d) => { setDraftPrefill(handoffDraft({ draft: d, surface: "overnight" })); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                       onOpenSettings={() => navigate("/settings?tab=preferences")}
                     />
+                  </LockedPanel>
+                </ErrorBoundary>
+              </div>
+            )}
+
+            {activeTab === "drafts" && (
+              <div className="animate-tab-spring aura-page">
+                <ErrorBoundary>
+                  <LockedPanel
+                    locked={!fullAccess}
+                    title="Work you have not finished"
+                    line="Every post you saved for later waits here until you open it again."
+                  >
+                    <DraftsPage />
                   </LockedPanel>
                 </ErrorBoundary>
               </div>

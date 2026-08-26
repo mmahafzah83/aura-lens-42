@@ -2166,7 +2166,7 @@ export default function StudioPanel({
     setStatus(T.saveLaterGoing[lang]);
     window.setTimeout(() => {
       try {
-        window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "library" } }));
+        window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "drafts" } }));
       } catch { /* navigation is never allowed to throw at a member */ }
     }, 450);
   }, [saveDraft, lang]);
