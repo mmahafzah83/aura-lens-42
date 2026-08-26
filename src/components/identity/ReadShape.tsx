@@ -37,7 +37,7 @@ const NIGHT: React.CSSProperties = {
 
 const ReadShape: React.FC = () => {
   const navigate = useNavigate();
-  const { fullAccess, locked } = usePlan();
+  const { locked } = usePlan();
 
   if (!locked) return null;
 
