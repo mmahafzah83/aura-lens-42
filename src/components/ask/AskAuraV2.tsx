@@ -286,6 +286,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       let buf = "";
       let acc = "";
       let gotCitations: Citation[] = [];
+      const gotActions: ActionLine[] = [];
       setMessages([...next, { role: "assistant", content: "" }]);
 
       while (true) {
@@ -302,6 +303,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
           try {
             const j = JSON.parse(payload);
             if (Array.isArray(j?.citations)) gotCitations = j.citations as Citation[];
+            if (j?.action && typeof j.action?.label === "string") {
+              gotActions.push({ tool: String(j.action.tool || ""), ok: !!j.action.ok, label: j.action.label });
+            }
             const delta = j?.choices?.[0]?.delta?.content;
             if (typeof delta === "string" && delta) {
               acc += delta;
@@ -326,6 +330,13 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       }
 
       if (acc.trim()) {
+        if (gotActions.length) {
+          setMessages(prev => {
+            const copy = [...prev];
+            copy[copy.length - 1] = { role: "assistant", content: acc, actions: gotActions };
+            return copy;
+          });
+        }
         const used = usedCitations(acc, gotCitations);
         const titles = used.map(c => c.title);
         void persist("assistant", acc.trim(), titles);
@@ -340,6 +351,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       } else {
         setMessages(prev => prev.slice(0, -1));
       }
+
     } catch (e: any) {
       setMessages(prev => {
         const copy = [...prev];
