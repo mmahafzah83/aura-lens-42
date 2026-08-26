@@ -128,10 +128,14 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   const [memory, setMemory] = useState<MemoryRow[]>([]);
   const [seeds, setSeeds] = useState<PromptSeed[]>([]);
   const [followUps, setFollowUps] = useState<string[]>([]);
+  const [opener, setOpener] = useState<{ text: string; chips: { label: string; prompt: string }[] } | null>(null);
+  const [openerDone, setOpenerDone] = useState(false);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const listRef = useRef<HTMLDivElement | null>(null);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
   const firedRef = useRef(false);
+  const openerRef = useRef(false);
+
 
   const openSignal = (id: string) => {
     const next = new URLSearchParams(window.location.search);
