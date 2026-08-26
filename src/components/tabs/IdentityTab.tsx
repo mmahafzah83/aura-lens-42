@@ -146,7 +146,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
-  const [radarRefreshKey, setRadarRefreshKey] = useState(0);
+  const [, setRadarRefreshKey] = useState(0);
   
   const [brandOpen, setBrandOpen] = useState(false);
   const [fullProfileOpen, setFullProfileOpen] = useState(false);
