@@ -381,6 +381,56 @@ export const T = {
   },
   savingPiece: { en: "Saving your post…", ar: "نحفظ منشورك…" },
 
+  // The Drafts door — the resume surface, outside the composer
+  draftsPageEyebrow: { en: "Drafts", ar: "المسودات" },
+  draftsPageTitle: { en: "Your unfinished work", ar: "عملك غير المكتمل" },
+  draftsPageDesc: {
+    en: "Pick up exactly where you stopped.",
+    ar: "تابع من حيث توقّفت.",
+  },
+  draftsPageEmpty: {
+    en: "Nothing unfinished. That's a good place to be.",
+    ar: "لا شيء غير مكتمل. هذا وضع جيد.",
+  },
+  draftsPageFailed: {
+    en: "We could not read your drafts just now. Nothing is lost — try again.",
+    ar: "لم نتمكن من قراءة مسوداتك الآن. لا شيء ضائع — حاول مرة أخرى.",
+  },
+  /** `{n}` is the TOTAL number of drafts, of which only the newest twelve show. */
+  draftsShowingRecent: (n: number, lang: Lang): CountParts =>
+    lang === "ar"
+      ? { pre: "نعرض أحدث ١٢ من ", digit: String(n), post: "." }
+      : { pre: "Showing the 12 most recent of ", digit: String(n), post: "." },
+  draftsDeleteAsk: { en: "Delete?", ar: "حذف؟" },
+  draftsDeleteYes: { en: "Yes", ar: "نعم" },
+  draftsDeleteCancel: { en: "Cancel", ar: "إلغاء" },
+  draftsDeleteFailed: {
+    en: "We could not delete that just now. It is still here — try again.",
+    ar: "لم نتمكن من الحذف الآن. ما زال موجوداً — حاول مرة أخرى.",
+  },
+  formatWords: { en: "Words", ar: "نص" },
+  formatWordsAndSlides: { en: "Words and slides", ar: "نص وشرائح" },
+
+  // The Library door — two segments, each saying what it holds
+  libSources: { en: "Sources", ar: "المصادر" },
+  libPublished: { en: "Published", ar: "المنشور" },
+  libSourcesTitle: { en: "Your sources", ar: "مصادرك" },
+  libSourcesDesc: {
+    en: "Links, notes, voice memos and documents you saved — plus the articles Aura found for you overnight.",
+    ar: "روابط وملاحظات ومذكرات صوتية ومستندات حفظتها — مع المقالات التي وجدتها أورا لك أثناء الليل.",
+  },
+  libPublishedTitle: { en: "What you published", ar: "ما نشرته" },
+  libPublishedDesc: {
+    en: "Every post that went live from here, newest first.",
+    ar: "كل منشور خرج من هنا، الأحدث أولاً.",
+  },
+  libPublishedEmpty: { en: "Nothing published yet.", ar: "لا يوجد منشور بعد." },
+  libPublishedFailed: {
+    en: "We could not read your published posts just now. Try again.",
+    ar: "لم نتمكن من قراءة منشوراتك الآن. حاول مرة أخرى.",
+  },
+
+
   // Publish — slides
   captionHead: { en: "Your caption", ar: "النص المرافق" },
   copyCaption: { en: "Copy the caption", ar: "انسخ النص المرافق" },
