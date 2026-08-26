@@ -1490,6 +1490,7 @@ export type Database = {
           embedding: string | null
           id: string
           metadata: Json | null
+          pipeline_version: number
           tsv: unknown
           user_id: string
         }
@@ -1501,6 +1502,7 @@ export type Database = {
           embedding?: string | null
           id?: string
           metadata?: Json | null
+          pipeline_version?: number
           tsv?: unknown
           user_id: string
         }
@@ -1512,6 +1514,7 @@ export type Database = {
           embedding?: string | null
           id?: string
           metadata?: Json | null
+          pipeline_version?: number
           tsv?: unknown
           user_id?: string
         }
@@ -1861,6 +1864,7 @@ export type Database = {
           fragment_type: string
           id: string
           metadata: Json | null
+          pipeline_version: number
           skill_pillars: string[]
           source_registry_id: string
           tags: string[]
@@ -1877,6 +1881,7 @@ export type Database = {
           fragment_type: string
           id?: string
           metadata?: Json | null
+          pipeline_version?: number
           skill_pillars?: string[]
           source_registry_id: string
           tags?: string[]
@@ -1893,6 +1898,7 @@ export type Database = {
           fragment_type?: string
           id?: string
           metadata?: Json | null
+          pipeline_version?: number
           skill_pillars?: string[]
           source_registry_id?: string
           tags?: string[]
@@ -4513,6 +4519,54 @@ export type Database = {
         }
         Relationships: []
       }
+      retrieval_logs: {
+        Row: {
+          caller: string
+          created_at: string
+          degraded: boolean
+          error: string | null
+          id: string
+          kinds: Json | null
+          latency_ms: number | null
+          pipeline_version: number
+          query: string | null
+          query_len: number | null
+          result_count: number | null
+          top_rank: number | null
+          user_id: string
+        }
+        Insert: {
+          caller: string
+          created_at?: string
+          degraded?: boolean
+          error?: string | null
+          id?: string
+          kinds?: Json | null
+          latency_ms?: number | null
+          pipeline_version?: number
+          query?: string | null
+          query_len?: number | null
+          result_count?: number | null
+          top_rank?: number | null
+          user_id: string
+        }
+        Update: {
+          caller?: string
+          created_at?: string
+          degraded?: boolean
+          error?: string | null
+          id?: string
+          kinds?: Json | null
+          latency_ms?: number | null
+          pipeline_version?: number
+          query?: string | null
+          query_len?: number | null
+          result_count?: number | null
+          top_rank?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       score_snapshots: {
         Row: {
           components: Json
@@ -4848,6 +4902,7 @@ export type Database = {
           last_evidence_at: string | null
           lifecycle_tier: string | null
           momentum: number | null
+          pipeline_version: number
           priority_score: number
           signal_title: string
           signal_velocity: number | null
@@ -4880,6 +4935,7 @@ export type Database = {
           last_evidence_at?: string | null
           lifecycle_tier?: string | null
           momentum?: number | null
+          pipeline_version?: number
           priority_score?: number
           signal_title: string
           signal_velocity?: number | null
@@ -4912,6 +4968,7 @@ export type Database = {
           last_evidence_at?: string | null
           lifecycle_tier?: string | null
           momentum?: number | null
+          pipeline_version?: number
           priority_score?: number
           signal_title?: string
           signal_velocity?: number | null
