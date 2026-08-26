@@ -3,7 +3,8 @@ import { ButtonPrimary, ButtonGhost } from "@/components/systemb";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { loadStudioDrafts, savedAgo, T, type StudioDraft } from "./draftsPageDeps";
+import { loadStudioDrafts, type StudioDraft } from "@/components/studio/draftsSource";
+import { T, savedAgo } from "@/components/studio/strings";
 
 /**
  * DraftsPage — the resume surface, out in the open.
@@ -30,7 +31,6 @@ const DraftsPage: React.FC = () => {
   const L = (lang === "ar" ? "ar" : "en") as "en" | "ar";
   const [drafts, setDrafts] = useState<StudioDraft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
   const [askId, setAskId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<{ id: string; message: string } | null>(null);
 
@@ -40,7 +40,6 @@ const DraftsPage: React.FC = () => {
       const rows = await loadStudioDrafts();
       if (cancelled) return;
       setDrafts(rows);
-      setFailed(false);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -95,10 +94,6 @@ const DraftsPage: React.FC = () => {
           <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--act)" }} />
           <span style={arabicLine}>{T.loading[L]}</span>
         </div>
-      ) : failed ? (
-        <p style={{ margin: 0, padding: "22px 4px", fontSize: 14, color: "var(--error)", ...arabicLine }}>
-          {T.draftsPageFailed[L]}
-        </p>
       ) : drafts.length === 0 ? (
         <div style={{
           background: "var(--surface-card)",
@@ -179,7 +174,7 @@ const DraftsPage: React.FC = () => {
                       </>
                     ) : (
                       <ButtonGhost onClick={() => { setRowError(null); setAskId(d.id); }}>
-                        {T.draftsDeleteAsk[L]}
+                        {T.draftsDelete[L]}
                       </ButtonGhost>
                     )}
                   </div>

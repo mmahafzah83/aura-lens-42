@@ -402,6 +402,7 @@ export const T = {
     lang === "ar"
       ? { pre: "نعرض أحدث ١٢ من ", digit: String(n), post: "." }
       : { pre: "Showing the 12 most recent of ", digit: String(n), post: "." },
+  draftsDelete: { en: "Delete", ar: "حذف" },
   draftsDeleteAsk: { en: "Delete?", ar: "حذف؟" },
   draftsDeleteYes: { en: "Yes", ar: "نعم" },
   draftsDeleteCancel: { en: "Cancel", ar: "إلغاء" },
