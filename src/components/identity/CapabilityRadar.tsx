@@ -147,14 +147,20 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
   );
   const complete = dims.length > 0 && answeredCount === dims.length;
 
-  const lowest = useMemo(
-    () => (complete
-      ? [...dims].sort((a, b) => (levels[a.id] ?? 3) - (levels[b.id] ?? 3)).slice(0, 2)
-      : []),
+/* Select by VALUE, not by count: every dimension at the minimum answered
+     level is marked. On a three-point scale ties are the normal case. */
+  const minLevel = useMemo(
+    () => (complete && dims.length ? Math.min(...dims.map((d) => levels[d.id] ?? 3)) : null),
     [complete, dims, levels],
   );
+  const lowest = useMemo(
+    () => (minLevel !== null && minLevel < 3
+      ? dims.filter((d) => (levels[d.id] ?? 3) === minLevel)
+      : []),
+    [minLevel, dims, levels],
+  );
 
-  /* The two thinnest points open on first render — that is what they came for. */
+  /* The thinnest points open on first render — that is what they came for. */
   useEffect(() => {
     if (defaultsApplied || !complete || lowest.length === 0) return;
     setExpanded(new Set(lowest.map((d) => d.id)));
