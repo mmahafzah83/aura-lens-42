@@ -104,6 +104,8 @@ function emptyByKind(): Record<SourceKind, RetrievedRow[]> {
     entry: [],
     signal: [],
     post: [],
+    learned_intelligence: [],
+    content_item: [],
   };
 }
 
