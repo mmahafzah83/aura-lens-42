@@ -359,11 +359,11 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
     const error = null;
 
     if (error) {
-      toast.error("Couldn't save scores");
+      toast.error("Couldn't save");
     } else {
       setAuditResults(merged);
       setEditMode(false);
-      toast.success("Capability scores updated.");
+      toast.success("Capability read updated.");
     }
     setSavingScores(false);
   };
@@ -378,7 +378,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
             className="text-xs font-medium hover:underline"
             style={{ color: "var(--brand)" }}
           >
-            Edit scores
+            Edit
           </button>
         ) : (
           <div className="flex items-center gap-2">
