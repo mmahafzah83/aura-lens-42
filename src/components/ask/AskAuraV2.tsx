@@ -178,7 +178,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       const sigs = ((sigRes.data as any[]) || []);
       const drafts = ((draftRes.data as any[]) || []).length;
       const s: PromptSeed[] = [];
-      if (sigs[0]) s.push({ label: `Why does “${String(sigs[0].signal_title).slice(0, 34)}” matter?`, text: `Why does the signal "${sigs[0].signal_title}" matter for me right now?` });
+      if (sigs[0]) {
+        const full = String(sigs[0].signal_title);
+        const short = full.length <= 34 ? full : `${full.slice(0, 34).replace(/\s+\S*$/, "").trim()}…`;
+        s.push({ label: `Why does “${short}” matter?`, text: `Why does the signal "${sigs[0].signal_title}" matter for me right now?` });
+      }
+
       if (sigs[1]) s.push({ label: "What should I write next?", text: `Given my live signals, what should I write next and what is the hook?` });
       if (top) s.push({ label: `Am I too narrow on ${top[0]}?`, text: `${top[1]} of my ${live.length} live posts are about ${top[0]}. Am I too concentrated?` });
       if (drafts > 0) s.push({ label: `Which of my ${drafts} drafts first?`, text: `I have ${drafts} drafts waiting. Which one should I finish first and why?` });
