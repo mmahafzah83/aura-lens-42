@@ -599,40 +599,103 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
                   max_tokens: 120,
                   temperature: 0.3,
                   messages: [
-                    { role: "system", content: "Summarize this advisory conversation in exactly 2 sentences. Plain prose, no preamble." },
+                    {
+                      role: "system",
+                      content:
+                        'Return STRICT JSON only. No prose, no markdown fence. Exactly these keys: {"summary": "2 plain sentences summarising this advisory conversation", "key_decisions": ["short strings"], "topics_discussed": ["short strings"], "actions_committed": ["short strings — anything the member said they would do"]}. Arrays may be empty.',
+                    },
                     ...messages,
                     { role: "assistant", content: reply },
                   ],
                 }),
               });
-              if (summaryRes.ok) {
-                const sj = await summaryRes.json();
-                const summary: string = sj?.choices?.[0]?.message?.content?.trim() || "";
-                if (summary) {
-                  const today = new Date().toISOString().slice(0, 10);
-                  const { data: existing } = await admin
-                    .from("aura_conversation_memory")
-                    .select("id")
-                    .eq("user_id", user_id)
-                    .eq("session_date", today)
-                    .maybeSingle();
-                  if (existing?.id) {
-                    await admin
-                      .from("aura_conversation_memory")
-                      .update({ summary, updated_at: new Date().toISOString() })
-                      .eq("id", existing.id);
-                  } else {
-                    await admin.from("aura_conversation_memory").insert({
-                      user_id,
-                      session_date: today,
-                      summary,
-                    });
-                  }
+              if (!summaryRes.ok) {
+                console.error("memory summary: model call failed", summaryRes.status);
+                return;
+              }
+              const sj = await summaryRes.json();
+              const raw: string = sj?.choices?.[0]?.message?.content?.trim() || "";
+              const cleaned = raw.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+              let parsed: any = null;
+              try {
+                parsed = JSON.parse(cleaned);
+              } catch {
+                const start = cleaned.indexOf("{");
+                const end = cleaned.lastIndexOf("}");
+                if (start >= 0 && end > start) {
+                  try {
+                    parsed = JSON.parse(cleaned.slice(start, end + 1));
+                  } catch { /* ignore */ }
                 }
+              }
+              if (!parsed || typeof parsed !== "object") {
+                console.error("memory summary: unparseable model output, nothing written");
+                return;
+              }
+              const summary: string = typeof parsed.summary === "string" ? parsed.summary.trim() : "";
+              if (summary.length < 12) {
+                console.error("memory summary: summary missing or too short, nothing written");
+                return;
+              }
+              const toList = (v: unknown): string[] =>
+                Array.isArray(v)
+                  ? v.filter((x) => typeof x === "string" && x.trim().length > 0)
+                      .map((x) => (x as string).trim())
+                      .slice(0, 5)
+                  : [];
+              const key_decisions = toList(parsed.key_decisions);
+              const topics_discussed = toList(parsed.topics_discussed);
+              const actions_committed = toList(parsed.actions_committed);
+
+              const today = new Date().toISOString().slice(0, 10);
+              let existingId: string | null = null;
+              if (session_id) {
+                const { data: existing } = await admin
+                  .from("aura_conversation_memory")
+                  .select("id")
+                  .eq("user_id", user_id)
+                  .eq("session_id", session_id)
+                  .is("role", null)
+                  .maybeSingle();
+                existingId = existing?.id ?? null;
+              } else {
+                const { data: existingRows } = await admin
+                  .from("aura_conversation_memory")
+                  .select("id")
+                  .eq("user_id", user_id)
+                  .eq("session_date", today)
+                  .is("role", null)
+                  .order("created_at", { ascending: false })
+                  .limit(1);
+                existingId = existingRows?.[0]?.id ?? null;
+              }
+
+              if (existingId) {
+                await admin
+                  .from("aura_conversation_memory")
+                  .update({
+                    summary,
+                    key_decisions,
+                    topics_discussed,
+                    actions_committed,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", existingId);
+              } else {
+                await admin.from("aura_conversation_memory").insert({
+                  user_id,
+                  session_id,
+                  session_date: today,
+                  summary,
+                  key_decisions,
+                  topics_discussed,
+                  actions_committed,
+                });
               }
             } catch (e) {
               console.error("memory upsert failed:", e);
             }
+
           })());
         }
       },
