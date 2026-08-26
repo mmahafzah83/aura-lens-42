@@ -457,8 +457,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                     Committed: {m.actions_committed.slice(0, 2).join(" · ")}
                   </div>
                 )}
-
+              </div>
             ))}
+
           </div>
         )}
       </div>
