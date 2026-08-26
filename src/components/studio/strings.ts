@@ -1,4 +1,5 @@
 import { evidenceAndSources, nEvidence, evidenceCountAr as evidenceAr, nEvidenceParts, withTail, type CountParts } from "@/constants/vocabulary";
+import { formatSmartDate } from "@/lib/formatDate";
 
 export type Lang = "en" | "ar";
 export type Posture = "delegator" | "editor" | "author";
@@ -380,6 +381,53 @@ export const T = {
     ar: "لم نتمكن من الحفظ الآن. نصك ما زال موجوداً — حاول مرة أخرى.",
   },
   savingPiece: { en: "Saving your post…", ar: "نحفظ منشورك…" },
+
+  // The Drafts door — the resume surface, outside the composer
+  draftsPageEyebrow: { en: "Drafts", ar: "المسودات" },
+  draftsPageTitle: { en: "Your unfinished work", ar: "عملك غير المكتمل" },
+  draftsPageDesc: {
+    en: "Pick up exactly where you stopped.",
+    ar: "تابع من حيث توقّفت.",
+  },
+  draftsPageEmpty: {
+    en: "Nothing unfinished. That's a good place to be.",
+    ar: "لا شيء غير مكتمل. هذا وضع جيد.",
+  },
+  /** `{n}` is the TOTAL number of drafts, of which only the newest twelve show. */
+  draftsShowingRecent: (n: number, lang: Lang): CountParts =>
+    lang === "ar"
+      ? { pre: "نعرض أحدث ١٢ من ", digit: String(n), post: "." }
+      : { pre: "Showing the 12 most recent of ", digit: String(n), post: "." },
+  draftsDelete: { en: "Delete", ar: "حذف" },
+  draftsDeleteAsk: { en: "Delete?", ar: "حذف؟" },
+  draftsDeleteYes: { en: "Yes", ar: "نعم" },
+  draftsDeleteCancel: { en: "Cancel", ar: "إلغاء" },
+  draftsDeleteFailed: {
+    en: "We could not delete that just now. It is still here — try again.",
+    ar: "لم نتمكن من الحذف الآن. ما زال موجوداً — حاول مرة أخرى.",
+  },
+  pieceWords: { en: "Words", ar: "نص" },
+  pieceWordsAndSlides: { en: "Words and slides", ar: "نص وشرائح" },
+
+  // The Library door — two segments, each saying what it holds
+  libSources: { en: "Sources", ar: "المصادر" },
+  libPublished: { en: "Published", ar: "المنشور" },
+  libSourcesTitle: { en: "Your sources", ar: "مصادرك" },
+  libSourcesDesc: {
+    en: "Links, notes, voice memos and documents you saved — plus the articles Aura found for you overnight.",
+    ar: "روابط وملاحظات ومذكرات صوتية ومستندات حفظتها — مع المقالات التي وجدتها أورا لك أثناء الليل.",
+  },
+  libPublishedTitle: { en: "What you published", ar: "ما نشرته" },
+  libPublishedDesc: {
+    en: "Every post that went live from here, newest first.",
+    ar: "كل منشور خرج من هنا، الأحدث أولاً.",
+  },
+  libPublishedEmpty: { en: "Nothing published yet.", ar: "لا يوجد منشور بعد." },
+  libPublishedFailed: {
+    en: "We could not read your published posts just now. Try again.",
+    ar: "لم نتمكن من قراءة منشوراتك الآن. حاول مرة أخرى.",
+  },
+
 
   // Publish — slides
   captionHead: { en: "Your caption", ar: "النص المرافق" },
@@ -840,4 +888,23 @@ export function postureLabel(p: Posture, lang: Lang): string {
   if (p === "delegator") return tr("postureNameDelegator", lang);
   if (p === "author") return tr("postureNameAuthor", lang);
   return tr("postureNameEditor", lang);
+}
+/**
+ * When a piece was last saved, said the way a person would say it.
+ * English reuses the app-wide formatter (src/lib/formatDate.ts); Arabic is
+ * worded here because that formatter is English-only.
+ */
+export function savedAgo(iso: string | null | undefined, lang: Lang): string {
+  if (!iso) return "";
+  if (lang !== "ar") return formatSmartDate(iso);
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (mins < 1) return "الآن";
+  if (mins < 60) return mins === 1 ? "منذ دقيقة" : mins === 2 ? "منذ دقيقتين" : `منذ ${mins} دقيقة`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs === 1 ? "منذ ساعة" : hrs === 2 ? "منذ ساعتين" : `منذ ${hrs} ساعة`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return days === 1 ? "منذ يوم" : days === 2 ? "منذ يومين" : `منذ ${days} أيام`;
+  return d.toLocaleDateString("ar", { month: "long", day: "numeric" });
 }

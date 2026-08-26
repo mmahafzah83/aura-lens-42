@@ -35,7 +35,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: "write", label: "Write", icon: PenLine, testId: "nav-publish",
     blurb: "Make the post, and everything you have made.",
-    primary: "authority", members: ["authority", "library"],
+    primary: "authority", members: ["authority", "drafts", "library"],
   },
   {
     key: "record", label: "Record", icon: BarChart3, testId: "nav-impact",
