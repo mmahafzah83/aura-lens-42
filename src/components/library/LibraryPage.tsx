@@ -161,7 +161,7 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
             {sources ? T.libSourcesDesc[L] : T.libPublishedDesc[L]}
           </p>
         </div>
-        {sources && <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture something</ButtonPrimary>}
+        {sources && <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />{T.libCaptureSomething[L]}</ButtonPrimary>}
       </div>
 
       <SubTabs
