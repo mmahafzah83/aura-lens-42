@@ -31,7 +31,8 @@ export interface RetrievedRow {
   url: string | null;
   occurred_at: string | null;
   rank: number;
-  metadata: Record<string, unknown> | null;
+  /** Source-specific fields; carries pipeline_version where the source stamps it. */
+  metadata: (Record<string, unknown> & { pipeline_version?: number }) | null;
 }
 
 export interface RetrieveOptions {
