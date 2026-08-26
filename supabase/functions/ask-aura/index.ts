@@ -3,6 +3,7 @@ import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { retrieveContext, logRetrievalFailure } from "../_shared/retrieval.ts";
 import { getUserContext } from "../_shared/userContext.ts";
+import { buildSearchQuery } from "../_shared/queryRewrite.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -309,10 +310,15 @@ serve(withObserve("ask-aura", async (req) => {
 
     let retrievedBlock = "—";
     let retrievalDegraded = false;
+    // Rewrite conversational follow-ups into a standalone query before search.
+    const search = await buildSearchQuery(messages, { caller: "ask-aura" });
+
     try {
-      const retrieved = await retrieveContext(admin, user_id, lastUserMessage, {
+      const retrieved = await retrieveContext(admin, user_id, search.query, {
         limit: 12,
         caller: "ask-aura",
+        rewritten: search.rewritten,
+        originalQuery: search.original,
       });
       if (retrieved.rows.length > 0) retrievedBlock = retrieved.citationBlock;
     } catch (e) {
@@ -320,7 +326,7 @@ serve(withObserve("ask-aura", async (req) => {
       logRetrievalFailure({
         user_id,
         caller: "ask-aura",
-        query_len: (lastUserMessage || "").length,
+        query_len: (search.query || "").length,
         error: e,
       });
     }

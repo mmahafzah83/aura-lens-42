@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { retrieveContext, logRetrievalFailure } from "../_shared/retrieval.ts";
+import { buildSearchQuery } from "../_shared/queryRewrite.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -193,10 +194,16 @@ If days_since_last_post > 7, naturally mention the publishing gap in your respon
     let ragContext = "";
     let retrievalDegraded = false;
 
+    // A follow-up like "and what about the risks?" carries no subject. Rewrite
+    // it into a standalone query before searching; never blocks the turn.
+    const search = await buildSearchQuery(messages, { caller: "chat-aura" });
+
     try {
-      const retrieved = await retrieveContext(adminClient, user.id, lastUserMessage, {
+      const retrieved = await retrieveContext(adminClient, user.id, search.query, {
         limit: 15,
         caller: "chat-aura",
+        rewritten: search.rewritten,
+        originalQuery: search.original,
       });
       if (retrieved.rows.length > 0) ragContext = retrieved.citationBlock;
     } catch (e) {
@@ -205,16 +212,17 @@ If days_since_last_post > 7, naturally mention the publishing gap in your respon
       logRetrievalFailure({
         user_id: user.id,
         caller: "chat-aura",
-        query_len: (lastUserMessage || "").length,
+        query_len: (search.query || "").length,
         error: e,
       });
       try {
         await adminClient.from("retrieval_logs").insert({
           user_id: user.id,
           caller: "chat-aura",
-          query: String(lastUserMessage || "").slice(0, 2000),
-          query_len: (lastUserMessage || "").length,
+          query: String(search.query || "").slice(0, 2000),
+          query_len: (search.query || "").length,
           result_count: 0,
+          kinds: { rewritten: search.rewritten, original_query: String(search.original || "").slice(0, 2000) },
           degraded: true,
           error: String((e as Error)?.message ?? e).slice(0, 1000),
         });
