@@ -93,6 +93,27 @@ Deno.serve(async (req) => {
     const posts_used = texts.length;
     const posts_excluded = (rows ?? []).length - posts_used;
 
+    /**
+     * A draft the member rewrote is the member writing. The edited half of
+     * every edit pair joins the measured corpus, so correcting a draft moves
+     * the voice itself and not only the rules distilled from it.
+     */
+    const { data: editRows } = await admin
+      .from("linkedin_posts")
+      .select("original_generated_text, post_text")
+      .eq("user_id", userId)
+      .not("original_generated_text", "is", null)
+      .not("edited_at", "is", null)
+      .order("edited_at", { ascending: false })
+      .limit(50);
+    const editedTexts = (editRows ?? [])
+      .map((r) => ({ original: String(r.original_generated_text ?? ""), edited: String(r.post_text ?? "") }))
+      .filter((p) => p.original.trim() && p.edited.trim() && p.original !== p.edited)
+      .map((p) => p.edited);
+    const edit_pairs_used = editedTexts.length;
+    for (const t of editedTexts) texts.push(t);
+
+
     // --- registry ---
     const { data: registry, error: regErr } = await admin
       .from("voice_trait_registry")
@@ -118,7 +139,7 @@ Deno.serve(async (req) => {
       const before = prior.get(key);
       if (before?.locked) { traits_skipped_locked += 1; continue; }
 
-      const m = posts_used > 0 ? measure(key, texts) : null;
+      const m = texts.length > 0 ? measure(key, texts) : null;
       if (!m) continue; // no evidence -> no row
 
       const minEv = Number(reg.min_evidence ?? 8);
@@ -225,8 +246,30 @@ Deno.serve(async (req) => {
       }
     }
 
+    /**
+     * The edit-pair pass. `voice-distill` is the only place that reads an edit
+     * pair for RULES; the re-read chain now runs it so an edit moves both the
+     * measured voice (above) and the rules. Failure is logged, never fatal.
+     */
+    let edit_pairs_distilled = false;
+    if (edit_pairs_used > 0) {
+      try {
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/voice-distill`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${SERVICE_ROLE}` },
+          body: JSON.stringify({ user_id: userId }),
+        });
+        edit_pairs_distilled = r.ok;
+        if (!r.ok) console.error("voice-distill chain failed:", r.status);
+      } catch (e) {
+        console.error("voice-distill chain failed:", (e as Error).message);
+      }
+    }
+
     return json({
       user_id: userId,
+      edit_pairs_used,
+      edit_pairs_distilled,
       profile_id: profileId,
       rules_suggested_run,
       traits_written,

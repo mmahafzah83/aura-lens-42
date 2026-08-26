@@ -68,14 +68,53 @@ export interface CorpusPost {
   isArabic: boolean;
 }
 
+/** Whether Aura can still read this member's LinkedIn. */
+export type ConnectionState = "connected" | "needs_reconnect" | "not_set";
+
+/** An example Aura kept, labelled by where it actually came from. */
+export interface KeptExample {
+  content: string;
+  sourceLabel: string;
+  addedAt: string | null;
+  /** true when the member added it themselves — a paste or an upload. */
+  memberAdded: boolean;
+}
+
+/** A post the member admires. Reference only — never material Aura reuses. */
+export interface AdmiredPost {
+  content: string;
+  source: string | null;
+  addedAt: string | null;
+}
+
+/** Sources on an `example_posts` entry that mean "the member added this". */
+const MEMBER_ADDED_SOURCES = ["teach", "paste", "upload", "member_added"];
+
+export const EXAMPLE_SOURCE_LABEL = (source: unknown): string => {
+  const s = String(source ?? "").trim();
+  if (!s) return "Unknown source";
+  if (MEMBER_ADDED_SOURCES.includes(s)) return "Added by you";
+  if (s === "linkedin_export") return "From your LinkedIn export";
+  if (s === "linkedin_own" || s === "imported") return "Your post";
+  return "Unknown source";
+};
+
+/** Aura will hold this many admired posts and no more. */
+export const ADMIRED_CAP = 10;
+
 export interface TeachAuraModel {
   address: LinkedInAddress;
+  connectionState: ConnectionState;
   /** Own posts Aura counted, and the ones it set aside. */
   includedCount: number;
   excludedCount: number;
   classifiedCount: number;
   documentCount: number;
-  pastedCount: number;
+  /** Examples Aura kept from the member's posts, with their true source. */
+  examples: KeptExample[];
+  /** Examples the member added themselves — the honest "you added" figure. */
+  addedByYouCount: number;
+  admired: AdmiredPost[];
   coverage: CoverageRow[];
   posts: CorpusPost[];
   totalPosts: number;
@@ -90,7 +129,11 @@ export interface TeachAuraModel {
    * 160 is a labelling job nobody finishes.
    */
   ambiguous: CorpusPost[];
+  /** Negative verdicts in the last 14 days, and what they disagreed on. */
+  negativeVerdicts: number;
+  negativeDimension: string | null;
 }
+
 /** How many uncertain items the member is ever asked about at once. */
 export const MAX_AMBIGUOUS = 8;
 
@@ -115,17 +158,19 @@ function statusFor(count: number, threshold: number): CoverageStatus {
 export const PAGE_SIZE = 20;
 
 export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAuraModel> {
-  const [address, postsRes, docsRes, voiceRes, textlessRes] = await Promise.all([
+  const [address, postsRes, docsRes, voiceRes, textlessRes, connRes, feedbackRes] = await Promise.all([
     loadLinkedInAddress(userId),
     supabase.rpc("voice_corpus_review", { p_user_id: userId }),
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    // Every default-mode row: examples live per language, and both languages
+    // are the same member's voice.
     supabase
       .from("authority_voice_profiles")
-      .select("example_posts")
+      .select("example_posts, admired_posts, is_primary, updated_at")
       .eq("user_id", userId)
-      .eq("is_primary", true)
       .eq("mode_key", "default")
-      .maybeSingle(),
+      .order("is_primary", { ascending: false })
+      .order("updated_at", { ascending: false }),
     // Engagement is known, the words were never saved. Aura can see these did
     // well and cannot read why.
     supabase
@@ -134,6 +179,14 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
       .eq("user_id", userId)
       .is("post_text", null)
       .gt("engagement_score", 0),
+    // Connection state, read where the address lives.
+    supabase.from("linkedin_connections").select("handle, access_token").eq("user_id", userId).maybeSingle(),
+    supabase
+      .from("voice_feedback")
+      .select("verdict, applied_changes, created_at")
+      .eq("user_id", userId)
+      .gte("created_at", new Date(Date.now() - 14 * 86_400_000).toISOString())
+      .order("created_at", { ascending: false }),
   ]);
 
   if (postsRes.error) throw new Error(postsRes.error.message);
@@ -179,7 +232,42 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
     status: statusFor(counts[key], COVERAGE_THRESHOLDS[key]),
   }));
 
-  const examples = (voiceRes.data as any)?.example_posts;
+  const profileRows = (voiceRes.data as any[]) || [];
+  const examples: KeptExample[] = profileRows.flatMap((row) =>
+    (Array.isArray(row?.example_posts) ? row.example_posts : []).map((e: any) => {
+      const source = e?.source ?? null;
+      return {
+        content: String(e?.content ?? "").trim(),
+        sourceLabel: EXAMPLE_SOURCE_LABEL(source),
+        addedAt: (e?.added_at as string | null) ?? null,
+        memberAdded: MEMBER_ADDED_SOURCES.includes(String(source ?? "")),
+      };
+    }),
+  ).filter((e: KeptExample) => e.content.length > 0);
+
+  const admiredRow = profileRows.find((r) => Array.isArray(r?.admired_posts) && r.admired_posts.length > 0)
+    ?? profileRows[0];
+  const admired: AdmiredPost[] = (Array.isArray(admiredRow?.admired_posts) ? admiredRow.admired_posts : [])
+    .map((a: any) => ({
+      content: String(a?.content ?? "").trim(),
+      source: (a?.source as string | null) ?? null,
+      addedAt: (a?.added_at as string | null) ?? null,
+    }))
+    .filter((a: AdmiredPost) => a.content.length > 0);
+
+  const conn = (connRes.data as any) || null;
+  const connectionState: ConnectionState = !address.handle && !conn?.handle
+    ? "not_set"
+    : String(conn?.access_token ?? "").length > 0
+      ? "connected"
+      : "needs_reconnect";
+
+  const negatives = ((feedbackRes.data as any[]) || [])
+    .filter((r) => r.verdict === "partly" || r.verdict === "not_me");
+  const dimension = negatives
+    .flatMap((r) => (Array.isArray(r.applied_changes) ? r.applied_changes : []))
+    .map((c: any) => String(c?.trait_key ?? "").replace(/_/g, " "))
+    .find(Boolean) ?? null;
 
   const ambiguous = posts
     .filter((p) =>
@@ -193,7 +281,12 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
     excludedCount: posts.length - included.length,
     classifiedCount: included.filter((p) => p.hookStyle).length,
     documentCount: docsRes.count ?? 0,
-    pastedCount: Array.isArray(examples) ? examples.length : 0,
+    connectionState,
+    examples,
+    addedByYouCount: examples.filter((e) => e.memberAdded).length,
+    admired,
+    negativeVerdicts: negatives.length,
+    negativeDimension: dimension,
     coverage,
     // The whole list; the page filters and pages it client-side so a filter
     // change costs nothing.
@@ -245,3 +338,87 @@ export async function setCorpusStates(postIds: string[], next: CorpusState): Pro
     .in("id", postIds);
   if (error) throw new Error(error.message);
 }
+/* ── controls the page offers ────────────────────────────────────────────── */
+
+/** Split a pasted block into posts: blank line or a rule between them. */
+export const splitPastedPosts = (text: string): string[] =>
+  String(text ?? "").split(/\n\s*-{3,}\s*\n|\n{2,}/).map((s) => s.trim()).filter(Boolean);
+
+export interface AddWritingResult {
+  admitted: number;
+  tooShort: number;
+  wrongSource: number;
+}
+
+/**
+ * Add the member's own writing — a paste or an uploaded .txt/.md.
+ *
+ * Everything goes through `voice-distill` stamped `member_added`, which is the
+ * only branch that writes rows the one corpus rule will admit. Nothing here
+ * decides for itself what counts as the member's writing.
+ */
+export async function addOwnWriting(posts: string[]): Promise<AddWritingResult> {
+  if (posts.length === 0) throw new Error("Add at least one post first.");
+  const { data, error } = await supabase.functions.invoke("voice-distill", {
+    body: { posts, store_samples: true, source: "member_added" },
+  });
+  if (error) throw new Error(error.message);
+  if ((data as any)?.error) throw new Error(String((data as any).error));
+  const rejected = (data as any)?.rejected ?? {};
+  return {
+    admitted: Number((data as any)?.admitted ?? 0),
+    tooShort: Number(rejected.too_short ?? 0),
+    wrongSource: Number(rejected.wrong_source ?? 0),
+  };
+}
+
+/** The default-mode row that holds this member's admired posts. */
+type StoredAdmired = { content: string; source: string | null; added_at: string | null };
+async function admiredRowId(userId: string): Promise<{ id: string; list: StoredAdmired[] }> {
+  const { data, error } = await supabase
+    .from("authority_voice_profiles")
+    .select("id, admired_posts")
+    .eq("user_id", userId)
+    .eq("mode_key", "default")
+    .order("is_primary", { ascending: false })
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Aura has no voice profile for you yet — read your posts first.");
+  /** Stored shape, kept exactly as the database holds it. */
+  const list = (Array.isArray((data as any).admired_posts) ? (data as any).admired_posts : [])
+    .map((a: any) => ({
+      content: String(a?.content ?? "").trim(),
+      source: (a?.source as string | null) ?? null,
+      added_at: (a?.added_at as string | null) ?? null,
+    }))
+    .filter((a: { content: string }) => a.content.length > 0);
+  return { id: String((data as any).id), list };
+}
+
+/** Add a post the member admires. Someone else's writing, held as reference. */
+export async function addAdmiredPost(userId: string, content: string, source: string): Promise<void> {
+  const text = String(content ?? "").trim();
+  if (text.length < 50) throw new Error("That is too short to learn a tone from.");
+  const { id, list } = await admiredRowId(userId);
+  const next = [{ content: text, source: source.trim() || null, added_at: new Date().toISOString() }, ...list]
+    .slice(0, ADMIRED_CAP);
+  const { error } = await supabase
+    .from("authority_voice_profiles")
+    .update({ admired_posts: next, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/** Remove one admired post by its position in the list on screen. */
+export async function removeAdmiredPost(userId: string, index: number): Promise<void> {
+  const { id, list } = await admiredRowId(userId);
+  const next = list.filter((_: unknown, i: number) => i !== index);
+  const { error } = await supabase
+    .from("authority_voice_profiles")
+    .update({ admired_posts: next, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+

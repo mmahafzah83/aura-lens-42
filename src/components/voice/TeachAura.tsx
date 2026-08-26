@@ -8,17 +8,21 @@
  * A failed read is reported as a failed read. It is never shown as an empty
  * corpus, which is a different and much more alarming thing to tell someone.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { loadTeachAura, MIN_POSTS_FOR_COVERAGE, type TeachAuraModel } from "@/lib/teachAura";
+import {
+  loadTeachAura, MIN_POSTS_FOR_COVERAGE, splitPastedPosts, addOwnWriting, addAdmiredPost, removeAdmiredPost,
+  ADMIRED_CAP, type TeachAuraModel,
+} from "@/lib/teachAura";
+import { saveLinkedInAddress } from "@/lib/linkedinAddress";
 import TeachAuraCoverage from "@/components/voice/TeachAuraCoverage";
 import TeachAuraReview from "@/components/voice/TeachAuraReview";
 import { useCachedVoice, invalidateVoiceCache } from "@/lib/voiceCache";
 import {
-  BLUE, GREEN, INK, LINE, MUTED, TYPE, cardStyle, chipStyle, ghostButton, microLabel, monoNum, primaryButton,
+  AMBER_TEXT, BLUE, GREEN, INK, LINE, MUTED, RED, TYPE, cardStyle, chipStyle, ghostButton, microLabel, monoNum, primaryButton,
 } from "@/components/voice/tokens";
 
 /** The three stages of a re-read, named so the member knows what's happening. */
@@ -139,6 +143,92 @@ export default function TeachAura({ userId }: { userId: string | null }) {
   }, [model, state]);
 
 
+  /* ── the controls this page offers ─────────────────────────────────────── */
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [pasteText, setPasteText] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addReport, setAddReport] = useState<string | null>(null);
+  const [admiredText, setAdmiredText] = useState("");
+  const [admiredSource, setAdmiredSource] = useState("");
+  const [addingAdmired, setAddingAdmired] = useState(false);
+  const [addressInput, setAddressInput] = useState("");
+  const [savingAddress, setSavingAddress] = useState(false);
+
+  const addWriting = useCallback(async (posts: string[]) => {
+    setAdding(true);
+    setAddReport(null);
+    try {
+      const r = await addOwnWriting(posts);
+      const parts = [`${r.admitted} added.`];
+      if (r.tooShort > 0) parts.push(`${r.tooShort} rejected — under 200 characters, too short to read a style from.`);
+      if (r.wrongSource > 0) parts.push(`${r.wrongSource} rejected — they did not pass the own-writing rule.`);
+      setAddReport(parts.join(" "));
+      setPasteText("");
+      invalidateVoiceCache("voice:");
+      await state.reload(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't add that writing.");
+    } finally {
+      setAdding(false);
+    }
+  }, [state]);
+
+  const onFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = (e.target.files || [])[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      await addWriting(splitPastedPosts(text));
+    } catch {
+      toast.error("Couldn't read that file. Use a .txt or .md file.");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }, [addWriting]);
+
+  const addAdmired = useCallback(async () => {
+    if (!userId) return;
+    setAddingAdmired(true);
+    try {
+      await addAdmiredPost(userId, admiredText, admiredSource);
+      setAdmiredText("");
+      setAdmiredSource("");
+      invalidateVoiceCache("voice:");
+      await state.reload(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't save that.");
+    } finally {
+      setAddingAdmired(false);
+    }
+  }, [userId, admiredText, admiredSource, state]);
+
+  const dropAdmired = useCallback(async (index: number) => {
+    if (!userId) return;
+    try {
+      await removeAdmiredPost(userId, index);
+      invalidateVoiceCache("voice:");
+      await state.reload(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't remove that.");
+    }
+  }, [userId, state]);
+
+  const saveAddress = useCallback(async () => {
+    if (!userId) return;
+    setSavingAddress(true);
+    try {
+      await saveLinkedInAddress(userId, addressInput);
+      setAddressInput("");
+      invalidateVoiceCache("voice:");
+      await state.reload(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't save that address.");
+    } finally {
+      setSavingAddress(false);
+    }
+  }, [userId, addressInput, state]);
+
+
   if (!userId) return <Card><span style={{ fontSize: TYPE.body, color: MUTED }}>Sign in to see what Aura read.</span></Card>;
   if (state.loading && !model) {
     return <Card><span style={{ fontSize: TYPE.body, color: MUTED }}>Loading what Aura read…</span></Card>;
@@ -157,22 +247,40 @@ export default function TeachAura({ userId }: { userId: string | null }) {
     );
   }
 
-  /* Genuinely nothing connected. No zeros, no inline form. */
+  /* Nothing connected. No zeros — and the action is here, not a link away. */
   if (!model || !model.address.handle) {
     return (
       <Card>
         <div style={{ fontSize: TYPE.section, fontWeight: 600, color: INK }}>
           Aura hasn't read anything you've written yet.
         </div>
-        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, marginBlock: "8px 14px" }}>
+        <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, marginBlock: "8px 12px" }}>
           Add your LinkedIn address and Aura learns your voice from your own posts.
         </p>
-        <Link to="/settings?tab=connections" style={{ ...primaryButton, display: "inline-block", textDecoration: "none" }}>
-          Add your LinkedIn address
-        </Link>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <input
+            value={addressInput}
+            onChange={(e) => setAddressInput(e.target.value)}
+            placeholder="linkedin.com/in/your-name"
+            aria-label="Your LinkedIn address"
+            style={{
+              flex: "1 1 220px", minBlockSize: 44, padding: "0 12px", fontSize: TYPE.body,
+              border: `1px solid ${LINE}`, borderRadius: 8, color: INK, background: "#FFFFFF",
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => void saveAddress()}
+            disabled={savingAddress || !addressInput.trim()}
+            style={{ ...primaryButton, minBlockSize: 44, opacity: savingAddress || !addressInput.trim() ? 0.6 : 1 }}
+          >
+            {savingAddress ? "Saving…" : "Save address"}
+          </button>
+        </div>
       </Card>
     );
   }
+
 
   const noPosts = model.totalPosts === 0;
 
@@ -183,9 +291,18 @@ export default function TeachAura({ userId }: { userId: string | null }) {
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
           <div style={{ minWidth: 0, flex: "1 1 260px" }}>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>LinkedIn — @{model.address.handle}</span>
-              <span style={chipStyle(GREEN, "#EAF6F0", "#BFE3D3")}>Connected</span>
+              <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
+                Your LinkedIn posts — {model.includedCount} counted
+              </span>
+              <span style={{ fontSize: TYPE.body, color: MUTED }}>@{model.address.handle}</span>
+              {model.connectionState === "connected"
+                ? <span style={chipStyle(GREEN, "#EAF6F0", "#BFE3D3")}>Connected</span>
+                : <span style={chipStyle(AMBER_TEXT, "#FBF3E0", "#EBD8A8")}>Needs reconnect</span>}
             </div>
+            <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 0" }}>
+              These are the only posts that shape how Aura writes for you.
+            </p>
+
             <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 0" }}>
               {noPosts
                 ? "Connected, but Aura hasn't read any posts yet."
@@ -236,24 +353,148 @@ export default function TeachAura({ userId }: { userId: string | null }) {
           </p>
         )}
 
+        {/* Writing the member added themselves — a paste or an upload. */}
         <div style={{ borderBlockStart: `1px solid ${LINE}`, marginBlockStart: 14, paddingBlockStart: 12 }}>
-          <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>Uploaded files</span>
-          <p style={{ fontSize: TYPE.body, color: MUTED, marginBlock: "6px 0" }}>
-            {model.documentCount > 0
-              ? `${model.documentCount} document${model.documentCount === 1 ? "" : "s"} read`
-              : "No files uploaded yet."}
+          <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
+            Writing you added yourself — {model.addedByYouCount}
+          </span>
+          <p style={{ fontSize: TYPE.body, color: MUTED, marginBlock: "6px 8px", lineHeight: 1.6 }}>
+            Posts you wrote that are not on your LinkedIn. They join your posts as evidence of how you write.
           </p>
+          <textarea
+            dir="auto"
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            rows={4}
+            aria-label="Paste your own writing"
+            placeholder="Paste one or more of your own posts — leave a blank line between them…"
+            style={{
+              inlineSize: "100%", border: `1px solid ${LINE}`, borderRadius: 12, padding: 10,
+              fontSize: TYPE.body, lineHeight: 1.6, color: INK, background: "#FFFFFF", resize: "vertical",
+            }}
+          />
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBlockStart: 8 }}>
+            <button
+              type="button"
+              disabled={adding || !pasteText.trim()}
+              onClick={() => void addWriting(splitPastedPosts(pasteText))}
+              style={{ ...ghostButton, minBlockSize: 44, display: "flex", gap: 6, alignItems: "center", opacity: adding || !pasteText.trim() ? 0.6 : 1 }}
+            >
+              {adding && <Loader2 size={13} className="animate-spin" />} Add this writing
+            </button>
+            <button
+              type="button"
+              disabled={adding}
+              onClick={() => fileRef.current?.click()}
+              style={{ ...ghostButton, minBlockSize: 44, display: "flex", gap: 6, alignItems: "center" }}
+            >
+              <Upload size={13} /> Upload a .txt or .md file
+            </button>
+            <input ref={fileRef} type="file" accept=".txt,.md" hidden onChange={(e) => void onFile(e)} />
+          </div>
+          {addReport && <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 8 }}>{addReport}</p>}
         </div>
 
+        {/* Posts the member admires — reference only, never reused. */}
         <div style={{ borderBlockStart: `1px solid ${LINE}`, marginBlockStart: 12, paddingBlockStart: 12 }}>
-          <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>Pasted samples</span>
-          <p style={{ fontSize: TYPE.body, color: MUTED, marginBlock: "6px 0" }}>
-            {model.pastedCount > 0
-              ? `${model.pastedCount} sample${model.pastedCount === 1 ? "" : "s"} pasted`
-              : "No samples pasted yet."}
+          <span style={{ fontSize: TYPE.bodyLg, fontWeight: 600, color: INK }}>
+            Posts you admire — {model.admired.length}
+          </span>
+          <p style={{ fontSize: TYPE.body, color: MUTED, marginBlock: "6px 8px", lineHeight: 1.6 }}>
+            Someone else's writing you want to sound closer to. Aura learns tone from these — it never reuses their
+            words or claims them as yours. Up to {ADMIRED_CAP}.
           </p>
+          {model.admired.length > 0 && (
+            <ul style={{ listStyle: "none", margin: "0 0 8px", padding: 0, display: "grid", gap: 6 }}>
+              {model.admired.map((a, i) => (
+                <li key={`${i}-${a.addedAt ?? ""}`} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: TYPE.small, color: MUTED, flex: 1, lineHeight: 1.5 }} dir="auto">
+                    {a.content.slice(0, 120)}{a.content.length > 120 ? "…" : ""}
+                    {a.source ? ` — ${a.source}` : " — source not noted"}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Remove this admired post"
+                    onClick={() => void dropAdmired(i)}
+                    style={{ ...ghostButton, minBlockSize: 44, minInlineSize: 44, display: "flex", alignItems: "center", justifyContent: "center", color: RED }}
+                  >
+                    <X size={13} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {model.admired.length < ADMIRED_CAP && (
+            <>
+              <textarea
+                dir="auto"
+                value={admiredText}
+                onChange={(e) => setAdmiredText(e.target.value)}
+                rows={3}
+                aria-label="Paste a post you admire"
+                placeholder="Paste a post you admire — not your own…"
+                style={{
+                  inlineSize: "100%", border: `1px solid ${LINE}`, borderRadius: 12, padding: 10,
+                  fontSize: TYPE.body, lineHeight: 1.6, color: INK, background: "#FFFFFF", resize: "vertical",
+                }}
+              />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBlockStart: 8 }}>
+                <input
+                  value={admiredSource}
+                  onChange={(e) => setAdmiredSource(e.target.value)}
+                  aria-label="Who wrote it"
+                  placeholder="Who wrote it"
+                  style={{
+                    flex: "1 1 180px", minBlockSize: 44, padding: "0 12px", fontSize: TYPE.body,
+                    border: `1px solid ${LINE}`, borderRadius: 8, color: INK, background: "#FFFFFF",
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={addingAdmired || !admiredText.trim()}
+                  onClick={() => void addAdmired()}
+                  style={{ ...ghostButton, minBlockSize: 44, opacity: addingAdmired || !admiredText.trim() ? 0.6 : 1 }}
+                >
+                  {addingAdmired ? "Saving…" : "Add this post"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </Card>
+
+      <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 8, lineHeight: 1.6 }}>
+        {model.documentCount} document{model.documentCount === 1 ? "" : "s"} feed what Aura knows, not how you sound.{" "}
+        <Link to="/home?tab=intelligence" style={{ color: BLUE, textDecoration: "none" }}>See them →</Link>
+      </p>
+
+      <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 6, lineHeight: 1.6 }}>
+        Examples Aura kept from your posts — {model.examples.length}
+        {model.examples.length > 0 ? `: ${Array.from(new Set(model.examples.map((e) => e.sourceLabel))).join(", ")}` : ""}
+      </p>
+
+      <p style={{ fontSize: TYPE.small, color: MUTED, marginBlockStart: 6, lineHeight: 1.6 }}>
+        Publishing a draft teaches Aura nothing, on purpose — learning from its own writing is how a voice goes stale.
+      </p>
+
+      {model.negativeVerdicts >= 3 && (
+        <div style={{ ...cardStyle, marginBlockStart: 10 }}>
+          <div style={{ fontSize: TYPE.body, color: INK, lineHeight: 1.6 }}>
+            You have told Aura {model.negativeVerdicts} times in the last two weeks that a draft did not sound like you
+            {model.negativeDimension ? `, mostly about ${model.negativeDimension}` : ""}. A re-read of your posts is the fix.
+          </div>
+          <button
+            type="button"
+            onClick={() => void reread()}
+            disabled={stage !== null}
+            style={{ ...ghostButton, minBlockSize: 44, marginBlockStart: 8, opacity: stage !== null ? 0.6 : 1 }}
+          >
+            Re-read my posts
+          </button>
+        </div>
+      )}
+
+
 
       {!noPosts && (
         <>
