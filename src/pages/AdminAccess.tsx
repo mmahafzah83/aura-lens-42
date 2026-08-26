@@ -81,6 +81,26 @@ const relativeTime = (iso: string | null) => {
   return `${days} days ago`;
 };
 
+/**
+ * The real message from an edge function. `invoke()` surfaces a non-2xx as an
+ * error whose body still holds the reason — read it rather than showing
+ * "Edge Function returned a non-2xx status code".
+ */
+const readFunctionError = async (data: unknown, error: unknown): Promise<string | null> => {
+  if (!error) {
+    const inline = (data as any)?.error;
+    return inline ? String(inline) : null;
+  }
+  const ctx = (error as any)?.context;
+  try {
+    if (ctx && typeof ctx.json === "function") {
+      const body = await ctx.json();
+      if (body?.error) return String(body.error);
+    }
+  } catch { /* body already consumed or not JSON */ }
+  return (error as any)?.message || "Request failed";
+};
+
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
     pending: "bg-slate-100 text-slate-600 border-slate-300",
@@ -126,7 +146,7 @@ const AdminAccess = () => {
   // Inactivity alert
 
   // Delete-user state
-  const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ email: string; name: string | null } | null>(null);
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ email: string; name: string | null; user_id?: string | null } | null>(null);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
 
   // In-page tabs + waitlist search (presentation only)
