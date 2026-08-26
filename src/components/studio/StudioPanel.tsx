@@ -1215,6 +1215,8 @@ export default function StudioPanel({
         // A stub carries no edited stamp; the full row (loaded below) is authoritative.
         saved_at: draftPrefill.created_at ?? new Date().toISOString(),
         signalId: draftPrefill.signalId ?? null,
+        // A stub knows nothing about slides; the full row (loaded below) is authoritative.
+        hasSlides: false,
       };
       // The shell may hand over a stub; the full row is authoritative.
       const full = (await loadStudioDraft(d.id)) ?? (d.body ? d : null);
