@@ -647,27 +647,38 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   );
 
   return createPortal(
-    <div data-testid="ask-aura-v2" style={{ position: "fixed", inset: 0, zIndex: 10000, background: "var(--surface-page, var(--surface-card))", display: "flex", flexDirection: "column" }}>
+    <div
+      ref={panelRef}
+      data-testid="ask-aura-v2"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ask-aura-title"
+      style={{ position: "fixed", inset: 0, zIndex: 10000, background: "var(--surface-page, var(--surface-card))", display: "flex", flexDirection: "column", overflowX: "hidden" }}
+    >
       <header style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "14px 20px", borderBottom: "1px solid var(--rule-outer)", flex: "0 0 auto",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--machine)" }} />
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--text-primary)" }}>Ask Aura</span>
+          <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 999, background: "var(--machine)" }} />
+          <span id="ask-aura-title" style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--text-primary)" }}>Ask Aura</span>
           {context?.linkedLabel && (
             <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>· {context.linkedLabel}</span>
           )}
         </div>
-        <button type="button" aria-label="Close" onClick={onClose} style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--text-secondary)" }}>
-          <X size={18} />
+        <button type="button" className="ask-focusable" aria-label="Close" onClick={onClose} style={{
+          background: "transparent", border: 0, cursor: "pointer", color: "var(--text-secondary)",
+          width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
+          margin: "-6px -10px -6px 0", borderRadius: 10,
+        }}>
+          <X size={18} aria-hidden="true" />
         </button>
       </header>
 
       <div className="ask-body" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <div className="ask-grid" style={{ height: "100%", maxWidth: 1400, margin: "0 auto", padding: "16px 20px", boxSizing: "border-box" }}>
           <section style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-            <div ref={listRef} style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
+            <div ref={listRef} aria-live="polite" aria-atomic="false" style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
               {messages.length === 0 && openerDone && (
                 <div style={{ padding: "36px 4px", maxWidth: 620 }}>
                   {opener ? (
