@@ -65,6 +65,8 @@ const fmtDate = (iso: string) =>
 const fmtShort = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }).toUpperCase();
 
+const NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"];
+
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
@@ -392,6 +394,19 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
           {answeredOtherBand && (
             <p style={{ fontFamily: UI, fontSize: 14, color: W_LINK, margin: "0 0 10px" }}>
               You're reading at the {band} now. These eight are different.
+            </p>
+          )}
+
+          {complete && minLevel === 3 && (
+            <p style={{ fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 10px" }}>
+              Nothing here sits low. The shape is where it moves next.
+            </p>
+          )}
+          {complete && lowest.length > 0 && (
+            <p style={{ fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 10px" }}>
+              {lowest.length === 1
+                ? "One point sits lowest."
+                : `${NUMBER_WORDS[lowest.length] ?? lowest.length} points sit lowest.`}
             </p>
           )}
 
