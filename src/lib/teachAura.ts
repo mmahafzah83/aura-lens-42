@@ -264,11 +264,18 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
     .filter((a: AdmiredPost) => a.content.length > 0);
 
   const conn = (connRes.data as any) || null;
-  const connectionState: ConnectionState = !address.handle && !conn?.handle
-    ? "not_set"
-    : String(conn?.access_token ?? "").length > 0
-      ? "connected"
-      : "needs_reconnect";
+  /* One rule, imported. Nothing here decides this for itself. */
+  const status = linkedinStatus({
+    hasRow: Boolean(conn),
+    status: (conn?.status as string | null) ?? null,
+    tokenExpiresAt: (conn?.token_expires_at as string | null) ?? null,
+    lastSyncedAt: (conn?.last_synced_at as string | null) ?? address.lastSyncedAt ?? null,
+  });
+  const connectionState: ConnectionState =
+    status.key === "not_connected" ? "not_set"
+      : status.key === "reconnect_needed" ? "needs_reconnect"
+        : "connected";
+
 
   const negatives = ((feedbackRes.data as any[]) || [])
     .filter((r) => r.verdict === "partly" || r.verdict === "not_me");
