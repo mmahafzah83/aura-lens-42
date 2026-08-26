@@ -8,7 +8,6 @@ import ProfileIntelligence from "@/components/ProfileIntelligence";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
 import MilestonesSection from "@/components/MilestonesSection";
-import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import ReportVersions from "@/components/identity/ReportVersions";
