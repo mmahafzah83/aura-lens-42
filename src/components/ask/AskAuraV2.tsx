@@ -233,7 +233,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       const res = await fetch(CHAT_URL, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next.map(m => ({ role: m.role, content: m.content })), context }),
+        body: JSON.stringify({ messages: next.map(m => ({ role: m.role, content: m.content })), context, session_id: sessionIdRef.current }),
       });
       if (!res.ok || !res.body) {
         const j = await res.json().catch(() => ({}));
