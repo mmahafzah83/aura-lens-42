@@ -52,6 +52,8 @@ interface ProfileData {
 }
 
 import { loadLinkedInState, EMPTY_LINKEDIN_STATE, type LinkedInState } from "@/lib/linkedinState";
+import { statusFromLinkedInState, mayPromptReconnect } from "@/lib/linkedinStatus";
+
 
 export default function Settings() {
   usePageMeta({
