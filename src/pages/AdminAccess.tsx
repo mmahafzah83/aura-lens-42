@@ -481,6 +481,10 @@ const AdminAccess = () => {
         </div>
 
         {activeTab === "waitlist" && (<>
+        {/* This tab lists waitlist and invite records only — not sign-in accounts. */}
+        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
+          Waitlist and invite records only. Sign-in accounts live in the Users tab.
+        </p>
         {/* Stats row */}
         <div className="flex flex-wrap gap-2 mb-6">
           <span className="text-xs px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
