@@ -218,23 +218,33 @@ const AdminAccess = () => {
     (async () => {
       try { setMetrics(await loadAdminMetrics()); } catch { setMetrics(null); }
     })();
-    (async () => {
-      setActiveLoading(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const { data, error } = await supabase.functions.invoke("admin-active-users", {
-          body: {},
-          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-        });
-        if (!error && data?.users) setActiveUsers(data.users);
-      } catch (e) {
-        console.warn("admin-active-users failed", e);
-      } finally {
-        setActiveLoading(false);
-      }
-    })();
+    fetchAuthUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authChecked]);
+
+  /** The Users tab reads real auth accounts, never the allowlist. */
+  const fetchAuthUsers = async () => {
+    setActiveLoading(true);
+    setUsersError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke("admin-active-users", {
+        body: {},
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
+      const message = await readFunctionError(data, error);
+      if (message) {
+        setUsersError(message);
+        return;
+      }
+      setActiveUsers(((data as any)?.users ?? []) as AuthUserRow[]);
+    } catch (e: any) {
+      console.warn("admin-active-users failed", e);
+      setUsersError(e?.message || "Couldn't load users");
+    } finally {
+      setActiveLoading(false);
+    }
+  };
 
   const npsStats = useMemo(() => {
     const valid = npsRows.filter((r) => typeof r.rating === "number");
