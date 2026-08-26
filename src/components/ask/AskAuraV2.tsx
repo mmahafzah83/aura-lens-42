@@ -538,6 +538,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               <button
                 key={c.ref}
                 type="button"
+                className="ask-focusable ask-rail-row"
                 onClick={() => openSignal(c.id)}
                 style={{
                   textAlign: "left", background: "transparent", cursor: "pointer",
