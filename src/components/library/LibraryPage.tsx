@@ -50,7 +50,7 @@ const PublishedList: React.FC<{ lang: "en" | "ar" }> = ({ lang }) => {
     (async () => {
       const { data, error } = await supabase
         .from("linkedin_posts")
-        .select("id, post_text, post_url, published_at, format_type")
+        .select("id, post_text, post_url, published_at, format_type, source_metadata")
         .eq("tracking_status", "published")
         .order("published_at", { ascending: false })
         .limit(50);
