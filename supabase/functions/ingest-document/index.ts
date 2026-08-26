@@ -802,6 +802,17 @@ async function runComplete(
     } catch (embErr) {
       console.error("[ingest-document] deferred embedding error:", embErr);
     }
+
+    // Grounded whole-document brief. Runs after chunking and embedding so the
+    // relevance gate has vectors to work with. Failure never fails ingestion.
+    try {
+      const { error: briefErr } = await admin.functions.invoke("build-document-brief", {
+        body: { document_id: doc.id },
+      });
+      if (briefErr) console.error("[ingest-document] deferred build-document-brief error:", briefErr);
+    } catch (e) {
+      console.error("[ingest-document] deferred brief error:", e);
+    }
   })());
 }
 
