@@ -128,7 +128,10 @@ serve(async (req) => {
         const t = String(unwritten.signal_title);
         const out: Opener = {
           kind: "unwritten signal",
-          text: `Your ${t} signal has been live ${n} days with ${nCaptures(frags, "en")} behind it, and you have not written from it yet.`,
+          text: out2text,
+          const subject = `${t} signal`;
+        const out2text = `Your ${subject} has been live ${n} days with ${nCaptures(frags, "en")} behind it, and you have not written from it yet.`;
+        void 0;
           chips: [
             { label: "Draft it", prompt: `Draft a post from my signal "${t}" using the evidence behind it.` },
             { label: "Show me the evidence", prompt: `What evidence sits behind "${t}"?` },
