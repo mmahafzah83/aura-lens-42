@@ -607,6 +607,29 @@ const Dashboard = () => {
     }
   }, []);
 
+  /* THE HEADER MUST NOT LIE AFTER AN EDIT.
+     The bootstrap below reads name and avatar once, inside a getSession().then()
+     that never runs again, so editing your name from Home left the old value in
+     the header and the profile menu until a reload. EditProfileModal calls this. */
+  const refreshHeaderProfile = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const uid = session?.user?.id;
+    if (!uid) return;
+    const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
+      .select("first_name, firm, level, sector_focus, avatar_url")
+      .eq("user_id", uid)
+      .maybeSingle();
+    if (!profile) return;
+    setUser((u) => ({
+      ...(u || {}),
+      email: session!.user.email,
+      fullName: (profile as any).first_name ?? null,
+      firstName: (profile as any).first_name ?? null,
+      avatarUrl: (profile as any).avatar_url ?? null,
+    }));
+    setProfileSector((profile as any).sector_focus ?? null);
+  }, []);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
@@ -676,11 +699,10 @@ const Dashboard = () => {
           // nothing else writes it. Refresh at most every 30 minutes.
           const stale = !lastVisit || (Date.now() - new Date(lastVisit).getTime()) > 30 * 60 * 1000;
           if (stale) {
-            void supabase
-              .from("diagnostic_profiles" as any)
-              .update({ last_visit_at: new Date().toISOString() } as any)
-              .eq("user_id", uid)
-              .then(({ error }: any) => { if (error) console.warn("last_visit_at write failed", error); });
+            // ONE clock: last_visit_at is the source of truth for "when was this
+            // member last here". `last_active_at` is DEPRECATED (see
+            // supabase/functions/strategic-nudge) and must not be read.
+            void writeProfile(uid, { last_visit_at: new Date().toISOString() }, "Dashboard.last_visit_at");
           }
         }
 
@@ -900,8 +922,9 @@ const Dashboard = () => {
           category: dimensionCategories[name] || "General",
           description: `${dimensionCategories[name] || "General"} capability — calibrated at ${Number(score)}/100`,
         }));
-        await (supabase.from("diagnostic_profiles" as any) as any)
-          .update({ generated_skills: skills })
+        await writeProfile(uid_for_skills, { generated_skills: skills }, "Dashboard.generated_skills") && void 0;
+        void ((supabase.from("__never" as any) as any)
+          .select("id")
           .eq("user_id", userId);
       } catch (e) {
         console.warn("generated_skills backfill skipped:", e);
@@ -1531,6 +1554,7 @@ const Dashboard = () => {
         onClose={() => setEditProfileOpen(false)}
         userId={userId}
         focusField={editProfileField}
+        onSaved={() => { void refreshHeaderProfile(); }}
       />
       <SetPasswordModal
         open={passwordModalOpen}
