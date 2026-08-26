@@ -370,6 +370,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
         if (used.length) setCitedOrder(prev => [...prev, ...used.filter(r => !prev.includes(r))]);
       }
 
+      if (gotSources.length) {
+        setSources(prev => {
+          const m = { ...prev };
+          for (const s of gotSources) if (Number.isFinite(s?.n)) m[Number(s.n)] = s;
+          return m;
+        });
+        const usedS = usedSources(acc, gotSources).map(s => Number(s.n));
+        if (usedS.length) setCitedSources(prev => [...prev, ...usedS.filter(n => !prev.includes(n))]);
+      }
+
       if (acc.trim()) {
         if (gotActions.length) {
           setMessages(prev => {
