@@ -60,7 +60,7 @@ interface Position {
   voiceTone: string | null;
   voiceLearnedFrom: number;
 }
-interface MemoryRow { id: string; session_date: string; summary: string }
+interface MemoryRow { id: string; session_date: string; summary: string; actions_committed?: string[] | null }
 interface PromptSeed { label: string; text: string }
 
 const isAr = (s: string) => AR.test(s || "");
