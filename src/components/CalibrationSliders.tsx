@@ -39,15 +39,6 @@ function insightFor(score: number, sector?: string | null): string {
   return `Starting here is a strength, not a weakness. Knowing your starting line is how leaders outpace everyone else.`;
 }
 
-function percentileFor(avg: number): string {
-  if (avg >= 70) return "top 10%";
-  if (avg >= 60) return "top 15%";
-  if (avg >= 50) return "top 25%";
-  if (avg >= 40) return "top 35%";
-  if (avg >= 30) return "top 50%";
-  return "a unique profile";
-}
-
 /* System-B "Studio Plate" palette — hard-coded on purpose. This component
    renders inside the light .ob card, which does not define System-A vars. */
 const ACT = "#0670C4";        // action / blue
@@ -170,6 +161,9 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
   const isSummary = index === CALIBRATION_DIMENSIONS.length;
   const current = !isSummary ? CALIBRATION_DIMENSIONS[index] : null;
   const currentScore = current ? scores[current.id] : 0;
+  const currentBand: CapabilityBand = current
+    ? bandForSlider(scores[current.id], !!touched[current.id])
+    : "not_assessed";
 
   // Insight debounce + decade pulse on slider movement
   useEffect(() => {
@@ -231,14 +225,17 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
     try { await onComplete(answeredScores); } finally { setSubmitting(false); }
   };
 
-  // Summary computations
+  // Summary — bands only. No average, no ranking, nothing invented from
+  // dimensions the member never touched.
   const summary = useMemo(() => {
-    const sorted = [...CALIBRATION_DIMENSIONS].sort((a, b) => scores[b.id] - scores[a.id]);
-    const top2 = sorted.slice(0, 2);
-    const lowest = sorted[sorted.length - 1];
-    const avg = Object.values(scores).reduce((a, b) => a + b, 0) / CALIBRATION_DIMENSIONS.length;
-    return { top2, lowest, percentile: percentileFor(avg) };
-  }, [scores]);
+    const rows = CALIBRATION_DIMENSIONS.map((d) => ({
+      id: d.id,
+      name: d.name,
+      band: bandForSlider(scores[d.id], !!touched[d.id]),
+    }));
+    rows.sort((a, b) => BAND_COPY[b.band].step - BAND_COPY[a.band].step || a.name.localeCompare(b.name));
+    return { rows, readCount: rows.filter((r) => r.band !== "not_assessed").length, total: rows.length };
+  }, [scores, touched]);
 
   const slide = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
@@ -306,16 +303,27 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
             <motion.div
               key={pulseKey}
               initial={{ scale: 1 }}
-              animate={{ scale: reduceMotion ? 1 : [1, 1.05, 1] }}
+              animate={{ scale: reduceMotion ? 1 : [1, 1.03, 1] }}
               transition={{ duration: 0.2 }}
-              style={{
-                fontFamily: MONO,
-                fontSize: 36, color: INK, fontWeight: 600,
-                textAlign: "center", margin: "8px 0 18px",
-              }}
+              style={{ textAlign: "center", margin: "10px 0 6px", opacity: currentBand === "not_assessed" ? 0.3 : 1 }}
             >
-              {currentScore}
+              <span
+                style={{
+                  display: "inline-block",
+                  background: BAND_TOKEN[currentBand].bg,
+                  color: BAND_TOKEN[currentBand].text,
+                  borderRadius: 999,
+                  padding: "4px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {BAND_COPY[currentBand].label}
+              </span>
             </motion.div>
+            <p style={{ fontSize: 13, color: INK_SOFT, textAlign: "center", margin: "0 0 18px" }}>
+              {BAND_COPY[currentBand].meaning}
+            </p>
 
             <div style={{ minHeight: 60, maxWidth: 380, margin: "0 auto 24px" }}>
               <motion.p
@@ -389,8 +397,11 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
 };
 
 interface SummaryCardProps {
-  summary: { top2: CalibrationDimension[]; lowest: CalibrationDimension; percentile: string };
-  scores: Record<string, number>;
+  summary: {
+    rows: { id: string; name: string; band: CapabilityBand }[];
+    readCount: number;
+    total: number;
+  };
   submitting: boolean;
   reduceMotion: boolean;
   onFinish: () => void;
