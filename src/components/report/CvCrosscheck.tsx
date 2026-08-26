@@ -87,6 +87,9 @@ const body: React.CSSProperties = {
   margin: 0,
 };
 
+/* The measure cap lives on the prose, never on the container. */
+const prose: React.CSSProperties = { ...body, maxInlineSize: "68ch" };
+
 const h2: React.CSSProperties = {
   fontFamily: OB.ui,
   fontSize: 15,
@@ -204,7 +207,7 @@ function PlainList({ items }: { items: string[] }) {
       {items.map((s, i) => (
         <li key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
           <span aria-hidden style={{ inlineSize: 5, blockSize: 5, borderRadius: 999, background: OB.cyan, marginBlockStart: 10, flex: "0 0 auto" }} />
-          <span style={body}>{s}</span>
+          <span style={prose}>{s}</span>
         </li>
       ))}
     </ul>
@@ -403,7 +406,7 @@ export default function CvCrosscheck({
   if (state === "no_cv") {
     return (
       <section style={{ ...card, ...style }}>
-        <p style={body}>Aura hasn't got a CV to read yet.</p>
+        <p style={prose}>Aura hasn't got a CV to read yet.</p>
         {uploadSlot ? <div style={{ marginBlockStart: 16 }}>{uploadSlot}</div> : null}
       </section>
     );
@@ -414,8 +417,8 @@ export default function CvCrosscheck({
       <section style={{ ...card, ...style }} aria-live="polite">
         <p style={mono}>Working</p>
         <ol style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "grid", gap: 8 }}>
-          <li style={body}>Reading your CV</li>
-          <li style={{ ...body, color: OB.muted }}>Comparing against your profile</li>
+          <li style={prose}>Reading your CV</li>
+          <li style={{ ...prose, color: OB.muted }}>Comparing against your profile</li>
         </ol>
       </section>
     );
@@ -424,7 +427,7 @@ export default function CvCrosscheck({
   if (state === "error") {
     return (
       <section style={{ ...card, ...style }}>
-        <p style={body}>Aura couldn't finish the comparison this time. Your CV is saved — try again.</p>
+        <p style={prose}>Aura couldn't finish the comparison this time. Your CV is saved — try again.</p>
         {onRetry ? (
           <button type="button" onClick={onRetry} style={{ ...filledBtn, marginBlockStart: 14 }}>Try again</button>
         ) : null}
@@ -499,20 +502,20 @@ export default function CvCrosscheck({
       <article style={{ display: "grid", gap: 10 }}>
         {first && f.do_first === true ? <p style={{ ...mono, color: OB.cyanText }}>Do this first</p> : null}
         {text(f.what) ? <h3 style={h3}>{f.what}</h3> : null}
-        {text(f.what_you_lose) ? <p style={body}>{f.what_you_lose}</p> : null}
+        {text(f.what_you_lose) ? <p style={prose}>{f.what_you_lose}</p> : null}
         {rewrite ? (
           <div style={boxed}>
             <p style={mono}>Use this line</p>
-            <p style={{ ...body, marginBlockStart: 8 }}>{rewrite}</p>
+            <p style={{ ...prose, marginBlockStart: 8 }}>{rewrite}</p>
             <div style={{ marginBlockStart: 12 }}>
               <CopyButton value={rewrite} label="Copy rewrite" />
             </div>
           </div>
         ) : null}
         {text(f.why_it_matters) ? (
-          <p style={{ ...body, fontSize: 15, color: OB.muted }}>{f.why_it_matters}</p>
+          <p style={{ ...prose, fontSize: 15, color: OB.muted }}>{f.why_it_matters}</p>
         ) : null}
-        {text(f.do_this) ? <p style={{ ...body, fontSize: 15, color: OB.blue }}>{f.do_this}</p> : null}
+        {text(f.do_this) ? <p style={{ ...prose, fontSize: 15, color: OB.blue }}>{f.do_this}</p> : null}
         <EvidenceToggle cv={cvLine} profile={profileLine} />
         {auraControl(f.aura_can, { finding: f })}
       </article>
@@ -551,7 +554,7 @@ export default function CvCrosscheck({
       {/* stale */}
       {state === "stale" ? (
         <div style={{ ...card, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <p style={{ ...body, flex: "1 1 240px" }}>Your CV changed since this ran</p>
+          <p style={{ ...prose, flex: "1 1 240px" }}>Your CV changed since this ran</p>
           {onRunAgain ? <button type="button" onClick={onRunAgain} style={filledBtn}>Run it again</button> : null}
         </div>
       ) : null}
@@ -587,7 +590,7 @@ export default function CvCrosscheck({
         <Disclosure id="cvx-defensibility" label="What a CFO will ask" count={proof.length} previewText={preview(proof[0])}>
           <div style={{ display: "grid", gap: 12 }}>
             {proof.map((s, i) => (
-              <div key={i} style={boxed}><p style={body}>{s}</p></div>
+              <div key={i} style={boxed}><p style={prose}>{s}</p></div>
             ))}
           </div>
         </Disclosure>
@@ -601,7 +604,7 @@ export default function CvCrosscheck({
           openSignal={headlineOpen}
         >
           <div style={boxed}>
-            <p style={body}>{headlineSuggestion}</p>
+            <p style={prose}>{headlineSuggestion}</p>
             <div style={{ marginBlockStart: 12 }}>
               <CopyButton value={headlineSuggestion} label="Copy suggested headline" />
             </div>
@@ -611,19 +614,19 @@ export default function CvCrosscheck({
 
       {shape ? (
         <Disclosure id="cvx-shape" label="The shape of your career" previewText={preview(shape)}>
-          <p style={body}>{shape}</p>
+          <p style={prose}>{shape}</p>
         </Disclosure>
       ) : null}
 
       {voice ? (
         <Disclosure id="cvx-voice" label="What you sound like next to what you claim" previewText={preview(voice)}>
-          <p style={body}>{voice}</p>
+          <p style={prose}>{voice}</p>
         </Disclosure>
       ) : null}
 
       {hardTruth ? (
         <Disclosure id="cvx-truth" label="The hard truth" previewText={preview(hardTruth)}>
-          <p style={{ ...body, fontSize: 20, fontWeight: 700, lineHeight: 1.45 }}>{hardTruth}</p>
+          <p style={{ ...prose, fontSize: 20, fontWeight: 700, lineHeight: 1.45 }}>{hardTruth}</p>
         </Disclosure>
       ) : null}
 
@@ -632,8 +635,8 @@ export default function CvCrosscheck({
           <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 18 }}>
             {recs.map((r, i) => (
               <li key={i}>
-                <p style={{ ...body, fontWeight: 600 }}>{r.action}</p>
-                {text(r.why_now) ? <p style={{ ...body, fontSize: 15, color: OB.muted }}>{r.why_now}</p> : null}
+                <p style={{ ...prose, fontWeight: 600 }}>{r.action}</p>
+                {text(r.why_now) ? <p style={{ ...prose, fontSize: 15, color: OB.muted }}>{r.why_now}</p> : null}
                 {auraControl(r.aura_can, { recommendation: r })}
               </li>
             ))}
@@ -643,7 +646,7 @@ export default function CvCrosscheck({
 
       {peer ? (
         <Disclosure id="cvx-peers" label="How others in your field describe this work" previewText={preview(peer)}>
-          <p style={body}>{peer}</p>
+          <p style={prose}>{peer}</p>
         </Disclosure>
       ) : null}
     </div>
