@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { canonicalHandle, profileUrlFor } from "@/lib/linkedinAddress";
 
 export interface LinkedInState {
+  /** A connection row exists at all. */
+  hasRow: boolean;
   /** A connection row exists with a usable token — Aura can act on LinkedIn. */
   connected: boolean;
   /** The address on file, canonical handle form, or null. */
@@ -24,7 +26,12 @@ export interface LinkedInState {
   sourceStatus: string | null;
   /** The connection's own state. 'needs_reconnect' means the sign-in expired. */
   connectionStatus: string | null;
-  /** LinkedIn refused the stored sign-in — the member must connect again. */
+  /** When the stored token stops working. The reconnect rule reads this. */
+  tokenExpiresAt: string | null;
+  /**
+   * LinkedIn refused the stored sign-in — the member must connect again.
+   * Never derived from sync age; see `linkedinStatus` for the one rule.
+   */
   needsReconnect: boolean;
   /** Whether Aura may publish for the member (still only on approval). */
   canPost: boolean;
@@ -32,11 +39,12 @@ export interface LinkedInState {
 }
 
 export const EMPTY_LINKEDIN_STATE: LinkedInState = {
-  connected: false, handle: null, address: null,
+  hasRow: false, connected: false, handle: null, address: null,
   confirmedByRead: false, addressConfirmed: false, sourceStatus: null,
-  connectionStatus: null, needsReconnect: false,
+  connectionStatus: null, tokenExpiresAt: null, needsReconnect: false,
   canPost: false, lastSyncedAt: null,
 };
+
 
 export async function loadLinkedInState(userId: string): Promise<LinkedInState> {
   // The safe view only: the browser has no grant on access_token / can_post,
