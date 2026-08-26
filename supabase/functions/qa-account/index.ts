@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
 import { isAdmin } from "../_shared/adminRole.ts";
 
+import { provisionAccount } from "../_shared/provisionAccount.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -76,6 +78,9 @@ serve(async (req) => {
     }
 
     const user_id = created.user.id;
+
+    // Same single provisioning writer every other path uses.
+    await provisionAccount(admin, user_id, "comped");
 
     const { error: allowErr } = await admin.from("beta_allowlist").insert({
       email,

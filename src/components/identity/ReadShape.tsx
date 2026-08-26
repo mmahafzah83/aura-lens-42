@@ -10,7 +10,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ButtonPrimary } from "@/components/systemb/Button";
-import { useTier } from "@/hooks/useTier";
+import { usePlan } from "@/hooks/usePlan";
 import {
   SEAT_HEADING,
   SEAT_ROWS,
@@ -37,9 +37,9 @@ const NIGHT: React.CSSProperties = {
 
 const ReadShape: React.FC = () => {
   const navigate = useNavigate();
-  const { isLoop } = useTier();
+  const { fullAccess } = usePlan();
 
-  if (isLoop) return null;
+  if (fullAccess) return null;
 
   return (
     <div style={{ marginTop: 8 }}>

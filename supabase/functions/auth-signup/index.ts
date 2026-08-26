@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { LIMITS, clientIp, hashIp } from "../_shared/limits.ts";
 import { renderEmail, heading, paragraph } from "../_shared/emailTemplate.ts";
+import { provisionAccount } from "../_shared/provisionAccount.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -168,6 +169,9 @@ serve(async (req) => {
           { onConflict: "user_id" },
         );
       if (profileError) console.error("consent record failed", profileError);
+      // One writer for a new account's standing. Idempotent: never resets an
+      // existing member's plan.
+      await provisionAccount(admin, newUserId, "invited");
       const { data: prof } = await admin
         .from("diagnostic_profiles")
         .select("onboarding_step")

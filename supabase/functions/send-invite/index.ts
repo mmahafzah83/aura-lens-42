@@ -8,6 +8,8 @@ import {
   escapeHtml as esc,
 } from "../_shared/emailTemplate.ts";
 
+import { provisionAccount } from "../_shared/provisionAccount.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -237,7 +239,12 @@ serve(withObserve("send-invite", async (req) => {
       );
     }
 
-    // Update beta_allowlist
+    // The invite created (or found) the auth account — establish its standing
+    // through the one provisioning writer. Idempotent for existing members.
+    const invitedUserId = linkRes.data?.user?.id;
+    if (invitedUserId) await provisionAccount(admin, invitedUserId, "invited");
+
+    // Update beta_allowlist (waitlist / lead record only — never an access gate)
     const { error: updateErr } = await admin
       .from("beta_allowlist")
       .update({
