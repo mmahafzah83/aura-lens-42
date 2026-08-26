@@ -678,11 +678,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     } as any);
   };
 
-  const handleNextMilestoneCTA = () => {
-    if (!nextMilestone) return;
-    const cta = nextMilestone.cta;
-    if (cta && onSwitchTab) onSwitchTab(cta.tab);
-  };
 
   /* CV cross-check state — derived from the newest CV document and the
      stored cross-check on the profile row. */
