@@ -51,7 +51,7 @@ export async function loadLinkedInState(userId: string): Promise<LinkedInState> 
   // and asking for them made Postgres reject the whole query, so every member
   // read back as disconnected.
   const { data, error } = await (supabase.from("linkedin_connections_safe" as any) as any)
-    .select("handle, profile_url, source_status, status, last_synced_at, scopes, linkedin_id")
+    .select("handle, profile_url, source_status, status, last_synced_at, token_expires_at, scopes, linkedin_id")
     .eq("user_id", userId)
     .maybeSingle();
   if (error || !data) return EMPTY_LINKEDIN_STATE;
@@ -65,6 +65,7 @@ export async function loadLinkedInState(userId: string): Promise<LinkedInState> 
   const scopes: string[] = Array.isArray(row.scopes) ? row.scopes : [];
   const connected = row.status === "active" && Boolean(row.linkedin_id) && scopes.length > 0;
   return {
+    hasRow: true,
     connected,
     handle,
     address: (row.profile_url as string | null) || profileUrlFor(handle),
@@ -72,8 +73,10 @@ export async function loadLinkedInState(userId: string): Promise<LinkedInState> 
     addressConfirmed,
     sourceStatus: (row.source_status as string | null) ?? null,
     connectionStatus: (row.status as string | null) ?? null,
+    tokenExpiresAt: (row.token_expires_at as string | null) ?? null,
     needsReconnect: row.status === "needs_reconnect",
     canPost: connected && scopes.includes("w_member_social"),
     lastSyncedAt: (row.last_synced_at as string | null) ?? null,
   };
 }
+
