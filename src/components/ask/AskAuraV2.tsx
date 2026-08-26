@@ -196,6 +196,30 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
     })();
   }, [open]);
 
+  /* ── Opener: Aura speaks first, once per open ── */
+  useEffect(() => {
+    if (!open) { openerRef.current = false; setOpener(null); setOpenerDone(false); return; }
+    if (openerRef.current || initialMessage) return;
+    openerRef.current = true;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setOpenerDone(true); return; }
+        const { data, error } = await supabase.functions.invoke("ask-aura-opener", { body: {} });
+        if (error) throw error;
+        const text = typeof (data as any)?.text === "string" ? (data as any).text.trim() : "";
+        const chips = Array.isArray((data as any)?.chips) ? (data as any).chips.slice(0, 3) : [];
+        if (text) setOpener({ text, chips });
+      } catch (e) {
+        console.error("[ask] opener failed", e);
+      } finally {
+        setOpenerDone(true);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialMessage]);
+
+
   useEffect(() => {
     if (!open) return;
     const t = window.setTimeout(() => taRef.current?.focus(), 120);
