@@ -17,7 +17,6 @@ import {
   loadTeachAura, MIN_POSTS_FOR_COVERAGE, splitPastedPosts, addOwnWriting, addAdmiredPost, removeAdmiredPost,
   ADMIRED_CAP, type TeachAuraModel,
 } from "@/lib/teachAura";
-import { saveLinkedInAddress } from "@/lib/linkedinAddress";
 import TeachAuraCoverage from "@/components/voice/TeachAuraCoverage";
 import TeachAuraReview from "@/components/voice/TeachAuraReview";
 import { useCachedVoice, invalidateVoiceCache } from "@/lib/voiceCache";
@@ -36,6 +35,8 @@ export default function TeachAura({ userId }: { userId: string | null }) {
   const [stage, setStage] = useState<number | null>(null);
   const [lastRead, setLastRead] = useState<string | null | undefined>(undefined);
   const [readSummary, setReadSummary] = useState<string>("");
+  /** One read at a time. A second press is a no-op, never a second request. */
+  const reading = useRef(false);
 
   const key = userId ? `voice:teach:${userId}` : null;
   const loader = useCallback(() => loadTeachAura(userId as string), [userId]);
@@ -59,7 +60,8 @@ export default function TeachAura({ userId }: { userId: string | null }) {
   /** Profile first, then posts — the same order as onboarding. */
   const rereadLinkedIn = useCallback(async () => {
     const profile_url = model?.address.profileUrl;
-    if (!profile_url) return;
+    if (!profile_url || reading.current) return;
+    reading.current = true;
     setReadSummary("");
     try {
       setStage(0);
@@ -115,7 +117,8 @@ export default function TeachAura({ userId }: { userId: string | null }) {
   }, [userId, state]);
 
   const reread = useCallback(async () => {
-    if (!model?.address.profileUrl) return;
+    if (!model?.address.profileUrl || reading.current) return;
+    reading.current = true;
     try {
       setStage(0);
       const { error } = await supabase.functions.invoke("linkedin-fetch-posts", {
@@ -213,21 +216,6 @@ export default function TeachAura({ userId }: { userId: string | null }) {
     }
   }, [userId, state]);
 
-  const saveAddress = useCallback(async () => {
-    if (!userId) return;
-    setSavingAddress(true);
-    try {
-      await saveLinkedInAddress(userId, addressInput);
-      setAddressInput("");
-      invalidateVoiceCache("voice:");
-      await state.reload(true);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't save that address.");
-    } finally {
-      setSavingAddress(false);
-    }
-  }, [userId, addressInput, state]);
-
 
   if (!userId) return <Card><span style={{ fontSize: TYPE.body, color: MUTED }}>Sign in to see what Aura read.</span></Card>;
   if (state.loading && !model) {
@@ -247,7 +235,8 @@ export default function TeachAura({ userId }: { userId: string | null }) {
     );
   }
 
-  /* Nothing connected. No zeros — and the action is here, not a link away. */
+  /* Nothing connected. No zeros, and no second address field — the address is
+     set in Settings → Connections and nowhere else. */
   if (!model || !model.address.handle) {
     return (
       <Card>
@@ -255,32 +244,17 @@ export default function TeachAura({ userId }: { userId: string | null }) {
           Aura hasn't read anything you've written yet.
         </div>
         <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.65, marginBlock: "8px 12px" }}>
-          Add your LinkedIn address and Aura learns your voice from your own posts.
+          Add your LinkedIn address in Settings and Aura learns your voice from your own posts.
         </p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input
-            value={addressInput}
-            onChange={(e) => setAddressInput(e.target.value)}
-            placeholder="linkedin.com/in/your-name"
-            aria-label="Your LinkedIn address"
-            style={{
-              flex: "1 1 220px", minBlockSize: 44, padding: "0 12px", fontSize: TYPE.body,
-              border: `1px solid ${LINE}`, borderRadius: 8, color: INK, background: "#FFFFFF",
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => void saveAddress()}
-            disabled={savingAddress || !addressInput.trim()}
-            style={{ ...primaryButton, minBlockSize: 44, opacity: savingAddress || !addressInput.trim() ? 0.6 : 1 }}
-          >
-            {savingAddress ? "Saving…" : "Save address"}
-          </button>
-        </div>
+        <Link
+          to="/settings?tab=connections"
+          style={{ ...primaryButton, minBlockSize: 44, display: "inline-flex", alignItems: "center", textDecoration: "none" }}
+        >
+          Add it in Settings
+        </Link>
       </Card>
     );
   }
-
 
   const noPosts = model.totalPosts === 0;
 
@@ -295,21 +269,24 @@ export default function TeachAura({ userId }: { userId: string | null }) {
                 Your LinkedIn posts — {model.includedCount} counted
               </span>
               <span style={{ fontSize: TYPE.body, color: MUTED }}>@{model.address.handle}</span>
-              {model.connectionState === "connected"
-                ? <span style={chipStyle(GREEN, "#EAF6F0", "#BFE3D3")}>Connected</span>
-                : <span style={chipStyle(AMBER_TEXT, "#FBF3E0", "#EBD8A8")}>Needs reconnect</span>}
+              {/* The shared rule decides this word. This file does not. */}
+              {model.status.tone === "green"
+                ? <span style={chipStyle(GREEN, "#EAF6F0", "#BFE3D3")}>{model.status.label}</span>
+                : <span style={chipStyle(AMBER_TEXT, "#FBF3E0", "#EBD8A8")}>{model.status.label}</span>}
             </div>
             <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 0" }}>
               These are the only posts that shape how Aura writes for you.
             </p>
 
             <p style={{ fontSize: TYPE.body, color: MUTED, lineHeight: 1.6, marginBlock: "6px 0" }}>
+              {/* Two different facts, said in two different ways: when Aura last
+                  read the profile, and when it last read the posts. */}
               {noPosts
-                ? "Connected, but Aura hasn't read any posts yet."
-                : `Last sync ${
+                ? "Aura hasn't read any of your posts yet."
+                : `Aura last read your posts ${
                     model.address.lastSyncedAt
-                      ? new Date(model.address.lastSyncedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
-                      : "not yet"
+                      ? new Date(model.address.lastSyncedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+                      : "— not yet"
                   }`}
             </p>
           </div>
@@ -340,8 +317,8 @@ export default function TeachAura({ userId }: { userId: string | null }) {
           </button>
           <span style={{ ...monoNum, fontSize: TYPE.small, color: MUTED }}>
             {lastRead === undefined ? "" : lastRead
-              ? `Last read: ${new Date(lastRead).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
-              : "Never read"}
+              ? `Aura last read your profile ${new Date(lastRead).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
+              : "Aura hasn't read your profile yet"}
           </span>
         </div>
         {readSummary && (
