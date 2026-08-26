@@ -27,7 +27,8 @@ type TableName =
   | "evidence_fragments"
   | "entries"
   | "strategic_signals"
-  | "linkedin_posts";
+  | "linkedin_posts"
+  | "content_items";
 
 /**
  * Per table: which columns to read, how to build the text, and the "has text"
@@ -64,7 +65,13 @@ const SPECS: Record<
     build: (r) => [r.hook, r.post_text].filter(Boolean).join("\n\n"),
     hasText: "post_text.neq.,hook.neq.",
   },
+  content_items: {
+    cols: ["id", "title", "body"],
+    build: (r) => [r.title, r.body].filter(Boolean).join("\n\n"),
+    hasText: "body.neq.,title.neq.",
+  },
 };
+
 
 
 function json(body: unknown, status = 200) {
