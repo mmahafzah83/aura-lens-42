@@ -591,46 +591,44 @@ const PrimaryButton: React.FC<{ onClick: () => void; disabled?: boolean; childre
 interface AssessProps {
   dims: Dimension[];
   levels: Record<string, number>;
-  reduced: boolean;
   onAnswer: (dimensionId: string, level: number) => Promise<void> | void;
   onFinish: (levels: Record<string, number>) => Promise<void> | void;
   onExit: () => void;
 }
 
-const Assessment: React.FC<AssessProps> = ({ dims, levels, reduced, onAnswer, onFinish, onExit }) => {
+const Assessment: React.FC<AssessProps> = ({ dims, levels, onAnswer, onFinish, onExit }) => {
   const firstUnanswered = Math.max(0, dims.findIndex((d) => !levels[d.id]));
   const [index, setIndex] = useState(firstUnanswered === -1 ? 0 : firstUnanswered);
   const [local, setLocal] = useState<Record<string, number>>(levels);
-  const [busy, setBusy] = useState(false);
-  const timer = useRef<number | null>(null);
+  const [finishing, setFinishing] = useState(false);
+  const pending = useRef<Promise<unknown> | null>(null);
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); }, []);
 
   const dim = dims[index];
   if (!dim) return null;
 
   const anchors = [dim.anchor_low, dim.anchor_mid, dim.anchor_high];
   const selected = local[dim.id];
+  const last = index === dims.length - 1;
+  const canAdvance = Boolean(selected) && !finishing;
 
-  const pick = async (level: number) => {
-    if (busy) return;
-    const next = { ...local, [dim.id]: level };
-    setLocal(next);
-    setBusy(true);
-    // Await the upsert: the eighth answer must be committed before the
-    // snapshot insert and the reload, or the card falls back to "7 of 8".
+  /* Selecting only selects. Moving is the footer button's job. Each tap
+     still upserts immediately, so resume-where-you-stopped is unchanged. */
+  const pick = (level: number) => {
+    setLocal((prev) => ({ ...prev, [dim.id]: level }));
+    pending.current = Promise.resolve(onAnswer(dim.id, level));
+  };
+
+  const goForward = async () => {
+    if (!canAdvance) return;
+    if (!last) { setIndex(index + 1); return; }
+    setFinishing(true);
     try {
-      await onAnswer(dim.id, level);
-      if (index + 1 < dims.length) {
-        const advance = () => { setIndex(index + 1); setBusy(false); };
-        if (reduced) advance();
-        else timer.current = window.setTimeout(advance, 250);
-        return;
-      }
-      await onFinish(next);
+      // The eighth upsert lands before the snapshot insert and the reload.
+      if (pending.current) await pending.current;
+      await onFinish({ ...local, [dim.id]: selected });
     } finally {
-      if (index + 1 >= dims.length) setBusy(false);
+      setFinishing(false);
     }
   };
 
