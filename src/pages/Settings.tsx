@@ -96,10 +96,9 @@ const [liState, setLiState] = useState<LinkedInState>(EMPTY_LINKEDIN_STATE);
 const liStatus = statusFromLinkedInState(liState);
 
 const [linkedInBusy, setLinkedInBusy] = useState(true);
-const [signatures, setSignatures] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
-const [savingSig, setSavingSig] = useState(false);
-const [publication, setPublicationState] = useState<PublicationConfig>({ name: "", style: "classic" });
-const [savingPub, setSavingPub] = useState(false);
+/* Signatures and the publication nameplate were removed from Settings.
+   Renderers keep working off the default nameplate fallback. */
+
 const [dangerOpen, setDangerOpen] = useState(false);
 const [deleteConfirmText, setDeleteConfirmText] = useState("");
 const [deleting, setDeleting] = useState(false);
