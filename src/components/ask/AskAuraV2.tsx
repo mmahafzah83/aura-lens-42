@@ -278,11 +278,43 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   }, [open, initialMessage]);
 
 
+  /* Initial focus stays on the textarea; the opener element is remembered so we can hand focus back. */
   useEffect(() => {
     if (!open) return;
+    openerElRef.current = (document.activeElement as HTMLElement | null) ?? null;
     const t = window.setTimeout(() => taRef.current?.focus(), 120);
-    return () => window.clearTimeout(t);
+    return () => {
+      window.clearTimeout(t);
+      const back = openerElRef.current;
+      openerElRef.current = null;
+      if (back && document.contains(back)) window.setTimeout(() => back.focus(), 0);
+    };
   }, [open]);
+
+  /* Escape closes; Tab is trapped inside the dialog in both directions. */
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      const root = panelRef.current;
+      if (!root) return;
+      if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); onClose(); return; }
+      if (e.key !== "Tab") return;
+      const nodes = Array.from(root.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )).filter(el => el.offsetParent !== null || el === document.activeElement);
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && (active === first || !root.contains(active))) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && (active === last || !root.contains(active))) {
+        e.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [open, onClose]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
