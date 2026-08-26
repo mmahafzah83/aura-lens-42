@@ -133,6 +133,7 @@ Deno.serve(async (req) => {
       .from(table)
       .select(spec.cols.join(","))
       .is("embedding", null)
+      .or(spec.hasText)
       .order("created_at", { ascending: true })
       .limit(batchSize);
 
@@ -167,17 +168,28 @@ Deno.serve(async (req) => {
       }
     }
 
+    // remaining counts only embeddable rows, so the chain can reach 0.
     const { count: remaining } = await admin
+      .from(table)
+      .select("id", { count: "exact", head: true })
+      .is("embedding", null)
+      .or(spec.hasText);
+
+    const { count: nullTotal } = await admin
       .from(table)
       .select("id", { count: "exact", head: true })
       .is("embedding", null);
 
     const left = remaining ?? 0;
-    console.log(`[backfill-embeddings] ${table} processed=${processed} remaining=${left}`);
+    const skippedUnembeddable = Math.max((nullTotal ?? 0) - left, 0);
+    const stalled = left > 0 && processed === 0;
 
-    // Chain the next batch without blocking this response. Only chain when this
-    // batch actually moved rows — otherwise a permanently unembeddable row
-    // would loop forever.
+    console.log(
+      `[backfill-embeddings] ${table} processed=${processed} remaining=${left} skipped_unembeddable=${skippedUnembeddable} stalled=${stalled}`,
+    );
+
+    // Chain the next batch without blocking this response. Never chain on a
+    // stalled batch — a stall must surface, not spin.
     if (left > 0 && processed > 0) {
       // @ts-ignore EdgeRuntime.waitUntil
       EdgeRuntime.waitUntil((async () => {
@@ -191,7 +203,13 @@ Deno.serve(async (req) => {
       })());
     }
 
-    return json({ table, processed, remaining: left });
+    return json({
+      table,
+      processed,
+      remaining: left,
+      skipped_unembeddable: skippedUnembeddable,
+      ...(stalled ? { stalled: true, stalled_ids: list.slice(0, 5).map((r) => r.id) } : {}),
+    });
   } catch (e) {
     console.error("[backfill-embeddings] error", e);
     return json({ error: (e as Error).message }, 500);
