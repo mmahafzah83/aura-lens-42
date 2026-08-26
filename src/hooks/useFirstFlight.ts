@@ -147,7 +147,7 @@ export function useFirstFlight(userId: string | null | undefined): FirstFlightSt
     try {
       const [connRes, entryRes, docRes, sigRes, postRes] = await Promise.all([
         supabase.from("linkedin_connections_safe" as any).select("id", { count: "exact", head: true }).eq("user_id", userId),
-        supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", userId),
+        supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("source_type", "user"),
         supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", userId),
         (supabase.from("strategic_signals" as any) as any)
           .select("id, signal_title, what_it_means_for_you, explanation, confidence, status")

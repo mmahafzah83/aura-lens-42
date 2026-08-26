@@ -30,6 +30,7 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
         (supabase.from("entries") as any)
           .select("id")
           .eq("user_id", user.id)
+          .eq("source_type", "user")
           .limit(1),
         (supabase.from("strategic_signals") as any)
           .select("id")

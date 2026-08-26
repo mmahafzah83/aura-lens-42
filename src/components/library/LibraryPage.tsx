@@ -37,11 +37,12 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
             Library
           </div>
           <h1 style={{ margin: "8px 0 0", fontSize: 26, lineHeight: 1.15, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-.01em" }}>
-            Everything you've kept
+            Your sources
           </h1>
           <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--text-secondary)", maxWidth: 620 }}>
-            Every link, note, voice memo and document you captured — and what Aura made of it.
+            Links, notes, voice memos and documents you saved — plus the articles Aura found for you overnight.
           </p>
+
         </div>
         <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture something</ButtonPrimary>
       </div>

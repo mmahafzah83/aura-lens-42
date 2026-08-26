@@ -250,7 +250,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     const [capRes, docRangeRes] = await Promise.all([
       safeQuery(
         () => supabase.from("entries").select("created_at")
-          .eq("user_id", user.id).gte("created_at", sinceIso)
+          .eq("user_id", user.id).eq("source_type", "user").gte("created_at", sinceIso)
           .order("created_at", { ascending: true }),
         { context: "Impact: captures", silent: true }
       ),
@@ -273,7 +273,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     monthStart.setHours(0, 0, 0, 0);
     const [{ count: entryMonth }, { count: docMonth }] = await Promise.all([
       supabase.from("entries").select("id", { count: "exact", head: true })
-        .eq("user_id", user.id).gte("created_at", monthStart.toISOString()),
+        .eq("user_id", user.id).eq("source_type", "user").gte("created_at", monthStart.toISOString()),
       supabase.from("documents").select("id", { count: "exact", head: true })
         .eq("user_id", user.id).gte("created_at", monthStart.toISOString()),
     ]);
@@ -281,7 +281,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
     // Last capture all-time (entries + documents) for "days since last capture" narrative
     const [lastEntryRes, lastDocRes] = await Promise.all([
-      supabase.from("entries").select("created_at").eq("user_id", user.id)
+      supabase.from("entries").select("created_at").eq("user_id", user.id).eq("source_type", "user")
         .order("created_at", { ascending: false }).limit(1),
       supabase.from("documents").select("created_at").eq("user_id", user.id)
         .order("created_at", { ascending: false }).limit(1),
@@ -294,7 +294,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
     // J12 — total all-time capture count for empty state detection
     const [{ count: totalEntries }, { count: totalDocs }] = await Promise.all([
-      supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("source_type", "user"),
       supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", user.id),
     ]);
     setTotalCaptureCount((totalEntries ?? 0) + (totalDocs ?? 0));
@@ -653,7 +653,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         const fourWeeks = new Date();
         fourWeeks.setDate(fourWeeks.getDate() - 28);
         const [eRes, dRes] = await Promise.all([
-          supabase.from("entries").select("created_at").eq("user_id", user.id).gte("created_at", fourWeeks.toISOString()),
+          supabase.from("entries").select("created_at").eq("user_id", user.id).eq("source_type", "user").gte("created_at", fourWeeks.toISOString()),
           supabase.from("documents").select("created_at").eq("user_id", user.id).gte("created_at", fourWeeks.toISOString()),
         ]);
         const all = [...((eRes.data as any[]) || []), ...((dRes.data as any[]) || [])];

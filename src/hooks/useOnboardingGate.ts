@@ -29,7 +29,8 @@ export function useOnboardingGate(userId?: string | null) {
           supabase
             .from("entries")
             .select("id", { count: "exact", head: true })
-            .eq("user_id", userId),
+            .eq("user_id", userId)
+            .eq("source_type", "user"),
           supabase
             .from("linkedin_posts")
             .select("id", { count: "exact", head: true })

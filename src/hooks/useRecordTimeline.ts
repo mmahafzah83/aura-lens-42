@@ -13,12 +13,16 @@ import type { Provenance } from "@/lib/postProvenance";
 
 export interface RecordBucket {
   d: string;        // YYYY-MM-DD — day, week start, or month start
+  /** rows the member saved themselves (source_type = 'user') */
   cap: number;
+  /** rows Aura fetched for the overnight read (source_type = 'aura_agent') */
+  found: number;
   themes: number;
   drafts: number;
   pub: number;
   nights: number;
 }
+
 
 export interface RecordPublished {
   id: string;
@@ -67,9 +71,10 @@ const EMPTY: RecordTimeline = {
 
 const asBuckets = (v: any): RecordBucket[] =>
   (Array.isArray(v) ? v : []).map((b: any) => ({
-    d: String(b.d), cap: b.cap ?? 0, themes: b.themes ?? 0,
+    d: String(b.d), cap: b.cap ?? 0, found: b.found ?? 0, themes: b.themes ?? 0,
     drafts: b.drafts ?? 0, pub: b.pub ?? 0, nights: b.nights ?? 0,
   }));
+
 
 export function useRecordTimeline(userId: string | null | undefined): RecordTimeline {
   const [state, setState] = useState<RecordTimeline>(EMPTY);

@@ -1200,7 +1200,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
           .eq("status", "active").order("strength_score", { ascending: false, nullsFirst: false }).limit(50),
         supabase.from("strategic_signals").select("id", { count: "exact", head: true })
           .eq("user_id", user.id).eq("status", "active"),
-        supabase.from("entries").select("id", { count: "exact", head: true }),
+        supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("source_type", "user"),
         supabase.from("documents").select("id", { count: "exact", head: true }),
         supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       ]);
