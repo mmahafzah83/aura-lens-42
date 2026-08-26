@@ -373,7 +373,8 @@ export async function addOwnWriting(posts: string[]): Promise<AddWritingResult> 
 }
 
 /** The default-mode row that holds this member's admired posts. */
-async function admiredRowId(userId: string): Promise<{ id: string; list: AdmiredPost[] }> {
+type StoredAdmired = { content: string; source: string | null; added_at: string | null };
+async function admiredRowId(userId: string): Promise<{ id: string; list: StoredAdmired[] }> {
   const { data, error } = await supabase
     .from("authority_voice_profiles")
     .select("id, admired_posts")
