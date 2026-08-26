@@ -43,6 +43,15 @@ interface Citation {
   confidence: number;
 }
 
+/** A retrieved row the answer can cite as a bare [n]. Built by the function from the retrieval layer. */
+interface Source {
+  n: number;
+  title: string;
+  kind: string;
+  date: string | null;
+  url: string | null;
+}
+
 interface ActionLine { tool: string; ok: boolean; label: string }
 
 type Msg = { role: "user" | "assistant"; content: string; isError?: boolean; actions?: ActionLine[] };
