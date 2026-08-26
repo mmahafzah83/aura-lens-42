@@ -368,31 +368,127 @@ const handleDeleteAccount = async () => {
           </h1>
         </div>
 
-        {/* Tabs — Account first, then preferences */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "0.5px solid var(--rule)" }}>
-          {([["account", "Account"], ["connections", "Connections"], ["preferences", "Preferences"]] as const).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setSearchParams(key === "account" ? {} : { tab: key }, { replace: true })}
-              style={{
-                background: "transparent",
-                border: 0,
-                borderBottom: `2px solid ${tab === key ? "var(--action)" : "transparent"}`,
-                color: tab === key ? "var(--ink)" : "var(--ink-3)",
-                padding: "8px 12px",
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: "pointer",
-                fontFamily: "var(--font-body)",
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {/* One nav array, two render branches: rail on desktop, chips on mobile. */}
+        <div className="md:flex md:items-start">
+          <nav
+            className="hidden md:block"
+            aria-label="Settings sections"
+            style={{
+              width: 240,
+              flex: "0 0 240px",
+              position: "sticky",
+              top: 24,
+              borderRight: "1px solid var(--rule)",
+              padding: "24px 12px",
+            }}
+          >
+            {NAV_ITEMS.map((item) => {
+              const active = section === item.key;
+              const danger = item.key === "danger";
+              return (
+                <div key={item.key}>
+                  {danger ? (
+                    <div style={{ height: 1, background: "var(--rule)", margin: "12px 8px" }} />
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setSearchParams(item.key === "profile" ? {} : { section: item.key }, { replace: true })}
+                    aria-current={active ? "page" : undefined}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      width: "100%",
+                      textAlign: "left",
+                      border: 0,
+                      cursor: "pointer",
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      fontFamily: "var(--font-body)",
+                      background: active ? "color-mix(in srgb, var(--action) 10%, var(--paper))" : "transparent",
+                      color: danger ? "var(--error)" : active ? "var(--action)" : "var(--ink-3)",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!active && !danger) e.currentTarget.style.color = "var(--ink)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active && !danger) e.currentTarget.style.color = "var(--ink-3)";
+                    }}
+                  >
+                    <item.Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                    {item.key === "connections" ? (
+                      <span
+                        aria-hidden
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: 999,
+                          background: liState.connected ? "var(--success)" : "var(--rule)",
+                        }}
+                      />
+                    ) : null}
+                  </button>
+                </div>
+              );
+            })}
+          </nav>
 
-        {tab === "preferences" ? (
+          <div
+            className="flex md:hidden"
+            aria-label="Settings sections"
+            style={{ gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 20 }}
+          >
+            {NAV_ITEMS.map((item) => {
+              const active = section === item.key;
+              const danger = item.key === "danger";
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setSearchParams(item.key === "profile" ? {} : { section: item.key }, { replace: true })}
+                  aria-current={active ? "page" : undefined}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    flex: "0 0 auto",
+                    whiteSpace: "nowrap",
+                    borderRadius: 999,
+                    border: "1px solid var(--rule)",
+                    padding: "8px 14px",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    fontFamily: "var(--font-body)",
+                    cursor: "pointer",
+                    background: active ? "var(--action)" : "transparent",
+                    color: active ? "#FFFFFF" : danger ? "var(--error)" : "var(--ink-3)",
+                  }}
+                >
+                  <item.Icon className="w-3.5 h-3.5" />
+                  <span>{item.label}</span>
+                  {item.key === "connections" ? (
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: 999,
+                        background: liState.connected ? "var(--success)" : "var(--rule)",
+                      }}
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex-1 min-w-0 md:pl-8">
+            <div className="max-w-2xl mx-auto">
+
+        {section === "preferences" ? (
           <PreferencesPanel
             open
             variant="inline"
@@ -402,52 +498,10 @@ const handleDeleteAccount = async () => {
             onEditField={(f) => setEditField(f)}
             onSignOut={() => { void signOutAndLand(navigate); }}
           />
-        ) : tab === "connections" ? (
-          <LinkedInAddressCard userId={authUser?.id ?? null} />
-        ) : (
-        <>
+        ) : null}
 
-        <AccountPanel userId={authUser?.id ?? null} email={authUser?.email} onSaved={() => void loadProfile()} />
-
-        {/* Your CV — the door stays open after the journey ends. */}
-        <SectionHeader
-          label="Your CV"
-          subtitle="Aura reads it against your profile and shows you the difference."
-        />
-        <div className="mb-8">
-          <AuraCard variant="default" hover="none">
-            {/* They compared a CV before they had an account: it was read and
-                discarded, so we never imply we still hold the file. */}
-            {(() => {
-              try { return localStorage.getItem("aura_cv_was_transient") === "1"; } catch { return false; }
-            })() ? (
-              <p className="mb-4 text-sm text-muted-foreground">
-                Your comparison is saved. Add your CV again from Settings if you'd like Aura to keep it.
-              </p>
-            ) : null}
-            <CvUploadControl userId={authUser?.id ?? null} />
-          </AuraCard>
-        </div>
-
-        {/* Your data — trust statement */}
-        <SectionHeader
-          label="Your data"
-          subtitle="What's private, what we can see, and how we protect it."
-        />
-        <div className="mb-8">
-          <AuraCard variant="default" hover="none">
-            <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--ink-2)" }}>
-              Your captures, drafts, and signals are private to your account — no other user can see them, and nothing in Aura shows them to us. We don't sell your data, and the providers that power Aura operate under business terms that don't use it to train their models by default. Aura isn't end-to-end encrypted — the system has to read your content to turn it into signals — so we protect it with strict per-account isolation instead.{" "}
-              <Link
-                to="/guide"
-                style={{ color: "var(--action)", fontWeight: 500, textDecoration: "none" }}
-              >
-                Full details →
-              </Link>
-            </p>
-          </AuraCard>
-        </div>
-
+        {section === "connections" ? (
+          <>
         {/* LinkedIn */}
         <SectionHeader
           label="LinkedIn"
@@ -513,7 +567,69 @@ const handleDeleteAccount = async () => {
           </>
         )}
 
+        <LinkedInAddressCard userId={authUser?.id ?? null} />
+          </>
+        ) : null}
 
+        {section === "slides" ? (
+        <section id="slides" style={{ scrollMarginTop: 96 }}>
+          <SectionHeader
+            label="Slides"
+            subtitle="The family and colour your slides open in. You can still change either inside any post."
+          />
+          <div className="space-y-4">
+            <SlideDefaultsCard userId={authUser?.id ?? null} />
+          </div>
+        </section>
+        ) : null}
+
+        {section === "privacy" ? (
+          <>
+        {/* Your data — trust statement */}
+        <SectionHeader
+          label="Your data"
+          subtitle="What's private, what we can see, and how we protect it."
+        />
+        <div className="mb-8">
+          <AuraCard variant="default" hover="none">
+            <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--ink-2)" }}>
+              Your captures, drafts, and signals are private to your account — no other user can see them, and nothing in Aura shows them to us. We don't sell your data, and the providers that power Aura operate under business terms that don't use it to train their models by default. Aura isn't end-to-end encrypted — the system has to read your content to turn it into signals — so we protect it with strict per-account isolation instead.{" "}
+              <Link
+                to="/guide"
+                style={{ color: "var(--action)", fontWeight: 500, textDecoration: "none" }}
+              >
+                Full details →
+              </Link>
+            </p>
+          </AuraCard>
+        </div>
+          </>
+        ) : null}
+
+        {section === "profile" ? (
+        <>
+
+        <AccountPanel userId={authUser?.id ?? null} email={authUser?.email} onSaved={() => void loadProfile()} />
+
+        {/* Your CV — the door stays open after the journey ends. */}
+        <SectionHeader
+          label="Your CV"
+          subtitle="Aura reads it against your profile and shows you the difference."
+        />
+        <div className="mb-8">
+          <AuraCard variant="default" hover="none">
+            {/* They compared a CV before they had an account: it was read and
+                discarded, so we never imply we still hold the file. */}
+            {(() => {
+              try { return localStorage.getItem("aura_cv_was_transient") === "1"; } catch { return false; }
+            })() ? (
+              <p className="mb-4 text-sm text-muted-foreground">
+                Your comparison is saved. Add your CV again from Settings if you'd like Aura to keep it.
+              </p>
+            ) : null}
+            <CvUploadControl userId={authUser?.id ?? null} />
+          </AuraCard>
+        </div>
 
         {/* Location */}
         <section id="location" style={{ scrollMarginTop: 96 }}>
@@ -533,25 +649,13 @@ const handleDeleteAccount = async () => {
         </div>
         </section>
 
-        {/* Slides */}
-        <section id="slides" style={{ scrollMarginTop: 96 }}>
-          <SectionHeader
-            label="Slides"
-            subtitle="The family and colour your slides open in. You can still change either inside any post."
-          />
-          <div className="space-y-4">
-            <SlideDefaultsCard userId={authUser?.id ?? null} />
-          </div>
-        </section>
-
-        {/* Profile summary */}
+        {/* About you — one card, three labelled rows. */}
         <SectionHeader
-          label="Profile summary"
+          label="About you"
           subtitle="A read-only summary of what Aura knows about your profile, brand, and capabilities."
         />
 
         <div className="space-y-4">
-          {/* Profile summary */}
           <AuraCard variant="default" hover="none">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -579,10 +683,9 @@ const handleDeleteAccount = async () => {
                 )}
               </div>
             </div>
-          </AuraCard>
 
-          {/* Brand pillars */}
-          <AuraCard variant="default" hover="none">
+            <div style={{ height: 1, background: "var(--rule)", margin: "16px 0" }} />
+
             <div
               className="text-xs font-semibold uppercase tracking-[0.12em] mb-3"
               style={{ color: "var(--ink)" }}
@@ -610,10 +713,9 @@ const handleDeleteAccount = async () => {
                 No brand pillars saved yet.
               </p>
             )}
-          </AuraCard>
 
-          {/* Capabilities */}
-          <AuraCard variant="default" hover="none">
+            <div style={{ height: 1, background: "var(--rule)", margin: "16px 0" }} />
+
             <div
               className="text-xs font-semibold uppercase tracking-[0.12em] mb-3"
               style={{ color: "var(--ink)" }}
@@ -637,7 +739,7 @@ const handleDeleteAccount = async () => {
             )}
           </AuraCard>
 
-          {/* Export actions */}
+          {/* Export actions — the identity report lives with identity, not slides. */}
           <AuraCard variant="default" hover="none">
             <div
               className="text-xs font-semibold uppercase tracking-[0.12em] mb-2"
@@ -700,6 +802,11 @@ const handleDeleteAccount = async () => {
           </AuraCard>
         </div>
 
+        </>
+        ) : null}
+
+        {section === "danger" ? (
+          <>
         {/* Danger zone */}
         <SectionHeader
           label="Danger zone"
@@ -784,9 +891,12 @@ const handleDeleteAccount = async () => {
             )}
           </AuraCard>
         </div>
+          </>
+        ) : null}
 
-        </>
-        )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Off-screen report mount for PDF export (W2-G-2b).
