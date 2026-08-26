@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, MessageCircle, Compass, Moon, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles, UserPlus, Flame, Library as LibraryIcon, LayoutGrid } from "lucide-react";
+import { Plus, LogOut, MessageCircle, Compass, Moon, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles, UserPlus, Flame, Library as LibraryIcon, FileText, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   originFromParams as originFromParamsShared,
@@ -72,7 +72,7 @@ import ReadTierHome from "@/components/home/ReadTierHome";
 
 /** The seven tabs a read-tier member can see but not use yet. */
 const LOOP_TABS = new Set([
-  "intelligence", "authority", "influence", "library", "momentum", "overnight", "widgets",
+  "intelligence", "authority", "influence", "library", "drafts", "momentum", "overnight", "widgets",
 ]);
 import type { Database } from "@/integrations/supabase/types";
 import LockedPanel from "@/components/LockedPanel";
