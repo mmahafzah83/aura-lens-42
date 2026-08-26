@@ -7394,18 +7394,22 @@ export type Database = {
         Returns: boolean
       }
       search_vault: {
-        Args: { p_limit?: number; p_query: string; p_query_embedding?: string }
+        Args: {
+          p_kinds?: string[]
+          p_limit?: number
+          p_query: string
+          p_query_embedding?: string
+          p_user_id: string
+        }
         Returns: {
           content: string
-          created_at: string
-          id: string
-          pinned: boolean
+          metadata: Json
+          occurred_at: string
           rank: number
-          skill_pillar: string
-          source: string
-          summary: string
+          source_id: string
+          source_kind: string
           title: string
-          type: string
+          url: string
         }[]
       }
       seed_test_member: {
