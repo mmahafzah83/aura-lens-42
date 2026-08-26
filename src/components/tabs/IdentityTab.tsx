@@ -646,20 +646,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const strongestTheme = themesForTerritory[0]?.theme || null;
 
 
-  // Earned milestones merged with canonical defs
-  const earnedById = new Map(milestoneData.filter((m) => m.earned).map((m) => [m.id, m]));
-  const earnedSorted = MILESTONE_DEFS
-    .filter((d) => earnedById.has(d.id))
-    .map((d) => ({ ...d, ...earnedById.get(d.id)! }))
-    .sort((a, b) => {
-      const ta = a.earned_at ? new Date(a.earned_at).getTime() : 0;
-      const tb = b.earned_at ? new Date(b.earned_at).getTime() : 0;
-      return tb - ta;
-    });
-  const nextMilestone = MILESTONE_DEFS.find((d) => !earnedById.has(d.id)) || null;
-  const futureMilestones = MILESTONE_DEFS
-    .filter((d) => !earnedById.has(d.id) && d.id !== nextMilestone?.id)
-    .map((d) => d.name);
 
   const archetypeName = brandResults?.primary_archetype || positioningTitle || "";
   const positioningOnly = brandResults?.positioning_statement || "";
