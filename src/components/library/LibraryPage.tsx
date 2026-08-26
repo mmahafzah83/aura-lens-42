@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { ButtonPrimary } from "@/components/systemb";
 import { Plus, Loader2 } from "lucide-react";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
@@ -128,18 +127,20 @@ const PublishedList: React.FC<{ lang: "en" | "ar" }> = ({ lang }) => {
 };
 
 const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
   const { lang } = useLanguage();
   const L: "en" | "ar" = String(lang) === "ar" ? "ar" : "en";
   const [view, setView] = useState<"sources" | "published">("sources");
 
+  /** Jumping to a signal is navigation, so it goes through the one shell
+   *  contract (`aura:switch-tab`) rather than this page writing the URL. */
   const openSignal = useCallback((id: string) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("tab", "intelligence");
-    next.set("signal", id);
-    setSearchParams(next);
+    try {
+      window.dispatchEvent(new CustomEvent("aura:switch-tab", {
+        detail: { tab: "intelligence", params: `signal=${encodeURIComponent(id)}` },
+      }));
+    } catch { /* navigation is never allowed to throw at a member */ }
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [searchParams, setSearchParams]);
+  }, []);
 
   const sources = view === "sources";
   const arabicLine = L === "ar" ? { lineHeight: 1.9 as const } : undefined;
