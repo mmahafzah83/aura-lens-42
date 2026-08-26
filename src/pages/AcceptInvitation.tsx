@@ -14,7 +14,7 @@ import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE } from "@/lib/brand";
 export default function AcceptInvitation() {
   usePageMeta({
     title: "Aura — Accept your invitation",
-    description: "You've been invited to join Aura — an AI professional identity platform. Your expertise is invisible; Aura fixes that. Accept your invitation to set up your account.",
+    description: "You've been invited to join Aura — an AI professional identity platform. Your experience is worth more than your profile shows. Accept your invitation to set up your account.",
     path: "/accept-invitation",
   });
   const [params] = useSearchParams();

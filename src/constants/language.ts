@@ -20,7 +20,7 @@
  * RULES:
  * 1. Simple English — a 12-year-old should understand every word
  * 2. Never describe the tool — describe who the user BECOMES
- * 3. Hit the nerve: their expertise is invisible. Visibility = credibility.
+ * 3. Hit the nerve: their experience is worth more than their profile shows. Visibility = credibility.
  * 4. One action per moment
  * 5. No jargon: never "generate", "process", "optimize", "leverage", "sync"
  * 6. The user is an expert. Aura amplifies them — it doesn't teach them.

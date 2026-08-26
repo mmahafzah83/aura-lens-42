@@ -40,7 +40,7 @@ const OurStory = () => {
   usePageMeta({
     title: "Aura — Our Story",
     description:
-      "Why Aura exists, from the founder. Your expertise is invisible; Aura fixes that — without the noise, and never in your name without your say.",
+      "Why Aura exists, from the founder. Your experience is worth more than your profile shows — without the noise, and never in your name without your say.",
     path: "/our-story",
     ogType: "article",
     jsonLd: {
@@ -48,7 +48,7 @@ const OurStory = () => {
       "@type": "Article",
       headline: "Why Aura exists",
       description:
-        "Why Aura exists, from the founder. Your expertise is invisible; Aura fixes that — without the noise, and never in your name without your say.",
+        "Why Aura exists, from the founder. Your experience is worth more than your profile shows — without the noise, and never in your name without your say.",
       author: {
         "@type": "Person",
         name: "Mohammad Mahafdhah",

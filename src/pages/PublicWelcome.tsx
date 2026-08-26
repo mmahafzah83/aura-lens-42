@@ -345,7 +345,7 @@ const responseFor = (v: number) => {
 
 export default function PublicWelcome() {
   usePageMeta({
-    title: "Welcome to Aura — Strategic Intelligence for Executives",
+    title: "Welcome to Aura — AI Professional Identity Platform",
     description:
       "See how Aura turns what senior professionals read every day into a distinct point of view, a clear cadence, and measurable market presence.",
     path: "/welcome",

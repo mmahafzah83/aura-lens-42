@@ -157,7 +157,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
       >
         <div className="mb-6">
           <div className="uppercase mb-3" style={{ color: "var(--text-muted)", fontFamily: FF_MONO, fontSize: 10, letterSpacing: "0.16em" }}>
-            Aura · Strategic Intelligence
+            Aura · AI Professional Identity Platform
           </div>
           <h1 className="mb-2" style={{ fontFamily: FF_SER, fontSize: 32, fontWeight: 400, lineHeight: 1.15, color: "var(--text-primary)" }}>
             Welcome to the inner circle.

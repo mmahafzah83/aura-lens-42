@@ -372,7 +372,7 @@ export default function TierCeremonyModal({
     if (which === "AR") {
       return `حققت ${sc} على Aura.\n\nمو اختبار..\n\nنظام يقرأ اللي أقرأه، يكتشف الأنماط اللي ما انتبهت لها، ويخبرني إن السوق تحرّك قبل ما ألاحظ.\n\nالحين يتابع ${sig}..\n\n${confPct}٪ ثقة.. ومستمرة.\n\nإذا خبرتك موجودة بس السوق ما يشوفها..\n\nهذا اللي صنع الفرق.\n\naura-intel.org`;
     }
-    return `Scored ${sc} on Aura.\n\nNot a test. A signal tracker. It reads what I read, finds the patterns I miss, and tells me when the market is moving before I notice.\n\nRight now it's tracking ${sig}. ${confPct}% confidence. Still growing.\n\nIf you're a senior professional whose expertise is invisible to the market — you'll want to see this.\n\naura-intel.org`;
+    return `Scored ${sc} on Aura.\n\nNot a test. A signal tracker. It reads what I read, finds the patterns I miss, and tells me when the market is moving before I notice.\n\nRight now it's tracking ${sig}. ${confPct}% confidence. Still growing.\n\nIf you're a senior professional whose experience is worth more than their profile shows — you'll want to see this.\n\naura-intel.org`;
   };
 
   // Seed/reseed the editable caption when language toggles or when
