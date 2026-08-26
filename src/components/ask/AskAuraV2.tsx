@@ -164,6 +164,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   const [loading, setLoading] = useState(false);
   const [citations, setCitations] = useState<Record<string, Citation>>({});
   const [citedOrder, setCitedOrder] = useState<string[]>([]);
+  const [sources, setSources] = useState<Record<number, Source>>({});
+  const [citedSources, setCitedSources] = useState<number[]>([]);
   const [position, setPosition] = useState<Position | null>(null);
   const [memory, setMemory] = useState<MemoryRow[]>([]);
   const [seeds, setSeeds] = useState<PromptSeed[]>([]);
