@@ -115,8 +115,11 @@ serve(withObserve("ask-aura", async (req) => {
           .from("aura_conversation_memory")
           .select("session_date, summary, key_decisions, topics_discussed, actions_committed")
           .eq("user_id", user_id)
-          .order("session_date", { ascending: false })
+          .is("role", null)
+          .not("summary", "is", null)
+          .order("created_at", { ascending: false })
           .limit(5) as any,
+
       ),
       safe(
         admin
