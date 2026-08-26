@@ -125,8 +125,8 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
       (supabase.from("capability_responses" as any) as any)
         .select("dimension_id, level").eq("user_id", userId),
       (supabase.from("capability_radar_snapshots" as any) as any)
-        .select("id, band, levels, taken_at").eq("user_id", userId).eq("band", band)
-        .order("taken_at", { ascending: false }).limit(2),
+        .select("id, band, levels, taken_at").eq("user_id", userId)
+        .order("taken_at", { ascending: false }).limit(10),
     ]);
     const ds = (dimRes?.data ?? []) as Dimension[];
     setDims(ds);
@@ -254,9 +254,11 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
   const count = dims.length || 8;
   const ratio = (lvl?: number) => (lvl === 1 ? 0.33 : lvl === 2 ? 0.66 : lvl === 3 ? 1 : 0);
 
-  const previous = snapshots.length > 1 ? snapshots[1] : (complete ? null : snapshots[0] ?? null);
-  const current = snapshots[0] ?? null;
-  const prevSnap = complete && current ? snapshots[1] ?? null : previous;
+  const bandSnaps = snapshots.filter((s) => s.band === band);
+  const current = complete ? bandSnaps[0] ?? null : null;
+  // Never overlay a shape taken against a different set of eight questions.
+  const prevSnap = complete ? bandSnaps[1] ?? null : bandSnaps[0] ?? null;
+  const answeredOtherBand = answeredCount === 0 && snapshots.some((s) => s.band !== band);
 
   const polygon = dims
     .map((d, i) => {
@@ -349,6 +351,11 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
 
       {answeredCount === 0 && (
         <div style={{ marginTop: 16 }}>
+          {answeredOtherBand && (
+            <p style={{ fontFamily: UI, fontSize: 14, color: "rgba(255,255,255,0.72)", margin: "0 0 8px" }}>
+              You're reading at the {band} now. These eight are different.
+            </p>
+          )}
           <p style={{ fontFamily: UI, fontSize: 14, color: "rgba(255,255,255,0.86)", margin: "0 0 14px" }}>
             Eight questions about how far your work travels. Two minutes.
           </p>
