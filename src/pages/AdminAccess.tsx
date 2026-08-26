@@ -37,6 +37,24 @@ type Row = {
   invited_at: string | null;
 };
 
+/** One real auth account, as returned by the admin-active-users function. */
+type AuthUserRow = {
+  user_id: string;
+  email: string | null;
+  created_at: string | null;
+  last_sign_in_at: string | null;
+  account_type: string | null;
+  tier: string | null;
+  role: string | null;
+  has_profile: boolean;
+  first_name: string | null;
+  full_name: string | null;
+  sector: string | null;
+  allowlist_status: string | null;
+  activated_at: string | null;
+  captures: number;
+};
+
 const SENIORITY = ["C-Suite", "VP", "Director", "Manager", "Other"];
 const SECTOR = ["Consulting", "Energy", "Finance", "Government", "Technology", "Other"];
 
@@ -96,8 +114,9 @@ const AdminAccess = () => {
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [directDuplicate, setDirectDuplicate] = useState<{ name: string | null; status: string } | null>(null);
   const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
-  const [activeUsers, setActiveUsers] = useState<Array<{ email: string; first_name: string | null; sector: string | null; last_sign_in_at: string | null; activated_at: string | null; captures: number; user_id?: string | null }>>([]);
+  const [activeUsers, setActiveUsers] = useState<AuthUserRow[]>([]);
   const [activeLoading, setActiveLoading] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
 
   // Seed captures
   const [seedUserId, setSeedUserId] = useState<string>("");
