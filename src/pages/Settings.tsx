@@ -46,7 +46,7 @@ interface ProfileData {
   skill_ratings: Record<string, unknown>;
   generated_skills: Record<string, unknown>;
   audit_results: Record<string, unknown>;
-  signature_presets: { id: string; name: string; text_en: string; text_ar: string }[] | null;
+  
   country: string | null;
   country_code: string | null;
 }
