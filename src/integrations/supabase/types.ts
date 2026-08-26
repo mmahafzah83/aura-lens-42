@@ -1487,6 +1487,71 @@ export type Database = {
         }
         Relationships: []
       }
+      document_briefs: {
+        Row: {
+          author_pov: string | null
+          contrarian_angles: Json
+          coverage: Json
+          created_at: string
+          document_id: string
+          embedding: string | null
+          grounding_score: number | null
+          id: string
+          key_figures: Json
+          key_points: Json
+          model: string | null
+          pipeline_version: number
+          so_what: Json
+          thesis: string | null
+          tsv: unknown
+          user_id: string
+        }
+        Insert: {
+          author_pov?: string | null
+          contrarian_angles?: Json
+          coverage?: Json
+          created_at?: string
+          document_id: string
+          embedding?: string | null
+          grounding_score?: number | null
+          id?: string
+          key_figures?: Json
+          key_points?: Json
+          model?: string | null
+          pipeline_version?: number
+          so_what?: Json
+          thesis?: string | null
+          tsv?: unknown
+          user_id: string
+        }
+        Update: {
+          author_pov?: string | null
+          contrarian_angles?: Json
+          coverage?: Json
+          created_at?: string
+          document_id?: string
+          embedding?: string | null
+          grounding_score?: number | null
+          id?: string
+          key_figures?: Json
+          key_points?: Json
+          model?: string | null
+          pipeline_version?: number
+          so_what?: Json
+          thesis?: string | null
+          tsv?: unknown
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_briefs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_chunks: {
         Row: {
           chunk_index: number
