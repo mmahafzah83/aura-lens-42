@@ -325,6 +325,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       let buf = "";
       let acc = "";
       let gotCitations: Citation[] = [];
+      let gotSources: Source[] = [];
       const gotActions: ActionLine[] = [];
       setMessages([...next, { role: "assistant", content: "" }]);
 
