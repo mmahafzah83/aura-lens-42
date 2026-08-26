@@ -2596,7 +2596,7 @@ export default function StudioPanel({
           : "";
 
   /* Save and come back later: only when there is something a save would keep. */
-  const canSave = wordsReady || slidesMade;
+  const canSave = (wordsReady || slidesMade) && !finished;
   /* Make the slides. */
   const canMakeSlides = format === "slides" && !slidesMade && !deckBusy && wordsReady;
   /* Write it — the delegator's one primary at step 2. */
@@ -4200,33 +4200,76 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
                 {T.endHead[lang]}
               </p>
-              <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7, color: "var(--text-secondary)", margin: 0 }}>
-                {T.endBody[lang]}{" "}
-                {postUrl && (
-                  <a href={postUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--act)", fontWeight: 700 }}>
-                    {T.seeOnLinkedIn[lang]}
-                  </a>
-                )}
-              </p>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {/* Every label states exactly what survives it. On the slides
-                    screen the export and save-link actions are the forward
-                    move, so New post is always the ghost there. */}
-                {format === "slides" || confirmOwnsPrimary ? (
-                  <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
-                    {T.newPost[lang]}
-                  </ButtonGhost>
-                ) : (
-                  <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
-                    {T.newPost[lang]}
-                  </ButtonPrimary>
-                )}
-                {subjectHasMore && (
-                  <ButtonGhost onClick={() => startNewPiece({ choice })} style={{ minHeight: 44 }}>
-                    {T.newPostSameSubject[lang]}
-                  </ButtonGhost>
-                )}
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <span
+                  style={{
+                    width: 8, height: 8, borderRadius: 999, background: "var(--machine)", flexShrink: 0, marginTop: 5,
+                  }}
+                />
+                <p
+                  style={{
+                    fontFamily: "var(--ff-ui)", fontSize: 13.5, lineHeight: rtlShell ? 1.9 : 1.7,
+                    color: "var(--text-secondary)", margin: 0, flex: 1,
+                  }}
+                >
+                  {T.endTrack[lang]}
+                </p>
               </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {(() => {
+                  const endOwnsPrimary = !(format === "slides" || confirmOwnsPrimary);
+                  return (
+                    <>
+                      {postUrl &&
+                        (endOwnsPrimary ? (
+                          <ButtonPrimary
+                            onClick={() => window.open(postUrl, "_blank", "noopener,noreferrer")}
+                            style={{ minHeight: 44 }}
+                          >
+                            {T.seeOnLinkedIn[lang]}
+                          </ButtonPrimary>
+                        ) : (
+                          <ButtonGhost
+                            onClick={() => window.open(postUrl, "_blank", "noopener,noreferrer")}
+                            style={{ minHeight: 44 }}
+                          >
+                            {T.seeOnLinkedIn[lang]}
+                          </ButtonGhost>
+                        ))}
+                      {postUrl || !endOwnsPrimary ? (
+                        <ButtonGhost onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
+                          {T.newPost[lang]}
+                        </ButtonGhost>
+                      ) : (
+                        <ButtonPrimary onClick={() => startNewPiece()} style={{ minHeight: 44 }}>
+                          {T.newPost[lang]}
+                        </ButtonPrimary>
+                      )}
+                      {subjectHasMore && (
+                        <ButtonGhost onClick={() => startNewPiece({ choice })} style={{ minHeight: 44 }}>
+                          {T.newPostSameSubject[lang]}
+                        </ButtonGhost>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+              <button
+                type="button"
+                className="v23-focus"
+                onClick={() => {
+                  try {
+                    window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "home" } }));
+                  } catch { /* navigation is never allowed to throw at a member */ }
+                }}
+                style={{
+                  fontFamily: "var(--ff-ui)", fontSize: 13, fontWeight: 700, color: "var(--act)",
+                  background: "transparent", border: "none", cursor: "pointer", minHeight: 44,
+                  padding: "0 2px", textAlign: rtlShell ? "right" : "left",
+                }}
+              >
+                {T.doneForNow[lang]} {rtlShell ? "←" : "→"}
+              </button>
             </div>
           )}
 
