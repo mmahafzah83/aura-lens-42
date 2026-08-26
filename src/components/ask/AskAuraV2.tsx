@@ -153,7 +153,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       const [postsRes, voiceRes, memRes, sigRes, draftRes] = await Promise.all([
         supabase.from("linkedin_posts").select("source_type, tracking_status, theme, theme_tags").eq("user_id", uid),
         supabase.from("authority_voice_profiles").select("tone, example_posts").eq("user_id", uid).eq("is_primary", true).eq("mode_key", "default").maybeSingle(),
-        supabase.from("aura_conversation_memory").select("id, session_date, summary").eq("user_id", uid).not("summary", "is", null).order("session_date", { ascending: false }).limit(6),
+        supabase.from("aura_conversation_memory").select("id, session_date, summary, actions_committed").eq("user_id", uid).is("role", null).not("summary", "is", null).order("created_at", { ascending: false }).limit(6),
         supabase.from("strategic_signals").select("id, signal_title, theme_tags, priority_score").eq("user_id", uid).order("priority_score", { ascending: false }).limit(3),
         supabase.from("linkedin_posts").select("id").eq("user_id", uid).eq("tracking_status", "draft"),
       ]);
