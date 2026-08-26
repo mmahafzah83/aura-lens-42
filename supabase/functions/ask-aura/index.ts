@@ -863,6 +863,7 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
               identity_loaded: !!profile,
             },
             citations,
+            sources,
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(contextEvent)}\n\n`));
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
