@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Check, Eye, Map as MapIcon, Trophy, Target as TargetIcon, Star, Camera, Mic } from "lucide-react";
+import { Pencil, Check, Eye, Map as MapIcon, Camera, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
 import MilestonesSection from "@/components/MilestonesSection";
-import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import ReportVersions from "@/components/identity/ReportVersions";
@@ -29,15 +28,14 @@ import { useJourneyState } from "@/hooks/useJourneyState";
 import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
 import HowYouAppear from "@/components/identity/HowYouAppear";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
-import { useTierFromImprint } from "@/hooks/useTierFromImprint";
+
 
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
-import TierExplainer from "@/components/ui/TierExplainer";
-import { TIER_COPY } from "@/constants/tierCopy";
 import ReadShape from "@/components/identity/ReadShape";
-import CvCrosscheck from "@/components/report/CvCrosscheck";
+import CvCrosscheck, { type CvCrosscheckState } from "@/components/report/CvCrosscheck";
+import CvUploadControl from "@/components/cv/CvUploadControl";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { handoffSubject, type SubjectHandoff } from "@/lib/workHandoff";
 import {
@@ -46,17 +44,6 @@ import {
   filterPublishedRows,
 } from "@/lib/postProvenance";
 
-// Canonical 8-milestone definition for the timeline
-const MILESTONE_DEFS: { id: string; name: string; cta?: { label: string; tab: string } }[] = [
-  { id: "profile_complete", name: "Profile complete" },
-  { id: "brand_assessment", name: "Brand assessment" },
-  { id: "first_signal", name: "First signal", cta: { label: "Capture an article →", tab: "intelligence" } },
-  { id: "voice_trained", name: "Voice trained", cta: { label: "Train your voice →", tab: "authority" } },
-  { id: "first_publish", name: "First publish", cta: { label: "Draft this post →", tab: "authority" } },
-  { id: "five_signals", name: "Five signals", cta: { label: "Capture an article →", tab: "intelligence" } },
-  { id: "sector_depth", name: "Sector depth", cta: { label: "Capture more sources →", tab: "intelligence" } },
-  { id: "weekly_rhythm_4", name: "Weekly rhythm", cta: { label: "Capture this week →", tab: "intelligence" } },
-];
 
 const prettify = (s?: string) =>
   (s || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, (m) => m.toUpperCase());
@@ -114,6 +101,8 @@ interface ProfileRow {
   identity_intelligence: any;
   primary_strength: string | null;
   instrument_version?: number | null;
+  cv_crosscheck?: any;
+  cv_crosscheck_at?: string | null;
 }
 
 const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: IdentityTabProps) => {
@@ -121,7 +110,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const journey = useJourneyState(authUser?.id ?? null);
   // Canonical score: imprint_snapshots (same source as Home/Observatory).
-  const { score: imprintScore, currentTier: imprintTier } = useTierFromImprint(authUser?.id ?? null);
+  
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [scoreTotal, setScoreTotal] = useState<number | null>(null);
@@ -146,7 +135,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
-  const [radarRefreshKey, setRadarRefreshKey] = useState(0);
+  const [, setRadarRefreshKey] = useState(0);
   
   const [brandOpen, setBrandOpen] = useState(false);
   const [fullProfileOpen, setFullProfileOpen] = useState(false);
@@ -157,13 +146,16 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [autoAssessing, setAutoAssessing] = useState(false);
   const [assessmentStep, setAssessmentStep] = useState("");
   const autoAssessTriggered = useRef(false);
-  const journeyRef = useRef<{ next: any; then: any | null } | null>(null);
+  
   const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
   const [entryCount, setEntryCount] = useState<number>(0);
   const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
-  const [publishedPostCount, setPublishedPostCount] = useState<number>(0);
+  const [, setPublishedPostCount] = useState<number>(0);
   
-  const [milestoneData, setMilestoneData] = useState<{ id: string; name: string; earned: boolean; earned_at: string | null; context: any }[]>([]);
+  const [, setMilestoneData] = useState<{ id: string; name: string; earned: boolean; earned_at: string | null; context: any }[]>([]);
+  /* The newest CV on file, and when the stored cross-check was written. */
+  const [cvDoc, setCvDoc] = useState<{ status: string | null; created_at: string | null } | null>(null);
+  const [cvCrosscheckAt, setCvCrosscheckAt] = useState<string | null>(null);
   const [radarInputs, setRadarInputs] = useState({
     avgEngagement: 0,
     totalPosts: 0,
@@ -268,15 +260,23 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     setLoadError(false);
     setLoading(true);
     try {
-      const [profileRes, signalsRes] = await withTimeout(Promise.all([
+      const [profileRes, signalsRes, cvDocRes] = await withTimeout(Promise.all([
         (supabase.from("diagnostic_profiles" as any) as any)
-          .select("first_name, last_name, level, firm, sector_focus, seniority_band, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength, instrument_version")
+          .select("first_name, last_name, level, firm, sector_focus, seniority_band, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength, instrument_version, cv_crosscheck, cv_crosscheck_at")
           .eq("user_id", uid).maybeSingle(),
         (supabase.from("strategic_signals") as any)
           .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids, strength_score, lifecycle_tier")
           .eq("user_id", uid).eq("status", "active")
           .order("confidence", { ascending: false }).limit(40),
+        /* Newest CV on file — the only input the cross-check states need. */
+        (supabase.from("documents") as any)
+          .select("status, created_at")
+          .eq("user_id", uid).eq("document_type", "cv")
+          .order("created_at", { ascending: false }).limit(1).maybeSingle(),
       ]), 12000);
+
+      setCvDoc((cvDocRes as any)?.data ?? null);
+      setCvCrosscheckAt(((profileRes as any)?.data?.cv_crosscheck_at as string | null) ?? null);
 
       if (profileRes.data) {
         setProfile(profileRes.data);
@@ -646,29 +646,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const strongestTheme = themesForTerritory[0]?.theme || null;
 
 
-  // Earned milestones merged with canonical defs
-  const earnedById = new Map(milestoneData.filter((m) => m.earned).map((m) => [m.id, m]));
-  const earnedSorted = MILESTONE_DEFS
-    .filter((d) => earnedById.has(d.id))
-    .map((d) => ({ ...d, ...earnedById.get(d.id)! }))
-    .sort((a, b) => {
-      const ta = a.earned_at ? new Date(a.earned_at).getTime() : 0;
-      const tb = b.earned_at ? new Date(b.earned_at).getTime() : 0;
-      return tb - ta;
-    });
-  const nextMilestone = MILESTONE_DEFS.find((d) => !earnedById.has(d.id)) || null;
-  const futureMilestones = MILESTONE_DEFS
-    .filter((d) => !earnedById.has(d.id) && d.id !== nextMilestone?.id)
-    .map((d) => d.name);
 
   const archetypeName = brandResults?.primary_archetype || positioningTitle || "";
   const positioningOnly = brandResults?.positioning_statement || "";
   const subtitle = [profile?.level, profile?.firm, profile?.sector_focus].filter(Boolean).join(" · ");
 
-  const fmtDate = (iso: string | null) => {
-    if (!iso) return "";
-    try { return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch { return ""; }
-  };
 
   const handleMilestoneShare = (m: { id: string; name: string; context: any }) => {
     setMarketShareData({
@@ -678,117 +660,30 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     } as any);
   };
 
-  const handleNextMilestoneCTA = () => {
-    if (!nextMilestone) return;
-    const cta = nextMilestone.cta;
-    if (cta && onSwitchTab) onSwitchTab(cta.tab);
-  };
 
-  // ============================================================
-  // JOURNEY DERIVATION — live NEXT/Then steps from real data.
-  // Tier name + points-to-next come from the EF response
-  // (single source of truth); no local threshold math here.
-  // ============================================================
-  type JourneyStep = {
-    id: string;
-    label: string;
-    detail?: string;
-    action?: { label: string; tab: string };
-  };
-  const nextTierBoundary = nextTierFromEF.name && nextTierFromEF.pointsToNext != null
-    ? { name: nextTierFromEF.name, pointsToNext: nextTierFromEF.pointsToNext }
-    : null;
-
-  const lowestComponentLabel = (() => {
-    if (!scoreComponents) return null;
-    const entries: Array<[string, number, string]> = [
-      ["capture", scoreComponents.capture, "intelligence"],
-      ["signal", scoreComponents.signal, "intelligence"],
-      ["content", scoreComponents.content, "authority"],
-    ];
-    entries.sort((a, b) => a[1] - b[1]);
-    return entries[0];
+  /* CV cross-check state — derived from the newest CV document and the
+     stored cross-check on the profile row. */
+  const cvState: CvCrosscheckState = (() => {
+    if (!cvDoc) return "no_cv";
+    if (cvDoc.status === "processing") return "processing";
+    if (cvDoc.status === "error" || cvDoc.status === "failed") return "error";
+    if (profile?.cv_crosscheck && cvCrosscheckAt && cvDoc.created_at && new Date(cvDoc.created_at).getTime() > new Date(cvCrosscheckAt).getTime()) {
+      return "stale";
+    }
+    return "ready";
   })();
 
-  const nextMondayLabel = (() => {
-    const d = new Date();
-    const day = d.getDay();
-    const delta = (8 - day) % 7 || 7;
-    d.setDate(d.getDate() + delta);
-    return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
-  })();
-
-  const derived = (() => {
-    if (journeyRef.current) return journeyRef.current;
-    // Only derive after the page's data has settled enough to be meaningful.
-    if (loading) return null;
-    if (imprintScore == null && scoreTotal == null) return null;
-
-    const steps: JourneyStep[] = [];
-
-    // 1) First publish
-    if (publishedPostCount === 0) {
-      steps.push({
-        id: "first_publish",
-        label: "First publish",
-        detail: "Your first post sets the baseline Aura measures from.",
-        action: { label: "Draft this post →", tab: "authority" },
-      });
+  const runCrosscheck = async () => {
+    if (!authUser) return;
+    try {
+      await supabase.auth.getSession();
+      await supabase.functions.invoke("cv-crosscheck", { body: {} });
+      await loadAll(authUser.id);
+    } catch (e) {
+      console.warn("[IdentityTab] cv-crosscheck failed", e);
     }
-
-    // 2) This week's rhythm
-    if (thisWeekEntries < 3) {
-      steps.push({
-        id: "weekly_rhythm",
-        label: `This week's rhythm: ${thisWeekEntries}/3`,
-        detail: "Capture three sources this week to keep the rhythm intact.",
-        action: { label: "Capture an article →", tab: "intelligence" },
-      });
-    }
-
-    // 3) Signal approaching Live
-    if (topApproachingLive && topApproachingLive.title) {
-      steps.push({
-        id: "approaching_live",
-        label: `Signal "${topApproachingLive.title}" is approaching Live`,
-        detail: "One more source confirms it.",
-        action: { label: "Capture an article →", tab: "intelligence" },
-      });
-    }
-
-    // 4) Within 5 points of next tier
-    if (nextTierBoundary && nextTierBoundary.pointsToNext <= 5 && nextTierBoundary.pointsToNext > 0) {
-      const comp = lowestComponentLabel;
-      const compName = comp ? comp[0] : "capture";
-      const tab = comp ? comp[2] : "intelligence";
-      const actionLabel =
-        compName === "content" ? "Draft this post →"
-        : compName === "signal" ? "Strengthen a signal →"
-        : "Capture an article →";
-      steps.push({
-        id: "tier_boundary",
-        label: `${nextTierBoundary.pointsToNext} points from ${nextTierBoundary.name}`,
-        detail: `Your ${compName} score is the lowest — lift it to cross.`,
-        action: { label: actionLabel, tab },
-      });
-    }
-
-    // 5) Fallback rhythm anchor — never empty.
-    steps.push({
-      id: "rhythm_anchor",
-      label: `Keep the rhythm: ${nextMondayLabel} briefing`,
-      detail: "Aura's weekly briefing lands on Monday.",
-      action: { label: "Open intelligence →", tab: "intelligence" },
-    });
-
-    const result = { next: steps[0], then: steps[1] || null };
-    journeyRef.current = result;
-    return result;
-  })();
-
-  const handleDerivedAction = (step: JourneyStep) => {
-    if (step.action && onSwitchTab) onSwitchTab(step.action.tab);
   };
+
 
   return (
     <div className="space-y-6 story-page">
@@ -1107,38 +1002,18 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {pane === "standing" && (
       <div style={STANDING_STACK}>
-      {/* SECTION 6 — CAPABILITY RADAR */}
-      {assessmentCompleted && (
-        <div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <SectionHeader label="Your capability radar" />
-            <InfoTooltip slug="capability-radar" label="Capability Radar" side="top" triggerSize={13} />
-          </div>
-          <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
-            Where your presence is strong and where it thins — recalculated as you capture and publish.
-          </p>
-        </div>
-      )}
-      {assessmentCompleted && profile?.audit_method !== "evidence_audit" && (
-        <p className="text-xs" style={{ color: "var(--ink-5)", marginTop: 2, marginBottom: 8 }}>
-          Self-rated baseline — refine with the Objective Audit.
-        </p>
-      )}
-      {assessmentCompleted && (
-        <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
-          <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
-            <AuditRadarWidget
-              onStartAudit={() => setAuditOpen(true)}
-              hideEditScores
-              refreshKey={radarRefreshKey}
-            />
-          </div>
-        </section>
-      )}
-
-      {/* SECTION 6b — PROFILE INTELLIGENCE */}
-      {/* CV against LinkedIn — renders nothing until a cross-check exists. */}
-      <CvCrosscheck userId={authUser?.id ?? null} />
+      {/* SECTION 6 — CV AGAINST PROFILE */}
+      {/* Every state is inside CvCrosscheck; this pane only supplies the truth. */}
+      <div>
+        <SectionHeader label="Your CV against your profile" />
+      </div>
+      <CvCrosscheck
+        userId={authUser?.id ?? null}
+        state={cvState}
+        uploadSlot={cvState === "no_cv" ? <CvUploadControl userId={authUser?.id ?? null} showPurpose={false} /> : undefined}
+        onRetry={cvState === "error" ? runCrosscheck : undefined}
+        onRunAgain={cvState === "stale" ? runCrosscheck : undefined}
+      />
 
       {assessmentCompleted && (
         <div>
@@ -1153,208 +1028,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} hideSuggestedTopics={false} />
         </div>
       )}
-      {/* SECTION 7 — YOUR JOURNEY (timeline) */}
-      {assessmentCompleted && milestoneData.length > 0 && (
-        <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Trophy className="w-3.5 h-3.5" style={{ color: "#12805C" }} />
-              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)" }}>
-                Your journey
-              </span>
-            </div>
-            <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
-              {earnedSorted.length} of {MILESTONE_DEFS.length} milestones
-            </span>
-          </div>
-          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "0 0 16px" }}>
-            Every milestone strengthens your market position.
-          </p>
-
-          <div style={{ paddingLeft: 22, borderLeft: "2px solid var(--brand-line, rgba(0,0,0,0.08))", marginLeft: 8 }}>
-            {/* NOW */}
-            <div style={{ position: "relative", paddingBottom: 18 }}>
-              <span style={{
-                position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
-                background: "var(--spot)", display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <Star className="w-2 h-2" style={{ color: "var(--paper)" }} fill="currentColor" />
-              </span>
-              <div style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", fontSize: 11, fontWeight: 500, color: "var(--spot)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <span>
-                  NOW{imprintTier?.name ? ` — ${imprintTier.name.toUpperCase()}` : ""}{imprintScore != null ? ` · SCORE ${imprintScore}` : ""}
-                </span>
-                {imprintTier?.key && (
-                  <TierExplainer tierKey={imprintTier.key} tierName={imprintTier.name} side="top" triggerSize={12} />
-                )}
-              </div>
-              {(identityIntel?.primary_role || positioningTitle) && (
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 500, color: "var(--ink)", marginTop: 3 }}>
-                  {identityIntel?.primary_role || positioningTitle}
-                </div>
-              )}
-              {imprintTier?.key && TIER_COPY[imprintTier.key] && (
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ink-3)", marginTop: 6, lineHeight: 1.5 }}>
-                  {TIER_COPY[imprintTier.key].whatLifts}
-                </div>
-              )}
-            </div>
-
-            {/* Earned milestones — collapsed to one quiet line */}
-            {earnedSorted.length > 0 && (
-              <div style={{ position: "relative", paddingBottom: 16 }}>
-                <span style={{
-                  position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
-                  background: "#12805C", display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <Check className="w-2 h-2" style={{ color: "var(--paper)" }} strokeWidth={3} />
-                </span>
-                <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
-                  {earnedSorted.length} milestone{earnedSorted.length === 1 ? "" : "s"} completed
-                  {earnedSorted[0]?.earned_at ? ` · ${fmtDate(earnedSorted[0].earned_at)}` : ""}
-                </div>
-              </div>
-            )}
-
-            {/* NEXT — live, derived from real data (session-memoized) */}
-            {derived?.next && (
-              <div style={{ position: "relative", paddingBottom: 16 }}>
-                <span style={{
-                  position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
-                  background: "var(--aura-card)", border: "2px dashed var(--spot)",
-                }} />
-                <div style={{ fontSize: 12, fontWeight: 500, color: "var(--spot)" }}>
-                  Next: {derived.next.label}
-                </div>
-                {derived.next.detail && (
-                  <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 3, lineHeight: 1.5 }}>
-                    {derived.next.detail}
-                  </div>
-                )}
-                {derived.next.action && (
-                  <button
-                    onClick={() => handleDerivedAction(derived.next)}
-                    style={{
-                      marginTop: 8, padding: "6px 12px", borderRadius: 8,
-                      background: "var(--spot)", color: "var(--text-inverse)",
-                      border: 0, fontSize: 12, fontWeight: 500, cursor: "pointer",
-                    }}
-                  >
-                    {derived.next.action.label}
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* THEN — second derived step (never the static MILESTONE_DEFS list) */}
-            {derived?.then && (
-              <div style={{ position: "relative" }}>
-                <span style={{
-                  position: "absolute", left: -30, top: 0, width: 14, height: 14, borderRadius: "50%",
-                  background: "var(--aura-card)", border: "2px solid var(--ink-5)", opacity: 0.4,
-                }} />
-                <div style={{ fontSize: 11, color: "var(--ink-5)" }}>
-                  Then: {derived.then.label}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* SECTION 8 — 3-YEAR TARGET */}
-      <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          <TargetIcon className="w-3.5 h-3.5" style={{ color: "var(--ink-5)" }} />
-          <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-5)" }}>
-            3-year target
-          </span>
-        </div>
-        {editingField === "north_star_goal" ? (
-          <input
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && saveEdit("north_star_goal")}
-            onBlur={() => saveEdit("north_star_goal")}
-            autoFocus
-            className="bg-transparent border-b border-brand outline-none w-full"
-            style={{ fontSize: 15, color: "var(--ink)", fontFamily: "var(--font-display)", fontWeight: 500, paddingBottom: 2 }}
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => startEdit("north_star_goal", profile?.north_star_goal || "")}
-            style={{
-              fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 500,
-              color: "var(--ink)", background: "transparent", border: 0, padding: 0,
-              textAlign: "left", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 8,
-            }}
-          >
-            {profile?.north_star_goal || "Set your north star goal"}
-            <Pencil className="w-3 h-3" style={{ color: "var(--ink-5)", opacity: 0.5 }} />
-          </button>
-        )}
-
-        {/* Horizontal timeline — real recorded events only. */}
-        {(() => {
-          const onboardingDone = !!profile?.onboarding_completed;
-          const brandDone = !!profile?.brand_assessment_completed_at;
-          const nodes: { label: string; state: "done" }[] = [];
-          if (onboardingDone) nodes.push({ label: "Foundation", state: "done" });
-          if (brandDone) nodes.push({ label: "Assessment", state: "done" });
-          for (const m of earnedSorted.slice(0, 4)) {
-            nodes.push({ label: m.name, state: "done" });
-          }
-          if (nodes.length < 2) {
-            return (
-              <p style={{ fontSize: 13.5, color: "#5B6673", marginTop: 16, marginBottom: 0, lineHeight: 1.6 }}>
-                Your record starts when you publish.
-              </p>
-            );
-          }
-          return (
-            <div style={{ display: "flex", alignItems: "center", marginTop: 16 }}>
-              {nodes.map((n, i) => {
-                const isDone = n.state === "done";
-                const isCurrent = false;
-                const dot = (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <span style={{
-                      width: 16, height: 16, borderRadius: "50%",
-                      background: isDone ? "var(--success)" : isCurrent ? "var(--spot)" : "transparent",
-                      border: !isDone && !isCurrent ? "1.5px solid var(--ink-5)" : "none",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      {isDone && <Check style={{ color: "var(--paper)", width: 9, height: 9 }} strokeWidth={3} />}
-                    </span>
-                    <span style={{
-                      fontSize: 9, marginTop: 6,
-                      color: isCurrent ? "var(--spot)" : "var(--ink-5)",
-                      fontWeight: isCurrent ? 600 : 400, textTransform: "uppercase", letterSpacing: "0.04em",
-                    }}>
-                      {n.label}
-                    </span>
-                  </div>
-                );
-                const next = nodes[i + 1];
-                const barColor = (() => {
-                  if (!next) return "transparent";
-                  if (isDone && next.state === "done") return "#12805C";
-                  return "var(--brand-line, rgba(0,0,0,0.12))";
-                })();
-                return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", flex: i === nodes.length - 1 ? "0 0 auto" : 1 }}>
-                    {dot}
-                    {i < nodes.length - 1 && (
-                      <div style={{ flex: 1, height: 2, background: barColor, margin: "0 8px", marginTop: -16 }} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })()}
-      </section>
 
 
       <MilestonesSection userId={authUser?.id ?? null} />
