@@ -29,29 +29,43 @@ type TableName =
   | "strategic_signals"
   | "linkedin_posts";
 
-const SPECS: Record<TableName, { cols: string[]; build: (r: any) => string }> = {
+/**
+ * Per table: which columns to read, how to build the text, and the "has text"
+ * predicate. The predicate runs at the query level so unembeddable rows never
+ * enter the queue and never stall the chain.
+ */
+const SPECS: Record<
+  TableName,
+  { cols: string[]; build: (r: any) => string; hasText: string }
+> = {
   document_chunks: {
     cols: ["id", "content"],
     build: (r) => r.content || "",
+    hasText: "content.neq.",
   },
   evidence_fragments: {
     cols: ["id", "title", "content"],
     build: (r) => [r.title, r.content].filter(Boolean).join("\n\n"),
+    hasText: "content.neq.,title.neq.",
   },
   entries: {
     cols: ["id", "title", "summary", "content"],
     build: (r) => [r.title, r.summary, r.content].filter(Boolean).join("\n\n"),
+    hasText: "content.neq.,summary.neq.,title.neq.",
   },
   strategic_signals: {
     cols: ["id", "signal_title", "explanation", "strategic_implications"],
     build: (r) =>
       [r.signal_title, r.explanation, r.strategic_implications].filter(Boolean).join("\n\n"),
+    hasText: "signal_title.neq.,explanation.neq.,strategic_implications.neq.",
   },
   linkedin_posts: {
     cols: ["id", "hook", "post_text"],
     build: (r) => [r.hook, r.post_text].filter(Boolean).join("\n\n"),
+    hasText: "post_text.neq.,hook.neq.",
   },
 };
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
