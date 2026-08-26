@@ -141,7 +141,7 @@ const ReadTierHome: React.FC<Props> = ({ onSwitchTab }) => {
         </h1>
         {dateLine && (
           <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.6, color: "var(--v23-on-night, rgba(255,255,255,.72))" }}>
-            Your read is from {dateLine}. Nothing has changed since — because nothing has been added to it yet.
+            Your read is from {dateLine}.
           </p>
         )}
       </section>

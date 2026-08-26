@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Session, User } from "@supabase/supabase-js";
+import { ensureTimezone } from "@/lib/ensureTimezone";
 
 /**
  * useAuthReady — deterministic auth bootstrap.
@@ -56,6 +57,9 @@ export function useAuthReady() {
         setSession(session ?? null);
         prevSessionRef.current = session ?? null;
         setIsReady(true);
+        // A brief cannot be sent at the right hour without the member's zone.
+        // Every signed-in route passes through here, not only /home.
+        if (session?.user?.id) void ensureTimezone(session.user.id);
         console.log(
           "[auth] restore finished",
           session?.user ? `uid=${session.user.id.slice(0, 8)}` : "no user"
