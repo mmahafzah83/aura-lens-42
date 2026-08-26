@@ -11,6 +11,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { loadLinkedInAddress, type LinkedInAddress } from "@/lib/linkedinAddress";
+import { linkedinStatus, type LinkedInStatusView } from "@/lib/linkedinStatus";
 
 /** Aura needs this many classified posts before it will judge coverage. */
 export const MIN_POSTS_FOR_COVERAGE = 8;
@@ -105,6 +106,8 @@ export const ADMIRED_CAP = 10;
 export interface TeachAuraModel {
   address: LinkedInAddress;
   connectionState: ConnectionState;
+  /** The shared status rule's answer — the only thing the chip may show. */
+  status: LinkedInStatusView;
   /** Own posts Aura counted, and the ones it set aside. */
   includedCount: number;
   excludedCount: number;
@@ -180,7 +183,15 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
       .is("post_text", null)
       .gt("engagement_score", 0),
     // Connection state, read where the address lives.
-    supabase.from("linkedin_connections").select("handle, access_token").eq("user_id", userId).maybeSingle(),
+    // Connection state, read from the safe view. The browser has NO grant on
+    // access_token, so the old `select("access_token")` came back empty for
+    // everyone and every healthy member was told to reconnect.
+    supabase
+      .from("linkedin_connections_safe" as any)
+      .select("handle, status, token_expires_at, last_synced_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
+
     supabase
       .from("voice_feedback")
       .select("verdict, applied_changes, created_at")
@@ -256,11 +267,18 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
     .filter((a: AdmiredPost) => a.content.length > 0);
 
   const conn = (connRes.data as any) || null;
-  const connectionState: ConnectionState = !address.handle && !conn?.handle
-    ? "not_set"
-    : String(conn?.access_token ?? "").length > 0
-      ? "connected"
-      : "needs_reconnect";
+  /* One rule, imported. Nothing here decides this for itself. */
+  const status = linkedinStatus({
+    hasRow: Boolean(conn),
+    status: (conn?.status as string | null) ?? null,
+    tokenExpiresAt: (conn?.token_expires_at as string | null) ?? null,
+    lastSyncedAt: (conn?.last_synced_at as string | null) ?? address.lastSyncedAt ?? null,
+  });
+  const connectionState: ConnectionState =
+    status.key === "not_connected" ? "not_set"
+      : status.key === "reconnect_needed" ? "needs_reconnect"
+        : "connected";
+
 
   const negatives = ((feedbackRes.data as any[]) || [])
     .filter((r) => r.verdict === "partly" || r.verdict === "not_me");
@@ -282,6 +300,7 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
     classifiedCount: included.filter((p) => p.hookStyle).length,
     documentCount: docsRes.count ?? 0,
     connectionState,
+    status,
     examples,
     addedByYouCount: examples.filter((e) => e.memberAdded).length,
     admired,

@@ -52,6 +52,8 @@ interface ProfileData {
 }
 
 import { loadLinkedInState, EMPTY_LINKEDIN_STATE, type LinkedInState } from "@/lib/linkedinState";
+import { statusFromLinkedInState, mayPromptReconnect } from "@/lib/linkedinStatus";
+
 
 export default function Settings() {
   usePageMeta({
@@ -90,6 +92,9 @@ const {
 /* One reader for the LinkedIn facts — the page used to answer this three
    different ways and contradict itself between cards. */
 const [liState, setLiState] = useState<LinkedInState>(EMPTY_LINKEDIN_STATE);
+/* The one status rule. Sync age is a nudge to re-read, never a reconnect. */
+const liStatus = statusFromLinkedInState(liState);
+
 const [linkedInBusy, setLinkedInBusy] = useState(true);
 const [signatures, setSignatures] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
 const [savingSig, setSavingSig] = useState(false);
@@ -516,22 +521,21 @@ const handleDeleteAccount = async () => {
                       {liState.handle ? `linkedin.com/in/${liState.handle}` : "LinkedIn"}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
-                      {liState.confirmedByRead ? "Connected — Aura has read this profile" : "Connected"}
+                      {/* The shared rule's sentence — never a locally invented one. */}
+                      {liStatus.explanation}
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="text-sm" style={{ color: "var(--ink)" }}>
-                      {liState.needsReconnect
+                      {mayPromptReconnect(liStatus)
                         ? "Your LinkedIn sign-in has run out"
                         : liState.address
                           ? `Address on file — ${liState.address.replace(/^https?:\/\/(www\.)?/, "")}`
                           : "Not connected"}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
-                      {liState.needsReconnect
-                        ? "LinkedIn stopped accepting it, so Aura can't read or publish until you sign in again."
-                        : "Connect your LinkedIn account to publish and sync analytics."}
+                      {liStatus.explanation}
                     </div>
                   </>
                 )}
@@ -543,8 +547,9 @@ const handleDeleteAccount = async () => {
                 disabled={linkedInBusy}
                 onClick={liState.connected ? handleDisconnectLinkedIn : handleConnectLinkedIn}
               >
-                {liState.connected ? "Disconnect" : liState.needsReconnect ? "Reconnect LinkedIn" : "Connect LinkedIn"}
+                {liState.connected ? "Disconnect" : mayPromptReconnect(liStatus) ? "Reconnect LinkedIn" : "Connect LinkedIn"}
               </Button>
+
             </div>
           </AuraCard>
         </div>
