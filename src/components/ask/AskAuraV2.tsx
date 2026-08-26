@@ -60,7 +60,7 @@ interface Position {
   voiceTone: string | null;
   voiceLearnedFrom: number;
 }
-interface MemoryRow { id: string; session_date: string; summary: string }
+interface MemoryRow { id: string; session_date: string; summary: string; actions_committed?: string[] | null }
 interface PromptSeed { label: string; text: string }
 
 const isAr = (s: string) => AR.test(s || "");
@@ -153,7 +153,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       const [postsRes, voiceRes, memRes, sigRes, draftRes] = await Promise.all([
         supabase.from("linkedin_posts").select("source_type, tracking_status, theme, theme_tags").eq("user_id", uid),
         supabase.from("authority_voice_profiles").select("tone, example_posts").eq("user_id", uid).eq("is_primary", true).eq("mode_key", "default").maybeSingle(),
-        supabase.from("aura_conversation_memory").select("id, session_date, summary").eq("user_id", uid).not("summary", "is", null).order("session_date", { ascending: false }).limit(6),
+        supabase.from("aura_conversation_memory").select("id, session_date, summary, actions_committed").eq("user_id", uid).is("role", null).not("summary", "is", null).order("created_at", { ascending: false }).limit(6),
         supabase.from("strategic_signals").select("id, signal_title, theme_tags, priority_score").eq("user_id", uid).order("priority_score", { ascending: false }).limit(3),
         supabase.from("linkedin_posts").select("id").eq("user_id", uid).eq("tracking_status", "draft"),
       ]);
@@ -178,7 +178,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       const sigs = ((sigRes.data as any[]) || []);
       const drafts = ((draftRes.data as any[]) || []).length;
       const s: PromptSeed[] = [];
-      if (sigs[0]) s.push({ label: `Why does “${String(sigs[0].signal_title).slice(0, 34)}” matter?`, text: `Why does the signal "${sigs[0].signal_title}" matter for me right now?` });
+      if (sigs[0]) {
+        const full = String(sigs[0].signal_title);
+        const short = full.length <= 34 ? full : `${full.slice(0, 34).replace(/\s+\S*$/, "").trim()}…`;
+        s.push({ label: `Why does “${short}” matter?`, text: `Why does the signal "${sigs[0].signal_title}" matter for me right now?` });
+      }
+
       if (sigs[1]) s.push({ label: "What should I write next?", text: `Given my live signals, what should I write next and what is the hook?` });
       if (top) s.push({ label: `Am I too narrow on ${top[0]}?`, text: `${top[1]} of my ${live.length} live posts are about ${top[0]}. Am I too concentrated?` });
       if (drafts > 0) s.push({ label: `Which of my ${drafts} drafts first?`, text: `I have ${drafts} drafts waiting. Which one should I finish first and why?` });
@@ -228,7 +233,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       const res = await fetch(CHAT_URL, {
         method: "POST",
         headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next.map(m => ({ role: m.role, content: m.content })), context }),
+        body: JSON.stringify({ messages: next.map(m => ({ role: m.role, content: m.content })), context, session_id: sessionIdRef.current }),
       });
       if (!res.ok || !res.body) {
         const j = await res.json().catch(() => ({}));
@@ -447,8 +452,14 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               <div key={m.id} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.55 }}>
                 <div style={{ ...MONO, fontSize: 10.5, color: "var(--text-muted)" }}>Noted {m.session_date}</div>
                 {m.summary}
+                {Array.isArray(m.actions_committed) && m.actions_committed.length > 0 && (
+                  <div style={{ ...MONO, fontSize: 10.5, color: "var(--text-muted)" }}>
+                    Committed: {m.actions_committed.slice(0, 2).join(" · ")}
+                  </div>
+                )}
               </div>
             ))}
+
           </div>
         )}
       </div>
