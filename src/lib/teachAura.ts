@@ -180,7 +180,15 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
       .is("post_text", null)
       .gt("engagement_score", 0),
     // Connection state, read where the address lives.
-    supabase.from("linkedin_connections").select("handle, access_token").eq("user_id", userId).maybeSingle(),
+    // Connection state, read from the safe view. The browser has NO grant on
+    // access_token, so the old `select("access_token")` came back empty for
+    // everyone and every healthy member was told to reconnect.
+    supabase
+      .from("linkedin_connections_safe" as any)
+      .select("handle, status, token_expires_at, last_synced_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
+
     supabase
       .from("voice_feedback")
       .select("verdict, applied_changes, created_at")
