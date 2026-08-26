@@ -60,15 +60,17 @@ serve(async (req) => {
       });
     }
 
-    // Check if last_active_at was >48h ago
-    const lastActive = profile.last_active_at ? new Date(profile.last_active_at) : new Date(profile.created_at);
+    // ONE clock: `last_visit_at`, the column the app itself writes on every
+    // visit. `last_active_at` is DEPRECATED — this function was its only writer,
+    // so it disagreed with what the product actually observed.
+    const lastActive = profile.last_visit_at ? new Date(profile.last_visit_at) : new Date(profile.created_at);
     const hoursSinceActive = (Date.now() - lastActive.getTime()) / (1000 * 60 * 60);
 
     if (hoursSinceActive < 48) {
-      // Update last_active_at and return no nudge
+      // Update last_visit_at and return no nudge
       await adminClient
         .from("diagnostic_profiles")
-        .update({ last_active_at: new Date().toISOString() })
+        .update({ last_visit_at: new Date().toISOString() })
         .eq("id", profile.id);
 
       return new Response(JSON.stringify({ nudge: null, reason: "Active within 48h" }), {
@@ -154,8 +156,8 @@ Rules:
         metadata: { skill_gaps: topGaps, hours_inactive: Math.round(hoursSinceActive) },
       });
 
-      // Update last_active_at
-      await adminClient.from("diagnostic_profiles").update({ last_active_at: new Date().toISOString() }).eq("id", profile.id);
+      // Update last_visit_at
+      await adminClient.from("diagnostic_profiles").update({ last_visit_at: new Date().toISOString() }).eq("id", profile.id);
 
       return new Response(JSON.stringify({ nudge: { title: nudgeTitle, body: nudgeBody } }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -177,8 +179,8 @@ Rules:
       metadata: { skill_gaps: topGaps, hours_inactive: Math.round(hoursSinceActive) },
     });
 
-    // Update last_active_at
-    await adminClient.from("diagnostic_profiles").update({ last_active_at: new Date().toISOString() }).eq("id", profile.id);
+    // Update last_visit_at
+    await adminClient.from("diagnostic_profiles").update({ last_visit_at: new Date().toISOString() }).eq("id", profile.id);
 
     return new Response(JSON.stringify({ nudge: { title: nudgeTitle, body: nudgeBody } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
