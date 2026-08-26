@@ -261,7 +261,6 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
       <Assessment
         dims={dims}
         levels={levels}
-        reduced={reduced}
         onAnswer={saveAnswer}
         onFinish={finish}
         onExit={() => setAssessing(false)}
@@ -703,14 +702,17 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, onAnswer, onFinish, o
         })}
       </div>
 
-      <div style={{ display: "flex", gap: 16, marginTop: 16, alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBlockStart: 16, alignItems: "center" }}>
         <button
           type="button"
           onClick={() => (index === 0 ? onExit() : setIndex(index - 1))}
-          style={{ background: "transparent", border: "none", padding: 0, color: BLUE, fontFamily: UI, fontSize: 13, cursor: "pointer", minHeight: 44 }}
+          style={{ background: "transparent", border: "none", padding: "0 4px", color: BLUE, fontFamily: UI, fontSize: 13, cursor: "pointer", minHeight: 44 }}
         >
           {index === 0 ? "Back to the radar" : "Back"}
         </button>
+        <PrimaryButton onClick={() => void goForward()} disabled={!canAdvance}>
+          {finishing ? "Working" : last ? "Show me the shape" : "Next"}
+        </PrimaryButton>
       </div>
 
       <style>{`
