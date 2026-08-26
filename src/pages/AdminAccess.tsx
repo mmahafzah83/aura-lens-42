@@ -1015,8 +1015,8 @@ const AdminAccess = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                const email = confirmDeleteRow?.email;
-                if (email) handleDeleteUser(email);
+                const target = confirmDeleteRow;
+                if (target) handleDeleteUser({ email: target.email, user_id: target.user_id });
               }}
             >
               Delete permanently
