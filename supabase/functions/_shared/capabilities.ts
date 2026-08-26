@@ -5,7 +5,8 @@
 // not mean the same thing across instruments, so no reader may present them as
 // numbers. This module detects the instrument, normalises the keys, and
 // converts every value into a BAND. Historic values are never rewritten.
-import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+// Callers run different supabase-js versions; only `.from()` is needed here.
+type DbClient = { from: (table: string) => any };
 
 export type Instrument = "v2_sliders" | "ordinal_evidence" | "legacy_sliders" | "unknown";
 export type CapabilityBand = "not_assessed" | "developing" | "solid" | "strong";
@@ -116,7 +117,7 @@ export function toPromptBlock(profile: CapabilityProfile): string {
 }
 
 export async function getCapabilityProfile(
-  admin: SupabaseClient,
+  admin: DbClient,
   userId: string,
 ): Promise<CapabilityProfile> {
   const [profRes, dimRes] = await Promise.all([
