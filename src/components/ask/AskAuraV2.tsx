@@ -599,7 +599,29 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                     {m.isError
                       ? <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>{m.content}</div>
                       : <Answer text={m.content} />}
+                    {/* The machine reporting its own work: cyan, never a button. */}
+                    {(m.actions || []).map((a, k) => (
+                      <div key={k} data-testid="ask-action-line" style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}>
+                        <span style={{
+                          width: 7, height: 7, borderRadius: 999,
+                          background: a.ok ? "var(--machine)" : "var(--text-muted)",
+                        }} />
+                        <span style={{ ...MONO, fontSize: 12, color: a.ok ? "var(--machine-text)" : "var(--text-muted)" }}>
+                          {a.label}
+                        </span>
+                      </div>
+                    ))}
+                    {(m.actions || []).some(a => a.ok && a.tool === "save_draft") && (
+                      <div style={{ marginTop: 10 }}>
+                        <button type="button" onClick={openDrafts} style={{
+                          background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                          borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                          display: "inline-flex", alignItems: "center", gap: 6,
+                        }}>Open in Publish<ArrowUpRight size={13} /></button>
+                      </div>
+                    )}
                   </div>
+
                 );
               })}
 
