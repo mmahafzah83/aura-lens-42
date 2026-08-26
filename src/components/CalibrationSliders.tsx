@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { CapabilityBandMeter } from "@/components/capability/CapabilityBandMeter";
+import { BandLegend } from "@/components/capability/BandLegend";
+import { bandForSlider, BAND_COPY, BAND_TOKEN, type CapabilityBand } from "@/lib/capabilityBands";
 
 export interface CalibrationDimension {
   id: string;
@@ -365,7 +368,6 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
           >
             <SummaryCard
               summary={summary}
-              scores={scores}
               submitting={submitting}
               onFinish={handleFinish}
               onBack={back}
