@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { writeProfile } from "@/lib/profileWrite";
 import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, Camera } from "lucide-react";
