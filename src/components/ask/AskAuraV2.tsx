@@ -765,7 +765,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               })}
 
               {loading && (
-                <div data-testid="ask-thinking" style={{ ...MONO, fontSize: 12, color: "var(--machine-text)", margin: "10px 0" }}>
+                <div role="status" data-testid="ask-thinking" style={{ ...MONO, fontSize: 12, color: "var(--machine-text)", margin: "10px 0" }}>
                   Reading your graph…
                 </div>
               )}
@@ -773,11 +773,11 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               {!loading && followUps.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "6px 0 16px" }}>
                   {followUps.map(f => (
-                    <button key={f} type="button" onClick={() => send(f)} style={{
+                    <button key={f} type="button" className="ask-focusable ask-chip" onClick={() => send(f)} style={{
                       background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
                       borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                       display: "inline-flex", alignItems: "center", gap: 6,
-                    }}>{f}<ArrowUpRight size={13} /></button>
+                    }}>{f}<ArrowUpRight size={13} aria-hidden="true" /></button>
                   ))}
                 </div>
               )}
@@ -794,6 +794,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               >
                 <textarea
                   ref={taRef}
+                  className="ask-focusable"
+                  aria-label="Ask Aura a question"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(input); } }}
@@ -801,23 +803,23 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                   dir={isAr(input) ? "rtl" : "ltr"}
                   placeholder="Ask about a signal, a draft, or your position"
                   style={{
-                    flex: 1, resize: "none", border: 0, outline: "none", background: "transparent",
+                    flex: 1, resize: "none", border: 0, background: "transparent",
                     fontSize: 14.5, color: "var(--text-primary)", lineHeight: isAr(input) ? 1.9 : 1.5,
                     fontFamily: isAr(input) ? "var(--ff-ar)" : undefined,
                   }}
                 />
-                <button type="submit" aria-label="Send" disabled={loading || !input.trim()} style={{
+                <button type="submit" className="ask-focusable ask-send" aria-label="Send" disabled={loading || !input.trim()} style={{
                   background: "var(--act)", color: "var(--text-inverse)", border: 0, borderRadius: 10,
                   width: 38, height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center",
                   cursor: loading || !input.trim() ? "default" : "pointer", opacity: loading || !input.trim() ? 0.5 : 1,
                 }}>
-                  <Send size={16} />
+                  <Send size={16} aria-hidden="true" />
                 </button>
               </form>
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
                 {seeds.map(s => (
-                  <button key={s.text} type="button" onClick={() => send(s.text)} style={{
+                  <button key={s.text} type="button" className="ask-focusable ask-chip" onClick={() => send(s.text)} style={{
                     background: "transparent", border: "1px solid var(--rule-outer)", color: "var(--text-secondary)",
                     borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                   }}>{s.label}</button>
@@ -833,9 +835,21 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       <style>{`
         .ask-grid { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 20px; }
         .ask-grid > aside { max-height: 100%; }
+        /* Keyboard users must see where they are. Mouse users are untouched. */
+        [data-testid="ask-aura-v2"] .ask-focusable:focus-visible {
+          outline: 2px solid var(--act);
+          outline-offset: 2px;
+        }
+        [data-testid="ask-aura-v2"] .ask-chip { min-height: 36px; }
+        [data-testid="ask-aura-v2"] .ask-rail-row { min-height: 44px; }
+        @media (max-width: 767px) {
+          [data-testid="ask-aura-v2"] .ask-chip { min-height: 44px; }
+          [data-testid="ask-aura-v2"] .ask-send { width: 44px; height: 44px; }
+        }
         @media (max-width: 1023px) {
-          .ask-grid { grid-template-columns: minmax(0,1fr); grid-template-rows: auto minmax(0,1fr); }
-          .ask-grid > aside { order: -1; flex-direction: row; gap: 18px; overflow-x: auto; padding: 12px 14px; }
+          /* The answer leads on a phone; the rail follows underneath it. */
+          .ask-grid { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; }
+          .ask-grid > aside { order: 1; flex-direction: row; gap: 18px; overflow-x: auto; max-width: 100%; padding: 12px 14px; }
           .ask-grid > aside > div { min-width: 220px; }
         }
       `}</style>
