@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { Plus, LogOut, MessageCircle, Compass, Moon, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles, UserPlus, Flame, Library as LibraryIcon, FileText, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
 import {
   originFromParams as originFromParamsShared,
   handoffSignal,
