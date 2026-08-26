@@ -117,8 +117,8 @@ const EmptyState = ({
           className="mt-5 font-sans transition-opacity hover:opacity-90"
           style={{
             /* System-B primary action — not the retired brand pill. */
-            background: "#0670C4",
-            color: "#FFFFFF",
+            background: "var(--act)",
+            color: "var(--text-inverse)",
             borderRadius: 8,
             padding: "10px 22px",
             fontSize: 14,
