@@ -432,7 +432,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   /* ── Answer body: refs become pills, unresolved refs are stripped ── */
   const Answer: React.FC<{ text: string }> = ({ text }) => {
     const rtl = isAr(text);
-    const prepared = markCitations(text, citations);
+    const prepared = markCitations(text, citations, sources);
     return (
       <div
         dir={rtl ? "rtl" : "ltr"}
