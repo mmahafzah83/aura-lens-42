@@ -665,10 +665,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const positioningOnly = brandResults?.positioning_statement || "";
   const subtitle = [profile?.level, profile?.firm, profile?.sector_focus].filter(Boolean).join(" · ");
 
-  const fmtDate = (iso: string | null) => {
-    if (!iso) return "";
-    try { return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch { return ""; }
-  };
 
   const handleMilestoneShare = (m: { id: string; name: string; context: any }) => {
     setMarketShareData({
