@@ -385,11 +385,14 @@ async function admiredRowId(userId: string): Promise<{ id: string; list: Admired
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Aura has no voice profile for you yet — read your posts first.");
-  const list = (Array.isArray((data as any).admired_posts) ? (data as any).admired_posts : []).map((a: any) => ({
-    content: String(a?.content ?? "").trim(),
-    source: (a?.source as string | null) ?? null,
-    addedAt: (a?.added_at as string | null) ?? null,
-  })).filter((a: AdmiredPost) => a.content);
+  /** Stored shape, kept exactly as the database holds it. */
+  const list = (Array.isArray((data as any).admired_posts) ? (data as any).admired_posts : [])
+    .map((a: any) => ({
+      content: String(a?.content ?? "").trim(),
+      source: (a?.source as string | null) ?? null,
+      added_at: (a?.added_at as string | null) ?? null,
+    }))
+    .filter((a: { content: string }) => a.content.length > 0);
   return { id: String((data as any).id), list };
 }
 
@@ -410,10 +413,11 @@ export async function addAdmiredPost(userId: string, content: string, source: st
 /** Remove one admired post by its position in the list on screen. */
 export async function removeAdmiredPost(userId: string, index: number): Promise<void> {
   const { id, list } = await admiredRowId(userId);
-  const next = list.filter((_, i) => i !== index);
+  const next = list.filter((_: unknown, i: number) => i !== index);
   const { error } = await supabase
     .from("authority_voice_profiles")
     .update({ admired_posts: next, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw new Error(error.message);
 }
+
