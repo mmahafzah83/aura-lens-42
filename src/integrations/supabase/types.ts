@@ -104,7 +104,7 @@ export type Database = {
           themes: string[]
           title: string | null
           url: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -120,7 +120,7 @@ export type Database = {
           themes?: string[]
           title?: string | null
           url?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -136,7 +136,7 @@ export type Database = {
           themes?: string[]
           title?: string | null
           url?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -2597,7 +2597,7 @@ export type Database = {
           scheduled_for: string
           status: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           attempts?: number
@@ -2613,7 +2613,7 @@ export type Database = {
           scheduled_for?: string
           status?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           attempts?: number
@@ -2629,7 +2629,7 @@ export type Database = {
           scheduled_for?: string
           status?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -4966,7 +4966,7 @@ export type Database = {
           error_type: string
           id: string
           sync_run_id: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           context?: Json | null
@@ -4975,7 +4975,7 @@ export type Database = {
           error_type?: string
           id?: string
           sync_run_id?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           context?: Json | null
@@ -4984,7 +4984,7 @@ export type Database = {
           error_type?: string
           id?: string
           sync_run_id?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -5008,7 +5008,7 @@ export type Database = {
           started_at: string
           status: string
           sync_type: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           account_id?: string | null
@@ -5021,7 +5021,7 @@ export type Database = {
           started_at?: string
           status?: string
           sync_type?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           account_id?: string | null
@@ -5034,7 +5034,7 @@ export type Database = {
           started_at?: string
           status?: string
           sync_type?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -7003,7 +7003,7 @@ export type Database = {
           scheduled_for: string
           status: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }[]
         SetofOptions: {
           from: "*"

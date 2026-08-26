@@ -37,6 +37,24 @@ type Row = {
   invited_at: string | null;
 };
 
+/** One real auth account, as returned by the admin-active-users function. */
+type AuthUserRow = {
+  user_id: string;
+  email: string | null;
+  created_at: string | null;
+  last_sign_in_at: string | null;
+  account_type: string | null;
+  tier: string | null;
+  role: string | null;
+  has_profile: boolean;
+  first_name: string | null;
+  full_name: string | null;
+  sector: string | null;
+  allowlist_status: string | null;
+  activated_at: string | null;
+  captures: number;
+};
+
 const SENIORITY = ["C-Suite", "VP", "Director", "Manager", "Other"];
 const SECTOR = ["Consulting", "Energy", "Finance", "Government", "Technology", "Other"];
 
@@ -61,6 +79,26 @@ const relativeTime = (iso: string | null) => {
   if (days === 0) return "Today";
   if (days === 1) return "1 day ago";
   return `${days} days ago`;
+};
+
+/**
+ * The real message from an edge function. `invoke()` surfaces a non-2xx as an
+ * error whose body still holds the reason — read it rather than showing
+ * "Edge Function returned a non-2xx status code".
+ */
+const readFunctionError = async (data: unknown, error: unknown): Promise<string | null> => {
+  if (!error) {
+    const inline = (data as any)?.error;
+    return inline ? String(inline) : null;
+  }
+  const ctx = (error as any)?.context;
+  try {
+    if (ctx && typeof ctx.json === "function") {
+      const body = await ctx.json();
+      if (body?.error) return String(body.error);
+    }
+  } catch { /* body already consumed or not JSON */ }
+  return (error as any)?.message || "Request failed";
 };
 
 const statusBadge = (status: string) => {
@@ -96,8 +134,9 @@ const AdminAccess = () => {
   const [decliningId, setDecliningId] = useState<string | null>(null);
   const [directDuplicate, setDirectDuplicate] = useState<{ name: string | null; status: string } | null>(null);
   const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
-  const [activeUsers, setActiveUsers] = useState<Array<{ email: string; first_name: string | null; sector: string | null; last_sign_in_at: string | null; activated_at: string | null; captures: number; user_id?: string | null }>>([]);
+  const [activeUsers, setActiveUsers] = useState<AuthUserRow[]>([]);
   const [activeLoading, setActiveLoading] = useState(false);
+  const [usersError, setUsersError] = useState<string | null>(null);
 
   // Seed captures
   const [seedUserId, setSeedUserId] = useState<string>("");
@@ -107,7 +146,7 @@ const AdminAccess = () => {
   // Inactivity alert
 
   // Delete-user state
-  const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ email: string; name: string | null } | null>(null);
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState<{ email: string; name: string | null; user_id?: string | null } | null>(null);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
 
   // In-page tabs + waitlist search (presentation only)
@@ -199,23 +238,33 @@ const AdminAccess = () => {
     (async () => {
       try { setMetrics(await loadAdminMetrics()); } catch { setMetrics(null); }
     })();
-    (async () => {
-      setActiveLoading(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const { data, error } = await supabase.functions.invoke("admin-active-users", {
-          body: {},
-          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-        });
-        if (!error && data?.users) setActiveUsers(data.users);
-      } catch (e) {
-        console.warn("admin-active-users failed", e);
-      } finally {
-        setActiveLoading(false);
-      }
-    })();
+    fetchAuthUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authChecked]);
+
+  /** The Users tab reads real auth accounts, never the allowlist. */
+  const fetchAuthUsers = async () => {
+    setActiveLoading(true);
+    setUsersError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke("admin-active-users", {
+        body: {},
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
+      const message = await readFunctionError(data, error);
+      if (message) {
+        setUsersError(message);
+        return;
+      }
+      setActiveUsers(((data as any)?.users ?? []) as AuthUserRow[]);
+    } catch (e: any) {
+      console.warn("admin-active-users failed", e);
+      setUsersError(e?.message || "Couldn't load users");
+    } finally {
+      setActiveLoading(false);
+    }
+  };
 
   const npsStats = useMemo(() => {
     const valid = npsRows.filter((r) => typeof r.rating === "number");
@@ -227,8 +276,8 @@ const AdminAccess = () => {
     return { count, avg, nps };
   }, [npsRows]);
 
-  const handleDeleteUser = async (email: string) => {
-    setDeletingEmail(email);
+  const handleDeleteUser = async (target: { email: string; user_id?: string | null }) => {
+    setDeletingEmail(target.email);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
@@ -236,15 +285,20 @@ const AdminAccess = () => {
       }
 
       const { data, error } = await supabase.functions.invoke("admin-delete-user", {
-        body: { target_email: email },
+        body: target.user_id
+          ? { target_user_id: target.user_id }
+          : { target_email: target.email },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      if (error || (data && (data as any).error)) {
-        throw new Error((data as any)?.error || error?.message || "Delete failed");
+      const message = await readFunctionError(data, error);
+      if (message) throw new Error(message);
+      if (!(data as any)?.success || !(data as any)?.deleted_user_id) {
+        throw new Error("The server did not confirm a delete. Nothing was removed.");
       }
       toast.success("User deleted permanently");
-      setRows((prev) => prev.filter((r) => r.email.toLowerCase() !== email.toLowerCase()));
-      setActiveUsers((prev) => prev.filter((u) => u.email.toLowerCase() !== email.toLowerCase()));
+      // No optimistic removal — re-read from the server so the table only
+      // loses a row once the account is genuinely gone.
+      await Promise.all([fetchAuthUsers(), fetchRows()]);
     } catch (e: any) {
       toast.error(e?.message || "Couldn't delete user");
     } finally {
@@ -427,6 +481,10 @@ const AdminAccess = () => {
         </div>
 
         {activeTab === "waitlist" && (<>
+        {/* This tab lists waitlist and invite records only — not sign-in accounts. */}
+        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
+          Waitlist and invite records only. Sign-in accounts live in the Users tab.
+        </p>
         {/* Stats row */}
         <div className="flex flex-wrap gap-2 mb-6">
           <span className="text-xs px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
@@ -754,47 +812,60 @@ const AdminAccess = () => {
           </div>
         </div>
 
-        {/* User management — delete users + their data */}
+        {/* Users — every auth account, read from auth.users via admin-active-users */}
         <div
           className="rounded-2xl p-6 mt-8"
           style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--border-default)" }}
         >
           <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
-            User management
+            Users
           </h2>
           <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
-            Users signed up: {metrics ? signedUp(metrics) ?? "?" : "—"}
-            {metrics ? ` · ${freshnessLine(metrics)} · ${exclusionLine(metrics)}` : ""} The list below is every auth
-            account, including test accounts. Deleting a user removes their auth account and all associated data permanently.
+            Every sign-in account that exists, including test accounts and accounts with no waitlist row.
+            {metrics ? ` Users signed up: ${signedUp(metrics) ?? "?"} · ${freshnessLine(metrics)} · ${exclusionLine(metrics)}` : ""}
+            {" "}Deleting a user removes their account and all associated data permanently.
           </p>
-          {rows.length === 0 ? (
-            <div className="text-xs" style={{ color: "var(--text-secondary)" }}>No users yet.</div>
+          {activeLoading ? (
+            <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading accounts…
+            </div>
+          ) : usersError ? (
+            <div className="text-xs" style={{ color: "#C0392B" }}>{usersError}</div>
+          ) : activeUsers.length === 0 ? (
+            <div className="text-xs" style={{ color: "var(--text-secondary)" }}>No accounts yet.</div>
           ) : (
             <div className="space-y-2">
-              {rows.map((r) => {
-                const profile = activeUsers.find((u) => u.email.toLowerCase() === r.email.toLowerCase());
+              <div className="text-xs mb-2" style={{ color: "var(--text-secondary)" }}>
+                {activeUsers.length} account{activeUsers.length === 1 ? "" : "s"}
+              </div>
+              {activeUsers.map((u) => {
+                const email = u.email || "(no email)";
                 const isProtected =
-                  (!!profile?.user_id && adminIds.has(profile.user_id)) ||
-                  r.email.toLowerCase() === PROTECTED_EMAIL;
-                const isDeleting = deletingEmail === r.email;
+                  adminIds.has(u.user_id) ||
+                  u.role === "admin" ||
+                  email.toLowerCase() === PROTECTED_EMAIL;
+                const isDeleting = deletingEmail === email;
                 return (
                   <div
-                    key={r.id}
+                    key={u.user_id}
                     className="flex items-start justify-between gap-4 p-3 rounded-md"
                     style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)" }}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                        {r.email}
+                        {email}
                       </div>
                       <div className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                        {profile?.first_name
-                          ? `${profile.first_name}${profile.sector ? ` · ${profile.sector}` : ""}`
-                          : r.name || "(Profile not completed)"}
+                        {u.full_name || u.first_name || "(Profile not completed)"}
+                        {u.sector ? ` · ${u.sector}` : ""}
                       </div>
-                      <div className="text-xs mt-1 uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
-                        <span className={`inline-block px-2 py-0.5 rounded border ${statusBadge(r.status)}`}>{r.status}</span>
-                        <span className="ml-2">Joined: {formatDate(r.invited_at || r.created_at || r.requested_at)}</span>
+                      <div className="text-xs mt-1 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: "var(--text-secondary)" }}>
+                        <span>Created: {formatDate(u.created_at)}</span>
+                        <span>Last sign-in: {relativeTime(u.last_sign_in_at)}</span>
+                        <span>Type: {u.account_type || "—"}</span>
+                        <span>Plan: {u.tier || "—"}</span>
+                        <span>Role: {u.role || "member"}</span>
+                        <span>{u.has_profile ? "Has profile" : "No profile"}</span>
                       </div>
                     </div>
                     {isProtected ? (
@@ -803,7 +874,7 @@ const AdminAccess = () => {
                       </span>
                     ) : (
                       <button
-                        onClick={() => setConfirmDeleteRow({ email: r.email, name: r.name })}
+                        onClick={() => setConfirmDeleteRow({ email, name: u.full_name, user_id: u.user_id })}
                         disabled={isDeleting}
                         className="px-3 py-1.5 text-xs rounded-md inline-flex items-center gap-1.5 shrink-0"
                         style={{ border: "1px solid rgba(192,57,43,0.4)", color: "#C0392B" }}
@@ -948,8 +1019,8 @@ const AdminAccess = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                const email = confirmDeleteRow?.email;
-                if (email) handleDeleteUser(email);
+                const target = confirmDeleteRow;
+                if (target) handleDeleteUser({ email: target.email, user_id: target.user_id });
               }}
             >
               Delete permanently
