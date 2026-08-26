@@ -357,9 +357,9 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
               <button
                 key={e.id}
                 onClick={handleTipItemClick}
-                className="w-full flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-secondary/40 transition-colors text-left group/item"
+                className="askaura-focusable w-full flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-secondary/40 transition-colors text-left group/item"
               >
-                <Icon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                <Icon aria-hidden="true" className="w-3.5 h-3.5 mt-0.5 shrink-0 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-foreground truncate">{e.title}</span>
@@ -371,13 +371,13 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
                     <p className="text-xs text-muted-foreground leading-snug truncate">{e.body}</p>
                   )}
                 </div>
-                <ArrowUpRight className="w-3 h-3 mt-0.5 shrink-0 text-brand opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                <ArrowUpRight aria-hidden="true" className="w-3 h-3 mt-0.5 shrink-0 text-brand opacity-0 group-hover/item:opacity-100 transition-opacity" />
               </button>
             );
           })}
           <button
             onClick={handleTipItemClick}
-            className="w-full text-xs text-primary hover:text-primary/80 px-2 py-1.5 text-right transition-colors"
+            className="askaura-focusable w-full text-xs text-primary hover:text-primary/80 px-2 py-1.5 text-right transition-colors"
           >
             See all →
           </button>
