@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Settings as SettingsIcon } from "lucide-react";
+import { ArrowLeft, Loader2, Settings as SettingsIcon, User, Link2, Settings2, Presentation, ShieldCheck, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { signOutAndLand } from "@/lib/signOut";
 import { supabase } from "@/integrations/supabase/client";
