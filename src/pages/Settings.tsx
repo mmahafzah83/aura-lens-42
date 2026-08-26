@@ -204,21 +204,8 @@ const handleDeleteAccount = async () => {
     }
   };
 
-  const persistSignatures = async (next: typeof signatures) => {
-    setSavingSig(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) throw new Error("Not signed in");
-      const ok = await writeProfile(session.user.id, { signature_presets: next }, "Settings.persistSignatures");
-      if (!ok) throw new Error("That didn't save — try once more.");
-      setSignatures(next);
-      toast.success("Signatures saved");
-    } catch (e: any) {
-      toast.error(e?.message || "Couldn't save signatures");
-    } finally {
-      setSavingSig(false);
-    }
-  };
+
+
 
   const [savingCountry, setSavingCountry] = useState(false);
   const persistCountry = async (name: string | null, code: string | null) => {
