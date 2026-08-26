@@ -75,7 +75,7 @@ const LOOP_TABS = new Set([
 ]);
 import type { Database } from "@/integrations/supabase/types";
 import LockedPanel from "@/components/LockedPanel";
-import { useTier } from "@/hooks/useTier";
+import { usePlan } from "@/hooks/usePlan";
 import { useQuery } from "@tanstack/react-query";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -241,10 +241,10 @@ const Dashboard = () => {
 
   // ── Plan level. The Read is free; the Loop is paid. Loading and errors both
   // resolve to `loop`, so nobody is ever locked out by a slow query.
-  const { isLoop } = useTier();
+  const { fullAccess } = usePlan();
   const { data: signalsToday } = useQuery({
     queryKey: ["signals-moved-today"],
-    enabled: !isLoop,
+    enabled: !fullAccess,
     queryFn: async () => {
       const since = new Date(Date.now() - 86400000).toISOString();
       const { count, error } = await supabase
@@ -977,7 +977,7 @@ const Dashboard = () => {
               {NAV_GROUPS.map((item) => {
                 const isActive = isGroupActive(item, activeTab);
                 const dimmed = isDoorDimmed(item);
-                const groupLocked = !isLoop && item.members.every((m) => LOOP_TABS.has(m));
+                const groupLocked = !fullAccess && item.members.every((m) => LOOP_TABS.has(m));
                 return (
                   <button
                     key={item.key}
@@ -1165,7 +1165,7 @@ const Dashboard = () => {
                 options={g.members.map((m) => ({
                   value: m,
                   label: NAV_ITEMS.find((n) => n.value === m)?.pageHeader ?? m,
-                  dot: !isLoop && LOOP_TABS.has(m) ? "#E0A82E" : undefined,
+                  dot: !fullAccess && LOOP_TABS.has(m) ? "#E0A82E" : undefined,
                 }))}
               />
             );
@@ -1181,7 +1181,7 @@ const Dashboard = () => {
             style={activeTab === "authority" ? undefined : { minHeight: "60vh" }}
           >
             {activeTab === "home" && (
-              !isLoop ? (
+              !fullAccess ? (
                 <ErrorBoundary>
                   <ReadTierHome onSwitchTab={(t) => switchTab(t as TabValue)} />
                 </ErrorBoundary>
@@ -1250,7 +1250,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!isLoop}
+                    locked={!fullAccess}
                     title="Your radar, every morning"
                     line="Aura reads your field overnight and matches what moved against your read."
                     count={signalsToday ?? undefined}
@@ -1274,7 +1274,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!isLoop}
+                    locked={!fullAccess}
                     title="The night shift"
                     line="Aura works while you sleep and tells you what it found."
                   >
@@ -1291,7 +1291,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!isLoop}
+                    locked={!fullAccess}
                     title="Everything you save, kept"
                     line="Captures become fragments. Fragments become the evidence behind your next post."
                   >
@@ -1313,7 +1313,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!isLoop}
+                    locked={!fullAccess}
                     title="Your presence, measured"
                     line="One honest number, built from what you actually published."
                   >
@@ -1327,7 +1327,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!isLoop}
+                    locked={!fullAccess}
                     title="Your rhythm"
                     line="Weekly consistency, not volume. Aura scores the habit, not the output."
                   >
@@ -1341,7 +1341,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!isLoop}
+                    locked={!fullAccess}
                     title="Your instrument panel"
                     line="The surfaces you choose, on the home you use."
                   >
@@ -1362,12 +1362,12 @@ const Dashboard = () => {
             <div hidden={activeTab !== "authority"} className={activeTab === "authority" ? "aura-page" : undefined}>
               <ErrorBoundary>
                 <LockedPanel
-                  locked={!isLoop}
+                  locked={!fullAccess}
                   title="Written from what you saved"
                   line="Never from a prompt. Aura writes only what your own evidence can carry."
                 >
                   <StudioPanel
-                    active={activeTab === "authority" && isLoop}
+                    active={activeTab === "authority" && fullAccess}
                     signalPrefill={signalDraftPrefill}
                     onSignalPrefillConsumed={() => setSignalDraftPrefill(null)}
                     draftPrefill={draftPrefill}

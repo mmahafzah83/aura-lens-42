@@ -44,7 +44,8 @@ type AuthUserRow = {
   created_at: string | null;
   last_sign_in_at: string | null;
   account_type: string | null;
-  tier: string | null;
+  plan: string | null;
+  trial_ends_at: string | null;
   role: string | null;
   has_profile: boolean;
   first_name: string | null;
@@ -483,7 +484,7 @@ const AdminAccess = () => {
         {activeTab === "waitlist" && (<>
         {/* This tab lists waitlist and invite records only — not sign-in accounts. */}
         <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
-          Waitlist and invite records only. Sign-in accounts live in the Users tab.
+          People who asked for access, plus the invites we sent them. A row here grants nothing — sign-in accounts live in the Users tab.
         </p>
         {/* Stats row */}
         <div className="flex flex-wrap gap-2 mb-6">
@@ -863,7 +864,7 @@ const AdminAccess = () => {
                         <span>Created: {formatDate(u.created_at)}</span>
                         <span>Last sign-in: {relativeTime(u.last_sign_in_at)}</span>
                         <span>Type: {u.account_type || "—"}</span>
-                        <span>Plan: {u.tier || "—"}</span>
+                        <span>Plan: {u.plan || "—"}</span>
                         <span>Role: {u.role || "member"}</span>
                         <span>{u.has_profile ? "Has profile" : "No profile"}</span>
                       </div>

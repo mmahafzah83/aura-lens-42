@@ -68,7 +68,7 @@ serve(async (req) => {
 
     // 2) Context tables, read once each.
     const [{ data: profiles }, { data: roles }, { data: allow }] = await Promise.all([
-      admin.from("diagnostic_profiles").select("user_id, first_name, last_name, sector_focus, account_type, tier"),
+      admin.from("diagnostic_profiles").select("user_id, first_name, last_name, sector_focus, account_type, plan, trial_ends_at"),
       admin.from("user_roles").select("user_id, role"),
       admin.from("beta_allowlist").select("email, sector, user_id, activated_at, status"),
     ]);
@@ -109,7 +109,8 @@ serve(async (req) => {
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
         account_type: prof?.account_type ?? null,
-        tier: prof?.tier ?? null,
+        plan: prof?.plan ?? null,
+        trial_ends_at: prof?.trial_ends_at ?? null,
         role: roleList.includes("admin") ? "admin" : (roleList[0] ?? null),
         has_profile: !!prof,
         first_name: prof?.first_name ?? null,

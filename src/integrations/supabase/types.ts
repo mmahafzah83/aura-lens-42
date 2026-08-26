@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -1226,6 +1226,9 @@ export type Database = {
           onboarding_step: number | null
           phone_verified: boolean | null
           phone_whatsapp: string | null
+          plan: Database["public"]["Enums"]["plan_type"]
+          plan_source: string | null
+          plan_started_at: string | null
           primary_strength: string | null
           sector_focus: string | null
           seniority_band: Database["public"]["Enums"]["seniority_band"] | null
@@ -1236,6 +1239,7 @@ export type Database = {
           theme_preference: string | null
           tier: string
           timezone: string | null
+          trial_ends_at: string | null
           ui_dismissals: Json
           user_id: string
           years_experience: string | null
@@ -1292,6 +1296,9 @@ export type Database = {
           onboarding_step?: number | null
           phone_verified?: boolean | null
           phone_whatsapp?: string | null
+          plan?: Database["public"]["Enums"]["plan_type"]
+          plan_source?: string | null
+          plan_started_at?: string | null
           primary_strength?: string | null
           sector_focus?: string | null
           seniority_band?: Database["public"]["Enums"]["seniority_band"] | null
@@ -1302,6 +1309,7 @@ export type Database = {
           theme_preference?: string | null
           tier?: string
           timezone?: string | null
+          trial_ends_at?: string | null
           ui_dismissals?: Json
           user_id: string
           years_experience?: string | null
@@ -1358,6 +1366,9 @@ export type Database = {
           onboarding_step?: number | null
           phone_verified?: boolean | null
           phone_whatsapp?: string | null
+          plan?: Database["public"]["Enums"]["plan_type"]
+          plan_source?: string | null
+          plan_started_at?: string | null
           primary_strength?: string | null
           sector_focus?: string | null
           seniority_band?: Database["public"]["Enums"]["seniority_band"] | null
@@ -1368,6 +1379,7 @@ export type Database = {
           theme_preference?: string | null
           tier?: string
           timezone?: string | null
+          trial_ends_at?: string | null
           ui_dismissals?: Json
           user_id?: string
           years_experience?: string | null
@@ -7366,6 +7378,7 @@ export type Database = {
     Enums: {
       account_type: "customer" | "staff" | "test" | "demo"
       app_role: "admin" | "member"
+      plan_type: "trial" | "free" | "paid"
       seniority_band: "work" | "table" | "room"
     }
     CompositeTypes: {
@@ -7496,6 +7509,7 @@ export const Constants = {
     Enums: {
       account_type: ["customer", "staff", "test", "demo"],
       app_role: ["admin", "member"],
+      plan_type: ["trial", "free", "paid"],
       seniority_band: ["work", "table", "room"],
     },
   },
