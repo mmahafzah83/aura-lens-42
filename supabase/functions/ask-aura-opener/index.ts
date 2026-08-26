@@ -126,13 +126,12 @@ serve(async (req) => {
         const n = daysSince(unwritten.created_at);
         const frags = Number(unwritten.fragment_count ?? 0);
         const t = String(unwritten.signal_title);
+        const subject = `${t} signal`;
         const out: Opener = {
           kind: "unwritten signal",
-          text: out2text,
-          const subject = `${t} signal`;
-        const out2text = `Your ${subject} has been live ${n} days with ${nCaptures(frags, "en")} behind it, and you have not written from it yet.`;
-        void 0;
+          text: `Your ${subject} has been live ${n} days with ${nCaptures(frags, "en")} behind it, and you have not written from it yet.`,
           chips: [
+
             { label: "Draft it", prompt: `Draft a post from my signal "${t}" using the evidence behind it.` },
             { label: "Show me the evidence", prompt: `What evidence sits behind "${t}"?` },
             ELSE,
