@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { retrieveContext, logRetrievalFailure } from "../_shared/retrieval.ts";
+import { getUserContext } from "../_shared/userContext.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -293,6 +295,36 @@ serve(withObserve("ask-aura", async (req) => {
         ? "—"
         : alt.map((a) => `- ${a.type}: ${a.title} (${a.sent_at})`).join("\n");
 
+    // STEP 2a — member context + retrieval over their own knowledge.
+    // user_id is derived from the verified JWT above, never from the body.
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === "user")?.content || "";
+
+    let memberContextBlock = "not specified";
+    try {
+      const uctx = await getUserContext(admin, user_id);
+      memberContextBlock = uctx.toPromptBlock();
+    } catch (e) {
+      console.error(JSON.stringify({ stage: "user_context", user_id, error: (e as Error)?.message ?? String(e) }));
+    }
+
+    let retrievedBlock = "—";
+    let retrievalDegraded = false;
+    try {
+      const retrieved = await retrieveContext(admin, user_id, lastUserMessage, {
+        limit: 12,
+        caller: "ask-aura",
+      });
+      if (retrieved.rows.length > 0) retrievedBlock = retrieved.citationBlock;
+    } catch (e) {
+      retrievalDegraded = true;
+      logRetrievalFailure({
+        user_id,
+        caller: "ask-aura",
+        query_len: (lastUserMessage || "").length,
+        error: e,
+      });
+    }
+
     const systemPrompt = `You are Aura — a senior strategic intelligence advisor. You are not a generic AI. You are a dedicated advisor who has studied this professional for months and knows their work deeply.
 
 PROFESSIONAL PROFILE:
@@ -445,7 +477,16 @@ RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
 13. When recommending content topics, frame the opportunity from the user's own evidence — how many captures support the angle, how long the signal has been live, what they have not written yet. Never claim what the network, competitors or the market has or has not covered; you cannot see them.
 14. Use ONE key insight line per response when appropriate, formatted as a Markdown blockquote: > Your key insight here. Optionally one italic provocation: *Your provocation here*. Use ONLY Markdown — never HTML tags (no <span>, <blockquote>, <em>, <strong>). Use **bold** and *italic* in Markdown.`;
 
-    const finalSystemPrompt = systemPrompt + responseRules;
+    const retrievalSection = `
+
+MEMBER CONTEXT:
+${memberContextBlock}
+
+RETRIEVED SOURCES (this member's own documents, evidence, captures and signals — numbered; cite by number, name the title, and use the url when present):
+${retrievedBlock}
+${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim the record is empty — say you could not read the record right now." : ""}`;
+
+    const finalSystemPrompt = systemPrompt + retrievalSection + responseRules;
 
     // STEP 3 — call AI (streaming so the existing sidebar SSE consumer works unchanged)
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

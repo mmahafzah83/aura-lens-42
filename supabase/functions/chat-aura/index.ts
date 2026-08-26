@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { retrieveContext, logRetrievalFailure } from "../_shared/retrieval.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -187,50 +188,41 @@ If days_since_last_post > 7, naturally mention the publishing gap in your respon
       .order("created_at", { ascending: false })
       .limit(5);
 
-    // --- RAG: Hybrid search ---
+    // --- RAG: hybrid search over the member's own knowledge ---
+    // user.id comes from the verified JWT above — never from the request body.
     let ragContext = "";
-    let ragResults: any[] = [];
-
-    let queryEmbedding: number[] | null = null;
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (OPENAI_API_KEY) {
-      try {
-        const embRes = await fetch("https://api.openai.com/v1/embeddings", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "text-embedding-3-small",
-            input: lastUserMessage.slice(0, 8000),
-          }),
-        });
-        if (embRes.ok) {
-          const embData = await embRes.json();
-          queryEmbedding = embData.data?.[0]?.embedding || null;
-        }
-      } catch (e) {
-        console.error("Query embedding error:", e);
-      }
-    }
+    let retrievalDegraded = false;
 
     try {
-      const rpcParams: any = {
-        p_user_id: user.id,
-        p_query: lastUserMessage,
-        p_limit: 15,
-      };
-      if (queryEmbedding) {
-        rpcParams.p_query_embedding = `[${queryEmbedding.join(",")}]`;
-      }
-      const { data: searchResults } = await adminClient.rpc("search_vault", rpcParams);
-      if (searchResults && searchResults.length > 0) {
-        ragResults = searchResults;
-      }
+      const retrieved = await retrieveContext(adminClient, user.id, lastUserMessage, {
+        limit: 15,
+        caller: "chat-aura",
+      });
+      if (retrieved.rows.length > 0) ragContext = retrieved.citationBlock;
     } catch (e) {
-      console.error("search_vault error:", e);
+      // Retrieval failure is loud, and the response says so.
+      retrievalDegraded = true;
+      logRetrievalFailure({
+        user_id: user.id,
+        caller: "chat-aura",
+        query_len: (lastUserMessage || "").length,
+        error: e,
+      });
+      try {
+        await adminClient.from("retrieval_logs").insert({
+          user_id: user.id,
+          caller: "chat-aura",
+          query: String(lastUserMessage || "").slice(0, 2000),
+          query_len: (lastUserMessage || "").length,
+          result_count: 0,
+          degraded: true,
+          error: String((e as Error)?.message ?? e).slice(0, 1000),
+        });
+      } catch (_logErr) {
+        console.warn("retrieval_logs insert failed (non-blocking)");
+      }
     }
+
 
     const { data: recentEntries } = await supabase
       .from("entries")
@@ -249,19 +241,9 @@ If days_since_last_post > 7, naturally mention the publishing gap in your respon
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (ragResults.length > 0) {
-      ragContext = ragResults.map((r: any, i: number) => {
-        const parts = [`[${i + 1}] Source: ${r.source} | Type: ${r.type} | Date: ${r.created_at?.slice(0, 10)}`];
-        if (r.title) parts.push(`Title: ${r.title}`);
-        if (r.pinned) parts.push(`📌 PINNED`);
-        if (r.skill_pillar) parts.push(`Pillar: ${r.skill_pillar}`);
-        parts.push(`Content: ${r.content}`);
-        if (r.summary) parts.push(`Summary: ${r.summary}`);
-        return parts.join("\n");
-      }).join("\n\n---\n\n");
-    }
+    // Recent entries are a fallback ONLY when retrieval itself failed.
+    if (retrievalDegraded && !ragContext) {
 
-    if (!ragContext) {
       ragContext = allEntries.slice(0, 15).map((e: any, i: number) => {
         const parts = [`[${i + 1}] Type: ${e.type} | Pillar: ${e.skill_pillar || "N/A"} | Date: ${e.created_at?.slice(0, 10)}`];
         if (e.title) parts.push(`Title: ${e.title}`);
@@ -271,6 +253,8 @@ If days_since_last_post > 7, naturally mention the publishing gap in your respon
         return parts.join("\n");
       }).join("\n\n---\n\n");
     }
+    if (!ragContext) ragContext = "—";
+
 
     const totalStats = {
       total: allEntries.length,
@@ -562,7 +546,7 @@ ${ragContext}`;
 
     const aiJson = await aiRes.json();
     const content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
-    return new Response(JSON.stringify({ content, success: true }), {
+    return new Response(JSON.stringify({ content, success: true, degraded: retrievalDegraded }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
