@@ -451,6 +451,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               const raw = String(children);
               const m = raw.match(/^\u27E6(S-\d+)\u27E7$/);
               if (m && citations[m[1]]) return <Pill c={citations[m[1]]} onOpen={openSignal} />;
+              const sm = raw.match(/^\u27E6#(\d{1,3})\u27E7$/);
+              if (sm && sources[Number(sm[1])]) return <SourcePill s={sources[Number(sm[1])]} />;
               return <code style={{ ...MONO, fontSize: 12.5 }}>{children}</code>;
             },
             p: ({ children }) => <p style={{ margin: "0 0 10px" }}>{children}</p>,
