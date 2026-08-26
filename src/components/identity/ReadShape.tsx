@@ -37,9 +37,9 @@ const NIGHT: React.CSSProperties = {
 
 const ReadShape: React.FC = () => {
   const navigate = useNavigate();
-  const { fullAccess } = usePlan();
+  const { fullAccess, locked } = usePlan();
 
-  if (fullAccess) return null;
+  if (!locked) return null;
 
   return (
     <div style={{ marginTop: 8 }}>

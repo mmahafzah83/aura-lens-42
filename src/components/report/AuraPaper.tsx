@@ -294,7 +294,7 @@ export function PaperCover({ data }: { data: ReportData }) {
             lineHeight: 1.3,
           }}
         >
-          Your expertise is invisible. Aura fixes that.
+          Your experience is worth more than your profile shows.
         </span>
         <span
           style={{

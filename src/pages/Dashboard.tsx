@@ -244,10 +244,10 @@ const Dashboard = () => {
 
   // ── Plan level. The Read is free; the Loop is paid. Loading and errors both
   // resolve to `loop`, so nobody is ever locked out by a slow query.
-  const { fullAccess } = usePlan();
+  const { fullAccess, locked } = usePlan();
   const { data: signalsToday } = useQuery({
     queryKey: ["signals-moved-today"],
-    enabled: !fullAccess,
+    enabled: locked,
     queryFn: async () => {
       const since = new Date(Date.now() - 86400000).toISOString();
       const { count, error } = await supabase
@@ -1001,7 +1001,7 @@ const Dashboard = () => {
               {NAV_GROUPS.map((item) => {
                 const isActive = isGroupActive(item, activeTab);
                 const dimmed = isDoorDimmed(item);
-                const groupLocked = !fullAccess && item.members.every((m) => LOOP_TABS.has(m));
+                const groupLocked = locked && item.members.every((m) => LOOP_TABS.has(m));
                 return (
                   <button
                     key={item.key}
@@ -1189,7 +1189,7 @@ const Dashboard = () => {
                 options={g.members.map((m) => ({
                   value: m,
                   label: NAV_ITEMS.find((n) => n.value === m)?.pageHeader ?? m,
-                  dot: !fullAccess && LOOP_TABS.has(m) ? "#E0A82E" : undefined,
+                  dot: locked && LOOP_TABS.has(m) ? "#E0A82E" : undefined,
                 }))}
               />
             );
@@ -1205,7 +1205,7 @@ const Dashboard = () => {
             style={activeTab === "authority" ? undefined : { minHeight: "60vh" }}
           >
             {activeTab === "home" && (
-              !fullAccess ? (
+              locked ? (
                 <ErrorBoundary>
                   <ReadTierHome onSwitchTab={(t) => switchTab(t as TabValue)} />
                 </ErrorBoundary>
@@ -1274,7 +1274,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!fullAccess}
+                    locked={locked}
                     title="Your radar, every morning"
                     line="Aura reads your field overnight and matches what moved against your read."
                     count={signalsToday ?? undefined}
@@ -1298,7 +1298,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!fullAccess}
+                    locked={locked}
                     title="The night shift"
                     line="Aura works while you sleep and tells you what it found."
                   >
@@ -1315,7 +1315,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!fullAccess}
+                    locked={locked}
                     title="Work you have not finished"
                     line="Every post you saved for later waits here until you open it again."
                   >
@@ -1329,7 +1329,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!fullAccess}
+                    locked={locked}
                     title="Everything you save, kept"
                     line="Captures become fragments. Fragments become the evidence behind your next post."
                   >
@@ -1351,7 +1351,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!fullAccess}
+                    locked={locked}
                     title="Your presence, measured"
                     line="One honest number, built from what you actually published."
                   >
@@ -1365,7 +1365,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!fullAccess}
+                    locked={locked}
                     title="Your rhythm"
                     line="Weekly consistency, not volume. Aura scores the habit, not the output."
                   >
@@ -1379,7 +1379,7 @@ const Dashboard = () => {
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <LockedPanel
-                    locked={!fullAccess}
+                    locked={locked}
                     title="Your instrument panel"
                     line="The surfaces you choose, on the home you use."
                   >
@@ -1400,7 +1400,7 @@ const Dashboard = () => {
             <div hidden={activeTab !== "authority"} className={activeTab === "authority" ? "aura-page" : undefined}>
               <ErrorBoundary>
                 <LockedPanel
-                  locked={!fullAccess}
+                  locked={locked}
                   title="Written from what you saved"
                   line="Never from a prompt. Aura writes only what your own evidence can carry."
                 >

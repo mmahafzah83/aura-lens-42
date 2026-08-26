@@ -509,7 +509,7 @@ export default function Mirror() {
       <style>{MIRROR_CSS}</style>
       <div style={{ maxInlineSize: 520, marginInline: "auto" }}>
         <h1 style={{ margin: 0, fontSize: 30, lineHeight: 1.15, fontWeight: 700, letterSpacing: "-0.02em" }}>
-          Your expertise is invisible. Aura fixes that.
+          Your experience is worth more than your profile shows.
         </h1>
         <p style={{ margin: "14px 0 0", fontSize: 15.5, lineHeight: 1.65, color: INK }}>
           Paste your LinkedIn. Answer nothing. Ninety seconds later, read how your field currently

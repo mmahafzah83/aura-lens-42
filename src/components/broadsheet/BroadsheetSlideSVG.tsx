@@ -120,7 +120,7 @@ export default function BroadsheetSlideSVG(props: BroadsheetProps) {
   const variant: "full" | "slim" = slide.slide_number === 1 ? "full" : "slim";
   const now = new Date();
   const dateline = formatDateline(now);
-  const topLeft = sectorFocus ? sectorFocus : "Strategic Intelligence";
+  const topLeft = sectorFocus ? sectorFocus : "AI Professional Identity Platform";
   const editionLabel = variant === "full" ? "" : `P.${slide.slide_number}/${total}`;
   const contentY = variant === "full" ? 200 : 164;
   const grainId = `grain-${slide.slide_number}`;
