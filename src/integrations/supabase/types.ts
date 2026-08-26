@@ -922,6 +922,7 @@ export type Database = {
           body: string
           confidence: string
           created_at: string
+          embedding: string | null
           ending_type: string | null
           generation_params: Json
           hook_style: string | null
@@ -936,6 +937,7 @@ export type Database = {
           signal_id: string | null
           status: string
           title: string
+          tsv: unknown
           type: string
           updated_at: string
           user_id: string
@@ -948,6 +950,7 @@ export type Database = {
           body?: string
           confidence?: string
           created_at?: string
+          embedding?: string | null
           ending_type?: string | null
           generation_params?: Json
           hook_style?: string | null
@@ -962,6 +965,7 @@ export type Database = {
           signal_id?: string | null
           status?: string
           title?: string
+          tsv?: unknown
           type: string
           updated_at?: string
           user_id: string
@@ -974,6 +978,7 @@ export type Database = {
           body?: string
           confidence?: string
           created_at?: string
+          embedding?: string | null
           ending_type?: string | null
           generation_params?: Json
           hook_style?: string | null
@@ -988,6 +993,7 @@ export type Database = {
           signal_id?: string | null
           status?: string
           title?: string
+          tsv?: unknown
           type?: string
           updated_at?: string
           user_id?: string
