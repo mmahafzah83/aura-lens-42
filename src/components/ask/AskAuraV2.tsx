@@ -120,8 +120,10 @@ function railLabel(children: React.ReactNode) {
 }
 
 const PILL_STYLE: React.CSSProperties = {
-  ...MONO, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "baseline",
-  margin: "0 2px", padding: "1px 7px", borderRadius: 999, fontSize: 11, cursor: "pointer",
+  ...MONO, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
+  verticalAlign: "baseline",
+  margin: "0 2px", padding: "4px 10px", minHeight: 24, minWidth: 24, borderRadius: 999,
+  fontSize: 11, cursor: "pointer", lineHeight: 1,
   background: "var(--act-tint)",
   border: "1px solid color-mix(in srgb, var(--act) 45%, transparent)",
   color: "var(--act-hover)",
@@ -135,8 +137,10 @@ const sourceDetail = (s: Source) =>
 const Pill: React.FC<{ c: Citation; onOpen: (id: string) => void }> = ({ c, onOpen }) => (
   <button
     type="button"
+    className="ask-focusable"
     data-testid="citation-pill"
     data-signal-id={c.id}
+    aria-label={`Signal ${c.ref}: ${c.title}`}
     title={`${c.title} — ${c.evidence_count} capture${c.evidence_count === 1 ? "" : "s"}`}
     onClick={() => onOpen(c.id)}
     style={PILL_STYLE}
@@ -149,7 +153,9 @@ const Pill: React.FC<{ c: Citation; onOpen: (id: string) => void }> = ({ c, onOp
 const SourcePill: React.FC<{ s: Source }> = ({ s }) => (
   <button
     type="button"
+    className="ask-focusable"
     data-testid="source-pill"
+    aria-label={`Source ${s.n}: ${sourceDetail(s)}`}
     title={sourceDetail(s)}
     onClick={() => { if (s.url) window.open(s.url, "_blank", "noopener,noreferrer"); }}
     style={{ ...PILL_STYLE, cursor: s.url ? "pointer" : "default" }}
