@@ -1233,7 +1233,6 @@ export type Database = {
           sector_focus: string | null
           seniority_band: Database["public"]["Enums"]["seniority_band"] | null
           shared_learning_consent: boolean
-          signature_presets: Json
           skill_ratings: Json
           target_register: string | null
           theme_preference: string | null
@@ -1303,7 +1302,6 @@ export type Database = {
           sector_focus?: string | null
           seniority_band?: Database["public"]["Enums"]["seniority_band"] | null
           shared_learning_consent?: boolean
-          signature_presets?: Json
           skill_ratings?: Json
           target_register?: string | null
           theme_preference?: string | null
@@ -1373,7 +1371,6 @@ export type Database = {
           sector_focus?: string | null
           seniority_band?: Database["public"]["Enums"]["seniority_band"] | null
           shared_learning_consent?: boolean
-          signature_presets?: Json
           skill_ratings?: Json
           target_register?: string | null
           theme_preference?: string | null
@@ -6116,7 +6113,6 @@ export type Database = {
           primary_strength: string | null
           sector_focus: string | null
           shared_learning_consent: boolean | null
-          signature_presets: Json | null
           skill_ratings: Json | null
           target_register: string | null
           theme_preference: string | null
@@ -6171,7 +6167,6 @@ export type Database = {
           primary_strength?: string | null
           sector_focus?: string | null
           shared_learning_consent?: boolean | null
-          signature_presets?: Json | null
           skill_ratings?: Json | null
           target_register?: string | null
           theme_preference?: string | null
@@ -6226,7 +6221,6 @@ export type Database = {
           primary_strength?: string | null
           sector_focus?: string | null
           shared_learning_consent?: boolean | null
-          signature_presets?: Json | null
           skill_ratings?: Json | null
           target_register?: string | null
           theme_preference?: string | null
