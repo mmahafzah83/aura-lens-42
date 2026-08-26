@@ -1004,8 +1004,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {pane === "standing" && (
       <div style={STANDING_STACK}>
       {/* SECTION 5 — CAPABILITY RADAR */}
-      <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <SectionHeader label="Your capability radar" />
+        <InfoTooltip label="Your capability radar" slug="capability-radar" />
       </div>
       <CapabilityRadar
         userId={authUser?.id ?? null}
