@@ -163,7 +163,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
   const [publishedPostCount, setPublishedPostCount] = useState<number>(0);
   
-  const [milestoneData, setMilestoneData] = useState<{ id: string; name: string; earned: boolean; earned_at: string | null; context: any }[]>([]);
+  const [, setMilestoneData] = useState<{ id: string; name: string; earned: boolean; earned_at: string | null; context: any }[]>([]);
+  /* The newest CV on file, and when the stored cross-check was written. */
+  const [cvDoc, setCvDoc] = useState<{ status: string | null; created_at: string | null } | null>(null);
+  const [cvCrosscheckAt, setCvCrosscheckAt] = useState<string | null>(null);
   const [radarInputs, setRadarInputs] = useState({
     avgEngagement: 0,
     totalPosts: 0,
