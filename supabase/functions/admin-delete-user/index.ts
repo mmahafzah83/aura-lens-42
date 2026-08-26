@@ -101,10 +101,10 @@ serve(async (req) => {
       }
       target_user_id = id;
       if (!target_user_id) {
-        // Last resort: the profile table carries the same id.
-        const { data: prof } = await admin
-          .from("diagnostic_profiles").select("user_id").ilike("email", target_email).maybeSingle();
-        target_user_id = (prof?.user_id as string | undefined) ?? null;
+        // Last resort: a claimed allowlist row carries the user id.
+        const { data: allowRow } = await admin
+          .from("beta_allowlist").select("user_id").ilike("email", target_email).maybeSingle();
+        target_user_id = (allowRow?.user_id as string | undefined) ?? null;
       }
     }
 
