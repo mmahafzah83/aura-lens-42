@@ -59,6 +59,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
   const [newSkillName, setNewSkillName] = useState("");
   const [expanded, setExpanded] = useState(!!startExpanded);
   const [radarKey, setRadarKey] = useState(0);
+  const loadedRef = useRef<Record<string, unknown>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -92,6 +93,20 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         setRatings(profile.skill_ratings || {});
         setStoredRatings(profile.skill_ratings || {});
         setHasSavedBefore(!!(profile.first_name && profile.firm && profile.level && profile.sector_focus));
+        // What was ON the row when we loaded it. handleSave writes only the
+        // fields that actually differ, so leaving a field untouched can never
+        // overwrite it with an empty string.
+        loadedRef.current = {
+          first_name: profile.first_name ?? null,
+          last_name: profile.last_name ?? null,
+          avatar_url: profile.avatar_url ?? null,
+          firm: profile.firm ?? null,
+          level: profile.level ?? null,
+          core_practice: profile.core_practice ?? null,
+          sector_focus: profile.sector_focus ?? null,
+          target_register: profile.target_register ?? null,
+          north_star_goal: profile.north_star_goal ?? null,
+        };
       }
       setLoading(false);
     };
@@ -108,17 +123,22 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
     );
     const wasFirstSave = !hasSavedBefore;
     const pickedBand = bandOfTitle(seniorityTitles, level);
+    // CHANGED FIELDS ONLY. Writing every text field on every save meant a member
+    // editing one line could blank a field they never opened.
+    const loaded = loadedRef.current;
+    const changed = (key: string, value: unknown) =>
+      (value ?? null) !== ((loaded as any)[key] ?? null) ? { [key]: value } : {};
     const ok = await writeProfile(user.id, {
-        first_name: firstName,
-        last_name: lastName || null,
-        avatar_url: avatarUrl,
-        firm,
-        level,
+        ...changed("first_name", firstName || null),
+        ...changed("last_name", lastName || null),
+        ...changed("avatar_url", avatarUrl),
+        ...changed("firm", firm || null),
+        ...changed("level", level || null),
         ...(pickedBand ? { seniority_band: pickedBand, band_source: "corrected" } : {}),
-        core_practice: corePractice,
-        sector_focus: resolvedSector,
-        target_register: targetRegister || null,
-        north_star_goal: northStar,
+        ...changed("core_practice", corePractice || null),
+        ...changed("sector_focus", resolvedSector || null),
+        ...changed("target_register", targetRegister || null),
+        ...changed("north_star_goal", northStar || null),
         brand_pillars: brandPillars,
         generated_skills: skills,
         // Merge — local state is seeded only from generated_skills ∩ skill_ratings,
