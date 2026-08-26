@@ -281,10 +281,11 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
         }}
       >
         <span className="relative inline-flex items-center justify-center shrink-0">
-          <Sparkles className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
+          <Sparkles aria-hidden="true" className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
           {(avatarState === "signal" || avatarState === "window") && (
             <span
               aria-hidden="true"
+              className="askaura-anim"
               style={{
                 position: "absolute",
                 top: "50%",
@@ -305,8 +306,8 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
 
         {visual.badgeBg && (
           <span
-            aria-label={`${count} unread`}
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center shadow-md"
+            aria-hidden="true"
+            className={`askaura-anim absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center shadow-md`}
             style={{
               background: visual.badgeBg,
               color: visual.textColor,
