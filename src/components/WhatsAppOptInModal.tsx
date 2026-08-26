@@ -33,6 +33,8 @@ export default function WhatsAppOptInModal() {
           .select("id")
           .eq("user_id", userId)
           .eq("type", "timing_window")
+          // Never count a future-dated row as something the member has seen.
+          .lte("sent_at", new Date().toISOString())
           .limit(1);
         if (cancelled) return;
         if (!events || events.length === 0) return;
