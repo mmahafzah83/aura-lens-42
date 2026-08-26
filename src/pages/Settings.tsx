@@ -14,8 +14,6 @@ import { exportReportPdf } from "@/lib/exportReportPdf";
 import usePageMeta from "@/hooks/usePageMeta";
 import ReportDocument from "@/components/ReportDocument";
 import { useReportSnapshot } from "@/hooks/useReportSnapshot";
-import { getPublication, validate as validatePublication, type PublicationConfig } from "@/lib/publication";
-import { PAPER, INK, SPOT, RULE, SERIF, MONO, ARABIC } from "@/components/broadsheet/pressTokens";
 import CountryPicker from "@/components/CountryPicker";
 import PreferencesPanel from "@/components/PreferencesPanel";
 import EditProfileModal, { type EditProfileField } from "@/components/EditProfileModal";
