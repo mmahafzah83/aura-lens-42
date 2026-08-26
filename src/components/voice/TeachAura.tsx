@@ -83,6 +83,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
     } catch (e) {
       toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't read your LinkedIn just now.");
     } finally {
+      reading.current = false;
       setStage(null);
     }
   }, [model, state, loadLastRead]);
@@ -141,6 +142,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
     } catch (e) {
       toast.error(e instanceof Error ? e.message.split("\n")[0] : "Couldn't read your posts.");
     } finally {
+      reading.current = false;
       setStage(null);
     }
   }, [model, state]);
@@ -154,8 +156,6 @@ export default function TeachAura({ userId }: { userId: string | null }) {
   const [admiredText, setAdmiredText] = useState("");
   const [admiredSource, setAdmiredSource] = useState("");
   const [addingAdmired, setAddingAdmired] = useState(false);
-  const [addressInput, setAddressInput] = useState("");
-  const [savingAddress, setSavingAddress] = useState(false);
 
   const addWriting = useCallback(async (posts: string[]) => {
     setAdding(true);
