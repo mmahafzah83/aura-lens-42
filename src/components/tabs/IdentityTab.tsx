@@ -1107,38 +1107,18 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {pane === "standing" && (
       <div style={STANDING_STACK}>
-      {/* SECTION 6 — CAPABILITY RADAR */}
-      {assessmentCompleted && (
-        <div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <SectionHeader label="Your capability radar" />
-            <InfoTooltip slug="capability-radar" label="Capability Radar" side="top" triggerSize={13} />
-          </div>
-          <p style={{ fontSize: 12, color: "#5B6673", marginTop: 2 }}>
-            Where your presence is strong and where it thins — recalculated as you capture and publish.
-          </p>
-        </div>
-      )}
-      {assessmentCompleted && profile?.audit_method !== "evidence_audit" && (
-        <p className="text-xs" style={{ color: "var(--ink-5)", marginTop: 2, marginBottom: 8 }}>
-          Self-rated baseline — refine with the Objective Audit.
-        </p>
-      )}
-      {assessmentCompleted && (
-        <section style={{ borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", paddingTop: 20 }}>
-          <div style={{ background: "var(--aura-card)", border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))", borderRadius: 12, padding: 14 }}>
-            <AuditRadarWidget
-              onStartAudit={() => setAuditOpen(true)}
-              hideEditScores
-              refreshKey={radarRefreshKey}
-            />
-          </div>
-        </section>
-      )}
-
-      {/* SECTION 6b — PROFILE INTELLIGENCE */}
-      {/* CV against LinkedIn — renders nothing until a cross-check exists. */}
-      <CvCrosscheck userId={authUser?.id ?? null} />
+      {/* SECTION 6 — CV AGAINST PROFILE */}
+      {/* Every state is inside CvCrosscheck; this pane only supplies the truth. */}
+      <div>
+        <SectionHeader label="Your CV against your profile" />
+      </div>
+      <CvCrosscheck
+        userId={authUser?.id ?? null}
+        state={cvState}
+        uploadSlot={cvState === "no_cv" ? <CvUploadControl userId={authUser?.id ?? null} showPurpose={false} /> : undefined}
+        onRetry={cvState === "error" ? runCrosscheck : undefined}
+        onRunAgain={cvState === "stale" ? runCrosscheck : undefined}
+      />
 
       {assessmentCompleted && (
         <div>
