@@ -43,7 +43,10 @@ interface Citation {
   confidence: number;
 }
 
-type Msg = { role: "user" | "assistant"; content: string; isError?: boolean };
+interface ActionLine { tool: string; ok: boolean; label: string }
+
+type Msg = { role: "user" | "assistant"; content: string; isError?: boolean; actions?: ActionLine[] };
+
 
 interface Props {
   open: boolean;
@@ -145,6 +148,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
     window.dispatchEvent(new PopStateEvent("popstate"));
     onClose();
   };
+  /** Same navigation contract as openSignal: Dashboard reads ?tab= and renders DraftsPage for "drafts". */
+  const openDrafts = () => {
+    const next = new URLSearchParams(window.location.search);
+    next.set("tab", "drafts");
+    next.delete("signal");
+    window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    onClose();
+  };
+
 
   /* ── Load the rail from real rows only ── */
   useEffect(() => {
@@ -273,6 +286,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       let buf = "";
       let acc = "";
       let gotCitations: Citation[] = [];
+      const gotActions: ActionLine[] = [];
       setMessages([...next, { role: "assistant", content: "" }]);
 
       while (true) {
@@ -289,6 +303,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
           try {
             const j = JSON.parse(payload);
             if (Array.isArray(j?.citations)) gotCitations = j.citations as Citation[];
+            if (j?.action && typeof j.action?.label === "string") {
+              gotActions.push({ tool: String(j.action.tool || ""), ok: !!j.action.ok, label: j.action.label });
+            }
             const delta = j?.choices?.[0]?.delta?.content;
             if (typeof delta === "string" && delta) {
               acc += delta;
@@ -313,6 +330,13 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       }
 
       if (acc.trim()) {
+        if (gotActions.length) {
+          setMessages(prev => {
+            const copy = [...prev];
+            copy[copy.length - 1] = { role: "assistant", content: acc, actions: gotActions };
+            return copy;
+          });
+        }
         const used = usedCitations(acc, gotCitations);
         const titles = used.map(c => c.title);
         void persist("assistant", acc.trim(), titles);
@@ -327,6 +351,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       } else {
         setMessages(prev => prev.slice(0, -1));
       }
+
     } catch (e: any) {
       setMessages(prev => {
         const copy = [...prev];
@@ -574,7 +599,29 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                     {m.isError
                       ? <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>{m.content}</div>
                       : <Answer text={m.content} />}
+                    {/* The machine reporting its own work: cyan, never a button. */}
+                    {(m.actions || []).map((a, k) => (
+                      <div key={k} data-testid="ask-action-line" style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}>
+                        <span style={{
+                          width: 7, height: 7, borderRadius: 999,
+                          background: a.ok ? "var(--machine)" : "var(--text-muted)",
+                        }} />
+                        <span style={{ ...MONO, fontSize: 12, color: a.ok ? "var(--machine-text)" : "var(--text-muted)" }}>
+                          {a.label}
+                        </span>
+                      </div>
+                    ))}
+                    {(m.actions || []).some(a => a.ok && a.tool === "save_draft") && (
+                      <div style={{ marginTop: 10 }}>
+                        <button type="button" onClick={openDrafts} style={{
+                          background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                          borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                          display: "inline-flex", alignItems: "center", gap: 6,
+                        }}>Open in Publish<ArrowUpRight size={13} /></button>
+                      </div>
+                    )}
                   </div>
+
                 );
               })}
 

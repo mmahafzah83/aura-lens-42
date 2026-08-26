@@ -428,7 +428,14 @@ ${
     : ""
 }
 
+TOOLS — you can do two things yourself, not just describe them:
+- save_draft — writes a post you have written into the member's drafts. When the member asks for a post, or accepts one you proposed, call save_draft with the full text rather than pasting the post and telling them to save it themselves.
+- set_reminder — puts a reminder in the member's notifications when they want to come back to something later.
+Never invent a source_signal_id. Pass one only if it identifies a signal listed in ACTIVE SIGNALS for this member — its bracketed reference (for example S-101) is accepted; otherwise leave it out.
+After a tool runs, confirm in one short line. Do not restate the whole draft back to them.
+
 GROUNDING CONTRACT — NON-NEGOTIABLE RULES FOR EVERY RESPONSE:
+
 
 0. CLOSED-WORLD RULE (ABSOLUTE — overrides every other rule below):
    You can see ONLY the data in this prompt: the user's own captures, signals, posts, metrics and profile. You have NO access to the open web, no competitor data, no network data, no audience data, no calendar of external events.
@@ -441,13 +448,16 @@ GROUNDING CONTRACT — NON-NEGOTIABLE RULES FOR EVERY RESPONSE:
 
 2. TEMPORAL HOOK: Every strategic recommendation must include a "why now" — one sentence grounded ONLY in the user's own graph: a signal's momentum or velocity, how many captures now support it, their publishing gap, or their own recent metrics. Never reference a competitor move or an external market event.
 
-3. NEXT STEP: Every response must end with exactly this format:
+3. CLOSING LINE:
+   - If you used one of your tools in this turn, do NOT write a NEXT STEP line. Instead close with one plain line stating what you just did and the single remaining thing only the member can do. Example: "Saved to your drafts. The only thing left is your read on the opening line."
+   - If no tool ran, every response must end with exactly this format:
 
-"NEXT STEP: [one specific action] — [named owner if relevant] — [specific deadline]"
+   "NEXT STEP: [one specific action] — [named owner if relevant] — [specific deadline]"
 
-Example: "NEXT STEP: Draft the 2-page Integration Trap white paper — you — by Friday"
+   Example: "NEXT STEP: Draft the 2-page Integration Trap white paper — you — by Friday"
 
-Never end a response without this line.
+   Never assign the member work that one of your tools can do — use the tool instead.
+
 
 4. CONTRARIAN OBLIGATION (for users with 3+ published posts): If the user's plan sounds conventional or safe, name the specific risk they are not seeing, using their own signals and posts as the evidence. Be direct. Never name external firms or claim what anyone else has published.
    FOR NEW USERS (0-2 published posts): Skip the contrarian voice. Focus on building confidence and momentum. The user needs to feel that publishing is SAFE before they can handle "your approach is too conventional."
@@ -486,21 +496,196 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
 
     const finalSystemPrompt = systemPrompt + retrievalSection + responseRules;
 
-    // STEP 3 — call AI (streaming so the existing sidebar SSE consumer works unchanged)
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    // STEP 3 — tool definitions. Aura can act, not only advise. Both tools take
+    // user_id from the verified JWT only; the model never supplies an identity
+    // and never supplies an existing row id. Insert only — no updates, no deletes.
+    const TOOLS = [
+      {
+        type: "function",
+        function: {
+          name: "save_draft",
+          description:
+            "Save a post you have written into this member's drafts. Use this instead of pasting the post and asking them to save it themselves.",
+          parameters: {
+            type: "object",
+            properties: {
+              post_text: { type: "string", description: "The full post text." },
+              title: { type: "string", description: "Short label for the draft." },
+              source_signal_id: {
+                type: "string",
+                description:
+                  "Optional. The signal this came from — only a signal listed in ACTIVE SIGNALS (its bracketed reference, e.g. S-101, is accepted).",
+              },
+            },
+            required: ["post_text"],
+          },
+        },
       },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        max_tokens: 1000,
-        temperature: 0.7,
-        stream: true,
-        messages: [{ role: "system", content: finalSystemPrompt }, ...messages],
-      }),
-    });
+      {
+        type: "function",
+        function: {
+          name: "set_reminder",
+          description: "Put a reminder in this member's notifications.",
+          parameters: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "Reminder title, 80 characters or fewer." },
+              body: { type: "string", description: "Optional detail." },
+              days_from_now: { type: "integer", description: "1 to 30. Defaults to 3." },
+            },
+            required: ["title"],
+          },
+        },
+      },
+    ];
+
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+    type ToolResult = { tool: string; ok: boolean; label: string; payload: Record<string, unknown> };
+
+    async function runTool(name: string, argsRaw: string): Promise<ToolResult> {
+      let args: any = {};
+      try {
+        args = argsRaw ? JSON.parse(argsRaw) : {};
+      } catch {
+        return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "unreadable arguments" } };
+      }
+
+      try {
+        if (name === "save_draft") {
+          const post_text = typeof args.post_text === "string" ? args.post_text.trim() : "";
+          if (!post_text) {
+            return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "no post text" } };
+          }
+          const title = typeof args.title === "string" && args.title.trim() ? args.title.trim().slice(0, 200) : null;
+
+          // Resolve the signal only against this member's own loaded signals.
+          let source_signal_id: string | null = null;
+          const rawSig = typeof args.source_signal_id === "string" ? args.source_signal_id.trim() : "";
+          if (rawSig) {
+            if (UUID_RE.test(rawSig) && sigs.some((s) => s.id === rawSig)) {
+              source_signal_id = rawSig;
+            } else {
+              const refIdx = citations.findIndex((c) => c.ref === rawSig.replace(/[[\]]/g, ""));
+              if (refIdx >= 0 && UUID_RE.test(String(citations[refIdx].id))) {
+                source_signal_id = citations[refIdx].id;
+              }
+            }
+          }
+
+          const row: Record<string, unknown> = {
+            user_id,
+            post_text,
+            tracking_status: "draft",
+            source_type: "aura_generated",
+            made_by: "aura",
+            authorship: "aura_drafted",
+            arrived_by: "generated_in_place",
+            acquisition: "unset",
+            confidence: "unknown",
+            source_metadata: { origin: "ask_aura" },
+          };
+          if (title) row.title = title;
+          if (source_signal_id) row.source_signal_id = source_signal_id;
+
+          const { data: inserted, error: insErr } = await admin
+            .from("linkedin_posts")
+            .insert(row)
+            .select("id")
+            .single();
+          if (insErr || !inserted?.id) {
+            console.error("save_draft insert failed", insErr?.message);
+            return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "could not save the draft" } };
+          }
+
+          const { error: evErr } = await admin.from("post_events").insert({
+            post_id: inserted.id,
+            user_id,
+            event: "drafted",
+            actor: "aura",
+            details: { origin: "ask_aura" },
+          });
+          if (evErr) console.error("save_draft event failed", evErr.message);
+
+          return {
+            tool: name,
+            ok: true,
+            label: "Draft saved",
+            payload: { ok: true, post_id: inserted.id, title },
+          };
+        }
+
+        if (name === "set_reminder") {
+          const title = typeof args.title === "string" ? args.title.trim().slice(0, 80) : "";
+          if (!title) {
+            return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "no title" } };
+          }
+          const bodyText = typeof args.body === "string" && args.body.trim() ? args.body.trim() : null;
+          let days = Number.isFinite(Number(args.days_from_now)) ? Math.round(Number(args.days_from_now)) : 3;
+          if (days < 1) days = 1;
+          if (days > 30) days = 30;
+          const when = new Date(Date.now() + days * 86400000);
+
+          const { error: nErr } = await admin.from("notification_events").insert({
+            user_id,
+            type: "member_reminder",
+            channel: "inapp",
+            title,
+            body: bodyText,
+            read: false,
+            sent_at: when.toISOString(),
+          });
+          if (nErr) {
+            console.error("set_reminder insert failed", nErr.message);
+            return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "could not set the reminder" } };
+          }
+          const remind_on = when.toISOString().slice(0, 10);
+          return {
+            tool: name,
+            ok: true,
+            label: `Reminder set for ${when.getUTCDate()} ${MONTHS[when.getUTCMonth()]}`,
+            payload: { ok: true, remind_on },
+          };
+        }
+
+        return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "unknown tool" } };
+      } catch (e) {
+        console.error("tool threw", name, e);
+        return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "unexpected failure" } };
+      }
+    }
+
+    // STEP 3b — call AI (streaming so the existing sidebar SSE consumer works unchanged)
+    const baseBody = {
+      model: "google/gemini-3-flash-preview",
+      max_tokens: 1000,
+      temperature: 0.7,
+      stream: true,
+    };
+    const firstMessages: any[] = [{ role: "system", content: finalSystemPrompt }, ...messages];
+
+    const callGateway = (msgs: any[], withTools: boolean) =>
+      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          withTools
+            ? { ...baseBody, messages: msgs, tools: TOOLS, tool_choice: "auto" }
+            : { ...baseBody, messages: msgs },
+        ),
+      });
+
+    let aiRes = await callGateway(firstMessages, true);
+    // If the gateway rejects the tools payload, fall back to a plain toolless call
+    // so the member still gets an answer.
+    if (!aiRes.ok && aiRes.status !== 429 && aiRes.status !== 402) {
+      console.error("gateway rejected tools payload", aiRes.status, await aiRes.text().catch(() => ""));
+      aiRes = await callGateway(firstMessages, false);
+    }
 
     if (!aiRes.ok || !aiRes.body) {
       if (aiRes.status === 429) {
@@ -523,39 +708,116 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
       });
     }
 
-    // Tee the upstream SSE: forward to client AND accumulate full reply for side effects.
-    const upstream = aiRes.body;
+    // The upstream is parsed, never forwarded verbatim: raw tool-call frames must
+    // not reach the client. Only content deltas are re-emitted, in the exact
+    // shape the existing consumer already parses.
+    const firstBody = aiRes.body;
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
+    type PumpOut = { text: string; toolCalls: { id: string; name: string; args: string }[] };
+
     const stream = new ReadableStream({
       async start(controller) {
-        const reader = upstream.getReader();
-        let buffer = "";
         let fullReply = "";
+        const actions: ToolResult[] = [];
 
-        try {
+        const pump = async (body: ReadableStream<Uint8Array>, collectTools: boolean): Promise<PumpOut> => {
+          const reader = body.getReader();
+          let buffer = "";
+          let text = "";
+          const acc: Record<number, { id: string; name: string; args: string }> = {};
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            // Forward bytes immediately
-            controller.enqueue(value);
-            // Also parse to accumulate text for memory + notification
             buffer += decoder.decode(value, { stream: true });
             let idx: number;
             while ((idx = buffer.indexOf("\n")) !== -1) {
               let line = buffer.slice(0, idx);
               buffer = buffer.slice(idx + 1);
               if (line.endsWith("\r")) line = line.slice(0, -1);
-              if (!line.startsWith("data: ")) continue;
-              const jsonStr = line.slice(6).trim();
-              if (jsonStr === "[DONE]") continue;
+              if (!line.startsWith("data:")) continue;
+              const jsonStr = line.slice(5).trim();
+              if (!jsonStr || jsonStr === "[DONE]") continue;
+              let parsed: any;
               try {
-                const parsed = JSON.parse(jsonStr);
-                const c = parsed?.choices?.[0]?.delta?.content;
-                if (typeof c === "string") fullReply += c;
-              } catch { /* partial — ignore */ }
+                parsed = JSON.parse(jsonStr);
+              } catch {
+                continue;
+              }
+              const delta = parsed?.choices?.[0]?.delta;
+              const c = delta?.content;
+              if (typeof c === "string" && c) {
+                text += c;
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`),
+                );
+              }
+              if (collectTools && Array.isArray(delta?.tool_calls)) {
+                for (const tc of delta.tool_calls) {
+                  const i = Number.isFinite(tc?.index) ? Number(tc.index) : 0;
+                  if (!acc[i]) acc[i] = { id: "", name: "", args: "" };
+                  if (typeof tc?.id === "string" && tc.id) acc[i].id = tc.id;
+                  if (typeof tc?.function?.name === "string" && tc.function.name) acc[i].name = tc.function.name;
+                  if (typeof tc?.function?.arguments === "string") acc[i].args += tc.function.arguments;
+                }
+              }
             }
+          }
+          const toolCalls = Object.keys(acc)
+            .map((k) => Number(k))
+            .sort((a, b) => a - b)
+            .map((k) => acc[k])
+            .filter((t) => t.name);
+          return { text, toolCalls };
+        };
+
+        try {
+          const first = await pump(firstBody, true);
+          fullReply = first.text;
+
+          if (first.toolCalls.length > 0) {
+            // Exactly one round of tool execution per request: the second call
+            // carries no tools, so the model cannot loop.
+            for (const call of first.toolCalls) {
+              actions.push(await runTool(call.name, call.args));
+            }
+
+            const assistantTurn = {
+              role: "assistant",
+              content: first.text || null,
+              tool_calls: first.toolCalls.map((t, i) => ({
+                id: t.id || `call_${i}`,
+                type: "function",
+                function: { name: t.name, arguments: t.args || "{}" },
+              })),
+            };
+            const toolTurns = first.toolCalls.map((t, i) => ({
+              role: "tool",
+              tool_call_id: t.id || `call_${i}`,
+              content: JSON.stringify(actions[i]?.payload ?? { ok: false, error: "no result" }),
+            }));
+
+            const second = await callGateway([...firstMessages, assistantTurn, ...toolTurns], false);
+            if (second.ok && second.body) {
+              const out = await pump(second.body, false);
+              // The summariser must see the answer the member actually read.
+              fullReply = out.text || first.text;
+            } else {
+              console.error("second gateway call failed", second.status);
+            }
+          }
+
+          // One machine line per tool that ran, before the existing events.
+          for (const a of actions) {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  choices: [{ delta: {} }],
+                  action: { tool: a.tool, ok: a.ok, label: a.label },
+                })}\n\n`,
+              ),
+            );
           }
 
           // Emit context_used as a custom SSE event (sidebar ignores non-delta events).
@@ -576,6 +838,7 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
         } finally {
           controller.close();
         }
+
 
         // STEP 4 — persistent side effect: summarize the session into memory.
         // Wrapped in EdgeRuntime.waitUntil so it survives stream close — Supabase
