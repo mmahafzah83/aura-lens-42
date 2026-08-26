@@ -92,6 +92,9 @@ const {
 /* One reader for the LinkedIn facts — the page used to answer this three
    different ways and contradict itself between cards. */
 const [liState, setLiState] = useState<LinkedInState>(EMPTY_LINKEDIN_STATE);
+/* The one status rule. Sync age is a nudge to re-read, never a reconnect. */
+const liStatus = statusFromLinkedInState(liState);
+
 const [linkedInBusy, setLinkedInBusy] = useState(true);
 const [signatures, setSignatures] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
 const [savingSig, setSavingSig] = useState(false);
