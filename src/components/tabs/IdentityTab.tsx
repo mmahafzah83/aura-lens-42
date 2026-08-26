@@ -161,7 +161,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
   const [entryCount, setEntryCount] = useState<number>(0);
   const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
-  const [publishedPostCount, setPublishedPostCount] = useState<number>(0);
+  const [, setPublishedPostCount] = useState<number>(0);
   
   const [, setMilestoneData] = useState<{ id: string; name: string; earned: boolean; earned_at: string | null; context: any }[]>([]);
   /* The newest CV on file, and when the stored cross-check was written. */
