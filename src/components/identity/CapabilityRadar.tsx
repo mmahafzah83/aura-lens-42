@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
  * Every question, anchor sentence and why_line is read from
  * `capability_dimensions` — nothing about the instrument lives in this file.
  * The stored level (1/2/3) is positional and is never shown to the member.
+ *
+ * Layout: geometry on one side, prose on the other. The SVG carries no words
+ * beyond the 1–8 index markers; names live in the list where they can wrap.
  */
 
 const INK = "#0F1519";
@@ -18,6 +21,15 @@ const CYAN = "#00CEC9";
 const NIGHT = "#0F1519";
 const MONO = "'IBM Plex Mono', monospace";
 const UI = "Inter, system-ui, sans-serif";
+
+/* White-on-night text scale — no invented colours, opacity only. */
+const W_STRONG = "rgba(255,255,255,0.92)";
+const W_BODY = "rgba(255,255,255,0.86)";
+const W_LINK = "rgba(255,255,255,0.72)";
+const W_DIM = "rgba(255,255,255,0.45)";
+const W_LINE = "rgba(255,255,255,0.14)";
+const W_SPOKE_ON = "rgba(255,255,255,0.35)";
+const W_DOT_OFF = "rgba(255,255,255,0.20)";
 
 type Band = "work" | "table" | "room";
 
@@ -70,29 +82,11 @@ function usePrefersReducedMotion() {
 const SIZE = 300;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
-const R = 96;
+const R = 108;
 
 const pointAt = (index: number, count: number, ratio: number) => {
   const angle = (Math.PI * 2 * index) / count - Math.PI / 2;
   return { x: CX + Math.cos(angle) * R * ratio, y: CY + Math.sin(angle) * R * ratio };
-};
-
-/** Wrap a label to at most two short lines so raw <text> cannot overflow. */
-const wrapLabel = (label: string, max = 16): string[] => {
-  const words = label.split(/\s+/);
-  const lines: string[] = [];
-  let cur = "";
-  for (const w of words) {
-    if (!cur) cur = w;
-    else if ((cur + " " + w).length <= max) cur += " " + w;
-    else { lines.push(cur); cur = w; }
-  }
-  if (cur) lines.push(cur);
-  if (lines.length > 2) {
-    const rest = lines.slice(1).join(" ");
-    return [lines[0], rest.length > max ? rest.slice(0, max - 1) + "…" : rest];
-  }
-  return lines;
 };
 
 /* ── Component ──────────────────────────────────────────────────────────── */
@@ -112,8 +106,9 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
   const [chooser, setChooser] = useState(false);
   const [assessing, setAssessing] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const rtl = typeof document !== "undefined" && document.dir === "rtl";
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [defaultsApplied, setDefaultsApplied] = useState(false);
 
   const load = useCallback(async () => {
     if (!userId || !band) { setLoading(false); return; }
@@ -152,6 +147,20 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
   );
   const complete = dims.length > 0 && answeredCount === dims.length;
 
+  const lowest = useMemo(
+    () => (complete
+      ? [...dims].sort((a, b) => (levels[a.id] ?? 3) - (levels[b.id] ?? 3)).slice(0, 2)
+      : []),
+    [complete, dims, levels],
+  );
+
+  /* The two thinnest points open on first render — that is what they came for. */
+  useEffect(() => {
+    if (defaultsApplied || !complete || lowest.length === 0) return;
+    setExpandedId(lowest[0].id);
+    setDefaultsApplied(true);
+  }, [complete, lowest, defaultsApplied]);
+
   const chooseBand = async (b: Band) => {
     if (!userId) return;
     setSaving(true);
@@ -178,10 +187,12 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
     if (!userId || !band) return;
     const payload: Record<string, number> = {};
     dims.forEach((d) => { if (finalLevels[d.id]) payload[d.id] = finalLevels[d.id]; });
+    // Await the insert before the reload, or the reload can read 7 of 8.
     const { error } = await (supabase.from("capability_radar_snapshots" as any) as any)
       .insert({ user_id: userId, band, instrument_version: 2, levels: payload });
     if (error) console.error("[CapabilityRadar] snapshot failed", error);
     setAssessing(false);
+    setDefaultsApplied(false);
     await load();
   };
 
@@ -232,7 +243,7 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
 
   if (loading) {
     return (
-      <div style={{ background: NIGHT, borderRadius: 20, height: 320 }} aria-busy="true" />
+      <div style={{ background: NIGHT, borderRadius: 20, height: 380 }} aria-busy="true" />
     );
   }
 
@@ -274,155 +285,269 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
       }).join(" ")
     : null;
 
-  const lowest = complete
-    ? [...dims].sort((a, b) => (levels[a.id] ?? 3) - (levels[b.id] ?? 3)).slice(0, 2)
-    : [];
+  const lowestIds = new Set(lowest.map((d) => d.id));
 
   return (
     <div style={{ background: NIGHT, borderRadius: 20, padding: 20, color: "#FFFFFF" }}>
-      <svg
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
-        width="100%"
-        role="img"
-        aria-label="Capability radar"
-        style={{ display: "block", maxWidth: 380, marginInline: "auto" }}
-      >
-        {[0.33, 0.66, 1].map((r) => (
-          <circle key={r} cx={CX} cy={CY} r={R * r} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={1} />
-        ))}
-        {dims.map((d, i) => {
-          const tip = pointAt(i, count, 1);
-          return <line key={d.id} x1={CX} y1={CY} x2={tip.x} y2={tip.y} stroke="rgba(255,255,255,0.14)" strokeWidth={1} />;
-        })}
-
-        {prevPolygon && (
-          <polygon points={prevPolygon} fill="none" stroke={CYAN} strokeOpacity={0.35} strokeWidth={1} />
-        )}
-
-        {answeredCount > 0 && (
-          <>
-            <polygon
-              points={polygon}
-              fill={complete ? CYAN : "none"}
-              fillOpacity={complete ? 0.16 : 0}
-              stroke={CYAN}
-              strokeWidth={2}
-            />
+      <div className="cap-radar-grid">
+        {/* LEFT — geometry only */}
+        <div>
+          <svg
+            viewBox={`0 0 ${SIZE} ${SIZE}`}
+            width="100%"
+            role="img"
+            aria-label="Capability radar"
+            style={{ display: "block", aspectRatio: "1 / 1", maxWidth: 320, marginInline: "auto" }}
+          >
+            {[0.33, 0.66, 1].map((r) => (
+              <circle key={r} cx={CX} cy={CY} r={R * r} fill="none" stroke={W_LINE} strokeWidth={1} />
+            ))}
             {dims.map((d, i) => {
-              if (!levels[d.id]) return null;
-              const p = pointAt(i, count, ratio(levels[d.id]));
-              return <circle key={d.id} cx={p.x} cy={p.y} r={3} fill={CYAN} />;
+              const tip = pointAt(i, count, 1);
+              const on = activeId === d.id;
+              return (
+                <line
+                  key={d.id}
+                  x1={CX} y1={CY} x2={tip.x} y2={tip.y}
+                  stroke={on ? W_SPOKE_ON : W_LINE}
+                  strokeWidth={1}
+                />
+              );
             })}
-          </>
-        )}
 
-        {answeredCount === 0 && <circle cx={CX} cy={CY} r={3} fill="rgba(255,255,255,0.35)" />}
+            {prevPolygon && (
+              <polygon points={prevPolygon} fill="none" stroke={CYAN} strokeOpacity={0.35} strokeWidth={1} />
+            )}
 
-        {dims.map((d, i) => {
-          const tip = pointAt(i, count, 1.16);
-          const onRight = tip.x > CX + 2;
-          const onLeft = tip.x < CX - 2;
-          // Under RTL, "start" anchors the right-hand side; deriving from
-          // direction keeps every label on canvas in both directions.
-          const startSide = rtl ? onRight : onLeft;
-          const anchor = onRight === onLeft ? "middle" : startSide ? "start" : "end";
-          const lines = wrapLabel(d.name);
-          return (
-            <text
-              key={d.id}
-              x={tip.x}
-              y={tip.y - (lines.length - 1) * 5}
-              textAnchor={anchor}
-              style={{ fontFamily: MONO, fontSize: 8.5, fill: "#FFFFFF", letterSpacing: "0.04em" }}
-            >
-              {lines.map((l, li) => (
-                <tspan key={li} x={tip.x} dy={li === 0 ? 0 : 10}>{l}</tspan>
-              ))}
-            </text>
-          );
-        })}
-      </svg>
+            {answeredCount > 0 && (
+              <>
+                <polygon
+                  points={polygon}
+                  fill={complete ? CYAN : "none"}
+                  fillOpacity={complete ? 0.16 : 0}
+                  stroke={CYAN}
+                  strokeWidth={2}
+                />
+                {dims.map((d, i) => {
+                  if (!levels[d.id]) return null;
+                  const p = pointAt(i, count, ratio(levels[d.id]));
+                  const on = activeId === d.id;
+                  return (
+                    <g key={d.id}>
+                      {on && (
+                        <circle cx={p.x} cy={p.y} r={6} fill="none" stroke={CYAN} strokeWidth={1.5} />
+                      )}
+                      <circle
+                        cx={p.x} cy={p.y} r={3} fill={CYAN}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={d.name}
+                        className="cap-vertex"
+                        onMouseEnter={() => setActiveId(d.id)}
+                        onMouseLeave={() => setActiveId((cur) => (cur === d.id ? null : cur))}
+                        onFocus={() => setActiveId(d.id)}
+                        onBlur={() => setActiveId((cur) => (cur === d.id ? null : cur))}
+                        style={{ cursor: "pointer" }}
+                      />
+                    </g>
+                  );
+                })}
+              </>
+            )}
 
-      {prevSnap && (
-        <div style={{ fontFamily: MONO, fontSize: 11, color: "rgba(255,255,255,0.72)", marginTop: 10, letterSpacing: "0.08em" }}>
-          PREVIOUS · {fmtShort(prevSnap.taken_at)}
+            {answeredCount === 0 && <circle cx={CX} cy={CY} r={3} fill={W_SPOKE_ON} />}
+
+            {/* The only text in the SVG: the 1–8 index markers. */}
+            {dims.map((d, i) => {
+              const tip = pointAt(i, count, 1.18);
+              return (
+                <text
+                  key={d.id}
+                  x={tip.x}
+                  y={tip.y + 3}
+                  textAnchor="middle"
+                  style={{ fontFamily: MONO, fontSize: 9, fill: activeId === d.id ? CYAN : W_DIM }}
+                >
+                  {i + 1}
+                </text>
+              );
+            })}
+          </svg>
+
+          {prevSnap && (
+            <div style={{ fontFamily: MONO, fontSize: 11, color: W_LINK, marginBlockStart: 10, letterSpacing: "0.08em", textAlign: "center" }}>
+              PREVIOUS · {fmtShort(prevSnap.taken_at)}
+            </div>
+          )}
         </div>
-      )}
 
-      {answeredCount === 0 && (
-        <div style={{ marginTop: 16 }}>
+        {/* RIGHT — the list */}
+        <div>
           {answeredOtherBand && (
-            <p style={{ fontFamily: UI, fontSize: 14, color: "rgba(255,255,255,0.72)", margin: "0 0 8px" }}>
+            <p style={{ fontFamily: UI, fontSize: 14, color: W_LINK, margin: "0 0 10px" }}>
               You're reading at the {band} now. These eight are different.
             </p>
           )}
-          <p style={{ fontFamily: UI, fontSize: 14, color: "rgba(255,255,255,0.86)", margin: "0 0 14px" }}>
-            Eight questions about how far your work travels. Two minutes.
-          </p>
-          <PrimaryButton onClick={() => setAssessing(true)}>Answer the eight</PrimaryButton>
-        </div>
-      )}
 
-      {answeredCount > 0 && !complete && (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: "rgba(255,255,255,0.86)", marginBottom: 12 }}>
-            {answeredCount} OF {dims.length} ANSWERED
-          </div>
-          <PrimaryButton onClick={() => setAssessing(true)}>Continue</PrimaryButton>
-        </div>
-      )}
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 2 }}>
+            {dims.map((d, i) => {
+              const level = levels[d.id];
+              const isExpanded = expandedId === d.id;
+              const isLow = lowestIds.has(d.id);
+              return (
+                <li
+                  key={d.id}
+                  style={{
+                    borderInlineStart: isLow ? `2px solid ${CYAN}` : "2px solid transparent",
+                    paddingInlineStart: 10,
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="cap-row"
+                    aria-expanded={isExpanded}
+                    onClick={() => setExpandedId(isExpanded ? null : d.id)}
+                    onMouseEnter={() => setActiveId(d.id)}
+                    onMouseLeave={() => setActiveId((cur) => (cur === d.id ? null : cur))}
+                    onFocus={() => setActiveId(d.id)}
+                    onBlur={() => setActiveId((cur) => (cur === d.id ? null : cur))}
+                    style={{
+                      width: "100%",
+                      minHeight: 44,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      background: "transparent",
+                      border: "none",
+                      padding: "10px 0",
+                      cursor: "pointer",
+                      textAlign: "start",
+                      color: level ? W_STRONG : W_DIM,
+                    }}
+                  >
+                    <span style={{ fontFamily: MONO, fontSize: 11, color: activeId === d.id ? CYAN : W_DIM, minWidth: 14 }}>
+                      {i + 1}
+                    </span>
+                    <span style={{ fontFamily: UI, fontSize: 14, lineHeight: 1.45, flex: 1 }}>{d.name}</span>
+                    <span aria-hidden="true" style={{ display: "inline-flex", gap: 4 }}>
+                      {[1, 2, 3].map((n) => (
+                        <span
+                          key={n}
+                          style={{
+                            width: 6, height: 6, borderRadius: 999,
+                            background: level === n ? CYAN : W_DOT_OFF,
+                          }}
+                        />
+                      ))}
+                    </span>
+                  </button>
+                  {isExpanded && (
+                    <div style={{ paddingBlockEnd: 12, maxWidth: "62ch" }}>
+                      {d.why_line && (
+                        <p style={{ fontFamily: UI, fontSize: 13, color: W_LINK, margin: "0 0 6px", lineHeight: 1.55 }}>
+                          {d.why_line}
+                        </p>
+                      )}
+                      {level && (
+                        <p style={{ fontFamily: UI, fontSize: 14, color: W_BODY, margin: 0, lineHeight: 1.55 }}>
+                          {d.name} — you said: “{anchorFor(d, level)}”
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
 
-      {complete && (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: "rgba(255,255,255,0.86)" }}>
-            ANSWERED {current ? fmtDate(current.taken_at) : ""} · BAND: {band.toUpperCase()}
-          </div>
-          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-            {lowest.map((d) => (
-              <div key={d.id} style={{ fontFamily: UI, fontSize: 14, color: "rgba(255,255,255,0.92)", lineHeight: 1.5 }}>
-                {d.name} — you said: “{anchorFor(d, levels[d.id])}”
+          {answeredCount === 0 && (
+            <div style={{ marginBlockStart: 16 }}>
+              <p style={{ fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 14px" }}>
+                Eight questions about how far your work travels. Two minutes.
+              </p>
+              <PrimaryButton onClick={() => setAssessing(true)}>Answer the eight</PrimaryButton>
+            </div>
+          )}
+
+          {answeredCount > 0 && !complete && (
+            <div style={{ marginBlockStart: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: W_BODY, marginBlockEnd: 12 }}>
+                {answeredCount} OF {dims.length} ANSWERED
               </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setAssessing(true)}
-            style={{
-              marginTop: 14, background: "transparent", border: "none", padding: 0,
-              color: "#7FC0F2", fontFamily: UI, fontSize: 13, cursor: "pointer", textDecoration: "underline",
-            }}
-          >
-            Answer again
-          </button>
-        </div>
-      )}
+              <PrimaryButton onClick={() => setAssessing(true)}>Continue</PrimaryButton>
+            </div>
+          )}
 
-      <div style={{ marginTop: 14, fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: "rgba(255,255,255,0.62)" }}>
-        BAND: {band.toUpperCase()} ·{" "}
-        <button
-          type="button"
-          onClick={() => setChooser(true)}
-          style={{ background: "transparent", border: "none", padding: 0, color: "#7FC0F2", fontFamily: MONO, fontSize: 11, cursor: "pointer" }}
-        >
-          change
-        </button>
+          {complete && (
+            <div style={{ marginBlockStart: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: W_BODY }}>
+                ANSWERED {current ? fmtDate(current.taken_at) : ""} · BAND: {band.toUpperCase()} ·{" "}
+                <button type="button" className="cap-link" onClick={() => setChooser(true)}
+                  style={{ background: "transparent", border: "none", padding: 0, fontFamily: MONO, fontSize: 11, cursor: "pointer" }}>
+                  change
+                </button>
+              </div>
+              <button
+                type="button"
+                className="cap-link"
+                onClick={() => setAssessing(true)}
+                style={{ marginBlockStart: 14, background: "transparent", border: "none", padding: 0, fontFamily: UI, fontSize: 13, cursor: "pointer", minHeight: 44 }}
+              >
+                Answer again
+              </button>
+            </div>
+          )}
+
+          {!complete && (
+            <div style={{ marginBlockStart: 14, fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: W_LINK }}>
+              BAND: {band.toUpperCase()} ·{" "}
+              <button type="button" className="cap-link" onClick={() => setChooser(true)}
+                style={{ background: "transparent", border: "none", padding: 0, fontFamily: MONO, fontSize: 11, cursor: "pointer" }}>
+                change
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      <style>{`
+        .cap-radar-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+          gap: 28px;
+          align-items: start;
+        }
+        @media (max-width: 900px) {
+          .cap-radar-grid { grid-template-columns: minmax(0, 1fr); }
+        }
+        .cap-link {
+          color: ${W_LINK};
+          text-decoration: underline;
+          text-decoration-color: rgba(255,255,255,0.32);
+        }
+        .cap-link:hover, .cap-link:focus-visible { color: #FFFFFF; }
+        .cap-row:focus-visible, .cap-link:focus-visible, .cap-vertex:focus-visible {
+          outline: 2px solid ${CYAN};
+          outline-offset: 2px;
+        }
+      `}</style>
     </div>
   );
 };
 
 /* ── Primary button ─────────────────────────────────────────────────── */
 
-const PrimaryButton: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => {
+const PrimaryButton: React.FC<{ onClick: () => void; disabled?: boolean; children: React.ReactNode }> = ({ onClick, disabled, children }) => {
   const [hover, setHover] = useState(false);
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        background: hover ? BLUE_HOVER : BLUE,
+        background: hover && !disabled ? BLUE_HOVER : BLUE,
         color: "#FFFFFF",
         border: "none",
         borderRadius: 8,
@@ -431,7 +556,8 @@ const PrimaryButton: React.FC<{ onClick: () => void; children: React.ReactNode }
         fontFamily: UI,
         fontSize: 14,
         fontWeight: 500,
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
       }}
     >
       {children}
@@ -445,8 +571,8 @@ interface AssessProps {
   dims: Dimension[];
   levels: Record<string, number>;
   reduced: boolean;
-  onAnswer: (dimensionId: string, level: number) => void;
-  onFinish: (levels: Record<string, number>) => void;
+  onAnswer: (dimensionId: string, level: number) => Promise<void> | void;
+  onFinish: (levels: Record<string, number>) => Promise<void> | void;
   onExit: () => void;
 }
 
@@ -454,7 +580,9 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, reduced, onAnswer, on
   const firstUnanswered = Math.max(0, dims.findIndex((d) => !levels[d.id]));
   const [index, setIndex] = useState(firstUnanswered === -1 ? 0 : firstUnanswered);
   const [local, setLocal] = useState<Record<string, number>>(levels);
+  const [busy, setBusy] = useState(false);
   const timer = useRef<number | null>(null);
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); }, []);
 
@@ -464,16 +592,42 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, reduced, onAnswer, on
   const anchors = [dim.anchor_low, dim.anchor_mid, dim.anchor_high];
   const selected = local[dim.id];
 
-  const pick = (level: number) => {
+  const pick = async (level: number) => {
+    if (busy) return;
     const next = { ...local, [dim.id]: level };
     setLocal(next);
-    onAnswer(dim.id, level);
-    const advance = () => {
-      if (index + 1 < dims.length) setIndex(index + 1);
-      else onFinish(next);
-    };
-    if (reduced) advance();
-    else timer.current = window.setTimeout(advance, 250);
+    setBusy(true);
+    // Await the upsert: the eighth answer must be committed before the
+    // snapshot insert and the reload, or the card falls back to "7 of 8".
+    try {
+      await onAnswer(dim.id, level);
+      if (index + 1 < dims.length) {
+        const advance = () => { setIndex(index + 1); setBusy(false); };
+        if (reduced) advance();
+        else timer.current = window.setTimeout(advance, 250);
+        return;
+      }
+      await onFinish(next);
+    } finally {
+      if (index + 1 >= dims.length) setBusy(false);
+    }
+  };
+
+  const rtl = typeof document !== "undefined" && document.dir === "rtl";
+
+  const focusOption = (i: number) => {
+    const clamped = (i + anchors.length) % anchors.length;
+    optionRefs.current[clamped]?.focus();
+    void pick(clamped + 1);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent, i: number) => {
+    const forward = rtl ? "ArrowLeft" : "ArrowRight";
+    const back = rtl ? "ArrowRight" : "ArrowLeft";
+    if (e.key === "ArrowDown" || e.key === forward) { e.preventDefault(); focusOption(i + 1); }
+    else if (e.key === "ArrowUp" || e.key === back) { e.preventDefault(); focusOption(i - 1); }
+    else if (e.key === "Home") { e.preventDefault(); focusOption(0); }
+    else if (e.key === "End") { e.preventDefault(); focusOption(anchors.length - 1); }
   };
 
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -496,12 +650,17 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, reduced, onAnswer, on
         {anchors.map((sentence, i) => {
           const level = i + 1;
           const isSel = selected === level;
+          const roving = selected ? isSel : i === 0;
           return (
             <button
               key={level}
               type="button"
               role="radio"
               aria-checked={isSel}
+              tabIndex={roving ? 0 : -1}
+              ref={(el) => { optionRefs.current[i] = el; }}
+              disabled={busy}
+              onKeyDown={(e) => onKeyDown(e, i)}
               onClick={() => pick(level)}
               className="capability-anchor"
               style={{
@@ -516,7 +675,7 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, reduced, onAnswer, on
                 fontFamily: UI,
                 fontSize: 14,
                 lineHeight: 1.5,
-                cursor: "pointer",
+                cursor: busy ? "not-allowed" : "pointer",
               }}
             >
               {sentence}
