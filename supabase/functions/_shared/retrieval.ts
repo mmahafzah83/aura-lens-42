@@ -19,7 +19,9 @@ export type SourceKind =
   | "evidence_fragment"
   | "entry"
   | "signal"
-  | "post";
+  | "post"
+  | "learned_intelligence"
+  | "content_item";
 
 export const SOURCE_KINDS: SourceKind[] = [
   "document_chunk",
@@ -27,6 +29,8 @@ export const SOURCE_KINDS: SourceKind[] = [
   "entry",
   "signal",
   "post",
+  "learned_intelligence",
+  "content_item",
 ];
 
 export interface RetrievedRow {
