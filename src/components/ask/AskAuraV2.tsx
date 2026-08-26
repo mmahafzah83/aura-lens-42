@@ -43,6 +43,15 @@ interface Citation {
   confidence: number;
 }
 
+/** A retrieved row the answer can cite as a bare [n]. Built by the function from the retrieval layer. */
+interface Source {
+  n: number;
+  title: string;
+  kind: string;
+  date: string | null;
+  url: string | null;
+}
+
 interface ActionLine { tool: string; ok: boolean; label: string }
 
 type Msg = { role: "user" | "assistant"; content: string; isError?: boolean; actions?: ActionLine[] };
@@ -79,10 +88,19 @@ function usedCitations(text: string, all: Citation[]): Citation[] {
   return all.filter(c => t.includes(`[${c.ref}]`) || (c.title && t.includes(c.title)));
 }
 
+/** Which retrieved sources this answer actually cited as bare [n]. */
+function usedSources(text: string, all: Source[]): Source[] {
+  const t = text || "";
+  return all.filter(s => t.includes(`[${s.n}]`));
+}
+
 /** Insert a pill marker for every citation this answer used. */
-function markCitations(text: string, byRef: Record<string, Citation>): string {
+function markCitations(text: string, byRef: Record<string, Citation>, byNum: Record<number, Source>): string {
   let out = text.replace(/\[(S-\d+)\]/g, (_full, ref: string) =>
     byRef[ref] ? ` \`\u27E6${ref}\u27E7\` ` : "");
+  // Bare numeric refs from the retrieval layer: pill when resolved, stripped when not.
+  out = out.replace(/\[(\d{1,3})\]/g, (_full, num: string) =>
+    byNum[Number(num)] ? ` \`\u27E6#${num}\u27E7\` ` : "");
   for (const c of Object.values(byRef)) {
     if (out.includes(`\u27E6${c.ref}\u27E7`)) continue;
     if (!c.title) continue;
@@ -101,6 +119,18 @@ function railLabel(children: React.ReactNode) {
   );
 }
 
+const PILL_STYLE: React.CSSProperties = {
+  ...MONO, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "baseline",
+  margin: "0 2px", padding: "1px 7px", borderRadius: 999, fontSize: 11, cursor: "pointer",
+  background: "var(--act-tint)",
+  border: "1px solid color-mix(in srgb, var(--act) 45%, transparent)",
+  color: "var(--act-hover)",
+};
+
+const sourceDetail = (s: Source) =>
+  [s.title, s.kind.replace(/_/g, " "), s.date || null, s.url ? "opens in a new tab" : "no link on this one"]
+    .filter(Boolean).join(" — ");
+
 /* ── Citation pill ── */
 const Pill: React.FC<{ c: Citation; onOpen: (id: string) => void }> = ({ c, onOpen }) => (
   <button
@@ -109,15 +139,22 @@ const Pill: React.FC<{ c: Citation; onOpen: (id: string) => void }> = ({ c, onOp
     data-signal-id={c.id}
     title={`${c.title} — ${c.evidence_count} capture${c.evidence_count === 1 ? "" : "s"}`}
     onClick={() => onOpen(c.id)}
-    style={{
-      ...MONO, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "baseline",
-      margin: "0 2px", padding: "1px 7px", borderRadius: 999, fontSize: 11, cursor: "pointer",
-      background: "var(--act-tint)",
-      border: "1px solid color-mix(in srgb, var(--act) 45%, transparent)",
-      color: "var(--act-hover)",
-    }}
+    style={PILL_STYLE}
   >
     {c.ref}
+  </button>
+);
+
+/* ── Source pill: same grammar as the citation pill. Opens the url when there is one. ── */
+const SourcePill: React.FC<{ s: Source }> = ({ s }) => (
+  <button
+    type="button"
+    data-testid="source-pill"
+    title={sourceDetail(s)}
+    onClick={() => { if (s.url) window.open(s.url, "_blank", "noopener,noreferrer"); }}
+    style={{ ...PILL_STYLE, cursor: s.url ? "pointer" : "default" }}
+  >
+    {s.n}
   </button>
 );
 
@@ -127,6 +164,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   const [loading, setLoading] = useState(false);
   const [citations, setCitations] = useState<Record<string, Citation>>({});
   const [citedOrder, setCitedOrder] = useState<string[]>([]);
+  const [sources, setSources] = useState<Record<number, Source>>({});
+  const [citedSources, setCitedSources] = useState<number[]>([]);
   const [position, setPosition] = useState<Position | null>(null);
   const [memory, setMemory] = useState<MemoryRow[]>([]);
   const [seeds, setSeeds] = useState<PromptSeed[]>([]);
@@ -286,6 +325,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       let buf = "";
       let acc = "";
       let gotCitations: Citation[] = [];
+      let gotSources: Source[] = [];
       const gotActions: ActionLine[] = [];
       setMessages([...next, { role: "assistant", content: "" }]);
 
@@ -303,6 +343,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
           try {
             const j = JSON.parse(payload);
             if (Array.isArray(j?.citations)) gotCitations = j.citations as Citation[];
+            if (Array.isArray(j?.sources)) gotSources = j.sources as Source[];
             if (j?.action && typeof j.action?.label === "string") {
               gotActions.push({ tool: String(j.action.tool || ""), ok: !!j.action.ok, label: j.action.label });
             }
@@ -327,6 +368,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
         });
         const used = usedCitations(acc, gotCitations).map(c => c.ref);
         if (used.length) setCitedOrder(prev => [...prev, ...used.filter(r => !prev.includes(r))]);
+      }
+
+      if (gotSources.length) {
+        setSources(prev => {
+          const m = { ...prev };
+          for (const s of gotSources) if (Number.isFinite(s?.n)) m[Number(s.n)] = s;
+          return m;
+        });
+        const usedS = usedSources(acc, gotSources).map(s => Number(s.n));
+        if (usedS.length) setCitedSources(prev => [...prev, ...usedS.filter(n => !prev.includes(n))]);
       }
 
       if (acc.trim()) {
@@ -371,13 +422,17 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   }, [open, initialMessage]);
 
   const cited = useMemo(() => citedOrder.map(r => citations[r]).filter(Boolean), [citedOrder, citations]);
+  const citedSourceRows = useMemo(
+    () => citedSources.map(n => sources[n]).filter(Boolean),
+    [citedSources, sources],
+  );
 
   if (!open) return null;
 
   /* ── Answer body: refs become pills, unresolved refs are stripped ── */
   const Answer: React.FC<{ text: string }> = ({ text }) => {
     const rtl = isAr(text);
-    const prepared = markCitations(text, citations);
+    const prepared = markCitations(text, citations, sources);
     return (
       <div
         dir={rtl ? "rtl" : "ltr"}
@@ -396,6 +451,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               const raw = String(children);
               const m = raw.match(/^\u27E6(S-\d+)\u27E7$/);
               if (m && citations[m[1]]) return <Pill c={citations[m[1]]} onOpen={openSignal} />;
+              const sm = raw.match(/^\u27E6#(\d{1,3})\u27E7$/);
+              if (sm && sources[Number(sm[1])]) return <SourcePill s={sources[Number(sm[1])]} />;
               return <code style={{ ...MONO, fontSize: 12.5 }}>{children}</code>;
             },
             p: ({ children }) => <p style={{ margin: "0 0 10px" }}>{children}</p>,
@@ -458,6 +515,33 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                 </div>
               </button>
             ))}
+          </div>
+        )}
+        {citedSourceRows.length > 0 && (
+          <div style={{ marginTop: 16 }} data-testid="ask-rail-sources">
+            {railLabel("Sources")}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {citedSourceRows.map(s => (
+                <button
+                  key={s.n}
+                  type="button"
+                  title={sourceDetail(s)}
+                  onClick={() => { if (s.url) window.open(s.url, "_blank", "noopener,noreferrer"); }}
+                  style={{
+                    textAlign: "left", background: "transparent", cursor: s.url ? "pointer" : "default",
+                    border: "1px solid var(--rule-outer)", borderRadius: 12, padding: "10px 12px",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                    <span style={{ ...MONO, fontSize: 10.5, color: "var(--machine-text)" }}>{s.n}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{s.title}</span>
+                  </div>
+                  <div style={{ ...MONO, fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                    {s.kind.replace(/_/g, " ")}{s.date ? ` · ${s.date}` : ""}
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

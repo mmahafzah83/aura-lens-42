@@ -297,8 +297,17 @@ serve(withObserve("ask-aura", async (req) => {
       console.error(JSON.stringify({ stage: "user_context", user_id, error: (e as Error)?.message ?? String(e) }));
     }
 
+    // Reply language is DECIDED in code from the member's own last message, not
+    // negotiated by the model against whatever language the sources are in.
+    const arabicChars = (lastUserMessage.match(/[\u0600-\u06FF]/g) || []).length;
+    const latinChars = (lastUserMessage.match(/[A-Za-z]/g) || []).length;
+    const totalLetters = arabicChars + latinChars;
+    const replyLanguage: "Arabic" | "English" =
+      totalLetters > 0 && arabicChars / totalLetters > 0.2 ? "Arabic" : "English";
+
     let retrievedBlock = "—";
     let retrievalDegraded = false;
+    let retrievedRows: any[] = [];
     // Rewrite conversational follow-ups into a standalone query before search.
     const search = await buildSearchQuery(messages, { caller: "ask-aura" });
 
@@ -309,7 +318,10 @@ serve(withObserve("ask-aura", async (req) => {
         rewritten: search.rewritten,
         originalQuery: search.original,
       });
-      if (retrieved.rows.length > 0) retrievedBlock = retrieved.citationBlock;
+      if (retrieved.rows.length > 0) {
+        retrievedBlock = retrieved.citationBlock;
+        retrievedRows = retrieved.rows;
+      }
     } catch (e) {
       retrievalDegraded = true;
       logRetrievalFailure({
@@ -319,6 +331,17 @@ serve(withObserve("ask-aura", async (req) => {
         error: e,
       });
     }
+
+    // Parallel to `citations`, one entry per retrieved row. The number matches the
+    // [n] the prompt block uses (formatCitations numbers rows 1..n in order).
+    const sources = retrievedRows.map((r, i) => ({
+      n: i + 1,
+      title: (r.title && String(r.title).trim()) || `${String(r.source_kind).replace(/_/g, " ")} ${i + 1}`,
+      kind: r.source_kind,
+      date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
+      url: r.url || null,
+    }));
+
 
     const systemPrompt = `You are Aura — a senior strategic intelligence advisor. You are not a generic AI. You are a dedicated advisor who has studied this professional for months and knows their work deeply.
 
@@ -375,7 +398,7 @@ RESPONSE RULES — follow these on every response without exception:
 6. Structure every response: [Direct Answer] → [Evidence from signals or posts] → [One specific action].
 7. Keep responses under 300 words unless the user asks for deep analysis.
 8. Always end with exactly one concrete next step — not a list, not options. One thing.
-8a. When you are responding in Arabic: one sentence per line, maximum 10–12 Arabic words per line, and keep signal names and technical terms in English.
+
 9. If asked "what should I post?" — name the highest priority_score signal, propose a specific hook, specify the format.
 10. If asked for an honest assessment — be direct, data-backed, and uncomfortable if necessary. This is advisor mode.
 
@@ -474,7 +497,7 @@ RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
 5. End every response with a specific NEXT STEP line.
 6. Cite signals by name in **bold**. Reference captures by title.
 7. If you don't have data: "I don't have intelligence on that yet. Capture an article about it."
-8. Respond in the same language as the user's most recent message. If that message is in English, respond in English. If it is in Arabic, respond in professional Gulf Arabic. If the language is ambiguous, very short, or mixed, default to English. Never switch languages unless the user switches first.
+
 9. Never say: "As an AI", "Great question!", "Here are some suggestions", "You might want to consider", "That's a wonderful insight."
 10. Think like a senior partner giving private counsel to a peer — direct, evidence-based, no fluff. Never name external firms.
 11. When reviewing posts: be HONEST. Weak hook? Say so. Suggest a specific rewrite.
@@ -494,7 +517,17 @@ RETRIEVED SOURCES (this member's own documents, evidence, captures and signals �
 ${retrievedBlock}
 ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim the record is empty — say you could not read the record right now." : ""}`;
 
-    const finalSystemPrompt = systemPrompt + retrievalSection + responseRules;
+    // Language is decided here, once, and sits above everything else in the
+    // prompt. Both gateway calls use this same string.
+    const languageDirective = `REPLY LANGUAGE: ${replyLanguage}. This is decided, not a preference. Write your entire answer in ${replyLanguage}, whatever language the retrieved sources or the member's stored material happen to be in. Quote source titles in their original language, but every sentence you write yourself is in ${replyLanguage}.${
+      replyLanguage === "Arabic"
+        ? "\nWhen writing Arabic: one sentence per line, maximum 10–12 Arabic words per line, and keep signal names and technical terms in English."
+        : ""
+    }
+
+`;
+
+    const finalSystemPrompt = languageDirective + systemPrompt + retrievalSection + responseRules;
 
     // STEP 3 — tool definitions. Aura can act, not only advise. Both tools take
     // user_id from the verified JWT only; the model never supplies an identity
@@ -830,6 +863,7 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
               identity_loaded: !!profile,
             },
             citations,
+            sources,
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(contextEvent)}\n\n`));
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));

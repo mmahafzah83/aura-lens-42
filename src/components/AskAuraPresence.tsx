@@ -95,6 +95,8 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
       .eq("user_id", user.id)
       .eq("read", false)
       .gte("sent_at", unreadSince)
+      // Scheduled reminders carry a future sent_at — they surface on the day, not on creation.
+      .lte("sent_at", new Date().toISOString())
       .order("sent_at", { ascending: false })
       .limit(20);
     if (error) {
