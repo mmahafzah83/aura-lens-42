@@ -3,6 +3,7 @@ import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
+import { getCapabilityProfile, BAND_LABEL } from "../_shared/capabilities.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,23 +84,23 @@ Deno.serve(withObserve("sovereign-reading-list", async (req) => {
       .slice(0, 3);
 
     // Fallback: derive skill gaps from audit_results if generated_skills is empty
-    if (skillGaps.length === 0 && (profile as any)?.audit_results) {
-      const auditScores = (profile as any).audit_results;
-      if (typeof auditScores === "object" && Object.keys(auditScores).length > 0) {
-        const sorted = Object.entries(auditScores)
-          .map(([name, score]) => ({ name, currentRating: Number(score), gap: 100 - Number(score) }))
-          .sort((a, b) => b.gap - a.gap);
-
-        const top3 = sorted.slice(0, 3);
-        top3.forEach((item) => {
+    if (skillGaps.length === 0) {
+      // Bands only — three instruments wrote these values on two incompatible
+      // scales, so a capability is never stated as a number.
+      const capability = await getCapabilityProfile(supabase as any, user.id);
+      const rank: Record<string, number> = { developing: 0, solid: 1, strong: 2 };
+      capability.dimensions
+        .filter((d) => d.band !== "not_assessed")
+        .sort((a, b) => (rank[a.band] ?? 9) - (rank[b.band] ?? 9))
+        .slice(0, 3)
+        .forEach((d) => {
           skillGaps.push({
-            name: item.name,
-            currentRating: item.currentRating,
-            gap: item.gap,
-            description: `Score: ${item.currentRating}/100 — this is a growth area that would strengthen market positioning.`,
+            name: d.label,
+            currentRating: null,
+            gap: null,
+            description: `Currently reading as ${BAND_LABEL[d.band]} — room to show more here.`,
           });
         });
-      }
     }
 
     if (skillGaps.length === 0) {
@@ -194,7 +195,7 @@ Output valid JSON:
   ]
 }`;
 
-    const userPrompt = `Generate 3 reading recommendations for these skill gaps:\n\n${skillGaps.map((g: any, i: number) => `${i + 1}. ${g.name} (current: ${g.currentRating}%, gap: ${g.gap}%) — ${g.description}`).join("\n")}`;
+    const userPrompt = `Generate 3 reading recommendations for these skill gaps:\n\n${skillGaps.map((g: any, i: number) => `${i + 1}. ${g.name} — ${g.description}`).join("\n")}`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
