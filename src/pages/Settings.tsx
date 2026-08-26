@@ -52,6 +52,15 @@ interface ProfileData {
 import { loadLinkedInState, EMPTY_LINKEDIN_STATE, type LinkedInState } from "@/lib/linkedinState";
 import { statusFromLinkedInState, mayPromptReconnect } from "@/lib/linkedinStatus";
 
+/* One list, two renderings (rail on desktop, chips on mobile). */
+const NAV_ITEMS = [
+  { key: "profile", label: "Profile & identity", Icon: User },
+  { key: "connections", label: "Connections", Icon: Link2 },
+  { key: "preferences", label: "Preferences", Icon: Settings2 },
+  { key: "slides", label: "Slides & export", Icon: Presentation },
+  { key: "privacy", label: "Data & privacy", Icon: ShieldCheck },
+  { key: "danger", label: "Danger zone", Icon: AlertTriangle },
+] as const;
 
 export default function Settings() {
   usePageMeta({
