@@ -128,10 +128,14 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   const [memory, setMemory] = useState<MemoryRow[]>([]);
   const [seeds, setSeeds] = useState<PromptSeed[]>([]);
   const [followUps, setFollowUps] = useState<string[]>([]);
+  const [opener, setOpener] = useState<{ text: string; chips: { label: string; prompt: string }[] } | null>(null);
+  const [openerDone, setOpenerDone] = useState(false);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const listRef = useRef<HTMLDivElement | null>(null);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
   const firedRef = useRef(false);
+  const openerRef = useRef(false);
+
 
   const openSignal = (id: string) => {
     const next = new URLSearchParams(window.location.search);
@@ -191,6 +195,30 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       setSeeds(s.slice(0, 4));
     })();
   }, [open]);
+
+  /* ── Opener: Aura speaks first, once per open ── */
+  useEffect(() => {
+    if (!open) { openerRef.current = false; setOpener(null); setOpenerDone(false); return; }
+    if (openerRef.current || initialMessage) return;
+    openerRef.current = true;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setOpenerDone(true); return; }
+        const { data, error } = await supabase.functions.invoke("ask-aura-opener", { body: {} });
+        if (error) throw error;
+        const text = typeof (data as any)?.text === "string" ? (data as any).text.trim() : "";
+        const chips = Array.isArray((data as any)?.chips) ? (data as any).chips.slice(0, 3) : [];
+        if (text) setOpener({ text, chips });
+      } catch (e) {
+        console.error("[ask] opener failed", e);
+      } finally {
+        setOpenerDone(true);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialMessage]);
+
 
   useEffect(() => {
     if (!open) return;
@@ -488,16 +516,48 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
         <div className="ask-grid" style={{ height: "100%", maxWidth: 1400, margin: "0 auto", padding: "16px 20px", boxSizing: "border-box" }}>
           <section style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
             <div ref={listRef} style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
-              {messages.length === 0 && (
+              {messages.length === 0 && openerDone && (
                 <div style={{ padding: "36px 4px", maxWidth: 620 }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--text-primary)", marginBottom: 8 }}>
-                    Ask about your own work.
-                  </div>
-                  <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                    Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
-                  </div>
+                  {opener ? (
+                    <>
+                      <Answer text={opener.text} />
+                      {opener.chips.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 14px" }}>
+                          {opener.chips.map((c, i) => (
+                            <button
+                              key={c.prompt}
+                              type="button"
+                              onClick={() => send(c.prompt)}
+                              style={i === 0 ? {
+                                background: "var(--act)", border: 0, color: "var(--text-inverse)",
+                                borderRadius: 999, padding: "7px 14px", fontSize: 12.5, cursor: "pointer",
+                                display: "inline-flex", alignItems: "center", gap: 6,
+                              } : {
+                                background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                                borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                                display: "inline-flex", alignItems: "center", gap: 6,
+                              }}
+                            >{c.label}<ArrowUpRight size={13} /></button>
+                          ))}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6 }}>
+                        Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--text-primary)", marginBottom: 8 }}>
+                        Ask about your own work.
+                      </div>
+                      <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                        Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
+
 
               {messages.map((m, i) => {
                 const rtl = isAr(m.content);
