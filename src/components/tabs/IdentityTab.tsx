@@ -34,10 +34,9 @@ import { useTierFromImprint } from "@/hooks/useTierFromImprint";
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
-import TierExplainer from "@/components/ui/TierExplainer";
-import { TIER_COPY } from "@/constants/tierCopy";
 import ReadShape from "@/components/identity/ReadShape";
-import CvCrosscheck from "@/components/report/CvCrosscheck";
+import CvCrosscheck, { type CvCrosscheckState } from "@/components/report/CvCrosscheck";
+import CvUploadControl from "@/components/cv/CvUploadControl";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { handoffSubject, type SubjectHandoff } from "@/lib/workHandoff";
 import {
