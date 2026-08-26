@@ -220,3 +220,9 @@ verify_jwt = false
 
 [functions.report-issue]
 verify_jwt = false
+
+[functions.build-document-brief]
+verify_jwt = false
+
+[functions.backfill-document-briefs]
+verify_jwt = false
