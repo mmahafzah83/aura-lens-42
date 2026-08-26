@@ -56,7 +56,7 @@ const NEXT_DESCRIPTIONS: Record<string, string> = {
   profile_complete: "Earned when your profile and sector focus are set.",
   first_signal: "Earned when Aura detects your first strategic signal.",
   voice_trained: "Earned when your voice profile has been distilled.",
-  first_publish: "Earned when you publish your first post.",
+  first_publish: "Earned when you publish a post Aura wrote.",
   brand_assessment: "Earned when you complete the brand assessment.",
   five_signals: "Earned when you have 5+ active signals.",
   sector_depth: "Earned when 5+ themes appear across your captures.",
