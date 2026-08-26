@@ -8,7 +8,6 @@ import { writeProfile } from "@/lib/profileWrite";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AuraCard } from "@/components/ui/AuraCard";
 import LinkedInAddressCard from "@/components/settings/LinkedInAddressCard";
-import YourLinkedInCard from "@/components/settings/YourLinkedInCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { exportReportPdf } from "@/lib/exportReportPdf";
@@ -418,9 +417,6 @@ const handleDeleteAccount = async () => {
             Settings
           </h1>
         </div>
-
-        {/* Your LinkedIn — above everything, until a read confirms the address */}
-        <YourLinkedInCard userId={authUser?.id ?? null} />
 
         {/* Tabs — Account first, then preferences */}
         <div style={{ display: "flex", gap: 4, marginBottom: 24, borderBottom: "0.5px solid var(--rule)" }}>
