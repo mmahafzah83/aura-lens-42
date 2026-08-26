@@ -40,6 +40,9 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
 
   const skill = EVIDENCE_MATRIX[currentSkillIdx];
   const progress = ((currentSkillIdx + 1) / EVIDENCE_MATRIX.length) * 100;
+  // A capability counts as "read" once the member has ticked any evidence for it.
+  const readCount = EVIDENCE_MATRIX.filter((s) => (checks[s.name] || []).some(Boolean)).length;
+
 
   // Cascade logic: toggling a tier auto-checks/unchecks dependent tiers
   const toggle = (qIdx: number) => {
