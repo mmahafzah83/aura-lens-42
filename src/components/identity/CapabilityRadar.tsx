@@ -65,17 +65,8 @@ const fmtDate = (iso: string) =>
 const fmtShort = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }).toUpperCase();
 
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const on = () => setReduced(mq.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return reduced;
-}
+const NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight"];
+
 
 /* ── Geometry ───────────────────────────────────────────────────────────── */
 
@@ -98,7 +89,6 @@ interface Props {
 }
 
 const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
-  const reduced = usePrefersReducedMotion();
   const [dims, setDims] = useState<Dimension[]>([]);
   const [levels, setLevels] = useState<Record<string, number>>({});
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
@@ -147,14 +137,20 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
   );
   const complete = dims.length > 0 && answeredCount === dims.length;
 
-  const lowest = useMemo(
-    () => (complete
-      ? [...dims].sort((a, b) => (levels[a.id] ?? 3) - (levels[b.id] ?? 3)).slice(0, 2)
-      : []),
+/* Select by VALUE, not by count: every dimension at the minimum answered
+     level is marked. On a three-point scale ties are the normal case. */
+  const minLevel = useMemo(
+    () => (complete && dims.length ? Math.min(...dims.map((d) => levels[d.id] ?? 3)) : null),
     [complete, dims, levels],
   );
+  const lowest = useMemo(
+    () => (minLevel !== null && minLevel < 3
+      ? dims.filter((d) => (levels[d.id] ?? 3) === minLevel)
+      : []),
+    [minLevel, dims, levels],
+  );
 
-  /* The two thinnest points open on first render — that is what they came for. */
+  /* The thinnest points open on first render — that is what they came for. */
   useEffect(() => {
     if (defaultsApplied || !complete || lowest.length === 0) return;
     setExpanded(new Set(lowest.map((d) => d.id)));
@@ -253,7 +249,6 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
       <Assessment
         dims={dims}
         levels={levels}
-        reduced={reduced}
         onAnswer={saveAnswer}
         onFinish={finish}
         onExit={() => setAssessing(false)}
@@ -386,6 +381,19 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
           {answeredOtherBand && (
             <p style={{ fontFamily: UI, fontSize: 14, color: W_LINK, margin: "0 0 10px" }}>
               You're reading at the {band} now. These eight are different.
+            </p>
+          )}
+
+          {complete && minLevel === 3 && (
+            <p style={{ fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 10px" }}>
+              Nothing here sits low. The shape is where it moves next.
+            </p>
+          )}
+          {complete && lowest.length > 0 && (
+            <p style={{ fontFamily: UI, fontSize: 14, color: W_BODY, margin: "0 0 10px" }}>
+              {lowest.length === 1
+                ? "One point sits lowest."
+                : `${NUMBER_WORDS[lowest.length] ?? lowest.length} points sit lowest.`}
             </p>
           )}
 
@@ -557,7 +565,7 @@ const PrimaryButton: React.FC<{ onClick: () => void; disabled?: boolean; childre
         fontSize: 14,
         fontWeight: 500,
         cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.6 : 1,
+        opacity: disabled ? 0.4 : 1,
       }}
     >
       {children}
@@ -570,46 +578,44 @@ const PrimaryButton: React.FC<{ onClick: () => void; disabled?: boolean; childre
 interface AssessProps {
   dims: Dimension[];
   levels: Record<string, number>;
-  reduced: boolean;
   onAnswer: (dimensionId: string, level: number) => Promise<void> | void;
   onFinish: (levels: Record<string, number>) => Promise<void> | void;
   onExit: () => void;
 }
 
-const Assessment: React.FC<AssessProps> = ({ dims, levels, reduced, onAnswer, onFinish, onExit }) => {
+const Assessment: React.FC<AssessProps> = ({ dims, levels, onAnswer, onFinish, onExit }) => {
   const firstUnanswered = Math.max(0, dims.findIndex((d) => !levels[d.id]));
   const [index, setIndex] = useState(firstUnanswered === -1 ? 0 : firstUnanswered);
   const [local, setLocal] = useState<Record<string, number>>(levels);
-  const [busy, setBusy] = useState(false);
-  const timer = useRef<number | null>(null);
+  const [finishing, setFinishing] = useState(false);
+  const pending = useRef<Promise<unknown> | null>(null);
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); }, []);
 
   const dim = dims[index];
   if (!dim) return null;
 
   const anchors = [dim.anchor_low, dim.anchor_mid, dim.anchor_high];
   const selected = local[dim.id];
+  const last = index === dims.length - 1;
+  const canAdvance = Boolean(selected) && !finishing;
 
-  const pick = async (level: number) => {
-    if (busy) return;
-    const next = { ...local, [dim.id]: level };
-    setLocal(next);
-    setBusy(true);
-    // Await the upsert: the eighth answer must be committed before the
-    // snapshot insert and the reload, or the card falls back to "7 of 8".
+  /* Selecting only selects. Moving is the footer button's job. Each tap
+     still upserts immediately, so resume-where-you-stopped is unchanged. */
+  const pick = (level: number) => {
+    setLocal((prev) => ({ ...prev, [dim.id]: level }));
+    pending.current = Promise.resolve(onAnswer(dim.id, level));
+  };
+
+  const goForward = async () => {
+    if (!canAdvance) return;
+    if (!last) { setIndex(index + 1); return; }
+    setFinishing(true);
     try {
-      await onAnswer(dim.id, level);
-      if (index + 1 < dims.length) {
-        const advance = () => { setIndex(index + 1); setBusy(false); };
-        if (reduced) advance();
-        else timer.current = window.setTimeout(advance, 250);
-        return;
-      }
-      await onFinish(next);
+      // The eighth upsert lands before the snapshot insert and the reload.
+      if (pending.current) await pending.current;
+      await onFinish({ ...local, [dim.id]: selected });
     } finally {
-      if (index + 1 >= dims.length) setBusy(false);
+      setFinishing(false);
     }
   };
 
@@ -633,7 +639,12 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, reduced, onAnswer, on
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <div style={{ background: "#FFFFFF", border: `1px solid ${BORDER}`, borderRadius: 20, padding: 20 }}>
+    <div
+      style={{ background: "#FFFFFF", border: `1px solid ${BORDER}`, borderRadius: 20, padding: 20 }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && canAdvance) { e.preventDefault(); void goForward(); }
+      }}
+    >
       <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.1em", color: INK_2 }}>
         {pad(index + 1)} / {pad(dims.length)}
       </div>
@@ -659,7 +670,7 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, reduced, onAnswer, on
               aria-checked={isSel}
               tabIndex={roving ? 0 : -1}
               ref={(el) => { optionRefs.current[i] = el; }}
-              disabled={busy}
+              disabled={finishing}
               onKeyDown={(e) => onKeyDown(e, i)}
               onClick={() => pick(level)}
               className="capability-anchor"
@@ -675,7 +686,7 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, reduced, onAnswer, on
                 fontFamily: UI,
                 fontSize: 14,
                 lineHeight: 1.5,
-                cursor: busy ? "not-allowed" : "pointer",
+                cursor: finishing ? "not-allowed" : "pointer",
               }}
             >
               {sentence}
@@ -684,14 +695,17 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, reduced, onAnswer, on
         })}
       </div>
 
-      <div style={{ display: "flex", gap: 16, marginTop: 16, alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBlockStart: 16, alignItems: "center" }}>
         <button
           type="button"
           onClick={() => (index === 0 ? onExit() : setIndex(index - 1))}
-          style={{ background: "transparent", border: "none", padding: 0, color: BLUE, fontFamily: UI, fontSize: 13, cursor: "pointer", minHeight: 44 }}
+          style={{ background: "transparent", border: "none", padding: "0 4px", color: BLUE, fontFamily: UI, fontSize: 13, cursor: "pointer", minHeight: 44 }}
         >
           {index === 0 ? "Back to the radar" : "Back"}
         </button>
+        <PrimaryButton onClick={() => void goForward()} disabled={!canAdvance}>
+          {finishing ? "Working" : last ? "Show me the shape" : "Next"}
+        </PrimaryButton>
       </div>
 
       <style>{`
