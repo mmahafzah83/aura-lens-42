@@ -252,6 +252,8 @@ If days_since_last_post > 7, naturally mention the publishing gap in your respon
         return parts.join("\n");
       }).join("\n\n---\n\n");
     }
+    if (!ragContext) ragContext = "—";
+
 
     const totalStats = {
       total: allEntries.length,
