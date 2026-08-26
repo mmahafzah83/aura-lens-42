@@ -121,7 +121,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const { enabled: celebrationsEnabled } = useCelebrationsEnabled();
   const journey = useJourneyState(authUser?.id ?? null);
   // Canonical score: imprint_snapshots (same source as Home/Observatory).
-  const { score: imprintScore, currentTier: imprintTier } = useTierFromImprint(authUser?.id ?? null);
+  
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [scoreTotal, setScoreTotal] = useState<number | null>(null);
