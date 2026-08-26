@@ -426,7 +426,9 @@ ${buildPrefsBlock(voiceProfile, false, chosenOpening, evidenceHasNumber)}`;
 }
 
 function buildArabicVoiceContext(voiceProfile: any, chosenOpening?: string | null, evidenceHasNumber = true): string {
-  if (!voiceProfile) return "";
+  // Same bar as the English path: a shell row is not a voice.
+  if (!voiceProfileIsTrained(voiceProfile)) return "";
+
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
   const useRules = splitForPrompt(vp.use);
