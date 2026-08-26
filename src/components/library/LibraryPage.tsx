@@ -105,7 +105,7 @@ const PublishedList: React.FC<{ lang: "en" | "ar" }> = ({ lang }) => {
             <span style={MONO}>{r.published_at ? formatSmartDate(r.published_at) : ""}</span>
             <span aria-hidden>·</span>
             <span style={arabicLine}>
-              {r.format_type === "carousel" ? T.pieceWordsAndSlides[lang] : T.pieceWords[lang]}
+              {deckHasSlides(r.source_metadata) ? T.pieceWordsAndSlides[lang] : T.pieceWords[lang]}
             </span>
             {r.post_url && (
               <>
