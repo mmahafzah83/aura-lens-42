@@ -250,16 +250,17 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
 
   return (
     <div
-      className="relative"
+      className="relative askaura-presence"
       onMouseEnter={() => { onEnter(); if (avatarState !== "idle") setShowAvatarTip(true); }}
       onMouseLeave={() => { onLeave(); setShowAvatarTip(false); }}
     >
       <button
         onClick={handleClick}
         data-testid="nav-ask-aura"
+        aria-label={count > 0 ? `Ask Aura — ${count} unread` : "Ask Aura"}
         className={
-          className ??
-          "w-full flex items-center gap-3 tactile-press group aura-ask-btn aura-ask-surface"
+          (className ??
+            "w-full flex items-center gap-3 tactile-press group aura-ask-btn aura-ask-surface") + " askaura-focusable"
         }
         style={{
           background: "var(--ask-bg, var(--ob-raised))",
@@ -280,10 +281,11 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
         }}
       >
         <span className="relative inline-flex items-center justify-center shrink-0">
-          <Sparkles className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
+          <Sparkles aria-hidden="true" className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
           {(avatarState === "signal" || avatarState === "window") && (
             <span
               aria-hidden="true"
+              className="askaura-anim"
               style={{
                 position: "absolute",
                 top: "50%",
@@ -304,8 +306,8 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
 
         {visual.badgeBg && (
           <span
-            aria-label={`${count} unread`}
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center shadow-md"
+            aria-hidden="true"
+            className={`askaura-anim absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center shadow-md`}
             style={{
               background: visual.badgeBg,
               color: visual.textColor,
@@ -355,9 +357,9 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
               <button
                 key={e.id}
                 onClick={handleTipItemClick}
-                className="w-full flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-secondary/40 transition-colors text-left group/item"
+                className="askaura-focusable w-full flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-secondary/40 transition-colors text-left group/item"
               >
-                <Icon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                <Icon aria-hidden="true" className="w-3.5 h-3.5 mt-0.5 shrink-0 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-foreground truncate">{e.title}</span>
@@ -369,13 +371,13 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
                     <p className="text-xs text-muted-foreground leading-snug truncate">{e.body}</p>
                   )}
                 </div>
-                <ArrowUpRight className="w-3 h-3 mt-0.5 shrink-0 text-brand opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                <ArrowUpRight aria-hidden="true" className="w-3 h-3 mt-0.5 shrink-0 text-brand opacity-0 group-hover/item:opacity-100 transition-opacity" />
               </button>
             );
           })}
           <button
             onClick={handleTipItemClick}
-            className="w-full text-xs text-primary hover:text-primary/80 px-2 py-1.5 text-right transition-colors"
+            className="askaura-focusable w-full text-xs text-primary hover:text-primary/80 px-2 py-1.5 text-right transition-colors"
           >
             See all →
           </button>
@@ -391,6 +393,18 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           0% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
           50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
           100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+        }
+        .askaura-presence .askaura-focusable:focus-visible {
+          outline: 2px solid var(--act);
+          outline-offset: 2px;
+        }
+        /* The indicator stays; it simply stops moving. */
+        @media (prefers-reduced-motion: reduce) {
+          .askaura-presence [style*="askaura-pulse"],
+          .askaura-presence [style*="askaura-ring-pulse"],
+          .askaura-presence .askaura-anim {
+            animation: none !important;
+          }
         }
       `}</style>
     </div>

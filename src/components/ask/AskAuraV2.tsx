@@ -120,8 +120,10 @@ function railLabel(children: React.ReactNode) {
 }
 
 const PILL_STYLE: React.CSSProperties = {
-  ...MONO, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "baseline",
-  margin: "0 2px", padding: "1px 7px", borderRadius: 999, fontSize: 11, cursor: "pointer",
+  ...MONO, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
+  verticalAlign: "baseline",
+  margin: "0 2px", padding: "4px 10px", minHeight: 24, minWidth: 24, borderRadius: 999,
+  fontSize: 11, cursor: "pointer", lineHeight: 1,
   background: "var(--act-tint)",
   border: "1px solid color-mix(in srgb, var(--act) 45%, transparent)",
   color: "var(--act-hover)",
@@ -135,8 +137,10 @@ const sourceDetail = (s: Source) =>
 const Pill: React.FC<{ c: Citation; onOpen: (id: string) => void }> = ({ c, onOpen }) => (
   <button
     type="button"
+    className="ask-focusable"
     data-testid="citation-pill"
     data-signal-id={c.id}
+    aria-label={`Signal ${c.ref}: ${c.title}`}
     title={`${c.title} — ${c.evidence_count} capture${c.evidence_count === 1 ? "" : "s"}`}
     onClick={() => onOpen(c.id)}
     style={PILL_STYLE}
@@ -149,7 +153,9 @@ const Pill: React.FC<{ c: Citation; onOpen: (id: string) => void }> = ({ c, onOp
 const SourcePill: React.FC<{ s: Source }> = ({ s }) => (
   <button
     type="button"
+    className="ask-focusable"
     data-testid="source-pill"
+    aria-label={`Source ${s.n}: ${sourceDetail(s)}`}
     title={sourceDetail(s)}
     onClick={() => { if (s.url) window.open(s.url, "_blank", "noopener,noreferrer"); }}
     style={{ ...PILL_STYLE, cursor: s.url ? "pointer" : "default" }}
@@ -174,6 +180,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   const [openerDone, setOpenerDone] = useState(false);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const listRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const openerElRef = useRef<HTMLElement | null>(null);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
   const firedRef = useRef(false);
   const openerRef = useRef(false);
@@ -272,11 +280,43 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   }, [open, initialMessage]);
 
 
+  /* Initial focus stays on the textarea; the opener element is remembered so we can hand focus back. */
   useEffect(() => {
     if (!open) return;
+    openerElRef.current = (document.activeElement as HTMLElement | null) ?? null;
     const t = window.setTimeout(() => taRef.current?.focus(), 120);
-    return () => window.clearTimeout(t);
+    return () => {
+      window.clearTimeout(t);
+      const back = openerElRef.current;
+      openerElRef.current = null;
+      if (back && document.contains(back)) window.setTimeout(() => back.focus(), 0);
+    };
   }, [open]);
+
+  /* Escape closes; Tab is trapped inside the dialog in both directions. */
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      const root = panelRef.current;
+      if (!root) return;
+      if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); onClose(); return; }
+      if (e.key !== "Tab") return;
+      const nodes = Array.from(root.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )).filter(el => el.offsetParent !== null || el === document.activeElement);
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && (active === first || !root.contains(active))) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && (active === last || !root.contains(active))) {
+        e.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [open, onClose]);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -498,6 +538,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               <button
                 key={c.ref}
                 type="button"
+                className="ask-focusable ask-rail-row"
                 onClick={() => openSignal(c.id)}
                 style={{
                   textAlign: "left", background: "transparent", cursor: "pointer",
@@ -525,6 +566,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                 <button
                   key={s.n}
                   type="button"
+                  className="ask-focusable ask-rail-row"
+                  aria-label={`Source ${s.n}: ${sourceDetail(s)}`}
                   title={sourceDetail(s)}
                   onClick={() => { if (s.url) window.open(s.url, "_blank", "noopener,noreferrer"); }}
                   style={{
@@ -604,27 +647,38 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   );
 
   return createPortal(
-    <div data-testid="ask-aura-v2" style={{ position: "fixed", inset: 0, zIndex: 10000, background: "var(--surface-page, var(--surface-card))", display: "flex", flexDirection: "column" }}>
+    <div
+      ref={panelRef}
+      data-testid="ask-aura-v2"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ask-aura-title"
+      style={{ position: "fixed", inset: 0, zIndex: 10000, background: "var(--surface-page, var(--surface-card))", display: "flex", flexDirection: "column", overflowX: "hidden" }}
+    >
       <header style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "14px 20px", borderBottom: "1px solid var(--rule-outer)", flex: "0 0 auto",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--machine)" }} />
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--text-primary)" }}>Ask Aura</span>
+          <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 999, background: "var(--machine)" }} />
+          <span id="ask-aura-title" style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--text-primary)" }}>Ask Aura</span>
           {context?.linkedLabel && (
             <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>· {context.linkedLabel}</span>
           )}
         </div>
-        <button type="button" aria-label="Close" onClick={onClose} style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--text-secondary)" }}>
-          <X size={18} />
+        <button type="button" className="ask-focusable" aria-label="Close" onClick={onClose} style={{
+          background: "transparent", border: 0, cursor: "pointer", color: "var(--text-secondary)",
+          width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
+          margin: "-6px -10px -6px 0", borderRadius: 10,
+        }}>
+          <X size={18} aria-hidden="true" />
         </button>
       </header>
 
       <div className="ask-body" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <div className="ask-grid" style={{ height: "100%", maxWidth: 1400, margin: "0 auto", padding: "16px 20px", boxSizing: "border-box" }}>
           <section style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-            <div ref={listRef} style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
+            <div ref={listRef} aria-live="polite" aria-atomic="false" style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
               {messages.length === 0 && openerDone && (
                 <div style={{ padding: "36px 4px", maxWidth: 620 }}>
                   {opener ? (
@@ -636,6 +690,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                             <button
                               key={c.prompt}
                               type="button"
+                              className="ask-focusable ask-chip"
                               onClick={() => send(c.prompt)}
                               style={i === 0 ? {
                                 background: "var(--act)", border: 0, color: "var(--text-inverse)",
@@ -686,7 +741,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                     {/* The machine reporting its own work: cyan, never a button. */}
                     {(m.actions || []).map((a, k) => (
                       <div key={k} data-testid="ask-action-line" style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}>
-                        <span style={{
+                        <span aria-hidden="true" style={{
                           width: 7, height: 7, borderRadius: 999,
                           background: a.ok ? "var(--machine)" : "var(--text-muted)",
                         }} />
@@ -697,11 +752,11 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                     ))}
                     {(m.actions || []).some(a => a.ok && a.tool === "save_draft") && (
                       <div style={{ marginTop: 10 }}>
-                        <button type="button" onClick={openDrafts} style={{
+                        <button type="button" className="ask-focusable ask-chip" onClick={openDrafts} style={{
                           background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
                           borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                           display: "inline-flex", alignItems: "center", gap: 6,
-                        }}>Open in Publish<ArrowUpRight size={13} /></button>
+                        }}>Open in Publish<ArrowUpRight size={13} aria-hidden="true" /></button>
                       </div>
                     )}
                   </div>
@@ -710,7 +765,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               })}
 
               {loading && (
-                <div data-testid="ask-thinking" style={{ ...MONO, fontSize: 12, color: "var(--machine-text)", margin: "10px 0" }}>
+                <div role="status" data-testid="ask-thinking" style={{ ...MONO, fontSize: 12, color: "var(--machine-text)", margin: "10px 0" }}>
                   Reading your graph…
                 </div>
               )}
@@ -718,11 +773,11 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               {!loading && followUps.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "6px 0 16px" }}>
                   {followUps.map(f => (
-                    <button key={f} type="button" onClick={() => send(f)} style={{
+                    <button key={f} type="button" className="ask-focusable ask-chip" onClick={() => send(f)} style={{
                       background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
                       borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                       display: "inline-flex", alignItems: "center", gap: 6,
-                    }}>{f}<ArrowUpRight size={13} /></button>
+                    }}>{f}<ArrowUpRight size={13} aria-hidden="true" /></button>
                   ))}
                 </div>
               )}
@@ -739,6 +794,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               >
                 <textarea
                   ref={taRef}
+                  className="ask-focusable"
+                  aria-label="Ask Aura a question"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(input); } }}
@@ -746,23 +803,23 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                   dir={isAr(input) ? "rtl" : "ltr"}
                   placeholder="Ask about a signal, a draft, or your position"
                   style={{
-                    flex: 1, resize: "none", border: 0, outline: "none", background: "transparent",
+                    flex: 1, resize: "none", border: 0, background: "transparent",
                     fontSize: 14.5, color: "var(--text-primary)", lineHeight: isAr(input) ? 1.9 : 1.5,
                     fontFamily: isAr(input) ? "var(--ff-ar)" : undefined,
                   }}
                 />
-                <button type="submit" aria-label="Send" disabled={loading || !input.trim()} style={{
+                <button type="submit" className="ask-focusable ask-send" aria-label="Send" disabled={loading || !input.trim()} style={{
                   background: "var(--act)", color: "var(--text-inverse)", border: 0, borderRadius: 10,
                   width: 38, height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center",
                   cursor: loading || !input.trim() ? "default" : "pointer", opacity: loading || !input.trim() ? 0.5 : 1,
                 }}>
-                  <Send size={16} />
+                  <Send size={16} aria-hidden="true" />
                 </button>
               </form>
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
                 {seeds.map(s => (
-                  <button key={s.text} type="button" onClick={() => send(s.text)} style={{
+                  <button key={s.text} type="button" className="ask-focusable ask-chip" onClick={() => send(s.text)} style={{
                     background: "transparent", border: "1px solid var(--rule-outer)", color: "var(--text-secondary)",
                     borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                   }}>{s.label}</button>
@@ -778,9 +835,21 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       <style>{`
         .ask-grid { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 20px; }
         .ask-grid > aside { max-height: 100%; }
+        /* Keyboard users must see where they are. Mouse users are untouched. */
+        [data-testid="ask-aura-v2"] .ask-focusable:focus-visible {
+          outline: 2px solid var(--act);
+          outline-offset: 2px;
+        }
+        [data-testid="ask-aura-v2"] .ask-chip { min-height: 36px; }
+        [data-testid="ask-aura-v2"] .ask-rail-row { min-height: 44px; }
+        @media (max-width: 767px) {
+          [data-testid="ask-aura-v2"] .ask-chip { min-height: 44px; }
+          [data-testid="ask-aura-v2"] .ask-send { width: 44px; height: 44px; }
+        }
         @media (max-width: 1023px) {
-          .ask-grid { grid-template-columns: minmax(0,1fr); grid-template-rows: auto minmax(0,1fr); }
-          .ask-grid > aside { order: -1; flex-direction: row; gap: 18px; overflow-x: auto; padding: 12px 14px; }
+          /* The answer leads on a phone; the rail follows underneath it. */
+          .ask-grid { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; }
+          .ask-grid > aside { order: 1; flex-direction: row; gap: 18px; overflow-x: auto; max-width: 100%; padding: 12px 14px; }
           .ask-grid > aside > div { min-width: 220px; }
         }
       `}</style>
