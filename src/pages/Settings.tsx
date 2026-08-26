@@ -344,7 +344,7 @@ const handleDeleteAccount = async () => {
         fontFamily: "var(--font-body)",
       }}
     >
-      <div className="max-w-2xl mx-auto px-6 py-10">
+      <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Back */}
         <button
           type="button"
