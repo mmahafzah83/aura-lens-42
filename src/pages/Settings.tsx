@@ -518,22 +518,21 @@ const handleDeleteAccount = async () => {
                       {liState.handle ? `linkedin.com/in/${liState.handle}` : "LinkedIn"}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
-                      {liState.confirmedByRead ? "Connected — Aura has read this profile" : "Connected"}
+                      {/* The shared rule's sentence — never a locally invented one. */}
+                      {liStatus.explanation}
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="text-sm" style={{ color: "var(--ink)" }}>
-                      {liState.needsReconnect
+                      {mayPromptReconnect(liStatus)
                         ? "Your LinkedIn sign-in has run out"
                         : liState.address
                           ? `Address on file — ${liState.address.replace(/^https?:\/\/(www\.)?/, "")}`
                           : "Not connected"}
                     </div>
                     <div className="mt-1 text-sm" style={{ color: "var(--ink-4)" }}>
-                      {liState.needsReconnect
-                        ? "LinkedIn stopped accepting it, so Aura can't read or publish until you sign in again."
-                        : "Connect your LinkedIn account to publish and sync analytics."}
+                      {liStatus.explanation}
                     </div>
                   </>
                 )}
@@ -545,8 +544,9 @@ const handleDeleteAccount = async () => {
                 disabled={linkedInBusy}
                 onClick={liState.connected ? handleDisconnectLinkedIn : handleConnectLinkedIn}
               >
-                {liState.connected ? "Disconnect" : liState.needsReconnect ? "Reconnect LinkedIn" : "Connect LinkedIn"}
+                {liState.connected ? "Disconnect" : mayPromptReconnect(liStatus) ? "Reconnect LinkedIn" : "Connect LinkedIn"}
               </Button>
+
             </div>
           </AuraCard>
         </div>
