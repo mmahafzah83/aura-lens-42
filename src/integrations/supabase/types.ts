@@ -3140,6 +3140,7 @@ export type Database = {
           cta_style: string | null
           edit_distance: number | null
           edited_at: string | null
+          embedding: string | null
           ending_type: string | null
           engagement_score: number
           enriched_by: string[]
@@ -3178,6 +3179,7 @@ export type Database = {
           tone: string | null
           topic_label: string | null
           tracking_status: string
+          tsv: unknown
           unsourced_entities_removed: number
           unsourced_numbers_removed: number
           user_id: string
@@ -3201,6 +3203,7 @@ export type Database = {
           cta_style?: string | null
           edit_distance?: number | null
           edited_at?: string | null
+          embedding?: string | null
           ending_type?: string | null
           engagement_score?: number
           enriched_by?: string[]
@@ -3239,6 +3242,7 @@ export type Database = {
           tone?: string | null
           topic_label?: string | null
           tracking_status?: string
+          tsv?: unknown
           unsourced_entities_removed?: number
           unsourced_numbers_removed?: number
           user_id: string
@@ -3262,6 +3266,7 @@ export type Database = {
           cta_style?: string | null
           edit_distance?: number | null
           edited_at?: string | null
+          embedding?: string | null
           ending_type?: string | null
           engagement_score?: number
           enriched_by?: string[]
@@ -3300,6 +3305,7 @@ export type Database = {
           tone?: string | null
           topic_label?: string | null
           tracking_status?: string
+          tsv?: unknown
           unsourced_entities_removed?: number
           unsourced_numbers_removed?: number
           user_id?: string
@@ -4894,6 +4900,7 @@ export type Database = {
           consulting_opportunity: Json | null
           content_opportunity: Json | null
           created_at: string
+          embedding: string | null
           explanation: string
           fragment_count: number
           framework_opportunity: Json | null
@@ -4912,6 +4919,7 @@ export type Database = {
           strength_score: number | null
           supporting_evidence_ids: string[]
           theme_tags: string[]
+          tsv: unknown
           unique_orgs: number
           updated_at: string
           user_id: string
@@ -4927,6 +4935,7 @@ export type Database = {
           consulting_opportunity?: Json | null
           content_opportunity?: Json | null
           created_at?: string
+          embedding?: string | null
           explanation: string
           fragment_count?: number
           framework_opportunity?: Json | null
@@ -4945,6 +4954,7 @@ export type Database = {
           strength_score?: number | null
           supporting_evidence_ids?: string[]
           theme_tags?: string[]
+          tsv?: unknown
           unique_orgs?: number
           updated_at?: string
           user_id: string
@@ -4960,6 +4970,7 @@ export type Database = {
           consulting_opportunity?: Json | null
           content_opportunity?: Json | null
           created_at?: string
+          embedding?: string | null
           explanation?: string
           fragment_count?: number
           framework_opportunity?: Json | null
@@ -4978,6 +4989,7 @@ export type Database = {
           strength_score?: number | null
           supporting_evidence_ids?: string[]
           theme_tags?: string[]
+          tsv?: unknown
           unique_orgs?: number
           updated_at?: string
           user_id?: string
@@ -7395,6 +7407,7 @@ export type Database = {
       }
       search_vault: {
         Args: {
+          p_candidates?: number
           p_kinds?: string[]
           p_limit?: number
           p_query: string
@@ -7403,13 +7416,16 @@ export type Database = {
         }
         Returns: {
           content: string
+          kw_rank: number
           metadata: Json
           occurred_at: string
           rank: number
+          rrf: number
           source_id: string
           source_kind: string
           title: string
           url: string
+          vec_distance: number
         }[]
       }
       seed_test_member: {
