@@ -43,7 +43,10 @@ interface Citation {
   confidence: number;
 }
 
-type Msg = { role: "user" | "assistant"; content: string; isError?: boolean };
+interface ActionLine { tool: string; ok: boolean; label: string }
+
+type Msg = { role: "user" | "assistant"; content: string; isError?: boolean; actions?: ActionLine[] };
+
 
 interface Props {
   open: boolean;
