@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { retrieveContext, logRetrievalFailure } from "../_shared/retrieval.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -545,7 +546,7 @@ ${ragContext}`;
 
     const aiJson = await aiRes.json();
     const content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
-    return new Response(JSON.stringify({ content, success: true }), {
+    return new Response(JSON.stringify({ content, success: true, degraded: retrievalDegraded }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
