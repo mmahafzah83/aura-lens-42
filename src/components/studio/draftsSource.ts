@@ -96,6 +96,7 @@ export async function loadStudioDrafts(): Promise<StudioDraft[]> {
         created_at: r.created_at,
         saved_at: r.edited_at || r.created_at,
         signalId: r.source_signal_id ?? (Array.isArray(meta.signal_ids) ? meta.signal_ids[0] ?? null : null),
+        hasSlides: deckHasSlides(meta) || normaliseType(r.format_type) === "carousel",
       });
     }
 
