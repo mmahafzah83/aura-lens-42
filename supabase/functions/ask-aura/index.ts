@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { retrieveContext, logRetrievalFailure } from "../_shared/retrieval.ts";
 import { getUserContext } from "../_shared/userContext.ts";
 import { buildSearchQuery } from "../_shared/queryRewrite.ts";
+import { getCapabilityProfile } from "../_shared/capabilities.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -204,33 +205,11 @@ serve(withObserve("ask-aura", async (req) => {
     const trendsBlock =
       trnds.length === 0 ? "—" : trnds.map((t) => `- ${t.headline} (${t.impact_level || "med"} impact)`).join("\n");
 
-    const skillsBlock = (() => {
-      const sr = p.skill_ratings;
-      if (!sr || typeof sr !== "object") return "—";
-      const entries = Object.entries(sr).filter(([, v]) => typeof v === "number");
-      if (!entries.length) return "—";
-      entries.sort((a, b) => (b[1] as number) - (a[1] as number));
-      const SKILL_LABELS: Record<string, string> = {
-        strategic_architecture: "Strategic Architecture",
-        c_suite_stewardship: "C-Suite Stewardship",
-        sector_foresight: "Sector Foresight",
-        digital_synthesis: "Digital Synthesis",
-        executive_presence: "Executive Presence",
-        commercial_velocity: "Commercial Velocity",
-        human_centric_leadership: "Human-Centric Leadership",
-        operational_resilience: "Operational Resilience",
-        geopolitical_fluency: "Geopolitical Fluency",
-        value_based_pl: "Value-Based P&L",
-      };
-      return entries
-        .map(([k, v]) => {
-          const label =
-            SKILL_LABELS[k] ||
-            k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-          return `- ${label}: ${v}/100`;
-        })
-        .join("\n");
-    })();
+    // Capability is read as BANDS, never as a number — see _shared/capabilities.ts.
+    const capabilityBlock = await getCapabilityProfile(admin as any, user_id)
+      .then((c) => c.toPromptBlock())
+      .catch(() => "Not yet assessed — this member has not completed a capability read.");
+
 
     const fmtList = (arr: any) =>
       Array.isArray(arr) && arr.length ? arr.join(", ") : "—";
@@ -343,8 +322,8 @@ North Star Goal: ${p.north_star_goal || "—"}
 Brand Pillars: ${fmtList(p.brand_pillars)}
 Account age: ${accountDays != null ? `${accountDays} day${accountDays === 1 ? "" : "s"} on Aura` : "—"}
 
-CALIBRATION SCORES (skill_ratings, 0-100):
-${skillsBlock}
+CAPABILITY READ:
+${capabilityBlock}
 
 VOICE PROFILE:
 Tone: ${vp.tone || "—"}
@@ -392,6 +371,8 @@ RESPONSE RULES — follow these on every response without exception:
 TONE: Direct. Confident. A trusted senior colleague who respects the user's intelligence and time. Not a coach. Not a chatbot. Not agreeable for the sake of it.
 
 DIGNITY RULE (NON-NEGOTIABLE): You speak to senior professionals who have decades of expertise. Never diminish their achievements. Never use language that implies they are failing, invisible, or irrelevant. Name the GAP without naming the person as the problem.
+
+NEVER tell a member they are at zero, at 0/100, or that they lack a capability. An unassessed or low band means Aura has not yet seen the evidence, not that the capability is absent. Frame it as 'not yet read' or 'room to show more', never as a deficit.
 
 WRONG: "You are currently an observer, not a leader."
 RIGHT: "Your expertise runs deeper than your digital footprint shows. The gap between what you know and what the market sees is where the opportunity lives."
@@ -465,8 +446,8 @@ Never end a response without this line.
     const responseRules = `
 
 RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
-1. You know EVERYTHING about this user from the context above. Use it. Reference specific signals by name, specific calibration scores with numbers, specific captures by title.
-2. When asked about strengths, give EXACT calibration scores from the CALIBRATION SCORES block — not generic advice.
+1. You know EVERYTHING about this user from the context above. Use it. Reference specific signals by name, specific capability bands from the CAPABILITY READ block, specific captures by title.
+2. When asked about strengths, name the capability and its band from the CAPABILITY READ block. Never state a capability as a number or a score out of 100. If a capability is Not yet assessed, say it has not been read yet and offer the assessment — never treat it as a weakness.
 3. When reviewing content, compare against the VOICE PROFILE. Be honest about what's weak.
 4. ONE recommendation, not five. Reduce decision fatigue. Never write "Here are 5 ideas" or "Consider these options."
 5. End every response with a specific NEXT STEP line.

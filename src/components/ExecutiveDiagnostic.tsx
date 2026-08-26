@@ -270,6 +270,13 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
         .select("skill_ratings").eq("user_id", session.user.id).maybeSingle();
       const existingRatings = ((currentProfile as any)?.skill_ratings as Record<string, number>) || {};
 
+      // Retired ordinal writer — see ObjectiveAuditModal. Ratings are no longer
+      // written from this flow; everything else about the interview still saves.
+      const LEGACY_ORDINAL_WRITE_ENABLED = false;
+      const ratingsPatch = LEGACY_ORDINAL_WRITE_ENABLED
+        ? { skill_ratings: { ...existingRatings, ...ratings }, audit_method: "evidence_audit", instrument_version: 1 }
+        : {};
+
       await supabase.from("diagnostic_profiles").upsert({
         user_id: session.user.id,
         firm: (answers.firm as string) || null,
@@ -281,7 +288,7 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
         leadership_style: (answers.leadership_style as string) || null,
         generated_skills: skills,
         // Merge — never replace: placements from the new instrument stay put.
-        skill_ratings: { ...existingRatings, ...ratings },
+        ...ratingsPatch,
         brand_pillars: brandPillarsArr,
         completed: true,
       } as any, { onConflict: "user_id" });

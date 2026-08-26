@@ -41,7 +41,11 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
-  const orderedScores = DIMENSION_ORDER.map((d) => scores[d] || 0);
+  // A missing key means the capability has not been read — never a zero point.
+  const orderedScores: (number | null)[] = DIMENSION_ORDER.map((d) => {
+    const v = scores[d];
+    return typeof v === "number" && Number.isFinite(v) ? v : null;
+  });
 
   // Draw radar chart
   useEffect(() => {
@@ -93,14 +97,17 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       ctx.stroke();
     }
 
-    // Data polygon
+    // Data polygon — unassessed dimensions are skipped, not plotted at zero.
     ctx.beginPath();
+    let started = false;
     for (let i = 0; i < n; i++) {
+      const raw = orderedScores[i];
+      if (raw === null) continue;
       const angle = startAngle + i * angleStep;
-      const val = orderedScores[i] / 100;
+      const val = raw / 100;
       const x = cx + radius * val * Math.cos(angle);
       const y = cy + radius * val * Math.sin(angle);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
     }
     ctx.closePath();
     const cs = getComputedStyle(document.documentElement);
@@ -114,8 +121,10 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
 
     // Data points
     for (let i = 0; i < n; i++) {
+      const raw = orderedScores[i];
+      if (raw === null) continue;
       const angle = startAngle + i * angleStep;
-      const val = orderedScores[i] / 100;
+      const val = raw / 100;
       const x = cx + radius * val * Math.cos(angle);
       const y = cy + radius * val * Math.sin(angle);
       ctx.beginPath();
@@ -191,13 +200,14 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
     "YOUR PROFESSIONAL IKIGAI": "WHY THIS WORK MATTERS TO ME",
     "YOUR TOP 3 CONTENT PILLARS": "MY 3 AUTHORITY THEMES",
     "YOUR 2 BLIND SPOTS": "WHERE I NEED TO GROW",
+    "WHERE THE EVIDENCE IS THINNEST": "WHERE THE EVIDENCE IS THINNEST",
   };
 
   const renameHeader = (header: string) => HEADER_RENAMES[header] || header;
 
   const renderInterpretation = (text: string) => {
     // Split by known section headers (ALL CAPS lines)
-    const sectionRegex = /^(YOUR [A-Z0-9\s&'\-]+(?:DOMAIN|GENIUS|ANGLE|IKIGAI|PILLARS|SPOTS|CAPABILITY|FIT|CONTENT PILLARS|BLIND SPOTS|BLUE OCEAN ANGLE|DOMINANT GALLUP DOMAIN|ZONE OF GENIUS|PROFESSIONAL IKIGAI|DISTINCTIVE CAPABILITY|PURPOSE-MARKET FIT|TOP 3 CONTENT PILLARS|2 BLIND SPOTS))$/gm;
+    const sectionRegex = /^(WHERE THE EVIDENCE IS THINNEST|YOUR [A-Z0-9\s&'\-]+(?:DOMAIN|GENIUS|ANGLE|IKIGAI|PILLARS|SPOTS|CAPABILITY|FIT|CONTENT PILLARS|BLIND SPOTS|BLUE OCEAN ANGLE|DOMINANT GALLUP DOMAIN|ZONE OF GENIUS|PROFESSIONAL IKIGAI|DISTINCTIVE CAPABILITY|PURPOSE-MARKET FIT|TOP 3 CONTENT PILLARS|2 BLIND SPOTS))$/gm;
     const parts = text.split(sectionRegex);
     
     const sections: { header?: string; body: string }[] = [];

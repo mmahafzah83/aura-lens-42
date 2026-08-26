@@ -653,6 +653,12 @@ const Onboarding = () => {
   const subjectRef = useRef<string | null>(null);
   const [dimIdx, setDimIdx] = useState(0);
   const [scores, setScores] = useState<Record<string, number>>({});
+  /* An untouched slider sits at 50 by display default only. "Not answered"
+     must stay distinguishable from "rated 50", so untouched dimensions are
+     never written. */
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touchedRef = useRef<Record<string, boolean>>({});
+  useEffect(() => { touchedRef.current = touched; }, [touched]);
   const [contentError, setContentError] = useState(false);
   const [flatWarn, setFlatWarn] = useState(false);
   const [flatAck, setFlatAck] = useState(false);
@@ -1174,7 +1180,13 @@ const Onboarding = () => {
         if (pf.sector_focus) { setSector(pf.sector_focus); setSectorKnown(true); }
         if (pf.level) setLevelTitle(pf.level);
         if (pf.seniority_band) setBand(pf.seniority_band as Band);
-        if (pf.skill_ratings && typeof pf.skill_ratings === "object") setScores(pf.skill_ratings);
+        if (pf.skill_ratings && typeof pf.skill_ratings === "object") {
+          setScores(pf.skill_ratings);
+          const t: Record<string, boolean> = {};
+          for (const k of Object.keys(pf.skill_ratings)) t[k] = true;
+          touchedRef.current = { ...touchedRef.current, ...t };
+          setTouched((prev) => ({ ...prev, ...t }));
+        }
         }
         if (st.answers && typeof st.answers === "object") setAnswers(st.answers);
         /* The capture payoff survives a reload: the fragments Aura pulled out
@@ -1329,7 +1341,13 @@ const Onboarding = () => {
       if (p.sector_focus) { setSector(p.sector_focus); setSectorKnown(true); }
       if (p.level) setLevelTitle(p.level);
       if (p.seniority_band) setBand(p.seniority_band as Band);
-      if (p.skill_ratings && typeof p.skill_ratings === "object") setScores(p.skill_ratings as Record<string, number>);
+      if (p.skill_ratings && typeof p.skill_ratings === "object") {
+        setScores(p.skill_ratings as Record<string, number>);
+        const t: Record<string, boolean> = {};
+        for (const k of Object.keys(p.skill_ratings as Record<string, number>)) t[k] = true;
+        touchedRef.current = { ...touchedRef.current, ...t };
+        setTouched((prev) => ({ ...prev, ...t }));
+      }
       /* P1 — answers must be in hand before any resume into the instrument.
          Without this, `advance` rebuilds the set from {} and the save wipes
          everything answered before the reload. */
@@ -1475,7 +1493,7 @@ const Onboarding = () => {
          answers and read sitting in state and on the row. */
       if (subjectRef.current && subjectRef.current !== profile_url) {
         const hadWork = Object.keys(scores).length > 0 || Object.keys(answers).length > 0 || !!reveal;
-        setScores({}); setAnswers({}); setReveal(null); setDimIdx(0); setQIdx(0);
+        setScores({}); setTouched({}); touchedRef.current = {}; setAnswers({}); setReveal(null); setDimIdx(0); setQIdx(0);
         setClaims([]);
         try { localStorage.removeItem(`aura_ob_dim_${userId}`); localStorage.removeItem(`aura_ob_q_${userId}`); } catch { /* ignore */ }
         /* These four columns must actually be emptied on the row, not merely in
@@ -1892,10 +1910,14 @@ const Onboarding = () => {
   /* ── autosave after every slider ──
      Existing members keep whatever keys are already on file: new answers are
      MERGED in alongside them, never written over the top of the object. */
-  const saveScores = useCallback(async (next: Record<string, number>) => {
+  const saveScores = useCallback(async (raw: Record<string, number>) => {
+    // Only dimensions the member actually moved are persisted.
+    const next: Record<string, number> = {};
+    for (const [k, v] of Object.entries(raw)) if (touchedRef.current[k]) next[k] = v;
+    if (Object.keys(next).length === 0) return;
     if (!userId) {
       // Anonymous run — the sliders are kept on the session row.
-      await writeProfile({ skill_ratings: next, audit_results: next, instrument_version: 2, ...(band ? { answered_band: band } : {}) }, "slider save");
+      await writeProfile({ skill_ratings: next, audit_results: next, instrument_version: 2, audit_method: "self_read", ...(band ? { answered_band: band } : {}) }, "slider save");
       return;
     }
     try {
@@ -1917,6 +1939,7 @@ const Onboarding = () => {
      against each other. State moves live; the save happens when the drag ends. */
   const setScore = (name: string, value: number) => {
     setScores((prev) => ({ ...prev, [name]: value }));
+    setTouched((prev) => (prev[name] ? prev : { ...prev, [name]: true }));
   };
 
   /* ── FIX 3 · a refresh must not cost the member their answers ──
@@ -2294,7 +2317,7 @@ const Onboarding = () => {
       } catch { /* ignore */ }
     }
     setAnswers({});
-    setScores({});
+    setScores({}); setTouched({}); touchedRef.current = {};
     setClaims([]);
     /* The resolved address and its read survive — only the journey restarts. */
     if (!readDone) {
@@ -3476,8 +3499,8 @@ const Onboarding = () => {
             aria-label={d.name}
             aria-valuetext={value < 34 ? (d.anchor_low ?? "") : value < 67 ? (d.anchor_mid ?? "") : (d.anchor_high ?? "")}
             onChange={(e) => setScore(d.name, Number(e.target.value))}
-            onPointerUp={(e) => void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) })}
-            onKeyUp={(e) => void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) })}
+            onPointerUp={(e) => { setScore(d.name, Number((e.target as HTMLInputElement).value)); void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) }); }}
+            onKeyUp={(e) => { setScore(d.name, Number((e.target as HTMLInputElement).value)); void saveScores({ ...scores, [d.name]: Number((e.target as HTMLInputElement).value) }); }}
             style={{ marginBlockStart: 26 }}
           />
           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBlockStart: 12 }}>
@@ -3502,8 +3525,8 @@ const Onboarding = () => {
           </div>
           <Actions style={{ marginBlockStart: 26 }}>
             <OBButton onClick={() => {
-              const committed = { ...scores, [d.name]: value };
-              if (!scores[d.name]) setScore(d.name, value);
+              // Advancing without moving the slider does NOT record a 50.
+              const committed = touchedRef.current[d.name] ? { ...scores, [d.name]: value } : { ...scores };
               void saveScores(committed);
               if (!last) { persistDimProgress(dimIdx + 1); setDimIdx((i) => i + 1); return; }
               const finalValues = dims.map((x) => committed[x.name] ?? value);

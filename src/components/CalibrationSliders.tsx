@@ -143,6 +143,22 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
     });
     return init;
   });
+  /* An untouched slider shows 50 but must never be SAVED as 50 — "not
+     answered" has to stay distinguishable from "rated 50". */
+  const [touched, setTouched] = useState<Record<string, boolean>>(() => {
+    const t: Record<string, boolean> = {};
+    if (initialScores) {
+      for (const d of CALIBRATION_DIMENSIONS) {
+        if (typeof initialScores[d.id] === "number") t[d.id] = true;
+      }
+    }
+    return t;
+  });
+  const answeredScores = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(scores)) if (touched[k]) out[k] = v;
+    return out;
+  }, [scores, touched]);
   const [insight, setInsight] = useState<string>("");
   const [insightVisible, setInsightVisible] = useState(false);
   const [companionLine, setCompanionLine] = useState<string>("");
@@ -186,7 +202,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
   const next = () => {
     if (current) {
       // Persist partial scores so progress isn't lost if the user closes the tab.
-      try { onAutoSave?.(scores); } catch { /* non-blocking */ }
+      try { if (Object.keys(answeredScores).length) onAutoSave?.(answeredScores); } catch { /* non-blocking */ }
       // Companion voice checkpoints (after card 3, 5, 8)
       const justFinished = index + 1; // 1-indexed
       let line = "";
@@ -212,7 +228,7 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
 
   const handleFinish = async () => {
     setSubmitting(true);
-    try { await onComplete(scores); } finally { setSubmitting(false); }
+    try { await onComplete(answeredScores); } finally { setSubmitting(false); }
   };
 
   // Summary computations
@@ -281,7 +297,10 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
 
             <CustomSlider
               value={currentScore}
-              onChange={(v) => setScores((s) => ({ ...s, [current.id]: v }))}
+              onChange={(v) => {
+                setScores((s) => ({ ...s, [current.id]: v }));
+                setTouched((t) => (t[current.id] ? t : { ...t, [current.id]: true }));
+              }}
             />
 
             <motion.div

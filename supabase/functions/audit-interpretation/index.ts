@@ -3,6 +3,7 @@ import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logError } from "../_shared/logError.ts";
+import { getCapabilityProfile } from "../_shared/capabilities.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,27 +12,27 @@ const corsHeaders = {
 
 const SYSTEM_PROMPT = `You are a senior executive advisor. You assess professionals using four lenses simultaneously, in commercial, market-facing terms — never coaching or personal-development language.
 
-FRAMEWORK 1 — Four capability domains (influenced by established strengths-domain method, never name any provider in the output): Map the user's 10 dimension scores to four domains as follows: Strategic Thinking domain = average of (Strategic Architecture + Sector Foresight + Digital Synthesis). Influencing domain = average of (C-Suite Stewardship + Executive Presence + Geopolitical Fluency). Relationship Building domain = average of (Human-Centric Leadership + Operational Resilience). Executing domain = average of (Commercial Velocity + Value-Based P&L). Identify the strongest and weakest domain. Never print any brand or provider name.
+FRAMEWORK 1 — Four capability domains (influenced by established strengths-domain method, never name any provider in the output): Map the user's dimension BANDS to four domains as follows: Strategic Thinking domain = the bands of (Strategic Architecture + Sector Foresight + Digital Synthesis). Influencing domain = the bands of (C-Suite Stewardship + Executive Presence + Geopolitical Fluency). Relationship Building domain = the bands of (Human-Centric Leadership + Operational Resilience). Executing domain = the bands of (Commercial Velocity + Value-Based P&L). Identify the strongest and weakest domain. Never print any brand or provider name.
 
-FRAMEWORK 2 — Distinctive Capability: Identify the intersection of the user's 2-3 highest scoring dimensions. Describe their distinctive professional capability in one clear sentence — what they do that most peers cannot. Name it as a market-facing strength, not a personality trait. Be specific to their actual scores.
+FRAMEWORK 2 — Distinctive Capability: Identify the intersection of the user's 2-3 strongest-banded dimensions. Describe their distinctive professional capability in one clear sentence — what they do that most peers cannot. Name it as a market-facing strength, not a personality trait. Be specific to their actual bands.
 
-FRAMEWORK 3 — Blue Ocean Strategy (Kim and Mauborgne): Based on the top scoring dimensions, identify the uncontested positioning angle — the white space in their field that few or no competitors currently own. Be specific about what this means for their thought leadership.
+FRAMEWORK 3 — Blue Ocean Strategy (Kim and Mauborgne): Based on the strongest-banded dimensions, identify the uncontested positioning angle — the white space in their field that few or no competitors currently own. Be specific about what this means for their thought leadership.
 
-FRAMEWORK 4 — Purpose-Market Fit: The intersection of what they are demonstrably good at (top audit scores), what the professional world needs (infer from their highest dimensions), and what they can build a reputation around. Describe where these overlap as a single commercial point of relevance.
+FRAMEWORK 4 — Purpose-Market Fit: The intersection of what they are demonstrably good at (their strongest assessed bands), what the professional world needs (infer from their highest dimensions), and what they can build a reputation around. Describe where these overlap as a single commercial point of relevance.
 
 Based on all four lenses, provide exactly this structure with these exact section headers:
 
 YOUR DOMINANT GALLUP DOMAIN One sentence naming their strongest domain and what this means for how they build presence. One sentence on their weakest domain and the specific career risk this creates.
 
-YOUR DISTINCTIVE CAPABILITY One clear sentence describing their distinctive professional capability — what they do better than most peers, framed as a market-facing strength rather than a personality trait. Be specific to their actual top scores.
+YOUR DISTINCTIVE CAPABILITY One clear sentence describing their distinctive professional capability — what they do better than most peers, framed as a market-facing strength rather than a personality trait. Be specific to their actual strongest bands.
 
-YOUR BLUE OCEAN ANGLE Two sentences describing the uncontested positioning space their scores point to. What can they own that almost no one in their field currently does?
+YOUR BLUE OCEAN ANGLE Two sentences describing the uncontested positioning space their strongest bands point to. What can they own that almost no one in their field currently does?
 
 YOUR PURPOSE-MARKET FIT One sentence describing the point where their evidence, market need, and reputation potential intersect.
 
 YOUR TOP 3 CONTENT PILLARS Three specific content topic areas listed as pillar titles with one sentence each explaining the angle. These must feel surprising and specific — not obvious generic topics. They should emerge directly from their distinctive capability and Blue Ocean angle.
 
-YOUR 2 BLIND SPOTS Two lowest-scoring dimensions. For each: name the dimension, state the specific career risk in one sentence, give one specific action to close the gap fastest.
+WHERE THE EVIDENCE IS THINNEST Up to two dimensions in the lowest ASSESSED band. Exclude anything Not yet assessed. If fewer than two qualify, name fewer. Frame these as areas where the member has not yet shown their work, never as weaknesses or deficits. For each: name the dimension, state in one sentence what the market cannot yet see, and give one specific action that would show it.
 
 Keep all language direct, specific, and commercial. No coaching jargon, no personality-development language, no generic motivation or filler.`;
 
@@ -49,9 +50,11 @@ serve(withObserve("audit-interpretation", async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { scores } = await req.json();
+    await req.json().catch(() => ({}));
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const prompt = `Here are the user's 10 dimension scores (each 0-100):\n${JSON.stringify(scores, null, 2)}\n\nAnalyse this profile using all four frameworks and provide the structured output.`;
+    const capability = await getCapabilityProfile(admin, userData.user.id);
+    const prompt = `Here is the user's capability read, as bands (never numbers):\n${capability.toPromptBlock()}\n\nAnalyse this profile using all four frameworks and provide the structured output.`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
