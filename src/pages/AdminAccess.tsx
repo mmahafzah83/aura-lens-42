@@ -256,8 +256,8 @@ const AdminAccess = () => {
     return { count, avg, nps };
   }, [npsRows]);
 
-  const handleDeleteUser = async (email: string) => {
-    setDeletingEmail(email);
+  const handleDeleteUser = async (target: { email: string; user_id?: string | null }) => {
+    setDeletingEmail(target.email);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
@@ -265,15 +265,20 @@ const AdminAccess = () => {
       }
 
       const { data, error } = await supabase.functions.invoke("admin-delete-user", {
-        body: { target_email: email },
+        body: target.user_id
+          ? { target_user_id: target.user_id }
+          : { target_email: target.email },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      if (error || (data && (data as any).error)) {
-        throw new Error((data as any)?.error || error?.message || "Delete failed");
+      const message = await readFunctionError(data, error);
+      if (message) throw new Error(message);
+      if (!(data as any)?.success || !(data as any)?.deleted_user_id) {
+        throw new Error("The server did not confirm a delete. Nothing was removed.");
       }
       toast.success("User deleted permanently");
-      setRows((prev) => prev.filter((r) => r.email.toLowerCase() !== email.toLowerCase()));
-      setActiveUsers((prev) => prev.filter((u) => u.email.toLowerCase() !== email.toLowerCase()));
+      // No optimistic removal — re-read from the server so the table only
+      // loses a row once the account is genuinely gone.
+      await Promise.all([fetchAuthUsers(), fetchRows()]);
     } catch (e: any) {
       toast.error(e?.message || "Couldn't delete user");
     } finally {
