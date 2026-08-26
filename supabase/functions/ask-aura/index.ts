@@ -64,6 +64,12 @@ serve(withObserve("ask-aura", async (req) => {
     const body = await req.json();
     const incoming: Msg[] = Array.isArray(body?.messages) ? body.messages : [];
     const mode: "advisor" | "standard" = body?.mode === "advisor" ? "advisor" : "standard";
+    const session_id: string | null =
+      typeof body?.session_id === "string" && body.session_id.trim() ? body.session_id.trim() : null;
+    const ctx: { linkedType?: string; linkedId?: string; linkedLabel?: string } =
+      body?.context && typeof body.context === "object" ? body.context : {};
+    const linkedLabel: string =
+      typeof ctx.linkedLabel === "string" ? ctx.linkedLabel.trim() : "";
 
     if (incoming.length === 0) {
       return new Response(JSON.stringify({ error: "messages required" }), {
@@ -72,8 +78,9 @@ serve(withObserve("ask-aura", async (req) => {
       });
     }
 
-    // Cap to last 6 turns
-    const messages = incoming.slice(-6);
+    // Cap to last 12 turns
+    const messages = incoming.slice(-12);
+
 
     // Service-role client for context fetch + writes
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
