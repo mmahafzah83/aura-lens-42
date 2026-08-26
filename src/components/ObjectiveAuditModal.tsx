@@ -6,7 +6,10 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { EVIDENCE_MATRIX, calculateScore, calculateTotalScore } from "@/components/diagnostic/EvidenceMatrix";
+import { EVIDENCE_MATRIX, calculateScore } from "@/components/diagnostic/EvidenceMatrix";
+import { CapabilityBandMeter } from "@/components/capability/CapabilityBandMeter";
+import { BandLegend } from "@/components/capability/BandLegend";
+import { bandForOrdinal } from "@/lib/capabilityBands";
 import AuditResultsView from "@/components/AuditResultsView";
 
 interface ObjectiveAuditModalProps {
@@ -226,10 +229,10 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
               <>
               <Progress value={progress} className="h-1.5 mb-2" />
               <div className="flex items-center justify-between">
-                <p className="text-xs text-ink-5">
-                  Skill {currentSkillIdx + 1} of {EVIDENCE_MATRIX.length} · <span className="text-brand font-semibold">Running score: {calculateTotalScore(checks)}%</span>
+                <p className="text-xs text-ink-5" style={{ fontFamily: "'IBM Plex Mono', ui-monospace, Menlo, monospace" }}>
+                  {readCount} of {EVIDENCE_MATRIX.length} read
                 </p>
-                <p className="text-xs text-ink-5">Answer honestly. Only verified evidence counts.</p>
+                <p className="text-xs text-ink-5">Nothing here is a grade.</p>
               </div>
               </>
               )}
@@ -251,6 +254,12 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
             />
           ) : (
             <div className="space-y-4">
+              <BandLegend />
+              <CapabilityBandMeter
+                label={skill.name}
+                band={bandForOrdinal(calculateScore(checks[skill.name]))}
+                meaning
+              />
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-semibold text-ink-7">{skill.name}</h3>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-surface-ink-subtle text-ink-5">
@@ -295,10 +304,6 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
               padding: "12px 16px",
             }}
           >
-            <div className="text-center mb-3">
-              <span className="text-2xl font-bold text-brand">{calculateScore(checks[skill.name])}%</span>
-              <p className="text-xs text-ink-5">Calculated Score</p>
-            </div>
             <div className="flex items-center justify-between">
               <Button
                 variant="outline"
