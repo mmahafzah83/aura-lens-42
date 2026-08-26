@@ -452,7 +452,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
               <div key={m.id} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.55 }}>
                 <div style={{ ...MONO, fontSize: 10.5, color: "var(--text-muted)" }}>Noted {m.session_date}</div>
                 {m.summary}
-              </div>
+                {Array.isArray(m.actions_committed) && m.actions_committed.length > 0 && (
+                  <div style={{ ...MONO, fontSize: 10.5, color: "var(--text-muted)" }}>
+                    Committed: {m.actions_committed.slice(0, 2).join(" · ")}
+                  </div>
+                )}
+
             ))}
           </div>
         )}
