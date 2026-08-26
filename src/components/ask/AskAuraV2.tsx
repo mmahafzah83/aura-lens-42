@@ -148,6 +148,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
     window.dispatchEvent(new PopStateEvent("popstate"));
     onClose();
   };
+  /** Same navigation contract as openSignal: Dashboard reads ?tab= and renders DraftsPage for "drafts". */
+  const openDrafts = () => {
+    const next = new URLSearchParams(window.location.search);
+    next.set("tab", "drafts");
+    next.delete("signal");
+    window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    onClose();
+  };
+
 
   /* ── Load the rail from real rows only ── */
   useEffect(() => {
