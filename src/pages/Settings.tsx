@@ -462,7 +462,7 @@ const handleDeleteAccount = async () => {
         ) : (
         <>
 
-        <AccountPanel userId={authUser?.id ?? null} email={authUser?.email} />
+        <AccountPanel userId={authUser?.id ?? null} email={authUser?.email} onSaved={() => void loadProfile()} />
 
         {/* Your CV — the door stays open after the journey ends. */}
         <SectionHeader

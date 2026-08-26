@@ -13,6 +13,9 @@ import SetPasswordModal from "@/components/SetPasswordModal";
 interface Props {
   userId: string | null;
   email?: string;
+  /** The Settings page re-reads its profile summary; local state alone left the
+      summary card showing the old name after a save. */
+  onSaved?: () => void;
 }
 
 const labelStyle: React.CSSProperties = {
@@ -38,7 +41,7 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "var(--font-body)",
 };
 
-export default function AccountPanel({ userId, email }: Props) {
+export default function AccountPanel({ userId, email, onSaved }: Props) {
   const [firstName, setFirstName] = useState("");
   const [initialName, setInitialName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -165,6 +168,7 @@ export default function AccountPanel({ userId, email }: Props) {
     setSaving(false);
     if (!ok) { toast.error("That didn't save — try once more."); return; }
     setInitialName(next);
+    onSaved?.();
     toast.success("Name updated");
   };
 
