@@ -2,6 +2,7 @@
 // Moved verbatim out of brand-assessment/index.ts so that admin-regenerate-report
 // produces a byte-identical prompt for the same inputs.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { getCapabilityProfile, BAND_LABEL } from "./capabilities.ts";
 
 export async function buildReadEvidence(
   admin: SupabaseClient,
@@ -140,21 +141,16 @@ export async function buildReadEvidence(
         .eq("active", true)
     : { data: [] as any[] };
   const dims: any[] = (dimRes as any).data ?? [];
-  const scoreMap: Record<string, number> = (auditScores && typeof auditScores === "object")
-    ? auditScores as Record<string, number>
-    : {};
-  const namedScores = Object.entries(scoreMap)
-    .filter(([, v]) => typeof v === "number")
-    .map(([k, v]) => {
-      const d = dims.find((x) => String(x.name).toLowerCase() === k.toLowerCase());
-      return { name: d?.name ?? k, why: d?.why_line ?? null, value: v as number };
-    })
-    .sort((a, b) => b.value - a.value);
-  const namedScoresBlock = namedScores.length
-    ? `THEIR OWN RATINGS, WITH THE NAME OF WHAT THEY RATED (highest first)
-${namedScores.map((s) => `- ${s.name}: ${s.value}${s.why ? ` — ${s.why}` : ""}`).join("\n")}
-Always refer to these by name, never as "dimension 5" or a bare number.`
-    : "THEIR OWN RATINGS\nNone on file.";
+  const capability = await getCapabilityProfile(admin, uid);
+  const namedScoresBlock = capability.assessedCount
+    ? `WHERE THEY STAND, IN BANDS (never numbers — the instruments behind these are not comparable as scores)
+${capability.dimensions.map((d) => {
+      const why = dims.find((x) => String(x.name).toLowerCase() === d.label.toLowerCase())?.why_line ?? null;
+      return `- ${d.label}: ${BAND_LABEL[d.band]}${d.band === "not_assessed" ? "" : d.confidence === "measured" ? " (evidence-backed)" : " (self-reported)"}${why ? ` — ${why}` : ""}`;
+    }).join("\n")}
+Always refer to these by name and by band. Never state a capability as a number, a percentage, or a score out of 100.
+A band of Not yet assessed means Aura has not read that capability yet — never treat it as a weakness.`
+    : "WHERE THEY STAND\nNot yet assessed — this member has not completed a capability read.";
 
   const takenNounsBlock = takenNames.length
     ? `ARCHETYPE NAMES ALREADY GIVEN TO OTHER MEMBERS AT THIS LEVEL IN THIS SECTOR
@@ -322,9 +318,9 @@ Compare that claim against their actual posts above and their captured claims. I
     : "WHERE THEY BET THEY ARE STRONGEST\nNot answered — do not invent a claim to test.";
 
   // Build audit scores context for the AI
-  const auditContext = typeof auditScores === "string"
-    ? auditScores
-    : `The user's Objective Evidence Audit scores are: ${JSON.stringify(auditScores, null, 2)}`;
+  // The raw audit numbers are never shown to the model — three instruments
+  // wrote them on two incompatible scales. Bands only, above.
+  const auditContext = typeof auditScores === "string" ? auditScores : "";
 
   // Documented evidence from their CV that their public profile does not show.
   const cc: any = (prof?.cv_crosscheck && typeof prof.cv_crosscheck === "object") ? prof.cv_crosscheck : null;
@@ -391,7 +387,7 @@ ${auditContext}
 Here are the user's Brand Assessment answers:
 ${JSON.stringify(answers, null, 2)}
 
-Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the audit scores as factual evidence — do not ask the user for them. Reference at least one of their own captured claims, by its substance, inside THE HONEST TRUTH section. THE HONEST TRUTH must also settle the claim-versus-evidence test set out above, with the number named, and it is allowed to be unwelcome — never trade accuracy for comfort. Write for their seniority band. Never write a bracketed placeholder and never write the words "sector name".`;
+Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the capability BANDS above as evidence of where they stand — never quote a capability as a number, and do not ask the user for them. Reference at least one of their own captured claims, by its substance, inside THE HONEST TRUTH section. THE HONEST TRUTH must also settle the claim-versus-evidence test set out above, with the number named, and it is allowed to be unwelcome — never trade accuracy for comfort. Write for their seniority band. Never write a bracketed placeholder and never write the words "sector name".`;
 
   return { floorMet: true, userPrompt, counts };
 }

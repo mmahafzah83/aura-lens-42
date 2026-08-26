@@ -62,7 +62,12 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
   const [completed, setCompleted] = useState(false);
   const [auditMethod, setAuditMethod] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; name: string; score: number; tier: string } | null>(null);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; name: string; score: number | null; tier: string } | null>(null);
+  // A capability with no value has NOT been rated zero — it has not been read.
+  const readScore = (d: string): number | null => {
+    const v = auditResults?.[d];
+    return typeof v === "number" && Number.isFinite(v) ? v : null;
+  };
   const [editMode, setEditMode] = useState(false);
   const [editScores, setEditScores] = useState<Record<string, number>>({});
   const [savingScores, setSavingScores] = useState(false);
@@ -137,7 +142,10 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
     if (n < 3) return;
     const angleStep = (2 * Math.PI) / n;
     const startAngle = -Math.PI / 2;
-    const orderedScores = dimensions.map((d) => auditResults[d] || 0);
+    const orderedScores: (number | null)[] = dimensions.map((d) => {
+      const v = auditResults[d];
+      return typeof v === "number" && Number.isFinite(v) ? v : null;
+    });
 
     ctx.clearRect(0, 0, w, h);
 
@@ -168,14 +176,18 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
       ctx.stroke();
     }
 
-    // Draw data polygon
+    // Draw data polygon — unassessed dimensions have no vertex at all,
+    // rather than a vertex pinned at the centre (which would read as zero).
     ctx.beginPath();
+    let started = false;
     for (let i = 0; i < n; i++) {
+      const raw = orderedScores[i];
+      if (raw === null) continue;
       const angle = startAngle + i * angleStep;
-      const val = orderedScores[i] / 100;
+      const val = raw / 100;
       const x = cx + radius * val * Math.cos(angle);
       const y = cy + radius * val * Math.sin(angle);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
     }
     ctx.closePath();
     ctx.fillStyle = "rgba(197, 165, 90, 0.12)";
@@ -186,8 +198,10 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
 
     // Draw data points
     for (let i = 0; i < n; i++) {
+      const raw = orderedScores[i];
+      if (raw === null) continue;
       const angle = startAngle + i * angleStep;
-      const val = orderedScores[i] / 100;
+      const val = raw / 100;
       const x = cx + radius * val * Math.cos(angle);
       const y = cy + radius * val * Math.sin(angle);
       ctx.beginPath();
@@ -246,14 +260,16 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
 
     for (let i = 0; i < n; i++) {
       const angle = startAngle + i * angleStep;
-      const val = (auditResults[dimensions[i]] || 0) / 100;
+      const rawHover = readScore(dimensions[i]);
+      if (rawHover === null) continue;
+      const val = rawHover / 100;
       const px = cx + radius * val * Math.cos(angle);
       const py = cy + radius * val * Math.sin(angle);
       const dist = Math.sqrt((mx - px) ** 2 + (my - py) ** 2);
       if (dist < 20 && (!closest || dist < closest.dist)) {
         closest = {
           name: formatSkillLabel(dimensions[i]),
-          score: auditResults[dimensions[i]] || 0,
+          score: readScore(dimensions[i]),
           tier: DIMENSION_TIERS[dimensions[i]]?.tier || "Core",
           dist,
         };
@@ -304,7 +320,10 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
   const startEdit = () => {
     if (auditResults) {
       const scores: Record<string, number> = {};
-      dimensions.forEach(d => { scores[d] = auditResults[d] || 0; });
+      dimensions.forEach(d => {
+        const v = readScore(d);
+        if (v !== null) scores[d] = v;
+      });
       setEditScores(scores);
       setEditMode(true);
     }
@@ -318,7 +337,8 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
     // Merge — never replace. Older keys stay exactly where they are.
     const merged = { ...(auditResults || {}), ...editScores };
     const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({ audit_results: merged, skill_ratings: merged })
+      // Every write to skill_ratings is stamped with its instrument.
+      .update({ audit_results: merged, skill_ratings: merged, audit_method: "self_calibration", instrument_version: 1 })
       .eq("user_id", user.id);
 
     if (error) {
@@ -370,10 +390,12 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
             <div key={dim} className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-ink-7">{formatSkillLabel(dim)}</span>
-                <span className="text-xs font-medium" style={{ color: "var(--brand)" }}>{editScores[dim] || 0}%</span>
+                <span className="text-xs font-medium" style={{ color: "var(--brand)" }}>
+                  {typeof editScores[dim] === "number" ? `${editScores[dim]}%` : "Not yet assessed"}
+                </span>
               </div>
               <Slider
-                value={[editScores[dim] || 0]}
+                value={[typeof editScores[dim] === "number" ? editScores[dim] : 50]}
                 onValueChange={([v]) => setEditScores(prev => ({ ...prev, [dim]: v }))}
                 max={100}
                 step={1}
@@ -409,7 +431,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
             >
               <p className="text-xs font-medium" style={{ color: "var(--ink-7)" }}>{tooltip.name}</p>
               <p className="text-xs" style={{ color: "var(--brand)" }}>
-                {tooltip.score}% · {tooltip.tier} Tier
+                {tooltip.score === null ? "Not yet assessed" : `${tooltip.score}%`} · {tooltip.tier} Tier
               </p>
             </div>
           )}

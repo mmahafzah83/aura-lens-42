@@ -16,6 +16,12 @@ interface ObjectiveAuditModalProps {
   onNavigate?: (tab: string) => void;
 }
 
+// The ordinal three-checkbox ladder is RETIRED as a writer. Its values
+// ({0,33,50,66,70,100}) are not comparable with the continuous instruments,
+// and a 0 means "no evidence checked", not a measured zero. Historic rows are
+// left untouched; new writes are gated off behind this flag.
+const LEGACY_ORDINAL_WRITE_ENABLED = false;
+
 const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: ObjectiveAuditModalProps) => {
   const [currentSkillIdx, setCurrentSkillIdx] = useState(0);
   const [checks, setChecks] = useState<Record<string, boolean[]>>(
@@ -77,9 +83,19 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
       const existingRatings = ((current as any)?.skill_ratings as Record<string, number>) || {};
       const existingAudit = ((current as any)?.audit_results as Record<string, number>) || {};
 
+      if (!LEGACY_ORDINAL_WRITE_ENABLED) {
+        toast({
+          title: "Use the capability read",
+          description: "This audit no longer records scores. Set your capabilities from My Story.",
+        });
+        setSaving(false);
+        return;
+      }
+
       await (supabase.from("diagnostic_profiles" as any) as any)
         .update({
           skill_ratings: { ...existingRatings, ...newRatings },
+          instrument_version: 1,
           generated_skills: skills,
           completed: true,
           audit_results: { ...existingAudit, ...newRatings },
