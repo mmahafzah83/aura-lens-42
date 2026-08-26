@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { nCaptures, nSignals } from "../_shared/vocabulary.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -127,7 +128,7 @@ serve(async (req) => {
         const t = String(unwritten.signal_title);
         const out: Opener = {
           kind: "unwritten signal",
-          text: `Your ${t} signal has been live ${n} days with ${frags} captures behind it, and you have not written from it yet.`,
+          text: `Your ${t} signal has been live ${n} days with ${nCaptures(frags, "en")} behind it, and you have not written from it yet.`,
           chips: [
             { label: "Draft it", prompt: `Draft a post from my signal "${t}" using the evidence behind it.` },
             { label: "Show me the evidence", prompt: `What evidence sits behind "${t}"?` },
@@ -189,7 +190,7 @@ serve(async (req) => {
 
     return json({
       kind: "cold start",
-      text: `I can see ${E} captures and ${S} live signals of yours. Ask me anything inside that.`,
+      text: `I can see ${nCaptures(E, "en")} and ${S} live ${nSignals(S, "en").replace(/^\d+\s/, "")} of yours. Ask me anything inside that.`,
       chips: [
         { label: "What can you see?", prompt: "What can you actually see in my graph right now?" },
         { label: "What should I write?", prompt: "From what I have already captured, what should I write next?" },
