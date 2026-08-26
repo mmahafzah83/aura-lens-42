@@ -808,47 +808,60 @@ const AdminAccess = () => {
           </div>
         </div>
 
-        {/* User management — delete users + their data */}
+        {/* Users — every auth account, read from auth.users via admin-active-users */}
         <div
           className="rounded-2xl p-6 mt-8"
           style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--border-default)" }}
         >
           <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
-            User management
+            Users
           </h2>
           <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
-            Users signed up: {metrics ? signedUp(metrics) ?? "?" : "—"}
-            {metrics ? ` · ${freshnessLine(metrics)} · ${exclusionLine(metrics)}` : ""} The list below is every auth
-            account, including test accounts. Deleting a user removes their auth account and all associated data permanently.
+            Every sign-in account that exists, including test accounts and accounts with no waitlist row.
+            {metrics ? ` Users signed up: ${signedUp(metrics) ?? "?"} · ${freshnessLine(metrics)} · ${exclusionLine(metrics)}` : ""}
+            {" "}Deleting a user removes their account and all associated data permanently.
           </p>
-          {rows.length === 0 ? (
-            <div className="text-xs" style={{ color: "var(--text-secondary)" }}>No users yet.</div>
+          {activeLoading ? (
+            <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading accounts…
+            </div>
+          ) : usersError ? (
+            <div className="text-xs" style={{ color: "#C0392B" }}>{usersError}</div>
+          ) : activeUsers.length === 0 ? (
+            <div className="text-xs" style={{ color: "var(--text-secondary)" }}>No accounts yet.</div>
           ) : (
             <div className="space-y-2">
-              {rows.map((r) => {
-                const profile = activeUsers.find((u) => u.email.toLowerCase() === r.email.toLowerCase());
+              <div className="text-xs mb-2" style={{ color: "var(--text-secondary)" }}>
+                {activeUsers.length} account{activeUsers.length === 1 ? "" : "s"}
+              </div>
+              {activeUsers.map((u) => {
+                const email = u.email || "(no email)";
                 const isProtected =
-                  (!!profile?.user_id && adminIds.has(profile.user_id)) ||
-                  r.email.toLowerCase() === PROTECTED_EMAIL;
-                const isDeleting = deletingEmail === r.email;
+                  adminIds.has(u.user_id) ||
+                  u.role === "admin" ||
+                  email.toLowerCase() === PROTECTED_EMAIL;
+                const isDeleting = deletingEmail === email;
                 return (
                   <div
-                    key={r.id}
+                    key={u.user_id}
                     className="flex items-start justify-between gap-4 p-3 rounded-md"
                     style={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-default)" }}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                        {r.email}
+                        {email}
                       </div>
                       <div className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                        {profile?.first_name
-                          ? `${profile.first_name}${profile.sector ? ` · ${profile.sector}` : ""}`
-                          : r.name || "(Profile not completed)"}
+                        {u.full_name || u.first_name || "(Profile not completed)"}
+                        {u.sector ? ` · ${u.sector}` : ""}
                       </div>
-                      <div className="text-xs mt-1 uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>
-                        <span className={`inline-block px-2 py-0.5 rounded border ${statusBadge(r.status)}`}>{r.status}</span>
-                        <span className="ml-2">Joined: {formatDate(r.invited_at || r.created_at || r.requested_at)}</span>
+                      <div className="text-xs mt-1 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: "var(--text-secondary)" }}>
+                        <span>Created: {formatDate(u.created_at)}</span>
+                        <span>Last sign-in: {relativeTime(u.last_sign_in_at)}</span>
+                        <span>Type: {u.account_type || "—"}</span>
+                        <span>Plan: {u.tier || "—"}</span>
+                        <span>Role: {u.role || "member"}</span>
+                        <span>{u.has_profile ? "Has profile" : "No profile"}</span>
                       </div>
                     </div>
                     {isProtected ? (
@@ -857,7 +870,7 @@ const AdminAccess = () => {
                       </span>
                     ) : (
                       <button
-                        onClick={() => setConfirmDeleteRow({ email: r.email, name: r.name })}
+                        onClick={() => setConfirmDeleteRow({ email, name: u.full_name, user_id: u.user_id })}
                         disabled={isDeleting}
                         className="px-3 py-1.5 text-xs rounded-md inline-flex items-center gap-1.5 shrink-0"
                         style={{ border: "1px solid rgba(192,57,43,0.4)", color: "#C0392B" }}
