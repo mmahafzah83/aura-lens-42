@@ -343,6 +343,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
           try {
             const j = JSON.parse(payload);
             if (Array.isArray(j?.citations)) gotCitations = j.citations as Citation[];
+            if (Array.isArray(j?.sources)) gotSources = j.sources as Source[];
             if (j?.action && typeof j.action?.label === "string") {
               gotActions.push({ tool: String(j.action.tool || ""), ok: !!j.action.ok, label: j.action.label });
             }
