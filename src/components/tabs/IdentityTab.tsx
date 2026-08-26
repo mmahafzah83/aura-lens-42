@@ -668,7 +668,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     if (!cvDoc) return "no_cv";
     if (cvDoc.status === "processing") return "processing";
     if (cvDoc.status === "error" || cvDoc.status === "failed") return "error";
-    if (cvCrosscheckAt && cvDoc.created_at && new Date(cvDoc.created_at).getTime() > new Date(cvCrosscheckAt).getTime()) {
+    if (profile?.cv_crosscheck && cvCrosscheckAt && cvDoc.created_at && new Date(cvDoc.created_at).getTime() > new Date(cvCrosscheckAt).getTime()) {
       return "stale";
     }
     return "ready";
