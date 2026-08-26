@@ -566,6 +566,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                 <button
                   key={s.n}
                   type="button"
+                  className="ask-focusable ask-rail-row"
+                  aria-label={`Source ${s.n}: ${sourceDetail(s)}`}
                   title={sourceDetail(s)}
                   onClick={() => { if (s.url) window.open(s.url, "_blank", "noopener,noreferrer"); }}
                   style={{
