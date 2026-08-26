@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
 import { logError } from "../_shared/logError.ts";
+import { isMadeWithAura } from "../_shared/postProvenance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
