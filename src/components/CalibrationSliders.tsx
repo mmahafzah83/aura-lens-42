@@ -408,102 +408,29 @@ interface SummaryCardProps {
   onBack: () => void;
 }
 
-const CountUp = ({ value, reduceMotion, onDone }: { value: number; reduceMotion: boolean; onDone?: () => void }) => {
-  const [n, setN] = useState(reduceMotion ? value : 0);
-  useEffect(() => {
-    if (reduceMotion) { setN(value); onDone?.(); return; }
-    const duration = 800;
-    const start = performance.now();
-    let raf = 0;
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setN(Math.round(eased * value));
-      if (p < 1) raf = requestAnimationFrame(tick);
-      else onDone?.();
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-  return <>{n}</>;
-};
-
-const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBack }: SummaryCardProps) => {
-  const [numbersDone, setNumbersDone] = useState(0);
-  const totalNumbers = 3;
-  const showPercentile = numbersDone >= totalNumbers;
-  const [companion, setCompanion] = useState("");
-  useEffect(() => {
-    if (showPercentile) {
-      const t = window.setTimeout(() => setCompanion("This is rare. Most professionals never map their strengths like this."), 600);
-      return () => window.clearTimeout(t);
-    }
-  }, [showPercentile]);
-  const onNumDone = () => setNumbersDone((n) => n + 1);
-
+const SummaryCard = ({ summary, submitting, onFinish, onBack }: SummaryCardProps) => {
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ fontSize: 24, color: ACT, marginBottom: 12 }}>✦</div>
       <h2 style={{
         fontFamily: SERIF,
-        fontSize: 22, color: INK, marginBottom: 24,
+        fontSize: 22, color: INK, marginBottom: 20,
       }}>
         Your Calibration
       </h2>
 
       <div style={{ textAlign: "left", maxWidth: 360, margin: "0 auto 20px" }}>
-        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: INK_FAINT, marginBottom: 8 }}>
-          Strongest edges
-        </p>
-        {summary.top2.map((d) => (
-          <p key={d.id} style={{ fontSize: 14, color: INK, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ color: ACT }}>◆</span>
-            <span>{d.name}</span>
-            <span style={{
-              marginLeft: "auto", color: ACT, fontFamily: MONO,
-              boxShadow: numbersDone >= totalNumbers ? "0 0 8px rgba(6,112,196,0.25)" : "none",
-              borderRadius: 4, padding: "0 4px", transition: "box-shadow 400ms ease",
-            }}>
-              <CountUp value={scores[d.id]} reduceMotion={reduceMotion} onDone={onNumDone} />
-            </span>
-          </p>
-        ))}
-
-        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: INK_FAINT, margin: "18px 0 8px" }}>
-          Biggest growth territory
-        </p>
-        <p style={{ fontSize: 14, color: INK_SOFT, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
-          <span>◇</span>
-          <span>{summary.lowest.name}</span>
-          <span style={{
-            marginLeft: "auto", fontFamily: MONO,
-            color: INK_SOFT,
-          }}>
-            <CountUp value={scores[summary.lowest.id]} reduceMotion={reduceMotion} onDone={onNumDone} />
-          </span>
+        <BandLegend className="mb-4" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {summary.rows.map((r) => (
+            <CapabilityBandMeter key={r.id} label={r.name} band={r.band} size="sm" />
+          ))}
+        </div>
+        <p style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT, marginTop: 18 }}>
+          {summary.readCount} of {summary.total} read
         </p>
       </div>
 
-      <motion.p
-        animate={{ opacity: showPercentile ? 1 : 0 }}
-        transition={{ duration: 0.5 }}
-        style={{ fontSize: 13, color: INK_SOFT, marginBottom: 12 }}
-      >
-        Your calibration places you in the {summary.percentile} of professionals who've completed this assessment.
-      </motion.p>
-
-      <AnimatePresence>
-        {companion && (
-          <motion.p
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            style={{ fontSize: 13, color: INK_SOFT, marginBottom: 20, fontStyle: "italic" }}
-          >
-            {companion}
-          </motion.p>
-        )}
-      </AnimatePresence>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 16 }}>
         <button
