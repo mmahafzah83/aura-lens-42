@@ -135,5 +135,6 @@ export async function loadStudioDraft(id: string): Promise<StudioDraft | null> {
     created_at: r.created_at,
     saved_at: r.edited_at || r.created_at,
     signalId: r.source_signal_id ?? null,
+    hasSlides: deckHasSlides(meta) || normaliseType(r.format_type) === "carousel",
   };
 }
