@@ -46,17 +46,6 @@ import {
   filterPublishedRows,
 } from "@/lib/postProvenance";
 
-// Canonical 8-milestone definition for the timeline
-const MILESTONE_DEFS: { id: string; name: string; cta?: { label: string; tab: string } }[] = [
-  { id: "profile_complete", name: "Profile complete" },
-  { id: "brand_assessment", name: "Brand assessment" },
-  { id: "first_signal", name: "First signal", cta: { label: "Capture an article →", tab: "intelligence" } },
-  { id: "voice_trained", name: "Voice trained", cta: { label: "Train your voice →", tab: "authority" } },
-  { id: "first_publish", name: "First publish", cta: { label: "Draft this post →", tab: "authority" } },
-  { id: "five_signals", name: "Five signals", cta: { label: "Capture an article →", tab: "intelligence" } },
-  { id: "sector_depth", name: "Sector depth", cta: { label: "Capture more sources →", tab: "intelligence" } },
-  { id: "weekly_rhythm_4", name: "Weekly rhythm", cta: { label: "Capture this week →", tab: "intelligence" } },
-];
 
 const prettify = (s?: string) =>
   (s || "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, (m) => m.toUpperCase());
