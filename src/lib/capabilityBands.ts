@@ -63,7 +63,7 @@ export const BAND_COPY: Record<CapabilityBand, { label: string; meaning: string;
 /** System-B only. Cyan #00CEC9 is reserved for a small live dot elsewhere. */
 export const BAND_TOKEN: Record<CapabilityBand, { fill: string; text: string; bg: string }> = {
   not_assessed: { fill: "#E2E7EE", text: "#5B6673", bg: "#F2F5F9" },
-  developing: { fill: "#E0A82E", text: "#9A6F12", bg: "#FDF6E7" },
+  developing: { fill: "#E0A82E", text: "#7A5709", bg: "#FDF6E7" },
   solid: { fill: "#0670C4", text: "#04477C", bg: "#EAF3FB" },
-  strong: { fill: "#12805C", text: "#12805C", bg: "#E8F5F0" },
+  strong: { fill: "#12805C", text: "#0E6A4C", bg: "#E8F5F0" },
 };
