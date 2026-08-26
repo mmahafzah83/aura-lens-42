@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import CapabilityRadar from "@/components/identity/CapabilityRadar";
 import { FirstTimeHint } from "@/components/FirstTimeHint";
 import MilestonesSection from "@/components/MilestonesSection";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
@@ -1002,6 +1003,17 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       {pane === "standing" && (
       <div style={STANDING_STACK}>
+      {/* SECTION 5 — CAPABILITY RADAR */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <SectionHeader label="Your capability radar" />
+        <InfoTooltip label="Your capability radar" slug="capability-radar" />
+      </div>
+      <CapabilityRadar
+        userId={authUser?.id ?? null}
+        band={(profile?.seniority_band as "work" | "table" | "room" | null) ?? null}
+        onBandChosen={() => { if (authUser) loadAll(authUser.id); }}
+      />
+
       {/* SECTION 6 — CV AGAINST PROFILE */}
       {/* Every state is inside CvCrosscheck; this pane only supplies the truth. */}
       <div>

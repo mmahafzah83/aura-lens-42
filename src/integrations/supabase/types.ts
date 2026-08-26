@@ -632,6 +632,68 @@ export type Database = {
         }
         Relationships: []
       }
+      capability_radar_snapshots: {
+        Row: {
+          band: Database["public"]["Enums"]["seniority_band"]
+          id: string
+          instrument_version: number
+          levels: Json
+          taken_at: string
+          user_id: string
+        }
+        Insert: {
+          band: Database["public"]["Enums"]["seniority_band"]
+          id?: string
+          instrument_version?: number
+          levels?: Json
+          taken_at?: string
+          user_id: string
+        }
+        Update: {
+          band?: Database["public"]["Enums"]["seniority_band"]
+          id?: string
+          instrument_version?: number
+          levels?: Json
+          taken_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      capability_responses: {
+        Row: {
+          answered_at: string
+          dimension_id: string
+          id: string
+          instrument_version: number
+          level: number
+          user_id: string
+        }
+        Insert: {
+          answered_at?: string
+          dimension_id: string
+          id?: string
+          instrument_version?: number
+          level: number
+          user_id: string
+        }
+        Update: {
+          answered_at?: string
+          dimension_id?: string
+          id?: string
+          instrument_version?: number
+          level?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capability_responses_dimension_id_fkey"
+            columns: ["dimension_id"]
+            isOneToOne: false
+            referencedRelation: "capability_dimensions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       captures: {
         Row: {
           created_at: string
