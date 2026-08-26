@@ -520,7 +520,7 @@ export default function CvCrosscheck({
   };
 
   return (
-    <div style={{ display: "grid", gap: 16, maxInlineSize: 640, ...style }}>
+    <div style={{ display: "grid", gap: 16, ...style }}>
       {/* 1 · Verdict — the only night surface here. */}
       <section
         style={{

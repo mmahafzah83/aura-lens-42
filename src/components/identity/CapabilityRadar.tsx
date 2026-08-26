@@ -100,7 +100,6 @@ interface Props {
 }
 
 const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
-  const reduced = usePrefersReducedMotion();
   const [dims, setDims] = useState<Dimension[]>([]);
   const [levels, setLevels] = useState<Record<string, number>>({});
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
