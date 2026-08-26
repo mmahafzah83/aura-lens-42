@@ -22,7 +22,21 @@ export type StudioDraft = {
       falling back to created_at when the table has never recorded an edit. */
   saved_at: string;
   signalId: string | null;
+  /** True only when a real built deck exists (source_metadata.deck.slides) or the
+      row's own type is a carousel — never derived from linkedin_posts.format_type,
+      which never carries "carousel". */
+  hasSlides: boolean;
 };
+
+/** ONE definition of "has slides". Observed live shape: source_metadata.deck is a
+    jsonb OBJECT like { dir, theme, length, slides: [...] }. */
+export function deckHasSlides(meta: unknown): boolean {
+  const d = (meta as any)?.deck;
+  if (!d || typeof d !== "object") return false;
+  const slides = Array.isArray(d) ? d : (d.slides ?? d.pages ?? null);
+  if (Array.isArray(slides)) return slides.length > 0;
+  return Object.keys(d).length > 0;
+}
 
 function normaliseType(raw: any): StudioDraft["type"] {
   return raw === "carousel" ? "carousel" : raw === "framework" ? "framework" : "linkedin_post";
