@@ -6,6 +6,7 @@ import SubTabs from "@/components/nav/SubTabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { T } from "@/components/studio/strings";
+import { deckHasSlides } from "@/components/studio/draftsSource";
 import { formatSmartDate } from "@/lib/formatDate";
 
 /**
