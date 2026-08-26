@@ -259,15 +259,23 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     setLoadError(false);
     setLoading(true);
     try {
-      const [profileRes, signalsRes] = await withTimeout(Promise.all([
+      const [profileRes, signalsRes, cvDocRes] = await withTimeout(Promise.all([
         (supabase.from("diagnostic_profiles" as any) as any)
-          .select("first_name, last_name, level, firm, sector_focus, seniority_band, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength, instrument_version")
+          .select("first_name, last_name, level, firm, sector_focus, seniority_band, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, audit_method, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength, instrument_version, cv_crosscheck, cv_crosscheck_at")
           .eq("user_id", uid).maybeSingle(),
         (supabase.from("strategic_signals") as any)
           .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids, strength_score, lifecycle_tier")
           .eq("user_id", uid).eq("status", "active")
           .order("confidence", { ascending: false }).limit(40),
+        /* Newest CV on file — the only input the cross-check states need. */
+        (supabase.from("documents") as any)
+          .select("status, created_at")
+          .eq("user_id", uid).eq("document_type", "cv")
+          .order("created_at", { ascending: false }).limit(1).maybeSingle(),
       ]), 12000);
+
+      setCvDoc((cvDocRes as any)?.data ?? null);
+      setCvCrosscheckAt(((profileRes as any)?.data?.cv_crosscheck_at as string | null) ?? null);
 
       if (profileRes.data) {
         setProfile(profileRes.data);
