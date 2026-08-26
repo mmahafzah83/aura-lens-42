@@ -1,4 +1,5 @@
 import { evidenceAndSources, nEvidence, evidenceCountAr as evidenceAr, nEvidenceParts, withTail, type CountParts } from "@/constants/vocabulary";
+import { formatSmartDate } from "@/lib/formatDate";
 
 export type Lang = "en" | "ar";
 export type Posture = "delegator" | "editor" | "author";
@@ -890,4 +891,23 @@ export function postureLabel(p: Posture, lang: Lang): string {
   if (p === "delegator") return tr("postureNameDelegator", lang);
   if (p === "author") return tr("postureNameAuthor", lang);
   return tr("postureNameEditor", lang);
+}
+/**
+ * When a piece was last saved, said the way a person would say it.
+ * English reuses the app-wide formatter (src/lib/formatDate.ts); Arabic is
+ * worded here because that formatter is English-only.
+ */
+export function savedAgo(iso: string | null | undefined, lang: Lang): string {
+  if (!iso) return "";
+  if (lang !== "ar") return formatSmartDate(iso);
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (mins < 1) return "الآن";
+  if (mins < 60) return mins === 1 ? "منذ دقيقة" : mins === 2 ? "منذ دقيقتين" : `منذ ${mins} دقيقة`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs === 1 ? "منذ ساعة" : hrs === 2 ? "منذ ساعتين" : `منذ ${hrs} ساعة`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return days === 1 ? "منذ يوم" : days === 2 ? "منذ يومين" : `منذ ${days} أيام`;
+  return d.toLocaleDateString("ar", { month: "long", day: "numeric" });
 }
