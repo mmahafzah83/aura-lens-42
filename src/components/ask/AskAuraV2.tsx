@@ -422,6 +422,10 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   }, [open, initialMessage]);
 
   const cited = useMemo(() => citedOrder.map(r => citations[r]).filter(Boolean), [citedOrder, citations]);
+  const citedSourceRows = useMemo(
+    () => citedSources.map(n => sources[n]).filter(Boolean),
+    [citedSources, sources],
+  );
 
   if (!open) return null;
 
