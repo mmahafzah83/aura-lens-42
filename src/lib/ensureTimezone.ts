@@ -7,6 +7,7 @@
  * Silent, once per session, never blocking.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { writeProfile } from "@/lib/profileWrite";
 
 const sessionKey = (userId: string) => `aura_tz_synced_${userId}`;
 
@@ -19,7 +20,13 @@ export function browserTimezone(): string | null {
   }
 }
 
-/** Write the browser zone when the stored one is missing or stale. Never throws. */
+/**
+ * Write the browser zone when the stored one is missing or stale. Never throws.
+ *
+ * The write goes through `writeProfile`, never a raw `.update().eq()`: PostgREST
+ * answers an update that matches zero rows with 204 and no error, which is how
+ * 13 of 14 members ended up with no timezone at all.
+ */
 export async function ensureTimezone(userId: string | null | undefined): Promise<void> {
   if (!userId) return;
   const tz = browserTimezone();
@@ -36,13 +43,12 @@ export async function ensureTimezone(userId: string | null | undefined): Promise
     if (error) { console.warn("[timezone] read failed", error); return; }
     const current = (data as any)?.timezone ?? null;
     if (current !== tz) {
-      const { error: writeError } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .update({ timezone: tz } as any)
-        .eq("user_id", userId);
-      if (writeError) { console.warn("[timezone] write failed", writeError); return; }
+      const ok = await writeProfile(userId, { timezone: tz }, "ensureTimezone");
+      if (!ok) return;
     }
     try { sessionStorage.setItem(sessionKey(userId), tz); } catch { /* ignore */ }
   } catch (e) {
     console.warn("[timezone] sync threw", e);
   }
 }
+

@@ -2663,6 +2663,16 @@ export default function StudioPanel({
      same reason line the card showed. */
   const chosenCard = choice?.id ? (cards.find((c) => c.signalId === choice.id) ?? null) : null;
 
+  /* ONE way to change the writing language, and it SAVES.
+     `content_language` on the profile is the durable answer — the boot seed
+     above reads that same column, so an Arabic-first member is no longer
+     re-seeded to English on every fresh mount. Never a raw `.update()`. */
+  const chooseWriteLang = (next: Lang) => {
+    langChosenRef.current = true;
+    setWriteLang(next);
+    if (userId) void writeProfile(userId, { content_language: next }, "composer writing language");
+  };
+
   /* ONE language control, ONE state. Rendered on the hub, subject, paste and
      confirm screens; every one of them is this same element, so there is no
      second source of truth for the writing language. */
@@ -2680,7 +2690,7 @@ export default function StudioPanel({
               type="button"
               className="v23-tap v23-focus"
               aria-pressed={on}
-              onClick={() => { langChosenRef.current = true; setWriteLang(key); }}
+              onClick={() => chooseWriteLang(key)}
               style={{
                 minHeight: 44, padding: "0 16px", borderRadius: 8, cursor: "pointer",
                 fontFamily: "var(--ff-ui)", fontSize: 13.5, fontWeight: on ? 700 : 500,
@@ -3920,8 +3930,7 @@ export default function StudioPanel({
                 const ownWords =
                   content.trim().length > 0 && content !== (generatedTextRef.current ?? "");
                 if (ownWords) { setAskLangSwitch(other); return; }
-                langChosenRef.current = true;
-                setWriteLang(other);
+                chooseWriteLang(other);
                 setNotReady(null);
                 void generate(undefined, other);
               }}
@@ -3945,8 +3954,7 @@ export default function StudioPanel({
                     onClick={() => {
                       const other = askLangSwitch;
                       setAskLangSwitch(null);
-                      langChosenRef.current = true;
-                setWriteLang(other);
+                      chooseWriteLang(other);
                       setNotReady(null);
                       void generate(undefined, other);
                     }}

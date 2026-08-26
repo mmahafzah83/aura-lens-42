@@ -88,7 +88,7 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
     postsR, findingsR, contentR, connR,
   ] = await Promise.all([
     admin.from("diagnostic_profiles")
-      .select("created_at, last_visit_at, last_active_at").eq("user_id", userId).maybeSingle(),
+      .select("created_at, last_visit_at").eq("user_id", userId).maybeSingle(),
     admin.from("entries").select("id, created_at").eq("user_id", userId)
       .order("created_at", { ascending: false }).limit(2000),
     admin.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", userId),
@@ -1026,8 +1026,10 @@ serve(async (req) => {
     if (isCron) {
       const since = isoDaysAgo(30);
       const { data: recent } = await admin.from("diagnostic_profiles")
-        .select("user_id, last_visit_at, last_active_at")
-        .or(`last_visit_at.gte.${since},last_active_at.gte.${since}`)
+        // ONE clock. `last_active_at` is DEPRECATED: only strategic-nudge ever
+        // wrote it, so two columns disagreed about the same fact.
+        .select("user_id, last_visit_at")
+        .gte("last_visit_at", since)
         .limit(2000);
       const ids = [...new Set((recent ?? []).map((r: any) => r.user_id))];
 

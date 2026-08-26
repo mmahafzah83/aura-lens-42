@@ -380,8 +380,30 @@ function buildPrefsBlock(voiceProfile: any, ar: boolean, chosenOpening?: string 
   return "\n" + (ar ? "اختيارات الكاتب الصريحة — تتقدّم على أي استنتاج:" : "WRITER'S EXPLICIT CHOICES — these outrank anything inferred:") + "\n" + lines.join("\n") + "\n";
 }
 
+/**
+ * A row is not a voice.
+ *
+ * `voiceRefresh` can create a row carrying only `example_posts` and
+ * `vocabulary_preferences`; with a hardcoded default tone it used to be injected
+ * under "VOICE PROFILE — Write in this voice" and read as trained. The bar:
+ * at least 3 example posts, OR a non-default tone plus at least one structure.
+ */
+const DEFAULT_TONE = "analytical, calm confidence";
+export function voiceProfileIsTrained(voiceProfile: any): boolean {
+  if (!voiceProfile) return false;
+  const examples = Array.isArray(voiceProfile.example_posts) ? voiceProfile.example_posts : [];
+  if (examples.filter((e: any) => String(e?.content ?? e ?? "").trim().length > 0).length >= 3) return true;
+  const tone = String(voiceProfile.tone ?? "").trim().toLowerCase();
+  const structures = Array.isArray(voiceProfile.preferred_structures) ? voiceProfile.preferred_structures : [];
+  const patterns = Array.isArray(voiceProfile.storytelling_patterns) ? voiceProfile.storytelling_patterns : [];
+  const realTone = tone.length > 0 && tone !== DEFAULT_TONE;
+  return realTone && (structures.length > 0 || patterns.length > 0);
+}
+
 function buildVoiceContext(voiceProfile: any, chosenOpening?: string | null, evidenceHasNumber = true): string {
-  if (!voiceProfile) return "No voice profile set — use analytical, calm confidence tone.";
+  // Below the bar we take the honest no-profile path rather than dress a shell
+  // up as the member's voice.
+  if (!voiceProfileIsTrained(voiceProfile)) return `No voice profile set — use ${DEFAULT_TONE} tone.`;
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
   // A rule observed in the member's own writing is a constraint; an inferred
@@ -404,7 +426,9 @@ ${buildPrefsBlock(voiceProfile, false, chosenOpening, evidenceHasNumber)}`;
 }
 
 function buildArabicVoiceContext(voiceProfile: any, chosenOpening?: string | null, evidenceHasNumber = true): string {
-  if (!voiceProfile) return "";
+  // Same bar as the English path: a shell row is not a voice.
+  if (!voiceProfileIsTrained(voiceProfile)) return "";
+
   const vp = typeof voiceProfile.vocabulary_preferences === "object" && voiceProfile.vocabulary_preferences ? voiceProfile.vocabulary_preferences : {};
   const sp = voiceProfile.storytelling_patterns;
   const useRules = splitForPrompt(vp.use);
@@ -519,6 +543,9 @@ serve(withObserve("generate-authority-content", async (req) => {
       ? (params as { mode_key: string }).mode_key.trim()
       : "default";
     let modeFallback = false;
+    // A member whose only trained voice is Arabic used to get NO voice at all
+    // when writing English. These say which profile actually drove the draft.
+    let languageFallbackFrom: string | null = null;
 
     // Load voice profile and diagnostic profile in parallel
     let [voiceRes, profileRes] = await Promise.all([
@@ -534,6 +561,32 @@ serve(withObserve("generate-authority-content", async (req) => {
       voiceRes = await supabase.from("authority_voice_profiles").select("*")
         .eq("user_id", effectiveUserId).eq("language", effectiveLanguage).eq("mode_key", "default").maybeSingle();
       modeFallback = true;
+    }
+
+    // No profile in the requested language: fall back to the member's primary
+    // voice in ANY language and use its DURABLE traits — tone, structures,
+    // storytelling patterns. Example posts are NOT carried across scripts:
+    // Arabic exemplars are not a style model for English prose.
+    if (!voiceRes.data) {
+      const cross = await supabase.from("authority_voice_profiles").select("*")
+        .eq("user_id", effectiveUserId)
+        .order("is_primary", { ascending: false })
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cross.data) {
+        languageFallbackFrom = String((cross.data as any).language ?? "") || null;
+        voiceRes = {
+          ...cross,
+          data: {
+            ...(cross.data as any),
+            language: effectiveLanguage,
+            // Written in another script — never injected as style exemplars.
+            example_posts: [],
+            admired_posts: [],
+          },
+        } as any;
+      }
     }
 
     // A voice profile describes HOW the member writes. Even if an older row
@@ -1701,6 +1754,10 @@ Nothing before <<<POST>>>. Nothing after <<<END>>>. No analysis, no restatement 
         guarded_after_rotation: guardedAfterRotation,
         mode_key: requestedMode,
         ...(modeFallback ? { mode_fallback: true } : {}),
+        // So the surface can say "drafted from your Arabic voice" rather than
+        // pretending the draft came from a voice trained in this language.
+        voice_profile_language: languageFallbackFrom ?? (voiceProfile ? effectiveLanguage : null),
+        ...(languageFallbackFrom ? { voice_language_fallback_from: languageFallbackFrom } : {}),
         chosen_opening: chosenOpening,
         // The rotation, handed back so the caller can store it and so siblings
         // in the same batch can be told what not to repeat. All three levels

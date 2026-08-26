@@ -116,9 +116,10 @@ const EmptyState = ({
           onClick={ctaAction}
           className="mt-5 font-sans transition-opacity hover:opacity-90"
           style={{
-            background: "var(--brand)",
-            color: "var(--brand-foreground, #fff)",
-            borderRadius: 9999,
+            /* System-B primary action — not the retired brand pill. */
+            background: "var(--act)",
+            color: "var(--text-inverse)",
+            borderRadius: 8,
             padding: "10px 22px",
             fontSize: 14,
             fontWeight: 500,

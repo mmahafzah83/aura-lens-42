@@ -244,6 +244,13 @@ export async function refreshVoiceProfiles(db: any, userId: string): Promise<Ref
         vocabulary_preferences: nextVocab,
         updated_at: new Date().toISOString(),
       }).eq("id", existing.id);
+    } else if (examples.length < 3) {
+      // NEVER create a shell. A row carrying no examples and no tone would be
+      // injected into the prompt as though it were the member's trained voice,
+      // and the "no voice yet" guard could no longer fire honestly. The member
+      // has posts in this language but not enough usable ones — say nothing.
+      result.languages[lang] = { posts: langPosts.length, examples: examples.length, created: false, reason: "below_bar" } as any;
+      continue;
     } else {
       await db.from("authority_voice_profiles").insert({
         user_id: userId,

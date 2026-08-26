@@ -42,8 +42,16 @@ type Counts = { all: number; accelerating: number; stable: number; dormant: numb
 const bucketOf = (r: Row): SignalFilter =>
   r.status === "dormant" ? "dormant" : r.velocity_status === "accelerating" ? "accelerating" : "stable";
 
-const ageDays = (iso: string | null) =>
-  iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000)) : 0;
+/** Days since the last piece of evidence, or null when there has never been any.
+    A signal with no evidence is not a signal that went quiet today. */
+const ageDays = (iso: string | null): number | null =>
+  iso ? Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000)) : null;
+
+/** Matches HowYouAppear: an em dash where there is nothing to measure. */
+const quietLabel = (iso: string | null) => {
+  const d = ageDays(iso);
+  return d === null ? "—" : `${d}d`;
+};
 
 const strengthOf = (r: Row) => Math.round((r.strength_score ?? r.confidence ?? 0) * 100) / 100;
 
@@ -320,7 +328,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
         }}>
           <EvidenceMeter filled={Math.min(evidence, 5)} bucket={bucket} />
           <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".06em", color: "var(--text-muted)" }}>
-            {nEvidence(evidence, "en")} · quiet {ageDays(r.last_evidence_at)}d
+            {nEvidence(evidence, "en")} · quiet {quietLabel(r.last_evidence_at)}
           </span>
           <span
             aria-hidden
@@ -596,7 +604,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
                     {bucket === "accelerating" && <Chip variant="live">Accelerating</Chip>}
                     <EvidenceMeter filled={Math.min((r.supporting_evidence_ids || []).length, 5)} bucket={bucket} />
                     <span style={{ ...MONO, fontSize: 10.5, letterSpacing: ".06em", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-                      {nEvidence((r.supporting_evidence_ids || []).length, "en")} · quiet {ageDays(r.last_evidence_at)}d
+                      {nEvidence((r.supporting_evidence_ids || []).length, "en")} · quiet {quietLabel(r.last_evidence_at)}
                     </span>
                     <span
                       aria-hidden
