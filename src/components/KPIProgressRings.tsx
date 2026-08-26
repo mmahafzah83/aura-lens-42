@@ -62,7 +62,7 @@ const KPIProgressRings = () => {
         { data: frameworks },
         { data: profile },
       ] = await Promise.all([
-        supabase.from("entries").select("type, created_at, has_strategic_insight"),
+        supabase.from("entries").select("type, created_at, has_strategic_insight").eq("source_type", "user"),
         supabase.from("learned_intelligence").select("id, created_at"),
         supabase.from("master_frameworks").select("id"),
         (supabase.from("diagnostic_profiles" as any) as any).select("skill_ratings, brand_pillars").maybeSingle(),

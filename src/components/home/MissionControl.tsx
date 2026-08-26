@@ -40,11 +40,15 @@ export default function MissionControl({
       const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       const [entriesRes, postsRes, voiceRes] = await Promise.all([
+        // An overnight article Aura fetched must not tick the member's own
+        // weekly capture habit — only rows the member saved count.
         supabase
           .from("entries")
           .select("id", { count: "exact", head: true })
           .eq("user_id", userId)
+          .eq("source_type", "user")
           .gte("created_at", weekStart),
+
         applyPublishedFilter(
           (supabase
             .from("linkedin_posts")

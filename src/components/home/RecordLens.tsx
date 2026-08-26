@@ -79,7 +79,7 @@ const periodEnd = (key: string, grain: Grain) => {
   return iso(new Date(a.getFullYear(), a.getMonth() + 1, 0));
 };
 
-const isEmpty = (b: RecordBucket) => b.cap + b.themes + b.drafts + b.pub === 0;
+const isEmpty = (b: RecordBucket) => b.cap + b.found + b.themes + b.drafts + b.pub === 0;
 
 function milestoneText(m: RecordMilestone): { head: string; sub: string } {
   if (m.kind === "band") {
@@ -189,8 +189,9 @@ const YearStrip: React.FC<{ months: RecordBucket[]; onPick: (key: string) => voi
           return (
             <button
               key={m.d} type="button" onClick={() => onPick(m.d)}
-              title={`${monthLabel(m.d)} — ${nCaptures(m.cap, "en")}, ${nPosts(m.pub, "en")} posted`}
-              aria-label={`${monthLabel(m.d)}: ${nCaptures(m.cap, "en")}, ${nPosts(m.pub, "en")} posted`}
+              title={`${monthLabel(m.d)} — you saved ${nCaptures(m.cap, "en")}, Aura found ${nCaptures(m.found, "en")}, ${nPosts(m.pub, "en")} posted`}
+              aria-label={`${monthLabel(m.d)}: you saved ${nCaptures(m.cap, "en")}, Aura found ${nCaptures(m.found, "en")}, ${nPosts(m.pub, "en")} posted`}
+
               style={{
                 display: "grid", gap: 5, justifyItems: "center", background: "none", border: 0,
                 padding: 0, cursor: "pointer", fontFamily: "var(--font-body)",
@@ -206,8 +207,9 @@ const YearStrip: React.FC<{ months: RecordBucket[]; onPick: (key: string) => voi
         })}
       </div>
       <Muted style={{ fontSize: 12 }}>
-        Each bar is one month. Taller means you captured more that month. Blue means you posted something that month.
+        Each bar is one month. Taller means you saved more that month. Blue means you posted something that month. Articles Aura found for you are listed separately, not counted here.
       </Muted>
+
       {!all && asc.length > 18 && (
         <TextButton onClick={() => setAll(true)} style={{ justifySelf: "start", fontSize: 12.5 }}>
           Show all months
@@ -535,6 +537,11 @@ export const RecordLens: React.FC<RecordLensProps> = ({
                           You captured {nCaptures(b.cap, "en")}.
                         </p>
                       )}
+                      {b.found > 0 && (
+                        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>
+                          Aura found {nCaptures(b.found, "en")} for you.
+                        </p>
+                      )}
                       {b.drafts > 0 && (
                         <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>
                           Aura wrote {nDrafts(b.drafts, "en")}.
@@ -543,9 +550,10 @@ export const RecordLens: React.FC<RecordLensProps> = ({
                     </>
                   ) : (
                     <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-secondary)" }}>
-                      Captured {nCaptures(b.cap, "en")} · Aura wrote {nDrafts(b.drafts, "en")} ·{" "}
+                      You captured {nCaptures(b.cap, "en")} · Aura found {nCaptures(b.found, "en")} · Aura wrote {nDrafts(b.drafts, "en")} ·{" "}
                       <strong style={{ color: "var(--act)", fontWeight: 700 }}>You published {nPosts(b.pub, "en")}</strong>
                     </p>
+
                   )}
                   {pubs.slice(0, 4).map((p) => <PublishedLine key={p.id} p={p} />)}
                   {pubs.length > 4 && (

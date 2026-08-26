@@ -318,7 +318,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         const [entriesCountRes, postsCountRes, publishedCountRes] = await Promise.all([
           (supabase.from("entries") as any)
             .select("id", { count: "exact", head: true })
-            .eq("user_id", uid),
+            .eq("user_id", uid)
+            .eq("source_type", "user"),
           applyCatalogFilter(
             (supabase.from("linkedin_posts") as any)
               .select("id", { count: "exact", head: true })
@@ -347,7 +348,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           (supabase.from("linkedin_posts") as any)
             .select("engagement_score").eq("user_id", uid).limit(200),
           (supabase.from("entries") as any)
-            .select("created_at").eq("user_id", uid)
+            .select("created_at").eq("user_id", uid).eq("source_type", "user")
             .gte("created_at", fourWeeksAgo.toISOString()).limit(500),
         ]);
         const posts = (postsRes.data || []) as any[];

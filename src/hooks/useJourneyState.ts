@@ -50,7 +50,7 @@ export function useJourneyState(userId: string | null | undefined): JourneyState
     try {
       const [profileRes, entriesRes, voiceRes, signalsRes, postsRes, snapsRes, metricsRes] = await Promise.all([
         supabase.from("diagnostic_profiles").select("first_name, firm, level, sector_focus, brand_assessment_completed_at, brand_pillars").eq("user_id", userId).maybeSingle(),
-        supabase.from("entries").select("account_name, type").eq("user_id", userId).limit(500),
+        supabase.from("entries").select("account_name, type").eq("user_id", userId).eq("source_type", "user").limit(500),
         supabase.from("authority_voice_profiles").select("id, tone").eq("user_id", userId).eq("is_primary", true).eq("mode_key", "default").maybeSingle(),
         (supabase.from("strategic_signals" as any) as any).select("id, status").eq("user_id", userId),
         supabase.from("linkedin_posts").select("tracking_status").eq("user_id", userId).limit(200),

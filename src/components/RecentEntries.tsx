@@ -82,7 +82,11 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
     return !isPinned && isOld;
   });
 
+  const foundForYouCount = entries.filter((e) => (e as any).source_type === "aura_agent").length;
+  const keptByYouCount = entries.length - foundForYouCount;
+
   const displayEntries = showArchive ? archivedEntries : activeEntries;
+
 
   const filtered = displayEntries.filter((e) => {
     if (!search.trim()) return true;
@@ -207,7 +211,12 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
         <div>
           <h3 className="text-lg font-semibold text-foreground mb-0.5">{t("entries.title")}</h3>
           <p className="text-xs text-muted-foreground tracking-wide uppercase">{t("entries.subtitle")}</p>
+          {/* Rows Aura fetched overnight are never counted as member captures. */}
+          <p className="text-xs text-muted-foreground mt-1">
+            {keptByYouCount} you saved{foundForYouCount > 0 ? ` · ${foundForYouCount} found for you` : ""}
+          </p>
         </div>
+
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={handleDedupScan}

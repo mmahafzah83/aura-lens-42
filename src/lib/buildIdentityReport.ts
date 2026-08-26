@@ -235,7 +235,7 @@ export async function buildIdentityReport(userId: string): Promise<ReportData> {
       .select("theme_tags")
       .eq("user_id", userId)
       .eq("status", "active"),
-    supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("source_type", "user"),
     supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("evidence_fragments").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "active"),

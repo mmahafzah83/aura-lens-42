@@ -26,6 +26,12 @@ interface SourceEntry {
   pinned: boolean;
   created_at: string;
   has_signal?: boolean;
+  /**
+   * 'user' = the member saved it. 'aura_agent' = Aura fetched it for the
+   * overnight read. Both stay in the list; only the counts separate them.
+   */
+  source_type?: string | null;
+
   // Document-specific fields
   file_url?: string | null;
   file_type?: string | null;
@@ -590,6 +596,18 @@ const SourcesSubTab = ({
   const [strengthened, setStrengthened] = useState<Map<string, { id: string; title: string; sources: number }[]>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * The list mixes two kinds of row: what the member saved, and what Aura
+   * fetched for the overnight read. Both stay on screen — the count must not
+   * claim the member kept all of them.
+   */
+  const foundForYouCount = useMemo(
+    () => entries.filter(e => e.source_type === "aura_agent").length,
+    [entries],
+  );
+  const keptByYouCount = Math.max(0, totalCount - foundForYouCount);
+
+
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     entries.forEach(e => { counts[e.type] = (counts[e.type] || 0) + 1; });
@@ -609,7 +627,7 @@ const SourcesSubTab = ({
     setLoading(true);
 
     const [entriesRes, docsRes] = await Promise.all([
-      supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at"),
+      supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at, source_type"),
       supabase.from("documents").select("id, filename, display_title, file_url, file_type, status, summary, page_count, file_size, created_at, error_message, pages_read, pages_total"),
     ]);
 
@@ -932,9 +950,17 @@ const SourcesSubTab = ({
         </div>
         <h2 style={{ color: "var(--glass-2)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Sources</h2>
         <span style={{ color: "var(--glass-2)", fontSize: 12, marginInlineStart: "auto" }}>
-          <span style={{ fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" }}>{totalCount}</span>
-          {" items · links, images, notes, voice, documents"}
+          <span style={{ fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" }}>{keptByYouCount}</span>
+          {" you saved"}
+          {foundForYouCount > 0 && (
+            <>
+              {" · "}
+              <span style={{ fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" }}>{foundForYouCount}</span>
+              {" Aura found for you"}
+            </>
+          )}
         </span>
+
       </div>
 
       {/* Search */}

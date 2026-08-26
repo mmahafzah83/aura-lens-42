@@ -124,7 +124,7 @@ export default function MomentumPage() {
 
     const [funnelRes, entriesRes, postsRes, scoreRes, msRes, prefRes, sigMergedRes] = await Promise.all([
       supabase.rpc("momentum_funnel" as any),
-      supabase.from("entries").select("created_at").eq("user_id", uid).gte("created_at", since.toISOString()),
+      supabase.from("entries").select("created_at").eq("user_id", uid).eq("source_type", "user").gte("created_at", since.toISOString()),
       supabase
         .from("linkedin_posts")
         .select("created_at, published_at, source_type, tracking_status")

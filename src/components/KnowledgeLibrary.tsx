@@ -47,7 +47,11 @@ const KnowledgeLibrary = () => {
     setLoading(false);
   };
 
+  const foundForYouCount = items.filter((i) => i.agentFound).length;
+  const keptByYouCount = items.length - foundForYouCount;
+
   const filtered = items.filter((item) => {
+
     if (filter !== "all") {
       if (filter === "note" && item.subtype !== "text") return false;
       if (filter === "link" && item.subtype !== "link") return false;
@@ -76,10 +80,17 @@ const KnowledgeLibrary = () => {
         </div>
         <div>
           <h3 className="text-card-title text-foreground">Knowledge Library</h3>
-          <p className="text-meta">All captured knowledge in one place</p>
+          <p className="text-meta">What you saved, plus what Aura found for you</p>
         </div>
-        <span className="ml-auto text-meta bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{items.length}</span>
+        {/* Two different things: the member's own captures and the overnight finds. */}
+        <span className="ml-auto flex items-center gap-2">
+          <span className="text-meta bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{keptByYouCount} you saved</span>
+          {foundForYouCount > 0 && (
+            <span className="text-meta bg-secondary/30 text-muted-foreground px-3 py-1 rounded-full font-medium">{foundForYouCount} found for you</span>
+          )}
+        </span>
       </div>
+
 
       {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">

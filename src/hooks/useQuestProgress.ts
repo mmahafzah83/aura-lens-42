@@ -43,7 +43,11 @@ export function useQuestProgress(userId: string | null) {
       score,
     ] = await Promise.all([
       supabase.from("diagnostic_profiles").select("first_name, firm, level, sector_focus, brand_assessment_completed_at, brand_pillars").eq("user_id", userId).maybeSingle(),
-      supabase.from("entries").select("source_url:content,id", { count: "exact", head: false }).eq("user_id", userId).limit(1000),
+      // Only what the member actually saved counts as a capture. Articles Aura
+      // fetched for the overnight read (source_type = 'aura_agent') never tick
+      // a capture quest.
+      supabase.from("entries").select("source_url:content,id", { count: "exact", head: false }).eq("user_id", userId).eq("source_type", "user").limit(1000),
+
       headCount(supabase.from("authority_voice_profiles").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("mode_key", "default")),
       supabase.from("linkedin_posts").select("id, source_signal_id, tracking_status", { count: "exact" }).eq("user_id", userId),
       supabase.from("strategic_signals" as any).select("id, theme_tags, status", { count: "exact" }).eq("user_id", userId),
