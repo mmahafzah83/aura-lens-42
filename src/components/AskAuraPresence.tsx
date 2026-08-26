@@ -250,16 +250,17 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
 
   return (
     <div
-      className="relative"
+      className="relative askaura-presence"
       onMouseEnter={() => { onEnter(); if (avatarState !== "idle") setShowAvatarTip(true); }}
       onMouseLeave={() => { onLeave(); setShowAvatarTip(false); }}
     >
       <button
         onClick={handleClick}
         data-testid="nav-ask-aura"
+        aria-label={count > 0 ? `Ask Aura — ${count} unread` : "Ask Aura"}
         className={
-          className ??
-          "w-full flex items-center gap-3 tactile-press group aura-ask-btn aura-ask-surface"
+          (className ??
+            "w-full flex items-center gap-3 tactile-press group aura-ask-btn aura-ask-surface") + " askaura-focusable"
         }
         style={{
           background: "var(--ask-bg, var(--ob-raised))",
