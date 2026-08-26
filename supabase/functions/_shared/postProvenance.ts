@@ -73,3 +73,32 @@ export function isAuraPublishedPost(p: { source_type?: string | null; tracking_s
 export function postEffectiveDate(p: { published_at?: string | null; created_at?: string | null } | null | undefined): string | null {
   return p?.published_at ?? p?.created_at ?? null;
 }
+
+// --- Provenance classification (verbatim twin of src/lib/postProvenance.ts) ---
+
+export type Provenance = "aura_published" | "aura_drafted" | "linkedin_only";
+
+export type ProvenanceRow = {
+  published_at?: string | null;
+  publish_attempted_at?: string | null;
+  authorship?: string | null;
+  acquisition?: string | null;
+  source_metadata?: Record<string, unknown> | null;  // legacy, no longer read
+  /** Present when the row came from the SQL view or home_record_timeline. */
+  provenance?: Provenance | null;
+};
+
+/** Null when the post is not live on LinkedIn (a draft). */
+export function provenanceOf(p: ProvenanceRow | null | undefined): Provenance | null {
+  if (!p) return null;
+  if (p.provenance) return p.provenance;                 // already classified by the view/RPC
+  if (!p.published_at) return null;                      // a draft, not live on LinkedIn
+  if (p.acquisition === "published_via_aura" || p.publish_attempted_at) return "aura_published";
+  if (p.authorship === "aura_drafted" || p.authorship === "aura_assisted") return "aura_drafted";
+  return "linkedin_only";
+}
+
+export function isMadeWithAura(p: ProvenanceRow | null | undefined): boolean {
+  const v = provenanceOf(p);
+  return v === "aura_published" || v === "aura_drafted";
+}
