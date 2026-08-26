@@ -922,10 +922,8 @@ const Dashboard = () => {
           category: dimensionCategories[name] || "General",
           description: `${dimensionCategories[name] || "General"} capability — calibrated at ${Number(score)}/100`,
         }));
-        await writeProfile(uid_for_skills, { generated_skills: skills }, "Dashboard.generated_skills") && void 0;
-        void ((supabase.from("__never" as any) as any)
-          .select("id")
-          .eq("user_id", userId);
+        await writeProfile(userId, { generated_skills: skills }, "Dashboard.generated_skills");
+
       } catch (e) {
         console.warn("generated_skills backfill skipped:", e);
       }
