@@ -364,8 +364,9 @@ ${memoryBlock}
 
 RECENT ALERTS:
 ${alertsBlock}
-
+${linkedLabel ? `\nOPENED FROM: the member opened this conversation from "${linkedLabel}". Treat that as the subject unless they ask about something else.\n` : ""}
 RESPONSE RULES — follow these on every response without exception:
+
 1. Always start with a direct answer. Never warm up with pleasantries.
 2. Reference real signal titles by name when relevant — never invent signals.
 3. Reference real post data when discussing content history.
