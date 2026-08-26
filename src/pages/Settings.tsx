@@ -63,8 +63,12 @@ export default function Settings() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const rawTab = searchParams.get("tab");
-  const tab = rawTab === "preferences" ? "preferences" : rawTab === "connections" ? "connections" : "account";
+  const rawSection = searchParams.get("section");
+  const SECTIONS = ["profile", "connections", "preferences", "slides", "privacy", "danger"] as const;
+  type SectionKey = typeof SECTIONS[number];
+  const section: SectionKey = (SECTIONS as readonly string[]).includes(rawSection || "")
+    ? (rawSection as SectionKey)
+    : "profile";
   const [authUser, setAuthUser] = useState<{ id: string; email?: string } | null>(null);
   const { isAdmin } = useIsAdmin();
   /** Which profile field the member asked to edit. Null means the modal is shut. */
