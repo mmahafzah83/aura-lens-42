@@ -88,10 +88,19 @@ function usedCitations(text: string, all: Citation[]): Citation[] {
   return all.filter(c => t.includes(`[${c.ref}]`) || (c.title && t.includes(c.title)));
 }
 
+/** Which retrieved sources this answer actually cited as bare [n]. */
+function usedSources(text: string, all: Source[]): Source[] {
+  const t = text || "";
+  return all.filter(s => t.includes(`[${s.n}]`));
+}
+
 /** Insert a pill marker for every citation this answer used. */
-function markCitations(text: string, byRef: Record<string, Citation>): string {
+function markCitations(text: string, byRef: Record<string, Citation>, byNum: Record<number, Source>): string {
   let out = text.replace(/\[(S-\d+)\]/g, (_full, ref: string) =>
     byRef[ref] ? ` \`\u27E6${ref}\u27E7\` ` : "");
+  // Bare numeric refs from the retrieval layer: pill when resolved, stripped when not.
+  out = out.replace(/\[(\d{1,3})\]/g, (_full, num: string) =>
+    byNum[Number(num)] ? ` \`\u27E6#${num}\u27E7\` ` : "");
   for (const c of Object.values(byRef)) {
     if (out.includes(`\u27E6${c.ref}\u27E7`)) continue;
     if (!c.title) continue;
@@ -110,6 +119,18 @@ function railLabel(children: React.ReactNode) {
   );
 }
 
+const PILL_STYLE: React.CSSProperties = {
+  ...MONO, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "baseline",
+  margin: "0 2px", padding: "1px 7px", borderRadius: 999, fontSize: 11, cursor: "pointer",
+  background: "var(--act-tint)",
+  border: "1px solid color-mix(in srgb, var(--act) 45%, transparent)",
+  color: "var(--act-hover)",
+};
+
+const sourceDetail = (s: Source) =>
+  [s.title, s.kind.replace(/_/g, " "), s.date || null, s.url ? "opens in a new tab" : "no link on this one"]
+    .filter(Boolean).join(" — ");
+
 /* ── Citation pill ── */
 const Pill: React.FC<{ c: Citation; onOpen: (id: string) => void }> = ({ c, onOpen }) => (
   <button
@@ -118,15 +139,22 @@ const Pill: React.FC<{ c: Citation; onOpen: (id: string) => void }> = ({ c, onOp
     data-signal-id={c.id}
     title={`${c.title} — ${c.evidence_count} capture${c.evidence_count === 1 ? "" : "s"}`}
     onClick={() => onOpen(c.id)}
-    style={{
-      ...MONO, display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "baseline",
-      margin: "0 2px", padding: "1px 7px", borderRadius: 999, fontSize: 11, cursor: "pointer",
-      background: "var(--act-tint)",
-      border: "1px solid color-mix(in srgb, var(--act) 45%, transparent)",
-      color: "var(--act-hover)",
-    }}
+    style={PILL_STYLE}
   >
     {c.ref}
+  </button>
+);
+
+/* ── Source pill: same grammar as the citation pill. Opens the url when there is one. ── */
+const SourcePill: React.FC<{ s: Source }> = ({ s }) => (
+  <button
+    type="button"
+    data-testid="source-pill"
+    title={sourceDetail(s)}
+    onClick={() => { if (s.url) window.open(s.url, "_blank", "noopener,noreferrer"); }}
+    style={{ ...PILL_STYLE, cursor: s.url ? "pointer" : "default" }}
+  >
+    {s.n}
   </button>
 );
 
