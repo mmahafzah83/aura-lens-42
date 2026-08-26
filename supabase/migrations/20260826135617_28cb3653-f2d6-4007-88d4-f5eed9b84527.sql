@@ -1,0 +1,1 @@
+ALTER VIEW public.cockpit_assertions SET (security_invoker = on);
