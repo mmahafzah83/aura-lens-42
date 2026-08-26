@@ -596,7 +596,7 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
                 },
                 body: JSON.stringify({
                   model: "google/gemini-3-flash-preview",
-                  max_tokens: 120,
+                  max_tokens: 400,
                   temperature: 0.3,
                   messages: [
                     {
