@@ -520,7 +520,10 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
         )}
       </Card>
 
-      {/* HOLDING YOU BACK */}
+      {/* HOLDING YOU BACK — every row is conditional, so a member with no
+          numbers would otherwise get a kicker, a title and a button saying
+          nothing. No rows, no card. */}
+      {(weakest || restingSignals > 0 || langCounts.ar > 0 || langCounts.en > 0) && (
       <Card index={card++} reduced={reduced}>
         <CardHead kicker="What's holding you back" title="Read from your own numbers" />
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -567,6 +570,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
           )}
         </div>
       </Card>
+      )}
     </div>
   );
 };
