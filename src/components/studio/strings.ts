@@ -393,10 +393,6 @@ export const T = {
     en: "Nothing unfinished. That's a good place to be.",
     ar: "لا شيء غير مكتمل. هذا وضع جيد.",
   },
-  draftsPageFailed: {
-    en: "We could not read your drafts just now. Nothing is lost — try again.",
-    ar: "لم نتمكن من قراءة مسوداتك الآن. لا شيء ضائع — حاول مرة أخرى.",
-  },
   /** `{n}` is the TOTAL number of drafts, of which only the newest twelve show. */
   draftsShowingRecent: (n: number, lang: Lang): CountParts =>
     lang === "ar"
@@ -410,8 +406,8 @@ export const T = {
     en: "We could not delete that just now. It is still here — try again.",
     ar: "لم نتمكن من الحذف الآن. ما زال موجوداً — حاول مرة أخرى.",
   },
-  formatWords: { en: "Words", ar: "نص" },
-  formatWordsAndSlides: { en: "Words and slides", ar: "نص وشرائح" },
+  pieceWords: { en: "Words", ar: "نص" },
+  pieceWordsAndSlides: { en: "Words and slides", ar: "نص وشرائح" },
 
   // The Library door — two segments, each saying what it holds
   libSources: { en: "Sources", ar: "المصادر" },

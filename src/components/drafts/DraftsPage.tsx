@@ -28,7 +28,7 @@ const firstLine = (text: string, max = 90) => {
 
 const DraftsPage: React.FC = () => {
   const { lang, isRTL } = useLanguage();
-  const L = (lang === "ar" ? "ar" : "en") as "en" | "ar";
+  const L: "en" | "ar" = String(lang) === "ar" ? "ar" : "en";
   const [drafts, setDrafts] = useState<StudioDraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [askId, setAskId] = useState<string | null>(null);
@@ -147,7 +147,7 @@ const DraftsPage: React.FC = () => {
                       <span style={MONO}>{d.language === "ar" ? "AR" : "EN"}</span>
                       <span aria-hidden>·</span>
                       <span style={arabicLine}>
-                        {d.type === "carousel" ? T.formatWordsAndSlides[L] : T.formatWords[L]}
+                        {d.type === "carousel" ? T.pieceWordsAndSlides[L] : T.pieceWords[L]}
                       </span>
                       <span aria-hidden>·</span>
                       <span style={MONO}>{savedAgo(d.saved_at, L)}</span>

@@ -104,7 +104,7 @@ const PublishedList: React.FC<{ lang: "en" | "ar" }> = ({ lang }) => {
             <span style={MONO}>{r.published_at ? formatSmartDate(r.published_at) : ""}</span>
             <span aria-hidden>·</span>
             <span style={arabicLine}>
-              {r.format_type === "carousel" ? T.formatWordsAndSlides[lang] : T.formatWords[lang]}
+              {r.format_type === "carousel" ? T.pieceWordsAndSlides[lang] : T.pieceWords[lang]}
             </span>
             {r.post_url && (
               <>
@@ -130,7 +130,7 @@ const PublishedList: React.FC<{ lang: "en" | "ar" }> = ({ lang }) => {
 const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { lang } = useLanguage();
-  const L = (lang === "ar" ? "ar" : "en") as "en" | "ar";
+  const L: "en" | "ar" = String(lang) === "ar" ? "ar" : "en";
   const [view, setView] = useState<"sources" | "published">("sources");
 
   const openSignal = useCallback((id: string) => {
