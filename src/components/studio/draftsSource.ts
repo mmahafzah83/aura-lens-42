@@ -77,6 +77,7 @@ export async function loadStudioDrafts(): Promise<StudioDraft[]> {
         created_at: r.created_at,
         saved_at: r.updated_at || r.created_at,
         signalId: params.signal_id ?? null,
+        hasSlides: normaliseType(r.type) === "carousel",
       });
     }
 
