@@ -11,6 +11,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { loadLinkedInAddress, type LinkedInAddress } from "@/lib/linkedinAddress";
+import { linkedinStatus, type LinkedInStatusView } from "@/lib/linkedinStatus";
 
 /** Aura needs this many classified posts before it will judge coverage. */
 export const MIN_POSTS_FOR_COVERAGE = 8;
@@ -105,6 +106,8 @@ export const ADMIRED_CAP = 10;
 export interface TeachAuraModel {
   address: LinkedInAddress;
   connectionState: ConnectionState;
+  /** The shared status rule's answer — the only thing the chip may show. */
+  status: LinkedInStatusView;
   /** Own posts Aura counted, and the ones it set aside. */
   includedCount: number;
   excludedCount: number;
@@ -297,6 +300,7 @@ export async function loadTeachAura(userId: string, _page = 0): Promise<TeachAur
     classifiedCount: included.filter((p) => p.hookStyle).length,
     documentCount: docsRes.count ?? 0,
     connectionState,
+    status,
     examples,
     addedByYouCount: examples.filter((e) => e.memberAdded).length,
     admired,
