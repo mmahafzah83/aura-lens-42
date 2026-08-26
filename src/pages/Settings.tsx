@@ -216,16 +216,30 @@ const handleDeleteAccount = async () => {
     }
   };
 
+  /* Old links used ?tab=. Map them once so bookmarks still land. */
+  useEffect(() => {
+    const legacy = searchParams.get("tab");
+    if (!legacy || searchParams.get("section")) return;
+    if (legacy === "preferences" || legacy === "connections") {
+      setSearchParams({ section: legacy }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (loading) return;
     if (typeof window === "undefined") return;
     if (window.location.hash !== "#location") return;
+    /* Location lives inside "profile" now, so land there first. */
+    if (section !== "profile") setSearchParams({ section: "profile" }, { replace: true });
     const t = setTimeout(() => {
       const el = document.getElementById("location");
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
     return () => clearTimeout(t);
-  }, [loading]);
+  }, [loading, section, setSearchParams]);
 
 
 
