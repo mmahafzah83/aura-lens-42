@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { nCaptures, nSignals } from "../_shared/vocabulary.ts";
+import { SIGNAL, nCaptures, nSignals } from "../_shared/vocabulary.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -126,7 +126,7 @@ serve(async (req) => {
         const n = daysSince(unwritten.created_at);
         const frags = Number(unwritten.fragment_count ?? 0);
         const t = String(unwritten.signal_title);
-        const subject = `${t} signal`;
+        const subject = t + " " + SIGNAL.one;
         const out: Opener = {
           kind: "unwritten signal",
           text: `Your ${subject} has been live ${n} days with ${nCaptures(frags, "en")} behind it, and you have not written from it yet.`,
