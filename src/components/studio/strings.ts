@@ -682,6 +682,11 @@ export const T = {
     en: "Aura will track how it performs and learn from what worked.",
     ar: "ستتابع أورا أداءه وتتعلّم مما نجح.",
   },
+  endTrack: {
+    en: "Aura checks back on this and adds it to your Record.",
+    ar: "تتابع أورا هذا المنشور وتضيفه إلى سجلّك.",
+  },
+  doneForNow: { en: "Done for now", ar: "يكفي الآن" },
   // The postures, made real
   authorPlaceholder: {
     en: "Write your post here, or paste it in.",
