@@ -684,111 +684,29 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     if (cta && onSwitchTab) onSwitchTab(cta.tab);
   };
 
-  // ============================================================
-  // JOURNEY DERIVATION — live NEXT/Then steps from real data.
-  // Tier name + points-to-next come from the EF response
-  // (single source of truth); no local threshold math here.
-  // ============================================================
-  type JourneyStep = {
-    id: string;
-    label: string;
-    detail?: string;
-    action?: { label: string; tab: string };
+  /* CV cross-check state — derived from the newest CV document and the
+     stored cross-check on the profile row. */
+  const cvState: CvCrosscheckState = (() => {
+    if (!cvDoc) return "no_cv";
+    if (cvDoc.status === "processing") return "processing";
+    if (cvDoc.status === "error" || cvDoc.status === "failed") return "error";
+    if (cvCrosscheckAt && cvDoc.created_at && new Date(cvDoc.created_at).getTime() > new Date(cvCrosscheckAt).getTime()) {
+      return "stale";
+    }
+    return "ready";
+  })();
+
+  const runCrosscheck = async () => {
+    if (!authUser) return;
+    try {
+      await supabase.auth.getSession();
+      await supabase.functions.invoke("cv-crosscheck", { body: {} });
+      await loadAll(authUser.id);
+    } catch (e) {
+      console.warn("[IdentityTab] cv-crosscheck failed", e);
+    }
   };
-  const nextTierBoundary = nextTierFromEF.name && nextTierFromEF.pointsToNext != null
-    ? { name: nextTierFromEF.name, pointsToNext: nextTierFromEF.pointsToNext }
-    : null;
 
-  const lowestComponentLabel = (() => {
-    if (!scoreComponents) return null;
-    const entries: Array<[string, number, string]> = [
-      ["capture", scoreComponents.capture, "intelligence"],
-      ["signal", scoreComponents.signal, "intelligence"],
-      ["content", scoreComponents.content, "authority"],
-    ];
-    entries.sort((a, b) => a[1] - b[1]);
-    return entries[0];
-  })();
-
-  const nextMondayLabel = (() => {
-    const d = new Date();
-    const day = d.getDay();
-    const delta = (8 - day) % 7 || 7;
-    d.setDate(d.getDate() + delta);
-    return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
-  })();
-
-  const derived = (() => {
-    if (journeyRef.current) return journeyRef.current;
-    // Only derive after the page's data has settled enough to be meaningful.
-    if (loading) return null;
-    if (imprintScore == null && scoreTotal == null) return null;
-
-    const steps: JourneyStep[] = [];
-
-    // 1) First publish
-    if (publishedPostCount === 0) {
-      steps.push({
-        id: "first_publish",
-        label: "First publish",
-        detail: "Your first post sets the baseline Aura measures from.",
-        action: { label: "Draft this post →", tab: "authority" },
-      });
-    }
-
-    // 2) This week's rhythm
-    if (thisWeekEntries < 3) {
-      steps.push({
-        id: "weekly_rhythm",
-        label: `This week's rhythm: ${thisWeekEntries}/3`,
-        detail: "Capture three sources this week to keep the rhythm intact.",
-        action: { label: "Capture an article →", tab: "intelligence" },
-      });
-    }
-
-    // 3) Signal approaching Live
-    if (topApproachingLive && topApproachingLive.title) {
-      steps.push({
-        id: "approaching_live",
-        label: `Signal "${topApproachingLive.title}" is approaching Live`,
-        detail: "One more source confirms it.",
-        action: { label: "Capture an article →", tab: "intelligence" },
-      });
-    }
-
-    // 4) Within 5 points of next tier
-    if (nextTierBoundary && nextTierBoundary.pointsToNext <= 5 && nextTierBoundary.pointsToNext > 0) {
-      const comp = lowestComponentLabel;
-      const compName = comp ? comp[0] : "capture";
-      const tab = comp ? comp[2] : "intelligence";
-      const actionLabel =
-        compName === "content" ? "Draft this post →"
-        : compName === "signal" ? "Strengthen a signal →"
-        : "Capture an article →";
-      steps.push({
-        id: "tier_boundary",
-        label: `${nextTierBoundary.pointsToNext} points from ${nextTierBoundary.name}`,
-        detail: `Your ${compName} score is the lowest — lift it to cross.`,
-        action: { label: actionLabel, tab },
-      });
-    }
-
-    // 5) Fallback rhythm anchor — never empty.
-    steps.push({
-      id: "rhythm_anchor",
-      label: `Keep the rhythm: ${nextMondayLabel} briefing`,
-      detail: "Aura's weekly briefing lands on Monday.",
-      action: { label: "Open intelligence →", tab: "intelligence" },
-    });
-
-    const result = { next: steps[0], then: steps[1] || null };
-    journeyRef.current = result;
-    return result;
-  })();
-
-  const handleDerivedAction = (step: JourneyStep) => {
-    if (step.action && onSwitchTab) onSwitchTab(step.action.tab);
-  };
 
   return (
     <div className="space-y-6 story-page">
