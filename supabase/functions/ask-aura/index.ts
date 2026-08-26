@@ -297,8 +297,17 @@ serve(withObserve("ask-aura", async (req) => {
       console.error(JSON.stringify({ stage: "user_context", user_id, error: (e as Error)?.message ?? String(e) }));
     }
 
+    // Reply language is DECIDED in code from the member's own last message, not
+    // negotiated by the model against whatever language the sources are in.
+    const arabicChars = (lastUserMessage.match(/[\u0600-\u06FF]/g) || []).length;
+    const latinChars = (lastUserMessage.match(/[A-Za-z]/g) || []).length;
+    const totalLetters = arabicChars + latinChars;
+    const replyLanguage: "Arabic" | "English" =
+      totalLetters > 0 && arabicChars / totalLetters > 0.2 ? "Arabic" : "English";
+
     let retrievedBlock = "—";
     let retrievalDegraded = false;
+    let retrievedRows: any[] = [];
     // Rewrite conversational follow-ups into a standalone query before search.
     const search = await buildSearchQuery(messages, { caller: "ask-aura" });
 
@@ -309,7 +318,10 @@ serve(withObserve("ask-aura", async (req) => {
         rewritten: search.rewritten,
         originalQuery: search.original,
       });
-      if (retrieved.rows.length > 0) retrievedBlock = retrieved.citationBlock;
+      if (retrieved.rows.length > 0) {
+        retrievedBlock = retrieved.citationBlock;
+        retrievedRows = retrieved.rows;
+      }
     } catch (e) {
       retrievalDegraded = true;
       logRetrievalFailure({
@@ -319,6 +331,17 @@ serve(withObserve("ask-aura", async (req) => {
         error: e,
       });
     }
+
+    // Parallel to `citations`, one entry per retrieved row. The number matches the
+    // [n] the prompt block uses (formatCitations numbers rows 1..n in order).
+    const sources = retrievedRows.map((r, i) => ({
+      n: i + 1,
+      title: (r.title && String(r.title).trim()) || `${String(r.source_kind).replace(/_/g, " ")} ${i + 1}`,
+      kind: r.source_kind,
+      date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
+      url: r.url || null,
+    }));
+
 
     const systemPrompt = `You are Aura — a senior strategic intelligence advisor. You are not a generic AI. You are a dedicated advisor who has studied this professional for months and knows their work deeply.
 
