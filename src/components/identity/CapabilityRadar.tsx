@@ -107,7 +107,7 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
   const [assessing, setAssessing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [defaultsApplied, setDefaultsApplied] = useState(false);
 
   const load = useCallback(async () => {
@@ -157,7 +157,7 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
   /* The two thinnest points open on first render — that is what they came for. */
   useEffect(() => {
     if (defaultsApplied || !complete || lowest.length === 0) return;
-    setExpandedId(lowest[0].id);
+    setExpanded(new Set(lowest.map((d) => d.id)));
     setDefaultsApplied(true);
   }, [complete, lowest, defaultsApplied]);
 
@@ -392,7 +392,7 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
           <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 2 }}>
             {dims.map((d, i) => {
               const level = levels[d.id];
-              const isExpanded = expandedId === d.id;
+              const isExpanded = expanded.has(d.id);
               const isLow = lowestIds.has(d.id);
               return (
                 <li
@@ -406,7 +406,7 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
                     type="button"
                     className="cap-row"
                     aria-expanded={isExpanded}
-                    onClick={() => setExpandedId(isExpanded ? null : d.id)}
+                    onClick={() => setExpanded(isExpanded ? new Set() : new Set([d.id]))}
                     onMouseEnter={() => setActiveId(d.id)}
                     onMouseLeave={() => setActiveId((cur) => (cur === d.id ? null : cur))}
                     onFocus={() => setActiveId(d.id)}
