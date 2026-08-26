@@ -180,6 +180,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
   const [openerDone, setOpenerDone] = useState(false);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const listRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const openerElRef = useRef<HTMLElement | null>(null);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
   const firedRef = useRef(false);
   const openerRef = useRef(false);
