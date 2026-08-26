@@ -587,7 +587,9 @@ export default function StudioPanel({
         .maybeSingle();
       if (dead) return;
       const seeded: Lang = (profile as any)?.content_language === "ar" ? "ar" : "en";
-      setLang(seeded);
+      // D2: content_language is the WRITING language. It never sets the chrome.
+      // The composer chrome follows the app language, which is English until Wave 1a
+      // ships the real LanguageContext and diagnostic_profiles.ui_language.
       setWriteLang(seeded);
       setReady(true);
       // The composer opening is the first number the company reads.
