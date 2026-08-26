@@ -116,21 +116,8 @@ export default function FlashPanel() {
   const [results, setResults] = useState<FlashResult[]>([]);
   const [sigPresets, setSigPresets] = useState<{ id: string; name: string; text_en: string; text_ar: string }[]>([]);
 
-  // Load signature presets (same source as Composer)
-  useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return;
-      const { data } = await supabase
-        .from("diagnostic_profiles")
-        .select("signature_presets")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      if (Array.isArray((data as any)?.signature_presets)) {
-        setSigPresets((data as any).signature_presets);
-      }
-    })();
-  }, []);
+  // Signatures were removed from the product; nothing to load here any more.
+
 
   // Theme list is language-aware and static — see THEMES_EN / THEMES_AR.
   const themeChips = useMemo(() => (lang === "ar" ? THEMES_AR : THEMES_EN), [lang]);
