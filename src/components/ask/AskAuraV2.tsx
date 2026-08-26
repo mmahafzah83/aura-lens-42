@@ -690,6 +690,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
                             <button
                               key={c.prompt}
                               type="button"
+                              className="ask-focusable ask-chip"
                               onClick={() => send(c.prompt)}
                               style={i === 0 ? {
                                 background: "var(--act)", border: 0, color: "var(--text-inverse)",
