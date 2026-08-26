@@ -120,22 +120,22 @@ BEGIN
   WITH pool AS (
     -- a. document chunks
     SELECT
-      'document_chunk'::text AS source_kind,
-      dc.id AS source_id,
-      d.filename AS title,
-      dc.content AS content,
-      d.file_url AS url,
-      dc.created_at AS occurred_at,
-      CASE WHEN q IS NOT NULL AND dc.tsv @@ q THEN ts_rank(dc.tsv, q)::real END AS kw_rank,
+      'document_chunk'::text AS sk,
+      dc.id AS sid,
+      d.filename AS ttl,
+      dc.content AS body,
+      d.file_url AS link,
+      dc.created_at AS occ,
+      CASE WHEN q IS NOT NULL AND dc.tsv @@ q THEN ts_rank(dc.tsv, q)::real END AS kwr,
       CASE WHEN p_query_embedding IS NOT NULL AND dc.embedding IS NOT NULL
                 AND (dc.embedding <=> p_query_embedding) < 0.8
-           THEN (dc.embedding <=> p_query_embedding)::real END AS vec_distance,
+           THEN (dc.embedding <=> p_query_embedding)::real END AS vdist,
       jsonb_build_object(
         'chunk_index', dc.chunk_index,
         'page', dc.metadata -> 'page',
         'document_id', dc.document_id,
         'pipeline_version', dc.pipeline_version
-      ) AS metadata
+      ) AS meta
     FROM public.document_chunks dc
     JOIN public.documents d ON d.id = dc.document_id
     WHERE dc.user_id = p_user_id
@@ -266,19 +266,19 @@ BEGIN
       )
   ),
   kw_ranked AS (
-    SELECT source_kind AS sk, source_id AS sid,
-           row_number() OVER (ORDER BY pool.kw_rank DESC) AS pos
+    SELECT pool.sk, pool.sid,
+           row_number() OVER (ORDER BY pool.kwr DESC) AS pos
     FROM pool
-    WHERE pool.kw_rank IS NOT NULL
-    ORDER BY pool.kw_rank DESC
+    WHERE pool.kwr IS NOT NULL
+    ORDER BY pool.kwr DESC
     LIMIT cand
   ),
   vec_ranked AS (
-    SELECT source_kind AS sk, source_id AS sid,
-           row_number() OVER (ORDER BY pool.vec_distance ASC) AS pos
+    SELECT pool.sk, pool.sid,
+           row_number() OVER (ORDER BY pool.vdist ASC) AS pos
     FROM pool
-    WHERE pool.vec_distance IS NOT NULL
-    ORDER BY pool.vec_distance ASC
+    WHERE pool.vdist IS NOT NULL
+    ORDER BY pool.vdist ASC
     LIMIT cand
   ),
   fused AS (
@@ -286,22 +286,22 @@ BEGIN
       p.*,
       (COALESCE(1.0 / (k + kr.pos), 0) + COALESCE(1.0 / (k + vr.pos), 0))::real AS rrf
     FROM pool p
-    LEFT JOIN kw_ranked kr ON kr.sk = p.source_kind AND kr.sid = p.source_id
-    LEFT JOIN vec_ranked vr ON vr.sk = p.source_kind AND vr.sid = p.source_id
+    LEFT JOIN kw_ranked kr ON kr.sk = p.sk AND kr.sid = p.sid
+    LEFT JOIN vec_ranked vr ON vr.sk = p.sk AND vr.sid = p.sid
     WHERE kr.pos IS NOT NULL OR vr.pos IS NOT NULL
   )
   SELECT
-    f.source_kind,
-    f.source_id,
-    f.title,
-    f.content,
-    f.url,
-    f.occurred_at,
-    f.rrf AS rank,
-    f.kw_rank,
-    f.vec_distance,
+    f.sk,
+    f.sid,
+    f.ttl,
+    f.body,
+    f.link,
+    f.occ,
     f.rrf,
-    f.metadata
+    f.kwr,
+    f.vdist,
+    f.rrf,
+    f.meta
   FROM fused f
   ORDER BY f.rrf DESC
   LIMIT lim;
