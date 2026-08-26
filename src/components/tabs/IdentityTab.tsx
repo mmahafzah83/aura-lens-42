@@ -29,7 +29,7 @@ import { useJourneyState } from "@/hooks/useJourneyState";
 import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
 import HowYouAppear from "@/components/identity/HowYouAppear";
 import { useCelebrationsEnabled } from "@/hooks/useCelebrationsEnabled";
-import { useTierFromImprint } from "@/hooks/useTierFromImprint";
+
 
 import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
