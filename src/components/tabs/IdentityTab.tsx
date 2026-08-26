@@ -102,6 +102,8 @@ interface ProfileRow {
   identity_intelligence: any;
   primary_strength: string | null;
   instrument_version?: number | null;
+  cv_crosscheck?: any;
+  cv_crosscheck_at?: string | null;
 }
 
 const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: IdentityTabProps) => {
