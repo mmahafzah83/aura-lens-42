@@ -240,19 +240,9 @@ If days_since_last_post > 7, naturally mention the publishing gap in your respon
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (ragResults.length > 0) {
-      ragContext = ragResults.map((r: any, i: number) => {
-        const parts = [`[${i + 1}] Source: ${r.source} | Type: ${r.type} | Date: ${r.created_at?.slice(0, 10)}`];
-        if (r.title) parts.push(`Title: ${r.title}`);
-        if (r.pinned) parts.push(`📌 PINNED`);
-        if (r.skill_pillar) parts.push(`Pillar: ${r.skill_pillar}`);
-        parts.push(`Content: ${r.content}`);
-        if (r.summary) parts.push(`Summary: ${r.summary}`);
-        return parts.join("\n");
-      }).join("\n\n---\n\n");
-    }
+    // Recent entries are a fallback ONLY when retrieval itself failed.
+    if (retrievalDegraded && !ragContext) {
 
-    if (!ragContext) {
       ragContext = allEntries.slice(0, 15).map((e: any, i: number) => {
         const parts = [`[${i + 1}] Type: ${e.type} | Pillar: ${e.skill_pillar || "N/A"} | Date: ${e.created_at?.slice(0, 10)}`];
         if (e.title) parts.push(`Title: ${e.title}`);
