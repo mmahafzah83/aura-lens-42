@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EVIDENCE_MATRIX, calculateScore } from "@/components/diagnostic/EvidenceMatrix";
+import { CapabilityBandMeter } from "@/components/capability/CapabilityBandMeter";
+import { bandForOrdinal } from "@/lib/capabilityBands";
 
 interface DiagnosticAnswer {
   firm: string;
@@ -564,20 +566,16 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
               {currentSkill.name}
             </h2>
             <p className="text-base text-muted-foreground/50 mb-6">
-              Answer honestly — your score is calculated from evidence, not self-perception.
+              Tick what you can evidence. Aura reads a band, not a score.
             </p>
 
-            {/* Score display */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="text-3xl font-bold text-primary tabular-nums">
-                {calculateScore(evidenceChecks[currentSkill.name] || [false, false, false])}%
-              </div>
-              <div className="flex-1">
-                <Progress
-                  value={calculateScore(evidenceChecks[currentSkill.name] || [false, false, false])}
-                  className="h-2.5 bg-muted/20"
-                />
-              </div>
+            {/* Live band — the member watches the band move, not a number. */}
+            <div className="mb-6">
+              <CapabilityBandMeter
+                label={currentSkill.name}
+                band={bandForOrdinal(calculateScore(evidenceChecks[currentSkill.name] || [false, false, false]))}
+                meaning
+              />
             </div>
 
             {/* 3 evidence questions */}

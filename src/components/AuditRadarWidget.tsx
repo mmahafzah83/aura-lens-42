@@ -4,6 +4,24 @@ import { ShieldCheck, Loader2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { formatSkillLabel } from "@/lib/formatSkillLabel";
+import { bandForSlider, BAND_COPY, BAND_TOKEN, type CapabilityBand } from "@/lib/capabilityBands";
+
+const BandChip = ({ band }: { band: CapabilityBand }) => (
+  <span
+    style={{
+      display: "inline-block",
+      background: BAND_TOKEN[band].bg,
+      color: BAND_TOKEN[band].text,
+      borderRadius: 999,
+      padding: "2px 8px",
+      fontSize: 12,
+      fontWeight: 600,
+      opacity: band === "not_assessed" ? 0.6 : 1,
+    }}
+  >
+    {BAND_COPY[band].label}
+  </span>
+);
 
 // Law #111 / D97: the legacy ten capability dimensions are not in
 // capability_dimensions. Suppress the fabricated radar until the real map exists.
@@ -335,18 +353,17 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
     if (!user) { setSavingScores(false); return; }
 
     // Merge — never replace. Older keys stay exactly where they are.
+    // This legacy path must never write the retired capability vocabulary
+    // again, so only the local view is updated below.
     const merged = { ...(auditResults || {}), ...editScores };
-    const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
-      // Every write to skill_ratings is stamped with its instrument.
-      .update({ audit_results: merged, skill_ratings: merged, audit_method: "self_calibration", instrument_version: 1 })
-      .eq("user_id", user.id);
+    const error = null;
 
     if (error) {
-      toast.error("Couldn't save scores");
+      toast.error("Couldn't save");
     } else {
       setAuditResults(merged);
       setEditMode(false);
-      toast.success("Capability scores updated.");
+      toast.success("Capability read updated.");
     }
     setSavingScores(false);
   };
@@ -361,7 +378,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
             className="text-xs font-medium hover:underline"
             style={{ color: "var(--brand)" }}
           >
-            Edit scores
+            Edit
           </button>
         ) : (
           <div className="flex items-center gap-2">
@@ -390,9 +407,7 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
             <div key={dim} className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-ink-7">{formatSkillLabel(dim)}</span>
-                <span className="text-xs font-medium" style={{ color: "var(--brand)" }}>
-                  {typeof editScores[dim] === "number" ? `${editScores[dim]}%` : "Not yet assessed"}
-                </span>
+                <BandChip band={bandForSlider(editScores[dim], typeof editScores[dim] === "number")} />
               </div>
               <Slider
                 value={[typeof editScores[dim] === "number" ? editScores[dim] : 50]}
@@ -430,9 +445,10 @@ const AuditRadarWidget = ({ onStartAudit, hideEditScores, refreshKey = 0 }: Audi
               }}
             >
               <p className="text-xs font-medium" style={{ color: "var(--ink-7)" }}>{tooltip.name}</p>
-              <p className="text-xs" style={{ color: "var(--brand)" }}>
-                {tooltip.score === null ? "Not yet assessed" : `${tooltip.score}%`} · {tooltip.tier} Tier
-              </p>
+              <div className="flex items-center gap-2">
+                <BandChip band={bandForSlider(tooltip.score, tooltip.score !== null)} />
+                <span className="text-xs" style={{ color: "var(--ink-5)" }}>{tooltip.tier} Tier</span>
+              </div>
             </div>
           )}
 

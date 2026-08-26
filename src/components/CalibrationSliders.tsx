@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { CapabilityBandMeter } from "@/components/capability/CapabilityBandMeter";
+import { BandLegend } from "@/components/capability/BandLegend";
+import { bandForSlider, BAND_COPY, BAND_TOKEN, type CapabilityBand } from "@/lib/capabilityBands";
 
 export interface CalibrationDimension {
   id: string;
@@ -37,15 +40,6 @@ function insightFor(score: number, sector?: string | null): string {
     ? `Honest answer. This is the dimension most leaders in ${s} avoid talking about — but the ones who close it, move fastest.`
     : `Honest answer. Knowing this is a strength most professionals never develop.`;
   return `Starting here is a strength, not a weakness. Knowing your starting line is how leaders outpace everyone else.`;
-}
-
-function percentileFor(avg: number): string {
-  if (avg >= 70) return "top 10%";
-  if (avg >= 60) return "top 15%";
-  if (avg >= 50) return "top 25%";
-  if (avg >= 40) return "top 35%";
-  if (avg >= 30) return "top 50%";
-  return "a unique profile";
 }
 
 /* System-B "Studio Plate" palette — hard-coded on purpose. This component
@@ -170,6 +164,9 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
   const isSummary = index === CALIBRATION_DIMENSIONS.length;
   const current = !isSummary ? CALIBRATION_DIMENSIONS[index] : null;
   const currentScore = current ? scores[current.id] : 0;
+  const currentBand: CapabilityBand = current
+    ? bandForSlider(scores[current.id], !!touched[current.id])
+    : "not_assessed";
 
   // Insight debounce + decade pulse on slider movement
   useEffect(() => {
@@ -231,14 +228,17 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
     try { await onComplete(answeredScores); } finally { setSubmitting(false); }
   };
 
-  // Summary computations
+  // Summary — bands only. No average, no ranking, nothing invented from
+  // dimensions the member never touched.
   const summary = useMemo(() => {
-    const sorted = [...CALIBRATION_DIMENSIONS].sort((a, b) => scores[b.id] - scores[a.id]);
-    const top2 = sorted.slice(0, 2);
-    const lowest = sorted[sorted.length - 1];
-    const avg = Object.values(scores).reduce((a, b) => a + b, 0) / CALIBRATION_DIMENSIONS.length;
-    return { top2, lowest, percentile: percentileFor(avg) };
-  }, [scores]);
+    const rows = CALIBRATION_DIMENSIONS.map((d) => ({
+      id: d.id,
+      name: d.name,
+      band: bandForSlider(scores[d.id], !!touched[d.id]),
+    }));
+    rows.sort((a, b) => BAND_COPY[b.band].step - BAND_COPY[a.band].step || a.name.localeCompare(b.name));
+    return { rows, readCount: rows.filter((r) => r.band !== "not_assessed").length, total: rows.length };
+  }, [scores, touched]);
 
   const slide = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
@@ -306,16 +306,27 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
             <motion.div
               key={pulseKey}
               initial={{ scale: 1 }}
-              animate={{ scale: reduceMotion ? 1 : [1, 1.05, 1] }}
+              animate={{ scale: reduceMotion ? 1 : [1, 1.03, 1] }}
               transition={{ duration: 0.2 }}
-              style={{
-                fontFamily: MONO,
-                fontSize: 36, color: INK, fontWeight: 600,
-                textAlign: "center", margin: "8px 0 18px",
-              }}
+              style={{ textAlign: "center", margin: "10px 0 6px", opacity: currentBand === "not_assessed" ? 0.3 : 1 }}
             >
-              {currentScore}
+              <span
+                style={{
+                  display: "inline-block",
+                  background: BAND_TOKEN[currentBand].bg,
+                  color: BAND_TOKEN[currentBand].text,
+                  borderRadius: 999,
+                  padding: "4px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {BAND_COPY[currentBand].label}
+              </span>
             </motion.div>
+            <p style={{ fontSize: 13, color: INK_SOFT, textAlign: "center", margin: "0 0 18px" }}>
+              {BAND_COPY[currentBand].meaning}
+            </p>
 
             <div style={{ minHeight: 60, maxWidth: 380, margin: "0 auto 24px" }}>
               <motion.p
@@ -357,7 +368,6 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
           >
             <SummaryCard
               summary={summary}
-              scores={scores}
               submitting={submitting}
               onFinish={handleFinish}
               onBack={back}
@@ -389,110 +399,40 @@ export const CalibrationSliders = ({ sector, onComplete, initialScores, onAutoSa
 };
 
 interface SummaryCardProps {
-  summary: { top2: CalibrationDimension[]; lowest: CalibrationDimension; percentile: string };
-  scores: Record<string, number>;
+  summary: {
+    rows: { id: string; name: string; band: CapabilityBand }[];
+    readCount: number;
+    total: number;
+  };
   submitting: boolean;
   reduceMotion: boolean;
   onFinish: () => void;
   onBack: () => void;
 }
 
-const CountUp = ({ value, reduceMotion, onDone }: { value: number; reduceMotion: boolean; onDone?: () => void }) => {
-  const [n, setN] = useState(reduceMotion ? value : 0);
-  useEffect(() => {
-    if (reduceMotion) { setN(value); onDone?.(); return; }
-    const duration = 800;
-    const start = performance.now();
-    let raf = 0;
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setN(Math.round(eased * value));
-      if (p < 1) raf = requestAnimationFrame(tick);
-      else onDone?.();
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-  return <>{n}</>;
-};
-
-const SummaryCard = ({ summary, scores, submitting, reduceMotion, onFinish, onBack }: SummaryCardProps) => {
-  const [numbersDone, setNumbersDone] = useState(0);
-  const totalNumbers = 3;
-  const showPercentile = numbersDone >= totalNumbers;
-  const [companion, setCompanion] = useState("");
-  useEffect(() => {
-    if (showPercentile) {
-      const t = window.setTimeout(() => setCompanion("This is rare. Most professionals never map their strengths like this."), 600);
-      return () => window.clearTimeout(t);
-    }
-  }, [showPercentile]);
-  const onNumDone = () => setNumbersDone((n) => n + 1);
-
+const SummaryCard = ({ summary, submitting, onFinish, onBack }: SummaryCardProps) => {
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ fontSize: 24, color: ACT, marginBottom: 12 }}>✦</div>
       <h2 style={{
         fontFamily: SERIF,
-        fontSize: 22, color: INK, marginBottom: 24,
+        fontSize: 22, color: INK, marginBottom: 20,
       }}>
         Your Calibration
       </h2>
 
       <div style={{ textAlign: "left", maxWidth: 360, margin: "0 auto 20px" }}>
-        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: INK_FAINT, marginBottom: 8 }}>
-          Strongest edges
-        </p>
-        {summary.top2.map((d) => (
-          <p key={d.id} style={{ fontSize: 14, color: INK, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ color: ACT }}>◆</span>
-            <span>{d.name}</span>
-            <span style={{
-              marginLeft: "auto", color: ACT, fontFamily: MONO,
-              boxShadow: numbersDone >= totalNumbers ? "0 0 8px rgba(6,112,196,0.25)" : "none",
-              borderRadius: 4, padding: "0 4px", transition: "box-shadow 400ms ease",
-            }}>
-              <CountUp value={scores[d.id]} reduceMotion={reduceMotion} onDone={onNumDone} />
-            </span>
-          </p>
-        ))}
-
-        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: INK_FAINT, margin: "18px 0 8px" }}>
-          Biggest growth territory
-        </p>
-        <p style={{ fontSize: 14, color: INK_SOFT, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
-          <span>◇</span>
-          <span>{summary.lowest.name}</span>
-          <span style={{
-            marginLeft: "auto", fontFamily: MONO,
-            color: INK_SOFT,
-          }}>
-            <CountUp value={scores[summary.lowest.id]} reduceMotion={reduceMotion} onDone={onNumDone} />
-          </span>
+        <BandLegend className="mb-4" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {summary.rows.map((r) => (
+            <CapabilityBandMeter key={r.id} label={r.name} band={r.band} size="sm" />
+          ))}
+        </div>
+        <p style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT, marginTop: 18 }}>
+          {summary.readCount} of {summary.total} read
         </p>
       </div>
 
-      <motion.p
-        animate={{ opacity: showPercentile ? 1 : 0 }}
-        transition={{ duration: 0.5 }}
-        style={{ fontSize: 13, color: INK_SOFT, marginBottom: 12 }}
-      >
-        Your calibration places you in the {summary.percentile} of professionals who've completed this assessment.
-      </motion.p>
-
-      <AnimatePresence>
-        {companion && (
-          <motion.p
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            style={{ fontSize: 13, color: INK_SOFT, marginBottom: 20, fontStyle: "italic" }}
-          >
-            {companion}
-          </motion.p>
-        )}
-      </AnimatePresence>
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 16 }}>
         <button
