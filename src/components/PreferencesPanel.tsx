@@ -31,6 +31,7 @@ interface Profile {
   notification_prefs: Record<string, unknown> | null;
   shared_learning_consent: boolean | null;
   timezone: string | null;
+  content_language: string | null;
 }
 
 const FALLBACK_TIMEZONES = [
@@ -245,7 +246,7 @@ export default function PreferencesPanel({
     (async () => {
       const { data } = await (supabase
         .from("diagnostic_profiles" as any) as any)
-        .select("first_name, last_name, firm, sector_focus, level, notification_prefs, shared_learning_consent, timezone")
+        .select("first_name, last_name, firm, sector_focus, level, notification_prefs, shared_learning_consent, timezone, content_language")
         .eq("user_id", userId)
         .maybeSingle();
       if (!cancelled) {
@@ -308,6 +309,21 @@ export default function PreferencesPanel({
       if (!ok) throw new Error("write affected no rows");
     } catch {
       setProfile((p) => (p ? { ...p, timezone: previousTz } : p));
+      toast.error("That didn't save — try once more.");
+    }
+  };
+
+  /** The language Aura writes in. Same column the composer seeds from, so it can
+      be set here without opening the composer. Same optimistic + rollback contract. */
+  const persistLanguage = async (next: "en" | "ar") => {
+    if (!userId) return;
+    const previous = profile?.content_language ?? null;
+    setProfile((p) => (p ? { ...p, content_language: next } : p));
+    try {
+      const ok = await writeProfile(userId, { content_language: next }, "PreferencesPanel.persistLanguage");
+      if (!ok) throw new Error("write affected no rows");
+    } catch {
+      setProfile((p) => (p ? { ...p, content_language: previous } : p));
       toast.error("That didn't save — try once more.");
     }
   };
@@ -400,6 +416,46 @@ export default function PreferencesPanel({
           {TIMEZONES.map((tz) => (
             <option key={tz} value={tz}>{tz}</option>
           ))}
+        </select>
+      </div>
+
+      {/* Writing language — the composer reads this same column at boot. */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          padding: "14px 24px",
+          borderTop: "0.5px solid var(--rule)",
+          fontFamily: "var(--font-body)",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", lineHeight: 1.3 }}>Writing language</div>
+          <div style={{ fontSize: 12.5, color: "var(--ink-2)", marginTop: 4, lineHeight: 1.45 }}>
+            The language the composer opens in. You can still switch it for a single post.
+          </div>
+        </div>
+        <select
+          aria-label="Writing language"
+          value={profile?.content_language === "ar" ? "ar" : "en"}
+          onChange={(e) => persistLanguage(e.target.value === "ar" ? "ar" : "en")}
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            color: "var(--ink)",
+            background: "var(--paper-2)",
+            border: "0.5px solid var(--rule)",
+            borderRadius: 8,
+            padding: "8px 10px",
+            minHeight: 44,
+            maxWidth: 220,
+            cursor: "pointer",
+          }}
+          className="focus-visible:ring-2 focus-visible:ring-[var(--act)]"
+        >
+          <option value="en">English</option>
+          <option value="ar">العربية</option>
         </select>
       </div>
 
