@@ -497,7 +497,7 @@ RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
 5. End every response with a specific NEXT STEP line.
 6. Cite signals by name in **bold**. Reference captures by title.
 7. If you don't have data: "I don't have intelligence on that yet. Capture an article about it."
-8. Respond in the same language as the user's most recent message. If that message is in English, respond in English. If it is in Arabic, respond in professional Gulf Arabic. If the language is ambiguous, very short, or mixed, default to English. Never switch languages unless the user switches first.
+
 9. Never say: "As an AI", "Great question!", "Here are some suggestions", "You might want to consider", "That's a wonderful insight."
 10. Think like a senior partner giving private counsel to a peer — direct, evidence-based, no fluff. Never name external firms.
 11. When reviewing posts: be HONEST. Weak hook? Say so. Suggest a specific rewrite.
@@ -517,7 +517,17 @@ RETRIEVED SOURCES (this member's own documents, evidence, captures and signals �
 ${retrievedBlock}
 ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim the record is empty — say you could not read the record right now." : ""}`;
 
-    const finalSystemPrompt = systemPrompt + retrievalSection + responseRules;
+    // Language is decided here, once, and sits above everything else in the
+    // prompt. Both gateway calls use this same string.
+    const languageDirective = `REPLY LANGUAGE: ${replyLanguage}. This is decided, not a preference. Write your entire answer in ${replyLanguage}, whatever language the retrieved sources or the member's stored material happen to be in. Quote source titles in their original language, but every sentence you write yourself is in ${replyLanguage}.${
+      replyLanguage === "Arabic"
+        ? "\nWhen writing Arabic: one sentence per line, maximum 10–12 Arabic words per line, and keep signal names and technical terms in English."
+        : ""
+    }
+
+`;
+
+    const finalSystemPrompt = languageDirective + systemPrompt + retrievalSection + responseRules;
 
     // STEP 3 — tool definitions. Aura can act, not only advise. Both tools take
     // user_id from the verified JWT only; the model never supplies an identity
