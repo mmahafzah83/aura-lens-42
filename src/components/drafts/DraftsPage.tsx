@@ -147,7 +147,7 @@ const DraftsPage: React.FC = () => {
                       <span style={MONO}>{d.language === "ar" ? "AR" : "EN"}</span>
                       <span aria-hidden>·</span>
                       <span style={arabicLine}>
-                        {d.type === "carousel" ? T.pieceWordsAndSlides[L] : T.pieceWords[L]}
+                        {d.hasSlides ? T.pieceWordsAndSlides[L] : T.pieceWords[L]}
                       </span>
                       <span aria-hidden>·</span>
                       <span style={MONO}>{savedAgo(d.saved_at, L)}</span>

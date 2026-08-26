@@ -408,6 +408,7 @@ export const T = {
   },
   pieceWords: { en: "Words", ar: "نص" },
   pieceWordsAndSlides: { en: "Words and slides", ar: "نص وشرائح" },
+  libCaptureSomething: { en: "Capture something", ar: "التقط شيئاً" },
 
   // The Library door — two segments, each saying what it holds
   libSources: { en: "Sources", ar: "المصادر" },

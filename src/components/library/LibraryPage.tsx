@@ -6,6 +6,7 @@ import SubTabs from "@/components/nav/SubTabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { T } from "@/components/studio/strings";
+import { deckHasSlides } from "@/components/studio/draftsSource";
 import { formatSmartDate } from "@/lib/formatDate";
 
 /**
@@ -24,6 +25,7 @@ type PublishedRow = {
   post_url: string | null;
   published_at: string | null;
   format_type: string | null;
+  source_metadata: unknown;
 };
 
 const firstLine = (text: string, max = 90) => {
@@ -48,7 +50,7 @@ const PublishedList: React.FC<{ lang: "en" | "ar" }> = ({ lang }) => {
     (async () => {
       const { data, error } = await supabase
         .from("linkedin_posts")
-        .select("id, post_text, post_url, published_at, format_type")
+        .select("id, post_text, post_url, published_at, format_type, source_metadata")
         .eq("tracking_status", "published")
         .order("published_at", { ascending: false })
         .limit(50);
@@ -103,7 +105,7 @@ const PublishedList: React.FC<{ lang: "en" | "ar" }> = ({ lang }) => {
             <span style={MONO}>{r.published_at ? formatSmartDate(r.published_at) : ""}</span>
             <span aria-hidden>·</span>
             <span style={arabicLine}>
-              {r.format_type === "carousel" ? T.pieceWordsAndSlides[lang] : T.pieceWords[lang]}
+              {deckHasSlides(r.source_metadata) ? T.pieceWordsAndSlides[lang] : T.pieceWords[lang]}
             </span>
             {r.post_url && (
               <>
@@ -159,7 +161,7 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
             {sources ? T.libSourcesDesc[L] : T.libPublishedDesc[L]}
           </p>
         </div>
-        {sources && <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />Capture something</ButtonPrimary>}
+        {sources && <ButtonPrimary onClick={() => onOpenCapture?.()}><Plus size={13} />{T.libCaptureSomething[L]}</ButtonPrimary>}
       </div>
 
       <SubTabs
