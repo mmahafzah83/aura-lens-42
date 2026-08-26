@@ -577,7 +577,7 @@ const PrimaryButton: React.FC<{ onClick: () => void; disabled?: boolean; childre
         fontSize: 14,
         fontWeight: 500,
         cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.6 : 1,
+        opacity: disabled ? 0.4 : 1,
       }}
     >
       {children}
@@ -651,7 +651,12 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, onAnswer, onFinish, o
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <div style={{ background: "#FFFFFF", border: `1px solid ${BORDER}`, borderRadius: 20, padding: 20 }}>
+    <div
+      style={{ background: "#FFFFFF", border: `1px solid ${BORDER}`, borderRadius: 20, padding: 20 }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && canAdvance) { e.preventDefault(); void goForward(); }
+      }}
+    >
       <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.1em", color: INK_2 }}>
         {pad(index + 1)} / {pad(dims.length)}
       </div>
@@ -677,7 +682,7 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, onAnswer, onFinish, o
               aria-checked={isSel}
               tabIndex={roving ? 0 : -1}
               ref={(el) => { optionRefs.current[i] = el; }}
-              disabled={busy}
+              disabled={finishing}
               onKeyDown={(e) => onKeyDown(e, i)}
               onClick={() => pick(level)}
               className="capability-anchor"
@@ -693,7 +698,7 @@ const Assessment: React.FC<AssessProps> = ({ dims, levels, onAnswer, onFinish, o
                 fontFamily: UI,
                 fontSize: 14,
                 lineHeight: 1.5,
-                cursor: busy ? "not-allowed" : "pointer",
+                cursor: finishing ? "not-allowed" : "pointer",
               }}
             >
               {sentence}
