@@ -392,6 +392,18 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
           100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
         }
+        .askaura-presence .askaura-focusable:focus-visible {
+          outline: 2px solid var(--act);
+          outline-offset: 2px;
+        }
+        /* The indicator stays; it simply stops moving. */
+        @media (prefers-reduced-motion: reduce) {
+          .askaura-presence [style*="askaura-pulse"],
+          .askaura-presence [style*="askaura-ring-pulse"],
+          .askaura-presence .askaura-anim {
+            animation: none !important;
+          }
+        }
       `}</style>
     </div>
   );
