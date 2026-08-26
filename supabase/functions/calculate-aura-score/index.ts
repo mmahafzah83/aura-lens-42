@@ -530,8 +530,9 @@ serve(withObserve("calculate-aura-score", async (req) => {
 
     const [{ data: voiceProfile }, { data: publishedPost }, { count: lpCount }] = await Promise.all([
       admin.from("authority_voice_profiles").select("tone").eq("user_id", userId).eq("is_primary", true).eq("mode_key", "default").maybeSingle(),
-      admin.from("linkedin_posts").select("id").eq("user_id", userId)
-        .or("source_type.eq.aura,content_engine_output_type.not.is.null").limit(1),
+      admin.from("linkedin_posts")
+        .select("published_at, publish_attempted_at, authorship, acquisition")
+        .eq("user_id", userId),
       admin.from("linkedin_posts").select("id", { count: "exact", head: true }).eq("user_id", userId),
     ]);
 
@@ -562,8 +563,8 @@ serve(withObserve("calculate-aura-score", async (req) => {
       },
       {
         id: "first_publish",
-        name: "First publish",
-        earned: !!(publishedPost && publishedPost.length > 0),
+        name: "Published through Aura",
+        earned: (publishedPost || []).some((row: any) => isMadeWithAura(row)),
         context: { post_count: lpCount ?? 0 },
       },
       {
