@@ -429,9 +429,24 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     } catch (e) { console.error("[ask] memory insert failed", e); }
   }, []);
 
-  const send = useCallback(async (text: string) => {
+  const send = useCallback(async (text: string, opts?: { force?: boolean }) => {
     const body = text.trim();
     if (!body || loading) return;
+
+    /* A question that needs something he has not given gets an honest refusal,
+       not an invented answer. "Later" keeps it quiet for thirty days. */
+    if (!opts?.force) {
+      const need = capabilityNeeded(body);
+      if (need && caps && !caps[need] && !isDeclined(prefs, need)) {
+        setMessages([...messages, { role: "user", content: body }]);
+        setInput("");
+        setFollowUps([]);
+        setBlocked({ capability: need, question: body });
+        return;
+      }
+    }
+    setBlocked(null);
+
     const userMsg: Msg = { role: "user", content: body };
     const next = [...messages, userMsg];
     setMessages(next);
@@ -441,6 +456,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     // The dock mirrors the Desk: it turns while Aura reads, stops when it lands.
     setDeskWorking("Reading your graph");
     void persist("user", body, []);
+
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
