@@ -19,6 +19,9 @@ import CaptureModal from "@/components/CaptureModal";
 import { useCapturedSources } from "@/hooks/useCapturedSources";
 import { type ChatContext } from "@/types/chat";
 import AskAuraV2 from "@/components/ask/AskAuraV2";
+import DeskDock from "@/components/desk/DeskDock";
+import { useDeskDock } from "@/components/desk/deskDockBus";
+import AuraMark from "@/components/brand/AuraMark";
 import AskAuraPresence from "@/components/AskAuraPresence";
 import AuraLogo from "@/components/brand/AuraLogo";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
@@ -759,6 +762,9 @@ const Dashboard = () => {
     await signOutAndLand(navigate);
   };
 
+  /* The dock's state also drives the mobile tab bar mark — no floating dock on phones. */
+  const deskDock = useDeskDock();
+
   const openChat = (msg?: string, ctx?: ChatContext) => {
     if (chatOpen) {
       setChatOpen(false);
@@ -1492,9 +1498,14 @@ const Dashboard = () => {
                           color: "var(--ink)",
                         }}
                       >
-                        <Plus className="w-[18px] h-[18px]" strokeWidth={2.5} />
+                        <span style={{ transform: "scale(0.75)", display: "inline-flex" }}>
+                          <AuraMark
+                            size={24}
+                            state={deskDock.state.kind === "working" ? "working" : deskDock.state.kind === "found" ? "held" : "resting"}
+                          />
+                        </span>
                       </span>
-                      <span style={{ fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>Aura</span>
+                      <span style={{ fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>Desk</span>
                     </button>
                   );
                 }
@@ -1550,6 +1561,9 @@ const Dashboard = () => {
         prefillText={capturePrefillText || undefined}
         initialType={captureInitialType}
       />
+      {/* The Desk, parked. Mounted at Dashboard level — above the tab router —
+          so a running task survives every tab change. */}
+      <DeskDock surfaceOpen={chatOpen} onOpenDesk={(m) => openChat(m)} />
       <AskAuraV2
         open={chatOpen}
         onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); setChatContext(undefined); setChatFindingId(undefined); }}
