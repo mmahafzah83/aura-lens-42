@@ -6,6 +6,8 @@ import DeskPriorityAsk from "@/components/desk/DeskPriorityAsk";
 import DeskMirror from "@/components/desk/DeskMirror";
 import DeskCapabilityReply from "@/components/desk/DeskCapabilityReply";
 import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
+import DeskSlot, { type DeskCardKind } from "@/components/desk/DeskSlot";
+import DeskReturnCard, { loadReturnCard, type ReturnCardData } from "@/components/desk/DeskReturnCard";
 import {
   capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs,
   type Capabilities, type CapabilityKey, type DeskPrefs,
@@ -246,9 +248,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [seeds, setSeeds] = useState<PromptSeed[]>([]);
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [opener, setOpener] = useState<{ text: string; chips: { label: string; prompt: string }[] } | null>(null);
-  /** True only while a Mirror card holds the opener slot. Two voices, never. */
+  /** True only while a Mirror card holds the slot. Two voices, never. */
   const [mirrorShowing, setMirrorShowing] = useState(false);
+  const [mirrorDecided, setMirrorDecided] = useState(false);
   const [openerDone, setOpenerDone] = useState(false);
+  /** The one card the member asked for, which outranks the computed one. */
+  const [slotAsk, setSlotAsk] = useState<"ledger" | null>(null);
+  /** The welcome-back card, decided once per session before anything renders. */
+  const [returnDecided, setReturnDecided] = useState(false);
+  const [returnData, setReturnData] = useState<ReturnCardData | null>(null);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
   /** "Say more" is per message: expanding one answer never expands another. */
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   /** The gear, and what the Desk can actually do for him today. */
