@@ -568,6 +568,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
             if (Array.isArray(j?.citations)) gotCitations = j.citations as Citation[];
             if (Array.isArray(j?.sources)) gotSources = j.sources as Source[];
             if (Array.isArray(j?.grounded_terms)) setGroundedTerms(j.grounded_terms.map(String));
+            if (Array.isArray(j?.grounded_terms)) setGroundedTerms(j.grounded_terms.map(String));
             if (j?.action && typeof j.action?.label === "string") {
               const r = j.action.route;
               const route: ActionRoute | undefined =
