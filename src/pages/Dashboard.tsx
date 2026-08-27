@@ -148,6 +148,7 @@ const Dashboard = () => {
     }
   };
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatFindingId, setChatFindingId] = useState<string | undefined>();
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; firstName?: string | null; avatarUrl?: string | null } | null>(null);
@@ -400,6 +401,17 @@ const Dashboard = () => {
     const resolvedTab = tabParam ? resolveTab(tabParam) : null;
     if (resolvedTab && isTabValue(resolvedTab)) {
       setActiveTab(resolvedTab as TabValue);
+    }
+
+    // The Overnight email lands here: open Ask Aura on the finding it names.
+    if (params.get("desk") === "1") {
+      const findingParam = params.get("finding");
+      setChatFindingId(findingParam || undefined);
+      setChatOpen(true);
+      const next = new URLSearchParams(window.location.search);
+      next.delete("desk");
+      next.delete("finding");
+      setSearchParams(next, { replace: true });
     }
 
     // If we landed on the Publish tab with a signal id, fetch that signal and
@@ -1540,9 +1552,10 @@ const Dashboard = () => {
       />
       <AskAuraV2
         open={chatOpen}
-        onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); setChatContext(undefined); }}
+        onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); setChatContext(undefined); setChatFindingId(undefined); }}
         initialMessage={chatInitialMessage}
         context={chatContext}
+        findingId={chatFindingId}
       />
       <FeedbackButton />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} activeTab={activeTab} />

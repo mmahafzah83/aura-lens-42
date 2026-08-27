@@ -86,7 +86,7 @@ serve(withObserve("ask-aura", async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     // STEP 1 — assemble context (in parallel, tolerate failures)
-    const [profile, signals, posts, memory, alerts, voice, scoreSnap, entriesRecent, entriesCount, metrics, trends] = await Promise.all([
+    const [profile, signals, posts, memory, alerts, voice, scoreSnap, entriesRecent, entriesCount, metrics, trends, findings] = await Promise.all([
       safe(
         admin
           .from("diagnostic_profiles")
@@ -177,6 +177,16 @@ serve(withObserve("ask-aura", async (req) => {
           .order("fetched_at", { ascending: false })
           .limit(3) as any,
       ),
+      // What Aura's own overnight agent found for this member while they were away.
+      safe(
+        admin
+          .from("agent_findings")
+          .select("title, source, implication, relevance_score, created_at, themes")
+          .eq("user_id", user_id)
+          .in("status", ["pending", "kept"])
+          .order("created_at", { ascending: false })
+          .limit(5) as any,
+      ),
     ]);
 
     const p: any = profile || {};
@@ -190,6 +200,21 @@ serve(withObserve("ask-aura", async (req) => {
     const entsTotal: number = (entriesCount as any)?.count ?? ents.length;
     const mets: any[] = Array.isArray(metrics) ? metrics : [];
     const trnds: any[] = Array.isArray(trends) ? trends : [];
+    const finds: any[] = Array.isArray(findings) ? findings : [];
+
+    const findingsBlock =
+      finds.length === 0
+        ? "—"
+        : finds
+            .map((f) => {
+              const bits = [String(f.title || f.source || "(untitled)").slice(0, 120)];
+              if (f.source) bits.push(String(f.source));
+              bits.push(`score ${f.relevance_score ?? "—"}`);
+              const imp = String(f.implication || "").trim();
+              if (imp) bits.push(imp.slice(0, 200));
+              return `- ${bits.join(" · ")}`;
+            })
+            .join("\n");
 
     const publishedCount = pst.filter((x) => !!x.published_at).length;
     const draftCount = pst.length - publishedCount;
@@ -376,6 +401,9 @@ CONTENT SUMMARY: ${publishedCount} published, ${draftCount} draft${draftCount ==
 INDUSTRY TRENDS (top 3):
 ${trendsBlock}
 
+WHAT THE OVERNIGHT FOUND FOR YOU (last 5, newest first):
+${findingsBlock}
+
 ACTIVE SIGNALS (top 5 by priority):
 ${signalsBlock}
 
@@ -456,6 +484,7 @@ TOOLS — you can do two things yourself, not just describe them:
 - set_reminder — puts a reminder in the member's notifications when they want to come back to something later.
 Never invent a source_signal_id. Pass one only if it identifies a signal listed in ACTIVE SIGNALS for this member — its bracketed reference (for example S-101) is accepted; otherwise leave it out.
 After a tool runs, confirm in one short line. Do not restate the whole draft back to them.
+The rows under WHAT THE OVERNIGHT FOUND FOR YOU are real things your own overnight agent found for this member while they were not working — you may discuss them by name, and you must never claim to have found anything that block does not contain.
 
 GROUNDING CONTRACT — NON-NEGOTIABLE RULES FOR EVERY RESPONSE:
 

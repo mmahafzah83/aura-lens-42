@@ -43,6 +43,62 @@ serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
+    // Optional hint from the caller. Identity never comes from the body — only
+    // the finding id does, and it is re-checked against this member's rows.
+    let requestedFindingId: string | null = null;
+    try {
+      const body = await req.json();
+      if (body && typeof body.finding_id === "string" && body.finding_id.trim()) {
+        requestedFindingId = body.finding_id.trim();
+      }
+    } catch (_e) { /* no body is fine */ }
+
+    /* ── RULE 0 — overnight ── */
+    const since36 = new Date(Date.now() - 36 * 3600000).toISOString();
+    const { data: findingRows } = await admin
+      .from("agent_findings")
+      .select("id, title, url, implication, relevance_score, created_at")
+      .eq("user_id", user_id)
+      .in("status", ["pending", "kept"])
+      .gte("created_at", since36)
+      .order("relevance_score", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(25);
+
+    const usableFindings = ((findingRows || []) as any[]).filter(
+      (f) => (typeof f.title === "string" && f.title.trim()) || (typeof f.url === "string" && f.url.trim()),
+    );
+    const finding =
+      (requestedFindingId ? usableFindings.find((f) => f.id === requestedFindingId) : null) ||
+      usableFindings[0] ||
+      null;
+
+    if (finding) {
+      const title = String(finding.title || finding.url || "").trim();
+      const implication = String(finding.implication || "").trim();
+      const firstSentence = implication
+        ? (implication.match(/^[^.!?]*[.!?]?/)?.[0] || implication).trim().slice(0, 140)
+        : "";
+      const second = firstSentence || "It is the newest thing on your radar and nothing has been done with it yet.";
+      const out: Opener = {
+        kind: "overnight",
+        text: `While you slept I found this: "${title}". ${second}`,
+        chips: [
+          {
+            label: "What does it mean for me?",
+            prompt: `What does "${title}" mean for my position, and what should I do about it?`,
+          },
+          {
+            label: "Draft from it",
+            prompt: `Draft a post from the overnight finding "${title}", using my own captures as the evidence.`,
+          },
+          ELSE,
+        ],
+      };
+      return json(out);
+    }
+
+
     /* ── RULE 1 — promise ── */
     const since14 = new Date(Date.now() - 14 * 86400000).toISOString();
     const { data: memRows } = await admin

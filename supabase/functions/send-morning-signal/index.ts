@@ -23,7 +23,7 @@ const corsHeaders = {
 
 const FROM = "Aura <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
-const CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
+const BASE_CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
 const PAUSE_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
 const FRESH_WINDOW_HOURS = 14;
 
@@ -108,6 +108,8 @@ function buildEmail(lead: Finding, others: Finding[]) {
   const headline = (lead.title || "").trim() || (lead.url || "").trim();
   const prov = provenanceParts(lead);
   const extras = others.slice(0, 3);
+  // The button must land on the thing we found, not a generic tab.
+  const leadUrl = `https://www.aura-intel.org/dashboard?desk=1&finding=${lead.id}`;
 
   const implicationHtml = (lead.implication || "").trim()
     ? quote(escapeHtml(lead.implication!.trim()))
@@ -121,7 +123,7 @@ function buildEmail(lead: Finding, others: Finding[]) {
     ? divider() +
       extras.map((e) =>
         `<p style="margin:0 0 8px;font-family:${BODY};font-size:13px;line-height:1.5;">` +
-        `<a href="${escapeHtml(e.url || CTA_URL)}" style="color:${INK_SOFT};text-decoration:underline;">${escapeHtml((e.title || e.url || "").trim())}</a></p>`
+        `<a href="${escapeHtml(e.url || BASE_CTA_URL)}" style="color:${INK_SOFT};text-decoration:underline;">${escapeHtml((e.title || e.url || "").trim())}</a></p>`
       ).join("")
     : "";
 
@@ -129,7 +131,7 @@ function buildEmail(lead: Finding, others: Finding[]) {
     preheader: headline,
     prefsHref: PAUSE_URL,
     prefsLabel: "Pause these emails",
-    cta: { href: CTA_URL, label: "Open it in Aura" },
+    cta: { href: leadUrl, label: "Open it in Aura" },
     body: `
       <p style="margin:0 0 14px;font-family:${MONO};font-size:11px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">${escapeHtml(kicker)}</p>
       ${heading(escapeHtml(headline))}
@@ -148,7 +150,7 @@ function buildEmail(lead: Finding, others: Finding[]) {
   ];
   if ((lead.implication || "").trim()) { textLines.push("", lead.implication!.trim()); }
   if (prov.length) { textLines.push("", prov.join(" · ")); }
-  textLines.push("", `Open it in Aura: ${CTA_URL}`);
+  textLines.push("", `Open it in Aura: ${leadUrl}`);
   if (extras.length) {
     textLines.push("", "Also last night:");
     for (const e of extras) textLines.push(`- ${(e.title || e.url || "").trim()}${e.url ? ` (${e.url})` : ""}`);
