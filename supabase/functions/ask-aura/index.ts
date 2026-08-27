@@ -1460,6 +1460,34 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
       return plain ? `§§PLAIN\n${plain}` : text;
     };
 
+    /**
+     * N4 — the layer contract is enforced here, on the server, for every
+     * answer. A long paste, a stubborn model or a fallback path cannot bypass
+     * it: anything written above §§PLAIN is dropped, and an answer that never
+     * declared a layer is rewritten into one, with its Markdown furniture
+     * removed so the plain layer reads plainly.
+     */
+    const enforceLayers = (raw: string): string => {
+      const text = String(raw ?? "").trim();
+      if (!text) return text;
+      const i = text.indexOf("§§PLAIN");
+      if (i >= 0) return text.slice(i).trim();
+      const body = text
+        .replace(/^\s{0,3}#{1,6}\s+/gm, "")       // headings
+        .replace(/^\s*[-*]\s+/gm, "")             // bullets
+        .replace(/^\s*\d+[.)]\s+/gm, "")          // numbered lists
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+      const paras = body.split(/\n{2,}/);
+      const head = paras[0] || body;
+      const rest = paras.slice(1).join("\n\n").trim();
+      return rest ? `§§PLAIN\n${head}\n§§MORE\n${rest}` : `§§PLAIN\n${head}`;
+    };
+
+    /** N3 — the member never sees silence. Any failure says so, in one line. */
+    const FAILURE_LINE = "Something went wrong reading your vault. Try again?";
+
+
     const stream = new ReadableStream({
       async start(controller) {
         let fullReply = "";
