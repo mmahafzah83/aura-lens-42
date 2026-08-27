@@ -26,11 +26,13 @@ const ELSE: Chip = { label: "Something else", prompt: "Let's talk about somethin
 export const OPENER_VOICE_CONTRACT = `You write the first line a member reads. Obey all of the following.
 
 1. TWO SENTENCES MAXIMUM. A short first sentence that says the one true thing, and a short second sentence that says what it means or what to do. Never a third.
-2. ONE NUMBER, NEVER TWO. One figure per opener — a count of days, captures, signals or posts. Two numbers turns a greeting into a report.
+2. ONE NUMBER, NEVER TWO. One figure per opener — a count of days, captures, signals or posts. Two numbers turns a greeting into a report. Prefer a number the member can feel ("since 2023", "six days") over a system count.
 3. COUNTS, NOT ADJECTIVES. "You've written about cost eleven times" — never "you seem to focus on cost." Never characterise the member; only count him. No horoscope language.
 4. NO ENTHUSIASM. Banned outright: "Great choice", "Awesome", "Love that", "Exciting", "I'm here to help", and any exclamation mark. The register is a senior chief of staff, not a helper. Respect, not cheer.
 5. WARMTH IS A FACT, NOT A FEELING. Banned: "we miss you", "hope you're well", "it's been a while". If the member has been away, say the actual span: "You haven't been here since Thursday — six days." The date is the warmth.
-6. NOTHING HAPPENING IS A PERMITTED OUTCOME. If there is genuinely no finding, no idle draft and no gap worth naming, the correct opener is a quiet one — "Quiet morning. Nothing needs you." — followed by one small optional suggestion. Do not manufacture urgency.`;
+6. NOTHING HAPPENING IS A PERMITTED OUTCOME. If there is genuinely no finding, no idle draft and no gap worth naming, the correct opener is a quiet one — "Quiet morning. Nothing needs you." — followed by one small optional suggestion. Do not manufacture urgency.
+7. PLAIN SPEECH. Write the way you would say it out loud to a colleague in a corridor. Short words. Concrete nouns. Say what happened and why it touches him — never restate the source's abstract framing. A seven-year-old should be able to follow the sentence. Never quote a headline and paste its implication.
+   Banned words and phrases: operating model, governance framework, paradigm, ecosystem, framework(s), landscape, holistic, robust, synergy, stakeholder alignment, digital transformation journey, at scale, going forward, in today's rapidly evolving, unlock, harness, navigate the complexities, rewriting the rules, reshaping, redefining, authority (noun), trajectory, personal brand, thought leader, leverage (verb), utilize, facilitate, seamless.`;
 
 const BANNED = [
   /\bgreat choice\b/gi, /\bawesome\b/gi, /\blove that\b/gi, /\bexciting\b/gi,
@@ -38,23 +40,72 @@ const BANNED = [
   /\bit'?s been a while\b/gi,
 ];
 
+/** Consultant abstraction. Any sentence carrying one of these is dropped. */
+export const JARGON = [
+  /\boperating models?\b/i, /\bgovernance frameworks?\b/i, /\bparadigms?\b/i,
+  /\becosystems?\b/i, /\bframeworks?\b/i, /\blandscapes?\b/i, /\bholistic\b/i,
+  /\brobust\b/i, /\bsynergy\b/i, /\bstakeholder alignment\b/i,
+  /\bdigital transformation journey\b/i, /\bat scale\b/i, /\bgoing forward\b/i,
+  /\bin today'?s rapidly evolving\b/i, /\bunlock\b/i, /\bharness\b/i,
+  /\bnavigate the complexities\b/i, /\brewrit(e|es|ing)\s+(the|each other'?s|their|our)?\s*rules\b/i, /\breshaping\b/i,
+  /\bredefining\b/i, /\bauthority\b/i, /\btrajector(y|ies)\b/i,
+  /\bpersonal brand\b/i, /\bthought leader(ship)?\b/i, /\bleverag(e|ing|es|ed)\b/i,
+  /\butiliz(e|ing|es|ed)\b/i, /\bfacilitat(e|ing|es|ed)\b/i, /\bseamless(ly)?\b/i,
+];
+
+export const hasJargon = (s: string) => JARGON.some((re) => re.test(s));
+
+const ABBREV = /(?:\b(?:e\.g|i\.e|etc|vs|Mr|Mrs|Ms|Dr|St|No|Inc|Ltd|Jr|Sr|approx|Fig|Prof)\.)$/i;
+
+/**
+ * Splits text into whole sentences. A boundary is `.`/`?`/`!` followed by
+ * whitespace or end of string, and never inside a decimal ("3.5"), an
+ * abbreviation ("e.g."), or a single initial ("J. Smith").
+ * Returns `{ complete, trailing }` — `trailing` is any unterminated stump.
+ */
+export function splitSentences(input: string): { complete: string[]; trailing: string } {
+  const t = String(input || "").trim();
+  const complete: string[] = [];
+  let start = 0;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (c !== "." && c !== "?" && c !== "!") continue;
+    const next = t[i + 1];
+    // Must be followed by whitespace or end of string.
+    if (next !== undefined && !/\s/.test(next)) continue;
+    const chunk = t.slice(start, i + 1);
+    // Decimal: digit . digit — already excluded by the whitespace rule, but a
+    // trailing "3." before a space is still a number, not a boundary.
+    if (c === "." && /\d\.$/.test(chunk) && /^\s*\d/.test(t.slice(i + 1))) continue;
+    // Abbreviation or single initial.
+    if (c === "." && (ABBREV.test(chunk.trim()) || /(^|\s)[A-Z]\.$/.test(chunk))) continue;
+    complete.push(chunk.trim());
+    start = i + 1;
+  }
+  return { complete: complete.filter(Boolean), trailing: t.slice(start).trim() };
+}
+
+const QUIET_FALLBACK = "Quiet morning. Nothing needs you.";
+
 /** Enforces the contract on any opener text before it leaves this function. */
 export function applyVoiceContract(input: string): string {
   let t = String(input || "").replace(/!+/g, ".").trim();
   for (const re of BANNED) t = t.replace(re, "").replace(/\s{2,}/g, " ").trim();
 
-  // Two sentences maximum.
-  const parts = (t.match(/[^.?]+[.?]?/g) || [t]).map((s) => s.trim()).filter(Boolean);
-  let kept = parts.slice(0, 2);
+  // Only whole sentences survive. An unterminated stump is dropped, never emitted.
+  const { complete } = splitSentences(t);
+  // Plain speech: a sentence carrying consultant abstraction is dropped whole.
+  let kept = complete.filter((s) => !hasJargon(s)).slice(0, 2);
 
   // One number, never two: drop the second sentence if both carry a figure.
   const hasNum = (s: string) => /\d/.test(s);
   if (kept.length === 2 && hasNum(kept[0]) && hasNum(kept[1])) kept = [kept[0]];
 
-  let out = kept.join(" ").replace(/\s{2,}/g, " ").trim();
-  if (out && !/[.?]$/.test(out)) out += ".";
+  const out = kept.join(" ").replace(/\s{2,}/g, " ").trim();
+  if (!out || out.length < 20 || !/[.?]$/.test(out)) return QUIET_FALLBACK;
   return out;
 }
+
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -64,6 +115,28 @@ const json = (body: unknown, status = 200) =>
 
 const daysSince = (iso: string) =>
   Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
+
+/**
+ * Turns a source headline into something a person would say out loud:
+ * drops the interrogative opener, strips quotes and subtitles, removes
+ * consultant abstraction, and lowercases the lead word.
+ */
+export function plainSubject(rawTitle: string): string {
+  let s = String(rawTitle || "").trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g, "");
+  s = s.split(/\s+[—–|:]\s+/)[0].trim();          // drop subtitle / publisher tail
+  s = s.replace(/^(how|why|what|when|where|the way)\b\s*/i, "");
+  for (const re of JARGON) s = s.replace(new RegExp(re.source, "gi"), " ");
+  s = s.replace(/\s{2,}/g, " ").replace(/[.,;:]+$/, "").trim();
+  // Stripping jargon can leave a dangling connector — cut it off.
+  s = s.replace(/\s+(is|are|was|were|and|or|to|of|for|in|on|that|their|our|the|a|an|each other'?s)$/i, "").trim();
+  if (s.length > 90) s = s.slice(0, 90).replace(/\s+\S*$/, "");
+  if (s.split(/\s+/).filter(Boolean).length < 2) return "";
+  // Lowercase the lead word only when it is ordinary prose, never an acronym.
+  const lead = s.split(/\s+/)[0];
+  return /^[A-Z]{2,}$/.test(lead.replace(/[^A-Za-z]/g, "")) ? s : s.charAt(0).toLowerCase() + s.slice(1);
+
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -115,14 +188,15 @@ serve(async (req) => {
 
     if (finding) {
       const title = String(finding.title || finding.url || "").trim();
-      const implication = String(finding.implication || "").trim();
-      const firstSentence = implication
-        ? (implication.match(/^[^.!?]*[.!?]?/)?.[0] || implication).trim().slice(0, 140)
-        : "";
-      const second = firstSentence || "It is the newest thing on your radar and nothing has been done with it yet.";
+      // Plain speech: say what it is about in ordinary words, never quote the
+      // headline and paste the source's own abstract framing after it.
+      const subject = plainSubject(title);
+      const hours = Math.max(1, Math.round((Date.now() - new Date(finding.created_at).getTime()) / 3600000));
       const out: Opener = {
         kind: "overnight",
-        text: `While you slept I found this: "${title}". ${second}`,
+        text: subject
+          ? `Something came in overnight about ${subject}. It landed ${hours} hours ago and nothing has been done with it yet.`
+          : `Something came in overnight. It landed ${hours} hours ago and nothing has been done with it yet.`,
         chips: [
           {
             label: "What does it mean for me?",
@@ -138,6 +212,7 @@ serve(async (req) => {
       out.text = applyVoiceContract(out.text);
       return json(out);
     }
+
 
 
     /* ── RULE 1 — promise ── */
