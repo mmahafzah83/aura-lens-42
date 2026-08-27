@@ -23,6 +23,7 @@ import {
 } from "@/components/composer/startCards";
 
 import { loadStudioDrafts, loadStudioDraft, type StudioDraft } from "@/components/studio/draftsSource";
+import DeskHandoverBanner from "@/components/studio/DeskHandoverBanner";
 import { track } from "@/lib/track";
 import type { SubjectHandoff, DraftHandoff, WorkOrigin } from "@/lib/workHandoff";
 import { generationMetadata, fingerprintFields } from "@/lib/generationMetadata";
@@ -2485,6 +2486,9 @@ export default function StudioPanel({
   /* The centre editor. Step 2 only. */
   const writeArea = (
     <>
+      {/* The Desk explains itself on arrival, and marks the line it could not
+          write. Once per draft; dismissing removes it for good. */}
+      <DeskHandoverBanner draftId={draftId} body={content} />
       {genError && (
         <p role="status" aria-live="polite" style={{ fontFamily: "var(--ff-ui)", fontSize: 13.5, color: "var(--error)", margin: "0 0 12px" }}>
           {genError === "session" ? T.sessionEnded[lang] : (genErrorDetail || T.writeFailed[lang])}{" "}

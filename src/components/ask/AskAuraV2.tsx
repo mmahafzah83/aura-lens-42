@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import DeskLedger from "./DeskLedger";
 import DeskWatchSheet from "@/components/desk/DeskWatchSheet";
 import DeskPriorityAsk from "@/components/desk/DeskPriorityAsk";
+import DeskMirror from "@/components/desk/DeskMirror";
 import DeskCapabilityReply from "@/components/desk/DeskCapabilityReply";
 import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
 import {
@@ -245,6 +246,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [seeds, setSeeds] = useState<PromptSeed[]>([]);
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [opener, setOpener] = useState<{ text: string; chips: { label: string; prompt: string }[] } | null>(null);
+  /** True only while a Mirror card holds the opener slot. Two voices, never. */
+  const [mirrorShowing, setMirrorShowing] = useState(false);
   const [openerDone, setOpenerDone] = useState(false);
   /** "Say more" is per message: expanding one answer never expands another. */
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
@@ -832,7 +835,22 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         <div className="ask-grid" style={{ height: "100%", maxWidth: 1400, margin: "0 auto", padding: "16px 20px", boxSizing: "border-box" }}>
           <section style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
             <div ref={listRef} aria-live="polite" aria-atomic="false" style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
-              {messages.length === 0 && openerDone && (
+              {/* The Mirror takes over the opener slot on the day it fires. */}
+              {messages.length === 0 && (
+                <DeskMirror
+                  onDecided={setMirrorShowing}
+                  onOpenDraft={(id) => {
+                    const next = new URLSearchParams(window.location.search);
+                    next.set("tab", "authority");
+                    next.set("draft", id);
+                    window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                    onClose();
+                  }}
+                />
+              )}
+
+              {messages.length === 0 && openerDone && !mirrorShowing && (
                 <div className="ask-answer-card" style={{ maxWidth: 620, marginTop: 24 }}>
                   {opener ? (
                     <>
