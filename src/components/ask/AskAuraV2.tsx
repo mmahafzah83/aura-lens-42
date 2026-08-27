@@ -9,7 +9,7 @@ import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
 import DeskSlot, { type DeskCardKind } from "@/components/desk/DeskSlot";
 import DeskReturnCard, { loadReturnCard, type ReturnCardData } from "@/components/desk/DeskReturnCard";
 import {
-  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn,
+  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen,
   type Capabilities, type CapabilityKey, type DeskPrefs,
 } from "@/components/desk/deskPrefs";
 import { cleanMoves, guardClaims, HONEST_FAILURE } from "@/components/desk/deskMoves";
@@ -780,21 +780,21 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       {/* 1 — What I can see: the single most reassuring line on the panel. */}
       {panelOn(prefs, "scope") && (
         <div data-testid="rail-scope">
-          {sectionHead(Eye, "What I can see")}
-          <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+          {sectionHead("scope", Eye, "What I can see")}
+          {panelOpen(prefs, "scope") && <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
             {!graph ? "Counting your rows…"
               : (graph.captures + graph.signals + graph.posts) === 0
                 ? "Nothing in your vault yet, so there is nothing for me to read."
                 : <>Your {num(graph.captures)} captures, {num(graph.signals)} signals, {num(graph.openSignals)} still open, {num(graph.posts)} posts.</>}
-          </div>
+          </div>}
         </div>
       )}
 
       {/* 2 — Used in this answer: the citation registry, each row openable. */}
       {panelOn(prefs, "cited") && (
         <div data-testid="rail-cited">
-          {sectionHead(Quote, "Used in this answer")}
-          {cited.length === 0 && citedSourceRows.length === 0 ? (
+          {sectionHead("cited", Quote, "Used in this answer")}
+          {panelOpen(prefs, "cited") && (cited.length === 0 && citedSourceRows.length === 0 ? (
             <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>Nothing cited yet.</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -843,15 +843,15 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 </button>
               ))}
             </div>
-          )}
+          ))}
         </div>
       )}
 
       {/* 3 — Where you stand: one number, one voice line. Never a third. */}
       {panelOn(prefs, "standing") && (
         <div data-testid="rail-standing">
-          {sectionHead(Gauge, "Where you stand")}
-          <div style={{ fontSize: 15, color: "var(--text-primary)" }}>
+          {sectionHead("standing", Gauge, "Where you stand")}
+          {panelOpen(prefs, "standing") && <><div style={{ fontSize: 15, color: "var(--text-primary)" }}>
             {graph && graph.score != null
               ? <span style={{ ...MONO, fontVariantNumeric: "tabular-nums" }}>{graph.score}/100</span>
               : <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>No score recorded yet.</span>}
@@ -860,35 +860,35 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
             {position && position.voiceTone
               ? <>Voice: {position.voiceTone}{position.voiceLearnedFrom > 0 ? ` — learned from ${position.voiceLearnedFrom} of your posts` : ""}</>
               : "No voice profile learned yet — Aura needs more of your own writing first."}
-          </div>
+          </div></>}
         </div>
       )}
 
       {/* 4 — Jump to: the four places he actually uses. */}
       {panelOn(prefs, "jump") && (
         <div data-testid="rail-jump">
-          {sectionHead(Compass, "Jump to")}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {sectionHead("jump", Compass, "Jump to")}
+          {panelOpen(prefs, "jump") && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {jumpRow(Radar, "Signals", graph && graph.signals > 0 ? String(graph.signals) : null, () => openSurface("intelligence"))}
             {jumpRow(PenLine, "Write", graph && graph.drafts > 0 ? `${graph.drafts} drafts` : null, () => openSurface("authority"))}
             {jumpRow(Inbox, "Capture", graph && graph.captures > 0 ? String(graph.captures) : null, () => openSurface("home"))}
             {jumpRow(Gauge, "Where you stand", graph && graph.score != null ? `${graph.score}/100` : null, () => openSurface("influence"))}
-          </div>
+          </div>}
         </div>
       )}
 
       {/* Last, and only when a row survived the filter. */}
       {panelOn(prefs, "memory") && memory.length > 0 && (
         <div data-testid="rail-memory">
-          {sectionHead(History, "What I remember")}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {sectionHead("memory", History, "What I remember")}
+          {panelOpen(prefs, "memory") && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {memory.map(m => (
               <div key={m.id} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.55 }}>
                 <div style={{ ...MONO, fontSize: 10.5, color: "var(--text-muted)" }}>Noted {m.session_date}</div>
                 <div className="ask-clamp-2">{m.text}</div>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       )}
     </aside>
