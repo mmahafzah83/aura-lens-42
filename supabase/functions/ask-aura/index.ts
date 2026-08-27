@@ -836,6 +836,53 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
           };
         }
 
+        if (name === "search_my_graph") {
+          // Read-only. No writes anywhere in this branch.
+          const q = typeof args.query === "string" ? args.query.trim() : "";
+          if (!q) return { tool: name, ok: false, label: "", payload: { ok: false, error: "could not search" } };
+          const kinds = Array.isArray(args.kinds)
+            ? args.kinds.filter((k: unknown) => typeof k === "string" && (SOURCE_KINDS as string[]).includes(k))
+            : null;
+          try {
+            const res = await retrieveContext(admin, user_id, q, {
+              limit: 8,
+              caller: "ask-aura-tool",
+              ...(kinds && kinds.length ? { kinds: kinds as any } : {}),
+            });
+            const kept = applyRelevanceFloor(res.rows);
+            const out = kept.map((r: any) => {
+              const key = `${r.source_kind}:${r.source_id}`;
+              let n: number;
+              if (sourceKeys.has(key)) {
+                // Already in the registry: keep its original number, add nothing.
+                n = sources.find((s) => s.key === key)!.n;
+              } else {
+                n = sources.length + 1; // append only — never restart, never renumber
+                sourceKeys.add(key);
+                sources.push({
+                  n,
+                  key,
+                  title: (r.title && String(r.title).trim()) || `${String(r.source_kind).replace(/_/g, " ")} ${n}`,
+                  kind: r.source_kind,
+                  date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
+                  url: r.url || null,
+                });
+              }
+              return {
+                n,
+                kind: r.source_kind,
+                title: r.title || null,
+                date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
+                content: r.content ? String(r.content).slice(0, 300) : "",
+              };
+            });
+            return { tool: name, ok: true, label: "", payload: { ok: true, results: out } };
+          } catch (e) {
+            console.error("search_my_graph failed", (e as Error)?.message ?? String(e));
+            return { tool: name, ok: false, label: "", payload: { ok: false, error: "could not search" } };
+          }
+        }
+
 
         return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "unknown tool" } };
       } catch (e) {
