@@ -258,18 +258,73 @@ serve(async (req) => {
       }
     } catch (_e) { /* no body is fine */ }
 
-    /* ── RULE 0 — overnight ── */
+    /* ── RECENCY GREETING + RULE 0 context, assembled in parallel ── */
     const since36 = new Date(Date.now() - 36 * 3600000).toISOString();
-    const { data: findingRows } = await admin
-      .from("agent_findings")
-      .select("id, title, url, implication, relevance_score, created_at")
-      .eq("user_id", user_id)
-      .in("status", ["pending", "kept"])
-      .gte("created_at", since36)
-      .order("relevance_score", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(25);
+    const [
+      { data: findingRows },
+      { data: profileRow },
+      { data: lastEntryRow },
+      { data: lastPostRow },
+    ] = await Promise.all([
+      admin
+        .from("agent_findings")
+        .select("id, title, url, implication, relevance_score, created_at, themes")
+        .eq("user_id", user_id)
+        .in("status", ["pending", "kept"])
+        .gte("created_at", since36)
+        .order("relevance_score", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(25),
+      admin
+        .from("diagnostic_profiles")
+        .select("first_name, last_visit_at, timezone")
+        .eq("user_id", user_id)
+        .maybeSingle(),
+      admin
+        .from("entries")
+        .select("created_at")
+        .eq("user_id", user_id)
+        .order("created_at", { ascending: false })
+        .limit(1),
+      admin
+        .from("linkedin_posts")
+        .select("published_at")
+        .eq("user_id", user_id)
+        .eq("tracking_status", "published")
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false })
+        .limit(1),
+    ]);
 
+    const tz: string | null = (profileRow as any)?.timezone ?? null;
+    const firstName: string | null = (profileRow as any)?.first_name ?? null;
+    const lastVisit: string | null = (profileRow as any)?.last_visit_at ?? null;
+    const lastCaptureAt: string | null = (lastEntryRow as any)?.[0]?.created_at ?? null;
+    const lastPostAt: string | null = (lastPostRow as any)?.[0]?.published_at ?? null;
+
+    // First match wins; only ONE greeting is ever used.
+    let greeting: string | null = null;
+    const daysAway = lastVisit ? daysSince(lastVisit) : 0;
+    const daysSinceCapture = lastCaptureAt ? daysSince(lastCaptureAt) : 0;
+    const daysSincePost = lastPostAt ? daysSince(lastPostAt) : 0;
+    if (daysAway >= 3 && lastVisit) {
+      const weekday = WEEKDAYS[inZone(lastVisit, tz).getDay()];
+      greeting = firstName
+        ? `Morning, ${firstName}. You have not been here since ${weekday} — ${daysAway} days.`
+        : `You have not been here since ${weekday} — ${daysAway} days.`;
+    } else if (daysSinceCapture >= 10) {
+      greeting = `Your reading has gone quiet — ${daysSinceCapture} days since you saved anything.`;
+    } else if (daysSincePost >= 21) {
+      greeting = `It has been ${daysSincePost} days since you published.`;
+    }
+    // The greeting is itself two clauses at most; the contract still caps at two
+    // sentences, and `assemble()` strips the rule's number when a greeting runs.
+    if (greeting) {
+      const { complete } = splitSentences(greeting);
+      greeting = complete.slice(0, 1).join(" ") || greeting;
+    }
+
+    /* ── RULE 0 — overnight ── */
     const usableFindings = ((findingRows || []) as any[]).filter(
       (f) => (typeof f.title === "string" && f.title.trim()) || (typeof f.url === "string" && f.url.trim()),
     );
@@ -283,12 +338,13 @@ serve(async (req) => {
       // Plain speech: say what it is about in ordinary words, never quote the
       // headline and paste the source's own abstract framing after it.
       const subject = plainSubject(title);
-      const hours = Math.max(1, Math.round((Date.now() - new Date(finding.created_at).getTime()) / 3600000));
+      const why = (await whyItTouchesHim(admin, user_id, finding)) ?? "Nothing like it in your vault yet.";
+      const lead = subject
+        ? `Something came in overnight about ${subject}.`
+        : `Something came in overnight.`;
       const out: Opener = {
         kind: "overnight",
-        text: subject
-          ? `Something came in overnight about ${subject}. It landed ${hours} hours ago and nothing has been done with it yet.`
-          : `Something came in overnight. It landed ${hours} hours ago and nothing has been done with it yet.`,
+        text: assemble(greeting, [lead, why]),
         chips: [
           {
             label: "What does it mean for me?",
@@ -301,9 +357,9 @@ serve(async (req) => {
           ELSE,
         ],
       };
-      out.text = applyVoiceContract(out.text);
       return json(out);
     }
+
 
 
 
