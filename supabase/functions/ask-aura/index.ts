@@ -36,6 +36,65 @@ function applyRelevanceFloor<T extends { rank?: number | null }>(rows: T[]): T[]
   return rows.filter((r, i) => i === 0 || Number(r.rank ?? 0) >= top * RELEVANCE_FLOOR);
 }
 
+/**
+ * I2 — product knowledge is a table, not a paragraph in this file.
+ *
+ * `product_facts` is read at request time and rendered into HOW AURA WORKS.
+ * A 60-second in-process cache keeps the hot path cheap; an admin edit is
+ * live within a minute, with no redeploy. A row untouched for over 180 days
+ * is marked stale in the block so the drift is visible rather than silent.
+ */
+const FACTS_TTL_MS = 60_000;
+let factsCache: { at: number; block: string } | null = null;
+
+async function productFactsBlock(admin: any): Promise<string> {
+  if (factsCache && Date.now() - factsCache.at < FACTS_TTL_MS) return factsCache.block;
+  const fallback =
+    "HOW AURA WORKS: no product facts are recorded. Do not describe the product — say you cannot see how that part works from here.";
+  let block = fallback;
+  try {
+    const { data, error } = await admin
+      .from("product_facts")
+      .select("key, title, body, category, updated_at")
+      .eq("active", true)
+      .order("category", { ascending: true })
+      .order("sort_order", { ascending: true });
+    if (error) throw new Error(error.message);
+    const rows: any[] = Array.isArray(data) ? data : [];
+    if (rows.length) {
+      const GROUPS: [string, string][] = [
+        ["surface", "The surfaces"],
+        ["score", "The score"],
+        ["capability", "What you can actually do"],
+        ["limit", "What you cannot do"],
+      ];
+      const lines: string[] = [];
+      let newest = "";
+      for (const [cat, heading] of GROUPS) {
+        const inGroup = rows.filter((r) => r.category === cat);
+        if (!inGroup.length) continue;
+        lines.push(`${heading}:`);
+        for (const r of inGroup) {
+          const upd = String(r.updated_at || "").slice(0, 10);
+          if (upd > newest) newest = upd;
+          const age = r.updated_at ? Date.now() - new Date(r.updated_at).getTime() : 0;
+          const stale = age > 180 * 86_400_000 ? ` (last checked ${upd} — may be out of date)` : "";
+          lines.push(`  - ${r.title}: ${r.body}${stale}`);
+        }
+      }
+      block =
+        `HOW AURA WORKS (read live from the product record${newest ? `, newest entry ${newest}` : ""}; state it plainly, never guess at it):\n` +
+        lines.join("\n");
+    }
+  } catch (e) {
+    console.error("product_facts read failed", (e as Error)?.message);
+  }
+  factsCache = { at: Date.now(), block };
+  return block;
+}
+
+
+
 /** Same shape as the shared citation block, but numbered from `start`. */
 function formatRows(rows: any[], start: number): string {
   if (!rows.length) return "—";
@@ -251,28 +310,44 @@ serve(withObserve("ask-aura", async (req) => {
     // account is counted here, from his own rows. Nothing is inferred from the
     // ten posts loaded above; those are a sample, not a total.
     const cnt = (r: any) => (typeof r?.count === "number" ? r.count : 0);
-    const [
-      publishedR, composerR, metricsCountR, lastPublishedR,
-      activeSignalsR, draftsR, entriesTotalR,
-    ] = await Promise.all([
+    /**
+     * I0 — every publishing figure is counted per tracking_status, and stated
+     * with its own meaning. There is no aggregate called "published": that
+     * blurred tracked, discovered and external rows into one wrong number.
+     */
+    const statusCount = (status: string) =>
       safeRes(admin.from("linkedin_posts").select("id", { count: "exact", head: true })
-        .eq("user_id", user_id).not("published_at", "is", null) as any),
+        .eq("user_id", user_id).eq("tracking_status", status) as any);
+    const [
+      publishedR, confirmedR, trackedR, discoveredR, externalR, draftsR,
+      composerR, metricsCountR, lastPublishedR,
+      activeSignalsR, entriesTotalR,
+    ] = await Promise.all([
+      statusCount("published"),
+      statusCount("confirmed"),
+      statusCount("tracked"),
+      statusCount("discovered"),
+      statusCount("external_reference"),
+      statusCount("draft"),
       safeRes(admin.from("linkedin_posts").select("id", { count: "exact", head: true })
         .eq("user_id", user_id).eq("produced_by", "composer") as any),
       safeRes(admin.from("linkedin_post_metrics").select("id", { count: "exact", head: true })
         .eq("user_id", user_id) as any),
       safeRes(admin.from("linkedin_posts").select("published_at")
-        .eq("user_id", user_id).not("published_at", "is", null)
+        .eq("user_id", user_id).eq("tracking_status", "published")
+        .not("published_at", "is", null)
         .order("published_at", { ascending: false }).limit(1).maybeSingle() as any),
       safeRes(admin.from("strategic_signals").select("id", { count: "exact", head: true })
         .eq("user_id", user_id).eq("status", "active") as any),
-      safeRes(admin.from("linkedin_posts").select("id", { count: "exact", head: true })
-        .eq("user_id", user_id).eq("tracking_status", "draft") as any),
       safeRes(admin.from("entries").select("id", { count: "exact", head: true })
         .eq("user_id", user_id) as any),
     ]);
 
     const publishedTotal = cnt(publishedR);
+    const confirmedTotal = cnt(confirmedR);
+    const trackedTotal = cnt(trackedR);
+    const discoveredTotal = cnt(discoveredR);
+    const externalTotal = cnt(externalR);
     const composerTotal = cnt(composerR);
     const metricsRows = cnt(metricsCountR);
     const lastPublishedDate = (lastPublishedR as any)?.data?.published_at
@@ -281,6 +356,7 @@ serve(withObserve("ask-aura", async (req) => {
     const activeSignals = cnt(activeSignalsR);
     const draftsTotal = cnt(draftsR);
     const entriesTotalExact = cnt(entriesTotalR) || entsTotal;
+
 
     const findingsBlock =
       finds.length === 0
@@ -325,6 +401,10 @@ serve(withObserve("ask-aura", async (req) => {
       .then((c) => c.toPromptBlock())
       .catch(() => "Not yet assessed — this member has not completed a capability read.");
 
+    /* Product knowledge, read live from product_facts. No redeploy to change it. */
+    const howAuraWorks = await productFactsBlock(admin);
+
+
 
     const fmtList = (arr: any) =>
       Array.isArray(arr) && arr.length ? arr.join(", ") : "—";
@@ -352,14 +432,21 @@ serve(withObserve("ask-aura", async (req) => {
       .join("\n");
 
     const accountFactsBlock = `YOUR ACCOUNT, IN FACTS (counted from this member's own rows — these are the only figures you may state about him):
-Publishing:
-  - posts published: ${publishedTotal}
+Posts, counted by what each row actually is. These are five different things. Never add them together, and never call any of them "published" except the first:
+  - published: ${publishedTotal} — posts he actually put out through Aura.
+  - confirmed: ${confirmedTotal} — posts confirmed as his, awaiting or beyond publication tracking.
+  - tracked: ${trackedTotal} — posts Aura is watching for performance data. Tracked is not published: it means the row is being monitored.
+  - discovered: ${discoveredTotal} — posts Aura found on his profile rather than made with him.
+  - external reference: ${externalTotal} — posts by other people kept only as reference material. Not his.
+  - drafts waiting: ${draftsTotal} — written, not put out.
   - posts written in the composer: ${composerTotal}
   - rows of post performance data: ${metricsRows}
   - most recent published post: ${lastPublishedDate ?? "none recorded"}
+  RULE: if you state a post count, name which of these it is. "He has published ${publishedTotal}" is the only sentence that may use the word published.
 ${publishedTotal > 0
   ? `  RULE: he HAS published. Never say he has not published, has never posted, or has no published work.`
   : `  RULE: no published post is recorded. Say the publishing window is wide open, never that he has failed.`}
+
 Score (newest score_snapshots row${sc.created_at ? `, ${String(sc.created_at).slice(0, 10)}` : ""}):
   - score: ${sc.score ?? "not recorded"}${sc.tier ? ` (band ${sc.tier})` : ""}
 ${componentLines || "  - components: not recorded"}
@@ -549,15 +636,27 @@ Storytelling patterns: ${fmtList(vp.storytelling_patterns)}
 
 ${accountFactsBlock}
 
-HOW AURA WORKS (this is the product; state it plainly, never guess at it):
-- The score is Signal 40% + Content 40% + Capture consistency 20%. Capture consistency measures weekly rhythm, not volume: a capture in a week counts once, and a hundred captures in one week do not beat one capture a week for eight weeks.
-- Capture adds to the vault and moves capture consistency.
-- Signals is where strategic signals are read.
-- Write turns a signal into a draft and moves content.
-- Publish puts a draft out, and publishing is the only thing that generates engagement metrics.
-- Where you stand shows the score and its parts.
+${howAuraWorks}
 - The named parts on the home surface are Expertise, Identity, Voice, Audience, Focus, Perception and Confidence. Audience, discernment and conviction can only register once something has been published: they are dormant, not weak.
-- The four things you can actually do are: save a draft, set a reminder, open a surface, and search the vault. You cannot post to LinkedIn, cannot send email, and cannot see the open web. Never imply otherwise.
+
+THREE MODES — choose one by what he asked for, and stay in it for the whole answer:
+- SECRETARY — admin and logistics: save this, remind me, open that, find the file. Do the thing, then confirm it in one line. Offer no opinion unless he asks for one.
+- CHIEF OF STAFF — status and orientation: where do I stand, what's waiting, what happened. Lead with the single most important thing, then the number, then one recommended move. Never a list of everything.
+- ADVISOR — judgement: what should I write, is this good, what do I do about this signal. Take a position and give the reason. You are allowed and expected to disagree with him. If the honest answer is "don't post this week", say so.
+
+USING YOUR TOOLS — this is not optional, and it comes before the answer:
+- You have four tools: save_draft, set_reminder, open_surface, search_my_graph. When the member asks for one of those things, CALL THE TOOL. Do not describe doing it, do not offer it as a next step, do not put it in §§MOVES instead.
+- "save it", "save this", "put it in my drafts", "draft it and keep it" → call save_draft with the full post text in the same turn you write it.
+- "remind me", "chase me", "don't let me forget" → call set_reminder.
+- "open", "take me to", "where is" → call open_surface.
+- "find", "search", "what do I have on" → call search_my_graph.
+- Never answer "I've saved it" without having called the tool. Never write a draft he asked you to save and then leave it unsaved.
+
+THE HONESTY CONTRACT (applies in all three modes):
+Say what you can see and what you cannot. Never imply a capability you do not have. If he asks for something outside the four things you can do, say plainly that you cannot do it and name the nearest thing you can. Never soften a real problem to be agreeable — he is paying for judgement, not comfort.
+
+LENGTH: the two-sentence cap applies to the opener only. Answers may run longer when the question earns it. Plain speech and no enthusiasm apply everywhere: no exclamation marks, no praise, no consultant jargon.
+
 
 RECENT CAPTURES (last 10 of ${entriesTotalExact} total):
 ${entriesBlock}
