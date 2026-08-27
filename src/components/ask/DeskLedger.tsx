@@ -98,10 +98,11 @@ export default function DeskLedger({ onOpenDrafts, onOpenSignals, onOpenTab }: P
           id: String(draft.id),
           title: new Date(draft.created_at).toLocaleDateString(undefined, { weekday: "long" }) + "'s draft",
           subtitle: why,
-          value: String(days),
-          unit: days === 1 ? "day idle" : "days idle",
+          /* A zero is not a number worth showing — it is a different sentence. */
+          value: days === 0 ? "Today" : String(days),
+          unit: days === 0 ? "" : days === 1 ? "day idle" : "days idle",
           colour: days >= 7 ? AMBER_TEXT : INK,
-          neglect: 1000 + days,
+          neglect: days,
           open: onOpenDrafts,
         });
       }
@@ -120,6 +121,14 @@ export default function DeskLedger({ onOpenDrafts, onOpenSignals, onOpenTab }: P
               .some((t: string) => String(t || "").toLowerCase().includes(topPillar.toLowerCase())
                 || topPillar.toLowerCase().includes(String(t || "").toLowerCase()))).length
           : 0;
+        /* Neglect is how long the oldest unread signal has sat, not how many there are. */
+        const oldestSig = sigs
+          .map(s => new Date(s.created_at).getTime())
+          .filter(n => Number.isFinite(n))
+          .sort((a, b) => a - b)[0];
+        const sigDays = oldestSig
+          ? Math.max(0, Math.floor((Date.now() - oldestSig) / 86_400_000))
+          : 0;
         out.push({
           key: "signals",
           title: "New signals",
@@ -129,23 +138,26 @@ export default function DeskLedger({ onOpenDrafts, onOpenSignals, onOpenTab }: P
           value: String(sigs.length),
           unit: "unread",
           colour: INK,
-          neglect: 500 + Math.min(sigs.length, 99),
+          neglect: sigDays,
           open: onOpenSignals,
         });
       }
 
-      /* Your presence — the move between the last two readings. */
-      const snaps = ((snapRes.data as any[]) || []);
+      /* Your presence — the move between the last two readings, newest first. */
+      const snaps = ((snapRes.data as any[]) || [])
+        .slice()
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       if (snaps.length === 2 && typeof snaps[0].score === "number" && typeof snaps[1].score === "number") {
         const delta = snaps[0].score - snaps[1].score;
         out.push({
           key: "presence",
           title: "Your presence",
           subtitle: "Moved this week",
-          value: `${delta > 0 ? "+" : ""}${delta}`,
-          unit: "points",
+          value: delta === 0 ? "Steady" : `${delta > 0 ? "+" : ""}${delta}`,
+          unit: delta === 0 ? "" : "points",
           colour: delta > 0 ? GREEN : INK,
-          neglect: 10,
+          /* Presence and the vault never wait on him; they sit below anything that does. */
+          neglect: 0.5,
           open: () => onOpenTab("influence"),
         });
       }
@@ -160,12 +172,13 @@ export default function DeskLedger({ onOpenDrafts, onOpenSignals, onOpenTab }: P
           value: String(vault),
           unit: "saved",
           colour: INK,
-          neglect: 1,
+          neglect: 0.1,
           open: () => onOpenTab("record"),
         });
       }
 
       out.sort((a, b) => b.neglect - a.neglect);
+
       setRows(out.slice(0, 4));
     })();
     return () => { cancelled = true; };
