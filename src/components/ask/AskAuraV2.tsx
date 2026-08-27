@@ -248,6 +248,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [openerDone, setOpenerDone] = useState(false);
   /** "Say more" is per message: expanding one answer never expands another. */
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  /** The gear, and what the Desk can actually do for him today. */
+  const [watchOpen, setWatchOpen] = useState(false);
+  const [caps, setCaps] = useState<Capabilities | null>(null);
+  const [prefs, setPrefs] = useState<DeskPrefs>({});
+  /** An ask parked because the thing it needs is missing. */
+  const [blocked, setBlocked] = useState<{ capability: CapabilityKey; question: string } | null>(null);
+  /** The gear's "Add it", answered in place on the Desk. */
+  const [addressOpen, setAddressOpen] = useState(false);
+
+
 
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const listRef = useRef<HTMLDivElement | null>(null);
