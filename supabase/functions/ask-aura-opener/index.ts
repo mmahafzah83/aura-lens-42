@@ -166,14 +166,15 @@ serve(async (req) => {
 
     if (finding) {
       const title = String(finding.title || finding.url || "").trim();
-      const implication = String(finding.implication || "").trim();
-      const firstSentence = implication
-        ? (implication.match(/^[^.!?]*[.!?]?/)?.[0] || implication).trim().slice(0, 140)
-        : "";
-      const second = firstSentence || "It is the newest thing on your radar and nothing has been done with it yet.";
+      // Plain speech: say what it is about in ordinary words, never quote the
+      // headline and paste the source's own abstract framing after it.
+      const subject = plainSubject(title);
+      const hours = Math.max(1, Math.round((Date.now() - new Date(finding.created_at).getTime()) / 3600000));
       const out: Opener = {
         kind: "overnight",
-        text: `While you slept I found this: "${title}". ${second}`,
+        text: subject
+          ? `Something came in overnight about ${subject}. It landed ${hours} hours ago and nothing has been done with it yet.`
+          : `Something came in overnight. It landed ${hours} hours ago and nothing has been done with it yet.`,
         chips: [
           {
             label: "What does it mean for me?",
@@ -189,6 +190,7 @@ serve(async (req) => {
       out.text = applyVoiceContract(out.text);
       return json(out);
     }
+
 
 
     /* ── RULE 1 — promise ── */
