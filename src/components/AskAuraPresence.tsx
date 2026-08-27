@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { Sparkles, Bell, Clock, AlertTriangle, TrendingUp, FileText, BookOpen, ArrowUpRight } from "lucide-react";
+import { Bell, Clock, AlertTriangle, TrendingUp, FileText, BookOpen, ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import AuraMark from "@/components/brand/AuraMark";
 import { formatDistanceToNow } from "date-fns";
 import { applyPublishedFilter, filterPublishedRows } from "@/lib/postProvenance";
 
@@ -48,15 +49,15 @@ function getVisual(count: number, mostUrgent: EventType | null): Visual {
   // But the spec keeps state-specific styling tied to most-urgent type below.
   switch (mostUrgent) {
     case "signal_shift":
-      return { borderColor: "#7F77DD", badgeBg: "#7F77DD", badgeText: String(count), textColor: "#fff", pulse: false };
+      return { borderColor: "var(--act)", badgeBg: "var(--act)", badgeText: String(count), textColor: "#fff", pulse: false };
     case "timing_window":
       return { borderColor: "var(--brand)", badgeBg: "var(--brand)", badgeText: "!", textColor: "#fff", pulse: true };
     case "silence_alarm":
       return { borderColor: "var(--brand)", badgeBg: "var(--brand)", badgeText: String(count), textColor: "var(--ink)", pulse: false };
     case "weekly_brief":
-      return { borderColor: "#1D9E75", badgeBg: "#1D9E75", badgeText: "B", textColor: "#fff", pulse: false };
+      return { borderColor: "var(--act)", badgeBg: "var(--act)", badgeText: "B", textColor: "#fff", pulse: false };
     case "knowledge_debt":
-      return { borderColor: "#534AB7", badgeBg: "#534AB7", badgeText: String(count), textColor: "#fff", pulse: false };
+      return { borderColor: "var(--text-secondary)", badgeBg: "var(--text-secondary)", badgeText: String(count), textColor: "#fff", pulse: false };
   }
 }
 
@@ -85,6 +86,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
   const tipTimer = useRef<number | null>(null);
   const [avatarState, setAvatarState] = useState<AvatarState>("idle");
   const [showAvatarTip, setShowAvatarTip] = useState(false);
+  const [overnightFound, setOvernightFound] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -173,6 +175,15 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
       const newSignalCount = (aRes as any)?.count ?? 0;
       const signalTriggered = newSignalCount > 0;
 
+      // The Overnight: anything usable found in the last 36 hours.
+      const thirtySixAgo = new Date(nowMs - 36 * 60 * 60 * 1000).toISOString();
+      const { count: findingCount } = await (supabase.from("agent_findings" as any) as any)
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .in("status", ["pending", "kept"])
+        .gte("created_at", thirtySixAgo);
+      setOvernightFound((findingCount ?? 0) > 0);
+
       // Priority: C > B > A
       if (alarmTriggered) setAvatarState("alarm");
       else if (windowTriggered) setAvatarState("window");
@@ -181,6 +192,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
     } catch (e) {
       // fail silently
       setAvatarState("idle");
+      setOvernightFound(false);
     }
   }, []);
 
@@ -206,7 +218,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
   // STATE 6 — Active override: count >= 3 AND mixed types -> dark purple/count
   const visual: Visual = useMemo(() => {
     if (count >= 3 && distinctTypes >= 2) {
-      return { borderColor: "#534AB7", badgeBg: "#534AB7", badgeText: String(count), textColor: "#fff", pulse: false };
+      return { borderColor: "var(--text-secondary)", badgeBg: "var(--text-secondary)", badgeText: String(count), textColor: "#fff", pulse: false };
     }
     return getVisual(count, mostUrgent);
   }, [count, mostUrgent, distinctTypes]);
@@ -281,7 +293,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
         }}
       >
         <span className="relative inline-flex items-center justify-center shrink-0">
-          <Sparkles aria-hidden="true" className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
+          <AuraMark size={16} state={overnightFound ? "found" : "resting"} className="group-hover:scale-110 transition-transform" />
           {(avatarState === "signal" || avatarState === "window") && (
             <span
               aria-hidden="true"
@@ -294,7 +306,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
                 width: 26,
                 height: 26,
                 borderRadius: "50%",
-                border: `2px solid ${avatarState === "signal" ? "#7F77DD" : "var(--brand)"}`,
+                border: `2px solid ${avatarState === "signal" ? "var(--act)" : "var(--brand)"}`,
                 animation: `askaura-ring-pulse ${avatarState === "signal" ? "2s" : "1s"} ease-in-out infinite`,
                 pointerEvents: "none",
               }}
