@@ -1192,12 +1192,17 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
             ? args.kinds.filter((k: unknown) => typeof k === "string" && (SOURCE_KINDS as string[]).includes(k))
             : null;
           try {
+            // L1.1 — the count is computed here and handed to the model as a
+            // rendered string. The model is forbidden from counting rows itself,
+            // so retrieval reads wider than it shows and states both figures.
             const res = await retrieveContext(admin, user_id, q, {
-              limit: 8,
+              limit: 40,
               caller: "ask-aura-tool",
               ...(kinds && kinds.length ? { kinds: kinds as any } : {}),
             });
-            const kept = applyRelevanceFloor(res.rows);
+            const keptAll = applyRelevanceFloor(res.rows);
+            const total = keptAll.length;
+            const kept = keptAll.slice(0, 8);
             const out = kept.map((r: any) => {
               const key = `${r.source_kind}:${r.source_id}`;
               let n: number;
@@ -1224,7 +1229,24 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
                 content: r.content ? String(r.content).slice(0, 300) : "",
               };
             });
-            return { tool: name, ok: true, label: "", payload: { ok: true, results: out } };
+            const countRendered = total === 0
+              ? `nothing in your record matches "${q}"`
+              : total === 1
+              ? `1 item in your record matches "${q}"`
+              : `${total} items in your record match "${q}"${total > kept.length ? ` (top ${kept.length} shown)` : ""}`;
+            return {
+              tool: name,
+              ok: true,
+              label: "",
+              payload: {
+                ok: true,
+                count: total,
+                shown: kept.length,
+                count_rendered: countRendered,
+                results: out,
+              },
+            };
+
           } catch (e) {
             console.error("search_my_graph failed", (e as Error)?.message ?? String(e));
             return { tool: name, ok: false, label: "", payload: { ok: false, error: "could not search" } };
