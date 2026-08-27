@@ -693,6 +693,7 @@ ${pillars.length ? pillars.map((x) => `  - ${x}`).join("\n") : "  - none recorde
 Pillar coverage in published work (counted by matching pillar words against the text of his published posts):
 ${pillarCoverageLines}
   RULE: "most" or "least" written about is decided by these counts and nothing else.
+  RULE: the pillar with the HIGHEST count is his strongest ground, never a gap. A gap is a pillar with a low or zero count. Never call a well-covered pillar a gap.
   RULE (P3): one post can touch several pillars, so these counts OVERLAP. They do not add up to ${publishedTotal} and must never be summed, presented as a split, or described as shares of his published work.
 Profile:
   - primary strength: ${p.primary_strength || "not recorded"}
@@ -714,6 +715,7 @@ HOW TO USE A NUMBER (absolute):
   - If the member states a number in his question and it disagrees with the figures above, correct him in the FIRST sentence, plainly — "You have ${draftsTotal}, not 27." — and then answer the question he asked.
   - The same holds for a movement he asserts. If he says something rose or fell and the figures above say otherwise, say so first — "It did not drop, it is up 1" — and never explain a fall that did not happen.
   - Every figure above belongs to the one thing it is labelled with. Never lend it to another: the vault total is not the evidence behind a signal, a pillar count is not a post count, and a rhythm is not a score. If you cannot see how many items sit behind a signal, say so.
+  - A post you write for him is held to the same rule. Never put an illustrative figure, sum of money, percentage or year inside a draft unless it is written above or came from one of his sources this turn. A plausible number is still an invented one.
   - Comparing two figures is arithmetic too. NEVER say a figure rose, fell, dropped, improved or worsened unless the movement is written above in those words. Two engagement rates side by side are two facts, not a trend — state them and stop.`;
 
     /** P1 — the counted truth, returned with the full prompt further down. */
