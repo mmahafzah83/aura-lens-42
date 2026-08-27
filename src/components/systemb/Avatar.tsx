@@ -27,16 +27,23 @@ interface AvatarProps {
 
 const Avatar: React.FC<AvatarProps> = ({ src, name, size = "md", ring, style }) => {
   const px = PX[size];
+  /* A dead src must never reach the DOM twice. The moment the browser tells us
+     the image failed, we forget it and render the initials instead — no broken
+     glyph, no alt text standing in for a face. */
+  const [failed, setFailed] = React.useState<string | null>(null);
+  React.useEffect(() => { setFailed(null); }, [src]);
+  const usable = src && src !== failed ? src : null;
   const shell: React.CSSProperties = {
     width: px, height: px, borderRadius: 999, flexShrink: 0,
     overflow: "hidden", display: "inline-flex", alignItems: "center", justifyContent: "center",
     border: `1px solid ${ring || "var(--border-default)"}`,
     ...style,
   };
-  if (src) {
+  if (usable) {
     return (
       <span style={shell} data-testid="systemb-avatar" data-avatar="photo">
-        <img src={src} alt={name ? `${name}'s profile photo` : "Profile photo"}
+        <img src={usable} alt={name ? `${name}'s profile photo` : "Profile photo"}
+          onError={() => setFailed(usable)}
           style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </span>
     );
