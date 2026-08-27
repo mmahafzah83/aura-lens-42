@@ -103,7 +103,15 @@ export function parseLayers(raw: string): { plain: string; more: string; moves: 
 
   let seenPlain = false;
   for (let i = 0; i < lines.length; i++) if (isMarker(lines[i], "§§PLAIN", i)) { seenPlain = true; break; }
-  if (!seenPlain) return { plain: text, more: "", moves: [] };
+  if (!seenPlain) {
+    // Fallback path gets the same guard as the main one: a final line that is
+    // only a partial or complete marker is being typed right now — drop it
+    // rather than flashing "§§PLAIN" on screen for a frame.
+    const last = lines[lines.length - 1].trim();
+    if (!text.endsWith("\n") && last.length > 0 && /^§+§?[A-Z]*$/.test(last))
+      return { plain: lines.slice(0, -1).join("\n"), more: "", moves: [] };
+    return { plain: text, more: "", moves: [] };
+  }
 
   let current: "none" | "plain" | "more" | "moves" = "none";
   const buf = { plain: [] as string[], more: [] as string[], moves: [] as string[] };
@@ -746,7 +754,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
           <section style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
             <div ref={listRef} aria-live="polite" aria-atomic="false" style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
               {messages.length === 0 && openerDone && (
-                <div style={{ padding: "36px 4px", maxWidth: 620 }}>
+                <div className="ask-answer-card" style={{ maxWidth: 620, marginTop: 24 }}>
                   {opener ? (
                     <>
                       <Answer text={opener.text} />
@@ -803,11 +811,15 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                   // The layers. A malformed answer degrades to the whole text.
                   const layers = parseLayers(m.content);
                   const isOpen = !!expanded[i];
+                  // A failure is not a finished object — errors stay outside the card.
+                  if (m.isError) return (
+                    <div key={i} style={{ margin: "14px 0", maxWidth: 720 }}>
+                      <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>{m.content}</div>
+                    </div>
+                  );
                   return (
-                  <div key={i} style={{ margin: "14px 0", maxWidth: 720 }}>
-                    {m.isError
-                      ? <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>{m.content}</div>
-                      : <>
+                  <div key={i} className="ask-answer-card" style={{ margin: "14px 0", maxWidth: 720 }}>
+                    {<>
                           <Answer text={layers.plain} size={15} color="var(--text-primary)" />
                           {layers.more && (
                             <>
@@ -834,7 +846,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 2px" }}>
                               {layers.moves.map((mv, mi) => (
                                 <button
-                                  key={mv} type="button" className="ask-focusable ask-chip"
+                                  key={`${mi}:${mv}`} type="button" className="ask-focusable ask-chip"
                                   data-testid="ask-move-chip"
                                   onClick={() => send(mv)}
                                   style={mi === 0 ? {
@@ -974,6 +986,13 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       <style>{`
         .ask-grid { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 20px; }
         .ask-grid > aside { max-height: 100%; }
+        /* One answer shape: every answer, and the opener, is a finished object. */
+        .ask-answer-card {
+          background: var(--surface-card);
+          border: 1px solid var(--rule-outer);
+          border-radius: 20px;
+          padding: 16px 18px 14px;
+        }
         /* Keyboard users must see where they are. Mouse users are untouched. */
         [data-testid="ask-aura-v2"] .ask-focusable:focus-visible {
           outline: 2px solid var(--act);
@@ -984,6 +1003,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         @media (max-width: 767px) {
           [data-testid="ask-aura-v2"] .ask-chip { min-height: 44px; }
           [data-testid="ask-aura-v2"] .ask-send { width: 44px; height: 44px; }
+          .ask-answer-card { padding: 14px 14px 12px; }
         }
         @media (max-width: 1023px) {
           /* The answer leads on a phone; the rail follows underneath it. */
