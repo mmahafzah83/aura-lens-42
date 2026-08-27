@@ -386,16 +386,16 @@ serve(async (req) => {
       const first = String((promiseRow as any).actions_committed[0]).trim();
       const out: Opener = {
         kind: "promise",
-        text: `You said you would ${first}. Still the right move?`,
+        text: assemble(greeting, [`You said you would ${first}.`, "Still the right move?"]),
         chips: [
           { label: "Help me finish it", prompt: `Help me finish this: ${first}` },
           { label: "What changed since?", prompt: "What has changed in my signals since I said that?" },
           ELSE,
         ],
       };
-      out.text = applyVoiceContract(out.text);
       return json(out);
     }
+
 
     /* ── RULE 2 — draft ── */
     const { data: draftRows } = await admin
