@@ -88,6 +88,38 @@ interface PromptSeed { label: string; text: string }
 const isAr = (s: string) => AR.test(s || "");
 
 /**
+ * The output contract: an answer arrives in layers. The model writes three
+ * line-markers; this splits them. It runs on every streamed token, so a
+ * half-written marker on the final line must never be treated as a marker.
+ *
+ * If §§PLAIN never appears the whole text is the plain layer — today's
+ * behaviour, which is the safety net.
+ */
+export function parseLayers(raw: string): { plain: string; more: string; moves: string[] } {
+  const text = String(raw ?? "");
+  const lines = text.split("\n");
+  const isMarker = (l: string, name: string, i: number) =>
+    l.trim() === name && (i < lines.length - 1 || text.endsWith("\n"));
+
+  let seenPlain = false;
+  for (let i = 0; i < lines.length; i++) if (isMarker(lines[i], "§§PLAIN", i)) { seenPlain = true; break; }
+  if (!seenPlain) return { plain: text, more: "", moves: [] };
+
+  let current: "none" | "plain" | "more" | "moves" = "none";
+  const buf = { plain: [] as string[], more: [] as string[], moves: [] as string[] };
+  lines.forEach((l, i) => {
+    if (isMarker(l, "§§PLAIN", i)) { current = "plain"; return; }
+    if (isMarker(l, "§§MORE", i)) { current = "more"; return; }
+    if (isMarker(l, "§§MOVES", i)) { current = "moves"; return; }
+    if (current !== "none") buf[current].push(l);
+  });
+
+  const moves = buf.moves.join(" ").split("|").map(s => s.trim()).filter(Boolean).slice(0, 4);
+  return { plain: buf.plain.join("\n").trim(), more: buf.more.join("\n").trim(), moves };
+}
+
+
+/**
  * Which citations this answer actually used. A ref is counted when the model
  * printed the bracketed reference, and — because models routinely cite the
  * title in bold and drop the ref — also when the exact signal title appears in
