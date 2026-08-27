@@ -1007,6 +1007,21 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 })();
               })}
 
+              {blocked && (
+                <DeskCapabilityReply
+                  capability={blocked.capability}
+                  onReady={async () => {
+                    const q = blocked.question;
+                    setBlocked(null);
+                    await refreshDesk();
+                    void send(q, { force: true });
+                  }}
+                  onInstead={(p) => { setBlocked(null); void send(p, { force: true }); }}
+                  onDismiss={() => setBlocked(null)}
+                />
+              )}
+
+
 
 
               {loading && (
