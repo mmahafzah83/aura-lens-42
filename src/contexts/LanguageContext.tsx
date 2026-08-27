@@ -11,7 +11,7 @@ interface LanguageContextType {
 const translations: Record<string, string> = {
   "app.name": "Aura",
   "app.subtitle": PRODUCT_DESCRIPTOR,
-  "header.askAura": "Ask Aura",
+  "header.askAura": "Your Desk",
   "header.logout": "Sign Out",
   "tab.briefing": "Briefing",
   "tab.pursuits": "Pursuits",
@@ -54,7 +54,7 @@ const translations: Record<string, string> = {
   "draft.title": "LinkedIn Draft",
   "draft.copy": "Copy to Clipboard",
   "draft.copied": "Copied!",
-  "chat.title": "Ask Aura",
+  "chat.title": "Your Desk",
   "chat.subtitle": "Your Intelligence Vault",
   "chat.placeholder": "Ask about your captures…",
   "chat.vaultUnlocked": "Your Vault, Unlocked",

@@ -536,7 +536,7 @@ export const SignalHero = ({
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <Button onClick={() => onDraft(signal)}>Write on this signal →</Button>
         <Button variant="outline" onClick={() => onOpenChat?.("Show competitor intel on: " + signal.signal_title)}>
-          Ask Aura to analyze →
+          Take this to Your Desk →
         </Button>
       </div>
     </section>

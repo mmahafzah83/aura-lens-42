@@ -2551,7 +2551,7 @@ const SectionInsight = ({ text, askAuraPrompt }: { text?: string | null; askAura
                 fontFamily: "inherit",
               }}
             >
-              Ask Aura to go deeper →
+              Take this to Your Desk →
             </button>
           )}
         </div>

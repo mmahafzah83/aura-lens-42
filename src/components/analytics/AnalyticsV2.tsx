@@ -564,7 +564,7 @@ const AnalyticsV2: React.FC<{ onOpenChat?: (msg?: string) => void }> = ({ onOpen
           {onOpenChat && (
             <div>
               <ButtonPrimary onClick={() => onOpenChat("Looking at my analytics — what should I fix first?")}>
-                <Sparkles size={13} /> Ask Aura what to fix first
+                <Sparkles size={13} /> Take this to Your Desk
               </ButtonPrimary>
             </div>
           )}

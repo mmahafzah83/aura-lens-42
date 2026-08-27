@@ -735,7 +735,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <AuraMark size={24} state={loading ? "working" : "resting"} />
-          <span id="ask-aura-title" style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--text-primary)" }}>Ask Aura</span>
+          <span id="ask-aura-title" style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--text-primary)" }}>Your Desk</span>
           {context?.linkedLabel && (
             <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>· {context.linkedLabel}</span>
           )}
@@ -946,13 +946,13 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 <textarea
                   ref={taRef}
                   className="ask-focusable"
-                  aria-label="Ask Aura a question"
+                  aria-label="Your Desk — ask a question"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(input); } }}
                   rows={2}
                   dir={isAr(input) ? "rtl" : "ltr"}
-                  placeholder="Ask about a signal, a draft, or your position"
+                  placeholder="Assign a task, or ask"
                   style={{
                     flex: 1, resize: "none", border: 0, background: "transparent",
                     fontSize: 14.5, color: "var(--text-primary)", lineHeight: isAr(input) ? 1.9 : 1.5,

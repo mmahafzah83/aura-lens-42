@@ -11,10 +11,10 @@ export default function AskAuraButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       data-tour="nav-ask-aura"
       data-testid="header-ask-aura"
-      aria-label="Ask Aura"
+      aria-label="Your Desk"
     >
       <Sparkles size={15} strokeWidth={2} />
-      <span className="hidden sm:inline">Ask Aura</span>
+      <span className="hidden sm:inline">Your Desk</span>
     </ButtonAI>
   );
 }
