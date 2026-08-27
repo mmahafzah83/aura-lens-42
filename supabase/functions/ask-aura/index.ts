@@ -86,7 +86,7 @@ serve(withObserve("ask-aura", async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     // STEP 1 — assemble context (in parallel, tolerate failures)
-    const [profile, signals, posts, memory, alerts, voice, scoreSnap, entriesRecent, entriesCount, metrics, trends] = await Promise.all([
+    const [profile, signals, posts, memory, alerts, voice, scoreSnap, entriesRecent, entriesCount, metrics, trends, findings] = await Promise.all([
       safe(
         admin
           .from("diagnostic_profiles")
