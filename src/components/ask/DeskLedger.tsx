@@ -223,10 +223,13 @@ export default function DeskLedger({ onOpenDrafts, onOpenSignals, onOpenTab }: P
                   display: "block", fontFamily: MONO, fontVariantNumeric: "tabular-nums",
                   fontSize: 18, fontWeight: 600, color: r.colour, lineHeight: 1.1,
                 }}>{r.value}</span>
-                <span style={{
-                  display: "block", fontSize: 9.5, letterSpacing: ".12em",
-                  textTransform: "uppercase", color: MUTED, marginTop: 3,
-                }}>{r.unit}</span>
+                {r.unit && (
+                  <span style={{
+                    display: "block", fontSize: 9.5, letterSpacing: ".12em",
+                    textTransform: "uppercase", color: MUTED, marginTop: 3,
+                  }}>{r.unit}</span>
+                )}
+
               </span>
             </button>
 
