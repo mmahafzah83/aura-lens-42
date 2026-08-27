@@ -127,9 +127,14 @@ export function plainSubject(rawTitle: string): string {
   s = s.replace(/^(how|why|what|when|where|the way)\b\s*/i, "");
   for (const re of JARGON) s = s.replace(new RegExp(re.source, "gi"), " ");
   s = s.replace(/\s{2,}/g, " ").replace(/[.,;:]+$/, "").trim();
+  // Stripping jargon can leave a dangling connector — cut it off.
+  s = s.replace(/\s+(is|are|was|were|and|or|to|of|for|in|on|that|their|our|the|a|an|each other'?s)$/i, "").trim();
   if (s.length > 90) s = s.slice(0, 90).replace(/\s+\S*$/, "");
   if (s.split(/\s+/).filter(Boolean).length < 2) return "";
-  return s.charAt(0).toLowerCase() + s.slice(1);
+  // Lowercase the lead word only when it is ordinary prose, never an acronym.
+  const lead = s.split(/\s+/)[0];
+  return /^[A-Z]{2,}$/.test(lead.replace(/[^A-Za-z]/g, "")) ? s : s.charAt(0).toLowerCase() + s.slice(1);
+
 }
 
 
