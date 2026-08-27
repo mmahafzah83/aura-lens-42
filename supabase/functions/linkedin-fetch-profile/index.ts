@@ -394,10 +394,7 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
 
 
     // --- Gentle auto-fill: only ever fills a blank, never replaces the member's own value ---
-    const profilePatch: Record<string, string> = {};
-    if (photo_url) profilePatch.avatar_url = photo_url;
-    if (firstName) profilePatch.first_name = firstName;
-    if (Object.keys(profilePatch).length) {
+    if (photo_url || firstName) {
       const { data: existing } = await admin
         .from("diagnostic_profiles")
         .select("avatar_url, first_name")
@@ -406,8 +403,16 @@ Deno.serve(withObserve("linkedin-fetch-profile", async (req) => {
       if (existing) {
         const blank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
         const patch: Record<string, string> = {};
-        if (profilePatch.avatar_url && blank(existing.avatar_url)) patch.avatar_url = profilePatch.avatar_url;
-        if (profilePatch.first_name && blank(existing.first_name)) patch.first_name = profilePatch.first_name;
+        /* A LinkedIn photo URL is signed and expires, so it is never what we
+           store. We take a copy into our own bucket and keep that. A stored
+           licdn URL from before this rule is treated as rotten and replaced;
+           a URL the member set themselves is left alone. */
+        const rotten = !blank(existing.avatar_url) && String(existing.avatar_url).includes("licdn.com");
+        if (photo_url && (blank(existing.avatar_url) || rotten)) {
+          const stored = await storeAvatar(admin, targetUserId, photo_url);
+          if (stored) patch.avatar_url = stored;
+        }
+        if (firstName && blank(existing.first_name)) patch.first_name = firstName;
         if (Object.keys(patch).length) {
           const { error } = await admin
             .from("diagnostic_profiles")
