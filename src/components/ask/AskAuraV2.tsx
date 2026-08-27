@@ -9,13 +9,14 @@ import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
 import DeskSlot, { type DeskCardKind } from "@/components/desk/DeskSlot";
 import DeskReturnCard, { loadReturnCard, type ReturnCardData } from "@/components/desk/DeskReturnCard";
 import {
-  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs,
+  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn,
   type Capabilities, type CapabilityKey, type DeskPrefs,
 } from "@/components/desk/deskPrefs";
+import { cleanMemory, type CleanMemoryRow } from "@/components/desk/deskMemory";
 
 
-import { setDeskWorking, setDeskFound, setDeskQuiet } from "@/components/desk/deskDockBus";
-import { Settings2, X, Send, ArrowUpRight } from "lucide-react";
+import { beginDeskRun, endDeskRun, setDeskFound } from "@/components/desk/deskDockBus";
+import { Settings2, X, Send, ArrowUpRight, Eye, Quote, Gauge, Compass, History, Radar, PenLine, Inbox } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import AuraMark from "@/components/brand/AuraMark";
@@ -247,7 +248,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [sources, setSources] = useState<Record<number, Source>>({});
   const [citedSources, setCitedSources] = useState<number[]>([]);
   const [position, setPosition] = useState<Position | null>(null);
-  const [memory, setMemory] = useState<MemoryRow[]>([]);
+  const [memory, setMemory] = useState<CleanMemoryRow[]>([]);
+  /** What the answers are made of, counted from his own rows. */
+  const [graph, setGraph] = useState<{ captures: number; signals: number; posts: number; drafts: number; score: number | null } | null>(null);
   const [seeds, setSeeds] = useState<PromptSeed[]>([]);
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [opener, setOpener] = useState<{ text: string; chips: { label: string; prompt: string }[] } | null>(null);
@@ -309,12 +312,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       const uid = session?.user?.id;
       if (!uid) return;
 
-      const [postsRes, voiceRes, memRes, sigRes, draftRes] = await Promise.all([
+      const [postsRes, voiceRes, memRes, sigRes, draftRes, captureRes, signalCountRes, postCountRes, scoreRes] = await Promise.all([
         supabase.from("linkedin_posts").select("source_type, tracking_status, theme, theme_tags").eq("user_id", uid),
         supabase.from("authority_voice_profiles").select("tone, example_posts").eq("user_id", uid).eq("is_primary", true).eq("mode_key", "default").maybeSingle(),
         supabase.from("aura_conversation_memory").select("id, session_date, summary, actions_committed").eq("user_id", uid).is("role", null).not("summary", "is", null).order("created_at", { ascending: false }).limit(6),
         supabase.from("strategic_signals").select("id, signal_title, theme_tags, priority_score").eq("user_id", uid).order("priority_score", { ascending: false }).limit(3),
         supabase.from("linkedin_posts").select("id").eq("user_id", uid).eq("tracking_status", "draft"),
+        supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid).neq("source_type", "aura_agent"),
+        supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        supabase.from("score_snapshots").select("score").eq("user_id", uid).order("created_at", { ascending: false }).limit(1),
       ]);
 
       const live = filterPublishedRows((postsRes.data as any[]) || []);
@@ -332,10 +339,18 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         voiceTone: voice?.tone || null,
         voiceLearnedFrom: Array.isArray(voice?.example_posts) ? voice.example_posts.length : 0,
       });
-      setMemory(((memRes.data as any[]) || []).filter(r => (r.summary || "").trim()) as MemoryRow[]);
+      /* Broken rows are dropped, never shown: see deskMemory.cleanMemory. */
+      setMemory(cleanMemory(((memRes.data as any[]) || []) as any));
 
       const sigs = ((sigRes.data as any[]) || []);
       const drafts = ((draftRes.data as any[]) || []).length;
+      setGraph({
+        captures: captureRes.count ?? 0,
+        signals: signalCountRes.count ?? 0,
+        posts: postCountRes.count ?? 0,
+        drafts,
+        score: ((scoreRes.data as any[]) || [])[0]?.score ?? null,
+      });
       const s: PromptSeed[] = [];
       if (sigs[0]) {
         const full = String(sigs[0].signal_title);
@@ -508,8 +523,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     setInput("");
     setFollowUps([]);
     setLoading(true);
-    // The dock mirrors the Desk: it turns while Aura reads, stops when it lands.
-    setDeskWorking("Reading your graph");
+    /* The dock mirrors the Desk: it turns while Aura reads, and keeps turning
+       if he closes the Desk mid-answer — the run, not the surface, owns it. */
+    beginDeskRun("Reading your graph");
     void persist("user", body, []);
 
 
@@ -613,7 +629,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         setDeskFound("Your answer is ready", { question: body, answer: parseLayers(acc).plain || acc.trim() });
       } else {
         setMessages(prev => prev.slice(0, -1));
-        setDeskQuiet();
+        endDeskRun();
       }
 
     } catch (e: any) {
@@ -622,7 +638,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         if (copy.length && copy[copy.length - 1].role === "assistant" && !copy[copy.length - 1].content) copy.pop();
         return [...copy, { role: "assistant", content: e?.message || "Didn't connect. Try once more.", isError: true }];
       });
-      setDeskQuiet();
+      endDeskRun();
     }
     setLoading(false);
   }, [caps, context, loading, messages, persist, prefs]);
@@ -696,6 +712,38 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     );
   };
 
+  /* One heading grammar for every section: icon, then label. */
+  const sectionHead = (Icon: any, label: string) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+      <Icon size={18} strokeWidth={1.7} color="var(--text-muted)" aria-hidden="true" />
+      <span style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+        {label}
+      </span>
+    </div>
+  );
+
+  const num = (n: number | string) => (
+    <span style={{ ...MONO, fontVariantNumeric: "tabular-nums", color: "var(--text-primary)" }}>{n}</span>
+  );
+
+  const jumpRow = (Icon: any, label: string, count: string | null, go: () => void) => (
+    <button
+      key={label}
+      type="button"
+      className="ask-focusable ask-rail-row"
+      onClick={go}
+      style={{
+        display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+        background: "transparent", cursor: "pointer",
+        border: "1px solid var(--rule-outer)", borderRadius: 12, padding: "9px 12px",
+      }}
+    >
+      <Icon size={18} strokeWidth={1.7} color="var(--text-muted)" aria-hidden="true" />
+      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{label}</span>
+      {count && <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>{count}</span>}
+    </button>
+  );
+
   const rail = (
     <aside
       data-testid="ask-rail"
@@ -704,52 +752,52 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         padding: 18, display: "flex", flexDirection: "column", gap: 22, overflowY: "auto",
       }}
     >
-      <div>
-        <div style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--machine-text)" }}>
-          Chief of Staff
-        </div>
-        <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 4 }}>
-          Reads only your graph.
-        </div>
-      </div>
-
-      <div>
-        {railLabel("In this conversation")}
-        {cited.length === 0 ? (
-          <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>Nothing cited yet.</div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {cited.map(c => (
-              <button
-                key={c.ref}
-                type="button"
-                className="ask-focusable ask-rail-row"
-                onClick={() => openSignal(c.id)}
-                style={{
-                  textAlign: "left", background: "transparent", cursor: "pointer",
-                  border: "1px solid var(--rule-outer)", borderRadius: 12, padding: "10px 12px",
-                }}
-              >
-                <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                  <span style={{ ...MONO, fontSize: 10.5, color: "var(--machine-text)" }}>{c.ref}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{c.title}</span>
-                </div>
-                <div style={{ ...MONO, fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                  {c.evidence_count} capture{c.evidence_count === 1 ? "" : "s"}
-                  {c.days_live != null ? ` · ${c.days_live}d live` : ""}
-                  {c.velocity_status ? ` · ${c.velocity_status}` : ""}
-                </div>
-              </button>
-            ))}
+      {/* 1 — What I can see: the single most reassuring line on the panel. */}
+      {panelOn(prefs, "scope") && (
+        <div data-testid="rail-scope">
+          {sectionHead(Eye, "What I can see")}
+          <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+            {!graph ? "Counting your rows…"
+              : (graph.captures + graph.signals + graph.posts) === 0
+                ? "Nothing in your vault yet, so there is nothing for me to read."
+                : <>Your {num(graph.captures)} captures, {num(graph.signals)} signals, {num(graph.posts)} posts.</>}
           </div>
-        )}
-        {citedSourceRows.length > 0 && (
-          <div style={{ marginTop: 16 }} data-testid="ask-rail-sources">
-            {railLabel("Sources")}
+        </div>
+      )}
+
+      {/* 2 — Used in this answer: the citation registry, each row openable. */}
+      {panelOn(prefs, "cited") && (
+        <div data-testid="rail-cited">
+          {sectionHead(Quote, "Used in this answer")}
+          {cited.length === 0 && citedSourceRows.length === 0 ? (
+            <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>Nothing cited yet.</div>
+          ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {cited.map(c => (
+                <button
+                  key={c.ref}
+                  type="button"
+                  className="ask-focusable ask-rail-row"
+                  onClick={() => openSignal(c.id)}
+                  style={{
+                    textAlign: "left", background: "transparent", cursor: "pointer",
+                    border: "1px solid var(--rule-outer)", borderRadius: 12, padding: "10px 12px",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                    <span style={{ ...MONO, fontSize: 10.5, color: "var(--machine-text)" }}>{c.ref}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{c.title}</span>
+                  </div>
+                  <div style={{ ...MONO, fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
+                    {c.evidence_count} capture{c.evidence_count === 1 ? "" : "s"}
+                    {c.days_live != null ? ` · ${c.days_live}d live` : ""}
+                    {c.velocity_status ? ` · ${c.velocity_status}` : ""}
+                  </div>
+                </button>
+              ))}
               {citedSourceRows.map(s => (
                 <button
-                  key={s.n}
+                  key={`s-${s.n}`}
                   type="button"
                   className="ask-focusable ask-rail-row"
                   aria-label={`Source ${s.n}: ${sourceDetail(s)}`}
@@ -770,64 +818,54 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 </button>
               ))}
             </div>
-          </div>
-        )}
-      </div>
-
-      <div>
-        {railLabel("Your position")}
-        {!position ? (
-          <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>Reading your posts…</div>
-        ) : position.publishedLive === 0 ? (
-          <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-            No posts live on LinkedIn yet, so there is no theme concentration to show.
-          </div>
-        ) : (
-          <div style={{ fontSize: 13, color: "var(--text-primary)" }}>
-            {position.topTheme ? (
-              <div>
-                <strong>{position.topTheme}</strong>
-                <span style={{ ...MONO, color: "var(--text-secondary)" }}>
-                  {" "}— {position.topThemePct}% of {position.publishedLive} posts live on LinkedIn
-                </span>
-              </div>
-            ) : (
-              <div style={{ color: "var(--text-muted)", fontSize: 12.5 }}>
-                {position.publishedLive} posts live on LinkedIn, none tagged with a theme yet.
-              </div>
-            )}
-          </div>
-        )}
-        <div style={{ marginTop: 10, fontSize: 12.5, color: "var(--text-secondary)" }}>
-          {position && position.voiceTone
-            ? <>Voice: {position.voiceTone}{position.voiceLearnedFrom > 0 ? ` — learned from ${position.voiceLearnedFrom} of your posts` : ""}</>
-            : "No voice profile learned yet — Aura needs more of your own writing first."}
+          )}
         </div>
-      </div>
+      )}
 
-      <div>
-        {railLabel("Memory")}
-        {memory.length === 0 ? (
-          <div data-testid="ask-memory-empty" style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6 }}>
-            Nothing remembered yet. Memory builds itself as you use Aura — each session leaves a short note here.
+      {/* 3 — Where you stand: one number, one voice line. Never a third. */}
+      {panelOn(prefs, "standing") && (
+        <div data-testid="rail-standing">
+          {sectionHead(Gauge, "Where you stand")}
+          <div style={{ fontSize: 15, color: "var(--text-primary)" }}>
+            {graph && graph.score != null
+              ? <span style={{ ...MONO, fontVariantNumeric: "tabular-nums" }}>{graph.score}/100</span>
+              : <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>No score recorded yet.</span>}
           </div>
-        ) : (
+          <div style={{ marginTop: 6, fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+            {position && position.voiceTone
+              ? <>Voice: {position.voiceTone}{position.voiceLearnedFrom > 0 ? ` — learned from ${position.voiceLearnedFrom} of your posts` : ""}</>
+              : "No voice profile learned yet — Aura needs more of your own writing first."}
+          </div>
+        </div>
+      )}
+
+      {/* 4 — Jump to: the four places he actually uses. */}
+      {panelOn(prefs, "jump") && (
+        <div data-testid="rail-jump">
+          {sectionHead(Compass, "Jump to")}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {jumpRow(Radar, "Signals", graph && graph.signals > 0 ? String(graph.signals) : null, () => openSurface("intelligence"))}
+            {jumpRow(PenLine, "Write", graph && graph.drafts > 0 ? `${graph.drafts} drafts` : null, () => openSurface("authority"))}
+            {jumpRow(Inbox, "Capture", graph && graph.captures > 0 ? String(graph.captures) : null, () => openSurface("home"))}
+            {jumpRow(Gauge, "Where you stand", graph && graph.score != null ? `${graph.score}/100` : null, () => openSurface("influence"))}
+          </div>
+        </div>
+      )}
+
+      {/* Last, and only when a row survived the filter. */}
+      {panelOn(prefs, "memory") && memory.length > 0 && (
+        <div data-testid="rail-memory">
+          {sectionHead(History, "What I remember")}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {memory.map(m => (
               <div key={m.id} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.55 }}>
                 <div style={{ ...MONO, fontSize: 10.5, color: "var(--text-muted)" }}>Noted {m.session_date}</div>
-                {m.summary}
-                {Array.isArray(m.actions_committed) && m.actions_committed.length > 0 && (
-                  <div style={{ ...MONO, fontSize: 10.5, color: "var(--text-muted)" }}>
-                    Committed: {m.actions_committed.slice(0, 2).join(" · ")}
-                  </div>
-                )}
+                <div className="ask-clamp-2">{m.text}</div>
               </div>
             ))}
-
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </aside>
   );
 
@@ -1230,6 +1268,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       <style>{`
         .ask-grid { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 20px; }
         .ask-grid > aside { max-height: 100%; }
+        .ask-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         /* One answer shape: every answer, and the opener, is a finished object. */
         .ask-answer-card {
           background: var(--surface-card);

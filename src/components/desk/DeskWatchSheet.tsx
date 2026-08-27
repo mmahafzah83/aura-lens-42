@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import {
-  GROUP_TITLES, MISSING_REASON, WATCH_OPTIONS, isOn, loadCapabilities, loadDeskPrefs,
-  saveDeskPrefs, type Capabilities, type DeskPrefs, type WatchOption,
+  GROUP_TITLES, MISSING_REASON, PANEL_OPTIONS, WATCH_OPTIONS, isOn, loadCapabilities, loadDeskPrefs,
+  panelOn, saveDeskPrefs, type Capabilities, type DeskPrefs, type WatchOption,
 } from "./deskPrefs";
 
 /**
@@ -88,6 +88,13 @@ export default function DeskWatchSheet({ open, onClose, onAddLinkedIn }: Props) 
     const next = !isOn(prefs, o.key);
     setPrefs(p => ({ ...p, watch: { ...(p.watch || {}), [o.key]: next } }));
     const stored = await saveDeskPrefs(prefs, { watch: { [o.key]: next } });
+    setPrefs(stored);
+  };
+
+  const togglePanel = async (key: string) => {
+    const next = !panelOn(prefs, key);
+    setPrefs(p => ({ ...p, panel: { ...(p.panel || {}), [key]: next } }));
+    const stored = await saveDeskPrefs(prefs, { panel: { [key]: next } });
     setPrefs(stored);
   };
 
@@ -177,6 +184,33 @@ export default function DeskWatchSheet({ open, onClose, onAddLinkedIn }: Props) 
             </div>
           </section>
         ))}
+
+        {/* The panel beside his answers is his to shape, section by section. */}
+        <section style={{ padding: "14px 20px 4px" }}>
+          <h3 style={{
+            margin: "0 0 6px", fontSize: 10.5, letterSpacing: ".12em",
+            textTransform: "uppercase", color: MUTED, fontWeight: 600,
+          }}>What shows beside your answers</h3>
+          <div style={{ border: `1px solid ${LINE}`, borderRadius: 14, overflow: "hidden" }}>
+            {PANEL_OPTIONS.map((o, i) => (
+              <div key={o.key} style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
+                borderTop: i === 0 ? "none" : `1px solid ${LINE}`, background: WHITE,
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: INK }}>{o.title}</div>
+                  <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>{o.line}</div>
+                </div>
+                <Toggle
+                  on={panelOn(prefs, o.key)}
+                  label={o.title}
+                  onChange={() => void togglePanel(o.key)}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
         <div style={{ height: 18 }} />
       </div>
     </div>,
