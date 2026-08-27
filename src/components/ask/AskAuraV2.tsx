@@ -12,7 +12,7 @@ import {
   capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen, saveDeskPrefs,
   type Capabilities, type CapabilityKey, type DeskPrefs,
 } from "@/components/desk/deskPrefs";
-import { cleanMoves, guardClaims, HONEST_FAILURE } from "@/components/desk/deskMoves";
+import { cleanMoves, guardClaims, groundBold, HONEST_FAILURE } from "@/components/desk/deskMoves";
 import { cleanMemory, type CleanMemoryRow } from "@/components/desk/deskMemory";
 
 
@@ -246,6 +246,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [citations, setCitations] = useState<Record<string, Citation>>({});
   const [citedOrder, setCitedOrder] = useState<string[]>([]);
   const [sources, setSources] = useState<Record<number, Source>>({});
+  /* Every name that exists in this member’s record; bold outside it is unbolded. */
+  const [groundedTerms, setGroundedTerms] = useState<string[]>([]);
   const [citedSources, setCitedSources] = useState<number[]>([]);
   const [position, setPosition] = useState<Position | null>(null);
   const [memory, setMemory] = useState<CleanMemoryRow[]>([]);
@@ -565,6 +567,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
             const j = JSON.parse(payload);
             if (Array.isArray(j?.citations)) gotCitations = j.citations as Citation[];
             if (Array.isArray(j?.sources)) gotSources = j.sources as Source[];
+            if (Array.isArray(j?.grounded_terms)) setGroundedTerms(j.grounded_terms.map(String));
+            if (Array.isArray(j?.grounded_terms)) setGroundedTerms(j.grounded_terms.map(String));
             if (j?.action && typeof j.action?.label === "string") {
               const r = j.action.route;
               const route: ActionRoute | undefined =
@@ -1105,8 +1109,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                   /* A save is only real when the write came back with a row id. */
                   const savedId = (m.actions || []).find(a => a.ok && a.tool === "save_draft" && a.post_id)?.post_id || null;
                   const verified = (m.actions || []).filter(a => a.ok && (a.tool !== "save_draft" || !!a.post_id)).map(a => a.tool);
-                  const guardedPlain = guardClaims(layers.plain, verified);
-                  const guardedMore = guardClaims(layers.more, verified);
+                  /* Bold reads as a system term — only real names keep it. */
+                  const guardedPlain = guardClaims(groundBold(layers.plain, groundedTerms), verified);
+                  const guardedMore = guardClaims(groundBold(layers.more, groundedTerms), verified);
                   const failedSave = (m.actions || []).some(a => a.tool === "save_draft" && (!a.ok || !a.post_id));
                   const isOpen = !!expanded[i];
                   // A failure is not a finished object — errors stay outside the card.

@@ -61,6 +61,17 @@ function safe<T>(p: Promise<{ data: T | null; error: any }>): Promise<T | null> 
   });
 }
 
+/** Same tolerance, but the whole response — needed when the count matters. */
+function safeRes(p: Promise<any>): Promise<{ data: any; count: number | null }> {
+  return p.then((r: any) => {
+    if (r?.error) console.error("fetch error:", r.error.message);
+    return { data: r?.data ?? null, count: typeof r?.count === "number" ? r.count : null };
+  }).catch((e) => {
+    console.error("fetch threw:", e);
+    return { data: null, count: null };
+  });
+}
+
 serve(withObserve("ask-aura", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -123,7 +134,7 @@ serve(withObserve("ask-aura", async (req) => {
       safe(
         admin
           .from("diagnostic_profiles")
-          .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars, first_name, skill_ratings, created_at")
+          .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars, primary_strength, first_name, skill_ratings, created_at")
           .eq("user_id", user_id)
           .maybeSingle() as any,
       ),
@@ -235,6 +246,42 @@ serve(withObserve("ask-aura", async (req) => {
     const trnds: any[] = Array.isArray(trends) ? trends : [];
     const finds: any[] = Array.isArray(findings) ? findings : [];
 
+    // ── H1 — the account facts, counted, never guessed ─────────────────────
+    // Every number the Desk is allowed to state about this member's own
+    // account is counted here, from his own rows. Nothing is inferred from the
+    // ten posts loaded above; those are a sample, not a total.
+    const cnt = (r: any) => (typeof r?.count === "number" ? r.count : 0);
+    const [
+      publishedR, composerR, metricsCountR, lastPublishedR,
+      activeSignalsR, draftsR, entriesTotalR,
+    ] = await Promise.all([
+      safeRes(admin.from("linkedin_posts").select("id", { count: "exact", head: true })
+        .eq("user_id", user_id).not("published_at", "is", null) as any),
+      safeRes(admin.from("linkedin_posts").select("id", { count: "exact", head: true })
+        .eq("user_id", user_id).eq("produced_by", "composer") as any),
+      safeRes(admin.from("linkedin_post_metrics").select("id", { count: "exact", head: true })
+        .eq("user_id", user_id) as any),
+      safeRes(admin.from("linkedin_posts").select("published_at")
+        .eq("user_id", user_id).not("published_at", "is", null)
+        .order("published_at", { ascending: false }).limit(1).maybeSingle() as any),
+      safeRes(admin.from("strategic_signals").select("id", { count: "exact", head: true })
+        .eq("user_id", user_id).eq("status", "active") as any),
+      safeRes(admin.from("linkedin_posts").select("id", { count: "exact", head: true })
+        .eq("user_id", user_id).eq("tracking_status", "draft") as any),
+      safeRes(admin.from("entries").select("id", { count: "exact", head: true })
+        .eq("user_id", user_id) as any),
+    ]);
+
+    const publishedTotal = cnt(publishedR);
+    const composerTotal = cnt(composerR);
+    const metricsRows = cnt(metricsCountR);
+    const lastPublishedDate = (lastPublishedR as any)?.data?.published_at
+      ? String((lastPublishedR as any).data.published_at).slice(0, 10)
+      : null;
+    const activeSignals = cnt(activeSignalsR);
+    const draftsTotal = cnt(draftsR);
+    const entriesTotalExact = cnt(entriesTotalR) || entsTotal;
+
     const findingsBlock =
       finds.length === 0
         ? "—"
@@ -282,10 +329,59 @@ serve(withObserve("ask-aura", async (req) => {
     const fmtList = (arr: any) =>
       Array.isArray(arr) && arr.length ? arr.join(", ") : "—";
 
-    // Zero-state guards
+    // ── H1 — YOUR ACCOUNT, IN FACTS ────────────────────────────────────────
+    // Counted rows only. Any figure the Desk states about this account must
+    // appear here; anything absent is something it does not know.
+    const pillars: string[] = Array.isArray(p.brand_pillars)
+      ? p.brand_pillars.map((x: unknown) => String(x)).filter(Boolean)
+      : [];
+    const scoreComponents: Record<string, unknown> =
+      sc.components && typeof sc.components === "object" ? sc.components : {};
+    const componentLines = Object.entries(scoreComponents)
+      .map(([k, v]) => {
+        if (v && typeof v === "object") {
+          const o: any = v;
+          if (typeof o.active_weeks === "number" && typeof o.total_weeks === "number") {
+            return `  - ${k.replace(/_/g, " ")}: ${o.active_weeks} of ${o.total_weeks} weeks active`;
+          }
+          return null;
+        }
+        return `  - ${k.replace(/_/g, " ")}: ${String(v)}`;
+      })
+      .filter(Boolean)
+      .join("\n");
+
+    const accountFactsBlock = `YOUR ACCOUNT, IN FACTS (counted from this member's own rows — these are the only figures you may state about him):
+Publishing:
+  - posts published: ${publishedTotal}
+  - posts written in the composer: ${composerTotal}
+  - rows of post performance data: ${metricsRows}
+  - most recent published post: ${lastPublishedDate ?? "none recorded"}
+${publishedTotal > 0
+  ? `  RULE: he HAS published. Never say he has not published, has never posted, or has no published work.`
+  : `  RULE: no published post is recorded. Say the publishing window is wide open, never that he has failed.`}
+Score (newest score_snapshots row${sc.created_at ? `, ${String(sc.created_at).slice(0, 10)}` : ""}):
+  - score: ${sc.score ?? "not recorded"}${sc.tier ? ` (band ${sc.tier})` : ""}
+${componentLines || "  - components: not recorded"}
+  RULE: these are the only numbers you may cite about his standing. No other score, percentage or index exists.
+Pillars (verbatim — these are the ONLY pillar names that exist for this member; never name a pillar that is not in this list):
+${pillars.length ? pillars.map((x) => `  - ${x}`).join("\n") : "  - none recorded"}
+Profile:
+  - primary strength: ${p.primary_strength || "not recorded"}
+  - level: ${p.level || "not recorded"}
+  - firm: ${p.firm || "not recorded"}
+  - core practice: ${p.core_practice || "not recorded"}
+  - sector focus: ${p.sector_focus || "not recorded"}
+  - north star goal: ${p.north_star_goal || "not recorded"}
+Counts:
+  - captures in the vault: ${entriesTotalExact}
+  - signals still open (status active): ${activeSignals}
+  - drafts waiting: ${draftsTotal}`;
+
+    // Zero-state guards — counted totals, never the ten-post sample.
     const topSignal = sigs?.[0];
     const topSignalTitle = topSignal?.signal_title || null;
-    const isNewUser = (accountDays != null && accountDays < 14) || (publishedCount || 0) === 0;
+    const isNewUser = (accountDays != null && accountDays < 14) && publishedTotal === 0;
 
     const signalsBlock =
       sigs.length === 0
@@ -403,6 +499,32 @@ serve(withObserve("ask-aura", async (req) => {
       }));
     const sourceKeys = new Set(retrievedRows.map((r) => `${r.source_kind}:${r.source_id}`));
 
+    // ── H3 — the vocabulary this member actually has ───────────────────────
+    // Product words plus every name that exists in his own record. The client
+    // checks bolded phrases against this list and unbolds the rest, so a
+    // hallucinated pillar cannot read as a system term.
+    const PRODUCT_TERMS = [
+      "Aura", "Capture", "Signals", "Signal", "Write", "Publish", "Where you stand",
+      "Content", "Capture consistency", "Expertise", "Identity", "Voice", "Audience",
+      "Focus", "Perception", "Confidence", "The Overnight", "Your Desk", "Drafts",
+      "Intelligence", "Library", "LinkedIn",
+    ];
+    const capabilityLabels = capabilityBlock
+      .split("\n")
+      .map((l) => l.replace(/^-\s*/, "").split(":")[0].trim())
+      .filter((l) => l && l.length < 60);
+    const groundedTerms: string[] = [
+      ...PRODUCT_TERMS,
+      ...capabilityLabels,
+      ...(Array.isArray(p.brand_pillars) ? p.brand_pillars.map((x: unknown) => String(x)) : []),
+      ...sigs.map((s) => String(s.signal_title || "")),
+      ...ents.map((e) => String(e.title || "")),
+      ...sources.map((s) => s.title),
+      p.firm, p.level, p.core_practice, p.sector_focus, p.primary_strength, p.first_name,
+    ].map((t) => String(t ?? "").trim()).filter(Boolean);
+
+
+
 
 
     const systemPrompt = `You are Aura — a senior strategic intelligence advisor. You are not a generic AI. You are a dedicated advisor who has studied this professional for months and knows their work deeply.
@@ -425,15 +547,23 @@ Tone: ${vp.tone || "—"}
 Preferred structures: ${fmtList(vp.preferred_structures)}
 Storytelling patterns: ${fmtList(vp.storytelling_patterns)}
 
-PRESENCE SCORE: ${sc.score ?? "—"}${sc.tier ? ` (${sc.tier})` : ""}
+${accountFactsBlock}
 
-RECENT CAPTURES (last 10 of ${entsTotal} total):
+HOW AURA WORKS (this is the product; state it plainly, never guess at it):
+- The score is Signal 40% + Content 40% + Capture consistency 20%. Capture consistency measures weekly rhythm, not volume: a capture in a week counts once, and a hundred captures in one week do not beat one capture a week for eight weeks.
+- Capture adds to the vault and moves capture consistency.
+- Signals is where strategic signals are read.
+- Write turns a signal into a draft and moves content.
+- Publish puts a draft out, and publishing is the only thing that generates engagement metrics.
+- Where you stand shows the score and its parts.
+- The named parts on the home surface are Expertise, Identity, Voice, Audience, Focus, Perception and Confidence. Audience, discernment and conviction can only register once something has been published: they are dormant, not weak.
+- The four things you can actually do are: save a draft, set a reminder, open a surface, and search the vault. You cannot post to LinkedIn, cannot send email, and cannot see the open web. Never imply otherwise.
+
+RECENT CAPTURES (last 10 of ${entriesTotalExact} total):
 ${entriesBlock}
 
 RECENT POST METRICS (last 5):
 ${metricsBlock}
-
-CONTENT SUMMARY: ${publishedCount} published, ${draftCount} draft${draftCount === 1 ? "" : "s"}
 
 INDUSTRY TRENDS (top 3):
 ${trendsBlock}
@@ -525,6 +655,12 @@ The rows under WHAT THE OVERNIGHT FOUND FOR YOU are real things your own overnig
 
 GROUNDING CONTRACT — NON-NEGOTIABLE RULES FOR EVERY RESPONSE:
 
+-1. THE ANTI-INVENTION RULE (ABSOLUTE — nothing overrides this):
+   Every proper noun, score, count and date you state about the member must appear in the context you were given. If it is not there, you do not know it. Never invent a pillar, skill, theme, framework or metric name — if you need to refer to one and it is not in context, describe it in plain words instead. When you do not have a figure, say what you do have. "I cannot see that from here" is always a better answer than a confident guess.
+   In particular: the pillar names in YOUR ACCOUNT, IN FACTS are the complete list. A capability name must come from the CAPABILITY READ block. A signal title must come from ACTIVE SIGNALS. A number about his account must come from YOUR ACCOUNT, IN FACTS. Anything else does not exist.
+
+
+
 
 0. CLOSED-WORLD RULE (ABSOLUTE — overrides every other rule below):
    You can see ONLY the data in this prompt: the user's own captures, signals, posts, metrics and profile. You have NO access to the open web, no competitor data, no network data, no audience data, no calendar of external events.
@@ -566,7 +702,7 @@ RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
 12. Reference account age and progress when relevant: ${topSignalTitle
       ? `"You've been on Aura for ${accountDays ?? "—"} days — your top signal '${topSignalTitle}' at ${Math.round(Number(topSignal?.confidence || 0) * 100)}% confidence formed from that work."`
       : `"You don't have strong signals yet — that's normal for the first week. Focus on capturing 3-5 articles in your sector to give Aura enough data to detect patterns."`}
-    ${(publishedCount || 0) === 0 ? `When discussing publishing cadence, do NOT say "your content score is 0". Say: "you haven't published yet, which means the publishing window is wide open."` : ""}
+    ${publishedTotal === 0 ? `When discussing publishing cadence, do NOT say "your content score is 0". Say: "you haven't published yet, which means the publishing window is wide open."` : `He has published ${publishedTotal} post${publishedTotal === 1 ? "" : "s"} — never suggest he has not published.`}
 13. When recommending content topics, frame the opportunity from the user's own evidence — how many captures support the angle, how long the signal has been live, what they have not written yet. Never claim what the network, competitors or the market has or has not covered; you cannot see them.`;
 
     const retrievalSection = `
@@ -1094,6 +1230,10 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
             },
             citations,
             sources: sources.map(({ key: _k, ...s }) => s),
+            // H3 — every system term this member actually has. The client
+            // unbolds any bolded phrase that matches none of them, so an
+            // invented pillar or metric never reads as an Aura term.
+            grounded_terms: groundedTerms,
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(contextEvent)}\n\n`));
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
