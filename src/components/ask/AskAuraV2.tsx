@@ -818,7 +818,15 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         }}>
           <X size={18} aria-hidden="true" />
         </button>
+        </div>
       </header>
+
+      <DeskWatchSheet
+        open={watchOpen}
+        onClose={() => { setWatchOpen(false); void refreshDesk(); }}
+        onAddLinkedIn={() => setAddressOpen(true)}
+      />
+
 
       <div className="ask-body" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <div className="ask-grid" style={{ height: "100%", maxWidth: 1400, margin: "0 auto", padding: "16px 20px", boxSizing: "border-box" }}>
