@@ -401,6 +401,9 @@ CONTENT SUMMARY: ${publishedCount} published, ${draftCount} draft${draftCount ==
 INDUSTRY TRENDS (top 3):
 ${trendsBlock}
 
+WHAT THE OVERNIGHT FOUND FOR YOU (last 5, newest first):
+${findingsBlock}
+
 ACTIVE SIGNALS (top 5 by priority):
 ${signalsBlock}
 
