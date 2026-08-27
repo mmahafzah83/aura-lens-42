@@ -7376,6 +7376,7 @@ export type Database = {
           used_in_signal: number
         }[]
       }
+      normalise_linkedin_handle: { Args: { p_raw: string }; Returns: string }
       ops_cron_status: {
         Args: { p_hours?: number }
         Returns: {
@@ -7468,6 +7469,7 @@ export type Database = {
         Args: { p_user_id?: string; p_wipe_captures?: boolean }
         Returns: Json
       }
+      resolve_member_handle: { Args: { p_user_id: string }; Returns: string }
       rollback_design_version: {
         Args: { p_target_version: number }
         Returns: undefined
