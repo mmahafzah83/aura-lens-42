@@ -19,6 +19,8 @@ export interface DeskPrefs {
   watch?: Record<string, boolean>;
   /** capability key → ISO date (YYYY-MM-DD) he last said "later" */
   declined?: Record<string, string>;
+  /** Mirror claims he has called untrue. Signatures, never surfaced again. */
+  mirror_dismissed?: string[];
 }
 
 export type CapabilityKey = "cv_crosscheck" | "linkedin_profile";
@@ -38,6 +40,7 @@ export const WATCH_OPTIONS: WatchOption[] = [
   { key: "where_i_stand", group: "morning", title: "Where I stand", line: "One line on your presence, and what moved it.", on: true },
   { key: "todays_subject", group: "morning", title: "What I should write about today", line: "One subject, with the reason it's today's.", on: true },
   { key: "overnight", group: "morning", title: "What came in overnight", line: "The single finding worth your time. Nothing else.", on: false },
+  { key: "mirror", group: "weekly", title: "The Mirror", line: "One counted thing about you, Fridays. Never alongside the morning note.", on: true },
   { key: "unsaid", group: "weekly", title: "Things about me I didn't say", line: "What sets you apart, and what you keep avoiding. Fridays.", on: true },
   { key: "quiet_topics", group: "weekly", title: "Topics I've stopped reading about", line: "Which of your pillars has gone quiet, and for how long.", on: false },
   { key: "post_results", group: "weekly", title: "How my posts actually did", line: "What your readers rewarded, and when to stay quiet.", on: true },
@@ -119,6 +122,7 @@ export async function saveDeskPrefs(current: DeskPrefs, patch: DeskPrefs): Promi
     ...current,
     ...patch,
     watch: { ...(current.watch || {}), ...(patch.watch || {}) },
+    mirror_dismissed: patch.mirror_dismissed ?? current.mirror_dismissed,
     declined: { ...(current.declined || {}), ...(patch.declined || {}) },
   };
   const { data: { session } } = await supabase.auth.getSession();
