@@ -562,6 +562,12 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
     // STEP 3 — tool definitions. Aura can act, not only advise. Both tools take
     // user_id from the verified JWT only; the model never supplies an identity
     // and never supplies an existing row id. Insert only — no updates, no deletes.
+    // The real tab router values from src/pages/Dashboard.tsx (NAV_ITEMS).
+    const SURFACES = [
+      "home", "intelligence", "library", "drafts", "overnight",
+      "authority", "influence", "momentum", "widgets", "identity",
+    ] as const;
+
     const TOOLS = [
       {
         type: "function",
