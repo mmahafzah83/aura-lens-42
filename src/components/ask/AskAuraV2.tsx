@@ -405,6 +405,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     setInput("");
     setFollowUps([]);
     setLoading(true);
+    // The dock mirrors the Desk: it turns while Aura reads, stops when it lands.
+    setDeskWorking("Reading your graph");
     void persist("user", body, []);
 
     try {
@@ -504,8 +506,10 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         }
         fu.push("Make that sharper");
         setFollowUps(fu.slice(0, 3));
+        setDeskFound("Your answer is ready", { question: body, answer: parseLayers(acc).plain || acc.trim() });
       } else {
         setMessages(prev => prev.slice(0, -1));
+        setDeskQuiet();
       }
 
     } catch (e: any) {
@@ -514,6 +518,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         if (copy.length && copy[copy.length - 1].role === "assistant" && !copy[copy.length - 1].content) copy.pop();
         return [...copy, { role: "assistant", content: e?.message || "Didn't connect. Try once more.", isError: true }];
       });
+      setDeskQuiet();
     }
     setLoading(false);
   }, [context, loading, messages, persist]);

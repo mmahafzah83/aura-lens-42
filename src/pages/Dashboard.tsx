@@ -19,6 +19,9 @@ import CaptureModal from "@/components/CaptureModal";
 import { useCapturedSources } from "@/hooks/useCapturedSources";
 import { type ChatContext } from "@/types/chat";
 import AskAuraV2 from "@/components/ask/AskAuraV2";
+import DeskDock from "@/components/desk/DeskDock";
+import { useDeskDock } from "@/components/desk/deskDockBus";
+import AuraMark from "@/components/brand/AuraMark";
 import AskAuraPresence from "@/components/AskAuraPresence";
 import AuraLogo from "@/components/brand/AuraLogo";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
@@ -1550,6 +1553,9 @@ const Dashboard = () => {
         prefillText={capturePrefillText || undefined}
         initialType={captureInitialType}
       />
+      {/* The Desk, parked. Mounted at Dashboard level — above the tab router —
+          so a running task survives every tab change. */}
+      <DeskDock surfaceOpen={chatOpen} onOpenDesk={(m) => openChat(m)} />
       <AskAuraV2
         open={chatOpen}
         onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); setChatContext(undefined); setChatFindingId(undefined); }}
