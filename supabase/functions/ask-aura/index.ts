@@ -1057,6 +1057,32 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
     };
 
 
+    /**
+     * N1 — a real count of his own rows that mention the query term. Separate
+     * from the rows shown, and never derived from a page length.
+     */
+    async function countVaultMatches(q: string): Promise<{ entries: number; chunks: number }> {
+      const term = q.replace(/[%_,()]/g, " ").trim().slice(0, 120);
+      if (!term) return { entries: 0, chunks: 0 };
+      const like = `%${term}%`;
+      const [e, d] = await Promise.all([
+        safeRes(admin.from("entries").select("id", { count: "exact", head: true })
+          .eq("user_id", user_id)
+          .or(`content.ilike.${like},title.ilike.${like},summary.ilike.${like}`) as any),
+        safeRes(admin.from("document_chunks").select("id", { count: "exact", head: true })
+          .eq("user_id", user_id).ilike("content", like) as any),
+      ]);
+      return { entries: cnt(e), chunks: cnt(d) };
+    }
+
+    /**
+     * N2 — the evidence floor. With fewer than three captures and no pillars
+     * there is nothing of his to write from, so the Desk does not write a post.
+     * Enforced in the tool: a prompt rule can be talked around, this cannot.
+     */
+    const pillarsRecorded = Array.isArray(p.brand_pillars) && p.brand_pillars.length > 0;
+    const belowEvidenceFloor = entriesTotalExact < 3 && !pillarsRecorded;
+
     async function runTool(name: string, argsRaw: string): Promise<ToolResult> {
       let args: any = {};
       try {
