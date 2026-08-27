@@ -10,6 +10,8 @@
  * `linkedin_posts`, matched on whole words.
  */
 
+import { nCaptures } from "@/constants/vocabulary";
+
 export type MirrorFace = "apart" | "unsaid";
 
 export interface MirrorClaim {
@@ -103,7 +105,7 @@ function apart(rows: Row[], dismissed: string[]): MirrorClaim | null {
     face: "apart",
     signature: `apart:${hit.term}`,
     sentences: [
-      `${hit.captures} of your captures reference ${hit.term}.`,
+      `${nCaptures(hit.captures, "en")} of yours reference ${hit.term}.`,
       `None of your published posts do.`,
     ],
     term: hit.term,
