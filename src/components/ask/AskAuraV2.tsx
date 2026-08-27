@@ -40,6 +40,9 @@ import { filterPublishedRows } from "@/lib/postProvenance";
  */
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-aura`;
+
+/** Words that mean "show me the ledger", not "answer me". */
+const WANTS_LEDGER = /\b(where\s+do\s+i\s+stand|what('?s| is)\s+waiting|what\s+have\s+i\s+got|what\s+else\s+is\s+waiting|what('?s| is)\s+outstanding|my\s+standing)\b/i;
 const MONO: React.CSSProperties = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" };
 const AR = /[\u0600-\u06FF]/;
 
@@ -827,6 +830,20 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       </div>
     </aside>
   );
+
+  /**
+   * WHICH ONE CARD. A single expression, evaluated top to bottom, producing one
+   * value. Asked-for beats computed; nothing renders until every decider has
+   * answered, and the resting mark covers that wait.
+   */
+  const slotReady = openerDone && prefsLoaded && mirrorDecided && returnDecided;
+  const card: DeskCardKind =
+    slotAsk ? slotAsk
+    : !slotReady ? "loading"
+    : returnData ? "return"
+    : mirrorShowing ? "mirror"
+    : !prefs.priority ? "priority"
+    : "opener";
 
   return createPortal(
     <div

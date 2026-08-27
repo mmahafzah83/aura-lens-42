@@ -22,6 +22,8 @@ const SANS = "Inter, system-ui, sans-serif";
 interface Props {
   /** Opens the gear so he can see what changed. */
   onOpenWatch: () => void;
+  /** Told once, when the answer is stored — the slot then returns to the opener. */
+  onAnswered?: () => void;
 }
 
 export default function DeskPriorityAsk({ onOpenWatch }: Props) {
