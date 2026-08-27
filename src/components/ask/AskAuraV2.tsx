@@ -946,7 +946,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                     priority: () => (
                       <DeskPriorityAsk
                         onOpenWatch={() => setWatchOpen(true)}
-                        onAnswered={() => { void refreshDesk(); }}
+                        onAnswered={() => { window.setTimeout(() => { void refreshDesk(); }, 2500); }}
                       />
                     ),
 
