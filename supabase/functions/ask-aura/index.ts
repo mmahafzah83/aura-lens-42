@@ -332,6 +332,7 @@ serve(withObserve("ask-aura", async (req) => {
       publishedR, confirmedR, trackedR, discoveredR, externalR, draftsR,
       composerR, metricsCountR, lastPublishedR,
       activeSignalsR, entriesTotalR, prevSnapR, publishedTextR,
+      memberCapturesR, agentCapturesR,
     ] = await Promise.all([
       statusCount("published"),
       statusCount("confirmed"),
