@@ -1003,6 +1003,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         @media (max-width: 767px) {
           [data-testid="ask-aura-v2"] .ask-chip { min-height: 44px; }
           [data-testid="ask-aura-v2"] .ask-send { width: 44px; height: 44px; }
+          .ask-answer-card { padding: 14px 14px 12px; }
         }
         @media (max-width: 1023px) {
           /* The answer leads on a phone; the rail follows underneath it. */
