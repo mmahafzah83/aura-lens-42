@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { SIGNAL, nCaptures, nSignals } from "../_shared/vocabulary.ts";
+import { SIGNAL, nCaptures } from "../_shared/vocabulary.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -15,6 +15,46 @@ type Chip = { label: string; prompt: string };
 type Opener = { kind: string; text: string; chips: Chip[] };
 
 const ELSE: Chip = { label: "Something else", prompt: "Let's talk about something else." };
+
+/* ── THE VOICE CONTRACT ───────────────────────────────────────────────
+ * This is the system prompt for any model that ever writes an opener, and
+ * the specification `applyVoiceContract()` enforces on deterministic text.
+ * It sits ON TOP of the six ordered rules (overnight → promise → draft →
+ * unwritten signal → quiet radar → cold start). It does not change which
+ * rule fires; it constrains what the fired rule is allowed to say.
+ */
+export const OPENER_VOICE_CONTRACT = `You write the first line a member reads. Obey all of the following.
+
+1. TWO SENTENCES MAXIMUM. A short first sentence that says the one true thing, and a short second sentence that says what it means or what to do. Never a third.
+2. ONE NUMBER, NEVER TWO. One figure per opener — a count of days, captures, signals or posts. Two numbers turns a greeting into a report.
+3. COUNTS, NOT ADJECTIVES. "You've written about cost eleven times" — never "you seem to focus on cost." Never characterise the member; only count him. No horoscope language.
+4. NO ENTHUSIASM. Banned outright: "Great choice", "Awesome", "Love that", "Exciting", "I'm here to help", and any exclamation mark. The register is a senior chief of staff, not a helper. Respect, not cheer.
+5. WARMTH IS A FACT, NOT A FEELING. Banned: "we miss you", "hope you're well", "it's been a while". If the member has been away, say the actual span: "You haven't been here since Thursday — six days." The date is the warmth.
+6. NOTHING HAPPENING IS A PERMITTED OUTCOME. If there is genuinely no finding, no idle draft and no gap worth naming, the correct opener is a quiet one — "Quiet morning. Nothing needs you." — followed by one small optional suggestion. Do not manufacture urgency.`;
+
+const BANNED = [
+  /\bgreat choice\b/gi, /\bawesome\b/gi, /\blove that\b/gi, /\bexciting\b/gi,
+  /\bi'?m here to help\b/gi, /\bwe miss you\b/gi, /\bhope you'?re well\b/gi,
+  /\bit'?s been a while\b/gi,
+];
+
+/** Enforces the contract on any opener text before it leaves this function. */
+export function applyVoiceContract(input: string): string {
+  let t = String(input || "").replace(/!+/g, ".").trim();
+  for (const re of BANNED) t = t.replace(re, "").replace(/\s{2,}/g, " ").trim();
+
+  // Two sentences maximum.
+  const parts = (t.match(/[^.?]+[.?]?/g) || [t]).map((s) => s.trim()).filter(Boolean);
+  let kept = parts.slice(0, 2);
+
+  // One number, never two: drop the second sentence if both carry a figure.
+  const hasNum = (s: string) => /\d/.test(s);
+  if (kept.length === 2 && hasNum(kept[0]) && hasNum(kept[1])) kept = [kept[0]];
+
+  let out = kept.join(" ").replace(/\s{2,}/g, " ").trim();
+  if (out && !/[.?]$/.test(out)) out += ".";
+  return out;
+}
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -95,6 +135,7 @@ serve(async (req) => {
           ELSE,
         ],
       };
+      out.text = applyVoiceContract(out.text);
       return json(out);
     }
 
@@ -129,6 +170,7 @@ serve(async (req) => {
           ELSE,
         ],
       };
+      out.text = applyVoiceContract(out.text);
       return json(out);
     }
 
@@ -156,7 +198,8 @@ serve(async (req) => {
             ELSE,
           ],
         };
-        return json(out);
+        out.text = applyVoiceContract(out.text);
+      return json(out);
       }
     }
 
@@ -180,12 +223,11 @@ serve(async (req) => {
       const unwritten = signals.find((s) => !used.has(s.id));
       if (unwritten) {
         const n = daysSince(unwritten.created_at);
-        const frags = Number(unwritten.fragment_count ?? 0);
         const t = String(unwritten.signal_title);
         const subject = t + " " + SIGNAL.one;
         const out: Opener = {
           kind: "unwritten signal",
-          text: `Your ${subject} has been live ${n} days with ${nCaptures(frags, "en")} behind it, and you have not written from it yet.`,
+          text: `Your ${subject} has been live ${n} days. You have not written from it yet.`,
           chips: [
 
             { label: "Draft it", prompt: `Draft a post from my signal "${t}" using the evidence behind it.` },
@@ -193,7 +235,8 @@ serve(async (req) => {
             ELSE,
           ],
         };
-        return json(out);
+        out.text = applyVoiceContract(out.text);
+      return json(out);
       }
     }
 
@@ -217,7 +260,8 @@ serve(async (req) => {
             ELSE,
           ],
         };
-        return json(out);
+        out.text = applyVoiceContract(out.text);
+      return json(out);
       }
     }
 
@@ -236,7 +280,7 @@ serve(async (req) => {
     if (E === 0 && S === 0) {
       return json({
         kind: "cold start",
-        text: "I do not have anything of yours to read yet. Capture one article and I will have something to say about it.",
+        text: applyVoiceContract("I do not have anything of yours to read yet. Capture one article and I will have something to say about it."),
         chips: [
           {
             label: "What should I capture?",
@@ -248,7 +292,7 @@ serve(async (req) => {
 
     return json({
       kind: "cold start",
-      text: `I can see ${nCaptures(E, "en")} and ${S} live ${nSignals(S, "en").replace(/^\d+\s/, "")} of yours. Ask me anything inside that.`,
+      text: applyVoiceContract(`Quiet morning. Nothing needs you — ${nCaptures(E, "en")} sit here when you want them.`),
       chips: [
         { label: "What can you see?", prompt: "What can you actually see in my graph right now?" },
         { label: "What should I write?", prompt: "From what I have already captured, what should I write next?" },

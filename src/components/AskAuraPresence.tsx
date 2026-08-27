@@ -269,7 +269,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
       <button
         onClick={handleClick}
         data-testid="nav-ask-aura"
-        aria-label={count > 0 ? `Ask Aura — ${count} unread` : "Ask Aura"}
+        aria-label={count > 0 ? `Your Desk — ${count} unread` : "Your Desk"}
         className={
           (className ??
             "w-full flex items-center gap-3 tactile-press group aura-ask-btn aura-ask-surface") + " askaura-focusable"
@@ -314,7 +314,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           )}
           {/* Persistent silence-alarm dot removed — Home Silence Alarm card is the canonical reminder. */}
         </span>
-        {showLabel && !collapsed && <span className="text-sm font-medium">Ask Aura</span>}
+        {showLabel && !collapsed && <span className="text-sm font-medium">Your Desk</span>}
 
         {visual.badgeBg && (
           <span

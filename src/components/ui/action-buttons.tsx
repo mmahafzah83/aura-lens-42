@@ -162,7 +162,7 @@ export const AuraAction = ({
   label = "Discuss with Aura",
   onClick,
 }: {
-  label?: "Ask Aura" | "Discuss with Aura" | "Critique with Aura";
+  label?: "Your Desk" | "Discuss with Aura" | "Critique with Aura";
   onClick: () => void;
 }) => (
   <Button variant="ghost" size="sm" className="text-xs gap-1.5 text-muted-foreground" onClick={onClick}>

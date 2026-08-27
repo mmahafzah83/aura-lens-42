@@ -403,7 +403,7 @@ const Dashboard = () => {
       setActiveTab(resolvedTab as TabValue);
     }
 
-    // The Overnight email lands here: open Ask Aura on the finding it names.
+    // The Overnight email lands here: open Your Desk on the finding it names.
     if (params.get("desk") === "1") {
       const findingParam = params.get("finding");
       setChatFindingId(findingParam || undefined);
@@ -1477,7 +1477,7 @@ const Dashboard = () => {
                     <button
                       key="mobile-aura-center"
                       onClick={() => openChat()}
-                      aria-label="Ask Aura"
+                      aria-label="Your Desk"
                       className="flex flex-col items-center justify-center"
                       style={{ gap: 4 }}
                     >
