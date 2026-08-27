@@ -882,6 +882,19 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 />
               )}
 
+              {messages.length === 0 && openerDone && (
+                <DeskPriorityAsk onOpenWatch={() => setWatchOpen(true)} />
+              )}
+
+              {addressOpen && (
+                <DeskLinkedInField
+                  onSaved={() => { setAddressOpen(false); void refreshDesk(); }}
+                  onCancel={() => setAddressOpen(false)}
+                />
+              )}
+
+
+
               {messages.map((m, i) => {
                 const rtl = isAr(m.content);
                 return m.role === "user" ? (
