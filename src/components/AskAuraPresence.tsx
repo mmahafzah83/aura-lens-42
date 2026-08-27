@@ -218,7 +218,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
   // STATE 6 — Active override: count >= 3 AND mixed types -> dark purple/count
   const visual: Visual = useMemo(() => {
     if (count >= 3 && distinctTypes >= 2) {
-      return { borderColor: "#534AB7", badgeBg: "#534AB7", badgeText: String(count), textColor: "#fff", pulse: false };
+      return { borderColor: "var(--text-secondary)", badgeBg: "var(--text-secondary)", badgeText: String(count), textColor: "#fff", pulse: false };
     }
     return getVisual(count, mostUrgent);
   }, [count, mostUrgent, distinctTypes]);
