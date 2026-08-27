@@ -762,6 +762,9 @@ const Dashboard = () => {
     await signOutAndLand(navigate);
   };
 
+  /* The dock's state also drives the mobile tab bar mark — no floating dock on phones. */
+  const deskDock = useDeskDock();
+
   const openChat = (msg?: string, ctx?: ChatContext) => {
     if (chatOpen) {
       setChatOpen(false);
@@ -1495,9 +1498,14 @@ const Dashboard = () => {
                           color: "var(--ink)",
                         }}
                       >
-                        <Plus className="w-[18px] h-[18px]" strokeWidth={2.5} />
+                        <span style={{ transform: "scale(0.75)", display: "inline-flex" }}>
+                          <AuraMark
+                            size={24}
+                            state={deskDock.state.kind === "working" ? "working" : deskDock.state.kind === "found" ? "held" : "resting"}
+                          />
+                        </span>
                       </span>
-                      <span style={{ fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>Aura</span>
+                      <span style={{ fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>Desk</span>
                     </button>
                   );
                 }
