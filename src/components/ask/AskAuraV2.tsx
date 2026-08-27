@@ -1268,6 +1268,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       <style>{`
         .ask-grid { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 20px; }
         .ask-grid > aside { max-height: 100%; }
+        .ask-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         /* One answer shape: every answer, and the opener, is a finished object. */
         .ask-answer-card {
           background: var(--surface-card);
