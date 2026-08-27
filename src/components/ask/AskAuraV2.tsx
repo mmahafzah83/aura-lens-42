@@ -88,6 +88,44 @@ interface PromptSeed { label: string; text: string }
 const isAr = (s: string) => AR.test(s || "");
 
 /**
+ * The output contract: an answer arrives in layers. The model writes three
+ * line-markers; this splits them. It runs on every streamed token, so a
+ * half-written marker on the final line must never be treated as a marker.
+ *
+ * If §§PLAIN never appears the whole text is the plain layer — today's
+ * behaviour, which is the safety net.
+ */
+export function parseLayers(raw: string): { plain: string; more: string; moves: string[] } {
+  const text = String(raw ?? "");
+  const lines = text.split("\n");
+  const isMarker = (l: string, name: string, i: number) =>
+    l.trim() === name && (i < lines.length - 1 || text.endsWith("\n"));
+
+  let seenPlain = false;
+  for (let i = 0; i < lines.length; i++) if (isMarker(lines[i], "§§PLAIN", i)) { seenPlain = true; break; }
+  if (!seenPlain) return { plain: text, more: "", moves: [] };
+
+  let current: "none" | "plain" | "more" | "moves" = "none";
+  const buf = { plain: [] as string[], more: [] as string[], moves: [] as string[] };
+  // A last line that is only the beginning of a marker is a marker still being
+  // typed — never show it to the member.
+  const partial = (l: string, i: number) =>
+    i === lines.length - 1 && !text.endsWith("\n") && /^§+§?[A-Z]*$/.test(l.trim()) && l.trim().length > 0;
+  lines.forEach((l, i) => {
+    if (isMarker(l, "§§PLAIN", i)) { current = "plain"; return; }
+    if (isMarker(l, "§§MORE", i)) { current = "more"; return; }
+    if (isMarker(l, "§§MOVES", i)) { current = "moves"; return; }
+    if (partial(l, i)) return;
+    if (current !== "none") buf[current].push(l);
+  });
+
+
+  const moves = buf.moves.join(" ").split("|").map(s => s.trim()).filter(Boolean).slice(0, 4);
+  return { plain: buf.plain.join("\n").trim(), more: buf.more.join("\n").trim(), moves };
+}
+
+
+/**
  * Which citations this answer actually used. A ref is counted when the model
  * printed the bracketed reference, and — because models routinely cite the
  * title in bold and drop the ref — also when the exact signal title appears in
@@ -188,6 +226,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [opener, setOpener] = useState<{ text: string; chips: { label: string; prompt: string }[] } | null>(null);
   const [openerDone, setOpenerDone] = useState(false);
+  /** "Say more" is per message: expanding one answer never expands another. */
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const listRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -476,6 +517,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   }, [open, initialMessage]);
 
   const cited = useMemo(() => citedOrder.map(r => citations[r]).filter(Boolean), [citedOrder, citations]);
+  /** Moves on the newest assistant answer, if it carried any. */
+  const lastMoves = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== "assistant") continue;
+      return m.isError ? [] : parseLayers(m.content).moves;
+    }
+    return [];
+  }, [messages]);
+
   const citedSourceRows = useMemo(
     () => citedSources.map(n => sources[n]).filter(Boolean),
     [citedSources, sources],
@@ -484,7 +535,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   if (!open) return null;
 
   /* ── Answer body: refs become pills, unresolved refs are stripped ── */
-  const Answer: React.FC<{ text: string }> = ({ text }) => {
+  const Answer: React.FC<{ text: string; size?: number; color?: string }> = ({ text, size, color }) => {
     const rtl = isAr(text);
     const prepared = markCitations(text, citations, sources);
     return (
@@ -494,11 +545,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         style={{
           fontFamily: rtl ? "var(--ff-ar)" : "var(--font-body, inherit)",
           lineHeight: rtl ? 1.9 : 1.65,
-          fontSize: 14.5,
-          color: "var(--text-primary)",
+          fontSize: size ?? 14.5,
+          color: color ?? "var(--text-primary)",
           textAlign: rtl ? "right" : "left",
         }}
       >
+
         <ReactMarkdown
           components={{
             code: ({ children }) => {
@@ -747,11 +799,59 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                       fontFamily: rtl ? "var(--ff-ar)" : undefined, lineHeight: rtl ? 1.9 : 1.55,
                     }}>{m.content}</div>
                   </div>
-                ) : (
+                ) : (() => {
+                  // The layers. A malformed answer degrades to the whole text.
+                  const layers = parseLayers(m.content);
+                  const isOpen = !!expanded[i];
+                  return (
                   <div key={i} style={{ margin: "14px 0", maxWidth: 720 }}>
                     {m.isError
                       ? <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>{m.content}</div>
-                      : <Answer text={m.content} />}
+                      : <>
+                          <Answer text={layers.plain} size={15} color="var(--text-primary)" />
+                          {layers.more && (
+                            <>
+                              <button
+                                type="button"
+                                className="ask-focusable ask-chip"
+                                data-testid="ask-say-more"
+                                aria-expanded={isOpen}
+                                onClick={() => setExpanded(p => ({ ...p, [i]: !p[i] }))}
+                                style={{
+                                  background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                                  borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                                  display: "inline-flex", alignItems: "center", gap: 6, marginTop: 2,
+                                }}
+                              >{isOpen ? "Less" : "Say more"}</button>
+                              {isOpen && (
+                                <div style={{ marginTop: 8 }}>
+                                  <Answer text={layers.more} size={13.8} color="var(--text-secondary)" />
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {layers.moves.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 2px" }}>
+                              {layers.moves.map((mv, mi) => (
+                                <button
+                                  key={mv} type="button" className="ask-focusable ask-chip"
+                                  data-testid="ask-move-chip"
+                                  onClick={() => send(mv)}
+                                  style={mi === 0 ? {
+                                    background: "var(--act)", border: 0, color: "var(--text-inverse)",
+                                    borderRadius: 999, padding: "7px 14px", fontSize: 12.5, cursor: "pointer",
+                                    display: "inline-flex", alignItems: "center", gap: 6,
+                                  } : {
+                                    background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                                    borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                                    display: "inline-flex", alignItems: "center", gap: 6,
+                                  }}
+                                >{mv}<ArrowUpRight size={13} aria-hidden="true" /></button>
+                              ))}
+                            </div>
+                          )}
+                        </>}
+
                     {/* The machine reporting its own work: cyan, never a button. */}
                     {(m.actions || []).map((a, k) => (
                       <div key={k} data-testid="ask-action-line" style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}>
@@ -793,9 +893,11 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                         </div>
                       ))}
                   </div>
-
-                );
+                  );
+                })();
               })}
+
+
 
               {loading && (
                 <div role="status" data-testid="ask-thinking" style={{ ...MONO, fontSize: 12, color: "var(--machine-text)", margin: "10px 0", display: "flex", alignItems: "center", gap: 8 }}>
@@ -804,7 +906,10 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 </div>
               )}
 
-              {!loading && followUps.length > 0 && (
+              {/* The model's own moves replace these for the answer that carries
+                  them; with no moves, the generated follow-ups render as today. */}
+              {!loading && followUps.length > 0 && lastMoves.length === 0 && (
+
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "6px 0 16px" }}>
                   {followUps.map(f => (
                     <button key={f} type="button" className="ask-focusable ask-chip" onClick={() => send(f)} style={{
