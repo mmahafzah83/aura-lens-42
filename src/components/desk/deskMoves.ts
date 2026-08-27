@@ -51,6 +51,17 @@ export function cleanMoves(raw: string[]): string[] {
 const CLAIM =
   /\b(saved|i(?:'ve| have) saved|stored|added it|scheduled|reminder (?:is )?set|set a reminder|drafted it|created the draft|put it in your drafts|opened)\b/i;
 
+/**
+ * Capabilities Aura does not have. It can save a draft, set a reminder, open a
+ * page and search the record — nothing else. A sentence promising to pause,
+ * hold, cancel or manage anything is removed whatever the tools returned.
+ */
+const IMPOSSIBLE =
+  /\b(pause|pausing|hold off on|put .{0,20}on hold|reschedul\w*|cancel\w*|postpon\w*|notify\b|email\b|message (?:your|the) team|manage your (?:calendar|schedule|inbox)|clear your (?:calendar|schedule)|handle everything)\b/i;
+const SCHEDULE_OBJECT =
+  /\b(schedule|cadence|posting|calendar|meeting|publishing|content)\b/i;
+
+
 export interface ClaimVerdict {
   /** The answer with unproven claims removed. */
   text: string;
