@@ -1378,11 +1378,14 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
               const c = delta?.content;
               if (typeof c === "string" && c) {
                 text += c;
-                if (secretaryTurn) continue; // held back; emitted once, trimmed
-
-                  encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`),
-                );
+                // Secretary turns are held back and emitted once, trimmed.
+                if (!secretaryTurn) {
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`),
+                  );
+                }
               }
+
               if (collectTools && Array.isArray(delta?.tool_calls)) {
                 for (const tc of delta.tool_calls) {
                   const i = Number.isFinite(tc?.index) ? Number(tc.index) : 0;
