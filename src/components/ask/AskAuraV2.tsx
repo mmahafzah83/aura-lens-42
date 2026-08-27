@@ -53,7 +53,14 @@ interface Source {
   url: string | null;
 }
 
-interface ActionLine { tool: string; ok: boolean; label: string }
+/** The real tab router values from src/pages/Dashboard.tsx (NAV_ITEMS). */
+const SURFACES = [
+  "home", "intelligence", "library", "drafts", "overnight",
+  "authority", "influence", "momentum", "widgets", "identity",
+] as const;
+
+interface ActionRoute { surface: string; subject_id: string | null }
+interface ActionLine { tool: string; ok: boolean; label: string; route?: ActionRoute }
 
 type Msg = { role: "user" | "assistant"; content: string; isError?: boolean; actions?: ActionLine[] };
 
