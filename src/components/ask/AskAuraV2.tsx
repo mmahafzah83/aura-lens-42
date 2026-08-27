@@ -336,6 +336,19 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     })();
   }, [open]);
 
+  /* What the Desk can do today, and what he has already told it. */
+  const refreshDesk = useCallback(async () => {
+    const [c, p] = await Promise.all([loadCapabilities(), loadDeskPrefs()]);
+    setCaps(c);
+    if (p) setPrefs(p.prefs);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    void refreshDesk();
+  }, [open, refreshDesk]);
+
+
   /* ── Opener: Aura speaks first, once per open ── */
   useEffect(() => {
     if (!open) { openerRef.current = false; setOpener(null); setOpenerDone(false); return; }
