@@ -67,10 +67,50 @@ const stemOf = (t: string) =>
 /** Shorten only a button label; the full title always rides on `title`. */
 const shortLabel = (t: string, max = 52) => (t.length <= max ? t : `${t.slice(0, max - 1).trimEnd()}…`);
 
+/**
+ * One number, one meaning. `home_address` is cached once a day, so its score
+ * and open-signal count can be hours behind the rows the Desk reads live. This
+ * reads the same two rows the Desk reads, and overrides the cached copy when
+ * they differ — so a member never sees 75 here and 74 there.
+ */
+function useLivePresence(userId: string | null | undefined) {
+  const [live, setLive] = useState<{ imprint: number | null; signals_active: number | null }>(
+    { imprint: null, signals_active: null },
+  );
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    (async () => {
+      const [snapR, sigR] = await Promise.all([
+        supabase.from("imprint_snapshots").select("imprint")
+          .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("strategic_signals").select("id", { count: "exact", head: true })
+          .eq("user_id", userId).eq("status", "active"),
+      ]);
+      if (!alive) return;
+      setLive({
+        imprint: snapR.data?.imprint != null ? Math.round(Number(snapR.data.imprint)) : null,
+        signals_active: typeof sigR.count === "number" ? sigR.count : null,
+      });
+    })();
+    return () => { alive = false; };
+  }, [userId]);
+  return live;
+}
+
 export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActive, activeTab }: HomeSpineProps) {
   const uid = userId ?? "anon";
   const address = useHomeAddress(userId);
-  const facts = address.facts;
+  const live = useLivePresence(userId);
+  const cachedFacts = address.facts;
+  const facts = useMemo(() => {
+    if (!cachedFacts) return cachedFacts;
+    return {
+      ...cachedFacts,
+      imprint: live.imprint ?? cachedFacts.imprint,
+      signals_active: live.signals_active ?? cachedFacts.signals_active,
+    };
+  }, [cachedFacts, live.imprint, live.signals_active]);
   const { chips, failed: chipsFailed, refresh: refreshChips } = useReadChips(userId, facts);
   // Ruling 2: the real join, not the raw theme-string count.
   const strengthened = useSignalsStrengthened(userId);
