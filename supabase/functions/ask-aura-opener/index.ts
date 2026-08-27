@@ -107,6 +107,22 @@ export function applyVoiceContract(input: string): string {
 }
 
 
+/**
+ * THE THREE-SENTENCE GUARD.
+ * A greeting is sentence one and carries the one permitted number, so the
+ * rule's own line must then carry none: we keep only the first number-free
+ * sentence the rule offered. Without a greeting the rule keeps up to two of
+ * its own sentences. Either way `applyVoiceContract` caps the result at two.
+ */
+function assemble(greeting: string | null, lines: string[]): string {
+  const clean = lines.map((l) => String(l || "").trim()).filter(Boolean);
+  if (greeting) {
+    const numberFree = clean.find((l) => !/\d/.test(l));
+    return applyVoiceContract([greeting, numberFree ?? ""].join(" "));
+  }
+  return applyVoiceContract(clean.slice(0, 2).join(" "));
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -115,6 +131,82 @@ const json = (body: unknown, status = 200) =>
 
 const daysSince = (iso: string) =>
   Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
+
+/** ILIKE-safe: neutralises wildcards and the PostgREST `or=` separators. */
+function safeTheme(t: string): string {
+  return String(t || "")
+    .replace(/[%_\\]/g, " ")
+    .replace(/[,()"']/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function inZone(iso: string, tz: string | null): Date {
+  const d = new Date(iso);
+  if (!tz) return d;
+  try {
+    return new Date(d.toLocaleString("en-US", { timeZone: tz }));
+  } catch (_e) {
+    return d;
+  }
+}
+
+/**
+ * Why the finding touches HIM: the member's own record, matched on the
+ * finding's themes. Prefers a year he can feel over a raw system count.
+ * Returns null when there is genuinely no connection — a generic
+ * "this is relevant to you" is worse than no second sentence.
+ */
+export async function whyItTouchesHim(
+  admin: any,
+  userId: string,
+  finding: { themes?: unknown },
+): Promise<string | null> {
+  const themes = (Array.isArray(finding?.themes) ? finding.themes : [])
+    .map((t: unknown) => safeTheme(String(t)))
+    .filter((t: string) => t.length >= 3)
+    .slice(0, 3);
+  if (!themes.length) return null;
+
+  const orFor = (cols: string[]) =>
+    cols.flatMap((c) => themes.map((t) => `${c}.ilike.%${t}%`)).join(",");
+
+  const [entryRes, postRes] = await Promise.all([
+    admin
+      .from("entries")
+      .select("created_at")
+      .eq("user_id", userId)
+      .or(orFor(["skill_pillar", "title", "content"]))
+      .order("created_at", { ascending: true })
+      .limit(50),
+    admin
+      .from("linkedin_posts")
+      .select("published_at")
+      .eq("user_id", userId)
+      .eq("tracking_status", "published")
+      .or(orFor(["topic_label", "theme", "hook", "post_text"]))
+      .order("published_at", { ascending: true })
+      .limit(50),
+  ]);
+
+  const entries = (entryRes?.data ?? []) as any[];
+  const posts = ((postRes?.data ?? []) as any[]).filter((p) => p?.published_at);
+
+  const oldest = entries[0]?.created_at ?? posts[0]?.published_at ?? null;
+  if (!oldest) return null;
+
+  const strong = entries.length >= 3 || posts.length >= 2;
+  const d = new Date(oldest);
+  if (strong) return `It touches something you have been writing about since ${d.getUTCFullYear()}.`;
+  return `You saved something on this back in ${MONTHS[d.getUTCMonth()]}.`;
+}
+
 
 /**
  * Turns a source headline into something a person would say out loud:
