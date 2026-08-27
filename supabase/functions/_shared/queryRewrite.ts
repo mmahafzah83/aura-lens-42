@@ -75,13 +75,15 @@ export async function buildSearchQuery(
   const original =
     [...list].reverse().find((m) => m?.role === "user")?.content?.toString() ?? "";
 
-  // Cheap path: already a standalone question.
-  if (original.trim().length > SELF_CONTAINED_CHARS) {
-    return { query: original, rewritten: false, original };
-  }
+  // Cheap path: only a message that actually depends on the conversation is
+  // rewritten. Everything else is returned unchanged, with no model call.
   if (!original.trim()) {
     return { query: original, rewritten: false, original };
   }
+  if (!needsRewrite(original)) {
+    return { query: original, rewritten: false, original };
+  }
+
 
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) {
