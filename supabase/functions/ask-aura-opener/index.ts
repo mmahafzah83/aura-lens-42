@@ -414,16 +414,16 @@ serve(async (req) => {
       if (label) {
         const out: Opener = {
           kind: "draft",
-          text: `You have a draft waiting — "${label}" — and nothing planned for it.`,
+          text: assemble(greeting, [`You have a draft waiting — "${label}" — and nothing planned for it.`]),
           chips: [
             { label: "Open it", prompt: `Show me my draft "${label}" and tell me honestly whether it is ready.` },
             { label: "Tighten it first", prompt: `Tighten my draft "${label}" — cut anything that is not carrying weight.` },
             ELSE,
           ],
         };
-        out.text = applyVoiceContract(out.text);
-      return json(out);
+        return json(out);
       }
+
     }
 
     /* ── RULE 3 — unwritten signal ── */
