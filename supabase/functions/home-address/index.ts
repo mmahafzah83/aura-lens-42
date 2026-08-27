@@ -237,7 +237,6 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
   // A draft the member asked for — from the Desk or the composer — is his work,
   // not the machine's, and counting it makes the card a lie.
   const agentNightDrafts = nightDrafts.filter((p) => p.produced_by === "overnight_agent");
-  const contentItems: any[] = contentR.data ?? [];
   const linkedSignalOf = (p: any) => {
     const sid = p.source_signal_id || p?.source_metadata?.signal_ids?.[0] || null;
     return { sid, sig: sid ? (signals.find((s) => s.id === sid) ?? null) : null };
