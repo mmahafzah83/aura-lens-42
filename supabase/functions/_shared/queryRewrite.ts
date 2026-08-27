@@ -36,9 +36,13 @@ const HARD_TIMEOUT_MS = 4000;
  * self-contained question does not.
  */
 const POINTERS =
-  /\b(that|this|it|they|them|those|these|the above|you just said)\b|ذلك|هذا|هذه|الذي|التي/i;
-/** A proper noun or a quoted phrase makes a message stand on its own. */
-const STANDS_ALONE = /["“”'']{1}[^"“”'']{2,}["“”'']{1}|(?<![.!?]\s)(?<!^)\b[A-Z][a-zA-Z]{2,}\b/;
+  /\b(that|this|it|they|them|those|these|the above|you just said|what about)\b|^(and|but|so|also|ok|okay)\b|ذلك|هذا|هذه|الذي|التي/i;
+/**
+ * A proper noun (Titlecase word that is not the first word of a sentence) or a
+ * quoted phrase makes the message stand on its own. Acronyms like "ESG" are not
+ * subjects on their own, so they do not count.
+ */
+const STANDS_ALONE = /["“”''][^"“”'']{2,}["“”'']|(?<![.!?]\s)(?<!^)\b[A-Z][a-z]{2,}\b/;
 
 function needsRewrite(msg: string): boolean {
   const t = (msg || "").trim();
