@@ -46,12 +46,8 @@ const WORK_WORDS =
  * anything, and a kind sentence that promises it is still a lie — it was the
  * last thing surviving this branch: "I will stop sending you reminders."
  */
-const PROMISE =
-  /\b(i(?:'ll| will| am going to| have|'ve)?|we(?:'ll| will| should)?|let me)\b[^.!?]{0,60}\b(stop|pause|hold|mute|silenc\w*|quieten|turn off|switch off|sending|send)\b/i;
-const PROMISE_AR =
-  /(سأتوقف|سأوقف|سأكف|سأمتنع|لن أرسل|سأصمت)/;
-const WORK_WORDS_AR =
-  /(منشور|منشورات|مسودة|مسودات|نشر|محتوى|إشارة|إشارات|لينكد|جدول|تذكير)/;
+const PROMISE = /\b(i(?:'ll| will| am going to| shall)|i'm going to|we(?:'ll| will| should)|let me)\b/i;
+const PROMISE_AR = /(سأ|سوف أ|لن أ|دعني)/;
 
 const MAX_SENTENCES = 3;
 const SPLIT = /(?<=[.!?؟…])\s+/;
@@ -93,7 +89,7 @@ Write your whole answer in ${lang}. At most three short sentences. Rules, all ab
 - Say that nothing here needs him and it will keep.
 - You may offer exactly ONE thing, and it must REDUCE what is being asked of him. Never add anything.
 - Do not mention drafts, posts, publishing, captures, signals, LinkedIn, cadence, output, momentum or presence. Not once.
-- Do not promise to pause, hold, stop, mute, reschedule, notify or manage anything, and do not offer to stop sending him things. You cannot do any of those, and offering is a lie however kind it sounds.
+- Promise him NOTHING. No sentence may begin "I will", "I'll" or "let me". You cannot pause, stop, mute, reschedule, notify, tidy, organise or handle anything on his behalf, and offering to is a lie however kind it sounds.
 - No question that asks him to decide something. No next step. No task.
 
 A good answer reads close to: "That matters more than any of this. Nothing here needs you — it will keep. Come back when you can."`;
