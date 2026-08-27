@@ -754,7 +754,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
           <section style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
             <div ref={listRef} aria-live="polite" aria-atomic="false" style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
               {messages.length === 0 && openerDone && (
-                <div style={{ padding: "36px 4px", maxWidth: 620 }}>
+                <div className="ask-answer-card" style={{ maxWidth: 620, marginTop: 24 }}>
                   {opener ? (
                     <>
                       <Answer text={opener.text} />
