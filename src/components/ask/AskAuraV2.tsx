@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import DeskLedger from "./DeskLedger";
+import DeskWatchSheet from "@/components/desk/DeskWatchSheet";
+import DeskPriorityAsk from "@/components/desk/DeskPriorityAsk";
+import DeskCapabilityReply from "@/components/desk/DeskCapabilityReply";
+import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
+import {
+  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs,
+  type Capabilities, type CapabilityKey, type DeskPrefs,
+} from "@/components/desk/deskPrefs";
+
 
 import { setDeskWorking, setDeskFound, setDeskQuiet } from "@/components/desk/deskDockBus";
 import { X, Send, ArrowUpRight } from "lucide-react";
