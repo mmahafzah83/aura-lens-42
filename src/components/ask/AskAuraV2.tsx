@@ -877,9 +877,11 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                         </div>
                       ))}
                   </div>
-
+                  );
+                })()}
                 );
               })}
+
 
               {loading && (
                 <div role="status" data-testid="ask-thinking" style={{ ...MONO, fontSize: 12, color: "var(--machine-text)", margin: "10px 0", display: "flex", alignItems: "center", gap: 8 }}>
