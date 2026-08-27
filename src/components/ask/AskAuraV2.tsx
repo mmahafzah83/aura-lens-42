@@ -53,7 +53,14 @@ interface Source {
   url: string | null;
 }
 
-interface ActionLine { tool: string; ok: boolean; label: string }
+/** The real tab router values from src/pages/Dashboard.tsx (NAV_ITEMS). */
+const SURFACES = [
+  "home", "intelligence", "library", "drafts", "overnight",
+  "authority", "influence", "momentum", "widgets", "identity",
+] as const;
+
+interface ActionRoute { surface: string; subject_id: string | null }
+interface ActionLine { tool: string; ok: boolean; label: string; route?: ActionRoute }
 
 type Msg = { role: "user" | "assistant"; content: string; isError?: boolean; actions?: ActionLine[] };
 
@@ -190,23 +197,22 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const openerRef = useRef(false);
 
 
-  const openSignal = (id: string) => {
+  /**
+   * The one navigation contract on this surface: Dashboard reads ?tab= (and
+   * ?signal= for a subject). openSignal, openDrafts and the routing pill all
+   * go through here — there is no second helper.
+   */
+  const openSurface = (tab: string, subjectId?: string | null) => {
     const next = new URLSearchParams(window.location.search);
-    next.set("tab", "intelligence");
-    next.set("signal", id);
+    next.set("tab", tab);
+    if (subjectId) next.set("signal", subjectId);
+    else next.delete("signal");
     window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
     window.dispatchEvent(new PopStateEvent("popstate"));
     onClose();
   };
-  /** Same navigation contract as openSignal: Dashboard reads ?tab= and renders DraftsPage for "drafts". */
-  const openDrafts = () => {
-    const next = new URLSearchParams(window.location.search);
-    next.set("tab", "drafts");
-    next.delete("signal");
-    window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    onClose();
-  };
+  const openSignal = (id: string) => openSurface("intelligence", id);
+  const openDrafts = () => openSurface("drafts");
 
 
   /* ── Load the rail from real rows only ── */
@@ -388,7 +394,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
             if (Array.isArray(j?.citations)) gotCitations = j.citations as Citation[];
             if (Array.isArray(j?.sources)) gotSources = j.sources as Source[];
             if (j?.action && typeof j.action?.label === "string") {
-              gotActions.push({ tool: String(j.action.tool || ""), ok: !!j.action.ok, label: j.action.label });
+              const r = j.action.route;
+              const route: ActionRoute | undefined =
+                r && typeof r.surface === "string"
+                  ? { surface: r.surface, subject_id: typeof r.subject_id === "string" ? r.subject_id : null }
+                  : undefined;
+              gotActions.push({ tool: String(j.action.tool || ""), ok: !!j.action.ok, label: j.action.label, route });
             }
             const delta = j?.choices?.[0]?.delta?.content;
             if (typeof delta === "string" && delta) {
@@ -762,6 +773,25 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                         }}>Open in Publish<ArrowUpRight size={13} aria-hidden="true" /></button>
                       </div>
                     )}
+                    {/* The door. Blue because the member taps it; a route to an
+                        unknown surface renders nothing at all. */}
+                    {(m.actions || [])
+                      .filter(a => a.ok && a.route && (SURFACES as readonly string[]).includes(a.route.surface))
+                      .map((a, k) => (
+                        <div key={`route-${k}`} style={{ marginTop: 10 }}>
+                          <button
+                            type="button"
+                            className="ask-focusable ask-chip"
+                            data-testid="ask-route-button"
+                            onClick={() => openSurface(a.route!.surface, a.route!.subject_id)}
+                            style={{
+                              background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                              borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                            }}
+                          >{a.label}<ArrowUpRight size={13} aria-hidden="true" /></button>
+                        </div>
+                      ))}
                   </div>
 
                 );

@@ -479,9 +479,10 @@ ${
     : ""
 }
 
-TOOLS — you can do two things yourself, not just describe them:
+TOOLS — you can do things yourself, not just describe them:
 - save_draft — writes a post you have written into the member's drafts. When the member asks for a post, or accepts one you proposed, call save_draft with the full text rather than pasting the post and telling them to save it themselves.
 - set_reminder — puts a reminder in the member's notifications when they want to come back to something later.
+- open_surface — opens any Aura surface for the member, so whenever the real answer lives on another screen you open that screen instead of describing it. It is an offer, never a substitute for answering: give the one-sentence answer first, then offer the door.
 Never invent a source_signal_id. Pass one only if it identifies a signal listed in ACTIVE SIGNALS for this member — its bracketed reference (for example S-101) is accepted; otherwise leave it out.
 After a tool runs, confirm in one short line. Do not restate the whole draft back to them.
 The rows under WHAT THE OVERNIGHT FOUND FOR YOU are real things your own overnight agent found for this member while they were not working — you may discuss them by name, and you must never claim to have found anything that block does not contain.
@@ -561,6 +562,12 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
     // STEP 3 — tool definitions. Aura can act, not only advise. Both tools take
     // user_id from the verified JWT only; the model never supplies an identity
     // and never supplies an existing row id. Insert only — no updates, no deletes.
+    // The real tab router values from src/pages/Dashboard.tsx (NAV_ITEMS).
+    const SURFACES = [
+      "home", "intelligence", "library", "drafts", "overnight",
+      "authority", "influence", "momentum", "widgets", "identity",
+    ] as const;
+
     const TOOLS = [
       {
         type: "function",
@@ -599,12 +606,36 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "open_surface",
+          description:
+            "Offer the member a way to the Aura surface where something lives. Performs no navigation and writes nothing — the member decides by tapping.",
+          parameters: {
+            type: "object",
+            properties: {
+              surface: { type: "string", enum: SURFACES, description: "The Aura surface that holds the answer." },
+              subject_id: {
+                type: "string",
+                description: "Optional. Only the id of a signal listed in ACTIVE SIGNALS for this member.",
+              },
+              reason: { type: "string", description: "Plain-language button label, 60 characters or fewer." },
+            },
+            required: ["surface", "reason"],
+          },
+        },
+      },
     ];
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-    type ToolResult = { tool: string; ok: boolean; label: string; payload: Record<string, unknown> };
+    type ToolResult = {
+      tool: string; ok: boolean; label: string; payload: Record<string, unknown>;
+      route?: { surface: string; subject_id: string | null };
+    };
+
 
     async function runTool(name: string, argsRaw: string): Promise<ToolResult> {
       let args: any = {};
@@ -710,6 +741,34 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
             payload: { ok: true, remind_on },
           };
         }
+
+        if (name === "open_surface") {
+          // Read-only by construction: validate, return. No writes, no navigation.
+          const surface = typeof args.surface === "string" ? args.surface.trim() : "";
+          if (!(SURFACES as readonly string[]).includes(surface)) {
+            return { tool: name, ok: false, label: "Couldn't open that", payload: { ok: false, error: "unknown surface" } };
+          }
+          const label = (typeof args.reason === "string" ? args.reason.trim() : "").slice(0, 60) || "Open it in Aura";
+          // An id only survives if it is one of THIS member's own loaded signals.
+          const rawId = typeof args.subject_id === "string" ? args.subject_id.trim() : "";
+          let subject_id: string | null = null;
+          if (rawId) {
+            if (UUID_RE.test(rawId) && sigs.some((s) => s.id === rawId)) {
+              subject_id = rawId;
+            } else {
+              const refIdx = citations.findIndex((c) => c.ref === rawId.replace(/[[\]]/g, ""));
+              if (refIdx >= 0 && UUID_RE.test(String(citations[refIdx].id))) subject_id = String(citations[refIdx].id);
+            }
+          }
+          return {
+            tool: name,
+            ok: true,
+            label,
+            payload: { ok: true, surface, subject_id, label },
+            route: { surface, subject_id },
+          };
+        }
+
 
         return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "unknown tool" } };
       } catch (e) {
@@ -876,7 +935,7 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
               encoder.encode(
                 `data: ${JSON.stringify({
                   choices: [{ delta: {} }],
-                  action: { tool: a.tool, ok: a.ok, label: a.label },
+                  action: { tool: a.tool, ok: a.ok, label: a.label, ...(a.route ? { route: a.route } : {}) },
                 })}\n\n`,
               ),
             );
