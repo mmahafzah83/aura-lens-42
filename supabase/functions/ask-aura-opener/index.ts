@@ -223,7 +223,6 @@ serve(async (req) => {
       const unwritten = signals.find((s) => !used.has(s.id));
       if (unwritten) {
         const n = daysSince(unwritten.created_at);
-        const frags = Number(unwritten.fragment_count ?? 0);
         const t = String(unwritten.signal_title);
         const subject = t + " " + SIGNAL.one;
         const out: Opener = {
@@ -281,7 +280,7 @@ serve(async (req) => {
     if (E === 0 && S === 0) {
       return json({
         kind: "cold start",
-        text: "I do not have anything of yours to read yet. Capture one article and I will have something to say about it.",
+        text: applyVoiceContract("I do not have anything of yours to read yet. Capture one article and I will have something to say about it."),
         chips: [
           {
             label: "What should I capture?",
@@ -293,7 +292,7 @@ serve(async (req) => {
 
     return json({
       kind: "cold start",
-      text: `Quiet morning. Nothing needs you — ${nCaptures(E, "en")} sit here when you want them.`,
+      text: applyVoiceContract(`Quiet morning. Nothing needs you — ${nCaptures(E, "en")} sit here when you want them.`),
       chips: [
         { label: "What can you see?", prompt: "What can you actually see in my graph right now?" },
         { label: "What should I write?", prompt: "From what I have already captured, what should I write next?" },
