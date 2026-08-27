@@ -783,11 +783,59 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                       fontFamily: rtl ? "var(--ff-ar)" : undefined, lineHeight: rtl ? 1.9 : 1.55,
                     }}>{m.content}</div>
                   </div>
-                ) : (
+                ) : (() => {
+                  // The layers. A malformed answer degrades to the whole text.
+                  const layers = parseLayers(m.content);
+                  const isOpen = !!expanded[i];
+                  return (
                   <div key={i} style={{ margin: "14px 0", maxWidth: 720 }}>
                     {m.isError
                       ? <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>{m.content}</div>
-                      : <Answer text={m.content} />}
+                      : <>
+                          <Answer text={layers.plain} size={15} color="var(--text-primary)" />
+                          {layers.more && (
+                            <>
+                              <button
+                                type="button"
+                                className="ask-focusable ask-chip"
+                                data-testid="ask-say-more"
+                                aria-expanded={isOpen}
+                                onClick={() => setExpanded(p => ({ ...p, [i]: !p[i] }))}
+                                style={{
+                                  background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                                  borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                                  display: "inline-flex", alignItems: "center", gap: 6, marginTop: 2,
+                                }}
+                              >{isOpen ? "Less" : "Say more"}</button>
+                              {isOpen && (
+                                <div style={{ marginTop: 8 }}>
+                                  <Answer text={layers.more} size={13.8} color="var(--text-secondary)" />
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {layers.moves.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 2px" }}>
+                              {layers.moves.map((mv, mi) => (
+                                <button
+                                  key={mv} type="button" className="ask-focusable ask-chip"
+                                  data-testid="ask-move-chip"
+                                  onClick={() => send(mv)}
+                                  style={mi === 0 ? {
+                                    background: "var(--act)", border: 0, color: "var(--text-inverse)",
+                                    borderRadius: 999, padding: "7px 14px", fontSize: 12.5, cursor: "pointer",
+                                    display: "inline-flex", alignItems: "center", gap: 6,
+                                  } : {
+                                    background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                                    borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                                    display: "inline-flex", alignItems: "center", gap: 6,
+                                  }}
+                                >{mv}<ArrowUpRight size={13} aria-hidden="true" /></button>
+                              ))}
+                            </div>
+                          )}
+                        </>}
+
                     {/* The machine reporting its own work: cyan, never a button. */}
                     {(m.actions || []).map((a, k) => (
                       <div key={k} data-testid="ask-action-line" style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}>
