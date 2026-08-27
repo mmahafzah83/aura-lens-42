@@ -280,10 +280,13 @@ serve(withObserve("ask-aura", async (req) => {
           .order("snapshot_date", { ascending: false })
           .limit(5) as any,
       ),
+      // N6 — industry_trends carries user_id and per-user RLS. The service-role
+      // client bypasses RLS, so the scope is applied explicitly here.
       safe(
         admin
           .from("industry_trends")
           .select("headline, impact_level")
+          .eq("user_id", user_id)
           .order("fetched_at", { ascending: false })
           .limit(3) as any,
       ),
