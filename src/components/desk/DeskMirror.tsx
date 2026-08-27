@@ -101,8 +101,9 @@ export default function DeskMirror({ onDecided, onOpenDraft }: Props) {
     });
     setBusy(false);
     if (!id) return;
+    /* The Desk says what it did and what it could not do BEFORE it moves him.
+       An unexplained navigation is the most disorienting thing it could do. */
     setUndo({ id, line: claim.gapLine });
-    onOpenDraft(id);
   };
 
   return (
@@ -142,14 +143,27 @@ export default function DeskMirror({ onDecided, onOpenDraft }: Props) {
         >Not true</button>
       </div>
       {undo && (
-        <div role="status" style={{ marginTop: 10, fontSize: 12.5, color: MUTED }}>
-          Draft made, nothing published.{" "}
-          <button
-            type="button"
-            className="ask-focusable"
-            onClick={() => { void undoDeskDraft(undo.id); setUndo(null); }}
-            style={{ background: "transparent", border: 0, color: BLUE, fontWeight: 600, cursor: "pointer" }}
-          >Undo</button>
+        <div role="status" style={{ marginTop: 12, borderTop: `1px solid ${LINE}`, paddingTop: 12 }}>
+          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.7, color: INK }}>
+            I've written the opening from your own counts. The middle is yours — it needs your number on the marked line. Nothing is published.
+          </p>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="ask-focusable"
+              onClick={() => onOpenDraft(undo.id)}
+              style={{
+                background: BLUE, border: 0, color: "#FFFFFF", borderRadius: 999,
+                padding: "8px 15px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", minHeight: 40,
+              }}
+            >Open the draft</button>
+            <button
+              type="button"
+              className="ask-focusable"
+              onClick={() => { void undoDeskDraft(undo.id); setUndo(null); }}
+              style={{ background: "transparent", border: 0, color: MUTED, fontSize: 12.5, cursor: "pointer", minHeight: 40 }}
+            >Undo</button>
+          </div>
         </div>
       )}
     </div>
