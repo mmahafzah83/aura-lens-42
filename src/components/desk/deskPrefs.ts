@@ -147,15 +147,17 @@ export async function loadCapabilities(): Promise<Capabilities> {
   const { data: { session } } = await supabase.auth.getSession();
   const uid = session?.user?.id;
   if (!uid) return { cv_crosscheck: false, linkedin_profile: false };
-  const { data } = await supabase
-    .from("diagnostic_profiles")
-    .select("cv_crosscheck, linkedin_handle, linkedin_url")
-    .eq("user_id", uid)
-    .maybeSingle();
-  const p: any = data || {};
-  const handle = String(p.linkedin_handle || "").trim() || String(p.linkedin_url || "").trim();
+  /* linkedin_connections is the one address of record; the profile columns are deprecated. */
+  const [profileRes, connRes] = await Promise.all([
+    supabase.from("diagnostic_profiles").select("cv_crosscheck").eq("user_id", uid).maybeSingle(),
+    supabase.from("linkedin_connections").select("handle, profile_url").eq("user_id", uid).maybeSingle(),
+  ]);
+  const p: any = profileRes.data || {};
+  const c: any = connRes.data || {};
+  const handle = canonicalHandle(c.handle) ?? canonicalHandle(c.profile_url);
   return {
     cv_crosscheck: p.cv_crosscheck !== null && p.cv_crosscheck !== undefined,
-    linkedin_profile: handle.length > 0,
+    linkedin_profile: !!handle,
   };
 }
+
