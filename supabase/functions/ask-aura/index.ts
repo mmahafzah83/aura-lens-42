@@ -169,6 +169,13 @@ serve(withObserve("ask-aura", async (req) => {
     const mode: "advisor" | "standard" = body?.mode === "advisor" ? "advisor" : "standard";
     const session_id: string | null =
       typeof body?.session_id === "string" && body.session_id.trim() ? body.session_id.trim() : null;
+    /**
+     * K5 — the evaluation harness must never write into the member's real
+     * library. In dry run a write tool still fires and still reports itself in
+     * the stream, so tool-firing is still measurable, but nothing is inserted.
+     */
+    const dryRun: boolean = body?.dry_run === true;
+
     const ctx: { linkedType?: string; linkedId?: string; linkedLabel?: string } =
       body?.context && typeof body.context === "object" ? body.context : {};
     const linkedLabel: string =
@@ -321,7 +328,7 @@ serve(withObserve("ask-aura", async (req) => {
     const [
       publishedR, confirmedR, trackedR, discoveredR, externalR, draftsR,
       composerR, metricsCountR, lastPublishedR,
-      activeSignalsR, entriesTotalR,
+      activeSignalsR, entriesTotalR, prevSnapR, publishedTextR,
     ] = await Promise.all([
       statusCount("published"),
       statusCount("confirmed"),
@@ -341,7 +348,15 @@ serve(withObserve("ask-aura", async (req) => {
         .eq("user_id", user_id).eq("status", "active") as any),
       safeRes(admin.from("entries").select("id", { count: "exact", head: true })
         .eq("user_id", user_id) as any),
+      // K2 — the previous snapshot, so every component can carry its delta.
+      safeRes(admin.from("score_snapshots").select("score, components, created_at")
+        .eq("user_id", user_id).order("created_at", { ascending: false })
+        .range(1, 1).limit(1).maybeSingle() as any),
+      // K2 — every published post's text, so pillar coverage is counted, not guessed.
+      safeRes(admin.from("linkedin_posts").select("post_text, theme")
+        .eq("user_id", user_id).eq("tracking_status", "published").limit(200) as any),
     ]);
+
 
     const publishedTotal = cnt(publishedR);
     const confirmedTotal = cnt(confirmedR);
@@ -357,6 +372,42 @@ serve(withObserve("ask-aura", async (req) => {
     const draftsTotal = cnt(draftsR);
     const entriesTotalExact = cnt(entriesTotalR) || entsTotal;
 
+    /**
+     * K1 — a figure never reaches the model bare. Every number is rendered with
+     * its unit and its meaning, because the model has no way to know that
+     * engagement_rate is already a percentage and confidence is not.
+     */
+    const pct1 = (v: unknown) => `${Number(v ?? 0).toFixed(2)}%`;         // stored 0–100
+    const pctFromUnit = (v: unknown) => `${Math.round(Number(v ?? 0) * 100)}%`; // stored 0–1
+    const ofOne = (v: unknown) => `${Number(v ?? 0).toFixed(2)} of 1.00`;  // stored 0–1, no unit
+    const plain = (v: unknown) => (v == null ? "not recorded" : String(v));
+
+    /** K2 — score components with their movement since the previous snapshot. */
+    const prevSnap: any = (prevSnapR as any)?.data || null;
+    const prevComponents: Record<string, any> =
+      prevSnap?.components && typeof prevSnap.components === "object" ? prevSnap.components : {};
+    const signDelta = (now: unknown, before: unknown): string => {
+      const a = Number(now), b = Number(before);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return "no previous reading to compare";
+      const d = a - b;
+      if (d === 0) return "unchanged since the previous reading";
+      return `${d > 0 ? "up" : "down"} ${Math.abs(d)} since the previous reading`;
+    };
+
+    /** K2 — how many published posts touch each pillar, counted, never guessed. */
+    const publishedTexts: any[] = Array.isArray((publishedTextR as any)?.data)
+      ? (publishedTextR as any).data
+      : [];
+    const pillarPublishedCount = (pillar: string): number => {
+      const words = String(pillar).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 4);
+      if (!words.length) return 0;
+      return publishedTexts.filter((row) => {
+        const hay = `${row?.post_text || ""} ${row?.theme || ""}`.toLowerCase();
+        return words.some((w) => hay.includes(w));
+      }).length;
+    };
+
+
 
     const findingsBlock =
       finds.length === 0
@@ -365,7 +416,7 @@ serve(withObserve("ask-aura", async (req) => {
             .map((f) => {
               const bits = [String(f.title || f.source || "(untitled)").slice(0, 120)];
               if (f.source) bits.push(String(f.source));
-              bits.push(`score ${f.relevance_score ?? "—"}`);
+              bits.push(`relevance ${ofOne(f.relevance_score)}`);
               const imp = String(f.implication || "").trim();
               if (imp) bits.push(imp.slice(0, 200));
               return `- ${bits.join(" · ")}`;
@@ -383,15 +434,19 @@ serve(withObserve("ask-aura", async (req) => {
         ? "—"
         : ents.map((e) => `- ${(e.title || "(untitled)").slice(0, 80)} [${e.type || "entry"}]`).join("\n");
 
+    // K1 — engagement_rate is STORED as a percentage (0–100). Multiplying it by
+    // 100 is what produced "213%" from a real rate of 2.13%. It is rendered
+    // here with its unit attached and never touched again.
     const metricsBlock =
       mets.length === 0
         ? "—"
         : mets
             .map(
               (m) =>
-                `- ${(m.snapshot_date || "").slice(0, 10) || "—"} · impressions ${m.impressions ?? 0} · eng ${(Number(m.engagement_rate || 0) * 100).toFixed(1)}% · ${m.reactions ?? 0}♥ ${m.comments ?? 0}💬`,
+                `- ${(m.snapshot_date || "").slice(0, 10) || "—"} · impressions ${m.impressions ?? 0} · engagement rate ${pct1(m.engagement_rate)} · reactions ${m.reactions ?? 0} · comments ${m.comments ?? 0}`,
             )
             .join("\n");
+
 
     const trendsBlock =
       trnds.length === 0 ? "—" : trnds.map((t) => `- ${t.headline} (${t.impact_level || "med"} impact)`).join("\n");
@@ -417,19 +472,35 @@ serve(withObserve("ask-aura", async (req) => {
       : [];
     const scoreComponents: Record<string, unknown> =
       sc.components && typeof sc.components === "object" ? sc.components : {};
+    // K1/K2 — every component is rendered with its unit, its meaning, and its
+    // movement since the previous snapshot. Nothing arrives as a bare number.
     const componentLines = Object.entries(scoreComponents)
+      .filter(([k]) => k !== "formula_version")
       .map(([k, v]) => {
+        const label = k.replace(/_/g, " ");
         if (v && typeof v === "object") {
           const o: any = v;
           if (typeof o.active_weeks === "number" && typeof o.total_weeks === "number") {
-            return `  - ${k.replace(/_/g, " ")}: ${o.active_weeks} of ${o.total_weeks} weeks active`;
+            const before = (prevComponents as any)?.[k];
+            const move = before && typeof before.active_weeks === "number"
+              ? signDelta(o.active_weeks, before.active_weeks)
+              : "no previous reading to compare";
+            return `  - capture rhythm: active in ${o.active_weeks} of the last ${o.total_weeks} weeks (${move}). This measures weekly rhythm, not how much he captured.`;
           }
           return null;
         }
-        return `  - ${k.replace(/_/g, " ")}: ${String(v)}`;
+        const unit = /_score$/.test(k) ? " out of 100" : /_weighted$/.test(k) ? " points of the total score" : "";
+        return `  - ${label}: ${plain(v)}${unit} (${signDelta(v, (prevComponents as any)?.[k])})`;
       })
       .filter(Boolean)
       .join("\n");
+
+    const pillarCoverageLines = pillars.length
+      ? pillars
+          .map((x) => `  - ${x}: ${pillarPublishedCount(x)} of his ${publishedTotal} published posts touch this pillar`)
+          .join("\n")
+      : "  - none recorded";
+
 
     const accountFactsBlock = `YOUR ACCOUNT, IN FACTS (counted from this member's own rows — these are the only figures you may state about him):
 Posts, counted by what each row actually is. These are five different things. Never add them together, and never call any of them "published" except the first:
@@ -448,11 +519,15 @@ ${publishedTotal > 0
   : `  RULE: no published post is recorded. Say the publishing window is wide open, never that he has failed.`}
 
 Score (newest score_snapshots row${sc.created_at ? `, ${String(sc.created_at).slice(0, 10)}` : ""}):
-  - score: ${sc.score ?? "not recorded"}${sc.tier ? ` (band ${sc.tier})` : ""}
+  - score: ${sc.score ?? "not recorded"} out of 100${sc.tier ? ` (band ${sc.tier})` : ""} — ${signDelta(sc.score, prevSnap?.score)}${prevSnap?.created_at ? `, taken ${String(prevSnap.created_at).slice(0, 10)}` : ""}
 ${componentLines || "  - components: not recorded"}
   RULE: these are the only numbers you may cite about his standing. No other score, percentage or index exists.
+  RULE: the component that moved DOWN is the driver of a fall, and the component that moved UP is the driver of a rise. Read the movement above before naming any cause. Never call a component the reason when it did not move in that direction.
 Pillars (verbatim — these are the ONLY pillar names that exist for this member; never name a pillar that is not in this list):
 ${pillars.length ? pillars.map((x) => `  - ${x}`).join("\n") : "  - none recorded"}
+Pillar coverage in published work (counted by matching pillar words against the text of his published posts):
+${pillarCoverageLines}
+  RULE: "most" or "least" written about is decided by these counts and nothing else.
 Profile:
   - primary strength: ${p.primary_strength || "not recorded"}
   - level: ${p.level || "not recorded"}
@@ -463,7 +538,14 @@ Profile:
 Counts:
   - captures in the vault: ${entriesTotalExact}
   - signals still open (status active): ${activeSignals}
-  - drafts waiting: ${draftsTotal}`;
+  - drafts waiting: ${draftsTotal}
+
+HOW TO USE A NUMBER (absolute):
+  - Every figure above is already written the way it must be said, with its unit attached. Copy it verbatim.
+  - NEVER do arithmetic on a figure, and NEVER convert its unit. An engagement rate of ${mets.length ? pct1(mets[0]?.engagement_rate) : "2.13%"} is that figure exactly — it is not that number multiplied by a hundred.
+  - If a figure you need is not written above, say you cannot see it. Do not derive it, estimate it, or reason it out.
+  - If the member states a number in his question and it disagrees with the figures above, correct him in the FIRST sentence, plainly — "You have ${draftsTotal}, not 27." — and then answer the question he asked.`;
+
 
     // Zero-state guards — counted totals, never the ten-post sample.
     const topSignal = sigs?.[0];
@@ -478,7 +560,10 @@ Counts:
               (s, i) =>
                 `- [S-${101 + i}] ${s.signal_title || "(untitled)"} — ${
                   s.strategic_implications || s.explanation || "no implications recorded"
-                } (Confidence: ${Math.round(Number(s.confidence || 0) * 100)}%)`,
+                } (confidence ${pctFromUnit(s.confidence)} · internal priority ${ofOne(
+                  Math.min(1, Number(s.priority_score ?? 0)),
+                )}, a ranking figure, not a percentage)`,
+
             )
             .join("\n");
 
@@ -657,6 +742,18 @@ Say what you can see and what you cannot. Never imply a capability you do not ha
 
 LENGTH: the two-sentence cap applies to the opener only. Answers may run longer when the question earns it. Plain speech and no enthusiasm apply everywhere: no exclamation marks, no praise, no consultant jargon.
 
+CAUSE MUST BE COUNTED (K2 — absolute):
+Any sentence using "because", "driven by", "the reason", "caused", "most" or "least" must name the exact component or count it came from, and that figure must appear in YOUR ACCOUNT, IN FACTS. Read the movement lines before naming a driver: a component that rose cannot be the reason a score fell. If the facts block does not identify the driver, say which comparison you cannot make — "I can see the score moved down three, but I cannot see which component drove it" — rather than proposing a cause.
+
+HOLD A POSITION (K3 — absolute):
+- DIRECTION QUESTIONS (up or down, better or worse, should I or shouldn't I): the direction word is the FIRST clause of the answer. "Down three this week." "Yes — publish today." Then the reason. Never a paragraph that circles the answer before landing on it.
+- VERDICT QUESTIONS ("is my writing any good", "is this draft strong"): the verdict comes first, the evidence second. If there is not enough evidence to judge, that IS the verdict and you say it as one: "I cannot judge this yet — I have two posts with performance data."
+- A CHALLENGE FROM THE MEMBER ("you are wrong about X") must open with exactly one of two shapes, and nothing else:
+    "You are right — " followed by the correction, when the facts show he is right.
+    "The record disagrees — " followed by the exact row and figure that show it, when the facts support you.
+  Never both. Never a hedge, never a soft pivot, never "you may have a point". He is paying for judgement.
+
+
 
 RECENT CAPTURES (last 10 of ${entriesTotalExact} total):
 ${entriesBlock}
@@ -717,7 +814,7 @@ PRODUCT-QUESTION ROUTING: If the user's message is a question about Aura the pro
 
 When you answer a product question:
 
-- Open with exactly: 'Aura is your personal intelligence system.'
+- Answer the question that was asked, and only that. The line 'Aura is your personal intelligence system.' belongs ONLY in a reply to "what is Aura" or an equally whole-product question; on any narrower product question (a page, a score, a term, a step) it is filler and must not appear. Nothing may ever be written above the §§PLAIN marker — not that line, not a greeting, not a restatement of the question. The very first characters of your whole response are '§§PLAIN'.
 
 - Then explain in plain words, like this: Aura saves the thinking you already do each week — what you read, notice, and conclude — and helps you share it, so the people who matter see how you think, not just your job title. It works quietly and does not add work to your week.
 
@@ -821,7 +918,7 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
         : ""
     }
 
-OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each alone on its own line, in this order:
+OUTPUT FORMAT — every answer arrives in layers. The first characters of your response are the literal marker §§PLAIN, always, with no exception and nothing above it: no greeting, no preamble, no restatement, no product opener. A single character written above §§PLAIN is a broken answer. Use these three markers, each alone on its own line, in this order:
 
 §§PLAIN
 <the answer in everyday words>
@@ -959,6 +1056,11 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
             return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "no post text" } };
           }
           const title = typeof args.title === "string" && args.title.trim() ? args.title.trim().slice(0, 200) : null;
+          if (dryRun) {
+            return { tool: name, ok: true, label: "Saved to your drafts (dry run — nothing written)",
+              payload: { ok: true, dry_run: true, title } };
+          }
+
 
           // Resolve the signal only against this member's own loaded signals.
           let source_signal_id: string | null = null;
@@ -1027,6 +1129,11 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
           if (days < 1) days = 1;
           if (days > 30) days = 30;
           const when = new Date(Date.now() + days * 86400000);
+          if (dryRun) {
+            return { tool: name, ok: true, label: "Reminder set (dry run — nothing written)",
+              payload: { ok: true, dry_run: true, title, when: when.toISOString() } };
+          }
+
 
           const { error: nErr } = await admin.from("notification_events").insert({
             user_id,
