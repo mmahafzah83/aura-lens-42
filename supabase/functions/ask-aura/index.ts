@@ -343,10 +343,8 @@ serve(withObserve("ask-aura", async (req) => {
         rewritten: search.rewritten,
         originalQuery: search.original,
       });
-      if (retrieved.rows.length > 0) {
-        retrievedBlock = retrieved.citationBlock;
-        retrievedRows = retrieved.rows;
-      }
+      retrievedRows = applyRelevanceFloor(retrieved.rows);
+      if (retrievedRows.length > 0) retrievedBlock = formatRows(retrievedRows, 1);
     } catch (e) {
       retrievalDegraded = true;
       logRetrievalFailure({
@@ -358,14 +356,19 @@ serve(withObserve("ask-aura", async (req) => {
     }
 
     // Parallel to `citations`, one entry per retrieved row. The number matches the
-    // [n] the prompt block uses (formatCitations numbers rows 1..n in order).
-    const sources = retrievedRows.map((r, i) => ({
-      n: i + 1,
-      title: (r.title && String(r.title).trim()) || `${String(r.source_kind).replace(/_/g, " ")} ${i + 1}`,
-      kind: r.source_kind,
-      date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
-      url: r.url || null,
-    }));
+    // [n] the prompt block uses (formatRows numbers rows 1..n in order).
+    // APPEND-ONLY: search_my_graph pushes onto this same array and continues the
+    // numbering. A number, once assigned, is never reused or renumbered.
+    const sources: { n: number; title: string; kind: string; date: string | null; url: string | null }[] =
+      retrievedRows.map((r, i) => ({
+        n: i + 1,
+        title: (r.title && String(r.title).trim()) || `${String(r.source_kind).replace(/_/g, " ")} ${i + 1}`,
+        kind: r.source_kind,
+        date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
+        url: r.url || null,
+      }));
+    const sourceKeys = new Set(retrievedRows.map((r) => `${r.source_kind}:${r.source_id}`));
+
 
 
     const systemPrompt = `You are Aura — a senior strategic intelligence advisor. You are not a generic AI. You are a dedicated advisor who has studied this professional for months and knows their work deeply.
