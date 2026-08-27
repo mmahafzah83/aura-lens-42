@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import DeskLedger from "./DeskLedger";
+import DeskWatchSheet from "@/components/desk/DeskWatchSheet";
+import DeskPriorityAsk from "@/components/desk/DeskPriorityAsk";
+import DeskCapabilityReply from "@/components/desk/DeskCapabilityReply";
+import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
+import {
+  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs,
+  type Capabilities, type CapabilityKey, type DeskPrefs,
+} from "@/components/desk/deskPrefs";
+
+
 import { setDeskWorking, setDeskFound, setDeskQuiet } from "@/components/desk/deskDockBus";
-import { X, Send, ArrowUpRight } from "lucide-react";
+import { Settings2, X, Send, ArrowUpRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import AuraMark from "@/components/brand/AuraMark";
@@ -238,6 +248,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [openerDone, setOpenerDone] = useState(false);
   /** "Say more" is per message: expanding one answer never expands another. */
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  /** The gear, and what the Desk can actually do for him today. */
+  const [watchOpen, setWatchOpen] = useState(false);
+  const [caps, setCaps] = useState<Capabilities | null>(null);
+  const [prefs, setPrefs] = useState<DeskPrefs>({});
+  /** An ask parked because the thing it needs is missing. */
+  const [blocked, setBlocked] = useState<{ capability: CapabilityKey; question: string } | null>(null);
+  /** The gear's "Add it", answered in place on the Desk. */
+  const [addressOpen, setAddressOpen] = useState(false);
+
+
 
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -315,6 +335,19 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       setSeeds(s.slice(0, 4));
     })();
   }, [open]);
+
+  /* What the Desk can do today, and what he has already told it. */
+  const refreshDesk = useCallback(async () => {
+    const [c, p] = await Promise.all([loadCapabilities(), loadDeskPrefs()]);
+    setCaps(c);
+    if (p) setPrefs(p.prefs);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    void refreshDesk();
+  }, [open, refreshDesk]);
+
 
   /* ── Opener: Aura speaks first, once per open ── */
   useEffect(() => {
@@ -396,9 +429,24 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     } catch (e) { console.error("[ask] memory insert failed", e); }
   }, []);
 
-  const send = useCallback(async (text: string) => {
+  const send = useCallback(async (text: string, opts?: { force?: boolean }) => {
     const body = text.trim();
     if (!body || loading) return;
+
+    /* A question that needs something he has not given gets an honest refusal,
+       not an invented answer. "Later" keeps it quiet for thirty days. */
+    if (!opts?.force) {
+      const need = capabilityNeeded(body);
+      if (need && caps && !caps[need] && !isDeclined(prefs, need)) {
+        setMessages([...messages, { role: "user", content: body }]);
+        setInput("");
+        setFollowUps([]);
+        setBlocked({ capability: need, question: body });
+        return;
+      }
+    }
+    setBlocked(null);
+
     const userMsg: Msg = { role: "user", content: body };
     const next = [...messages, userMsg];
     setMessages(next);
@@ -408,6 +456,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     // The dock mirrors the Desk: it turns while Aura reads, stops when it lands.
     setDeskWorking("Reading your graph");
     void persist("user", body, []);
+
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -521,7 +570,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       setDeskQuiet();
     }
     setLoading(false);
-  }, [context, loading, messages, persist]);
+  }, [caps, context, loading, messages, persist, prefs]);
 
   useEffect(() => {
     if (!open) { firedRef.current = false; return; }
@@ -747,14 +796,37 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
             <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>· {context.linkedLabel}</span>
           )}
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <button
+          type="button"
+          className="ask-focusable"
+          aria-label="What your Desk watches"
+          onClick={() => setWatchOpen(true)}
+          style={{
+            background: "transparent", border: 0, cursor: "pointer", color: "#5B6673",
+            width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
+            margin: "-6px 0", borderRadius: 10,
+          }}
+        >
+          <Settings2 size={17} aria-hidden="true" />
+        </button>
         <button type="button" className="ask-focusable" aria-label="Close" onClick={onClose} style={{
+
           background: "transparent", border: 0, cursor: "pointer", color: "var(--text-secondary)",
           width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
           margin: "-6px -10px -6px 0", borderRadius: 10,
         }}>
           <X size={18} aria-hidden="true" />
         </button>
+        </div>
       </header>
+
+      <DeskWatchSheet
+        open={watchOpen}
+        onClose={() => { setWatchOpen(false); void refreshDesk(); }}
+        onAddLinkedIn={() => setAddressOpen(true)}
+      />
+
 
       <div className="ask-body" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <div className="ask-grid" style={{ height: "100%", maxWidth: 1400, margin: "0 auto", padding: "16px 20px", boxSizing: "border-box" }}>
@@ -809,6 +881,19 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                   onOpenTab={(t) => openSurface(t)}
                 />
               )}
+
+              {messages.length === 0 && openerDone && (
+                <DeskPriorityAsk onOpenWatch={() => setWatchOpen(true)} />
+              )}
+
+              {addressOpen && (
+                <DeskLinkedInField
+                  onSaved={() => { setAddressOpen(false); void refreshDesk(); }}
+                  onCancel={() => setAddressOpen(false)}
+                />
+              )}
+
+
 
               {messages.map((m, i) => {
                 const rtl = isAr(m.content);
@@ -921,6 +1006,21 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                   );
                 })();
               })}
+
+              {blocked && (
+                <DeskCapabilityReply
+                  capability={blocked.capability}
+                  onReady={async () => {
+                    const q = blocked.question;
+                    setBlocked(null);
+                    await refreshDesk();
+                    void send(q, { force: true });
+                  }}
+                  onInstead={(p) => { setBlocked(null); void send(p, { force: true }); }}
+                  onDismiss={() => setBlocked(null)}
+                />
+              )}
+
 
 
 
