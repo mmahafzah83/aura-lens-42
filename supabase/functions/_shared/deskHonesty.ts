@@ -16,7 +16,7 @@ const CLAIM_AR = /(حفظت|تم الحفظ|تم الحفظ في مسوداتك|
 
 /** Capabilities the Desk does not have, in any language. */
 const IMPOSSIBLE =
-  /\b(pause|pausing|hold off on|put .{0,20}on hold|reschedul\w*|cancel\w*|postpon\w*|notify\b|email\b|message (?:your|the) team|manage your (?:calendar|schedule|inbox)|clear your (?:calendar|schedule)|handle everything|scale back your output)\b/i;
+  /\b(pause|pausing|hold off on|put .{0,20}on hold|reschedul\w*|cancel\w*|postpon\w*|notify\b|notification\b|alert you\b|ping you\b|text you\b|email\b|message (?:your|the) team|manage your (?:calendar|schedule|inbox)|clear your (?:calendar|schedule)|handle everything|scale back your output)\b/i;
 const SCHEDULE_OBJECT = /\b(schedule|cadence|posting|calendar|meeting|publishing|content|output)\b/i;
 
 const SENTENCE_SPLIT = /(?<=[.!?؟…])\s+/;
@@ -24,7 +24,8 @@ const SENTENCE_SPLIT = /(?<=[.!?؟…])\s+/;
 function impossibleClaim(sentence: string): boolean {
   if (!/\b(i(?:'ll| will| have|'ve)?|we(?:'ll| will)?|let me)\b/i.test(sentence)) return false;
   if (!IMPOSSIBLE.test(sentence)) return false;
-  return SCHEDULE_OBJECT.test(sentence) || /\bnotify|email\b/i.test(sentence);
+  // A promise to reach him off the screen is impossible whatever its object.
+  return SCHEDULE_OBJECT.test(sentence) || /\b(notify|notification|alert you|ping you|text you|email)\b/i.test(sentence);
 }
 
 export interface ClaimVerdict { text: string; stripped: boolean }
