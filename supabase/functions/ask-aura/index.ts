@@ -1245,18 +1245,26 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
                 content: r.content ? String(r.content).slice(0, 300) : "",
               };
             });
-            const countRendered = total === 0
-              ? `nothing in your record matches "${q}"`
-              : total === 1
-              ? `1 item in your record matches "${q}"`
-              : `${total} items in your record match "${q}"${total > kept.length ? ` (top ${kept.length} shown)` : ""}`;
+            /**
+             * N1 — the count is a real count(*) against his own rows, never the
+             * length of a retrieval page. A retriever asked for 40 rows returns
+             * 40 rows; that is a page size, not a fact about his record.
+             */
+            const real = await countVaultMatches(q);
+            const realTotal = real.entries + real.chunks;
+            const parts: string[] = [];
+            if (real.entries) parts.push(`${real.entries} ${real.entries === 1 ? "capture" : "captures"}`);
+            if (real.chunks) parts.push(`${real.chunks} document ${real.chunks === 1 ? "chunk" : "chunks"}`);
+            const countRendered = realTotal === 0
+              ? `nothing in your record mentions "${q}"`
+              : `${parts.join(" and ")} ${realTotal === 1 ? "mentions" : "mention"} "${q}" (showing ${kept.length})`;
             return {
               tool: name,
               ok: true,
               label: "",
               payload: {
                 ok: true,
-                count: total,
+                count: realTotal,
                 shown: kept.length,
                 count_rendered: countRendered,
                 results: out,
