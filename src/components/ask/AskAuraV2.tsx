@@ -474,6 +474,17 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     const body = text.trim();
     if (!body || loading) return;
 
+    /* "Where do I stand" is not a question for a model — it is the ledger.
+       Asked for in words, it takes the slot exactly as the chip does. */
+    if (!opts?.force && messages.length === 0 && WANTS_LEDGER.test(body)) {
+      setInput("");
+      setReturnData(null);
+      setSlotAsk("ledger");
+      return;
+    }
+
+
+
     /* A question that needs something he has not given gets an honest refusal,
        not an invented answer. "Later" keeps it quiet for thirty days. */
     if (!opts?.force) {
