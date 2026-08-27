@@ -22,9 +22,11 @@ const SANS = "Inter, system-ui, sans-serif";
 interface Props {
   /** Opens the gear so he can see what changed. */
   onOpenWatch: () => void;
+  /** Told once, when the answer is stored — the slot then returns to the opener. */
+  onAnswered?: () => void;
 }
 
-export default function DeskPriorityAsk({ onOpenWatch }: Props) {
+export default function DeskPriorityAsk({ onOpenWatch, onAnswered }: Props) {
   const [prefs, setPrefs] = useState<DeskPrefs | null>(null);
   const [justChose, setJustChose] = useState<DeskPriority | null>(null);
 
@@ -48,6 +50,7 @@ export default function DeskPriorityAsk({ onOpenWatch }: Props) {
     for (const o of WATCH_OPTIONS) watch[o.key] = wanted.includes(o.key);
     const stored = await saveDeskPrefs(prefs, { priority: key, watch });
     setPrefs(stored);
+    onAnswered?.();
   };
 
   return (

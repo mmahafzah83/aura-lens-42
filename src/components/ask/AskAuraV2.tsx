@@ -6,6 +6,8 @@ import DeskPriorityAsk from "@/components/desk/DeskPriorityAsk";
 import DeskMirror from "@/components/desk/DeskMirror";
 import DeskCapabilityReply from "@/components/desk/DeskCapabilityReply";
 import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
+import DeskSlot, { type DeskCardKind } from "@/components/desk/DeskSlot";
+import DeskReturnCard, { loadReturnCard, type ReturnCardData } from "@/components/desk/DeskReturnCard";
 import {
   capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs,
   type Capabilities, type CapabilityKey, type DeskPrefs,
@@ -38,6 +40,9 @@ import { filterPublishedRows } from "@/lib/postProvenance";
  */
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-aura`;
+
+/** Words that mean "show me the ledger", not "answer me". */
+const WANTS_LEDGER = /\b(where\s+do\s+i\s+stand|what('?s| is)\s+waiting|what\s+have\s+i\s+got|what\s+else\s+is\s+waiting|what('?s| is)\s+outstanding|my\s+standing)\b/i;
 const MONO: React.CSSProperties = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" };
 const AR = /[\u0600-\u06FF]/;
 
@@ -246,9 +251,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [seeds, setSeeds] = useState<PromptSeed[]>([]);
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [opener, setOpener] = useState<{ text: string; chips: { label: string; prompt: string }[] } | null>(null);
-  /** True only while a Mirror card holds the opener slot. Two voices, never. */
+  /** True only while a Mirror card holds the slot. Two voices, never. */
   const [mirrorShowing, setMirrorShowing] = useState(false);
+  const [mirrorDecided, setMirrorDecided] = useState(false);
   const [openerDone, setOpenerDone] = useState(false);
+  /** The one card the member asked for, which outranks the computed one. */
+  const [slotAsk, setSlotAsk] = useState<"ledger" | null>(null);
+  /** The welcome-back card, decided once per session before anything renders. */
+  const [returnDecided, setReturnDecided] = useState(false);
+  const [returnData, setReturnData] = useState<ReturnCardData | null>(null);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
   /** "Say more" is per message: expanding one answer never expands another. */
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   /** The gear, and what the Desk can actually do for him today. */
@@ -344,12 +356,41 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     const [c, p] = await Promise.all([loadCapabilities(), loadDeskPrefs()]);
     setCaps(c);
     if (p) setPrefs(p.prefs);
+    setPrefsLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setPrefsLoaded(false); setSlotAsk(null); return; }
     void refreshDesk();
   }, [open, refreshDesk]);
+
+  /* Is he coming back after a gap? Decided before the slot renders anything. */
+  useEffect(() => {
+    if (!open) { setReturnDecided(false); setReturnData(null); setMirrorDecided(false); setMirrorShowing(false); return; }
+    let cancelled = false;
+    (async () => {
+      let d: ReturnCardData | null = null;
+      try { d = await loadReturnCard(); } catch { d = null; }
+      if (cancelled) return;
+      setReturnData(d);
+      setReturnDecided(true);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  /* A decider that never answers must not leave him looking at a resting mark. */
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => {
+      setMirrorDecided(true);
+      setReturnDecided(true);
+      setPrefsLoaded(true);
+      setOpenerDone(true);
+    }, 6000);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
+
 
 
   /* ── Opener: Aura speaks first, once per open ── */
@@ -435,6 +476,17 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const send = useCallback(async (text: string, opts?: { force?: boolean }) => {
     const body = text.trim();
     if (!body || loading) return;
+
+    /* "Where do I stand" is not a question for a model — it is the ledger.
+       Asked for in words, it takes the slot exactly as the chip does. */
+    if (!opts?.force && messages.length === 0 && WANTS_LEDGER.test(body)) {
+      setInput("");
+      setReturnData(null);
+      setSlotAsk("ledger");
+      return;
+    }
+
+
 
     /* A question that needs something he has not given gets an honest refusal,
        not an invented answer. "Later" keeps it quiet for thirty days. */
@@ -779,6 +831,20 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     </aside>
   );
 
+  /**
+   * WHICH ONE CARD. A single expression, evaluated top to bottom, producing one
+   * value. Asked-for beats computed; nothing renders until every decider has
+   * answered, and the resting mark covers that wait.
+   */
+  const slotReady = openerDone && prefsLoaded && mirrorDecided && returnDecided;
+  const card: DeskCardKind =
+    slotAsk ? slotAsk
+    : !slotReady ? "loading"
+    : returnData ? "return"
+    : mirrorShowing ? "mirror"
+    : !prefs.priority ? "priority"
+    : "opener";
+
   return createPortal(
     <div
       ref={panelRef}
@@ -835,74 +901,121 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         <div className="ask-grid" style={{ height: "100%", maxWidth: 1400, margin: "0 auto", padding: "16px 20px", boxSizing: "border-box" }}>
           <section style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
             <div ref={listRef} aria-live="polite" aria-atomic="false" style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
-              {/* The Mirror takes over the opener slot on the day it fires. */}
+              {/* ── THE SLOT: exactly one card, ever. ── */}
               {messages.length === 0 && (
-                <DeskMirror
-                  onDecided={setMirrorShowing}
-                  onOpenDraft={(id) => {
-                    const next = new URLSearchParams(window.location.search);
-                    next.set("tab", "authority");
-                    next.set("draft", id);
-                    window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
-                    window.dispatchEvent(new PopStateEvent("popstate"));
-                    onClose();
+                <DeskSlot
+                  card={card}
+                  probe={
+                    <DeskMirror
+                      onDecided={(show) => { setMirrorDecided(true); setMirrorShowing(show); }}
+                      onOpenDraft={(id) => {
+                        const next = new URLSearchParams(window.location.search);
+                        next.set("tab", "authority");
+                        next.set("draft", id);
+                        window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
+                        window.dispatchEvent(new PopStateEvent("popstate"));
+                        onClose();
+                      }}
+                    />
+                  }
+                  render={{
+                    /* The Mirror is the probe itself — the slot shows it in place. */
+                    mirror: () => null,
+
+                    /* Not a spinner, not a void: the mark, parked, on the card ground. */
+                    loading: () => (
+                      <div data-testid="desk-resting" style={{
+                        minHeight: 220, display: "flex", alignItems: "center", justifyContent: "center",
+                        background: "var(--surface-card)", borderRadius: 16,
+                      }}>
+                        <AuraMark size={64} state="resting" />
+                      </div>
+                    ),
+
+                    return: () => (
+                      <DeskReturnCard
+                        data={returnData}
+                        onReady={(show, d) => { setReturnDecided(true); setReturnData(show ? d : null); }}
+                        onPickUp={() => { setReturnData(null); void send("Pick up where we left off."); }}
+                        onOvernight={() => { setReturnData(null); setSlotAsk(null); }}
+                        onNew={() => { setReturnData(null); setSlotAsk(null); taRef.current?.focus(); }}
+                      />
+                    ),
+
+                    /* First run only, and never beside the opener. */
+                    priority: () => (
+                      <DeskPriorityAsk
+                        onOpenWatch={() => setWatchOpen(true)}
+                        onAnswered={() => { window.setTimeout(() => { void refreshDesk(); }, 2500); }}
+                      />
+                    ),
+
+                    /* Asked for, never shown unasked. */
+                    ledger: () => (
+                      <div style={{ marginTop: 8 }}>
+                        <button
+                          type="button"
+                          className="ask-focusable"
+                          data-testid="desk-ledger-back"
+                          onClick={() => setSlotAsk(null)}
+                          style={{
+                            background: "transparent", border: 0, color: "var(--text-muted)",
+                            fontSize: 12.5, cursor: "pointer", padding: "6px 2px", minHeight: 44,
+                          }}
+                        >← Back</button>
+                        <DeskLedger
+                          onOpenDrafts={openDrafts}
+                          onOpenSignals={() => openSurface("intelligence")}
+                          onOpenTab={(t) => openSurface(t)}
+                        />
+                      </div>
+                    ),
+
+                    opener: () => (
+                      <div className="ask-answer-card" style={{ maxWidth: 620, marginTop: 24 }}>
+                        {opener ? (
+                          <>
+                            <Answer text={opener.text} />
+                            {opener.chips.length > 0 && (
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 14px" }}>
+                                {opener.chips.map((c, i) => {
+                                  /* The third chip is the way into the ledger, in this slot. */
+                                  const toLedger = i === 2 || /something else/i.test(c.prompt);
+                                  return (
+                                    <button
+                                      key={c.prompt}
+                                      type="button"
+                                      className="ask-focusable ask-chip"
+                                      onClick={() => (toLedger ? setSlotAsk("ledger") : send(c.prompt))}
+                                      style={i === 0 ? {
+                                        background: "var(--act)", border: 0, color: "var(--text-inverse)",
+                                        borderRadius: 999, padding: "7px 14px", fontSize: 12.5, cursor: "pointer",
+                                        display: "inline-flex", alignItems: "center", gap: 6,
+                                      } : {
+                                        background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                                        borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                                        display: "inline-flex", alignItems: "center", gap: 6,
+                                      }}
+                                    >{toLedger ? "What else is waiting?" : c.label}<ArrowUpRight size={13} /></button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6 }}>
+                              Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                            Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
+                          </div>
+                        )}
+                      </div>
+                    ),
                   }}
                 />
               )}
 
-              {messages.length === 0 && openerDone && !mirrorShowing && (
-                <div className="ask-answer-card" style={{ maxWidth: 620, marginTop: 24 }}>
-                  {opener ? (
-                    <>
-                      <Answer text={opener.text} />
-                      {opener.chips.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 14px" }}>
-                          {opener.chips.map((c, i) => (
-                            <button
-                              key={c.prompt}
-                              type="button"
-                              className="ask-focusable ask-chip"
-                              onClick={() => send(c.prompt)}
-                              style={i === 0 ? {
-                                background: "var(--act)", border: 0, color: "var(--text-inverse)",
-                                borderRadius: 999, padding: "7px 14px", fontSize: 12.5, cursor: "pointer",
-                                display: "inline-flex", alignItems: "center", gap: 6,
-                              } : {
-                                background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
-                                borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
-                                display: "inline-flex", alignItems: "center", gap: 6,
-                              }}
-                            >{c.label}<ArrowUpRight size={13} /></button>
-                          ))}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6 }}>
-                        Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* Heading removed — the opener card carries the surface. */}
-
-                      <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                        Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {messages.length === 0 && openerDone && (
-                <DeskLedger
-                  onOpenDrafts={openDrafts}
-                  onOpenSignals={() => openSurface("intelligence")}
-                  onOpenTab={(t) => openSurface(t)}
-                />
-              )}
-
-              {messages.length === 0 && openerDone && (
-                <DeskPriorityAsk onOpenWatch={() => setWatchOpen(true)} />
-              )}
 
               {addressOpen && (
                 <DeskLinkedInField
