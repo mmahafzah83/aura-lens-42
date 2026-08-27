@@ -835,74 +835,121 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         <div className="ask-grid" style={{ height: "100%", maxWidth: 1400, margin: "0 auto", padding: "16px 20px", boxSizing: "border-box" }}>
           <section style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
             <div ref={listRef} aria-live="polite" aria-atomic="false" style={{ flex: 1, overflowY: "auto", paddingRight: 4 }}>
-              {/* The Mirror takes over the opener slot on the day it fires. */}
+              {/* ── THE SLOT: exactly one card, ever. ── */}
               {messages.length === 0 && (
-                <DeskMirror
-                  onDecided={setMirrorShowing}
-                  onOpenDraft={(id) => {
-                    const next = new URLSearchParams(window.location.search);
-                    next.set("tab", "authority");
-                    next.set("draft", id);
-                    window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
-                    window.dispatchEvent(new PopStateEvent("popstate"));
-                    onClose();
+                <DeskSlot
+                  card={card}
+                  probe={
+                    <DeskMirror
+                      onDecided={(show) => { setMirrorDecided(true); setMirrorShowing(show); }}
+                      onOpenDraft={(id) => {
+                        const next = new URLSearchParams(window.location.search);
+                        next.set("tab", "authority");
+                        next.set("draft", id);
+                        window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
+                        window.dispatchEvent(new PopStateEvent("popstate"));
+                        onClose();
+                      }}
+                    />
+                  }
+                  render={{
+                    /* The Mirror is the probe itself — the slot shows it in place. */
+                    mirror: () => null,
+
+                    /* Not a spinner, not a void: the mark, parked, on the card ground. */
+                    loading: () => (
+                      <div data-testid="desk-resting" style={{
+                        minHeight: 220, display: "flex", alignItems: "center", justifyContent: "center",
+                        background: "var(--surface-card)", borderRadius: 16,
+                      }}>
+                        <AuraMark size={64} state="resting" />
+                      </div>
+                    ),
+
+                    return: () => (
+                      <DeskReturnCard
+                        data={returnData}
+                        onReady={(show, d) => { setReturnDecided(true); setReturnData(show ? d : null); }}
+                        onPickUp={() => { setReturnData(null); void send("Pick up where we left off."); }}
+                        onOvernight={() => { setReturnData(null); setSlotAsk(null); }}
+                        onNew={() => { setReturnData(null); setSlotAsk(null); taRef.current?.focus(); }}
+                      />
+                    ),
+
+                    /* First run only, and never beside the opener. */
+                    priority: () => (
+                      <DeskPriorityAsk
+                        onOpenWatch={() => setWatchOpen(true)}
+                        onAnswered={() => { void refreshDesk(); }}
+                      />
+                    ),
+
+                    /* Asked for, never shown unasked. */
+                    ledger: () => (
+                      <div style={{ marginTop: 8 }}>
+                        <button
+                          type="button"
+                          className="ask-focusable"
+                          data-testid="desk-ledger-back"
+                          onClick={() => setSlotAsk(null)}
+                          style={{
+                            background: "transparent", border: 0, color: "var(--text-muted)",
+                            fontSize: 12.5, cursor: "pointer", padding: "6px 2px", minHeight: 44,
+                          }}
+                        >← Back</button>
+                        <DeskLedger
+                          onOpenDrafts={openDrafts}
+                          onOpenSignals={() => openSurface("intelligence")}
+                          onOpenTab={(t) => openSurface(t)}
+                        />
+                      </div>
+                    ),
+
+                    opener: () => (
+                      <div className="ask-answer-card" style={{ maxWidth: 620, marginTop: 24 }}>
+                        {opener ? (
+                          <>
+                            <Answer text={opener.text} />
+                            {opener.chips.length > 0 && (
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 14px" }}>
+                                {opener.chips.map((c, i) => {
+                                  /* The third chip is the way into the ledger, in this slot. */
+                                  const toLedger = i === 2 || /something else/i.test(c.prompt);
+                                  return (
+                                    <button
+                                      key={c.prompt}
+                                      type="button"
+                                      className="ask-focusable ask-chip"
+                                      onClick={() => (toLedger ? setSlotAsk("ledger") : send(c.prompt))}
+                                      style={i === 0 ? {
+                                        background: "var(--act)", border: 0, color: "var(--text-inverse)",
+                                        borderRadius: 999, padding: "7px 14px", fontSize: 12.5, cursor: "pointer",
+                                        display: "inline-flex", alignItems: "center", gap: 6,
+                                      } : {
+                                        background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                                        borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                                        display: "inline-flex", alignItems: "center", gap: 6,
+                                      }}
+                                    >{toLedger ? "What else is waiting?" : c.label}<ArrowUpRight size={13} /></button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6 }}>
+                              Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                            Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
+                          </div>
+                        )}
+                      </div>
+                    ),
                   }}
                 />
               )}
 
-              {messages.length === 0 && openerDone && !mirrorShowing && (
-                <div className="ask-answer-card" style={{ maxWidth: 620, marginTop: 24 }}>
-                  {opener ? (
-                    <>
-                      <Answer text={opener.text} />
-                      {opener.chips.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 14px" }}>
-                          {opener.chips.map((c, i) => (
-                            <button
-                              key={c.prompt}
-                              type="button"
-                              className="ask-focusable ask-chip"
-                              onClick={() => send(c.prompt)}
-                              style={i === 0 ? {
-                                background: "var(--act)", border: 0, color: "var(--text-inverse)",
-                                borderRadius: 999, padding: "7px 14px", fontSize: 12.5, cursor: "pointer",
-                                display: "inline-flex", alignItems: "center", gap: 6,
-                              } : {
-                                background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
-                                borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
-                                display: "inline-flex", alignItems: "center", gap: 6,
-                              }}
-                            >{c.label}<ArrowUpRight size={13} /></button>
-                          ))}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6 }}>
-                        Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {/* Heading removed — the opener card carries the surface. */}
-
-                      <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                        Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {messages.length === 0 && openerDone && (
-                <DeskLedger
-                  onOpenDrafts={openDrafts}
-                  onOpenSignals={() => openSurface("intelligence")}
-                  onOpenTab={(t) => openSurface(t)}
-                />
-              )}
-
-              {messages.length === 0 && openerDone && (
-                <DeskPriorityAsk onOpenWatch={() => setWatchOpen(true)} />
-              )}
 
               {addressOpen && (
                 <DeskLinkedInField
