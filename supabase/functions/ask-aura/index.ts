@@ -600,12 +600,36 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "open_surface",
+          description:
+            "Offer the member a way to the Aura surface where something lives. Performs no navigation and writes nothing — the member decides by tapping.",
+          parameters: {
+            type: "object",
+            properties: {
+              surface: { type: "string", enum: SURFACES, description: "The Aura surface that holds the answer." },
+              subject_id: {
+                type: "string",
+                description: "Optional. Only the id of a signal listed in ACTIVE SIGNALS for this member.",
+              },
+              reason: { type: "string", description: "Plain-language button label, 60 characters or fewer." },
+            },
+            required: ["surface", "reason"],
+          },
+        },
+      },
     ];
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-    type ToolResult = { tool: string; ok: boolean; label: string; payload: Record<string, unknown> };
+    type ToolResult = {
+      tool: string; ok: boolean; label: string; payload: Record<string, unknown>;
+      route?: { surface: string; subject_id: string | null };
+    };
+
 
     async function runTool(name: string, argsRaw: string): Promise<ToolResult> {
       let args: any = {};
