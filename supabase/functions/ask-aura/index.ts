@@ -672,7 +672,28 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "search_my_graph",
+          description:
+            "Search this member's own captures, documents, evidence and signals again, with a fresh standalone query. Read-only. Returns numbered sources you can cite.",
+          parameters: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "A standalone search query." },
+              kinds: {
+                type: "array",
+                description: "Optional. Restrict the search to these source kinds.",
+                items: { type: "string", enum: SOURCE_KINDS },
+              },
+            },
+            required: ["query"],
+          },
+        },
+      },
     ];
+
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
