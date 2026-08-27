@@ -12,7 +12,7 @@ import {
   capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen, saveDeskPrefs,
   type Capabilities, type CapabilityKey, type DeskPrefs,
 } from "@/components/desk/deskPrefs";
-import { cleanMoves, guardClaims, groundBold, HONEST_FAILURE } from "@/components/desk/deskMoves";
+import { cleanMoves, guardClaims, groundBold, honestFailure, answerLang } from "@/components/desk/deskMoves";
 import { cleanMemory, type CleanMemoryRow } from "@/components/desk/deskMemory";
 
 
@@ -147,8 +147,11 @@ export function parseLayers(raw: string): { plain: string; more: string; moves: 
   });
 
 
-  const moves = cleanMoves(buf.moves.join(" ").split("|"));
-  return { plain: buf.plain.join("\n").trim(), more: buf.more.join("\n").trim(), moves };
+  const plain = buf.plain.join("\n").trim();
+  const more = buf.more.join("\n").trim();
+  // O3 — the chips are written in the language of the answer they sit under.
+  const moves = cleanMoves(buf.moves.join(" ").split("|"), answerLang(`${plain}\n${more}`));
+  return { plain, more, moves };
 }
 
 
@@ -1126,7 +1129,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                           <Answer text={guardedPlain.text} size={15} color="var(--text-primary)" />
                           {(failedSave || (guardedPlain.stripped && verified.length === 0)) && (
                             <div data-testid="ask-honest-failure" style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: "2px 0 8px" }}>
-                              {HONEST_FAILURE}
+                              {honestFailure(answerLang(layers.plain))}
                             </div>
                           )}
                           {guardedMore.text && (

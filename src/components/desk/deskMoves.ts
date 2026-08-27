@@ -9,14 +9,19 @@
  *     verified action line proves it. Aura never reports its own work.
  */
 
-/** Internal name → the words a member would actually say. */
-const TOOL_LABELS: Record<string, string> = {
-  save_draft: "Save this draft",
-  open_drafts: "Open my drafts",
-  open_surface: "Open my drafts",
-  set_reminder: "Remind me tomorrow",
-  search_my_graph: "Search my vault",
-  search_vault: "Search my vault",
+/**
+ * Internal name → the words a member would actually say, in his language.
+ *
+ * O3: an Arabic answer used to arrive with English chips under it, because the
+ * mapping below only ever spoke English. The chips follow the answer.
+ */
+const TOOL_LABELS: Record<string, { en: string; ar: string }> = {
+  save_draft: { en: "Save this draft", ar: "احفظ هذه المسودة" },
+  open_drafts: { en: "Open my drafts", ar: "افتح مسوداتي" },
+  open_surface: { en: "Open my drafts", ar: "افتح مسوداتي" },
+  set_reminder: { en: "Remind me tomorrow", ar: "ذكّرني غدًا" },
+  search_my_graph: { en: "Search my vault", ar: "ابحث في سجلي" },
+  search_vault: { en: "Search my vault", ar: "ابحث في سجلي" },
 };
 
 /** Machine-shaped: snake_case, camelCase run-ons, or a bare function call. */
@@ -28,7 +33,7 @@ function fourWords(label: string): string {
 }
 
 /** At most three chips, plain words only, never a tool name. */
-export function cleanMoves(raw: string[]): string[] {
+export function cleanMoves(raw: string[], lang: "ar" | "en" = "en"): string[] {
   const out: string[] = [];
   for (const r of raw) {
     const t = String(r ?? "").trim().replace(/^[-•*\s]+/, "");
@@ -36,7 +41,8 @@ export function cleanMoves(raw: string[]): string[] {
     const key = t.toLowerCase().replace(/[^a-z0-9_]/g, "");
     const mapped = TOOL_LABELS[key];
     if (mapped) {
-      if (!out.includes(mapped)) out.push(mapped);
+      const label = lang === "ar" ? mapped.ar : mapped.en;
+      if (!out.includes(label)) out.push(label);
     } else {
       if (MACHINE.test(t.toLowerCase())) continue; // malformed: dropped silently
       const label = fourWords(t);
@@ -46,6 +52,7 @@ export function cleanMoves(raw: string[]): string[] {
   }
   return out;
 }
+
 
 /** Language that asserts a write happened. Only a row id may earn it. */
 const CLAIM =
@@ -100,8 +107,19 @@ export function guardClaims(text: string, verified: string[]): ClaimVerdict {
 }
 
 
-/** What the member is told when the write did not happen. */
-export const HONEST_FAILURE = "I could not save that. The draft is still here — try again?";
+/** What the member is told when the write did not happen — in his language. */
+export const honestFailure = (lang: "ar" | "en" = "en"): string =>
+  lang === "ar"
+    ? "تعذّر عليّ حفظ ذلك. المسودة ما زالت هنا — أجرّب مرة أخرى؟"
+    : "I could not save that. The draft is still here — try again?";
+export const HONEST_FAILURE = honestFailure("en");
+
+/** Arabic if the answer itself is written in Arabic. Chips follow the answer. */
+export function answerLang(text: string): "ar" | "en" {
+  const ar = (String(text ?? "").match(/[\u0600-\u06FF]/g) || []).length;
+  const la = (String(text ?? "").match(/[A-Za-z]/g) || []).length;
+  return ar + la > 0 && ar / (ar + la) > 0.2 ? "ar" : "en";
+}
 
 /**
  * Unbold any bolded phrase that names nothing in the member's own record.
