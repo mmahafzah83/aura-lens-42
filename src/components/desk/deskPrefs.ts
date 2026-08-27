@@ -161,3 +161,17 @@ export async function loadCapabilities(): Promise<Capabilities> {
   };
 }
 
+
+/**
+ * The capability a question needs before it can be answered honestly.
+ * Deliberately narrow: only asks that plainly require a thing he has not given.
+ */
+export function capabilityNeeded(text: string): CapabilityKey | null {
+  const t = text.toLowerCase();
+  const profile = /(my|the)\s+(linkedin\s+)?(profile|headline|about section|banner)/.test(t)
+    || /how\s+(does|do)\s+my\s+profile/.test(t);
+  if (profile) return "linkedin_profile";
+  const cv = /\b(cv|resume|résumé)\b/.test(t);
+  if (cv) return "cv_crosscheck";
+  return null;
+}
