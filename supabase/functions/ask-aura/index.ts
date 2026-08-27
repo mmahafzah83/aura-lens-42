@@ -1378,7 +1378,8 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
               const c = delta?.content;
               if (typeof c === "string" && c) {
                 text += c;
-                controller.enqueue(
+                if (secretaryTurn) continue; // held back; emitted once, trimmed
+
                   encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`),
                 );
               }
