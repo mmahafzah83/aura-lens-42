@@ -103,7 +103,15 @@ export function parseLayers(raw: string): { plain: string; more: string; moves: 
 
   let seenPlain = false;
   for (let i = 0; i < lines.length; i++) if (isMarker(lines[i], "§§PLAIN", i)) { seenPlain = true; break; }
-  if (!seenPlain) return { plain: text, more: "", moves: [] };
+  if (!seenPlain) {
+    // Fallback path gets the same guard as the main one: a final line that is
+    // only a partial or complete marker is being typed right now — drop it
+    // rather than flashing "§§PLAIN" on screen for a frame.
+    const last = lines[lines.length - 1].trim();
+    if (!text.endsWith("\n") && last.length > 0 && /^§+§?[A-Z]*$/.test(last))
+      return { plain: lines.slice(0, -1).join("\n"), more: "", moves: [] };
+    return { plain: text, more: "", moves: [] };
+  }
 
   let current: "none" | "plain" | "more" | "moves" = "none";
   const buf = { plain: [] as string[], more: [] as string[], moves: [] as string[] };
