@@ -27,9 +27,27 @@ export interface RewriteOptions {
   timeoutMs?: number;
 }
 
-const SELF_CONTAINED_CHARS = 60;
 const MAX_TURNS = 3;
 const HARD_TIMEOUT_MS = 4000;
+
+/**
+ * Rewrite only when the message NEEDS it. Length was the wrong signal: a long
+ * follow-up that is entirely anaphora needs rewriting, and a short
+ * self-contained question does not.
+ */
+const POINTERS =
+  /\b(that|this|it|they|them|those|these|the above|you just said)\b|ذلك|هذا|هذه|الذي|التي/i;
+/** A proper noun or a quoted phrase makes a message stand on its own. */
+const STANDS_ALONE = /["“”'']{1}[^"“”'']{2,}["“”'']{1}|(?<![.!?]\s)(?<!^)\b[A-Z][a-zA-Z]{2,}\b/;
+
+function needsRewrite(msg: string): boolean {
+  const t = (msg || "").trim();
+  if (!t) return false;
+  if (!POINTERS.test(t)) return false;
+  if (STANDS_ALONE.test(t)) return false;
+  return true;
+}
+
 
 const SYSTEM_PROMPT =
   "Rewrite the user's latest message as a standalone search query that carries forward any subject, company, document or topic from the recent conversation. Output ONLY the query, no quotes, no explanation, maximum 25 words.";
