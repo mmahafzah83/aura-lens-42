@@ -392,9 +392,10 @@ serve(withObserve("ask-aura", async (req) => {
     // [n] the prompt block uses (formatRows numbers rows 1..n in order).
     // APPEND-ONLY: search_my_graph pushes onto this same array and continues the
     // numbering. A number, once assigned, is never reused or renumbered.
-    const sources: { n: number; title: string; kind: string; date: string | null; url: string | null }[] =
+    const sources: { n: number; key: string; title: string; kind: string; date: string | null; url: string | null }[] =
       retrievedRows.map((r, i) => ({
         n: i + 1,
+        key: `${r.source_kind}:${r.source_id}`,
         title: (r.title && String(r.title).trim()) || `${String(r.source_kind).replace(/_/g, " ")} ${i + 1}`,
         kind: r.source_kind,
         date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
