@@ -1460,7 +1460,17 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
           }
 
           // The summariser must see the answer the member actually read.
-          fullReply = lastText;
+          fullReply = secretaryTurn ? stripAfterMore(lastText) : lastText;
+
+          if (secretaryTurn && fullReply) {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ choices: [{ delta: { content: fullReply } }] })}\n\n`,
+              ),
+            );
+          }
+
+
 
 
           // One machine line per tool that ran, before the existing events.
