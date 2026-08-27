@@ -1520,13 +1520,9 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
               const delta = parsed?.choices?.[0]?.delta;
               const c = delta?.content;
               if (typeof c === "string" && c) {
+                // N4 — every answer is held back and emitted once, after the
+                // layer contract has been enforced on the whole text.
                 text += c;
-                // Secretary turns are held back and emitted once, trimmed.
-                if (!secretaryTurn) {
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`),
-                  );
-                }
               }
 
               if (collectTools && Array.isArray(delta?.tool_calls)) {
