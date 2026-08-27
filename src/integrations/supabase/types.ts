@@ -1270,6 +1270,7 @@ export type Database = {
           cv_crosscheck_at: string | null
           default_template: string | null
           default_theme: string | null
+          desk_prefs: Json
           display_name_override: string | null
           excluded_at: string | null
           excluded_reason: string | null
@@ -1339,6 +1340,7 @@ export type Database = {
           cv_crosscheck_at?: string | null
           default_template?: string | null
           default_theme?: string | null
+          desk_prefs?: Json
           display_name_override?: string | null
           excluded_at?: string | null
           excluded_reason?: string | null
@@ -1408,6 +1410,7 @@ export type Database = {
           cv_crosscheck_at?: string | null
           default_template?: string | null
           default_theme?: string | null
+          desk_prefs?: Json
           display_name_override?: string | null
           excluded_at?: string | null
           excluded_reason?: string | null
