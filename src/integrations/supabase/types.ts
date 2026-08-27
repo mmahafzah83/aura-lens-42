@@ -1241,6 +1241,77 @@ export type Database = {
         }
         Relationships: []
       }
+      desk_eval_questions: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          expects: string
+          id: string
+          question: string
+          trap: boolean
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          expects: string
+          id?: string
+          question: string
+          trap?: boolean
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          expects?: string
+          id?: string
+          question?: string
+          trap?: boolean
+        }
+        Relationships: []
+      }
+      desk_eval_runs: {
+        Row: {
+          answer: string | null
+          failure_kind: string | null
+          id: string
+          mode_detected: string | null
+          notes: string | null
+          question_id: string
+          run_at: string
+          verdict: string | null
+        }
+        Insert: {
+          answer?: string | null
+          failure_kind?: string | null
+          id?: string
+          mode_detected?: string | null
+          notes?: string | null
+          question_id: string
+          run_at?: string
+          verdict?: string | null
+        }
+        Update: {
+          answer?: string | null
+          failure_kind?: string | null
+          id?: string
+          mode_detected?: string | null
+          notes?: string | null
+          question_id?: string
+          run_at?: string
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "desk_eval_runs_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "desk_eval_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diagnostic_profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"]
