@@ -742,6 +742,34 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
           };
         }
 
+        if (name === "open_surface") {
+          // Read-only by construction: validate, return. No writes, no navigation.
+          const surface = typeof args.surface === "string" ? args.surface.trim() : "";
+          if (!(SURFACES as readonly string[]).includes(surface)) {
+            return { tool: name, ok: false, label: "Couldn't open that", payload: { ok: false, error: "unknown surface" } };
+          }
+          const label = (typeof args.reason === "string" ? args.reason.trim() : "").slice(0, 60) || "Open it in Aura";
+          // An id only survives if it is one of THIS member's own loaded signals.
+          const rawId = typeof args.subject_id === "string" ? args.subject_id.trim() : "";
+          let subject_id: string | null = null;
+          if (rawId) {
+            if (UUID_RE.test(rawId) && sigs.some((s) => s.id === rawId)) {
+              subject_id = rawId;
+            } else {
+              const refIdx = citations.findIndex((c) => c.ref === rawId.replace(/[[\]]/g, ""));
+              if (refIdx >= 0 && UUID_RE.test(String(citations[refIdx].id))) subject_id = String(citations[refIdx].id);
+            }
+          }
+          return {
+            tool: name,
+            ok: true,
+            label,
+            payload: { ok: true, surface, subject_id, label },
+            route: { surface, subject_id },
+          };
+        }
+
+
         return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "unknown tool" } };
       } catch (e) {
         console.error("tool threw", name, e);
