@@ -842,7 +842,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 2px" }}>
                               {layers.moves.map((mv, mi) => (
                                 <button
-                                  key={mv} type="button" className="ask-focusable ask-chip"
+                                  key={`${mi}:${mv}`} type="button" className="ask-focusable ask-chip"
                                   data-testid="ask-move-chip"
                                   onClick={() => send(mv)}
                                   style={mi === 0 ? {
