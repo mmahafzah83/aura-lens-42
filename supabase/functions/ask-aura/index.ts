@@ -1088,7 +1088,7 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
               identity_loaded: !!profile,
             },
             citations,
-            sources,
+            sources: sources.map(({ key: _k, ...s }) => s),
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(contextEvent)}\n\n`));
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
