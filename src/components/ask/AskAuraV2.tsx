@@ -570,7 +570,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       setDeskQuiet();
     }
     setLoading(false);
-  }, [context, loading, messages, persist]);
+  }, [caps, context, loading, messages, persist, prefs]);
 
   useEffect(() => {
     if (!open) { firedRef.current = false; return; }
