@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { canonicalHandle } from "@/lib/linkedinAddress";
+
 
 /**
  * deskPrefs — one jsonb column on diagnostic_profiles, read and written the
