@@ -896,7 +896,10 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 </div>
               )}
 
-              {!loading && followUps.length > 0 && (
+              {/* The model's own moves replace these for the answer that carries
+                  them; with no moves, the generated follow-ups render as today. */}
+              {!loading && followUps.length > 0 && lastMoves.length === 0 && (
+
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "6px 0 16px" }}>
                   {followUps.map(f => (
                     <button key={f} type="button" className="ask-focusable ask-chip" onClick={() => send(f)} style={{
