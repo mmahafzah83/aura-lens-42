@@ -1324,10 +1324,31 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
 
     type PumpOut = { text: string; toolCalls: { id: string; name: string; args: string }[] };
 
+    /**
+     * L1.2 — Secretary work is a confirmation, not a briefing. When the member
+     * asked for an errand ("save this", "remind me", "open my drafts"), the
+     * professional restatement is noise: everything from §§MORE onward is cut
+     * and only the plain layer plus the machine's own action line survives.
+     * The answer is held back rather than streamed so nothing that gets cut is
+     * ever seen on screen first.
+     */
+    const lastUserText = String(
+      [...messages].reverse().find((m: any) => m?.role === "user")?.content ?? "",
+    );
+    const secretaryTurn = /\b(save (it|this|that)|save to (my )?drafts?|put (it|this|that) in|remind me|chase me|don'?t let me forget|open (my|the)|take me to)\b/i
+      .test(lastUserText);
+
+    const stripAfterMore = (text: string): string => {
+      const i = text.search(/§§MORE|§§MOVES/);
+      const head = i === -1 ? text : text.slice(0, i);
+      return head.replace(/§§PLAIN\s*/, "").trim();
+    };
+
     const stream = new ReadableStream({
       async start(controller) {
         let fullReply = "";
         const actions: ToolResult[] = [];
+
 
         const pump = async (body: ReadableStream<Uint8Array>, collectTools: boolean): Promise<PumpOut> => {
           const reader = body.getReader();
