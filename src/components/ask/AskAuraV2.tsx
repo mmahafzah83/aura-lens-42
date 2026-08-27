@@ -811,11 +811,15 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                   // The layers. A malformed answer degrades to the whole text.
                   const layers = parseLayers(m.content);
                   const isOpen = !!expanded[i];
+                  // A failure is not a finished object — errors stay outside the card.
+                  if (m.isError) return (
+                    <div key={i} style={{ margin: "14px 0", maxWidth: 720 }}>
+                      <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>{m.content}</div>
+                    </div>
+                  );
                   return (
-                  <div key={i} style={{ margin: "14px 0", maxWidth: 720 }}>
-                    {m.isError
-                      ? <div style={{ fontSize: 14, color: "var(--text-secondary)" }}>{m.content}</div>
-                      : <>
+                  <div key={i} className="ask-answer-card" style={{ margin: "14px 0", maxWidth: 720 }}>
+                    {<>
                           <Answer text={layers.plain} size={15} color="var(--text-primary)" />
                           {layers.more && (
                             <>
