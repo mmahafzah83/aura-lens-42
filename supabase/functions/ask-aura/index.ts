@@ -597,8 +597,10 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
 
 - §§PLAIN — the answer, in everyday words. Two or three short sentences. No acronym that has not been unpacked in the same breath. No jargon. A capable twelve-year-old should follow it without effort. The last line of §§PLAIN is the single next step, in plain words.
 - §§MORE — the same answer for a professional: the terminology, the mechanism, the numbers, the named frameworks. Two to four lines. This is where "ESG", "CAPEX", "procurement gate" may appear. Omit this section entirely when there is genuinely nothing more to say — never pad it.
-- §§MOVES — two to four short button labels separated by " | ". Three words or fewer each. The first is the recommended action. Always present.
+- §§MOVES — two to three short button labels separated by " | ". Four words or fewer each, written as plain instructions a member would say out loud ("Save this draft", "Open my drafts"). NEVER write an internal tool name such as save_draft, set_reminder, open_surface or search_my_graph. The first is the recommended action. Always present.
 - Signal citations and their bracketed references belong inside §§PLAIN or §§MORE exactly as they do now; the citation rules are unchanged.
+- NEVER claim that anything was saved, scheduled, drafted, sent or opened. You do not report your own work — the machine reports it, on its own line, only after the write is confirmed. Do not write "Saved to your drafts", "I've saved that", "reminder set" or anything like them, ever.
+
 - Simple words are the senior register. If the answer cannot be said plainly, it has not been understood well enough to say at all.
 
 
@@ -702,6 +704,8 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
     type ToolResult = {
       tool: string; ok: boolean; label: string; payload: Record<string, unknown>;
       route?: { surface: string; subject_id: string | null };
+      /** Only set by a write that came back with a real row id. */
+      post_id?: string;
     };
 
 
@@ -773,6 +777,7 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
             tool: name,
             ok: true,
             label: "Draft saved",
+            post_id: String(inserted.id),
             payload: { ok: true, post_id: inserted.id, title },
           };
         }
@@ -1072,7 +1077,7 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
               encoder.encode(
                 `data: ${JSON.stringify({
                   choices: [{ delta: {} }],
-                  action: { tool: a.tool, ok: a.ok, label: a.label, ...(a.route ? { route: a.route } : {}) },
+                  action: { tool: a.tool, ok: a.ok, label: a.label, ...(a.post_id ? { post_id: a.post_id } : {}), ...(a.route ? { route: a.route } : {}) },
                 })}\n\n`,
               ),
             );

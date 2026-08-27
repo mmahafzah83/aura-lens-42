@@ -9,14 +9,15 @@ import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
 import DeskSlot, { type DeskCardKind } from "@/components/desk/DeskSlot";
 import DeskReturnCard, { loadReturnCard, type ReturnCardData } from "@/components/desk/DeskReturnCard";
 import {
-  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn,
+  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen, saveDeskPrefs,
   type Capabilities, type CapabilityKey, type DeskPrefs,
 } from "@/components/desk/deskPrefs";
+import { cleanMoves, guardClaims, HONEST_FAILURE } from "@/components/desk/deskMoves";
 import { cleanMemory, type CleanMemoryRow } from "@/components/desk/deskMemory";
 
 
 import { beginDeskRun, endDeskRun, setDeskFound } from "@/components/desk/deskDockBus";
-import { Settings2, X, Send, ArrowUpRight, Eye, Quote, Gauge, Compass, History, Radar, PenLine, Inbox } from "lucide-react";
+import { Settings2, X, Send, ArrowUpRight, Eye, Quote, Gauge, Compass, History, Radar, PenLine, Inbox, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import AuraMark from "@/components/brand/AuraMark";
@@ -79,7 +80,7 @@ const SURFACES = [
 ] as const;
 
 interface ActionRoute { surface: string; subject_id: string | null }
-interface ActionLine { tool: string; ok: boolean; label: string; route?: ActionRoute }
+interface ActionLine { tool: string; ok: boolean; label: string; route?: ActionRoute; /** Only present when the write returned a real row id. */ post_id?: string }
 
 type Msg = { role: "user" | "assistant"; content: string; isError?: boolean; actions?: ActionLine[] };
 
@@ -102,7 +103,6 @@ interface Position {
   voiceLearnedFrom: number;
 }
 interface MemoryRow { id: string; session_date: string; summary: string; actions_committed?: string[] | null }
-interface PromptSeed { label: string; text: string }
 
 const isAr = (s: string) => AR.test(s || "");
 
@@ -147,7 +147,7 @@ export function parseLayers(raw: string): { plain: string; more: string; moves: 
   });
 
 
-  const moves = buf.moves.join(" ").split("|").map(s => s.trim()).filter(Boolean).slice(0, 4);
+  const moves = cleanMoves(buf.moves.join(" ").split("|"));
   return { plain: buf.plain.join("\n").trim(), more: buf.more.join("\n").trim(), moves };
 }
 
@@ -250,8 +250,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [position, setPosition] = useState<Position | null>(null);
   const [memory, setMemory] = useState<CleanMemoryRow[]>([]);
   /** What the answers are made of, counted from his own rows. */
-  const [graph, setGraph] = useState<{ captures: number; signals: number; posts: number; drafts: number; score: number | null } | null>(null);
-  const [seeds, setSeeds] = useState<PromptSeed[]>([]);
+  const [graph, setGraph] = useState<{ captures: number; signals: number; openSignals: number; posts: number; drafts: number; score: number | null } | null>(null);
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [opener, setOpener] = useState<{ text: string; chips: { label: string; prompt: string }[] } | null>(null);
   /** True only while a Mirror card holds the slot. Two voices, never. */
@@ -301,7 +300,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     onClose();
   };
   const openSignal = (id: string) => openSurface("intelligence", id);
-  const openDrafts = () => openSurface("drafts");
+  /** Only ever called with a verified row id — there is no fallback to home. */
+  const openDraft = (postId: string) => {
+    const next = new URLSearchParams(window.location.search);
+    next.set("tab", "drafts");
+    next.set("post", postId);
+    next.delete("signal");
+    window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    onClose();
+  };
 
 
   /* ── Load the rail from real rows only ── */
@@ -312,15 +320,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       const uid = session?.user?.id;
       if (!uid) return;
 
-      const [postsRes, voiceRes, memRes, sigRes, draftRes, captureRes, signalCountRes, postCountRes, scoreRes] = await Promise.all([
+      const [postsRes, voiceRes, memRes, sigRes, draftRes, captureRes, signalCountRes, postCountRes, openSignalRes, scoreRes] = await Promise.all([
         supabase.from("linkedin_posts").select("source_type, tracking_status, theme, theme_tags").eq("user_id", uid),
         supabase.from("authority_voice_profiles").select("tone, example_posts").eq("user_id", uid).eq("is_primary", true).eq("mode_key", "default").maybeSingle(),
         supabase.from("aura_conversation_memory").select("id, session_date, summary, actions_committed").eq("user_id", uid).is("role", null).not("summary", "is", null).order("created_at", { ascending: false }).limit(6),
         supabase.from("strategic_signals").select("id, signal_title, theme_tags, priority_score").eq("user_id", uid).order("priority_score", { ascending: false }).limit(3),
         supabase.from("linkedin_posts").select("id").eq("user_id", uid).eq("tracking_status", "draft"),
-        supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid).neq("source_type", "aura_agent"),
+        supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid),
         supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid),
         supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("status", "active"),
         supabase.from("score_snapshots").select("score").eq("user_id", uid).order("created_at", { ascending: false }).limit(1),
       ]);
 
@@ -342,27 +351,17 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       /* Broken rows are dropped, never shown: see deskMemory.cleanMemory. */
       setMemory(cleanMemory(((memRes.data as any[]) || []) as any));
 
-      const sigs = ((sigRes.data as any[]) || []);
+      void sigRes;
       const drafts = ((draftRes.data as any[]) || []).length;
       setGraph({
         captures: captureRes.count ?? 0,
         signals: signalCountRes.count ?? 0,
+        openSignals: openSignalRes.count ?? 0,
         posts: postCountRes.count ?? 0,
         drafts,
         score: ((scoreRes.data as any[]) || [])[0]?.score ?? null,
       });
-      const s: PromptSeed[] = [];
-      if (sigs[0]) {
-        const full = String(sigs[0].signal_title);
-        const short = full.length <= 34 ? full : `${full.slice(0, 34).replace(/\s+\S*$/, "").trim()}…`;
-        s.push({ label: `Why does “${short}” matter?`, text: `Why does the signal "${sigs[0].signal_title}" matter for me right now?` });
-      }
 
-      if (sigs[1]) s.push({ label: "What should I write next?", text: `Given my live signals, what should I write next and what is the hook?` });
-      if (top) s.push({ label: `Am I too narrow on ${top[0]}?`, text: `${top[1]} of my ${live.length} live posts are about ${top[0]}. Am I too concentrated?` });
-      if (drafts > 0) s.push({ label: `Which of my ${drafts} drafts first?`, text: `I have ${drafts} drafts waiting. Which one should I finish first and why?` });
-      if (!s.length) s.push({ label: "What can you see about me?", text: "What can you actually see in my graph right now?" });
-      setSeeds(s.slice(0, 4));
     })();
   }, [open]);
 
@@ -572,7 +571,13 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 r && typeof r.surface === "string"
                   ? { surface: r.surface, subject_id: typeof r.subject_id === "string" ? r.subject_id : null }
                   : undefined;
-              gotActions.push({ tool: String(j.action.tool || ""), ok: !!j.action.ok, label: j.action.label, route });
+              gotActions.push({
+                tool: String(j.action.tool || ""),
+                ok: !!j.action.ok,
+                label: j.action.label,
+                post_id: typeof j.action.post_id === "string" ? j.action.post_id : undefined,
+                route,
+              });
             }
             const delta = j?.choices?.[0]?.delta?.content;
             if (typeof delta === "string" && delta) {
@@ -712,15 +717,35 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     );
   };
 
-  /* One heading grammar for every section: icon, then label. */
-  const sectionHead = (Icon: any, label: string) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-      <Icon size={18} strokeWidth={1.7} color="var(--text-muted)" aria-hidden="true" />
-      <span style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-        {label}
-      </span>
-    </div>
-  );
+  /* One heading grammar for every section: icon, label, and the fold. */
+  const sectionHead = (key: string, Icon: any, label: string) => {
+    const isOpen = panelOpen(prefs, key);
+    return (
+      <button
+        type="button"
+        className="ask-focusable"
+        aria-expanded={isOpen}
+        onClick={async () => {
+          const merged = await saveDeskPrefs(prefs, { panel_open: { [key]: !isOpen } });
+          setPrefs(merged);
+        }}
+        style={{
+          display: "flex", alignItems: "center", gap: 8, width: "100%", minHeight: 36,
+          background: "transparent", border: 0, padding: 0, marginBottom: isOpen ? 10 : 0, cursor: "pointer",
+        }}
+      >
+        <Icon size={18} strokeWidth={1.7} color="var(--text-muted)" aria-hidden="true" />
+        <span style={{ ...MONO, fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--text-muted)", flex: 1, textAlign: "left" }}>
+          {label}
+        </span>
+        <ChevronDown
+          size={15} strokeWidth={1.8} color="var(--text-muted)" aria-hidden="true"
+          style={{ transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 160ms ease" }}
+        />
+      </button>
+    );
+  };
+
 
   const num = (n: number | string) => (
     <span style={{ ...MONO, fontVariantNumeric: "tabular-nums", color: "var(--text-primary)" }}>{n}</span>
@@ -755,21 +780,21 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       {/* 1 — What I can see: the single most reassuring line on the panel. */}
       {panelOn(prefs, "scope") && (
         <div data-testid="rail-scope">
-          {sectionHead(Eye, "What I can see")}
-          <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+          {sectionHead("scope", Eye, "What I can see")}
+          {panelOpen(prefs, "scope") && <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
             {!graph ? "Counting your rows…"
               : (graph.captures + graph.signals + graph.posts) === 0
                 ? "Nothing in your vault yet, so there is nothing for me to read."
-                : <>Your {num(graph.captures)} captures, {num(graph.signals)} signals, {num(graph.posts)} posts.</>}
-          </div>
+                : <>Your {num(graph.captures)} captures, {num(graph.signals)} signals, {num(graph.openSignals)} still open, {num(graph.posts)} posts.</>}
+          </div>}
         </div>
       )}
 
       {/* 2 — Used in this answer: the citation registry, each row openable. */}
       {panelOn(prefs, "cited") && (
         <div data-testid="rail-cited">
-          {sectionHead(Quote, "Used in this answer")}
-          {cited.length === 0 && citedSourceRows.length === 0 ? (
+          {sectionHead("cited", Quote, "Used in this answer")}
+          {panelOpen(prefs, "cited") && (cited.length === 0 && citedSourceRows.length === 0 ? (
             <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>Nothing cited yet.</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -818,15 +843,15 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 </button>
               ))}
             </div>
-          )}
+          ))}
         </div>
       )}
 
       {/* 3 — Where you stand: one number, one voice line. Never a third. */}
       {panelOn(prefs, "standing") && (
         <div data-testid="rail-standing">
-          {sectionHead(Gauge, "Where you stand")}
-          <div style={{ fontSize: 15, color: "var(--text-primary)" }}>
+          {sectionHead("standing", Gauge, "Where you stand")}
+          {panelOpen(prefs, "standing") && <><div style={{ fontSize: 15, color: "var(--text-primary)" }}>
             {graph && graph.score != null
               ? <span style={{ ...MONO, fontVariantNumeric: "tabular-nums" }}>{graph.score}/100</span>
               : <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>No score recorded yet.</span>}
@@ -835,35 +860,35 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
             {position && position.voiceTone
               ? <>Voice: {position.voiceTone}{position.voiceLearnedFrom > 0 ? ` — learned from ${position.voiceLearnedFrom} of your posts` : ""}</>
               : "No voice profile learned yet — Aura needs more of your own writing first."}
-          </div>
+          </div></>}
         </div>
       )}
 
       {/* 4 — Jump to: the four places he actually uses. */}
       {panelOn(prefs, "jump") && (
         <div data-testid="rail-jump">
-          {sectionHead(Compass, "Jump to")}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {sectionHead("jump", Compass, "Jump to")}
+          {panelOpen(prefs, "jump") && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {jumpRow(Radar, "Signals", graph && graph.signals > 0 ? String(graph.signals) : null, () => openSurface("intelligence"))}
             {jumpRow(PenLine, "Write", graph && graph.drafts > 0 ? `${graph.drafts} drafts` : null, () => openSurface("authority"))}
             {jumpRow(Inbox, "Capture", graph && graph.captures > 0 ? String(graph.captures) : null, () => openSurface("home"))}
             {jumpRow(Gauge, "Where you stand", graph && graph.score != null ? `${graph.score}/100` : null, () => openSurface("influence"))}
-          </div>
+          </div>}
         </div>
       )}
 
       {/* Last, and only when a row survived the filter. */}
       {panelOn(prefs, "memory") && memory.length > 0 && (
         <div data-testid="rail-memory">
-          {sectionHead(History, "What I remember")}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {sectionHead("memory", History, "What I remember")}
+          {panelOpen(prefs, "memory") && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {memory.map(m => (
               <div key={m.id} style={{ fontSize: 12.5, color: "var(--text-secondary)", lineHeight: 1.55 }}>
                 <div style={{ ...MONO, fontSize: 10.5, color: "var(--text-muted)" }}>Noted {m.session_date}</div>
                 <div className="ask-clamp-2">{m.text}</div>
               </div>
             ))}
-          </div>
+          </div>}
         </div>
       )}
     </aside>
@@ -1002,7 +1027,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                           }}
                         >← Back</button>
                         <DeskLedger
-                          onOpenDrafts={openDrafts}
+                          onOpenDrafts={() => openSurface("drafts")}
                           onOpenSignals={() => openSurface("intelligence")}
                           onOpenTab={(t) => openSurface(t)}
                         />
@@ -1077,6 +1102,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 ) : (() => {
                   // The layers. A malformed answer degrades to the whole text.
                   const layers = parseLayers(m.content);
+                  /* A save is only real when the write came back with a row id. */
+                  const savedId = (m.actions || []).find(a => a.ok && a.tool === "save_draft" && a.post_id)?.post_id || null;
+                  const verified = (m.actions || []).filter(a => a.ok && (a.tool !== "save_draft" || !!a.post_id)).map(a => a.tool);
+                  const guardedPlain = guardClaims(layers.plain, verified);
+                  const guardedMore = guardClaims(layers.more, verified);
+                  const failedSave = (m.actions || []).some(a => a.tool === "save_draft" && (!a.ok || !a.post_id));
                   const isOpen = !!expanded[i];
                   // A failure is not a finished object — errors stay outside the card.
                   if (m.isError) return (
@@ -1087,8 +1118,13 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                   return (
                   <div key={i} className="ask-answer-card" style={{ margin: "14px 0", maxWidth: 720 }}>
                     {<>
-                          <Answer text={layers.plain} size={15} color="var(--text-primary)" />
-                          {layers.more && (
+                          <Answer text={guardedPlain.text} size={15} color="var(--text-primary)" />
+                          {(failedSave || guardedPlain.stripped) && (
+                            <div data-testid="ask-honest-failure" style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: "2px 0 8px" }}>
+                              {HONEST_FAILURE}
+                            </div>
+                          )}
+                          {guardedMore.text && (
                             <>
                               <button
                                 type="button"
@@ -1104,7 +1140,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                               >{isOpen ? "Less" : "Say more"}</button>
                               {isOpen && (
                                 <div style={{ marginTop: 8 }}>
-                                  <Answer text={layers.more} size={13.8} color="var(--text-secondary)" />
+                                  <Answer text={guardedMore.text} size={13.8} color="var(--text-secondary)" />
                                 </div>
                               )}
                             </>
@@ -1143,9 +1179,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                         </span>
                       </div>
                     ))}
-                    {(m.actions || []).some(a => a.ok && a.tool === "save_draft") && (
+                    {savedId && (
                       <div style={{ marginTop: 10 }}>
-                        <button type="button" className="ask-focusable ask-chip" onClick={openDrafts} style={{
+                        <button type="button" className="ask-focusable ask-chip" onClick={() => openDraft(savedId)} style={{
                           background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
                           borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                           display: "inline-flex", alignItems: "center", gap: 6,
@@ -1250,14 +1286,6 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 </button>
               </form>
 
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                {seeds.map(s => (
-                  <button key={s.text} type="button" className="ask-focusable ask-chip" onClick={() => send(s.text)} style={{
-                    background: "transparent", border: "1px solid var(--rule-outer)", color: "var(--text-secondary)",
-                    borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
-                  }}>{s.label}</button>
-                ))}
-              </div>
             </div>
           </section>
 
