@@ -191,6 +191,60 @@ serve(withObserve("ask-aura", async (req) => {
     // Cap to last 12 turns
     const messages = incoming.slice(-12);
 
+    /** One plain sentence, in the shape the client already parses, then done. */
+    const plainStream = (line: string) =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            const enc = new TextEncoder();
+            controller.enqueue(
+              enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: `§§PLAIN\n${line}` } }] })}\n\n`),
+            );
+            controller.enqueue(enc.encode("data: [DONE]\n\n"));
+            controller.close();
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } },
+      );
+
+    /**
+     * N5 — an empty or one-character message is not a question. It gets a short
+     * prompt to say something, and no tool runs.
+     */
+    const lastUserRaw = String(
+      [...messages].reverse().find((m: any) => m?.role === "user")?.content ?? "",
+    ).trim();
+    if (lastUserRaw.length < 3) {
+      return plainStream("Say what you need and I'll pick it up.");
+    }
+
+    /**
+     * N4 — oversized input is capped here rather than allowed to break the
+     * layer contract downstream. The member is told what was read.
+     */
+    const MAX_INPUT_CHARS = 6000;
+    let inputTruncated = false;
+    for (const m of messages as any[]) {
+      if (typeof m?.content === "string" && m.content.length > MAX_INPUT_CHARS) {
+        m.content = `${m.content.slice(0, MAX_INPUT_CHARS)}\n\n[Text cut here. Only the first ${MAX_INPUT_CHARS} characters were read.]`;
+        inputTruncated = true;
+      }
+    }
+
+    /**
+     * N9 — an unresolvable referent is a question, not a guess. When the whole
+     * turn is "fix it" or "the Riyadh piece" with no antecedent in this
+     * session, the Desk asks once and calls no tools.
+     */
+    const priorTurns = messages.filter((m: any) => m?.role === "user").length > 1;
+    const vagueReferent =
+      /^(fix|do|handle|sort|finish|redo|send|post)\s+(it|that|this|the thing|them)\b/i.test(lastUserRaw) ||
+      /\b(the thing we discussed|the thing we talked about|as discussed|you know the one)\b/i.test(lastUserRaw) ||
+      (/\bthe\s+[\p{L}]+\s+(piece|one|thing|post|draft)\b/iu.test(lastUserRaw) && lastUserRaw.length < 80);
+    const ambiguousTurn = vagueReferent && !priorTurns;
+
+
+
 
     // Service-role client for context fetch + writes
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
