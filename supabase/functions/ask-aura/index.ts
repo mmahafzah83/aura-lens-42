@@ -1009,40 +1009,62 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
         };
 
         try {
-          const first = await pump(firstBody, true);
-          fullReply = first.text;
+          // Up to two tool rounds, then one forced toolless answer. Worst case is
+          // three gateway calls per turn; when no tool is called it stays at one.
+          const MAX_TOOL_ROUNDS = 2;
+          let convo: any[] = firstMessages;
+          let round = 0;
+          let lastText = "";
+          let pumped: PumpOut = await pump(firstBody, true);
 
-          if (first.toolCalls.length > 0) {
-            // Exactly one round of tool execution per request: the second call
-            // carries no tools, so the model cannot loop.
-            for (const call of first.toolCalls) {
-              actions.push(await runTool(call.name, call.args));
+          while (true) {
+            lastText = pumped.text || lastText;
+            if (pumped.toolCalls.length === 0) break; // this round's content is the answer
+
+            const results: ToolResult[] = [];
+            for (const call of pumped.toolCalls) {
+              const r = await runTool(call.name, call.args);
+              results.push(r);
+              // search_my_graph emits no action line — the sources are the receipt.
+              if (call.name !== "search_my_graph") actions.push(r);
             }
 
-            const assistantTurn = {
-              role: "assistant",
-              content: first.text || null,
-              tool_calls: first.toolCalls.map((t, i) => ({
-                id: t.id || `call_${i}`,
-                type: "function",
-                function: { name: t.name, arguments: t.args || "{}" },
+            convo = [
+              ...convo,
+              {
+                role: "assistant",
+                content: pumped.text || null,
+                tool_calls: pumped.toolCalls.map((t, i) => ({
+                  id: t.id || `call_${round}_${i}`,
+                  type: "function",
+                  function: { name: t.name, arguments: t.args || "{}" },
+                })),
+              },
+              ...pumped.toolCalls.map((t, i) => ({
+                role: "tool",
+                tool_call_id: t.id || `call_${round}_${i}`,
+                content: JSON.stringify(results[i]?.payload ?? { ok: false, error: "no result" }),
               })),
-            };
-            const toolTurns = first.toolCalls.map((t, i) => ({
-              role: "tool",
-              tool_call_id: t.id || `call_${i}`,
-              content: JSON.stringify(actions[i]?.payload ?? { ok: false, error: "no result" }),
-            }));
+            ];
+            round++;
 
-            const second = await callGateway([...firstMessages, assistantTurn, ...toolTurns], false);
-            if (second.ok && second.body) {
-              const out = await pump(second.body, false);
-              // The summariser must see the answer the member actually read.
-              fullReply = out.text || first.text;
-            } else {
-              console.error("second gateway call failed", second.status);
+            const withTools = round < MAX_TOOL_ROUNDS;
+            const next = await callGateway(convo, withTools);
+            if (!next.ok || !next.body) {
+              console.error("follow-up gateway call failed", next.status);
+              break;
+            }
+            pumped = await pump(next.body, withTools);
+            if (!withTools) {
+              // Final call: tools omitted, so the model must answer.
+              lastText = pumped.text || lastText;
+              break;
             }
           }
+
+          // The summariser must see the answer the member actually read.
+          fullReply = lastText;
+
 
           // One machine line per tool that ran, before the existing events.
           for (const a of actions) {
