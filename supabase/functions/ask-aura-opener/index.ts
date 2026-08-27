@@ -116,6 +116,23 @@ const json = (body: unknown, status = 200) =>
 const daysSince = (iso: string) =>
   Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
 
+/**
+ * Turns a source headline into something a person would say out loud:
+ * drops the interrogative opener, strips quotes and subtitles, removes
+ * consultant abstraction, and lowercases the lead word.
+ */
+export function plainSubject(rawTitle: string): string {
+  let s = String(rawTitle || "").trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g, "");
+  s = s.split(/\s+[—–|:]\s+/)[0].trim();          // drop subtitle / publisher tail
+  s = s.replace(/^(how|why|what|when|where|the way)\b\s*/i, "");
+  for (const re of JARGON) s = s.replace(new RegExp(re.source, "gi"), " ");
+  s = s.replace(/\s{2,}/g, " ").replace(/[.,;:]+$/, "").trim();
+  if (s.length > 90) s = s.slice(0, 90).replace(/\s+\S*$/, "");
+  if (s.split(/\s+/).filter(Boolean).length < 2) return "";
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
