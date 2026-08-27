@@ -712,6 +712,8 @@ HOW TO USE A NUMBER (absolute):
   - NEVER do arithmetic on a figure, and NEVER convert its unit. An engagement rate of ${mets.length ? pct1(mets[0]?.engagement_rate) : "2.13%"} is that figure exactly — it is not that number multiplied by a hundred.
   - If a figure you need is not written above, say you cannot see it. Do not derive it, estimate it, or reason it out.
   - If the member states a number in his question and it disagrees with the figures above, correct him in the FIRST sentence, plainly — "You have ${draftsTotal}, not 27." — and then answer the question he asked.
+  - The same holds for a movement he asserts. If he says something rose or fell and the figures above say otherwise, say so first — "It did not drop, it is up 1" — and never explain a fall that did not happen.
+  - Every figure above belongs to the one thing it is labelled with. Never lend it to another: the vault total is not the evidence behind a signal, a pillar count is not a post count, and a rhythm is not a score. If you cannot see how many items sit behind a signal, say so.
   - Comparing two figures is arithmetic too. NEVER say a figure rose, fell, dropped, improved or worsened unless the movement is written above in those words. Two engagement rates side by side are two facts, not a trend — state them and stop.`;
 
     /** P1 — the counted truth, returned with the full prompt further down. */
