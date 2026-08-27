@@ -1249,6 +1249,7 @@ export type Database = {
           expects: string
           id: string
           question: string
+          question_set: string
           trap: boolean
         }
         Insert: {
@@ -1258,6 +1259,7 @@ export type Database = {
           expects: string
           id?: string
           question: string
+          question_set?: string
           trap?: boolean
         }
         Update: {
@@ -1267,6 +1269,7 @@ export type Database = {
           expects?: string
           id?: string
           question?: string
+          question_set?: string
           trap?: boolean
         }
         Relationships: []
@@ -1274,6 +1277,8 @@ export type Database = {
       desk_eval_runs: {
         Row: {
           answer: string | null
+          axis_asks_when_unclear: string | null
+          axis_consistency: string | null
           failure_kind: string | null
           id: string
           mode_detected: string | null
@@ -1284,6 +1289,8 @@ export type Database = {
         }
         Insert: {
           answer?: string | null
+          axis_asks_when_unclear?: string | null
+          axis_consistency?: string | null
           failure_kind?: string | null
           id?: string
           mode_detected?: string | null
@@ -1294,6 +1301,8 @@ export type Database = {
         }
         Update: {
           answer?: string | null
+          axis_asks_when_unclear?: string | null
+          axis_consistency?: string | null
           failure_kind?: string | null
           id?: string
           mode_detected?: string | null
