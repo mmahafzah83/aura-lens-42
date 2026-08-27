@@ -177,6 +177,16 @@ serve(withObserve("ask-aura", async (req) => {
           .order("fetched_at", { ascending: false })
           .limit(3) as any,
       ),
+      // What Aura's own overnight agent found for this member while they were away.
+      safe(
+        admin
+          .from("agent_findings")
+          .select("title, source, implication, relevance_score, created_at, themes")
+          .eq("user_id", user_id)
+          .in("status", ["pending", "kept"])
+          .order("created_at", { ascending: false })
+          .limit(5) as any,
+      ),
     ]);
 
     const p: any = profile || {};
