@@ -1645,6 +1645,16 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         } catch (e) {
           console.error("stream tee error:", e);
+          // N3 — a failure is spoken, not swallowed. The stream closes cleanly
+          // with one plain sentence rather than zero bytes.
+          try {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ choices: [{ delta: { content: `§§PLAIN\n${FAILURE_LINE}` } }] })}\n\n`,
+              ),
+            );
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          } catch { /* the socket is already gone */ }
         } finally {
           controller.close();
         }
