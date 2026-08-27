@@ -986,6 +986,13 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       <style>{`
         .ask-grid { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 20px; }
         .ask-grid > aside { max-height: 100%; }
+        /* One answer shape: every answer, and the opener, is a finished object. */
+        .ask-answer-card {
+          background: var(--surface-card);
+          border: 1px solid var(--rule-outer);
+          border-radius: 20px;
+          padding: 16px 18px 14px;
+        }
         /* Keyboard users must see where they are. Mouse users are untouched. */
         [data-testid="ask-aura-v2"] .ask-focusable:focus-visible {
           outline: 2px solid var(--act);
