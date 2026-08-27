@@ -353,12 +353,41 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
     const [c, p] = await Promise.all([loadCapabilities(), loadDeskPrefs()]);
     setCaps(c);
     if (p) setPrefs(p.prefs);
+    setPrefsLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setPrefsLoaded(false); setSlotAsk(null); return; }
     void refreshDesk();
   }, [open, refreshDesk]);
+
+  /* Is he coming back after a gap? Decided before the slot renders anything. */
+  useEffect(() => {
+    if (!open) { setReturnDecided(false); setReturnData(null); setMirrorDecided(false); setMirrorShowing(false); return; }
+    let cancelled = false;
+    (async () => {
+      let d: ReturnCardData | null = null;
+      try { d = await loadReturnCard(); } catch { d = null; }
+      if (cancelled) return;
+      setReturnData(d);
+      setReturnDecided(true);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
+
+  /* A decider that never answers must not leave him looking at a resting mark. */
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => {
+      setMirrorDecided(true);
+      setReturnDecided(true);
+      setPrefsLoaded(true);
+      setOpenerDone(true);
+    }, 6000);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
+
 
 
   /* ── Opener: Aura speaks first, once per open ── */
