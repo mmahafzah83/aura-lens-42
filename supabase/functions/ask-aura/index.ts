@@ -1093,6 +1093,19 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
 
       try {
         if (name === "save_draft") {
+          if (belowEvidenceFloor) {
+            return {
+              tool: name,
+              ok: false,
+              label: "",
+              payload: {
+                ok: false,
+                refused: "no_evidence",
+                error:
+                  "Refused: this member has fewer than 3 captures and no pillars recorded. You have nothing of his to write from. Do not write or save a post. Say plainly that you have nothing of his to write from yet, and ask him for his first capture.",
+              },
+            };
+          }
           const post_text = typeof args.post_text === "string" ? args.post_text.trim() : "";
           if (!post_text) {
             return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "no post text" } };
