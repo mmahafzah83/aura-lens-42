@@ -61,7 +61,7 @@ serve(async (req) => {
       .eq("user_id", user_id)
       .in("status", ["pending", "kept"])
       .gte("created_at", since36)
-      .order("relevance_score", { ascending: false })
+      .order("relevance_score", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(25);
 
