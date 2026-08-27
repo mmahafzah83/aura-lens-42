@@ -773,6 +773,25 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                         }}>Open in Publish<ArrowUpRight size={13} aria-hidden="true" /></button>
                       </div>
                     )}
+                    {/* The door. Blue because the member taps it; a route to an
+                        unknown surface renders nothing at all. */}
+                    {(m.actions || [])
+                      .filter(a => a.ok && a.route && (SURFACES as readonly string[]).includes(a.route.surface))
+                      .map((a, k) => (
+                        <div key={`route-${k}`} style={{ marginTop: 10 }}>
+                          <button
+                            type="button"
+                            className="ask-focusable ask-chip"
+                            data-testid="ask-route-button"
+                            onClick={() => openSurface(a.route!.surface, a.route!.subject_id)}
+                            style={{
+                              background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
+                              borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                              display: "inline-flex", alignItems: "center", gap: 6,
+                            }}
+                          >{a.label}<ArrowUpRight size={13} aria-hidden="true" /></button>
+                        </div>
+                      ))}
                   </div>
 
                 );
