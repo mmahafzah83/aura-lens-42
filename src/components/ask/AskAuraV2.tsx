@@ -220,6 +220,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [followUps, setFollowUps] = useState<string[]>([]);
   const [opener, setOpener] = useState<{ text: string; chips: { label: string; prompt: string }[] } | null>(null);
   const [openerDone, setOpenerDone] = useState(false);
+  /** "Say more" is per message: expanding one answer never expands another. */
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const listRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
