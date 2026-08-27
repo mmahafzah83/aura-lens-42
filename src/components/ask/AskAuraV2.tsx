@@ -395,7 +395,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
             if (Array.isArray(j?.citations)) gotCitations = j.citations as Citation[];
             if (Array.isArray(j?.sources)) gotSources = j.sources as Source[];
             if (j?.action && typeof j.action?.label === "string") {
-              gotActions.push({ tool: String(j.action.tool || ""), ok: !!j.action.ok, label: j.action.label });
+              const r = j.action.route;
+              const route: ActionRoute | undefined =
+                r && typeof r.surface === "string"
+                  ? { surface: r.surface, subject_id: typeof r.subject_id === "string" ? r.subject_id : null }
+                  : undefined;
+              gotActions.push({ tool: String(j.action.tool || ""), ok: !!j.action.ok, label: j.action.label, route });
             }
             const delta = j?.choices?.[0]?.delta?.content;
             if (typeof delta === "string" && delta) {
