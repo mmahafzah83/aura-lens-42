@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { withObserve } from "../_shared/observe.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { retrieveContext, logRetrievalFailure } from "../_shared/retrieval.ts";
+import { retrieveContext, logRetrievalFailure, SOURCE_KINDS } from "../_shared/retrieval.ts";
 import { getUserContext } from "../_shared/userContext.ts";
 import { buildSearchQuery } from "../_shared/queryRewrite.ts";
 import { getCapabilityProfile } from "../_shared/capabilities.ts";
@@ -17,6 +17,39 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 type Msg = { role: "user" | "assistant" | "system"; content: string };
+
+/**
+ * Relevance floor. A relative floor, not an absolute one, because the scale of
+ * `rank` is not guaranteed: drop any row scoring below 40% of the top row. The
+ * top row is never dropped. Applied wherever retrieval is consumed — the
+ * pre-generation call and the search_my_graph tool alike.
+ *
+ * Deliberately NOT a re-rank pass: a per-search model call stays out of scope
+ * until operation_runs.cost_usd is populated, because adding uninstrumented
+ * model calls while per-turn cost is unmeasurable is the wrong trade.
+ */
+const RELEVANCE_FLOOR = 0.4;
+function applyRelevanceFloor<T extends { rank?: number | null }>(rows: T[]): T[] {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  const top = Number(rows[0]?.rank ?? 0);
+  if (!(top > 0)) return rows;
+  return rows.filter((r, i) => i === 0 || Number(r.rank ?? 0) >= top * RELEVANCE_FLOOR);
+}
+
+/** Same shape as the shared citation block, but numbered from `start`. */
+function formatRows(rows: any[], start: number): string {
+  if (!rows.length) return "—";
+  return rows
+    .map((r, i) => {
+      const head = `[${start + i}] kind: ${r.source_kind}${r.title ? ` | title: ${r.title}` : ""}${
+        r.url ? ` | url: ${r.url}` : ""
+      }${r.occurred_at ? ` | date: ${String(r.occurred_at).slice(0, 10)}` : ""}`;
+      return r.content ? `${head}\n${String(r.content).slice(0, 1200)}` : head;
+    })
+    .join("\n\n---\n\n");
+}
+
+
 
 function safe<T>(p: Promise<{ data: T | null; error: any }>): Promise<T | null> {
   return p.then(({ data, error }) => {
@@ -343,10 +376,8 @@ serve(withObserve("ask-aura", async (req) => {
         rewritten: search.rewritten,
         originalQuery: search.original,
       });
-      if (retrieved.rows.length > 0) {
-        retrievedBlock = retrieved.citationBlock;
-        retrievedRows = retrieved.rows;
-      }
+      retrievedRows = applyRelevanceFloor(retrieved.rows);
+      if (retrievedRows.length > 0) retrievedBlock = formatRows(retrievedRows, 1);
     } catch (e) {
       retrievalDegraded = true;
       logRetrievalFailure({
@@ -358,14 +389,20 @@ serve(withObserve("ask-aura", async (req) => {
     }
 
     // Parallel to `citations`, one entry per retrieved row. The number matches the
-    // [n] the prompt block uses (formatCitations numbers rows 1..n in order).
-    const sources = retrievedRows.map((r, i) => ({
-      n: i + 1,
-      title: (r.title && String(r.title).trim()) || `${String(r.source_kind).replace(/_/g, " ")} ${i + 1}`,
-      kind: r.source_kind,
-      date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
-      url: r.url || null,
-    }));
+    // [n] the prompt block uses (formatRows numbers rows 1..n in order).
+    // APPEND-ONLY: search_my_graph pushes onto this same array and continues the
+    // numbering. A number, once assigned, is never reused or renumbered.
+    const sources: { n: number; key: string; title: string; kind: string; date: string | null; url: string | null }[] =
+      retrievedRows.map((r, i) => ({
+        n: i + 1,
+        key: `${r.source_kind}:${r.source_id}`,
+        title: (r.title && String(r.title).trim()) || `${String(r.source_kind).replace(/_/g, " ")} ${i + 1}`,
+        kind: r.source_kind,
+        date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
+        url: r.url || null,
+      }));
+    const sourceKeys = new Set(retrievedRows.map((r) => `${r.source_kind}:${r.source_id}`));
+
 
 
     const systemPrompt = `You are Aura — a senior strategic intelligence advisor. You are not a generic AI. You are a dedicated advisor who has studied this professional for months and knows their work deeply.
@@ -481,6 +518,7 @@ TOOLS — you can do things yourself, not just describe them:
 - save_draft — writes a post you have written into the member's drafts. When the member asks for a post, or accepts one you proposed, call save_draft with the full text rather than pasting the post and telling them to save it themselves.
 - set_reminder — puts a reminder in the member's notifications when they want to come back to something later.
 - open_surface — opens any Aura surface for the member, so whenever the real answer lives on another screen you open that screen instead of describing it. It is an offer, never a substitute for answering: give the one-sentence answer first, then offer the door.
+- search_my_graph — searches this member's own captures, documents, evidence fragments and signals. Use it whenever the context already loaded above does not answer the question. You may search at most twice in a turn, and the second search must refine the query rather than repeat it. Anything it returns is cited by the source number the tool gives you. Finding nothing is a real answer: say plainly that the record does not hold it, instead of stretching weak material.
 Never invent a source_signal_id. Pass one only if it identifies a signal listed in ACTIVE SIGNALS for this member — its bracketed reference (for example S-101) is accepted; otherwise leave it out.
 After a tool runs, confirm in one short line. Do not restate the whole draft back to them.
 The rows under WHAT THE OVERNIGHT FOUND FOR YOU are real things your own overnight agent found for this member while they were not working — you may discuss them by name, and you must never claim to have found anything that block does not contain.
@@ -635,7 +673,28 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "search_my_graph",
+          description:
+            "Search this member's own captures, documents, evidence and signals again, with a fresh standalone query. Read-only. Returns numbered sources you can cite.",
+          parameters: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "A standalone search query." },
+              kinds: {
+                type: "array",
+                description: "Optional. Restrict the search to these source kinds.",
+                items: { type: "string", enum: SOURCE_KINDS },
+              },
+            },
+            required: ["query"],
+          },
+        },
+      },
     ];
+
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -778,6 +837,53 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
           };
         }
 
+        if (name === "search_my_graph") {
+          // Read-only. No writes anywhere in this branch.
+          const q = typeof args.query === "string" ? args.query.trim() : "";
+          if (!q) return { tool: name, ok: false, label: "", payload: { ok: false, error: "could not search" } };
+          const kinds = Array.isArray(args.kinds)
+            ? args.kinds.filter((k: unknown) => typeof k === "string" && (SOURCE_KINDS as string[]).includes(k))
+            : null;
+          try {
+            const res = await retrieveContext(admin, user_id, q, {
+              limit: 8,
+              caller: "ask-aura-tool",
+              ...(kinds && kinds.length ? { kinds: kinds as any } : {}),
+            });
+            const kept = applyRelevanceFloor(res.rows);
+            const out = kept.map((r: any) => {
+              const key = `${r.source_kind}:${r.source_id}`;
+              let n: number;
+              if (sourceKeys.has(key)) {
+                // Already in the registry: keep its original number, add nothing.
+                n = sources.find((s) => s.key === key)!.n;
+              } else {
+                n = sources.length + 1; // append only — never restart, never renumber
+                sourceKeys.add(key);
+                sources.push({
+                  n,
+                  key,
+                  title: (r.title && String(r.title).trim()) || `${String(r.source_kind).replace(/_/g, " ")} ${n}`,
+                  kind: r.source_kind,
+                  date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
+                  url: r.url || null,
+                });
+              }
+              return {
+                n,
+                kind: r.source_kind,
+                title: r.title || null,
+                date: r.occurred_at ? String(r.occurred_at).slice(0, 10) : null,
+                content: r.content ? String(r.content).slice(0, 300) : "",
+              };
+            });
+            return { tool: name, ok: true, label: "", payload: { ok: true, results: out } };
+          } catch (e) {
+            console.error("search_my_graph failed", (e as Error)?.message ?? String(e));
+            return { tool: name, ok: false, label: "", payload: { ok: false, error: "could not search" } };
+          }
+        }
+
 
         return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "unknown tool" } };
       } catch (e) {
@@ -903,40 +1009,62 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
         };
 
         try {
-          const first = await pump(firstBody, true);
-          fullReply = first.text;
+          // Up to two tool rounds, then one forced toolless answer. Worst case is
+          // three gateway calls per turn; when no tool is called it stays at one.
+          const MAX_TOOL_ROUNDS = 2;
+          let convo: any[] = firstMessages;
+          let round = 0;
+          let lastText = "";
+          let pumped: PumpOut = await pump(firstBody, true);
 
-          if (first.toolCalls.length > 0) {
-            // Exactly one round of tool execution per request: the second call
-            // carries no tools, so the model cannot loop.
-            for (const call of first.toolCalls) {
-              actions.push(await runTool(call.name, call.args));
+          while (true) {
+            lastText = pumped.text || lastText;
+            if (pumped.toolCalls.length === 0) break; // this round's content is the answer
+
+            const results: ToolResult[] = [];
+            for (const call of pumped.toolCalls) {
+              const r = await runTool(call.name, call.args);
+              results.push(r);
+              // search_my_graph emits no action line — the sources are the receipt.
+              if (call.name !== "search_my_graph") actions.push(r);
             }
 
-            const assistantTurn = {
-              role: "assistant",
-              content: first.text || null,
-              tool_calls: first.toolCalls.map((t, i) => ({
-                id: t.id || `call_${i}`,
-                type: "function",
-                function: { name: t.name, arguments: t.args || "{}" },
+            convo = [
+              ...convo,
+              {
+                role: "assistant",
+                content: pumped.text || null,
+                tool_calls: pumped.toolCalls.map((t, i) => ({
+                  id: t.id || `call_${round}_${i}`,
+                  type: "function",
+                  function: { name: t.name, arguments: t.args || "{}" },
+                })),
+              },
+              ...pumped.toolCalls.map((t, i) => ({
+                role: "tool",
+                tool_call_id: t.id || `call_${round}_${i}`,
+                content: JSON.stringify(results[i]?.payload ?? { ok: false, error: "no result" }),
               })),
-            };
-            const toolTurns = first.toolCalls.map((t, i) => ({
-              role: "tool",
-              tool_call_id: t.id || `call_${i}`,
-              content: JSON.stringify(actions[i]?.payload ?? { ok: false, error: "no result" }),
-            }));
+            ];
+            round++;
 
-            const second = await callGateway([...firstMessages, assistantTurn, ...toolTurns], false);
-            if (second.ok && second.body) {
-              const out = await pump(second.body, false);
-              // The summariser must see the answer the member actually read.
-              fullReply = out.text || first.text;
-            } else {
-              console.error("second gateway call failed", second.status);
+            const withTools = round < MAX_TOOL_ROUNDS;
+            const next = await callGateway(convo, withTools);
+            if (!next.ok || !next.body) {
+              console.error("follow-up gateway call failed", next.status);
+              break;
+            }
+            pumped = await pump(next.body, withTools);
+            if (!withTools) {
+              // Final call: tools omitted, so the model must answer.
+              lastText = pumped.text || lastText;
+              break;
             }
           }
+
+          // The summariser must see the answer the member actually read.
+          fullReply = lastText;
+
 
           // One machine line per tool that ran, before the existing events.
           for (const a of actions) {
@@ -960,7 +1088,7 @@ OUTPUT FORMAT — every answer arrives in layers. Use these three markers, each 
               identity_loaded: !!profile,
             },
             citations,
-            sources,
+            sources: sources.map(({ key: _k, ...s }) => s),
           };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(contextEvent)}\n\n`));
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));

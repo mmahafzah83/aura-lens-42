@@ -27,9 +27,31 @@ export interface RewriteOptions {
   timeoutMs?: number;
 }
 
-const SELF_CONTAINED_CHARS = 60;
 const MAX_TURNS = 3;
 const HARD_TIMEOUT_MS = 4000;
+
+/**
+ * Rewrite only when the message NEEDS it. Length was the wrong signal: a long
+ * follow-up that is entirely anaphora needs rewriting, and a short
+ * self-contained question does not.
+ */
+const POINTERS =
+  /\b(that|this|it|they|them|those|these|the above|you just said|what about)\b|^(and|but|so|also|ok|okay)\b|ذلك|هذا|هذه|الذي|التي/i;
+/**
+ * A proper noun (Titlecase word that is not the first word of a sentence) or a
+ * quoted phrase makes the message stand on its own. Acronyms like "ESG" are not
+ * subjects on their own, so they do not count.
+ */
+const STANDS_ALONE = /["“”''][^"“”'']{2,}["“”'']|(?<![.!?]\s)(?<!^)\b[A-Z][a-z]{2,}\b/;
+
+function needsRewrite(msg: string): boolean {
+  const t = (msg || "").trim();
+  if (!t) return false;
+  if (!POINTERS.test(t)) return false;
+  if (STANDS_ALONE.test(t)) return false;
+  return true;
+}
+
 
 const SYSTEM_PROMPT =
   "Rewrite the user's latest message as a standalone search query that carries forward any subject, company, document or topic from the recent conversation. Output ONLY the query, no quotes, no explanation, maximum 25 words.";
@@ -53,13 +75,15 @@ export async function buildSearchQuery(
   const original =
     [...list].reverse().find((m) => m?.role === "user")?.content?.toString() ?? "";
 
-  // Cheap path: already a standalone question.
-  if (original.trim().length > SELF_CONTAINED_CHARS) {
-    return { query: original, rewritten: false, original };
-  }
+  // Cheap path: only a message that actually depends on the conversation is
+  // rewritten. Everything else is returned unchanged, with no model call.
   if (!original.trim()) {
     return { query: original, rewritten: false, original };
   }
+  if (!needsRewrite(original)) {
+    return { query: original, rewritten: false, original };
+  }
+
 
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) {
