@@ -5,6 +5,22 @@ import { retrieveContext, logRetrievalFailure, SOURCE_KINDS } from "../_shared/r
 import { getUserContext } from "../_shared/userContext.ts";
 import { buildSearchQuery } from "../_shared/queryRewrite.ts";
 import { getCapabilityProfile } from "../_shared/capabilities.ts";
+import {
+  buildNumberAllowlist,
+  findForeignFigures,
+  retryInstruction,
+  dropOffendingSentences,
+  type Violation,
+} from "../_shared/numericGate.ts";
+import { isHumanLimitTurn, stripWork, humanLimitPrompt, humanLimitFallback } from "../_shared/humanLimits.ts";
+import {
+  guardClaimsServer,
+  requestedDraftLanguage,
+  hasArabic,
+  SAY,
+  MONTHS_EN,
+  MONTHS_AR,
+} from "../_shared/deskHonesty.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -95,18 +111,38 @@ async function productFactsBlock(admin: any): Promise<string> {
 
 
 
-/** Same shape as the shared citation block, but numbered from `start`. */
+/**
+ * Same shape as the shared citation block, but numbered from `start`.
+ *
+ * O5 — each row carries what it actually IS, in words. A page of a PDF he
+ * uploaded is not something he captured, wrote or chose, and describing it as
+ * his capture is how a Saudi Vision 2030 annual report became "his work on
+ * Neom". The label travels with the row so the model cannot blur them.
+ */
+const KIND_LABEL: Record<string, string> = {
+  document_chunk: "a page from a file he uploaded — NOT a capture, NOT his writing, NOT his opinion. Reference material only. Never count it as a capture and never attribute its subjects, clients or projects to him.",
+  entry: "something he captured himself",
+  evidence_fragment: "an extract Aura pulled from his own material",
+  signal: "a signal Aura formed from his material",
+  post: "a post of his",
+  content_item: "an item in his library",
+  learned_intelligence: "something Aura learned from his behaviour",
+  brief: "Aura's summary of a file he uploaded — the file is reference material, not his writing",
+};
+
 function formatRows(rows: any[], start: number): string {
   if (!rows.length) return "—";
   return rows
     .map((r, i) => {
-      const head = `[${start + i}] kind: ${r.source_kind}${r.title ? ` | title: ${r.title}` : ""}${
+      const what = KIND_LABEL[String(r.source_kind)] || String(r.source_kind);
+      const head = `[${start + i}] kind: ${r.source_kind} (${what})${r.title ? ` | title: ${r.title}` : ""}${
         r.url ? ` | url: ${r.url}` : ""
       }${r.occurred_at ? ` | date: ${String(r.occurred_at).slice(0, 10)}` : ""}`;
       return r.content ? `${head}\n${String(r.content).slice(0, 1200)}` : head;
     })
     .join("\n\n---\n\n");
 }
+
 
 
 
@@ -208,15 +244,72 @@ serve(withObserve("ask-aura", async (req) => {
       );
 
     /**
-     * N5 — an empty or one-character message is not a question. It gets a short
-     * prompt to say something, and no tool runs.
+     * Reply language is decided in code from the member's own last message, and
+     * decided HERE — above every early return — so that the machine's own
+     * sentences leave in the same language as the answer. (O3: the empty-message
+     * prompt and the failure line were two of the paths still emitting English
+     * whatever the member wrote.)
      */
     const lastUserRaw = String(
       [...messages].reverse().find((m: any) => m?.role === "user")?.content ?? "",
     ).trim();
+    const arabicChars = (lastUserRaw.match(/[\u0600-\u06FF]/g) || []).length;
+    const latinChars = (lastUserRaw.match(/[A-Za-z]/g) || []).length;
+    const totalLetters = arabicChars + latinChars;
+    const replyLanguage: "Arabic" | "English" =
+      totalLetters > 0 && arabicChars / totalLetters > 0.2 ? "Arabic" : "English";
+
+    /**
+     * N5 — an empty or one-character message is not a question. It gets a short
+     * prompt to say something, and no tool runs.
+     */
     if (lastUserRaw.length < 3) {
-      return plainStream("Say what you need and I'll pick it up.");
+      return plainStream(SAY.emptyMessage(replyLanguage));
     }
+
+    const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+    /**
+     * O4 — HUMAN LIMITS. Decided in code, before anything else runs. Illness,
+     * loss, exhaustion, burnout, quitting, doubt about carrying on: no tool
+     * fires, no context is loaded, nothing about content may appear, and the
+     * answer is at most three sentences offering exactly one thing that reduces
+     * demand. The prompt rule did not hold this; a branch does.
+     */
+    if (isHumanLimitTurn(lastUserRaw)) {
+      let firstName: string | null = null;
+      try {
+        const { data } = await admin
+          .from("diagnostic_profiles").select("first_name").eq("user_id", user_id).maybeSingle();
+        firstName = (data as any)?.first_name ?? null;
+      } catch { /* the name is a nicety, not a requirement */ }
+
+      let line = humanLimitFallback(replyLanguage);
+      try {
+        const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            max_tokens: 200,
+            temperature: 0.6,
+            messages: [
+              { role: "system", content: humanLimitPrompt(replyLanguage, firstName) },
+              { role: "user", content: lastUserRaw },
+            ],
+          }),
+        });
+        if (r.ok) {
+          const j = await r.json();
+          const raw = String(j?.choices?.[0]?.message?.content ?? "");
+          line = stripWork(raw, humanLimitFallback(replyLanguage));
+        }
+      } catch (e) {
+        console.error("human-limit reply failed", (e as Error)?.message);
+      }
+      return plainStream(line);
+    }
+
 
     /**
      * N4 — oversized input is capped here rather than allowed to break the
@@ -246,8 +339,7 @@ serve(withObserve("ask-aura", async (req) => {
 
 
 
-    // Service-role client for context fetch + writes
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+    // Service-role client for context fetch + writes — created above.
 
     // STEP 1 — assemble context (in parallel, tolerate failures)
     const [profile, signals, posts, memory, alerts, voice, scoreSnap, entriesRecent, entriesCount, metrics, trends, findings] = await Promise.all([
@@ -690,13 +782,17 @@ HOW TO USE A NUMBER (absolute):
       console.error(JSON.stringify({ stage: "user_context", user_id, error: (e as Error)?.message ?? String(e) }));
     }
 
-    // Reply language is DECIDED in code from the member's own last message, not
-    // negotiated by the model against whatever language the sources are in.
-    const arabicChars = (lastUserMessage.match(/[\u0600-\u06FF]/g) || []).length;
-    const latinChars = (lastUserMessage.match(/[A-Za-z]/g) || []).length;
-    const totalLetters = arabicChars + latinChars;
-    const replyLanguage: "Arabic" | "English" =
-      totalLetters > 0 && arabicChars / totalLetters > 0.2 ? "Arabic" : "English";
+    // Reply language was decided above, from the member's own last message, so
+    // that every early return speaks it too.
+
+    /**
+     * O2 — the language of the DRAFT he asked for is a separate decision from
+     * the language of the conversation. "Draft me something in Arabic" is an
+     * English message that must produce an Arabic draft.
+     */
+    const draftLanguage = requestedDraftLanguage(lastUserMessage);
+
+
 
     let retrievedBlock = "—";
     let retrievalDegraded = false;
@@ -975,7 +1071,7 @@ RESPONSE RULES (v2 DEFINITIVE — ALWAYS APPLY):
 MEMBER CONTEXT:
 ${memberContextBlock}
 
-RETRIEVED SOURCES (this member's own documents, evidence, captures and signals — numbered; cite by number, name the title, and use the url when present):
+RETRIEVED SOURCES (numbered; cite by number, name the title, and use the url when present). Each row states what it IS in brackets. Honour that label exactly: a page from a file he uploaded is reference material he happened to read, never his capture, never his work, and never evidence that he has written or thought about its subject:
 ${retrievedBlock}
 ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim the record is empty — say you could not read the record right now." : ""}`;
 
@@ -985,7 +1081,16 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
       replyLanguage === "Arabic"
         ? "\nWhen writing Arabic: one sentence per line, maximum 10–12 Arabic words per line, and keep signal names and technical terms in English."
         : ""
+    }${
+      draftLanguage
+        ? `\nDRAFT LANGUAGE: he asked for the DRAFT ITSELF in ${draftLanguage}. That is separate from the language of your own sentences. Every word of the post you write is in ${draftLanguage}${
+            draftLanguage === "Arabic"
+              ? " — contemporary professional Arabic, written natively, not translated English. Do not write the post in English and do not offer an English version."
+              : ""
+          }. If you cannot write it in ${draftLanguage}, say so plainly and write nothing.`
+        : ""
     }
+
 
 OUTPUT FORMAT — every answer arrives in layers. The first characters of your response are the literal marker §§PLAIN, always, with no exception and nothing above it: no greeting, no preamble, no restatement, no product opener. A single character written above §§PLAIN is a broken answer. Use these three markers, each alone on its own line, in this order:
 
@@ -1143,13 +1248,15 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
 
 
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    // Month names for the reminder label come from _shared/deskHonesty.ts, in both languages.
 
     type ToolResult = {
       tool: string; ok: boolean; label: string; payload: Record<string, unknown>;
       route?: { surface: string; subject_id: string | null };
       /** Only set by a write that came back with a real row id. */
       post_id?: string;
+      /** True only when a row was actually inserted. Never true in a dry run. */
+      wrote?: boolean;
     };
 
 
@@ -1184,7 +1291,7 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
       try {
         args = argsRaw ? JSON.parse(argsRaw) : {};
       } catch {
-        return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "unreadable arguments" } };
+        return { tool: name, ok: false, label: SAY.saveFailed(replyLanguage), payload: { ok: false, error: "unreadable arguments" } };
       }
 
       try {
@@ -1204,11 +1311,11 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
           }
           const post_text = typeof args.post_text === "string" ? args.post_text.trim() : "";
           if (!post_text) {
-            return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "no post text" } };
+            return { tool: name, ok: false, label: SAY.saveFailed(replyLanguage), payload: { ok: false, error: "no post text" } };
           }
           const title = typeof args.title === "string" && args.title.trim() ? args.title.trim().slice(0, 200) : null;
           if (dryRun) {
-            return { tool: name, ok: true, label: "Saved to your drafts (dry run — nothing written)",
+            return { tool: name, ok: true, label: SAY.dryRunDraft(replyLanguage),
               payload: { ok: true, dry_run: true, title } };
           }
 
@@ -1249,7 +1356,7 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
             .single();
           if (insErr || !inserted?.id) {
             console.error("save_draft insert failed", insErr?.message);
-            return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "could not save the draft" } };
+            return { tool: name, ok: false, label: SAY.saveFailed(replyLanguage), payload: { ok: false, error: "could not save the draft" } };
           }
 
           const { error: evErr } = await admin.from("post_events").insert({
@@ -1264,8 +1371,9 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
           return {
             tool: name,
             ok: true,
-            label: "Draft saved",
+            label: SAY.draftSaved(replyLanguage),
             post_id: String(inserted.id),
+            wrote: true,
             payload: { ok: true, post_id: inserted.id, title },
           };
         }
@@ -1273,7 +1381,7 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
         if (name === "set_reminder") {
           const title = typeof args.title === "string" ? args.title.trim().slice(0, 80) : "";
           if (!title) {
-            return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "no title" } };
+            return { tool: name, ok: false, label: SAY.saveFailed(replyLanguage), payload: { ok: false, error: "no title" } };
           }
           const bodyText = typeof args.body === "string" && args.body.trim() ? args.body.trim() : null;
           let days = Number.isFinite(Number(args.days_from_now)) ? Math.round(Number(args.days_from_now)) : 3;
@@ -1281,7 +1389,7 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
           if (days > 30) days = 30;
           const when = new Date(Date.now() + days * 86400000);
           if (dryRun) {
-            return { tool: name, ok: true, label: "Reminder set (dry run — nothing written)",
+            return { tool: name, ok: true, label: SAY.dryRunReminder(replyLanguage),
               payload: { ok: true, dry_run: true, title, when: when.toISOString() } };
           }
 
@@ -1297,13 +1405,14 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
           });
           if (nErr) {
             console.error("set_reminder insert failed", nErr.message);
-            return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "could not set the reminder" } };
+            return { tool: name, ok: false, label: SAY.saveFailed(replyLanguage), payload: { ok: false, error: "could not set the reminder" } };
           }
           const remind_on = when.toISOString().slice(0, 10);
           return {
             tool: name,
             ok: true,
-            label: `Reminder set for ${when.getUTCDate()} ${MONTHS[when.getUTCMonth()]}`,
+            label: SAY.reminderSet(replyLanguage, when.getUTCDate(), MONTHS_EN[when.getUTCMonth()], MONTHS_AR[when.getUTCMonth()]),
+            wrote: true,
             payload: { ok: true, remind_on },
           };
         }
@@ -1312,9 +1421,9 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
           // Read-only by construction: validate, return. No writes, no navigation.
           const surface = typeof args.surface === "string" ? args.surface.trim() : "";
           if (!(SURFACES as readonly string[]).includes(surface)) {
-            return { tool: name, ok: false, label: "Couldn't open that", payload: { ok: false, error: "unknown surface" } };
+            return { tool: name, ok: false, label: SAY.openFailed(replyLanguage), payload: { ok: false, error: "unknown surface" } };
           }
-          const label = (typeof args.reason === "string" ? args.reason.trim() : "").slice(0, 60) || "Open it in Aura";
+          const label = (typeof args.reason === "string" ? args.reason.trim() : "").slice(0, 60) || SAY.openIt(replyLanguage);
           // An id only survives if it is one of THIS member's own loaded signals.
           const rawId = typeof args.subject_id === "string" ? args.subject_id.trim() : "";
           let subject_id: string | null = null;
@@ -1412,10 +1521,10 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
         }
 
 
-        return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "unknown tool" } };
+        return { tool: name, ok: false, label: SAY.saveFailed(replyLanguage), payload: { ok: false, error: "unknown tool" } };
       } catch (e) {
         console.error("tool threw", name, e);
-        return { tool: name, ok: false, label: "Couldn't save that", payload: { ok: false, error: "unexpected failure" } };
+        return { tool: name, ok: false, label: SAY.saveFailed(replyLanguage), payload: { ok: false, error: "unexpected failure" } };
       }
     }
 
@@ -1527,7 +1636,7 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
     };
 
     /** N3 — the member never sees silence. Any failure says so, in one line. */
-    const FAILURE_LINE = "Something went wrong reading your vault. Try again?";
+    const FAILURE_LINE = SAY.failure(replyLanguage);
 
 
     const stream = new ReadableStream({
@@ -1593,7 +1702,10 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
           let convo: any[] = firstMessages;
           let round = 0;
           let lastText = "";
+          /** O1 — everything a tool handed back this turn, for the allowlist. */
+          const toolTexts: string[] = [];
           let pumped: PumpOut = await pump(firstBody, true);
+
 
           while (true) {
             lastText = pumped.text || lastText;
@@ -1603,9 +1715,12 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
             for (const call of pumped.toolCalls) {
               const r = await runTool(call.name, call.args);
               results.push(r);
+              // O1 — every figure a tool handed back is permitted in the answer.
+              toolTexts.push(JSON.stringify(r.payload ?? {}));
               // search_my_graph emits no action line — the sources are the receipt.
               if (call.name !== "search_my_graph") actions.push(r);
             }
+
 
             convo = [
               ...convo,
@@ -1640,10 +1755,126 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
             }
           }
 
+          let answer = secretaryTurn ? stripAfterMore(lastText) : lastText;
+
+          /**
+           * O1 — THE NUMERIC GATE.
+           *
+           * The allowlist is everything the Desk was actually handed this turn:
+           * the counted account facts, the capability read, the signals, the
+           * metrics, the retrieved sources, every tool result, and the member's
+           * own words. Anything else is not a figure — it is an invention, and
+           * it leaves here rather than reaching him.
+           */
+          const allow = buildNumberAllowlist([
+            accountFactsBlock,
+            capabilityBlock,
+            signalsBlock,
+            metricsBlock,
+            entriesBlock,
+            trendsBlock,
+            findingsBlock,
+            postsBlock,
+            memoryBlock,
+            alertsBlock,
+            retrievedBlock,
+            memberContextBlock,
+            howAuraWorks,
+            ...toolTexts,
+            ...messages.map((m: any) => String(m?.content ?? "")),
+          ]);
+
+          const logViolation = async (figure: string, resolved: "retry_fixed" | "sentence_dropped") => {
+            try {
+              await admin.from("desk_number_violations").insert({
+                user_id,
+                question: lastUserMessage.slice(0, 2000),
+                figure: String(figure).slice(0, 80),
+                resolved,
+                answer_excerpt: answer.slice(0, 800),
+              });
+            } catch (e) {
+              console.error("number violation log failed", (e as Error)?.message);
+            }
+          };
+
+          let violations: Violation[] = findForeignFigures(answer, allow);
+          if (violations.length > 0) {
+            console.warn(JSON.stringify({
+              stage: "numeric_gate", user_id, figures: violations.map((v) => v.figure),
+            }));
+            // 1 — re-ask once, naming the exact violation.
+            try {
+              const retry = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  model: "google/gemini-3-flash-preview",
+                  max_tokens: 1000,
+                  temperature: 0.3,
+                  messages: [
+                    { role: "system", content: finalSystemPrompt },
+                    ...messages,
+                    { role: "assistant", content: answer },
+                    { role: "user", content: retryInstruction(violations) },
+                  ],
+                }),
+              });
+              if (retry.ok) {
+                const rj = await retry.json();
+                const redone = String(rj?.choices?.[0]?.message?.content ?? "").trim();
+                if (redone) {
+                  const still = findForeignFigures(redone, allow);
+                  if (still.length === 0) {
+                    for (const v of violations) await logViolation(v.figure, "retry_fixed");
+                    answer = secretaryTurn ? stripAfterMore(redone) : redone;
+                    violations = [];
+                  } else {
+                    answer = secretaryTurn ? stripAfterMore(redone) : redone;
+                    violations = still;
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("numeric gate retry failed", (e as Error)?.message);
+            }
+
+            // 2 — still offending: the sentence carrying the figure is dropped.
+            if (violations.length > 0) {
+              const out = dropOffendingSentences(answer, allow);
+              answer = out.text;
+              const seen = new Set<string>();
+              for (const v of out.dropped) {
+                if (seen.has(v.figure)) continue;
+                seen.add(v.figure);
+                await logViolation(v.figure, "sentence_dropped");
+              }
+            }
+          }
+
+          /**
+           * O2 — a draft asked for in Arabic that came back in English is not a
+           * draft. It is not returned, and nothing claims it was saved.
+           */
+          if (draftLanguage === "Arabic" && !hasArabic(answer)) {
+            console.warn(JSON.stringify({ stage: "draft_language", user_id, wanted: "Arabic" }));
+            answer = `§§PLAIN\n${SAY.draftLanguageFailed(replyLanguage)}`;
+          }
+
+          /**
+           * O2 — the claim guard, on the SERVER. It lived only in the browser,
+           * which is how "saved to your drafts" survived a dry run: the harness
+           * never loads the browser. A write is proven by a row id and nothing
+           * else.
+           */
+          const provenWrite = actions.some((a) => a.ok && a.wrote === true);
+          answer = guardClaimsServer(answer, provenWrite).text;
+
           // The summariser must see the answer the member actually read.
-          fullReply = enforceLayers(secretaryTurn ? stripAfterMore(lastText) : lastText);
+          fullReply = enforceLayers(answer);
           // N3 — a turn that produced nothing says so rather than going quiet.
           if (!fullReply.trim()) fullReply = `§§PLAIN\n${FAILURE_LINE}`;
+
 
           controller.enqueue(
             encoder.encode(

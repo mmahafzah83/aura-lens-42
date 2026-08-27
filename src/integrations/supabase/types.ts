@@ -1321,6 +1321,36 @@ export type Database = {
           },
         ]
       }
+      desk_number_violations: {
+        Row: {
+          answer_excerpt: string | null
+          figure: string
+          id: string
+          question: string | null
+          resolved: string
+          run_at: string
+          user_id: string | null
+        }
+        Insert: {
+          answer_excerpt?: string | null
+          figure: string
+          id?: string
+          question?: string | null
+          resolved: string
+          run_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          answer_excerpt?: string | null
+          figure?: string
+          id?: string
+          question?: string | null
+          resolved?: string
+          run_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       diagnostic_profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"]
