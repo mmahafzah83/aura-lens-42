@@ -18,6 +18,39 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 type Msg = { role: "user" | "assistant" | "system"; content: string };
 
+/**
+ * Relevance floor. A relative floor, not an absolute one, because the scale of
+ * `rank` is not guaranteed: drop any row scoring below 40% of the top row. The
+ * top row is never dropped. Applied wherever retrieval is consumed — the
+ * pre-generation call and the search_my_graph tool alike.
+ *
+ * Deliberately NOT a re-rank pass: a per-search model call stays out of scope
+ * until operation_runs.cost_usd is populated, because adding uninstrumented
+ * model calls while per-turn cost is unmeasurable is the wrong trade.
+ */
+const RELEVANCE_FLOOR = 0.4;
+function applyRelevanceFloor<T extends { rank?: number | null }>(rows: T[]): T[] {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  const top = Number(rows[0]?.rank ?? 0);
+  if (!(top > 0)) return rows;
+  return rows.filter((r, i) => i === 0 || Number(r.rank ?? 0) >= top * RELEVANCE_FLOOR);
+}
+
+/** Same shape as the shared citation block, but numbered from `start`. */
+function formatRows(rows: any[], start: number): string {
+  if (!rows.length) return "—";
+  return rows
+    .map((r, i) => {
+      const head = `[${start + i}] kind: ${r.source_kind}${r.title ? ` | title: ${r.title}` : ""}${
+        r.url ? ` | url: ${r.url}` : ""
+      }${r.occurred_at ? ` | date: ${String(r.occurred_at).slice(0, 10)}` : ""}`;
+      return r.content ? `${head}\n${String(r.content).slice(0, 1200)}` : head;
+    })
+    .join("\n\n---\n\n");
+}
+
+
+
 function safe<T>(p: Promise<{ data: T | null; error: any }>): Promise<T | null> {
   return p.then(({ data, error }) => {
     if (error) console.error("fetch error:", error.message);
