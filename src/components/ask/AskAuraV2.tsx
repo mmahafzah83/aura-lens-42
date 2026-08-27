@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import DeskLedger from "./DeskLedger";
+import { setDeskWorking, setDeskFound, setDeskQuiet } from "@/components/desk/deskDockBus";
 import { X, Send, ArrowUpRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -795,6 +797,13 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                 </div>
               )}
 
+              {messages.length === 0 && openerDone && (
+                <DeskLedger
+                  onOpenDrafts={openDrafts}
+                  onOpenSignals={() => openSurface("intelligence")}
+                  onOpenTab={(t) => openSurface(t)}
+                />
+              )}
 
               {messages.map((m, i) => {
                 const rtl = isAr(m.content);

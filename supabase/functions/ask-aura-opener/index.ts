@@ -203,7 +203,15 @@ export async function whyItTouchesHim(
 
   const strong = entries.length >= 3 || posts.length >= 2;
   const d = new Date(oldest);
-  if (strong) return `It touches something you have been writing about since ${d.getUTCFullYear()}.`;
+  if (strong) {
+    // A year is only worth naming when it is a past year; inside the current
+    // year "since 2026" reads as broken, so name the month instead.
+    const nowYear = new Date().getUTCFullYear();
+    const when = d.getUTCFullYear() < nowYear
+      ? String(d.getUTCFullYear())
+      : MONTHS[d.getUTCMonth()];
+    return `It touches something you have been writing about since ${when}.`;
+  }
   return `You saved something on this back in ${MONTHS[d.getUTCMonth()]}.`;
 }
 
