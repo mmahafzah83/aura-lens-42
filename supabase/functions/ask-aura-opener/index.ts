@@ -47,7 +47,7 @@ export const JARGON = [
   /\brobust\b/i, /\bsynergy\b/i, /\bstakeholder alignment\b/i,
   /\bdigital transformation journey\b/i, /\bat scale\b/i, /\bgoing forward\b/i,
   /\bin today'?s rapidly evolving\b/i, /\bunlock\b/i, /\bharness\b/i,
-  /\bnavigate the complexities\b/i, /\brewriting the rules\b/i, /\breshaping\b/i,
+  /\bnavigate the complexities\b/i, /\brewrit(e|es|ing)\s+(the|each other'?s|their|our)?\s*rules\b/i, /\breshaping\b/i,
   /\bredefining\b/i, /\bauthority\b/i, /\btrajector(y|ies)\b/i,
   /\bpersonal brand\b/i, /\bthought leader(ship)?\b/i, /\bleverag(e|ing|es|ed)\b/i,
   /\butiliz(e|ing|es|ed)\b/i, /\bfacilitat(e|ing|es|ed)\b/i, /\bseamless(ly)?\b/i,
