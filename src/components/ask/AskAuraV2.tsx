@@ -785,9 +785,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                     </>
                   ) : (
                     <>
-                      <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--text-primary)", marginBottom: 8 }}>
-                        Ask about your own work.
-                      </div>
+                      {/* Heading removed — the opener card carries the surface. */}
+
                       <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>
                         Aura reads your captures, signals and posts. It cannot see the open web or what anyone else has published — so it will tell you when a question sits outside what it can see.
                       </div>
