@@ -211,6 +211,12 @@ serve(withObserve("ask-aura", async (req) => {
      * the stream, so tool-firing is still measurable, but nothing is inserted.
      */
     const dryRun: boolean = body?.dry_run === true;
+    /**
+     * P1 — the grader must judge against the same facts the Desk was handed,
+     * not against plausibility. With this flag the function assembles the facts
+     * block exactly as a real turn would and returns it, generating nothing.
+     */
+    const factsOnly: boolean = body?.facts_only === true;
 
     const ctx: { linkedType?: string; linkedId?: string; linkedLabel?: string } =
       body?.context && typeof body.context === "object" ? body.context : {};
@@ -672,6 +678,7 @@ Posts, counted by what each row actually is. These are five different things. Ne
   - rows of post performance data: ${metricsRows}
   - most recent published post: ${lastPublishedDate ?? "none recorded"}
   RULE: if you state a post count, name which of these it is. "He has published ${publishedTotal}" is the only sentence that may use the word published.
+  RULE (P3 — one definition each, reconciled): these six figures count DIFFERENT rows. They are not six readings of the same thing and they never contradict each other. "Published" means put out through Aura (${publishedTotal}). "Confirmed" means confirmed as his but not put out through Aura (${confirmedTotal}). If the question is how much he has published, the answer is ${publishedTotal} and only ${publishedTotal}. Never put two of these figures in one sentence as though they disagreed, and never total them.
 ${publishedTotal > 0
   ? `  RULE: he HAS published. Never say he has not published, has never posted, or has no published work.`
   : `  RULE: no published post is recorded. Say the publishing window is wide open, never that he has failed.`}
@@ -686,6 +693,7 @@ ${pillars.length ? pillars.map((x) => `  - ${x}`).join("\n") : "  - none recorde
 Pillar coverage in published work (counted by matching pillar words against the text of his published posts):
 ${pillarCoverageLines}
   RULE: "most" or "least" written about is decided by these counts and nothing else.
+  RULE (P3): one post can touch several pillars, so these counts OVERLAP. They do not add up to ${publishedTotal} and must never be summed, presented as a split, or described as shares of his published work.
 Profile:
   - primary strength: ${p.primary_strength || "not recorded"}
   - level: ${p.level || "not recorded"}
@@ -704,6 +712,19 @@ HOW TO USE A NUMBER (absolute):
   - NEVER do arithmetic on a figure, and NEVER convert its unit. An engagement rate of ${mets.length ? pct1(mets[0]?.engagement_rate) : "2.13%"} is that figure exactly — it is not that number multiplied by a hundred.
   - If a figure you need is not written above, say you cannot see it. Do not derive it, estimate it, or reason it out.
   - If the member states a number in his question and it disagrees with the figures above, correct him in the FIRST sentence, plainly — "You have ${draftsTotal}, not 27." — and then answer the question he asked.`;
+
+    /** P1 — the counted truth, returned with the full prompt further down. */
+    const probeCounts = {
+      published: publishedTotal, confirmed: confirmedTotal, tracked: trackedTotal,
+      discovered: discoveredTotal, external_reference: externalTotal, drafts: draftsTotal,
+      composer: composerTotal, metrics_rows: metricsRows,
+      entries_total: entriesTotalExact, member_captures: memberCaptures,
+      agent_captures: agentCaptures, active_signals: activeSignals,
+      score: sc.score ?? null, tier: sc.tier ?? null,
+      last_published: lastPublishedDate, pillars,
+    };
+
+
 
 
     // Zero-state guards — counted totals, never the ten-post sample.
@@ -989,7 +1010,7 @@ When you answer a product question:
 
 Keep it to 3–4 short plain sentences. Match the Guide's 'What is Aura?' voice — not your strategic persona.
 
-BANNED WORDS — never use these in any response: "authority" (as a noun), "trajectory", "personal brand", "thought leader", "thought leadership", "Zone of Genius", "leverage" (as a verb), "utilize", "facilitate". Use plain words instead: for "authority" say "presence" or "standing"; for "leverage"/"utilize" say "use"; for "thought leadership" say "sharing your expertise".
+BANNED WORDS — never use these in any response: "authority" (as a noun), "trajectory", "personal brand", "thought leader", "thought leadership", "Zone of Genius", "leverage" (as a verb), "utilize", "facilitate", "terminal gap", "CQRS", "context window", "context windows", "signal-to-noise", "surface area". Use plain words instead: for "authority" say "presence" or "standing"; for "leverage"/"utilize" say "use"; for "thought leadership" say "sharing your expertise"; for "terminal gap" say the plain thing that is missing; never name an engineering or model term like "CQRS" or "context window" to a member at all.
 
 ${isNewUser ? `NEW USER CALIBRATION (ACTIVE — account is new or zero published posts):
 - Lead with what the user has DONE right (they joined, they captured, they completed onboarding).
@@ -1156,6 +1177,16 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
   : ""}${ambiguousTurn ? "\nTHIS TURN: the subject of his message cannot be resolved. Ask one short question. Call no tool. Write no draft.\n" : ""}${inputTruncated ? "\nTHIS TURN: his message was longer than you can read and was cut. Say so in one clause before answering.\n" : ""}`;
 
     const finalSystemPrompt = languageDirective + systemPrompt + retrievalSection + responseRules + passNRules;
+
+    // P1 — the grader must judge against what the Desk actually held, which is
+    // this whole prompt, not the counted block alone. Nothing is generated.
+    if (factsOnly) {
+      return new Response(
+        JSON.stringify({ prompt: finalSystemPrompt, facts: accountFactsBlock, counts: probeCounts }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
 
     // STEP 3 — tool definitions. Aura can act, not only advise. Both tools take
     // user_id from the verified JWT only; the model never supplies an identity
