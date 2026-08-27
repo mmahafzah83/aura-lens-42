@@ -381,6 +381,8 @@ serve(withObserve("ask-aura", async (req) => {
     const activeSignals = cnt(activeSignalsR);
     const draftsTotal = cnt(draftsR);
     const entriesTotalExact = cnt(entriesTotalR) || entsTotal;
+    const memberCaptures = cnt(memberCapturesR);
+    const agentCaptures = cnt(agentCapturesR);
 
     /**
      * K1 — a figure never reaches the model bare. Every number is rendered with
