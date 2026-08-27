@@ -1124,7 +1124,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                   <div key={i} className="ask-answer-card" style={{ margin: "14px 0", maxWidth: 720 }}>
                     {<>
                           <Answer text={guardedPlain.text} size={15} color="var(--text-primary)" />
-                          {(failedSave || guardedPlain.stripped) && (
+                          {(failedSave || (guardedPlain.stripped && verified.length === 0)) && (
                             <div data-testid="ask-honest-failure" style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: "2px 0 8px" }}>
                               {HONEST_FAILURE}
                             </div>
