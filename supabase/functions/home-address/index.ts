@@ -100,7 +100,7 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
       .eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     admin.from("facet_states").select("facet, value").eq("user_id", userId),
     admin.from("linkedin_posts")
-      .select("id, title, post_text, tracking_status, created_at, published_at, publish_attempted_at, source_signal_id, source_metadata, authorship, acquisition")
+      .select("id, title, post_text, tracking_status, created_at, published_at, publish_attempted_at, source_signal_id, source_metadata, authorship, acquisition, produced_by")
       .eq("user_id", userId).order("created_at", { ascending: false }).limit(1000),
     admin.from("agent_findings").select("id, status, themes, created_at")
       .eq("user_id", userId).gte("created_at", isoDaysAgo(1)),
@@ -233,6 +233,10 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
   const nightDrafts = posts.filter(
     (p) => p.tracking_status === "draft" && new Date(p.created_at).getTime() >= Date.now() - 86400000,
   );
+  // "While you slept" may only count what the overnight agent itself wrote.
+  // A draft the member asked for — from the Desk or the composer — is his work,
+  // not the machine's, and counting it makes the card a lie.
+  const agentNightDrafts = nightDrafts.filter((p) => p.produced_by === "overnight_agent");
   const contentItems: any[] = contentR.data ?? [];
   const linkedSignalOf = (p: any) => {
     const sid = p.source_signal_id || p?.source_metadata?.signal_ids?.[0] || null;
@@ -260,7 +264,7 @@ async function gatherFacts(admin: SupabaseClient, userId: string): Promise<Facts
   const last_night = {
     sources_read: findings.length,
     themes_strengthened: themes.size,
-    drafts_written: nightDrafts.length + contentItems.filter((c) => c.status === "draft").length,
+    drafts_written: agentNightDrafts.length,
     newest_signal_draft,
   };
 
