@@ -49,7 +49,8 @@ const WORK_WORDS =
 const WORK_WORDS_AR =
   /(منشور|منشورات|مسودة|مسودات|نشر|محتوى|إشارة|إشارات|لينكد|جدول|تذكير)/;
 
-const PROMISE = /\b(i(?:'ll| will| am going to| shall)|i'm going to|we(?:'ll| will| should)|let me)\b/i;
+const PROMISE =
+  /\b(i(?:'ll| will| can| could| am going to| shall)|i'm going to|i'd be happy|we(?:'ll| will| should| can)|let me)\b/i;
 const PROMISE_AR = /(سأ|سوف أ|لن أ|دعني)/;
 
 const MAX_SENTENCES = 3;
