@@ -517,6 +517,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   }, [open, initialMessage]);
 
   const cited = useMemo(() => citedOrder.map(r => citations[r]).filter(Boolean), [citedOrder, citations]);
+  /** Moves on the newest assistant answer, if it carried any. */
+  const lastMoves = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== "assistant") continue;
+      return m.isError ? [] : parseLayers(m.content).moves;
+    }
+    return [];
+  }, [messages]);
+
   const citedSourceRows = useMemo(
     () => citedSources.map(n => sources[n]).filter(Boolean),
     [citedSources, sources],
