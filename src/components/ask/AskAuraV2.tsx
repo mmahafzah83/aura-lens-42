@@ -878,9 +878,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                       ))}
                   </div>
                   );
-                })()}
-                );
+                })();
               })}
+
 
 
               {loading && (
