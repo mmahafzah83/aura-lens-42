@@ -548,7 +548,8 @@ Profile:
   - sector focus: ${p.sector_focus || "not recorded"}
   - north star goal: ${p.north_star_goal || "not recorded"}
 Counts:
-  - captures in the vault: ${entriesTotalExact}
+  - captures in the vault: ${entriesTotalExact} in total — ${memberCaptures} he captured himself, ${agentCaptures} added by Aura's overnight agent.
+  RULE: those two numbers are captures. The discovered figure above (${discoveredTotal}) is posts found on his LinkedIn profile and is a different thing entirely. Never state one as the other, and never call the overnight figure "discovered".
   - signals still open (status active): ${activeSignals}
   - drafts waiting: ${draftsTotal}
 
