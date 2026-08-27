@@ -69,26 +69,36 @@ export interface ClaimVerdict {
   stripped: boolean;
 }
 
+/** A promise to do something Aura cannot do at all. Never earned by a tool. */
+function impossibleClaim(sentence: string): boolean {
+  if (!/\b(i(?:'ll| will| have|'ve)?|we(?:'ll| will)?|let me)\b/i.test(sentence)) return false;
+  if (!IMPOSSIBLE.test(sentence)) return false;
+  return SCHEDULE_OBJECT.test(sentence) || /\bnotify|email\b/i.test(sentence);
+}
+
 /**
- * Remove any sentence claiming work was done when no verified action proves it.
+ * Remove any sentence claiming work was done when no verified action proves it,
+ * and any sentence promising a capability Aura does not have.
  * `verified` is the set of tools that came back ok with a real row.
  */
 export function guardClaims(text: string, verified: string[]): ClaimVerdict {
-  if (verified.length > 0) return { text, stripped: false };
   const src = String(text ?? "");
-  if (!CLAIM.test(src)) return { text: src, stripped: false };
+  const proven = verified.length > 0;
+  if (proven && !IMPOSSIBLE.test(src)) return { text: src, stripped: false };
+  if (!proven && !CLAIM.test(src) && !IMPOSSIBLE.test(src)) return { text: src, stripped: false };
   let stripped = false;
   const kept = src
     .split(/(?<=[.!?])\s+/)
     .filter(s => {
-      if (!CLAIM.test(s)) return true;
-      stripped = true;
-      return false;
+      if (impossibleClaim(s)) { stripped = true; return false; }
+      if (!proven && CLAIM.test(s)) { stripped = true; return false; }
+      return true;
     })
     .join(" ")
     .trim();
   return { text: kept, stripped };
 }
+
 
 /** What the member is told when the write did not happen. */
 export const HONEST_FAILURE = "I could not save that. The draft is still here — try again?";
