@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X, Send, ArrowUpRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
+import AuraMark from "@/components/brand/AuraMark";
 import { filterPublishedRows } from "@/lib/postProvenance";
 
 /**
@@ -662,7 +663,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         padding: "14px 20px", borderBottom: "1px solid var(--rule-outer)", flex: "0 0 auto",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 999, background: "var(--machine)" }} />
+          <AuraMark size={24} state={loading ? "working" : "resting"} />
           <span id="ask-aura-title" style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--text-primary)" }}>Ask Aura</span>
           {context?.linkedLabel && (
             <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>· {context.linkedLabel}</span>
@@ -767,7 +768,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
               })}
 
               {loading && (
-                <div role="status" data-testid="ask-thinking" style={{ ...MONO, fontSize: 12, color: "var(--machine-text)", margin: "10px 0" }}>
+                <div role="status" data-testid="ask-thinking" style={{ ...MONO, fontSize: 12, color: "var(--machine-text)", margin: "10px 0", display: "flex", alignItems: "center", gap: 8 }}>
+                  <AuraMark size={16} state="working" />
                   Reading your graph…
                 </div>
               )}
