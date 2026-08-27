@@ -69,7 +69,8 @@ export default function DeskLedger({ onOpenDrafts, onOpenSignals, onOpenTab }: P
           .eq("user_id", uid).eq("tracking_status", "draft")
           .order("created_at", { ascending: false }).limit(1),
         supabase.from("strategic_signals")
-          .select("id, theme_tags").eq("user_id", uid).eq("status", "active"),
+          .select("id, theme_tags, created_at").eq("user_id", uid).eq("status", "active"),
+
         supabase.from("score_snapshots")
           .select("score, created_at").eq("user_id", uid)
           .order("created_at", { ascending: false }).limit(2),
