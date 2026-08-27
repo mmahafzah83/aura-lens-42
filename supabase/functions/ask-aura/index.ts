@@ -200,6 +200,21 @@ serve(withObserve("ask-aura", async (req) => {
     const entsTotal: number = (entriesCount as any)?.count ?? ents.length;
     const mets: any[] = Array.isArray(metrics) ? metrics : [];
     const trnds: any[] = Array.isArray(trends) ? trends : [];
+    const finds: any[] = Array.isArray(findings) ? findings : [];
+
+    const findingsBlock =
+      finds.length === 0
+        ? "—"
+        : finds
+            .map((f) => {
+              const bits = [String(f.title || f.source || "(untitled)").slice(0, 120)];
+              if (f.source) bits.push(String(f.source));
+              bits.push(`score ${f.relevance_score ?? "—"}`);
+              const imp = String(f.implication || "").trim();
+              if (imp) bits.push(imp.slice(0, 200));
+              return `- ${bits.join(" · ")}`;
+            })
+            .join("\n");
 
     const publishedCount = pst.filter((x) => !!x.published_at).length;
     const draftCount = pst.length - publishedCount;
