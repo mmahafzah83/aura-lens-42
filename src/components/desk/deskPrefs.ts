@@ -13,6 +13,12 @@ import { canonicalHandle } from "@/lib/linkedinAddress";
 export type DeskPriority = "presence" | "current" | "output" | "role";
 export type DeskAudience = "buyers" | "peers" | "hirers" | "team";
 
+export interface DockPosition {
+  corner: "br" | "bl" | "tr" | "tl";
+  /** Distance from that corner along the vertical edge, in px. */
+  offsetY: number;
+}
+
 export interface DeskPrefs {
   priority?: DeskPriority;
   audience?: DeskAudience;
@@ -21,6 +27,27 @@ export interface DeskPrefs {
   declined?: Record<string, string>;
   /** Mirror claims he has called untrue. Signatures, never surfaced again. */
   mirror_dismissed?: string[];
+  /** Where he put the dock. Corner plus offset, never free x/y. */
+  dock_position?: DockPosition;
+  /** How many results he has been shown. The pulse teaches only the first. */
+  found_seen?: number;
+  /** Which sections show beside his answers. */
+  panel?: Record<string, boolean>;
+}
+
+/** The four sections of the panel, in render order, plus memory last. */
+export const PANEL_OPTIONS: { key: string; title: string; line: string; on: boolean }[] = [
+  { key: "scope", title: "What I can see", line: "The rows your answers are made of.", on: true },
+  { key: "cited", title: "Used in this answer", line: "Every source the answer leaned on.", on: true },
+  { key: "standing", title: "Where you stand", line: "One number, and how your voice was learned.", on: true },
+  { key: "jump", title: "Jump to", line: "Signals, Write, Capture, Where you stand.", on: true },
+  { key: "memory", title: "What I remember", line: "Notes left by earlier sessions.", on: false },
+];
+
+export function panelOn(prefs: DeskPrefs | null, key: string): boolean {
+  const shipped = PANEL_OPTIONS.find(o => o.key === key)?.on ?? false;
+  const v = prefs?.panel?.[key];
+  return typeof v === "boolean" ? v : shipped;
 }
 
 export type CapabilityKey = "cv_crosscheck" | "linkedin_profile";
@@ -123,6 +150,7 @@ export async function saveDeskPrefs(current: DeskPrefs, patch: DeskPrefs): Promi
     ...patch,
     watch: { ...(current.watch || {}), ...(patch.watch || {}) },
     mirror_dismissed: patch.mirror_dismissed ?? current.mirror_dismissed,
+    panel: { ...(current.panel || {}), ...(patch.panel || {}) },
     declined: { ...(current.declined || {}), ...(patch.declined || {}) },
   };
   const { data: { session } } = await supabase.auth.getSession();

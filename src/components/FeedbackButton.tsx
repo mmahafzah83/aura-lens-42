@@ -70,6 +70,8 @@ const FeedbackButton = () => {
     <>
       {!open && (
         <button
+          /* Measured by the Desk dock so the two never sit on top of each other. */
+          data-feedback-button=""
           onClick={() => setOpen(true)}
           style={{
             position: "fixed",

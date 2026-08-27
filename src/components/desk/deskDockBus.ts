@@ -21,10 +21,19 @@ export interface DeskExchange {
 interface Snapshot {
   state: DeskDockState;
   last: DeskExchange | null;
+  /** Increments once per result. The pulse is keyed on it, so it fires once. */
+  foundId: number;
 }
 
-let snapshot: Snapshot = { state: { kind: "quiet" }, last: null };
+let snapshot: Snapshot = { state: { kind: "quiet" }, last: null, foundId: 0 };
 const listeners = new Set<() => void>();
+
+/**
+ * Tasks in flight. A run begun on the Desk keeps the dock turning after the
+ * Desk closes, and two overlapping runs cannot cancel each other: only the
+ * last one to finish stops the hand.
+ */
+let runs = 0;
 
 function emit() {
   for (const l of listeners) l();
@@ -37,12 +46,30 @@ export function setDeskWorking(label: string) {
   emit();
 }
 
+/** A task starts. The hand turns until every started task has ended. */
+export function beginDeskRun(label: string) {
+  runs += 1;
+  setDeskWorking(label);
+}
+
+/** A task ends with nothing to show: quiet only when no other run is left. */
+export function endDeskRun() {
+  runs = Math.max(0, runs - 1);
+  if (runs === 0 && snapshot.state.kind === "working") setDeskQuiet();
+}
+
 export function setDeskFound(text: string, last?: DeskExchange) {
-  snapshot = { state: { kind: "found", text: text.trim() }, last: last ?? snapshot.last };
+  runs = Math.max(0, runs - 1);
+  snapshot = {
+    state: { kind: "found", text: text.trim() },
+    last: last ?? snapshot.last,
+    foundId: snapshot.foundId + 1,
+  };
   emit();
 }
 
 export function setDeskQuiet() {
+  runs = 0;
   snapshot = { ...snapshot, state: { kind: "quiet" } };
   emit();
 }
