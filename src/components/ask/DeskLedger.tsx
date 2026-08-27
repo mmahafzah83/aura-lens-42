@@ -28,11 +28,14 @@ interface Row {
   title: string;
   subtitle: string;
   value: string;
+  /** Empty when the value is a word ("Today") rather than a number. */
   unit: string;
   colour: string;
+  /** Days the row has genuinely been waiting. Higher waits longer. */
   neglect: number;
   open: () => void;
 }
+
 
 interface Props {
   onOpenDrafts: () => void;
