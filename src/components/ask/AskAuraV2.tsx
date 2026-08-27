@@ -62,6 +62,8 @@ interface Props {
   onClose: () => void;
   initialMessage?: string;
   context?: AskContext;
+  /** Optional overnight finding the opener should speak about first. */
+  findingId?: string;
 }
 
 /* ── Rail data ── */
@@ -164,7 +166,7 @@ const SourcePill: React.FC<{ s: Source }> = ({ s }) => (
   </button>
 );
 
-export default function AskAuraV2({ open, onClose, initialMessage, context }: Props) {
+export default function AskAuraV2({ open, onClose, initialMessage, context, findingId }: Props) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -265,7 +267,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) { setOpenerDone(true); return; }
-        const { data, error } = await supabase.functions.invoke("ask-aura-opener", { body: {} });
+        const { data, error } = await supabase.functions.invoke("ask-aura-opener", { body: findingId ? { finding_id: findingId } : {} });
         if (error) throw error;
         const text = typeof (data as any)?.text === "string" ? (data as any).text.trim() : "";
         const chips = Array.isArray((data as any)?.chips) ? (data as any).chips.slice(0, 3) : [];
@@ -277,7 +279,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context }: Pr
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialMessage]);
+  }, [open, initialMessage, findingId]);
 
 
   /* Initial focus stays on the textarea; the opener element is remembered so we can hand focus back. */
