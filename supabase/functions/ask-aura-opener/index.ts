@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { SIGNAL, nCaptures, nSignals } from "../_shared/vocabulary.ts";
+import { SIGNAL, nCaptures } from "../_shared/vocabulary.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
