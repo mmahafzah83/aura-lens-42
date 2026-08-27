@@ -12,7 +12,7 @@ import {
 
 
 import { setDeskWorking, setDeskFound, setDeskQuiet } from "@/components/desk/deskDockBus";
-import { X, Send, ArrowUpRight } from "lucide-react";
+import { Settings2, X, Send, ArrowUpRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import AuraMark from "@/components/brand/AuraMark";
