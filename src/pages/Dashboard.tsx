@@ -148,6 +148,7 @@ const Dashboard = () => {
     }
   };
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatFindingId, setChatFindingId] = useState<string | undefined>();
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; firstName?: string | null; avatarUrl?: string | null } | null>(null);
@@ -1551,9 +1552,10 @@ const Dashboard = () => {
       />
       <AskAuraV2
         open={chatOpen}
-        onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); setChatContext(undefined); }}
+        onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); setChatContext(undefined); setChatFindingId(undefined); }}
         initialMessage={chatInitialMessage}
         context={chatContext}
+        findingId={chatFindingId}
       />
       <FeedbackButton />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} activeTab={activeTab} />
