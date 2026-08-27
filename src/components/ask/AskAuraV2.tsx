@@ -1109,8 +1109,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                   /* A save is only real when the write came back with a row id. */
                   const savedId = (m.actions || []).find(a => a.ok && a.tool === "save_draft" && a.post_id)?.post_id || null;
                   const verified = (m.actions || []).filter(a => a.ok && (a.tool !== "save_draft" || !!a.post_id)).map(a => a.tool);
-                  const guardedPlain = guardClaims(layers.plain, verified);
-                  const guardedMore = guardClaims(layers.more, verified);
+                  /* Bold reads as a system term — only real names keep it. */
+                  const guardedPlain = guardClaims(groundBold(layers.plain, groundedTerms), verified);
+                  const guardedMore = guardClaims(groundBold(layers.more, groundedTerms), verified);
                   const failedSave = (m.actions || []).some(a => a.tool === "save_draft" && (!a.ok || !a.post_id));
                   const isOpen = !!expanded[i];
                   // A failure is not a finished object — errors stay outside the card.
