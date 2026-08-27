@@ -107,12 +107,18 @@ export function parseLayers(raw: string): { plain: string; more: string; moves: 
 
   let current: "none" | "plain" | "more" | "moves" = "none";
   const buf = { plain: [] as string[], more: [] as string[], moves: [] as string[] };
+  // A last line that is only the beginning of a marker is a marker still being
+  // typed — never show it to the member.
+  const partial = (l: string, i: number) =>
+    i === lines.length - 1 && !text.endsWith("\n") && /^§+§?[A-Z]*$/.test(l.trim()) && l.trim().length > 0;
   lines.forEach((l, i) => {
     if (isMarker(l, "§§PLAIN", i)) { current = "plain"; return; }
     if (isMarker(l, "§§MORE", i)) { current = "more"; return; }
     if (isMarker(l, "§§MOVES", i)) { current = "moves"; return; }
+    if (partial(l, i)) return;
     if (current !== "none") buf[current].push(l);
   });
+
 
   const moves = buf.moves.join(" ").split("|").map(s => s.trim()).filter(Boolean).slice(0, 4);
   return { plain: buf.plain.join("\n").trim(), more: buf.more.join("\n").trim(), moves };
