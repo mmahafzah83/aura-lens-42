@@ -37,7 +37,17 @@ export function isHumanLimitTurn(message: string): boolean {
 
 /** Anything that is work, a promise, or a piece of product advice. */
 const WORK_WORDS =
-  /\b(draft|drafts|post|posts|posting|publish\w*|content|capture|captures|signal|signals|linkedin|pillar|audience|engagement|cadence|schedule|scaled? back|scale back|output|pause|reminder|reschedul\w*|hold off|momentum|presence|visibility)\b/i;
+  /\b(draft\w*|post\w*|publish\w*|content|captur\w*|signal\w*|linkedin|pillar\w*|audience|engagement|cadence|schedul\w*|scaled? back|scale back|output|paus\w*|remind\w*|updat\w*|notif\w*|hold off|momentum|presence|visibility|writing|write)\b/i;
+
+/**
+ * A promise to stop, mute or hold something on his behalf. Aura cannot silence
+ * anything, and a kind sentence that promises it is still a lie — it was the
+ * last thing surviving this branch: "I will stop sending you reminders."
+ */
+const PROMISE =
+  /\b(i(?:'ll| will| am going to| have|'ve)?|we(?:'ll| will| should)?|let me)\b[^.!?]{0,60}\b(stop|pause|hold|mute|silenc\w*|quieten|turn off|switch off|sending|send)\b/i;
+const PROMISE_AR =
+  /(سأتوقف|سأوقف|سأكف|سأمتنع|لن أرسل|سأصمت)/;
 const WORK_WORDS_AR =
   /(منشور|منشورات|مسودة|مسودات|نشر|محتوى|إشارة|إشارات|لينكد|جدول|تذكير)/;
 
@@ -57,7 +67,12 @@ export function stripWork(text: string, fallback: string): string {
   const kept = body
     .split(SPLIT)
     .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !WORK_WORDS.test(s) && !WORK_WORDS_AR.test(s))
+    .filter((s) =>
+      s.length > 0 &&
+      !WORK_WORDS.test(s) &&
+      !WORK_WORDS_AR.test(s) &&
+      !PROMISE.test(s) &&
+      !PROMISE_AR.test(s))
     .slice(0, MAX_SENTENCES);
   const out = kept.join(" ").trim();
   return out.length >= 12 ? out : fallback;
@@ -76,7 +91,7 @@ Write your whole answer in ${lang}. At most three short sentences. Rules, all ab
 - Say that nothing here needs him and it will keep.
 - You may offer exactly ONE thing, and it must REDUCE what is being asked of him. Never add anything.
 - Do not mention drafts, posts, publishing, captures, signals, LinkedIn, cadence, output, momentum or presence. Not once.
-- Do not promise to pause, hold, reschedule, notify or manage anything. You cannot do any of those.
+- Do not promise to pause, hold, stop, mute, reschedule, notify or manage anything, and do not offer to stop sending him things. You cannot do any of those, and offering is a lie however kind it sounds.
 - No question that asks him to decide something. No next step. No task.
 
 A good answer reads close to: "That matters more than any of this. Nothing here needs you — it will keep. Come back when you can."`;
