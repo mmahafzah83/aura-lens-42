@@ -1400,7 +1400,8 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
         ),
       });
 
-    let aiRes = await callGateway(firstMessages, true);
+    // N9 — an unresolvable referent gets a question, never a tool call.
+    let aiRes = await callGateway(firstMessages, !ambiguousTurn);
     // If the gateway rejects the tools payload, fall back to a plain toolless call
     // so the member still gets an answer.
     if (!aiRes.ok && aiRes.status !== 429 && aiRes.status !== 402) {
