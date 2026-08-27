@@ -402,6 +402,17 @@ const Dashboard = () => {
       setActiveTab(resolvedTab as TabValue);
     }
 
+    // The Overnight email lands here: open Ask Aura on the finding it names.
+    if (params.get("desk") === "1") {
+      const findingParam = params.get("finding");
+      setChatFindingId(findingParam || undefined);
+      setChatOpen(true);
+      const next = new URLSearchParams(window.location.search);
+      next.delete("desk");
+      next.delete("finding");
+      setSearchParams(next, { replace: true });
+    }
+
     // If we landed on the Publish tab with a signal id, fetch that signal and
     // pre-fill the draft so the user lands directly in the right context.
     const signalParam = params.get("signal");
