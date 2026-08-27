@@ -1217,7 +1217,6 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
               ...(kinds && kinds.length ? { kinds: kinds as any } : {}),
             });
             const keptAll = applyRelevanceFloor(res.rows);
-            const total = keptAll.length;
             const kept = keptAll.slice(0, 8);
             const out = kept.map((r: any) => {
               const key = `${r.source_kind}:${r.source_id}`;
