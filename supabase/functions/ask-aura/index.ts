@@ -935,7 +935,7 @@ ${retrievalDegraded ? "NOTE: source retrieval failed for this turn. Do not claim
               encoder.encode(
                 `data: ${JSON.stringify({
                   choices: [{ delta: {} }],
-                  action: { tool: a.tool, ok: a.ok, label: a.label },
+                  action: { tool: a.tool, ok: a.ok, label: a.label, ...(a.route ? { route: a.route } : {}) },
                 })}\n\n`,
               ),
             );
