@@ -33,6 +33,8 @@ export interface DeskPrefs {
   found_seen?: number;
   /** Which sections show beside his answers. */
   panel?: Record<string, boolean>;
+  /** Which of the shown sections are expanded. */
+  panel_open?: Record<string, boolean>;
 }
 
 /** The four sections of the panel, in render order, plus memory last. */
@@ -43,6 +45,16 @@ export const PANEL_OPTIONS: { key: string; title: string; line: string; on: bool
   { key: "jump", title: "Jump to", line: "Signals, Write, Capture, Where you stand.", on: true },
   { key: "memory", title: "What I remember", line: "Notes left by earlier sessions.", on: false },
 ];
+
+/** Shipped open state: the two he uses, open; the rest folded away. */
+export const PANEL_OPEN_DEFAULT: Record<string, boolean> = {
+  scope: false, cited: true, standing: false, jump: true, memory: false,
+};
+
+export function panelOpen(prefs: DeskPrefs | null, key: string): boolean {
+  const v = prefs?.panel_open?.[key];
+  return typeof v === "boolean" ? v : (PANEL_OPEN_DEFAULT[key] ?? false);
+}
 
 export function panelOn(prefs: DeskPrefs | null, key: string): boolean {
   const shipped = PANEL_OPTIONS.find(o => o.key === key)?.on ?? false;
@@ -151,6 +163,7 @@ export async function saveDeskPrefs(current: DeskPrefs, patch: DeskPrefs): Promi
     watch: { ...(current.watch || {}), ...(patch.watch || {}) },
     mirror_dismissed: patch.mirror_dismissed ?? current.mirror_dismissed,
     panel: { ...(current.panel || {}), ...(patch.panel || {}) },
+    panel_open: { ...(current.panel_open || {}), ...(patch.panel_open || {}) },
     declined: { ...(current.declined || {}), ...(patch.declined || {}) },
   };
   const { data: { session } } = await supabase.auth.getSession();
