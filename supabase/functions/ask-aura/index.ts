@@ -1341,7 +1341,8 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
     const stripAfterMore = (text: string): string => {
       const i = text.search(/§§MORE|§§MOVES/);
       const head = i === -1 ? text : text.slice(0, i);
-      return head.replace(/§§PLAIN\s*/, "").trim();
+      const plain = head.replace(/§§PLAIN\s*/, "").trim();
+      return plain ? `§§PLAIN\n${plain}` : text;
     };
 
     const stream = new ReadableStream({
