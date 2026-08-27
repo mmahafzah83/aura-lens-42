@@ -735,7 +735,9 @@ USING YOUR TOOLS — this is not optional, and it comes before the answer:
 - "remind me", "chase me", "don't let me forget" → call set_reminder.
 - "open", "take me to", "where is" → call open_surface.
 - "find", "search", "what do I have on" → call search_my_graph.
+- search_my_graph returns a field named count_rendered. That string is the only count of his record you may state. Repeat it as written. Never count the results yourself, never estimate how many items he has, and never round or adjust the figure.
 - Never answer "I've saved it" without having called the tool. Never write a draft he asked you to save and then leave it unsaved.
+
 
 THE HONESTY CONTRACT (applies in all three modes):
 Say what you can see and what you cannot. Never imply a capability you do not have. If he asks for something outside the four things you can do, say plainly that you cannot do it and name the nearest thing you can. Never soften a real problem to be agreeable — he is paying for judgement, not comfort.
@@ -928,6 +930,7 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
 <label> | <label> | <label>
 
 - §§PLAIN — the answer, in everyday words. Two or three short sentences. No acronym that has not been unpacked in the same breath. No jargon. A capable twelve-year-old should follow it without effort. The last line of §§PLAIN is the single next step, in plain words.
+- In SECRETARY mode — an errand: save this, remind me, open that — write §§PLAIN only, one line, and stop. No §§MORE. The machine reports the work on its own line; you do not restate it.
 - §§MORE — the same answer for a professional: the terminology, the mechanism, the numbers, the named frameworks. Two to four lines. This is where "ESG", "CAPEX", "procurement gate" may appear. Omit this section entirely when there is genuinely nothing more to say — never pad it.
 - §§MOVES — two to three short button labels separated by " | ". Four words or fewer each, written as plain instructions a member would say out loud ("Save this draft", "Open my drafts"). NEVER write an internal tool name such as save_draft, set_reminder, open_surface or search_my_graph. The first is the recommended action. Always present.
 - Signal citations and their bracketed references belong inside §§PLAIN or §§MORE exactly as they do now; the citation rules are unchanged.
@@ -1192,12 +1195,17 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
             ? args.kinds.filter((k: unknown) => typeof k === "string" && (SOURCE_KINDS as string[]).includes(k))
             : null;
           try {
+            // L1.1 — the count is computed here and handed to the model as a
+            // rendered string. The model is forbidden from counting rows itself,
+            // so retrieval reads wider than it shows and states both figures.
             const res = await retrieveContext(admin, user_id, q, {
-              limit: 8,
+              limit: 40,
               caller: "ask-aura-tool",
               ...(kinds && kinds.length ? { kinds: kinds as any } : {}),
             });
-            const kept = applyRelevanceFloor(res.rows);
+            const keptAll = applyRelevanceFloor(res.rows);
+            const total = keptAll.length;
+            const kept = keptAll.slice(0, 8);
             const out = kept.map((r: any) => {
               const key = `${r.source_kind}:${r.source_id}`;
               let n: number;
@@ -1224,7 +1232,24 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
                 content: r.content ? String(r.content).slice(0, 300) : "",
               };
             });
-            return { tool: name, ok: true, label: "", payload: { ok: true, results: out } };
+            const countRendered = total === 0
+              ? `nothing in your record matches "${q}"`
+              : total === 1
+              ? `1 item in your record matches "${q}"`
+              : `${total} items in your record match "${q}"${total > kept.length ? ` (top ${kept.length} shown)` : ""}`;
+            return {
+              tool: name,
+              ok: true,
+              label: "",
+              payload: {
+                ok: true,
+                count: total,
+                shown: kept.length,
+                count_rendered: countRendered,
+                results: out,
+              },
+            };
+
           } catch (e) {
             console.error("search_my_graph failed", (e as Error)?.message ?? String(e));
             return { tool: name, ok: false, label: "", payload: { ok: false, error: "could not search" } };
@@ -1300,10 +1325,32 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
 
     type PumpOut = { text: string; toolCalls: { id: string; name: string; args: string }[] };
 
+    /**
+     * L1.2 — Secretary work is a confirmation, not a briefing. When the member
+     * asked for an errand ("save this", "remind me", "open my drafts"), the
+     * professional restatement is noise: everything from §§MORE onward is cut
+     * and only the plain layer plus the machine's own action line survives.
+     * The answer is held back rather than streamed so nothing that gets cut is
+     * ever seen on screen first.
+     */
+    const lastUserText = String(
+      [...messages].reverse().find((m: any) => m?.role === "user")?.content ?? "",
+    );
+    const secretaryTurn = /\b(save (it|this|that)|save to (my )?drafts?|put (it|this|that) in|remind me|chase me|don'?t let me forget|open (my|the)|take me to)\b/i
+      .test(lastUserText);
+
+    const stripAfterMore = (text: string): string => {
+      const i = text.search(/§§MORE|§§MOVES/);
+      const head = i === -1 ? text : text.slice(0, i);
+      const plain = head.replace(/§§PLAIN\s*/, "").trim();
+      return plain ? `§§PLAIN\n${plain}` : text;
+    };
+
     const stream = new ReadableStream({
       async start(controller) {
         let fullReply = "";
         const actions: ToolResult[] = [];
+
 
         const pump = async (body: ReadableStream<Uint8Array>, collectTools: boolean): Promise<PumpOut> => {
           const reader = body.getReader();
@@ -1332,10 +1379,14 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
               const c = delta?.content;
               if (typeof c === "string" && c) {
                 text += c;
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`),
-                );
+                // Secretary turns are held back and emitted once, trimmed.
+                if (!secretaryTurn) {
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: c } }] })}\n\n`),
+                  );
+                }
               }
+
               if (collectTools && Array.isArray(delta?.tool_calls)) {
                 for (const tc of delta.tool_calls) {
                   const i = Number.isFinite(tc?.index) ? Number(tc.index) : 0;
@@ -1410,7 +1461,17 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
           }
 
           // The summariser must see the answer the member actually read.
-          fullReply = lastText;
+          fullReply = secretaryTurn ? stripAfterMore(lastText) : lastText;
+
+          if (secretaryTurn && fullReply) {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ choices: [{ delta: { content: fullReply } }] })}\n\n`,
+              ),
+            );
+          }
+
+
 
 
           // One machine line per tool that ran, before the existing events.
