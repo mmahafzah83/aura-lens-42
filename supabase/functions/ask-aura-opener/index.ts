@@ -450,7 +450,10 @@ serve(async (req) => {
         const subject = t + " " + SIGNAL.one;
         const out: Opener = {
           kind: "unwritten signal",
-          text: `Your ${subject} has been live ${n} days. You have not written from it yet.`,
+          text: assemble(greeting, [
+            `Your ${subject} has been live ${n} days.`,
+            "You have not written from it yet.",
+          ]),
           chips: [
 
             { label: "Draft it", prompt: `Draft a post from my signal "${t}" using the evidence behind it.` },
@@ -458,33 +461,28 @@ serve(async (req) => {
             ELSE,
           ],
         };
-        out.text = applyVoiceContract(out.text);
-      return json(out);
+        return json(out);
       }
     }
 
     /* ── RULE 4 — quiet radar ── */
-    const { data: lastEntry } = await admin
-      .from("entries")
-      .select("created_at")
-      .eq("user_id", user_id)
-      .order("created_at", { ascending: false })
-      .limit(1);
-    const lastAt = lastEntry?.[0]?.created_at as string | undefined;
+    const lastAt = lastCaptureAt ?? undefined;
     if (lastAt) {
       const n = daysSince(lastAt);
       if (n > 7) {
         const out: Opener = {
           kind: "quiet radar",
-          text: `Your last capture was ${n} days ago. There is still plenty here to work with.`,
+          text: assemble(greeting, [
+            `Your last capture was ${n} days ago.`,
+            "There is still plenty here to work with.",
+          ]),
           chips: [
             { label: "What is still live?", prompt: "Which of my signals are still worth acting on right now?" },
             { label: "What should I write?", prompt: "From what I have already captured, what should I write next?" },
             ELSE,
           ],
         };
-        out.text = applyVoiceContract(out.text);
-      return json(out);
+        return json(out);
       }
     }
 
@@ -503,7 +501,10 @@ serve(async (req) => {
     if (E === 0 && S === 0) {
       return json({
         kind: "cold start",
-        text: applyVoiceContract("I do not have anything of yours to read yet. Capture one article and I will have something to say about it."),
+        text: assemble(greeting, [
+          "I do not have anything of yours to read yet.",
+          "Capture one article and I will have something to say about it.",
+        ]),
         chips: [
           {
             label: "What should I capture?",
@@ -513,14 +514,45 @@ serve(async (req) => {
       } satisfies Opener);
     }
 
-    return json({
-      kind: "cold start",
-      text: applyVoiceContract(`Quiet morning. Nothing needs you — ${nCaptures(E, "en")} sit here when you want them.`),
-      chips: [
+    /* ── QUIET MORNING — a real outcome, not a truncation guard ── */
+    const { data: idleDraftRows } = await admin
+      .from("linkedin_posts")
+      .select("title, post_text, created_at")
+      .eq("user_id", user_id)
+      .eq("tracking_status", "draft")
+      .order("created_at", { ascending: true })
+      .limit(1);
+    const idle: any = idleDraftRows?.[0] || null;
+    const idleLabel = idle
+      ? (typeof idle.title === "string" && idle.title.trim()
+        ? idle.title.trim()
+        : (typeof idle.post_text === "string" && idle.post_text.trim()
+          ? `${idle.post_text.trim().slice(0, 60)}…`
+          : ""))
+      : "";
+
+    const quietChips: Chip[] = idleLabel
+      ? [
+        {
+          label: "Pick up the oldest draft",
+          prompt: `Open my oldest draft "${idleLabel}" and tell me honestly whether it is worth finishing.`,
+        },
+        { label: "What should I write?", prompt: "From what I have already captured, what should I write next?" },
+      ]
+      : [
         { label: "What can you see?", prompt: "What can you actually see in my graph right now?" },
         { label: "What should I write?", prompt: "From what I have already captured, what should I write next?" },
-      ],
+      ];
+
+    return json({
+      kind: "quiet morning",
+      text: assemble(greeting, [
+        "Quiet morning. Nothing needs you.",
+        `${nCaptures(E, "en")} sit here when you want them.`,
+      ]),
+      chips: quietChips,
     } satisfies Opener);
+
   } catch (e) {
     console.error("ask-aura-opener failed:", e);
     return json({ error: "opener unavailable" }, 500);
