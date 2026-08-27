@@ -197,23 +197,22 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const openerRef = useRef(false);
 
 
-  const openSignal = (id: string) => {
+  /**
+   * The one navigation contract on this surface: Dashboard reads ?tab= (and
+   * ?signal= for a subject). openSignal, openDrafts and the routing pill all
+   * go through here — there is no second helper.
+   */
+  const openSurface = (tab: string, subjectId?: string | null) => {
     const next = new URLSearchParams(window.location.search);
-    next.set("tab", "intelligence");
-    next.set("signal", id);
+    next.set("tab", tab);
+    if (subjectId) next.set("signal", subjectId);
+    else next.delete("signal");
     window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
     window.dispatchEvent(new PopStateEvent("popstate"));
     onClose();
   };
-  /** Same navigation contract as openSignal: Dashboard reads ?tab= and renders DraftsPage for "drafts". */
-  const openDrafts = () => {
-    const next = new URLSearchParams(window.location.search);
-    next.set("tab", "drafts");
-    next.delete("signal");
-    window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    onClose();
-  };
+  const openSignal = (id: string) => openSurface("intelligence", id);
+  const openDrafts = () => openSurface("drafts");
 
 
   /* ── Load the rail from real rows only ── */
