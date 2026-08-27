@@ -9,7 +9,7 @@ import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
 import DeskSlot, { type DeskCardKind } from "@/components/desk/DeskSlot";
 import DeskReturnCard, { loadReturnCard, type ReturnCardData } from "@/components/desk/DeskReturnCard";
 import {
-  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen,
+  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen, saveDeskPrefs,
   type Capabilities, type CapabilityKey, type DeskPrefs,
 } from "@/components/desk/deskPrefs";
 import { cleanMoves, guardClaims, HONEST_FAILURE } from "@/components/desk/deskMoves";
@@ -17,7 +17,7 @@ import { cleanMemory, type CleanMemoryRow } from "@/components/desk/deskMemory";
 
 
 import { beginDeskRun, endDeskRun, setDeskFound } from "@/components/desk/deskDockBus";
-import { Settings2, X, Send, ArrowUpRight, Eye, Quote, Gauge, Compass, History, Radar, PenLine, Inbox } from "lucide-react";
+import { Settings2, X, Send, ArrowUpRight, Eye, Quote, Gauge, Compass, History, Radar, PenLine, Inbox, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import AuraMark from "@/components/brand/AuraMark";
