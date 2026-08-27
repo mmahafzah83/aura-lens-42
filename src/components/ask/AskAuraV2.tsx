@@ -796,7 +796,22 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
             <span style={{ ...MONO, fontSize: 11, color: "var(--text-muted)" }}>· {context.linkedLabel}</span>
           )}
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <button
+          type="button"
+          className="ask-focusable"
+          aria-label="What your Desk watches"
+          onClick={() => setWatchOpen(true)}
+          style={{
+            background: "transparent", border: 0, cursor: "pointer", color: "#5B6673",
+            width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
+            margin: "-6px 0", borderRadius: 10,
+          }}
+        >
+          <Settings2 size={17} aria-hidden="true" />
+        </button>
         <button type="button" className="ask-focusable" aria-label="Close" onClick={onClose} style={{
+
           background: "transparent", border: 0, cursor: "pointer", color: "var(--text-secondary)",
           width: 44, height: 44, display: "inline-flex", alignItems: "center", justifyContent: "center",
           margin: "-6px -10px -6px 0", borderRadius: 10,
