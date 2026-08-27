@@ -359,6 +359,12 @@ serve(withObserve("ask-aura", async (req) => {
       // K2 — every published post's text, so pillar coverage is counted, not guessed.
       safeRes(admin.from("linkedin_posts").select("post_text, theme")
         .eq("user_id", user_id).eq("tracking_status", "published").limit(200) as any),
+      // N7 — captures he made, and captures Aura's overnight agent added. Two
+      // different things: neither is the discovered-posts figure.
+      safeRes(admin.from("entries").select("id", { count: "exact", head: true })
+        .eq("user_id", user_id).or("source_type.is.null,source_type.neq.aura_agent") as any),
+      safeRes(admin.from("entries").select("id", { count: "exact", head: true })
+        .eq("user_id", user_id).eq("source_type", "aura_agent") as any),
     ]);
 
 
