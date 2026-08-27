@@ -1599,15 +1599,16 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
           }
 
           // The summariser must see the answer the member actually read.
-          fullReply = secretaryTurn ? stripAfterMore(lastText) : lastText;
+          fullReply = enforceLayers(secretaryTurn ? stripAfterMore(lastText) : lastText);
+          // N3 — a turn that produced nothing says so rather than going quiet.
+          if (!fullReply.trim()) fullReply = `§§PLAIN\n${FAILURE_LINE}`;
 
-          if (secretaryTurn && fullReply) {
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ choices: [{ delta: { content: fullReply } }] })}\n\n`,
-              ),
-            );
-          }
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ choices: [{ delta: { content: fullReply } }] })}\n\n`,
+            ),
+          );
+
 
 
 
