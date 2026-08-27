@@ -13,6 +13,7 @@ import { logEfError, withObserve } from "../_shared/observe.ts";
 import { mergeSnapshot } from "../_shared/mergeSnapshot.ts";
 import { similarityRatio } from "../_shared/editDistance.ts";
 import { compareKey as normaliseForCompare } from "../_shared/textMatch.ts";
+import { storeAvatar } from "../_shared/avatarStore.ts";
 
 /* One shared text layer: the same normaliser the profile matcher uses. */
 
