@@ -107,6 +107,22 @@ export function applyVoiceContract(input: string): string {
 }
 
 
+/**
+ * THE THREE-SENTENCE GUARD.
+ * A greeting is sentence one and carries the one permitted number, so the
+ * rule's own line must then carry none: we keep only the first number-free
+ * sentence the rule offered. Without a greeting the rule keeps up to two of
+ * its own sentences. Either way `applyVoiceContract` caps the result at two.
+ */
+function assemble(greeting: string | null, lines: string[]): string {
+  const clean = lines.map((l) => String(l || "").trim()).filter(Boolean);
+  if (greeting) {
+    const numberFree = clean.find((l) => !/\d/.test(l));
+    return applyVoiceContract([greeting, numberFree ?? ""].join(" "));
+  }
+  return applyVoiceContract(clean.slice(0, 2).join(" "));
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -115,6 +131,82 @@ const json = (body: unknown, status = 200) =>
 
 const daysSince = (iso: string) =>
   Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
+
+/** ILIKE-safe: neutralises wildcards and the PostgREST `or=` separators. */
+function safeTheme(t: string): string {
+  return String(t || "")
+    .replace(/[%_\\]/g, " ")
+    .replace(/[,()"']/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function inZone(iso: string, tz: string | null): Date {
+  const d = new Date(iso);
+  if (!tz) return d;
+  try {
+    return new Date(d.toLocaleString("en-US", { timeZone: tz }));
+  } catch (_e) {
+    return d;
+  }
+}
+
+/**
+ * Why the finding touches HIM: the member's own record, matched on the
+ * finding's themes. Prefers a year he can feel over a raw system count.
+ * Returns null when there is genuinely no connection — a generic
+ * "this is relevant to you" is worse than no second sentence.
+ */
+export async function whyItTouchesHim(
+  admin: any,
+  userId: string,
+  finding: { themes?: unknown },
+): Promise<string | null> {
+  const themes = (Array.isArray(finding?.themes) ? finding.themes : [])
+    .map((t: unknown) => safeTheme(String(t)))
+    .filter((t: string) => t.length >= 3)
+    .slice(0, 3);
+  if (!themes.length) return null;
+
+  const orFor = (cols: string[]) =>
+    cols.flatMap((c) => themes.map((t) => `${c}.ilike.%${t}%`)).join(",");
+
+  const [entryRes, postRes] = await Promise.all([
+    admin
+      .from("entries")
+      .select("created_at")
+      .eq("user_id", userId)
+      .or(orFor(["skill_pillar", "title", "content"]))
+      .order("created_at", { ascending: true })
+      .limit(50),
+    admin
+      .from("linkedin_posts")
+      .select("published_at")
+      .eq("user_id", userId)
+      .eq("tracking_status", "published")
+      .or(orFor(["topic_label", "theme", "hook", "post_text"]))
+      .order("published_at", { ascending: true })
+      .limit(50),
+  ]);
+
+  const entries = (entryRes?.data ?? []) as any[];
+  const posts = ((postRes?.data ?? []) as any[]).filter((p) => p?.published_at);
+
+  const oldest = entries[0]?.created_at ?? posts[0]?.published_at ?? null;
+  if (!oldest) return null;
+
+  const strong = entries.length >= 3 || posts.length >= 2;
+  const d = new Date(oldest);
+  if (strong) return `It touches something you have been writing about since ${d.getUTCFullYear()}.`;
+  return `You saved something on this back in ${MONTHS[d.getUTCMonth()]}.`;
+}
+
 
 /**
  * Turns a source headline into something a person would say out loud:
@@ -166,18 +258,73 @@ serve(async (req) => {
       }
     } catch (_e) { /* no body is fine */ }
 
-    /* ── RULE 0 — overnight ── */
+    /* ── RECENCY GREETING + RULE 0 context, assembled in parallel ── */
     const since36 = new Date(Date.now() - 36 * 3600000).toISOString();
-    const { data: findingRows } = await admin
-      .from("agent_findings")
-      .select("id, title, url, implication, relevance_score, created_at")
-      .eq("user_id", user_id)
-      .in("status", ["pending", "kept"])
-      .gte("created_at", since36)
-      .order("relevance_score", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(25);
+    const [
+      { data: findingRows },
+      { data: profileRow },
+      { data: lastEntryRow },
+      { data: lastPostRow },
+    ] = await Promise.all([
+      admin
+        .from("agent_findings")
+        .select("id, title, url, implication, relevance_score, created_at, themes")
+        .eq("user_id", user_id)
+        .in("status", ["pending", "kept"])
+        .gte("created_at", since36)
+        .order("relevance_score", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(25),
+      admin
+        .from("diagnostic_profiles")
+        .select("first_name, last_visit_at, timezone")
+        .eq("user_id", user_id)
+        .maybeSingle(),
+      admin
+        .from("entries")
+        .select("created_at")
+        .eq("user_id", user_id)
+        .order("created_at", { ascending: false })
+        .limit(1),
+      admin
+        .from("linkedin_posts")
+        .select("published_at")
+        .eq("user_id", user_id)
+        .eq("tracking_status", "published")
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false })
+        .limit(1),
+    ]);
 
+    const tz: string | null = (profileRow as any)?.timezone ?? null;
+    const firstName: string | null = (profileRow as any)?.first_name ?? null;
+    const lastVisit: string | null = (profileRow as any)?.last_visit_at ?? null;
+    const lastCaptureAt: string | null = (lastEntryRow as any)?.[0]?.created_at ?? null;
+    const lastPostAt: string | null = (lastPostRow as any)?.[0]?.published_at ?? null;
+
+    // First match wins; only ONE greeting is ever used.
+    let greeting: string | null = null;
+    const daysAway = lastVisit ? daysSince(lastVisit) : 0;
+    const daysSinceCapture = lastCaptureAt ? daysSince(lastCaptureAt) : 0;
+    const daysSincePost = lastPostAt ? daysSince(lastPostAt) : 0;
+    if (daysAway >= 3 && lastVisit) {
+      const weekday = WEEKDAYS[inZone(lastVisit, tz).getDay()];
+      greeting = firstName
+        ? `Morning, ${firstName}. You have not been here since ${weekday} — ${daysAway} days.`
+        : `You have not been here since ${weekday} — ${daysAway} days.`;
+    } else if (daysSinceCapture >= 10) {
+      greeting = `Your reading has gone quiet — ${daysSinceCapture} days since you saved anything.`;
+    } else if (daysSincePost >= 21) {
+      greeting = `It has been ${daysSincePost} days since you published.`;
+    }
+    // The greeting is itself two clauses at most; the contract still caps at two
+    // sentences, and `assemble()` strips the rule's number when a greeting runs.
+    if (greeting) {
+      const { complete } = splitSentences(greeting);
+      greeting = complete.slice(0, 1).join(" ") || greeting;
+    }
+
+    /* ── RULE 0 — overnight ── */
     const usableFindings = ((findingRows || []) as any[]).filter(
       (f) => (typeof f.title === "string" && f.title.trim()) || (typeof f.url === "string" && f.url.trim()),
     );
@@ -191,12 +338,13 @@ serve(async (req) => {
       // Plain speech: say what it is about in ordinary words, never quote the
       // headline and paste the source's own abstract framing after it.
       const subject = plainSubject(title);
-      const hours = Math.max(1, Math.round((Date.now() - new Date(finding.created_at).getTime()) / 3600000));
+      const why = (await whyItTouchesHim(admin, user_id, finding)) ?? "Nothing like it in your vault yet.";
+      const lead = subject
+        ? `Something came in overnight about ${subject}.`
+        : `Something came in overnight.`;
       const out: Opener = {
         kind: "overnight",
-        text: subject
-          ? `Something came in overnight about ${subject}. It landed ${hours} hours ago and nothing has been done with it yet.`
-          : `Something came in overnight. It landed ${hours} hours ago and nothing has been done with it yet.`,
+        text: assemble(greeting, [lead, why]),
         chips: [
           {
             label: "What does it mean for me?",
@@ -209,9 +357,9 @@ serve(async (req) => {
           ELSE,
         ],
       };
-      out.text = applyVoiceContract(out.text);
       return json(out);
     }
+
 
 
 
@@ -238,16 +386,16 @@ serve(async (req) => {
       const first = String((promiseRow as any).actions_committed[0]).trim();
       const out: Opener = {
         kind: "promise",
-        text: `You said you would ${first}. Still the right move?`,
+        text: assemble(greeting, [`You said you would ${first}.`, "Still the right move?"]),
         chips: [
           { label: "Help me finish it", prompt: `Help me finish this: ${first}` },
           { label: "What changed since?", prompt: "What has changed in my signals since I said that?" },
           ELSE,
         ],
       };
-      out.text = applyVoiceContract(out.text);
       return json(out);
     }
+
 
     /* ── RULE 2 — draft ── */
     const { data: draftRows } = await admin
@@ -266,16 +414,16 @@ serve(async (req) => {
       if (label) {
         const out: Opener = {
           kind: "draft",
-          text: `You have a draft waiting — "${label}" — and nothing planned for it.`,
+          text: assemble(greeting, [`You have a draft waiting — "${label}" — and nothing planned for it.`]),
           chips: [
             { label: "Open it", prompt: `Show me my draft "${label}" and tell me honestly whether it is ready.` },
             { label: "Tighten it first", prompt: `Tighten my draft "${label}" — cut anything that is not carrying weight.` },
             ELSE,
           ],
         };
-        out.text = applyVoiceContract(out.text);
-      return json(out);
+        return json(out);
       }
+
     }
 
     /* ── RULE 3 — unwritten signal ── */
@@ -302,7 +450,10 @@ serve(async (req) => {
         const subject = t + " " + SIGNAL.one;
         const out: Opener = {
           kind: "unwritten signal",
-          text: `Your ${subject} has been live ${n} days. You have not written from it yet.`,
+          text: assemble(greeting, [
+            `Your ${subject} has been live ${n} days.`,
+            "You have not written from it yet.",
+          ]),
           chips: [
 
             { label: "Draft it", prompt: `Draft a post from my signal "${t}" using the evidence behind it.` },
@@ -310,33 +461,28 @@ serve(async (req) => {
             ELSE,
           ],
         };
-        out.text = applyVoiceContract(out.text);
-      return json(out);
+        return json(out);
       }
     }
 
     /* ── RULE 4 — quiet radar ── */
-    const { data: lastEntry } = await admin
-      .from("entries")
-      .select("created_at")
-      .eq("user_id", user_id)
-      .order("created_at", { ascending: false })
-      .limit(1);
-    const lastAt = lastEntry?.[0]?.created_at as string | undefined;
+    const lastAt = lastCaptureAt ?? undefined;
     if (lastAt) {
       const n = daysSince(lastAt);
       if (n > 7) {
         const out: Opener = {
           kind: "quiet radar",
-          text: `Your last capture was ${n} days ago. There is still plenty here to work with.`,
+          text: assemble(greeting, [
+            `Your last capture was ${n} days ago.`,
+            "There is still plenty here to work with.",
+          ]),
           chips: [
             { label: "What is still live?", prompt: "Which of my signals are still worth acting on right now?" },
             { label: "What should I write?", prompt: "From what I have already captured, what should I write next?" },
             ELSE,
           ],
         };
-        out.text = applyVoiceContract(out.text);
-      return json(out);
+        return json(out);
       }
     }
 
@@ -355,7 +501,10 @@ serve(async (req) => {
     if (E === 0 && S === 0) {
       return json({
         kind: "cold start",
-        text: applyVoiceContract("I do not have anything of yours to read yet. Capture one article and I will have something to say about it."),
+        text: assemble(greeting, [
+          "I do not have anything of yours to read yet.",
+          "Capture one article and I will have something to say about it.",
+        ]),
         chips: [
           {
             label: "What should I capture?",
@@ -365,14 +514,45 @@ serve(async (req) => {
       } satisfies Opener);
     }
 
-    return json({
-      kind: "cold start",
-      text: applyVoiceContract(`Quiet morning. Nothing needs you — ${nCaptures(E, "en")} sit here when you want them.`),
-      chips: [
+    /* ── QUIET MORNING — a real outcome, not a truncation guard ── */
+    const { data: idleDraftRows } = await admin
+      .from("linkedin_posts")
+      .select("title, post_text, created_at")
+      .eq("user_id", user_id)
+      .eq("tracking_status", "draft")
+      .order("created_at", { ascending: true })
+      .limit(1);
+    const idle: any = idleDraftRows?.[0] || null;
+    const idleLabel = idle
+      ? (typeof idle.title === "string" && idle.title.trim()
+        ? idle.title.trim()
+        : (typeof idle.post_text === "string" && idle.post_text.trim()
+          ? `${idle.post_text.trim().slice(0, 60)}…`
+          : ""))
+      : "";
+
+    const quietChips: Chip[] = idleLabel
+      ? [
+        {
+          label: "Pick up the oldest draft",
+          prompt: `Open my oldest draft "${idleLabel}" and tell me honestly whether it is worth finishing.`,
+        },
+        { label: "What should I write?", prompt: "From what I have already captured, what should I write next?" },
+      ]
+      : [
         { label: "What can you see?", prompt: "What can you actually see in my graph right now?" },
         { label: "What should I write?", prompt: "From what I have already captured, what should I write next?" },
-      ],
+      ];
+
+    return json({
+      kind: "quiet morning",
+      text: assemble(greeting, [
+        "Quiet morning. Nothing needs you.",
+        `${nCaptures(E, "en")} sit here when you want them.`,
+      ]),
+      chips: quietChips,
     } satisfies Opener);
+
   } catch (e) {
     console.error("ask-aura-opener failed:", e);
     return json({ error: "opener unavailable" }, 500);
