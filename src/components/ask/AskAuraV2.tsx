@@ -1027,7 +1027,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                           }}
                         >← Back</button>
                         <DeskLedger
-                          onOpenDrafts={openDrafts}
+                          onOpenDrafts={() => openSurface("drafts")}
                           onOpenSignals={() => openSurface("intelligence")}
                           onOpenTab={(t) => openSurface(t)}
                         />
