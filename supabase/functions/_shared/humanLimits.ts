@@ -46,6 +46,9 @@ const WORK_WORDS =
  * anything, and a kind sentence that promises it is still a lie — it was the
  * last thing surviving this branch: "I will stop sending you reminders."
  */
+const WORK_WORDS_AR =
+  /(منشور|منشورات|مسودة|مسودات|نشر|محتوى|إشارة|إشارات|لينكد|جدول|تذكير)/;
+
 const PROMISE = /\b(i(?:'ll| will| am going to| shall)|i'm going to|we(?:'ll| will| should)|let me)\b/i;
 const PROMISE_AR = /(سأ|سوف أ|لن أ|دعني)/;
 
