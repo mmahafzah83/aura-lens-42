@@ -484,7 +484,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   if (!open) return null;
 
   /* ── Answer body: refs become pills, unresolved refs are stripped ── */
-  const Answer: React.FC<{ text: string }> = ({ text }) => {
+  const Answer: React.FC<{ text: string; size?: number; color?: string }> = ({ text, size, color }) => {
     const rtl = isAr(text);
     const prepared = markCitations(text, citations, sources);
     return (
@@ -494,11 +494,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
         style={{
           fontFamily: rtl ? "var(--ff-ar)" : "var(--font-body, inherit)",
           lineHeight: rtl ? 1.9 : 1.65,
-          fontSize: 14.5,
-          color: "var(--text-primary)",
+          fontSize: size ?? 14.5,
+          color: color ?? "var(--text-primary)",
           textAlign: rtl ? "right" : "left",
         }}
       >
+
         <ReactMarkdown
           components={{
             code: ({ children }) => {
