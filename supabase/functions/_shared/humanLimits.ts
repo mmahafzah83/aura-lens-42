@@ -18,7 +18,9 @@ const PATTERNS: RegExp[] = [
   // exhaustion and burnout
   /\b(burn(?:ed|t)? out|burnout|exhaust(?:ed|ion)|running on empty|no energy left|can'?t keep (?:this|it) up|drained)\b/i,
   /\b\d{2,3}[- ]hour (?:week|weeks|days?)\b/i,
-  /\bworked?\s+\d{2,3}\s+hours\b/i,
+  // "worked 90 hours", "working 90 hours a week", "putting in 90+ hours"
+  /\b(work\w*|doing|putting in|clocking)\s+(?:about\s+|around\s+|nearly\s+)?\d{2,3}\s*\+?\s*hours?\b/i,
+
   // overwhelm
   /\b(overwhelmed|drowning|too much on|falling behind on everything|breaking point)\b/i,
   // quitting and doubt about continuing
