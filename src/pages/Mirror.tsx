@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import ReadResult from "@/components/read/ReadResult";
+import ReadingScreen from "@/components/read/ReadingScreen";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import { SEAT_CTA, SEAT_PATH } from "@/lib/seatCopy";
 
@@ -16,13 +17,11 @@ const INK = "#0F1519";
 const INK2 = "#5B6673";
 const BLUE = "#0670C4";
 const BLUE_DARK = "#04477C";
-const CYAN = "#00CEC9";
 const AMBER = "#E0A82E";
 const MONO = "'IBM Plex Mono', ui-monospace, monospace";
 const UI = "Inter, system-ui, sans-serif";
 
 const MIRROR_CSS = `
-@keyframes mr-pulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1)}}
 @keyframes mr-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .mr-line{animation:mr-in .5s ease both}
 .mr-btn:hover{background:${BLUE_DARK} !important}
@@ -65,15 +64,14 @@ const ERROR_COPY: Record<string, string> = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/** The four things Aura does here. None of them ticks: none has an event of its own. */
 const READING_LINES = [
-  "Opening the profile…",
-  "Reading recent posts…",
-  "Finding what only you have…",
-  "Writing your read…",
+  "Opening your LinkedIn",
+  "Reading your recent posts",
+  "Finding what only you have",
+  "Writing your first read",
 ];
 
-/** Line n appears at this offset, so the four spread across ~60 seconds. */
-const READING_DELAYS = [0, 14_000, 32_000, 50_000];
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
 
@@ -158,7 +156,6 @@ export default function Mirror() {
   const [sentOk, setSentOk] = useState(false);
 
   const [result, setResult] = useState<MirrorResponse | null>(null);
-  const [lineIndex, setLineIndex] = useState(0);
   const [showCancel, setShowCancel] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const autoRan = useRef(false);
@@ -190,17 +187,14 @@ export default function Mirror() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // The reading copy advances on its own and holds on the last line.
+  // The quiet way out appears once the wait is long enough to feel like one.
   useEffect(() => {
     if (stage !== "reading") return;
-    setLineIndex(0);
     setShowCancel(false);
-    const timers = READING_DELAYS.slice(1).map((delay, i) =>
-      window.setTimeout(() => setLineIndex(i + 1), delay),
-    );
-    timers.push(window.setTimeout(() => setShowCancel(true), 10_000));
-    return () => timers.forEach(window.clearTimeout);
+    const t = window.setTimeout(() => setShowCancel(true), 10_000);
+    return () => window.clearTimeout(t);
   }, [stage]);
+
 
   const failBack = (key: string) => {
     setFormError(ERROR_COPY[key] ?? ERROR_COPY.network);
@@ -329,39 +323,33 @@ export default function Mirror() {
   const sparse = !!result?.sparse;
   const postsRead = result?.posts_read ?? 0;
 
-  /* ── STATE B — reading (night) ── */
+  /* ── STATE B — reading. The one honest wait, shared with the assessment gate. ── */
   if (stage === "reading") {
     return (
-      <main style={{ minBlockSize: "100dvh", background: INK, color: "#FFFFFF", fontFamily: UI,
+      <main style={{ minBlockSize: "100dvh", background: CANVAS, color: INK, fontFamily: UI,
         display: "flex", alignItems: "center", padding: 24 }}>
         <style>{MIRROR_CSS}</style>
         <div style={{ inlineSize: "100%", maxInlineSize: 520, marginInline: "auto" }}>
-          <span style={{
-            display: "inline-block", inlineSize: 12, blockSize: 12, borderRadius: 999,
-            background: CYAN, boxShadow: `0 0 18px 4px ${CYAN}55`,
-            animation: "mr-pulse 1.6s ease-in-out infinite",
-          }} />
-          <div style={{ marginBlockStart: 26, display: "flex", flexDirection: "column", gap: 14 }}>
-            {READING_LINES.slice(0, lineIndex + 1).map((l) => (
-              <p key={l} className="mr-line" style={{
-                margin: 0, fontFamily: MONO, fontSize: 14, letterSpacing: "0.04em",
-                color: "rgba(255,255,255,0.86)",
-              }}>{l}</p>
-            ))}
-          </div>
-          {showCancel ? (
-            <button
-              onClick={cancelRead}
-              style={{
-                marginBlockStart: 26, background: "none", border: "none", padding: 0,
-                color: "rgba(255,255,255,0.62)", fontFamily: UI, fontSize: 13.5,
-                textDecoration: "underline", cursor: "pointer",
-              }}
-            >Cancel</button>
-          ) : null}
+          <ReadingScreen
+            heading="Aura is reading your profile."
+            steps={READING_LINES}
+            waitKey="linkedin_read"
+          >
+            {showCancel ? (
+              <button
+                onClick={cancelRead}
+                style={{
+                  marginBlockStart: 22, background: "none", border: "none", padding: 0,
+                  color: INK2, fontFamily: UI, fontSize: 13.5,
+                  textDecoration: "underline", cursor: "pointer",
+                }}
+              >Cancel</button>
+            ) : null}
+          </ReadingScreen>
         </div>
       </main>
     );
+
   }
 
   /* ── STATE C — the read ── */
