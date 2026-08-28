@@ -12,8 +12,9 @@ import { ARCHETYPE_LABEL, SLOT_LABEL, SLOT_ORDER } from "./slotLabels";
 import { REQUIRED_SLOTS, OPTIONAL_SLOTS } from "../slots";
 import {
   deleteSlide, editSlotText, heroBudgetFor, isLocked, readSlot,
-  setHeroHighlight, setSlidePhoto, swapArchetype, swappableArchetypes, type SlotPath,
+  setHeroHighlight, setSlidePhoto, slideHasPicture, swapArchetype, swappableArchetypes, type SlotPath,
 } from "./deckEdit";
+import { wordBudgetFor } from "../slots";
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "var(--ff-mono)", fontSize: 10, letterSpacing: ".09em",
@@ -40,23 +41,26 @@ function counterColour(len: number, budget: number): string {
 }
 
 function Field({
-  label, value, rows, budget, onChange, right,
+  label, value, rows, budget, count, onChange, right,
 }: {
   label: string;
   value: string;
   rows?: number;
   budget?: number;
+  /** What the counter measures — characters for hero lines, words elsewhere. */
+  count?: number;
   onChange: (v: string) => void;
   right?: React.ReactNode;
 }) {
+  const n = count ?? value.length;
   return (
     <div style={{ display: "grid", gap: 5 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
         <span style={labelStyle}>{label}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {budget !== undefined && (
-            <span style={{ ...labelStyle, color: counterColour(value.length, budget) }}>
-              {value.length}/{budget}
+            <span style={{ ...labelStyle, color: counterColour(n, budget) }}>
+              {n}/{budget}
             </span>
           )}
           {right}
@@ -92,7 +96,11 @@ export function EditPanel({
   const swaps = swappableArchetypes(deck, slide);
   const canHoldPhoto = mediaSupport !== "none";
 
-  const fields: Array<{ key: string; label: string; path: SlotPath; budget?: number; rows?: number; right?: React.ReactNode }> = [];
+  const fields: Array<{ key: string; label: string; path: SlotPath; budget?: number; count?: number; rows?: number; right?: React.ReactNode }> = [];
+  // The slide-level word budget is the only contract non-hero slots have;
+  // the counter measures words against it, exactly as the fit ladder does.
+  const wordBudget = wordBudgetFor(slide.archetype, slideHasPicture(slide));
+  const wordCount = (text: string) => text.split(/\s+/).filter(Boolean).length;
   // A field is only editable if the archetype contract actually draws it.
   // A stray slot the model emitted has no renderer, so editing it changes nothing.
   const allowed = new Set<string>([
@@ -111,7 +119,8 @@ export function EditPanel({
           key: `${slot}-${i}`,
           label: `${SLOT_LABEL[slot]}${value.length > 1 ? ` ${i + 1}` : ""}`,
           path: { slot, i },
-          budget: isHero ? heroBudgetFor(text) : undefined,
+          budget: isHero ? heroBudgetFor(text, deck.template) : wordBudget,
+          count: isHero ? undefined : wordCount(text),
           rows: isHero ? 1 : 2,
           right: isHero ? (
             <button
@@ -136,6 +145,8 @@ export function EditPanel({
       key: slot,
       label: SLOT_LABEL[slot] ?? slot,
       path: { slot },
+      budget: wordBudget,
+      count: wordCount(readSlot(slide.slots, { slot })),
       rows: slot === "body" || slot === "quote" ? 3 : 2,
     });
   }
@@ -204,6 +215,7 @@ export function EditPanel({
           value={readSlot(slide.slots, f.path)}
           rows={f.rows}
           budget={f.budget}
+          count={f.count}
           right={f.right}
           onChange={(v) => onChange(editSlotText(deck, slide.index, f.path, v))}
         />
