@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
 import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_SOLD_OUT_NOTE, waveFrom } from "@/lib/seatCopy";
-import { PRODUCT_DESCRIPTOR, FIRST_READ_LINE, FULL_PICTURE_LINE, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA, FREE_CTA_LABEL, FREE_CTA_SHORT_LABEL, FREE_CTA_ARIA } from "@/lib/brand";
+import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA, FREE_CTA_SHORT_LABEL, FREE_CTA_ARIA } from "@/lib/brand";
 import { BRAND } from "@/constants/language";
 
 /* D126 — the headline is single-sourced from BRAND.headline. The hero splits it
