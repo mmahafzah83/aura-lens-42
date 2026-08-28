@@ -294,6 +294,29 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const taRef = useRef<HTMLTextAreaElement | null>(null);
   const firedRef = useRef(false);
   const openerRef = useRef(false);
+  /** Moves already logged as offered, so re-renders never inflate the count. */
+  const offeredRef = useRef<Set<string>>(new Set());
+
+  /**
+   * The feedback control, wired. `Yes` and `No` both land in
+   * desk_answer_feedback with the question that produced the answer; the
+   * nightly learner turns a `No` into a counted `rejects` observation.
+   */
+  const sendFeedback = useCallback(async (index: number, verdict: "yes" | "no", question: string, answer: string) => {
+    setFeedback(p => ({ ...p, [index]: verdict }));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (!uid) return;
+      await (supabase.from("desk_answer_feedback" as any) as any).insert({
+        user_id: uid, question: question.slice(0, 2000), answer: answer.slice(0, 8000), verdict,
+      });
+    } catch (e) {
+      console.error("[desk] feedback write failed", (e as Error)?.message);
+    }
+  }, []);
+
+
 
 
   /**
