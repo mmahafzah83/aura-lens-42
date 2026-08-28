@@ -201,6 +201,8 @@ const Assessment = () => {
       return;
     }
 
+    const runId = newRunId();
+    setReadRunId(runId);
     setStage("reading");
     try {
       const base = import.meta.env.VITE_SUPABASE_URL;
@@ -208,7 +210,7 @@ const Assessment = () => {
       const res = await fetch(`${base}/functions/v1/mirror-read`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ profile_url: target }),
+        body: JSON.stringify({ profile_url: target, run_id: runId, anon_token: t }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok || !data?.read) {
