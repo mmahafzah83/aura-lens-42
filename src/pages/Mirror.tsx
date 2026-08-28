@@ -65,15 +65,14 @@ const ERROR_COPY: Record<string, string> = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+/** The four things Aura does here. None of them ticks: none has an event of its own. */
 const READING_LINES = [
-  "Opening the profile…",
-  "Reading recent posts…",
-  "Finding what only you have…",
-  "Writing your read…",
+  "Opening your LinkedIn",
+  "Reading your recent posts",
+  "Finding what only you have",
+  "Writing your first read",
 ];
 
-/** Line n appears at this offset, so the four spread across ~60 seconds. */
-const READING_DELAYS = [0, 14_000, 32_000, 50_000];
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
 
