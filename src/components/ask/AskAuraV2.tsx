@@ -1190,11 +1190,22 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                           )}
                           {layers.moves.length > 0 && (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 2px" }}>
-                              {layers.moves.map((mv, mi) => (
+                              {layers.moves.map((mv, mi) => {
+                                /* Offered is counted once per answer: acts_on is
+                                   only true if offers are not inflated by re-renders. */
+                                const seenKey = `${i}:${mv}`;
+                                if (!offeredRef.current.has(seenKey)) {
+                                  offeredRef.current.add(seenKey);
+                                  void track("desk_move_offered", { label: mv.slice(0, 60), rank: mi });
+                                }
+                                return (
                                 <button
                                   key={`${mi}:${mv}`} type="button" className="ask-focusable ask-chip"
                                   data-testid="ask-move-chip"
-                                  onClick={() => send(mv)}
+                                  onClick={() => {
+                                    void track("desk_move_taken", { label: mv.slice(0, 60), rank: mi });
+                                    send(mv);
+                                  }}
                                   style={mi === 0 ? {
                                     background: "var(--act)", border: 0, color: "var(--text-inverse)",
                                     borderRadius: 999, padding: "7px 14px", fontSize: 12.5, cursor: "pointer",
@@ -1205,7 +1216,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                                     display: "inline-flex", alignItems: "center", gap: 6,
                                   }}
                                 >{mv}<ArrowUpRight size={13} aria-hidden="true" /></button>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </>}
