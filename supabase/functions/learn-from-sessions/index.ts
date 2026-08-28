@@ -258,24 +258,35 @@ async function learnForUser(admin: any, userId: string) {
 
   const offered = new Map<string, number>();
   const taken = new Map<string, number>();
+  const offerTimes = new Map<string, string[]>();
   for (const e of evs || []) {
     const label = String((e as any)?.props?.label ?? "").trim().slice(0, 60);
     if (!label) continue;
     const m = (e as any).event === "desk_move_offered" ? offered : taken;
     m.set(label, (m.get(label) ?? 0) + 1);
+    if ((e as any).event === "desk_move_offered") {
+      offerTimes.set(label, [...(offerTimes.get(label) ?? []), String((e as any).occurred_at ?? "")]);
+    }
   }
   for (const [label, offers] of offered) {
     if (offers < MIN_EVIDENCE) continue;
     const took = taken.get(label) ?? 0;
+    /* "have never taken it" is a habit claim. Offers that all landed in one
+       sitting cannot carry it, so the row states the plain count instead. */
+    const spread = temporalSpread(offerTimes.get(label) ?? []);
+    const habit = canClaimRhythm(spread);
     candidates.push({
       kind: "acts_on",
       observation: took === 0
-        ? `You were offered "${label}" ${offers} times and have never taken it.`
+        ? (habit
+            ? `You were offered "${label}" ${offers} times and have never taken it.`
+            : `You were offered "${label}" ${offers} times and took it none of those times.`)
         : `You were offered "${label}" ${offers} times and took it ${took} times.`,
       count: offers,
-      evidence: { label, offered: offers, taken: took },
+      evidence: { label, offered: offers, taken: took, distinct_days: spread.days, distinct_weeks: spread.weeks },
     });
   }
+
 
   // ── rejects — refusals he made explicitly. ───────────────────────────────
   const { data: prof } = await admin
