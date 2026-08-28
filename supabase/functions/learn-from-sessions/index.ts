@@ -53,6 +53,49 @@ const INTENTS: { key: string; label: string; re: RegExp }[] = [
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+/* ── THE SHAPE RULE ────────────────────────────────────────────────────────
+ * Before writing any observation, check that the evidence supports the SHAPE
+ * of the sentence, not just the number in it. Five messages inside a single
+ * afternoon support "you asked five times". They never support "you ask on
+ * Thursdays" — that sentence claims a rhythm the evidence cannot carry.
+ *
+ * So: a temporal claim — a named weekday, a time of day, "most Mondays",
+ * "usually in the morning", or anything implying repetition over time — may
+ * only be written when the evidence spans at least 3 distinct calendar days
+ * AND at least 3 distinct ISO weeks. Below that the observation still states
+ * its count, and says nothing about when.
+ */
+const MIN_TEMPORAL_DAYS = 3;
+const MIN_TEMPORAL_WEEKS = 3;
+
+/** ISO-week key (year + week number), so "3 weeks" means three real weeks. */
+function weekKey(d: Date): string {
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = (t.getUTCDay() + 6) % 7;            // Monday = 0
+  t.setUTCDate(t.getUTCDate() - dayNum + 3);          // nearest Thursday
+  const firstThursday = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  const week = 1 + Math.round(((t.getTime() - firstThursday.getTime()) / 86_400_000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return `${t.getUTCFullYear()}-W${week}`;
+}
+
+/** How far apart in time the evidence actually sits. */
+export function temporalSpread(timestamps: string[]): { days: number; weeks: number } {
+  const days = new Set<string>();
+  const weeks = new Set<string>();
+  for (const ts of timestamps) {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) continue;
+    days.add(d.toISOString().slice(0, 10));
+    weeks.add(weekKey(d));
+  }
+  return { days: days.size, weeks: weeks.size };
+}
+
+/** True only when a rhythm may honestly be named. */
+export function canClaimRhythm(spread: { days: number; weeks: number }): boolean {
+  return spread.days >= MIN_TEMPORAL_DAYS && spread.weeks >= MIN_TEMPORAL_WEEKS;
+}
+
 /** He told the Desk it was wrong. Counted, never interpreted. */
 const CORRECTION = /\b(that'?s (not right|wrong|incorrect)|not true|you'?re wrong|that is wrong|wrong number|incorrect|actually,? (it|i)\b|no,? it'?s)\b/i;
 
@@ -140,9 +183,16 @@ async function learnForUser(admin: any, userId: string) {
       if (!isNaN(d.getTime())) dayCounts[d.getUTCDay()] += 1;
     }
     const top = dayCounts.indexOf(Math.max(...dayCounts));
-    const dayClause = dayCounts[top] >= Math.ceil(hits.length / 2) && dayCounts[top] >= MIN_EVIDENCE
-      ? ` ${dayCounts[top]} of those fell on a ${WEEKDAYS[top]}.`
-      : "";
+    /* A count of five inside one afternoon supports "you asked five times".
+       It never supports "you ask on Thursdays". A rhythm may only be named
+       when the evidence is actually spread out in time. */
+    const spread = temporalSpread(hits.map((h: any) => h.at));
+    const dayClause =
+      canClaimRhythm(spread) &&
+      dayCounts[top] >= Math.ceil(hits.length / 2) &&
+      dayCounts[top] >= MIN_EVIDENCE
+        ? ` ${dayCounts[top]} of those fell on a ${WEEKDAYS[top]}.`
+        : "";
     candidates.push({
       kind: "asks_about",
       observation: `You have asked about ${intent.label} ${hits.length} times in the last ${WINDOW_DAYS} days.${dayClause}`,
@@ -151,9 +201,12 @@ async function learnForUser(admin: any, userId: string) {
         intent: intent.key,
         message_ids: hits.slice(0, 20).map((h: any) => h.id),
         dates: hits.slice(0, 20).map((h: any) => h.at.slice(0, 10)),
+        distinct_days: spread.days,
+        distinct_weeks: spread.weeks,
       },
     });
   }
+
 
   // talks_like — countable properties of HIS messages, never of him.
   if (userMsgs.length >= MIN_EVIDENCE) {
@@ -205,24 +258,35 @@ async function learnForUser(admin: any, userId: string) {
 
   const offered = new Map<string, number>();
   const taken = new Map<string, number>();
+  const offerTimes = new Map<string, string[]>();
   for (const e of evs || []) {
     const label = String((e as any)?.props?.label ?? "").trim().slice(0, 60);
     if (!label) continue;
     const m = (e as any).event === "desk_move_offered" ? offered : taken;
     m.set(label, (m.get(label) ?? 0) + 1);
+    if ((e as any).event === "desk_move_offered") {
+      offerTimes.set(label, [...(offerTimes.get(label) ?? []), String((e as any).occurred_at ?? "")]);
+    }
   }
   for (const [label, offers] of offered) {
     if (offers < MIN_EVIDENCE) continue;
     const took = taken.get(label) ?? 0;
+    /* "have never taken it" is a habit claim. Offers that all landed in one
+       sitting cannot carry it, so the row states the plain count instead. */
+    const spread = temporalSpread(offerTimes.get(label) ?? []);
+    const habit = canClaimRhythm(spread);
     candidates.push({
       kind: "acts_on",
       observation: took === 0
-        ? `You were offered "${label}" ${offers} times and have never taken it.`
+        ? (habit
+            ? `You were offered "${label}" ${offers} times and have never taken it.`
+            : `You were offered "${label}" ${offers} times and took it none of those times.`)
         : `You were offered "${label}" ${offers} times and took it ${took} times.`,
       count: offers,
-      evidence: { label, offered: offers, taken: took },
+      evidence: { label, offered: offers, taken: took, distinct_days: spread.days, distinct_weeks: spread.weeks },
     });
   }
+
 
   // ── rejects — refusals he made explicitly. ───────────────────────────────
   const { data: prof } = await admin
