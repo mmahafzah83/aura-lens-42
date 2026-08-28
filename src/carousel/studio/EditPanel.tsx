@@ -96,7 +96,11 @@ export function EditPanel({
   const swaps = swappableArchetypes(deck, slide);
   const canHoldPhoto = mediaSupport !== "none";
 
-  const fields: Array<{ key: string; label: string; path: SlotPath; budget?: number; rows?: number; right?: React.ReactNode }> = [];
+  const fields: Array<{ key: string; label: string; path: SlotPath; budget?: number; count?: number; rows?: number; right?: React.ReactNode }> = [];
+  // The slide-level word budget is the only contract non-hero slots have;
+  // the counter measures words against it, exactly as the fit ladder does.
+  const wordBudget = wordBudgetFor(slide.archetype, slideHasPicture(slide));
+  const wordCount = (text: string) => text.split(/\s+/).filter(Boolean).length;
   // A field is only editable if the archetype contract actually draws it.
   // A stray slot the model emitted has no renderer, so editing it changes nothing.
   const allowed = new Set<string>([
@@ -115,7 +119,8 @@ export function EditPanel({
           key: `${slot}-${i}`,
           label: `${SLOT_LABEL[slot]}${value.length > 1 ? ` ${i + 1}` : ""}`,
           path: { slot, i },
-          budget: isHero ? heroBudgetFor(text) : undefined,
+          budget: isHero ? heroBudgetFor(text, deck.template) : wordBudget,
+          count: isHero ? undefined : wordCount(text),
           rows: isHero ? 1 : 2,
           right: isHero ? (
             <button
