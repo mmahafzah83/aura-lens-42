@@ -2025,6 +2025,10 @@ export default function StudioPanel({
       setExported(false);
       setCurrent(0);
       setFits({});
+      // A fresh generation is a new deck, not an edit of the last one.
+      deckRowIdRef.current = null;
+      void saveDeckRow(parsed.data, theme, template, isUuid(choice?.id) ? String(choice?.id) : null)
+        .catch((e) => console.warn("deck row not saved", e));
       // Fire and forget: a save failure never withholds the slides.
       const deckRow = rowId ?? draftId;
       if (!deckRow) {
@@ -2042,7 +2046,7 @@ export default function StudioPanel({
       window.clearTimeout(timer);
       if (runId === deckRunId.current) setDeckBusy(false);
     }
-  }, [choice, content, theme, template, deckLength, writeLang, lang, saveDraft, draftId, persistDeck, slidesFailureSentence]);
+  }, [choice, content, theme, template, deckLength, writeLang, lang, saveDraft, draftId, persistDeck, saveDeckRow, slidesFailureSentence]);
 
   const changeThisLine = useCallback(async () => {
     if (!deck) return;
