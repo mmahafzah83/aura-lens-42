@@ -316,6 +316,17 @@ const Dashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setSearchParams]);
 
+  /**
+   * T1 — the acknowledgement. Your Desk used to say "Opened your library" while
+   * the app sat on home, because nothing ever confirmed the move. The rail is
+   * the only thing that knows a tab actually changed, so it says so, and the
+   * Desk waits for this before it writes a single word of confirmation.
+   */
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("aura:tab-changed", { detail: { tab: activeTab } }));
+  }, [activeTab]);
+
+
 
   /**
    * The composer mounts on first arrival at the authority tab and is never

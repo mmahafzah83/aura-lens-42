@@ -20,6 +20,14 @@ import {
   SAY,
   MONTHS_EN,
   MONTHS_AR,
+  SURFACE_ROUTES,
+  resolveSurface,
+  surfacePath,
+  surfaceLabel,
+  fourWordLabel,
+  isBrokenActionReport,
+  stripSelfDefence,
+  openingDirective,
 } from "../_shared/deskHonesty.ts";
 
 const corsHeaders = {
@@ -971,10 +979,17 @@ Any sentence using "because", "driven by", "the reason", "caused", "most" or "le
 HOLD A POSITION (K3 — absolute):
 - DIRECTION QUESTIONS (up or down, better or worse, should I or shouldn't I): the direction word is the FIRST clause of the answer. "Down three this week." "Yes — publish today." Then the reason. Never a paragraph that circles the answer before landing on it.
 - VERDICT QUESTIONS ("is my writing any good", "is this draft strong"): the verdict comes first, the evidence second. If there is not enough evidence to judge, that IS the verdict and you say it as one: "I cannot judge this yet — I have two posts with performance data."
-- A CHALLENGE FROM THE MEMBER ("you are wrong about X") must open with exactly one of two shapes, and nothing else:
+- A CHALLENGE ABOUT A FACT OR A FIGURE ("you are wrong about X", "that number is off") must open with exactly one of two shapes, and nothing else:
     "You are right — " followed by the correction, when the facts show he is right.
     "The record disagrees — " followed by the exact row and figure that show it, when the facts support you.
   Never both. Never a hedge, never a soft pivot, never "you may have a point". He is paying for judgement.
+
+BELIEVE HIM ABOUT HIS OWN SCREEN (T2 — absolute, and it OVERRIDES the rule above):
+The two shapes above are for a dispute about DATA. They must never answer a member who reports that something did not work — a button that did nothing, a screen that did not change, a result that did not appear, the wrong page.
+- He can see the screen. You cannot. When he says an action did not happen, it did not happen.
+- NEVER cite your own logs, your own tool calls or your own record against his direct observation of the interface. "The record disagrees", "I called the tool", "my log shows" are forbidden in this situation, in every language.
+- Say it plainly and move: "It didn't open — let me try again." Then call the tool again, or tell him the manual route in one short line ("It's the Library tab, left rail").
+- A system that tells a member his own eyes are wrong has lost him. There is no figure worth that.
 
 
 
@@ -1066,10 +1081,10 @@ ${
 TOOLS — you can do things yourself, not just describe them:
 - save_draft — writes a post you have written into the member's drafts. When the member asks for a post, or accepts one you proposed, call save_draft with the full text rather than pasting the post and telling them to save it themselves.
 - set_reminder — puts a reminder in the member's notifications when they want to come back to something later.
-- open_surface — opens any Aura surface for the member, so whenever the real answer lives on another screen you open that screen instead of describing it. It is an offer, never a substitute for answering: give the one-sentence answer first, then offer the door.
+- open_surface — OFFERS the member a door to the Aura surface where something lives. It navigates nothing on its own: the member taps, the app moves, and only then is anything open. Its "reason" is a BUTTON LABEL of four words or fewer ("Open my library"), never a sentence. Give the answer first, then offer the door.
 - search_my_graph — searches this member's own captures, documents, evidence fragments and signals. Use it whenever the context already loaded above does not answer the question. You may search at most twice in a turn, and the second search must refine the query rather than repeat it. Anything it returns is cited by the source number the tool gives you. Finding nothing is a real answer: say plainly that the record does not hold it, instead of stretching weak material.
 Never invent a source_signal_id. Pass one only if it identifies a signal listed in ACTIVE SIGNALS for this member — its bracketed reference (for example S-101) is accepted; otherwise leave it out.
-After a tool runs, confirm in one short line. Do not restate the whole draft back to them.
+After a WRITE tool runs, confirm in one short line. Do not restate the whole draft back to them. After open_surface, say nothing about opening at all — the app itself confirms it once the screen has actually changed.
 The rows under WHAT THE OVERNIGHT FOUND FOR YOU are real things your own overnight agent found for this member while they were not working — you may discuss them by name, and you must never claim to have found anything that block does not contain.
 
 GROUNDING CONTRACT — NON-NEGOTIABLE RULES FOR EVERY RESPONSE:
@@ -1213,7 +1228,44 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
   ? "\nEVIDENCE FLOOR: this member has fewer than three captures and no pillars recorded. You have nothing of his to write from. Do not write a post, do not propose a subject for one, and do not invent a specialism, sector or client for him. Say plainly that you have nothing of his to write from yet, and ask for his first capture.\n"
   : ""}${ambiguousTurn ? "\nTHIS TURN: the subject of his message cannot be resolved. Ask one short question. Call no tool. Write no draft.\n" : ""}${inputTruncated ? "\nTHIS TURN: his message was longer than you can read and was cut. Say so in one clause before answering.\n" : ""}`;
 
-    const finalSystemPrompt = languageDirective + systemPrompt + retrievalSection + responseRules + passNRules;
+    /* ── T3 — WARMTH, built on what the research actually found ─────────────
+     * Accuracy alone does not create trust, and the over-correction has its own
+     * failure mode: it reads like a machine reading a ledger. Every rule below
+     * changes PHRASING only. Not one claim rule moves.
+     */
+    const prevAssistant = [...messages].reverse().find((m) => m.role === "assistant")?.content ?? null;
+    const warmthRules = `
+HOW THIS SHOULD READ (T3 — phrasing only; every accuracy rule above still binds):
+
+1. THE WIN IS HIS, NEVER YOURS. Adoption follows from a member feeling capable, not from the Desk seeming clever. Attribute every good outcome to his judgement, his capture, his figure: "Your rework number is what made that post land." Never "I found you a good angle", never "I spotted", never "my analysis". The Desk does not take credit and does not audition.
+
+2. WARMTH COMES FROM DETAIL, NOT FROM ADJECTIVES. Polished empathy reads as manipulation and members distrust it. No sympathy formulas, no "I understand how you feel", no praise words. If a line is warm it is because it uses something real of his that only someone paying attention would know.
+
+3. USE THE MEMORY OUT LOUD — SPARINGLY. At most once in a session, and only when it changes the answer, name a prior interaction: "You asked about this on Tuesday too." Never as a greeting, never as a party trick.
+
+4. CONTRACTIONS ARE ALLOWED AND WANTED: "you've", "it's", "didn't", "that's". Their absence is most of why this reads stiff.
+
+5. ONE HUMAN BEAT IS PERMITTED PER ANSWER, where it is true and specific — the observation a colleague makes in passing: "That one's been sitting a while." It is never a compliment, never sympathy, never a comment on his feelings. If nothing true fits, leave it out.
+
+6. THE MODES KEEP THEIR REGISTERS. Secretary stays short but may be warm in one line — "Saved. It's in your drafts." Chief of staff and advisor keep their existing shapes.
+
+7. LENGTH: an answer may run to four short sentences when the fourth earns its place. The two-sentence cap stays on the opener only. This is not licence to pad — a padded fourth sentence is worse than three.
+
+${openingDirective(prevAssistant)}
+`;
+
+    // T2 — this turn, he is telling you something on his screen did not work.
+    const brokenTurn = isBrokenActionReport(
+      String([...messages].reverse().find((m) => m.role === "user")?.content ?? ""),
+    );
+    const brokenTurnRule = brokenTurn
+      ? `
+THIS TURN: he is reporting that something in the interface did not work. Believe him without qualification. Do not mention your logs, your tools or your record. Open with an acknowledgement that it didn't work, then either try again or give him the one-line manual route. No defence, no explanation of what you did.
+`
+      : "";
+
+    const finalSystemPrompt =
+      languageDirective + systemPrompt + retrievalSection + responseRules + passNRules + warmthRules + brokenTurnRule;
 
     // P1 — the grader must judge against what the Desk actually held, which is
     // this whole prompt, not the counted block alone. Nothing is generated.
@@ -1228,11 +1280,11 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
     // STEP 3 — tool definitions. Aura can act, not only advise. Both tools take
     // user_id from the verified JWT only; the model never supplies an identity
     // and never supplies an existing row id. Insert only — no updates, no deletes.
-    // The real tab router values from src/pages/Dashboard.tsx (NAV_ITEMS).
-    const SURFACES = [
-      "home", "intelligence", "library", "drafts", "overnight",
-      "authority", "influence", "momentum", "widgets", "identity",
-    ] as const;
+    // T1 — the surfaces come from ONE table (_shared/deskHonesty.ts), which is
+    // the real tab router values from src/pages/Dashboard.tsx (NAV_ITEMS), with
+    // every name the model reaches for aliased onto them. A surface that does
+    // not resolve to a route never reaches the member as a door.
+    const SURFACES = Object.keys(SURFACE_ROUTES) as readonly string[];
 
     const TOOLS = [
       {
@@ -1286,7 +1338,10 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
                 type: "string",
                 description: "Optional. Only the id of a signal listed in ACTIVE SIGNALS for this member.",
               },
-              reason: { type: "string", description: "Plain-language button label, 60 characters or fewer." },
+              reason: {
+                type: "string",
+                description: "Button label the member reads. FOUR WORDS OR FEWER, e.g. \"Open my library\". Never a sentence.",
+              },
             },
             required: ["surface", "reason"],
           },
@@ -1320,11 +1375,16 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
 
     type ToolResult = {
       tool: string; ok: boolean; label: string; payload: Record<string, unknown>;
-      route?: { surface: string; subject_id: string | null };
+      route?: { surface: string; subject_id: string | null; path: string | null; name: string };
       /** Only set by a write that came back with a real row id. */
       post_id?: string;
       /** True only when a row was actually inserted. Never true in a dry run. */
       wrote?: boolean;
+      /**
+       * T1 — nothing has happened yet; this is an offer. The client must not
+       * render a confirmation for it until it has proof (a route change).
+       */
+      pending?: boolean;
     };
 
 
@@ -1486,12 +1546,17 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
         }
 
         if (name === "open_surface") {
-          // Read-only by construction: validate, return. No writes, no navigation.
-          const surface = typeof args.surface === "string" ? args.surface.trim() : "";
-          if (!(SURFACES as readonly string[]).includes(surface)) {
+          /* T1 — this tool NAVIGATES NOTHING. It offers a door.
+             The name is resolved against the real router table, so a surface
+             that does not exist can never be offered; the confirmation line is
+             written by the client, and only after it has watched the tab
+             change. Nothing here may read as success. */
+          const surface = resolveSurface(args.surface);
+          if (!surface) {
             return { tool: name, ok: false, label: SAY.openFailed(replyLanguage), payload: { ok: false, error: "unknown surface" } };
           }
-          const label = (typeof args.reason === "string" ? args.reason.trim() : "").slice(0, 60) || SAY.openIt(replyLanguage);
+          // The four-word cap is not a chip rule. It applies to every label.
+          const label = fourWordLabel(args.reason, SAY.openIt(replyLanguage));
           // An id only survives if it is one of THIS member's own loaded signals.
           const rawId = typeof args.subject_id === "string" ? args.subject_id.trim() : "";
           let subject_id: string | null = null;
@@ -1503,12 +1568,21 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
               if (refIdx >= 0 && UUID_RE.test(String(citations[refIdx].id))) subject_id = String(citations[refIdx].id);
             }
           }
+          const path = surfacePath(surface, subject_id);
           return {
             tool: name,
             ok: true,
+            // No machine line: nothing has happened yet. The client renders the
+            // door with this label and writes the confirmation itself, after
+            // the route has actually changed.
             label,
-            payload: { ok: true, surface, subject_id, label },
-            route: { surface, subject_id },
+            pending: true,
+            payload: {
+              ok: true, offered: true, navigated: false,
+              surface, subject_id, label, path,
+              note: "A door was offered. Nothing has opened; the member has not tapped it.",
+            },
+            route: { surface, subject_id, path, name: surfaceLabel(surface, replyLanguage) },
           };
         }
 
@@ -1948,6 +2022,19 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
           const provenWrite = actions.some((a) => a.ok && a.wrote === true);
           answer = guardClaimsServer(answer, provenWrite).text;
 
+          /**
+           * T2 — he can see the screen and the Desk cannot. When he reports
+           * that something did not work, any sentence citing our own logs
+           * against him is removed before he ever reads it.
+           */
+          if (isBrokenActionReport(lastUserText)) {
+            const defence = stripSelfDefence(answer);
+            answer = defence.text;
+            if (defence.stripped) {
+              console.warn(JSON.stringify({ stage: "self_defence_stripped", user_id }));
+            }
+          }
+
           // The summariser must see the answer the member actually read.
           fullReply = enforceLayers(answer);
           // N3 — a turn that produced nothing says so rather than going quiet.
@@ -1970,7 +2057,14 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
               encoder.encode(
                 `data: ${JSON.stringify({
                   choices: [{ delta: {} }],
-                  action: { tool: a.tool, ok: a.ok, label: a.label, ...(a.post_id ? { post_id: a.post_id } : {}), ...(a.route ? { route: a.route } : {}) },
+                  action: {
+                    tool: a.tool, ok: a.ok, label: a.label,
+                    // T1 — an offered door is pending, not done. The client
+                    // renders no confirmation for it until the route changes.
+                    ...(a.pending ? { pending: true } : {}),
+                    ...(a.post_id ? { post_id: a.post_id } : {}),
+                    ...(a.route ? { route: a.route } : {}),
+                  },
                 })}\n\n`,
               ),
             );

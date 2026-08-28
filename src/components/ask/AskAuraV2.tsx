@@ -80,10 +80,53 @@ const SURFACES = [
   "authority", "influence", "momentum", "widgets", "identity",
 ] as const;
 
-interface ActionRoute { surface: string; subject_id: string | null }
-interface ActionLine { tool: string; ok: boolean; label: string; route?: ActionRoute; /** Only present when the write returned a real row id. */ post_id?: string }
+interface ActionRoute { surface: string; subject_id: string | null; path?: string | null; name?: string }
+interface ActionLine {
+  tool: string; ok: boolean; label: string; route?: ActionRoute;
+  /** Only present when the write returned a real row id. */
+  post_id?: string;
+  /** T1 — a door was offered. Nothing has opened until the member taps it. */
+  pending?: boolean;
+}
 
 type Msg = { role: "user" | "assistant"; content: string; isError?: boolean; actions?: ActionLine[] };
+
+/** T1 — the four-word cap belongs to every label a member reads, tools included. */
+function fourWords(raw: string, fallback: string): string {
+  const t = String(raw ?? "").trim().replace(/^[-•*\s]+/, "").replace(/[.。؟?!]+$/, "");
+  if (!t) return fallback;
+  return t.split(/\s+/).filter(Boolean).slice(0, 4).join(" ") || fallback;
+}
+
+/**
+ * T1 — navigate, then WAIT for the rail to say it moved.
+ *
+ * The old path pushed a URL and fired `popstate`; Dashboard only reads the URL
+ * on mount, so the tab never changed and the Desk confidently reported success.
+ * Now the Desk asks the rail to switch, and resolves only when the rail
+ * acknowledges the tab it actually landed on. No acknowledgement, no claim.
+ */
+function navigateToSurface(tab: string, subjectId?: string | null): Promise<boolean> {
+  if (!(SURFACES as readonly string[]).includes(tab)) return Promise.resolve(false);
+  return new Promise<boolean>((resolve) => {
+    let done = false;
+    const finish = (ok: boolean) => {
+      if (done) return;
+      done = true;
+      window.removeEventListener("aura:tab-changed", onAck as EventListener);
+      window.clearTimeout(timer);
+      resolve(ok);
+    };
+    const onAck = (e: Event) => {
+      const landed = (e as CustomEvent).detail?.tab;
+      if (landed === tab) finish(true);
+    };
+    window.addEventListener("aura:tab-changed", onAck as EventListener);
+    const timer = window.setTimeout(() => finish(false), 1500);
+    const params = subjectId ? `signal=${encodeURIComponent(subjectId)}` : "";
+    window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab, params } }));
+  });
+}
 
 
 interface Props {
@@ -320,28 +363,32 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
 
 
   /**
-   * The one navigation contract on this surface: Dashboard reads ?tab= (and
-   * ?signal= for a subject). openSignal, openDrafts and the routing pill all
-   * go through here — there is no second helper.
+   * Which doors have actually been walked through. A key lands here only after
+   * the rail has acknowledged the tab change — it is the ONLY thing that lets a
+   * confirmation render.
    */
-  const openSurface = (tab: string, subjectId?: string | null) => {
-    const next = new URLSearchParams(window.location.search);
-    next.set("tab", tab);
-    if (subjectId) next.set("signal", subjectId);
-    else next.delete("signal");
-    window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    onClose();
+  const [opened, setOpened] = useState<Record<string, "done" | "failed">>({});
+
+  /**
+   * The one navigation contract on this surface. It asks the rail to switch and
+   * waits for the rail to confirm the tab it landed on; the Desk never reports
+   * a move it has not seen happen.
+   */
+  const openSurface = async (tab: string, subjectId?: string | null, key?: string) => {
+    const ok = await navigateToSurface(tab, subjectId);
+    if (key) setOpened((prev) => ({ ...prev, [key]: ok ? "done" : "failed" }));
+    if (ok) onClose();
+    return ok;
   };
-  const openSignal = (id: string) => openSurface("intelligence", id);
+  const openSignal = (id: string) => { void openSurface("intelligence", id); };
   /** Only ever called with a verified row id — there is no fallback to home. */
-  const openDraft = (postId: string) => {
+  const openDraft = async (postId: string) => {
+    const ok = await navigateToSurface("drafts");
+    if (!ok) return;
     const next = new URLSearchParams(window.location.search);
-    next.set("tab", "drafts");
     next.set("post", postId);
     next.delete("signal");
-    window.history.pushState({}, "", `${window.location.pathname}?${next.toString()}`);
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    window.history.replaceState({}, "", `${window.location.pathname}?${next.toString()}`);
     onClose();
   };
 
@@ -607,13 +654,19 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
               const r = j.action.route;
               const route: ActionRoute | undefined =
                 r && typeof r.surface === "string"
-                  ? { surface: r.surface, subject_id: typeof r.subject_id === "string" ? r.subject_id : null }
+                  ? {
+                      surface: r.surface,
+                      subject_id: typeof r.subject_id === "string" ? r.subject_id : null,
+                      path: typeof r.path === "string" ? r.path : null,
+                      name: typeof r.name === "string" ? r.name : undefined,
+                    }
                   : undefined;
               gotActions.push({
                 tool: String(j.action.tool || ""),
                 ok: !!j.action.ok,
-                label: j.action.label,
+                label: fourWords(String(j.action.label), "Open it"),
                 post_id: typeof j.action.post_id === "string" ? j.action.post_id : undefined,
+                pending: j.action.pending === true,
                 route,
               });
             }
@@ -1224,8 +1277,10 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                           )}
                         </>}
 
-                    {/* The machine reporting its own work: cyan, never a button. */}
-                    {(m.actions || []).map((a, k) => (
+                    {/* The machine reporting its own work: cyan, never a button.
+                        T1 — an offered door reports NOTHING here. It has not
+                        happened yet, so there is nothing honest to report. */}
+                    {(m.actions || []).filter(a => !a.pending).map((a, k) => (
                       <div key={k} data-testid="ask-action-line" style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}>
                         <span aria-hidden="true" style={{
                           width: 7, height: 7, borderRadius: 999,
