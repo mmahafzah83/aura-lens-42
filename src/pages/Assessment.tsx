@@ -14,7 +14,7 @@ import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult
 import { JourneyChrome, readStageFraction } from "@/components/journey/JourneyShell";
 import {
   ASSESSMENT_MINUTES, FIRST_READ_LINE, FULL_PICTURE_LINE,
-  FIRST_READ_SHORT, ASSESSMENT_QUESTIONS_PHRASE,
+  FIRST_READ_SHORT, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA_LABEL,
 } from "@/lib/brand";
 
 /**
