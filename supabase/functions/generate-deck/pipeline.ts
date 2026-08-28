@@ -217,7 +217,7 @@ export function pickSignOff(voice: Record<string, any> | null | undefined): stri
 /* ------------------------------------------------------------------ */
 
 /**
- * TRUNCATED-JSON REPAIR (ported from generate-carousel-v2, which is now deleted).
+ * TRUNCATED-JSON REPAIR (ported from the retired carousel v2 function).
  *
  * The model sometimes cuts an argument string mid-slide. Walk char by char
  * tracking string/escape/depth, cut at the last position that was OUTSIDE a
