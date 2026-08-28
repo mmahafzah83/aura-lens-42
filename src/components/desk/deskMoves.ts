@@ -27,8 +27,14 @@ const TOOL_LABELS: Record<string, { en: string; ar: string }> = {
 /** Machine-shaped: snake_case, camelCase run-ons, or a bare function call. */
 const MACHINE = /^[a-z0-9]+(_[a-z0-9]+)+(\(\))?$/;
 
-function fourWords(label: string): string {
-  const words = label.trim().split(/\s+/);
+/**
+ * T1 — the four-word cap is not a chip rule. It was only applied to model
+ * moves, which is how a tool label arrived as the whole sentence "View your 194
+ * captures in the library." Exported so every label a member reads goes
+ * through the same door.
+ */
+export function fourWords(label: string): string {
+  const words = String(label ?? "").trim().replace(/[.。؟?!]+$/, "").split(/\s+/).filter(Boolean);
   return words.length <= 4 ? words.join(" ") : words.slice(0, 4).join(" ");
 }
 
@@ -122,14 +128,18 @@ export const HONEST_FAILURE = honestFailure("en");
 export const CHROME: Record<"ar" | "en", {
   more: string; less: string; openInPublish: string;
   rightYes: string; rightNo: string; rightAsk: string; thanks: string;
+  /** T1 — the door, and the two things that can honestly follow a tap. */
+  openIt: string; openedPrefix: string; didNotOpen: string;
 }> = {
   en: {
     more: "Say more", less: "Less", openInPublish: "Open in Publish",
     rightYes: "Yes", rightNo: "No", rightAsk: "Was this right?", thanks: "Noted.",
+    openIt: "Open it", openedPrefix: "Opened", didNotOpen: "It didn't open. Try again?",
   },
   ar: {
     more: "تفاصيل أكثر", less: "اختصار", openInPublish: "افتحها في النشر",
     rightYes: "نعم", rightNo: "لا", rightAsk: "هل كان هذا صحيحًا؟", thanks: "سُجّل.",
+    openIt: "افتحها", openedPrefix: "فُتحت", didNotOpen: "لم تُفتح. جرّب مرة أخرى؟",
   },
 };
 
