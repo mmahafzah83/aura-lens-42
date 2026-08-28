@@ -620,7 +620,7 @@ Deno.serve(async (req) => {
       return text;
     }
 
-    const messages = [{ role: "user", content: userPrompt }];
+    const messages = [{ role: "user", content: stripLoneSurrogates(userPrompt) }];
     /* Stage four opens: the model writing the read. */
     run?.mark(OPERATION_STAGES.linkedin_read[3]);
     let raw = await callModel(messages);
