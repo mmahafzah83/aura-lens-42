@@ -23,44 +23,6 @@ import {
  */
 type Stage = "gate" | "address" | "reading" | "read" | "resume";
 
-/** The four things Aura does. None of them ticks: none has an event of its own. */
-const READING_STEPS = [
-  "Opening the profile",
-  "Reading recent posts",
-  "Finding what only you have",
-  "Writing your read",
-];
-
-/**
- * The honest wait: named steps that never pretend to finish, a counter of real
- * elapsed time, and an estimate measured from finished reads. No percentage.
- * Reduced motion changes nothing — the same words, the same real counter.
- */
-const ReadingWait = () => {
-  const secs = useElapsed(true);
-  const est = useWaitEstimate("linkedin_read");
-  const over = est.known && secs > est.p95;
-  return (
-    <div role="status" aria-live="polite" style={{ marginBlockStart: 18 }}>
-      <p className="asg-pp">{waitCopy(est)}</p>
-      <ul style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "grid", gap: 6 }}>
-        {READING_STEPS.map((s) => (
-          <li key={s} style={{ fontSize: 14, lineHeight: 1.5, color: "#5B6673" }}>{s}</li>
-        ))}
-      </ul>
-      <p style={{
-        fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)", fontSize: 13,
-        color: "#5B6673", margin: "12px 0 0", fontVariantNumeric: "tabular-nums",
-      }}>
-        {mmss(secs)}
-      </p>
-      {over ? (
-        <p style={{ fontSize: 12.5, lineHeight: 1.5, color: "#5B6673", margin: "6px 0 0" }}>{OVER_P95_LINE}</p>
-      ) : null}
-    </div>
-  );
-};
-
 /**
  * WHEN WE ARE FULL — a real capture, not a consolation line. The email is
  * written to `read_queue` and the position shown is the position held.
