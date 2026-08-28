@@ -333,10 +333,16 @@ const Assessment = () => {
           )}
 
           {stage === "reading" && (
-            <section className="asg-panel asg-center">
+            <section className="asg-panel">
               <span className="asg-k">READING</span>
-              <h1 className="asg-ph">Aura is reading your profile.</h1>
-              <ReadingWait />
+              <div style={{ marginBlockStart: 14 }}>
+                <WorkingPanel
+                  operation="linkedin_read"
+                  runId={readRunId ?? 0}
+                  title="Reading your profile"
+                  stages={readRun.stages}
+                />
+              </div>
             </section>
           )}
 
