@@ -646,7 +646,7 @@ Deno.serve(async (req) => {
       await logError("mirror-read", new Error("unreadable model output"), {
         user_id: null,
         severity: "high",
-        context: { handle, sparse },
+        context: { handle, sparse, raw_head: (raw ?? "").slice(0, 500), raw_length: (raw ?? "").length },
       });
       await refund();
       await finish("failed", "unreadable");
