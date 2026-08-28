@@ -232,18 +232,65 @@ async function fetchPosts(canonical_url: string, handle: string, token: string):
 }
 
 /** Strip fences, take the outermost braces. */
-function parseJsonLoose(raw: string): Record<string, unknown> | null {
-  let t = raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  const start = t.indexOf("{");
-  const end = t.lastIndexOf("}");
-  if (start === -1 || end <= start) return null;
-  t = t.slice(start, end + 1);
-  try {
-    const parsed = JSON.parse(t);
-    return parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : null;
-  } catch {
-    return null;
+/**
+ * The model sometimes stops mid-sentence. Walk the text tracking string and
+ * escape state, cut back to the last position outside a string, then close
+ * whatever brackets are still open. A truncated read used to read as garbage.
+ */
+function repairTruncatedJson(input: string): string {
+  let inStr = false, esc = false, lastSafe = -1;
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
+    if (esc) { esc = false; continue; }
+    if (c === "\\") { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === "}" || c === "]" || c === ",") lastSafe = i;
   }
+  let s = inStr && lastSafe > 0 ? input.slice(0, lastSafe + 1) : input;
+  const stk: string[] = [];
+  let inS = false, es = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (es) { es = false; continue; }
+    if (c === "\\") { es = true; continue; }
+    if (c === '"') { inS = !inS; continue; }
+    if (inS) continue;
+    if (c === "{") stk.push("}");
+    else if (c === "[") stk.push("]");
+    else if (c === "}" || c === "]") stk.pop();
+  }
+  s = s.replace(/[,\s]+$/, "");
+  while (stk.length) s += stk.pop();
+  return s;
+}
+
+function parseJsonLoose(raw: string): Record<string, unknown> | null {
+  let t = (raw ?? "").trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const start = t.indexOf("{");
+  if (start === -1) return null;
+  t = t.slice(start);
+  const end = t.lastIndexOf("}");
+  const candidates = end > 0 ? [t.slice(0, end + 1), t] : [t];
+  for (const c of candidates) {
+    for (const attempt of [c, repairTruncatedJson(c)]) {
+      try {
+        const parsed = JSON.parse(attempt);
+        if (parsed && typeof parsed === "object") return parsed as Record<string, unknown>;
+      } catch { /* try the next shape */ }
+    }
+  }
+  return null;
+}
+
+/**
+ * LinkedIn text sometimes carries half an emoji: a high surrogate with no
+ * partner. That single character makes the request body invalid JSON and the
+ * whole read fails. Drop unpaired surrogates before anything is sent.
+ */
+function stripLoneSurrogates(s: string): string {
+  return (s ?? "").replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, "")
+    .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "");
 }
 
 /** Placeholders are only meaningful inside the model's own sentences. */
@@ -552,16 +599,24 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           model: "claude-sonnet-4-5-20250929",
-          max_tokens: 1500,
+          /* The seven-key read runs long; 1500 cut it mid-sentence. */
+          max_tokens: 4000,
+          temperature: 0.3,
           system: SYSTEM_PROMPT,
           messages,
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error("[mirror-read] model call failed:", res.status, JSON.stringify(data?.error ?? {}).slice(0, 300));
+      }
       const text = (data?.content ?? [])
         .map((c: any) => (typeof c?.text === "string" ? c.text : ""))
         .join("")
         .trim();
+      if (data?.stop_reason === "max_tokens") {
+        console.warn("[mirror-read] model output hit the token ceiling; repairing.");
+      }
       await logAIUsage({
         user_id: null,
         function_name: "mirror-read",
@@ -575,7 +630,7 @@ Deno.serve(async (req) => {
       return text;
     }
 
-    const messages = [{ role: "user", content: userPrompt }];
+    const messages = [{ role: "user", content: stripLoneSurrogates(userPrompt) }];
     /* Stage four opens: the model writing the read. */
     run?.mark(OPERATION_STAGES.linkedin_read[3]);
     let raw = await callModel(messages);
@@ -601,7 +656,7 @@ Deno.serve(async (req) => {
       await logError("mirror-read", new Error("unreadable model output"), {
         user_id: null,
         severity: "high",
-        context: { handle, sparse },
+        context: { handle, sparse, raw_head: (raw ?? "").slice(0, 500), raw_length: (raw ?? "").length },
       });
       await refund();
       await finish("failed", "unreadable");
