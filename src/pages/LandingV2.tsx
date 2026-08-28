@@ -68,7 +68,7 @@ const LANDING_V2_CSS = `
 .aura-v2 .acts{display:flex;gap:11px;margin-top:30px;align-items:center;flex-wrap:wrap}
 .aura-v2 .mi{font-family:var(--mono);font-size:10.5px;color:var(--ink4);letter-spacing:.07em}
 .aura-v2 .big{font-size:clamp(34px,3.8vw,46px);font-weight:700;letter-spacing:-.038em;line-height:.98}
-.aura-v2 .big.b{color:var(--blue)}.aura-v2 .big.c{color:var(--cyanT)}.aura-v2 .big.k{color:var(--ink)}.aura-v2 .big.r{color:var(--red)}
+.aura-v2 .big.b{color:var(--blue)}.aura-v2 .big.c{color:var(--cyanT)}.aura-v2 .big.k{color:var(--ink)}
 .aura-v2 .rest{font-size:17px;font-weight:500;color:var(--ink2);line-height:1.38;margin-top:9px;letter-spacing:-.012em}
 .aura-v2 .det{font-size:14px;color:var(--ink3);line-height:1.6;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 .aura-v2 .det b{color:var(--ink2);font-weight:600}
@@ -889,36 +889,7 @@ const LANDING_V2_HTML = `
     </div>
   </div>
 
-  <div class="g2 rv" style="margin-top:22px">
-    <div style="background:#FFF;border:1px solid #E2E7EE;border-radius:20px;padding:32px 28px">
-      <div class="viz"><svg width="230" height="80" viewBox="0 0 230 80" fill="none">
-        <rect x="2" y="14" width="40" height="52" rx="6" fill="#FFF" stroke="#0670C4"/>
-        <rect x="50" y="14" width="40" height="52" rx="6" fill="#FFF" stroke="#0670C4" stroke-opacity=".6"/>
-        <rect x="98" y="14" width="40" height="52" rx="6" fill="#FFF" stroke="#0670C4" stroke-opacity=".3"/>
-        <rect x="146" y="14" width="40" height="52" rx="6" fill="#FFF" stroke="#0670C4" stroke-opacity=".12"/>
-        <circle cx="212" cy="40" r="16" fill="#FDECEA" stroke="#C0392B"/>
-        <text x="212" y="46" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="14" fill="#C0392B">0</text>
-      </svg></div>
-      <div class="big r">Lost</div>
-      <div class="rest">what happens now.</div>
-      <div class="det">You read something good. You close the page. Nobody ever hears about it. A year later you cannot point to one thing, and the people who should know your name still do not.</div>
-    </div>
-    <div style="background:#FFF;border:1px solid #00CEC9;border-radius:20px;padding:32px 28px">
-      <div class="viz"><svg width="230" height="80" viewBox="0 0 230 80" fill="none">
-        <rect x="10" y="52" width="30" height="22" rx="4" fill="#E0F7F6"/>
-        <rect x="56" y="40" width="30" height="34" rx="4" fill="#B6ECEA"/>
-        <rect x="102" y="26" width="30" height="48" rx="4" fill="#6FDDD9"/>
-        <rect x="148" y="10" width="30" height="64" rx="4" fill="#00CEC9"/>
-        <path d="M18 50l46-12 46-14 48-16" stroke="#00807B" stroke-width="1.6" stroke-linecap="round"/>
-        <circle cx="200" cy="14" r="5" fill="#00807B"/>
-      </svg></div>
-      <div class="big c">Kept</div>
-      <div class="rest">what happens with Aura.</div>
-      <div class="det">The same reading becomes posts and carousels people can see. Every week adds to the last one, so after six months there is a real record of what you know — <b>and it cost you two minutes a day.</b></div>
-    </div>
-  </div>
-
-  <div class="eyebrow" style="margin-top:46px">What people pay for the pieces, every month</div>
+  <div class="eyebrow" style="margin-top:28px">What people pay for the pieces, every month</div>
   <div class="wide rv">
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A ghostwriter</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:88%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$50–400</span></div>
     <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A positioning consultant</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:66%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$30–300</span></div>
