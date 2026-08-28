@@ -1180,7 +1180,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                                   borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                                   display: "inline-flex", alignItems: "center", gap: 6, marginTop: 2,
                                 }}
-                              >{isOpen ? "Less" : "Say more"}</button>
+                              >{isOpen ? CH.less : CH.more}</button>
                               {isOpen && (
                                 <div style={{ marginTop: 8 }}>
                                   <Answer text={guardedMore.text} size={13.8} color="var(--text-secondary)" />
