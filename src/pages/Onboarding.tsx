@@ -2818,10 +2818,18 @@ const Onboarding = () => {
             <WorkingPanel
               operation="linkedin_read"
               runId={readRunId}
-              title="Reading what LinkedIn shows"
-              stages={[{ key: "read", label: "Reading your profile and your posts", state: readDone ? "done" : "active" }]}
+              title="Aura is reading your profile."
+              /* The same four named steps the read shows everywhere else. None
+                 of them ticks on its own: each state is read from real data. */
+              stages={[
+                { key: "open", label: "Opening your LinkedIn", state: readDone || postsRead ? "done" : "active" },
+                { key: "posts", label: "Reading your posts", state: readDone || postsRead ? "done" : "waiting" },
+                { key: "only", label: "Finding what only you have", state: readDone ? "done" : (postsRead ? "active" : "waiting") },
+                { key: "write", label: "Writing your first read", state: readDone ? "done" : "waiting" },
+              ]}
               onCarryOn={{ label: "Carry on — I'll pick this up later", action: () => go(5) }}
             />
+
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBlockStart: 14 }}>
               {rows.map((r) => (
                 <StatusRow key={r.key} label={r.label} done={r.done}>{r.line}</StatusRow>
