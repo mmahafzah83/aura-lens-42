@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ButtonPrimary } from "@/components/systemb";
 import { Plus, Loader2 } from "lucide-react";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
@@ -132,6 +133,19 @@ const LibraryPage: React.FC<Props> = ({ onOpenCapture }) => {
   const { lang } = useLanguage();
   const L: "en" | "ar" = String(lang) === "ar" ? "ar" : "en";
   const [view, setView] = useState<"sources" | "published">("sources");
+  /**
+   * U2 — a navigation must land on the right sub-tab, not the parent. The Desk
+   * passes `view=published|sources`; the segment stays a page-level filter, and
+   * the parameter is consumed so it never sticks to a later visit.
+   */
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const v = searchParams.get("view");
+    if (v !== "published" && v !== "sources") return;
+    setView(v);
+    searchParams.delete("view");
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   /** Jumping to a signal is navigation, so it goes through the one shell
    *  contract (`aura:switch-tab`) rather than this page writing the URL. */

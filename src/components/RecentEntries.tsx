@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { captureCountsFromRows } from "@/lib/counts";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Database } from "@/integrations/supabase/types";
@@ -82,8 +83,10 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
     return !isPinned && isOld;
   });
 
-  const foundForYouCount = entries.filter((e) => (e as any).source_type === "aura_agent").length;
-  const keptByYouCount = entries.length - foundForYouCount;
+  /* U1 — the shared definition, applied to the rows this list already holds. */
+  const captureCounts = captureCountsFromRows(entries as any[]);
+  const foundForYouCount = captureCounts.agent_captures;
+  const keptByYouCount = captureCounts.user_captures;
 
   const displayEntries = showArchive ? archivedEntries : activeEntries;
 

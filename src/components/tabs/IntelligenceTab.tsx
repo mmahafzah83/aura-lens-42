@@ -1240,6 +1240,15 @@ const IntelligenceTab = ({ entries, onOpenChat, onOpenCapture, onDraftToStudio }
     return () => { supabase.removeChannel(channel); };
   }, [authUser?.id, loadSignals]);
 
+  /* U2 — land on the sub-tab the member asked for, not the parent surface. */
+  useEffect(() => {
+    const sub = searchParams.get("sub");
+    if (sub !== "signals" && sub !== "sources") return;
+    setActiveSubTab(sub as SubTab);
+    searchParams.delete("sub");
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   // Deep link
   useEffect(() => {
     const sigParam = searchParams.get("signal");
