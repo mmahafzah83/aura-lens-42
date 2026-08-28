@@ -232,18 +232,55 @@ async function fetchPosts(canonical_url: string, handle: string, token: string):
 }
 
 /** Strip fences, take the outermost braces. */
-function parseJsonLoose(raw: string): Record<string, unknown> | null {
-  let t = raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  const start = t.indexOf("{");
-  const end = t.lastIndexOf("}");
-  if (start === -1 || end <= start) return null;
-  t = t.slice(start, end + 1);
-  try {
-    const parsed = JSON.parse(t);
-    return parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : null;
-  } catch {
-    return null;
+/**
+ * The model sometimes stops mid-sentence. Walk the text tracking string and
+ * escape state, cut back to the last position outside a string, then close
+ * whatever brackets are still open. A truncated read used to read as garbage.
+ */
+function repairTruncatedJson(input: string): string {
+  let inStr = false, esc = false, lastSafe = -1;
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
+    if (esc) { esc = false; continue; }
+    if (c === "\\") { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === "}" || c === "]" || c === ",") lastSafe = i;
   }
+  let s = inStr && lastSafe > 0 ? input.slice(0, lastSafe + 1) : input;
+  const stk: string[] = [];
+  let inS = false, es = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (es) { es = false; continue; }
+    if (c === "\\") { es = true; continue; }
+    if (c === '"') { inS = !inS; continue; }
+    if (inS) continue;
+    if (c === "{") stk.push("}");
+    else if (c === "[") stk.push("]");
+    else if (c === "}" || c === "]") stk.pop();
+  }
+  s = s.replace(/[,\s]+$/, "");
+  while (stk.length) s += stk.pop();
+  return s;
+}
+
+function parseJsonLoose(raw: string): Record<string, unknown> | null {
+  let t = (raw ?? "").trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const start = t.indexOf("{");
+  if (start === -1) return null;
+  t = t.slice(start);
+  const end = t.lastIndexOf("}");
+  const candidates = end > 0 ? [t.slice(0, end + 1), t] : [t];
+  for (const c of candidates) {
+    for (const attempt of [c, repairTruncatedJson(c)]) {
+      try {
+        const parsed = JSON.parse(attempt);
+        if (parsed && typeof parsed === "object") return parsed as Record<string, unknown>;
+      } catch { /* try the next shape */ }
+    }
+  }
+  return null;
 }
 
 /** Placeholders are only meaningful inside the model's own sentences. */
