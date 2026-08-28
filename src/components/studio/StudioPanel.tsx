@@ -1905,17 +1905,54 @@ export default function StudioPanel({
     if (error) console.warn("deck not persisted", error);
   }, []);
 
+  /**
+   * THE DECK ITSELF IS KEPT. `deck_events` only ever held telemetry, so a deck
+   * vanished the moment the member left. The IR now lands in its own row,
+   * owner-only. This never blocks the editor: a failure is a console line.
+   */
+  const deckRowIdRef = useRef<string | null>(null);
+  const saveDeckRow = useCallback(async (d: DeckIR, th: string, tpl: string, signalId: string | null) => {
+    if (!userId) return;
+    const payload = {
+      user_id: userId,
+      signal_id: signalId,
+      lang: d.primary_lang ?? null,
+      template: tpl,
+      theme: th,
+      slides: { ...d, theme: th, template: tpl } as unknown as Record<string, unknown>,
+    };
+    if (deckRowIdRef.current) {
+      const { error } = await supabase
+        .from("decks")
+        .update({ ...payload, updated_at: new Date().toISOString() } as any)
+        .eq("id", deckRowIdRef.current);
+      if (error) console.warn("deck row not saved", error);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("decks")
+      .insert(payload as any)
+      .select("id")
+      .maybeSingle();
+    if (error) { console.warn("deck row not saved", error); return; }
+    if (data?.id) deckRowIdRef.current = data.id as string;
+  }, [userId]);
+
   /** Every deck edit is a first-class save, not a memory-only tweak. */
   useEffect(() => {
     if (!deck) return;
     const rowId = postRowRef.current ?? draftId;
-    if (!rowId) return;
+    const signalId = typeof choice?.id === "string" ? choice.id : null;
     const t = window.setTimeout(() => {
-      void persistDeck(rowId, deck, theme, template).catch((e) =>
-        console.warn("deck not persisted", e));
-    }, 800);
+      if (rowId) {
+        void persistDeck(rowId, deck, theme, template).catch((e) =>
+          console.warn("deck not persisted", e));
+      }
+      void saveDeckRow(deck, theme, template, signalId).catch((e) =>
+        console.warn("deck row not saved", e));
+    }, 1500);
     return () => window.clearTimeout(t);
-  }, [deck, theme, template, draftId, persistDeck]);
+  }, [deck, theme, template, draftId, choice?.id, persistDeck, saveDeckRow]);
 
   const makeSlides = useCallback(async (lengthOverride?: 5 | 7 | 10) => {
     // Never silent: every refusal says why.
