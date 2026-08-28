@@ -140,9 +140,16 @@ async function learnForUser(admin: any, userId: string) {
       if (!isNaN(d.getTime())) dayCounts[d.getUTCDay()] += 1;
     }
     const top = dayCounts.indexOf(Math.max(...dayCounts));
-    const dayClause = dayCounts[top] >= Math.ceil(hits.length / 2) && dayCounts[top] >= MIN_EVIDENCE
-      ? ` ${dayCounts[top]} of those fell on a ${WEEKDAYS[top]}.`
-      : "";
+    /* A count of five inside one afternoon supports "you asked five times".
+       It never supports "you ask on Thursdays". A rhythm may only be named
+       when the evidence is actually spread out in time. */
+    const spread = temporalSpread(hits.map((h: any) => h.at));
+    const dayClause =
+      canClaimRhythm(spread) &&
+      dayCounts[top] >= Math.ceil(hits.length / 2) &&
+      dayCounts[top] >= MIN_EVIDENCE
+        ? ` ${dayCounts[top]} of those fell on a ${WEEKDAYS[top]}.`
+        : "";
     candidates.push({
       kind: "asks_about",
       observation: `You have asked about ${intent.label} ${hits.length} times in the last ${WINDOW_DAYS} days.${dayClause}`,
@@ -151,9 +158,12 @@ async function learnForUser(admin: any, userId: string) {
         intent: intent.key,
         message_ids: hits.slice(0, 20).map((h: any) => h.id),
         dates: hits.slice(0, 20).map((h: any) => h.at.slice(0, 10)),
+        distinct_days: spread.days,
+        distinct_weeks: spread.weeks,
       },
     });
   }
+
 
   // talks_like — countable properties of HIS messages, never of him.
   if (userMsgs.length >= MIN_EVIDENCE) {
