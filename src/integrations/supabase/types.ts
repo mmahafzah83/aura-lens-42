@@ -1184,6 +1184,42 @@ export type Database = {
         }
         Relationships: []
       }
+      decks: {
+        Row: {
+          created_at: string
+          id: string
+          lang: string | null
+          signal_id: string | null
+          slides: Json | null
+          template: string | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lang?: string | null
+          signal_id?: string | null
+          slides?: Json | null
+          template?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lang?: string | null
+          signal_id?: string | null
+          slides?: Json | null
+          template?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deleted_test_accounts_20260818: {
         Row: {
           deleted_at: string | null
