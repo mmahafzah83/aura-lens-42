@@ -338,7 +338,7 @@ export async function callTool(
 
   const args = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
   if (typeof args !== "string") throw new Error("model returned no tool call");
-  return JSON.parse(args);
+  return safeParseToolArgs(args);
 }
 
 export function contextBlock(ctx: SignalContext): string {
