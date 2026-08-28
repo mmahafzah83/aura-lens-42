@@ -475,7 +475,7 @@ const Assessment = () => {
 
             <div className="asg-acts">
               <button className="asg-btn asg-bp" onClick={() => void begin()} disabled={busy}>
-                {busy ? "Opening…" : (<>Start with my LinkedIn <span className="asg-a">↗</span></>)}
+                {busy ? "Opening…" : (<>{FREE_CTA_LABEL} <span className="asg-a">↗</span></>)}
               </button>
               <button
                 type="button"
