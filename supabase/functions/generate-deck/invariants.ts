@@ -202,6 +202,12 @@ export interface InvariantOptions {
    * source material there is no way to tell domain language from filler.
    */
   domainTerms?: string[];
+  /**
+   * The member's `authority_voice_profiles.marker_style` for this deck's
+   * language. Absent or empty means no glyph is permitted — the default, and
+   * the behaviour of every deck written before the field existed.
+   */
+  markerStyle?: unknown;
 }
 
 /* ------------------------------------------------------------------ */
@@ -219,6 +225,51 @@ export const MARKER_RE =
 
 export function stripMarkers(text: string): string {
   return text.replace(MARKER_RE, " ").replace(/\s{2,}/g, " ").trim();
+}
+
+/* ------------------------------------------------------------------ */
+/* INV-24 — markers the member's own voice profile did not permit      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Voice profile decides the words and the tone.
+ * The slide decides what a slide can physically hold.
+ *
+ * `marker_style` on the member's voice profile row records the glyphs they
+ * actually type, counted from their own posts. An empty or absent value means
+ * no glyphs are permitted anywhere, which is exactly the behaviour every deck
+ * had before the field existed.
+ */
+export interface MarkerPermission {
+  symbols: string[];
+  emoji: string[];
+  /** True when the member's profile permits at least one glyph. */
+  any: boolean;
+}
+
+export function markerPermission(raw: unknown): MarkerPermission {
+  const o = raw && typeof raw === "object" && !Array.isArray(raw)
+    ? raw as Record<string, unknown>
+    : {};
+  const list = (v: unknown) =>
+    (Array.isArray(v) ? v : []).map((x) => String(x ?? "").trim()).filter(Boolean).slice(0, 4);
+  const symbols = o.uses_symbols === true ? list(o.symbols) : [];
+  const emoji = o.uses_emoji === true ? list(o.emoji) : [];
+  return { symbols, emoji, any: symbols.length + emoji.length > 0 };
+}
+
+/** Pictographs are emoji; every other marker glyph is a symbol. */
+const EMOJI_GLYPH_RE = /\p{Extended_Pictographic}/u;
+
+/** Direction-breaking glyphs. No voice profile may license these in Arabic. */
+export const RTL_FORBIDDEN_GLYPHS = ["\u21B3", "\u21B2", "\u2937", "\u2936"];
+
+/** At most one symbol on a slide, and at most two emoji in a whole deck. */
+export const MARKER_LIMITS = { symbols_per_slide: 1, emoji_per_deck: 2 };
+
+export function glyphsIn(text: string): string[] {
+  MARKER_RE.lastIndex = 0;
+  return String(text ?? "").match(MARKER_RE) ?? [];
 }
 
 /** Case-folded, diacritic-free, punctuation-free, whitespace-collapsed. */
@@ -331,12 +382,21 @@ function slideRuns(slide: Slide): Run[] {
   return [...slideTextNodes(slide).flatMap((n) => n.runs), ...hero];
 }
 
-function slideStrings(slide: Slide): string[] {
+/** Hero lines only — typography, never a place for a marker. */
+function heroStrings(slide: Slide): string[] {
+  return (slide.slots.hero_lines ?? []).map(plainText).filter(Boolean);
+}
+
+/** Everything on the slide that is not a hero line. */
+function nonHeroStrings(slide: Slide): string[] {
   const out = slideTextNodes(slide).map(plainText);
-  for (const line of slide.slots.hero_lines ?? []) out.push(plainText(line));
   if (slide.slots.stat_value) out.push(slide.slots.stat_value);
   if (slide.slots.media?.credit) out.push(slide.slots.media.credit);
   return out.filter(Boolean);
+}
+
+function slideStrings(slide: Slide): string[] {
+  return [...nonHeroStrings(slide), ...heroStrings(slide)];
 }
 
 /** Content slots — `media` alone does not make a slide, but it does count. */
@@ -373,6 +433,10 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     .map((s) => String(s ?? "").trim())
     .filter((s) => s.length >= 25);
 
+  /** What this member's own writing licenses. Empty by default. */
+  const marker = markerPermission(opts.markerStyle);
+  let deckEmoji = 0;
+
   let tripletCount = 0;
   let concreteParticulars = 0;
 
@@ -396,16 +460,19 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
     }
 
     for (const text of slideStrings(slide)) {
-      // INV-20 — a marker glyph inside a paragraph is a rendering defect, and
-      // a direction-neutral one wrecks the edge of an RTL text block.
-      MARKER_RE.lastIndex = 0;
-      if (MARKER_RE.test(text)) {
-        errors.push(
-          stripMarkers(text)
-            ? `INV-20: ${where} carries a symbol marker inside slide text: "${text.slice(0, 60)}".`
-            // Nothing survives the strip, so the repair cannot help: blocking.
-            : `INV-01: ${where} has a text node made only of symbol markers, leaving it empty once they are removed.`,
-        );
+      // INV-20 — with no permitted marker (the default) a glyph inside a
+      // paragraph is a rendering defect, and a direction-neutral one wrecks
+      // the edge of an RTL text block.
+      if (!marker.any) {
+        MARKER_RE.lastIndex = 0;
+        if (MARKER_RE.test(text)) {
+          errors.push(
+            stripMarkers(text)
+              ? `INV-20: ${where} carries a symbol marker inside slide text: "${text.slice(0, 60)}".`
+              // Nothing survives the strip, so the repair cannot help: blocking.
+              : `INV-01: ${where} has a text node made only of symbol markers, leaving it empty once they are removed.`,
+          );
+        }
       }
       // INV-21 — a sign-off is a statement about the member. It belongs at the
       // end of the post body and never on a slide.
@@ -480,13 +547,62 @@ export function checkInvariants(ir: DeckIR, opts: InvariantOptions = {}): string
 
     // INV-13 — hero line budget. A longer line wraps and destroys the highlight block.
     for (const line of slide.slots.hero_lines ?? []) {
-      const text = plainText(line);
+      const raw = plainText(line);
+      // A marker never counts toward the hero budget, and never buys room in it.
+      const text = glyphsIn(raw).length ? stripMarkers(raw) : raw;
       const lang: "en" | "ar" = ARABIC_RE.test(text) ? "ar" : "en";
       const budget = heroBudget(lang, ir.template);
       if (text.length > budget) {
         errors.push(
           `INV-13: ${where} hero line "${text}" is ${text.length} characters, over the ${lang} budget of ${budget}.`,
         );
+      }
+    }
+
+    // INV-24 — markers the member's voice profile did not permit, and the
+    // physical limits no profile can override. Physical limits always win:
+    // the voice profile decides the words, the slide decides what it can hold.
+    const edgeSlide = slide.archetype === "close" || slide.archetype.startsWith("cover");
+    if (marker.any) {
+      for (const text of heroStrings(slide)) {
+        for (const g of glyphsIn(text)) {
+          errors.push(`INV-24: ${where} puts "${g}" in a hero line. A hero line is typography and holds no marker, whatever the voice profile says.`);
+        }
+      }
+      let symbolsHere = 0;
+      for (const text of nonHeroStrings(slide)) {
+        for (const g of glyphsIn(text)) {
+          const isEmoji = EMOJI_GLYPH_RE.test(g);
+          const permitted = isEmoji ? marker.emoji.includes(g) : marker.symbols.includes(g);
+          if (!permitted) {
+            errors.push(`INV-24: ${where} uses "${g}", which this member's marker style does not include.`);
+            continue;
+          }
+          if (edgeSlide) {
+            errors.push(`INV-24: ${where} carries "${g}". A cover or close slide holds no marker.`);
+            continue;
+          }
+          if (isEmoji) {
+            deckEmoji += 1;
+            if (deckEmoji > MARKER_LIMITS.emoji_per_deck) {
+              errors.push(`INV-24: ${where} takes the deck past ${MARKER_LIMITS.emoji_per_deck} emoji with "${g}".`);
+            }
+          } else {
+            symbolsHere += 1;
+            if (symbolsHere > MARKER_LIMITS.symbols_per_slide) {
+              errors.push(`INV-24: ${where} carries more than one symbol marker ("${g}"); one per slide is the limit.`);
+            }
+          }
+        }
+      }
+    }
+    // Direction integrity is physical, so it is checked whatever the profile says.
+    for (const run of slideRuns(slide)) {
+      if (run.lang !== "ar") continue;
+      for (const g of RTL_FORBIDDEN_GLYPHS) {
+        if (String(run.t ?? "").includes(g)) {
+          errors.push(`INV-24: ${where} uses "${g}" inside Arabic text, which breaks the right-to-left edge of the block.`);
+        }
       }
     }
 

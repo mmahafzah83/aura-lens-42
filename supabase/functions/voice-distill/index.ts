@@ -12,6 +12,7 @@ import { sanitizeStyleFields } from "../_shared/voiceStyle.ts";
 import { isOwnWriting, CORPUS_COLUMNS } from "../_shared/voiceCorpus.ts";
 import { deriveInVoiceSubsets } from "../_shared/contentDNA.ts";
 import { hookStyleOf, endingTypeOf } from "../_shared/fingerprint.ts";
+import { deriveMarkerStyle } from "../_shared/markerStyle.ts";
 
 
 /**
@@ -671,7 +672,7 @@ Deno.serve(async (req) => {
       // MERGE into the (user_id, L) row.
       const { data: existing, error: existErr } = await supabase
         .from("authority_voice_profiles")
-        .select("id, tone, vocabulary_preferences, allowed_endings")
+        .select("id, tone, vocabulary_preferences, allowed_endings, example_posts, admired_posts")
         .eq("user_id", user_id)
         .eq("language", L)
         .eq("mode_key", "default")
@@ -751,9 +752,22 @@ Deno.serve(async (req) => {
         const raw = (existing as any)?.example_posts;
         if (!Array.isArray(raw)) return [];
         return raw
-          .map((e: any) => (typeof e === "string" ? e : String(e?.text ?? e?.body ?? "")))
+          .map((e: any) => (typeof e === "string" ? e : String(e?.text ?? e?.body ?? e?.content ?? "")))
           .filter((t: string) => t.trim().length > 0);
       })();
+      const admiredBodies: string[] = (() => {
+        const raw = (existing as any)?.admired_posts;
+        if (!Array.isArray(raw)) return [];
+        return raw
+          .map((e: any) => (typeof e === "string" ? e : String(e?.text ?? e?.body ?? e?.content ?? "")))
+          .filter((t: string) => t.trim().length > 0);
+      })();
+      /**
+       * MARKER STYLE — counted, never guessed, and scanned per language because
+       * Arabic and English marker habits differ. No evidence means no symbols,
+       * which is the behaviour every surface had before this field existed.
+       */
+      const markerStyle = deriveMarkerStyle([...exampleBodies, ...admiredBodies]);
       const observedOpens = [...new Set(exampleBodies.map((t) => hookStyleOf(t)))];
       const observedLands = [...new Set(exampleBodies.map((t) => endingTypeOf(t)))];
       const range = deriveInVoiceSubsets({
@@ -772,6 +786,7 @@ Deno.serve(async (req) => {
         storytelling_patterns: style.storytelling_patterns,
         vocabulary_preferences: style.vocabulary_preferences,
         allowed_endings: style.allowed_endings,
+        marker_style: markerStyle,
         in_voice_moves: [...range.subset.moves],
         in_voice_opens: [...range.subset.opens],
         in_voice_lands: [...range.subset.lands],

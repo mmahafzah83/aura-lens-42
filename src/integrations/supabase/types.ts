@@ -443,6 +443,7 @@ export type Database = {
           in_voice_opens: string[] | null
           is_primary: boolean
           language: string
+          marker_style: Json
           mode_key: string | null
           mode_label: string | null
           preferred_structures: Json
@@ -464,6 +465,7 @@ export type Database = {
           in_voice_opens?: string[] | null
           is_primary?: boolean
           language?: string
+          marker_style?: Json
           mode_key?: string | null
           mode_label?: string | null
           preferred_structures?: Json
@@ -485,6 +487,7 @@ export type Database = {
           in_voice_opens?: string[] | null
           is_primary?: boolean
           language?: string
+          marker_style?: Json
           mode_key?: string | null
           mode_label?: string | null
           preferred_structures?: Json

@@ -7,7 +7,7 @@
  * was the reason members were staring at "Aura would not ship this deck".
  */
 import { plainText, type DeckIR } from "./deckIR.ts";
-import { heroBudget, MARKER_RE } from "./invariants.ts";
+import { heroBudget, MARKER_RE, markerPermission } from "./invariants.ts";
 
 const ARABIC_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
@@ -88,9 +88,22 @@ function trimRuns(runs: any[], budget: number): any[] {
   return out.length ? out : [{ ...(runs[0] ?? { lang: "en" }), t: String(runs[0]?.t ?? "").slice(0, budget).trim() }];
 }
 
-export function repairDeck(ir: DeckIR): { deck: DeckIR; repaired: string[] } {
+export function repairDeck(
+  ir: DeckIR,
+  /** The member's `marker_style`. Absent means no glyph survives, as before. */
+  markerStyle?: unknown,
+): { deck: DeckIR; repaired: string[] } {
   const repaired: string[] = [];
   const deck: DeckIR = JSON.parse(JSON.stringify(ir));
+  const marker = markerPermission(markerStyle);
+  const permitted = new Set([...marker.symbols, ...marker.emoji]);
+  /** Strip only the glyphs this member's own writing does not license. */
+  const stripUnpermitted = (t: string) =>
+    t.replace(MARKER_RE, (g) => (permitted.has(g) ? g : " ")).replace(/\s{2,}/g, " ");
+  const hasUnpermitted = (t: string) => {
+    MARKER_RE.lastIndex = 0;
+    return (t.match(MARKER_RE) ?? []).some((g) => !permitted.has(g));
+  };
 
   for (const slide of deck.slides ?? []) {
     const where = `slide ${slide.index} (${slide.archetype})`;
@@ -102,9 +115,8 @@ export function repairDeck(ir: DeckIR): { deck: DeckIR; repaired: string[] } {
     const scrubNode = (node: any) => {
       if (!node?.runs) return;
       for (const run of node.runs) {
-        MARKER_RE.lastIndex = 0;
-        if (!MARKER_RE.test(String(run.t ?? ""))) continue;
-        run.t = String(run.t).replace(MARKER_RE, " ").replace(/\s{2,}/g, " ");
+        if (!hasUnpermitted(String(run.t ?? ""))) continue;
+        run.t = stripUnpermitted(String(run.t));
         repaired.push(`INV-20: ${where} stripped a symbol marker from slide text.`);
       }
       node.runs = node.runs.filter((r: any) => String(r.t ?? "").trim().length > 0);
