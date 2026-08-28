@@ -7,7 +7,7 @@
  * shared so every "Aura is reading" screen looks and behaves the same.
  */
 import type { ReactNode } from "react";
-import { OVER_P95_LINE, mmss, useElapsed, useWaitEstimate, waitCopy } from "@/lib/waitEstimate";
+import { OVER_P95_LINE, mmss, useElapsed, useWaitEstimate, waitCopy, type WaitOperation } from "@/lib/waitEstimate";
 
 /* System-B surface tokens */
 const CARD = "#FFFFFF";
@@ -25,7 +25,7 @@ type Props = {
   /** Plain step labels, stacked. None of them ticks. */
   steps: string[];
   /** Which measured wait to quote. */
-  waitKey: string;
+  waitKey: WaitOperation;
   /** Optional action below the counter (for example, a quiet cancel). */
   children?: ReactNode;
 };
