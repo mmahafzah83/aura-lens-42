@@ -63,8 +63,6 @@ const LANDING_V2_CSS = `
 .aura-v2 .btn{font-family:var(--ui);font-weight:600;font-size:14.5px;padding:14px 26px;border:none;border-radius:9px;cursor:pointer;transition:200ms var(--sp);text-decoration:none;display:inline-block}
 .aura-v2 .bp{background:var(--blue);color:#fff}
 .aura-v2 .bp:hover{background:var(--blue2);transform:translateY(-2px);box-shadow:0 10px 26px rgba(6,112,196,.26)}
-.aura-v2 .bg2{background:var(--white);color:var(--ink);border:1px solid var(--line2)}
-.aura-v2 .bg2:hover{border-color:var(--ink);transform:translateY(-2px)}
 .aura-v2 .acts{display:flex;gap:11px;margin-top:30px;align-items:center;flex-wrap:wrap}
 .aura-v2 .mi{font-family:var(--mono);font-size:10.5px;color:var(--ink4);letter-spacing:.07em}
 .aura-v2 .big{font-size:clamp(34px,3.8vw,46px);font-weight:700;letter-spacing:-.038em;line-height:.98}
