@@ -950,7 +950,7 @@ const Dashboard = () => {
         const skills = Object.entries(audit as Record<string, unknown>).map(([name, score]) => ({
           name,
           category: dimensionCategories[name] || "General",
-          description: `${dimensionCategories[name] || "General"} capability — calibrated at ${Number(score)}/100`,
+          description: `${dimensionCategories[name] || "General"} skill — you placed it at ${Number(score)}/100`,
         }));
         await writeProfile(userId, { generated_skills: skills }, "Dashboard.generated_skills");
 

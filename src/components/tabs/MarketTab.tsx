@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Loader2, RefreshCw, ExternalLink, Sparkles, Check, X, Copy, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { nPosts } from "@/constants/vocabulary";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -425,7 +426,7 @@ const MarketTab = () => {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground/40 mt-3">
-                {approvedPosts.length} post{approvedPosts.length > 1 ? "s" : ""} ready to publish
+                {nPosts(approvedPosts.length, "en")} ready to publish
               </p>
             </div>
           )}

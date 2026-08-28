@@ -1999,7 +1999,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     const first = m.posts[0];
                     const preview = (first.post_text || "").replace(/\s+/g, " ").trim().slice(0, 40);
                     const dateLabel = fmtDateShort(first.published_at);
-                    const tip = `Post published · ${dateLabel}${m.posts.length > 1 ? ` (+${m.posts.length - 1} more)` : ""}${preview ? ` — ${preview}${(first.post_text || "").length > 40 ? "…" : ""}` : ""}`;
+                    const tip = `Post published · ${dateLabel}${m.posts.length > 1 ? ` (+${m.posts.length - 1} more)` : ""}${preview ? ` — ${preview}${(first.post_text || "").length > 40 ? "…" : ""}` : ""}`;  // vocab-ok: "+N more" is a subset of the posts on one day, not the post count
                     return (
                       <ReferenceLine
                         key={`pub-${idx}`}

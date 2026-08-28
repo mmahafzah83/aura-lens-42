@@ -104,7 +104,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
         /* A locked marker is a decision the member made — never report it as
            "your posts didn't matter". */
         if (written === 0 && lockedSkipped > 0) {
-          toast.message("Nothing changed — you've locked every marker. Unlock one to let Aura adjust it.");
+          toast.message("Nothing changed — every marker is locked. Open one so Aura can adjust it.");
         } else {
           toast.message("Nothing moved — those posts weren't changing your voice.");
         }
@@ -133,7 +133,7 @@ export default function TeachAura({ userId }: { userId: string | null }) {
       const lockedSkipped = Number((traits as any)?.traits_skipped_locked ?? 0);
       const written = Number((traits as any)?.traits_written ?? 0);
       if (written === 0 && lockedSkipped > 0) {
-        toast.message("Nothing changed — you've locked every marker. Unlock one to let Aura adjust it.");
+        toast.message("Nothing changed — every marker is locked. Open one so Aura can adjust it.");
       } else {
         toast.success("Aura re-read your posts.");
       }

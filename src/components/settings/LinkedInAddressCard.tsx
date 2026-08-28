@@ -144,7 +144,7 @@ export default function LinkedInAddressCard({ userId }: { userId: string | null 
         Aura reads what's already public on your profile — your headline and your recent posts —
         so that what it writes sounds like you and not like anyone else.
         {state?.handle
-          ? ` Currently reading @${state.handle}${state.confirmedByRead ? "" : " — Aura hasn't opened it yet"}.`
+          ? ` Reading @${state.handle} now${state.confirmedByRead ? "" : " — Aura hasn't opened it yet"}.`
           : " No address set yet."}
       </p>
       <p style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.6, marginBlockStart: 0, marginBlockEnd: 12 }}>

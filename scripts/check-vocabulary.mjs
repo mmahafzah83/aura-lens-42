@@ -103,13 +103,20 @@ function compareTwin(fileA, fileB, marker, label) {
   return [];
 }
 
-/** Both twins, checked the same way. */
+/** The CONCEPT REGISTRY and its Deno twin — PASS V. The registry is what makes
+ *  a word mean one thing; two copies that disagree would undo the whole point. */
+const CONCEPTS_MIRROR = "src/constants/concepts.ts";
+const CONCEPTS_TWIN = "supabase/functions/_shared/concepts.ts";
+
+/** All three twins, checked the same way. */
 export function checkTwin() {
   return [
     ...compareTwin(DICT, DICT_TWIN, "export type VocabLang", "the dictionary"),
     ...compareTwin(MOVES_MIRROR, MOVES_TWIN, "export type MoveBeat", "the MOVES table"),
+    ...compareTwin(CONCEPTS_MIRROR, CONCEPTS_TWIN, "export const CONCEPT_KEYS", "the concept registry"),
   ];
 }
+
 
 /** Banned member-facing nouns, plus the seven legitimate ones (which still may
  *  not be hand-written next to a number). */
@@ -315,6 +322,8 @@ function literalsOf(line) {
 const EXEMPT = [
   DICT,       // the dictionary
   DICT_TWIN,  // its Deno twin, policed by checkTwin() instead
+  "src/constants/concepts.ts",                     // the concept registry IS the dictionary
+  "supabase/functions/_shared/concepts.ts",        // its Deno twin, policed by checkTwin()
 ];
 
 
@@ -428,6 +437,212 @@ const LATER_FILES = [
 ];
 
 
+/* ══════════════════════════════════════════════════════════════════════════
+ * PASS V — THE GATE GETS TEETH.
+ *
+ * Everything above polices HOW a number is phrased. Everything below polices
+ * WHAT a word means, WHERE its number comes from, and whether a member could
+ * actually read it out loud.
+ *
+ * Four new checks:
+ *   V2.2  a raw count of a dictionary concept in a component
+ *   V2.3  a term used with the wrong meaning
+ *   V2.4  a banned word
+ *   V3    plain words — long word, noun stack, internal name, noun button
+ *
+ * Same discipline as the rounds above: a violation on a MEMBER-FACING surface
+ * fails the build; anywhere else it is reported and listed. That is how the
+ * gate tightens file by file without a red build nobody can land.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/** Surfaces the member actually looks at. A violation here FAILS the build. */
+const MEMBER_FACING = [
+  "src/components/ask/",
+  "src/components/home/",
+  "src/components/studio/",
+  "src/components/voice/",
+  "src/components/identity/",
+  "src/components/tabs/",
+  "src/components/rail/",
+  "src/components/settings/",
+  "src/pages/Dashboard.tsx",
+  "src/pages/DraftsPage.tsx",
+  "src/constants/",
+];
+
+const isMemberFacing = (rel) => MEMBER_FACING.some((p) => rel.startsWith(p));
+
+/* ── V2.4 — BANNED WORDS ──────────────────────────────────────────────────
+ * The original list, plus everything Pass T and Pass U dragged onto a screen.
+ * "authority" as a NOUN and "leverage" as a VERB only — the adjective
+ * "authoritative" and the noun "leverage" in a finance sentence are not the
+ * problem, the posture-language is.
+ */
+const BANNED_WORDS_V = [
+  // the original list
+  "trajectory", "personal brand", "thought leader", "thought leadership",
+  "utilize", "facilitate", "seamless",
+  // added in Pass V, all seen on a screen today
+  "terminal gap", "CQRS", "context window", "signal-to-noise", "signal to noise",
+  "surface area", "operating model", "governance framework", "ecosystem",
+  "paradigm", "holistic", "robust", "at scale", "unlock", "harness",
+  "reshaping", "redefining",
+];
+const BANNED_WORDS_RE = new RegExp(`\\b(?:${BANNED_WORDS_V.join("|")})\\b`, "i");
+/** "authority" as a noun: not preceded by "the ... of", not "authoritative". */
+const AUTHORITY_NOUN_RE = /\bauthority\b(?!\s*=)/i;
+/** "leverage" used as a verb: followed by an article or a noun phrase. */
+const LEVERAGE_VERB_RE = /\bleverage(?:s|d|ing)?\s+(?:the|your|our|his|her|its|their|a|an|this|these)\b/i;
+
+/* ── V3 — PLAIN WORDS ─────────────────────────────────────────────────────
+ * Prefer the short word. A member says the word on the right.
+ */
+const SIMPLE_WORDS = {
+  utilize: "use", utilise: "use", utilization: "use",
+  facilitate: "help", facilitates: "helps",
+  initiate: "start", initiates: "starts", initiated: "started",
+  regarding: "about", concerning: "about",
+  currently: "now", presently: "now",
+  additional: "more", additionally: "also",
+  commence: "begin", terminate: "end",
+  demonstrate: "show", demonstrates: "shows",
+  obtain: "get", provide: "give", provides: "gives",
+  approximately: "about", sufficient: "enough",
+  subsequently: "then", "prior to": "before",
+  "in order to": "to", "at this time": "now",
+  optimize: "improve", optimise: "improve",
+  aggregate: "total", methodology: "method",
+  functionality: "what it does", capability: "what you can do",
+  configure: "set up", configuration: "settings",
+  navigate: "go", "select an option": "pick one",
+};
+const SIMPLE_RE = new RegExp(`\\b(?:${Object.keys(SIMPLE_WORDS).join("|")})\\b`, "i");
+
+/** Internal names. If a member sees it, it is written in his words. */
+const INTERNAL_NAMES = [
+  "open_surface", "save_draft", "set_reminder", "search_my_graph",
+  "tracking_status", "source_type", "source registry", "source_registry",
+  "evidence fragment", "evidence_fragments", "agent_findings",
+  "strategic_signals", "content_items", "linkedin_posts", "post_provenance",
+  "score_snapshots", "notification_events", "countFn", "dry_run",
+  "tsvector", "embedding vector", "RRF", "upsert", "RLS", "JSONB",
+];
+const INTERNAL_RE = new RegExp(`(?:${INTERNAL_NAMES.map((s) => s.replace(/[_.]/g, "[_.]")).join("|")})`);
+
+/** Abstract nouns that stack. Three in a row is a phrase nobody speaks. */
+const STACKABLE = [
+  "content", "engine", "performance", "summary", "signal", "intelligence",
+  "capability", "assessment", "provenance", "profile", "management",
+  "configuration", "optimisation", "optimization", "framework", "pipeline",
+  "workflow", "module", "system", "state", "status", "metric", "metrics",
+  "analytics", "dashboard", "registry", "library", "source", "data",
+  "generation", "distribution", "coverage", "readiness", "score", "index",
+];
+const NOUN_STACK_RE = new RegExp(
+  `\\b(?:${STACKABLE.join("|")})\\s+(?:${STACKABLE.join("|")})\\s+(?:${STACKABLE.join("|")})\\b`, "i");
+
+/** A button label that is a noun, not a verb the member would say. */
+const VERB_START = /^(?:open|show|see|read|write|save|start|finish|send|add|pick|choose|keep|skip|try|fix|check|make|give|tell|ask|go|get|use|put|set|turn|close|hide|undo|redo|copy|move|find|edit|delete|remove|clear|not|no|yes|do|don't|let|take|leave|come|back|next|later|again|change|update|share|publish|draft|teach|answer|explain|remind|connect|upload|download|retry|refresh|continue|cancel|confirm|apply|sort|filter|search|view|play|pause|stop|sign|log|create|build|run|review|rename|import|export|paste|pin|unpin|drop|lock|teach|train|record|listen|read|link|attach|reset|restore|repeat|rerun|resume|invite|report|flag|mark|rate|score|plan|draft)\b/i;
+
+/* ── V2.2 — a raw count of a dictionary concept in a component ────────────
+ * `captures.length`, `drafts.length`, `posts.filter(...).length` — a number
+ * for a dictionary concept that did not come from that concept's countFn.
+ */
+const CONCEPT_IDENTS =
+  "captures?|documents?|signals?|posts?|drafts?|findings?|reminders?|pillars?|entries";
+const RAW_COUNT_RE = new RegExp(
+  `\\b(?:\\w*(?:${CONCEPT_IDENTS}))\\s*(?:\\.[\\w]+\\([^)]*\\)\\s*)*\\.length\\b`, "i");
+/** The sanctioned producers. A line that uses one of these is correct. */
+const SANCTIONED_COUNT =
+  /\b(?:nCaptures|nSources|nEvidence|nSignals|nPages|nDrafts|nPosts|nPostsParts|nEvidenceParts|countNoun|countOf|countAll|fetchCaptureCounts|fetchDocumentCount|fetchPublishedCounts|fetchDraftCount|fetchSignalCounts|fetchScore|fetchPillarCount|fetchReminderCount|fetchFindingCount|captureCountsFromRows|documentCountFromRows|countPosts|fetchSurfaceCounts)\b/;
+
+/* ── V2.3 — a term used with the wrong meaning ────────────────────────────
+ * "captures" applied to documents; "published" applied to a tracked or
+ * discovered post. Both bit us twice.
+ */
+function findWrongMeaning(line) {
+  const l = line.toLowerCase();
+  if (/\bcaptures?\b/.test(l) && /\bdocuments?\b/.test(l) && /[+]|concat|\.\.\.|union/.test(l)) {
+    return `"capture" applied to documents — a document is not a capture`;
+  }
+  if (/\bpublished\b/.test(l) && /\b(?:tracked|discovered|search_discovery)\b/.test(l)) {
+    return `"published" applied to a tracked or discovered post`;
+  }
+  return null;
+}
+
+/** Prose only: a literal with a space in it, from a member-facing line. */
+function proseLiterals(line) {
+  return [...literalsOf(line), ...nestedLiteralsOfTemplates(line)]
+    .filter((lit) => /\s/.test(lit) && !CODE_LIKE.test(lit) && !isColumnList(lit));
+}
+
+/** `"id, post_text, tracking_status, created_at"` is a column list, not a
+ *  sentence. Every part snake_case or a nested select, no sentence punctuation. */
+function isColumnList(lit) {
+  if (!lit.includes(",")) return false;
+  if (/[.!?—–:;'"]/.test(lit)) return false;
+  return lit.split(",").every((part) => /^\s*[a-z_][a-z0-9_]*(?:\([^)]*\))?\s*$/i.test(part));
+}
+
+/** Every Pass V violation on one line, with its kind. */
+function findPassV(rel, rawLine, line) {
+  const out = [];
+  // A class list is styling and a `.select(...)` argument is a column list —
+  // both read as prose to a regex and neither is ever on a screen.
+  const clean = line
+    .replace(/className=\{[^}]*\}/g, " ")
+    .replace(/className="[^"]*"/g, " ")
+    .replace(/class="[^"]*"/g, " ");
+  const isCode = /\.(?:select|eq|order|from|rpc|match|in)\s*\(/.test(clean)
+    || /console\.(?:log|warn|error|info)\s*\(/.test(clean);
+  const prose = isCode ? [] : proseLiterals(clean);
+
+  for (const lit of prose) {
+    let m;
+    if ((m = lit.match(BANNED_WORDS_RE))) out.push({ kind: "banned word", match: m[0] });
+    else if (AUTHORITY_NOUN_RE.test(lit) && !/authoritative/i.test(lit))
+      out.push({ kind: "banned word", match: "authority (as a noun)" });
+    else if ((m = lit.match(LEVERAGE_VERB_RE))) out.push({ kind: "banned word", match: m[0] });
+
+    if ((m = lit.match(SIMPLE_RE))) {
+      const w = m[0].toLowerCase();
+      out.push({ kind: "long word", match: `"${m[0]}" — say "${SIMPLE_WORDS[w] ?? "the short word"}"` });
+    }
+    if ((m = lit.match(NOUN_STACK_RE))) out.push({ kind: "noun stack", match: m[0] });
+    if ((m = lit.match(INTERNAL_RE))) out.push({ kind: "internal name", match: m[0] });
+  }
+
+  // A button label must be a verb the member would say. Only real buttons:
+  // a tab name and an aria-label name a PLACE, and a place is a noun.
+  if ((/<(?:button|Button|ButtonPrimary)\b/.test(line) || /\b(?:cta|actionLabel|buttonLabel)\s*[:=]/i.test(line))
+      && !/aria-label|title=|docTitle|pageHeader/.test(clean)) {
+    for (const lit of prose) {
+      const t = lit.trim();
+      if (t.length > 2 && t.length < 40 && /^[A-Za-z]/.test(t) && !VERB_START.test(t)) {
+        out.push({ kind: "noun button", match: t });
+        break;
+      }
+    }
+  }
+
+  // A raw count of a dictionary concept, in a component.
+  // Only a count the MEMBER SEES. `if (drafts.length === 0)` is a guard, not a
+  // number on a screen; `${drafts.length} drafts` is the defect.
+  const shown = /`[^`]*\$\{[^}]*\.length/.test(line)
+    || /\{[^{}]*\.length[^{}]*\}\s*(?:[A-Za-z\u0600-\u06FF]|<)/.test(line)
+    || /\b(?:label|title|text|badge|subtitle|caption)\s*[:=]\s*[^=]*\.length\b/i.test(line);
+  if ((rel.startsWith("src/components/") || rel.startsWith("src/pages/"))
+      && shown && RAW_COUNT_RE.test(line) && !SANCTIONED_COUNT.test(line)) {
+    out.push({ kind: "raw count", match: line.match(RAW_COUNT_RE)[0] });
+  }
+
+  const wrong = findWrongMeaning(line);
+  if (wrong) out.push({ kind: "wrong meaning", match: wrong });
+
+  return out;
+}
+
 const SKIP_DIRS = new Set(["__tests__", "__fixtures__", "node_modules"]);
 
 function walk(dir, out = []) {
@@ -457,6 +672,9 @@ function stripComments(text) {
 export function runVocabularyCheck() {
   const hits = [];
   const deferred = [];
+  /** PASS V violations: member-facing ones fail, the rest are listed. */
+  const passV = [];
+  const passVDeferred = [];
 
   const roots = [SRC, FUNCTIONS].filter((d) => {
     try { return statSync(d).isDirectory(); } catch { return false; }
@@ -470,6 +688,10 @@ export function runVocabularyCheck() {
     const rawLines = raw.split("\n");
     stripped.split("\n").forEach((line, idx) => {
       if (/vocab-ok/.test(rawLines[idx] || "")) return;
+      for (const v of findPassV(rel, rawLines[idx] || "", line)) {
+        const hit = { rel, line: idx + 1, text: (rawLines[idx] || "").trim().slice(0, 160), match: v.match, kind: v.kind };
+        if (isMemberFacing(rel)) passV.push(hit); else passVDeferred.push(hit);
+      }
       const banned = findBannedPhrase(line);
       const match = banned || findHit(line);
       if (!match) return;
@@ -486,7 +708,7 @@ export function runVocabularyCheck() {
       else hits.push(hit);
     });
   }
-  return { hits, deferred, twin: checkTwin() };
+  return { hits, deferred, passV, passVDeferred, twin: checkTwin() };
 }
 
 const say = (h) => h.banned
@@ -496,12 +718,22 @@ const say = (h) => h.banned
 /** Report to the console; return the failing hits. Used by the CLI and by the
  *  Vite plugin in vite.config.ts (which throws on a non-empty result). */
 export function reportVocabularyCheck({ quiet = false } = {}) {
-  const { hits, deferred, twin } = runVocabularyCheck();
+  const { hits, deferred, passV, passVDeferred, twin } = runVocabularyCheck();
   if (deferred.length && !quiet) {
     console.log(`\nVOCABULARY — ${deferred.length} deferred hit(s) in files outside this round (allowlisted):`);
     for (const h of deferred) console.log(say(h));
   }
-  const failures = [...hits];
+  if (passVDeferred.length && !quiet) {
+    const byKind = {};
+    for (const h of passVDeferred) byKind[h.kind] = (byKind[h.kind] || 0) + 1;
+    console.log(`\nPASS V — ${passVDeferred.length} violation(s) outside member-facing surfaces (listed, not fixed this pass):`);
+    for (const [k, n] of Object.entries(byKind).sort((a, b) => b[1] - a[1])) console.log(`  ${String(n).padStart(4)}  ${k}`);
+  }
+  const failures = [...hits, ...passV];
+  if (passV.length) {
+    console.error(`\nPASS V GATE FAILED — ${passV.length} member-facing violation(s):`);
+    for (const h of passV) console.error(`  ${h.rel}:${h.line}\n    ${h.text}\n    \u21b3 ${h.kind}: ${h.match}`);
+  }
   if (twin.length) {
     console.error(`\nVOCABULARY TWIN DIVERGED — ${DICT} and ${DICT_TWIN} do not say the same words:`);
     for (const p of twin) console.error(`  ${p}`);

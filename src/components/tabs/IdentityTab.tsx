@@ -1005,8 +1005,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <div style={STANDING_STACK}>
       {/* SECTION 5 — CAPABILITY RADAR */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <SectionHeader label="Your capability radar" />
-        <InfoTooltip label="Your capability radar" slug="capability-radar" />
+        <SectionHeader label="What you can do" />
+        <InfoTooltip label="What you can do" slug="capability-radar" />
       </div>
       <CapabilityRadar
         userId={authUser?.id ?? null}

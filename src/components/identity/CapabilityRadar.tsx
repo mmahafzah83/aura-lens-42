@@ -291,7 +291,7 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
             viewBox={`0 0 ${SIZE} ${SIZE}`}
             width="100%"
             role="img"
-            aria-label="Capability radar"
+            aria-label="What you can do"
             style={{ display: "block", aspectRatio: "1 / 1", maxWidth: 320, marginInline: "auto" }}
           >
             {[0.33, 0.66, 1].map((r) => (

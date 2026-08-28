@@ -1179,6 +1179,8 @@ OUTPUT FORMAT — every answer arrives in layers. The first characters of your r
 §§MOVES
 <label> | <label> | <label>
 
+- THREE ITEMS, NEVER MORE. If the honest answer is a list, name at most three things and stop. A fourth is a page, not an answer: say there is more and offer to open the page instead. This holds in every layer.
+- THE MOST USEFUL THING IS HIGHEST. The first line of §§PLAIN is the thing he came for — the number, the name, the answer. Never context, never a recap of the question, never what you did to find it.
 - §§PLAIN — the answer, in everyday words. Two or three short sentences. No acronym that has not been unpacked in the same breath. No jargon. A capable twelve-year-old should follow it without effort. The last line of §§PLAIN is the single next step, in plain words.
 - In SECRETARY mode — an errand: save this, remind me, open that — write §§PLAIN only, one line, and stop. No §§MORE. The machine reports the work on its own line; you do not restate it.
 - §§MORE — the same answer for a professional: the terminology, the mechanism, the numbers, the named frameworks. Two to four lines. This is where "ESG", "CAPEX", "procurement gate" may appear. Omit this section entirely when there is genuinely nothing more to say — never pad it.
@@ -1608,7 +1610,10 @@ THIS TURN: he is reporting that something in the interface did not work. Believe
               ...(kinds && kinds.length ? { kinds: kinds as any } : {}),
             });
             const keptAll = applyRelevanceFloor(res.rows);
-            const kept = keptAll.slice(0, 8);
+            // V4 — three items maximum in any list the Desk returns. Retrieval
+            // still reads wide (the count below is a real count(*)); only what
+            // comes back to be listed is capped.
+            const kept = keptAll.slice(0, 3);
             const out = kept.map((r: any) => {
               const key = `${r.source_kind}:${r.source_id}`;
               let n: number;
@@ -1774,11 +1779,42 @@ THIS TURN: he is reporting that something in the interface did not work. Believe
      * declared a layer is rewritten into one, with its Markdown furniture
      * removed so the plain layer reads plainly.
      */
+    /**
+     * V4 — THREE ITEMS, NEVER MORE. More than three is a page, not an answer.
+     * A run of four or more bullets is cut to three and the Desk offers the
+     * real page instead of scrolling one. Enforced here, on the server, for
+     * the same reason the layer contract is: a prompt rule can be ignored.
+     */
+    const MORE_IS_A_PAGE = replyLanguage === "ar"
+      ? "هناك المزيد — افتح الصفحة لتراها كلها."
+      : "There's more than this — open the page to see all of it.";
+
+    const capLists = (text: string): string => {
+      const lines = text.split("\n");
+      const out: string[] = [];
+      let run = 0;
+      let trimmed = false;
+      const isBullet = (l: string) => /^\s*(?:[-*•]|\d+[.)])\s+\S/.test(l);
+      for (const l of lines) {
+        if (isBullet(l)) {
+          run += 1;
+          if (run <= 3) out.push(l);
+          else trimmed = true;
+          continue;
+        }
+        if (run > 3 && trimmed) { out.push(MORE_IS_A_PAGE); trimmed = false; }
+        run = 0;
+        out.push(l);
+      }
+      if (run > 3 && trimmed) out.push(MORE_IS_A_PAGE);
+      return out.join("\n");
+    };
+
     const enforceLayers = (raw: string): string => {
       const text = String(raw ?? "").trim();
       if (!text) return text;
       const i = text.indexOf("§§PLAIN");
-      if (i >= 0) return text.slice(i).trim();
+      if (i >= 0) return capLists(text.slice(i).trim());
       const body = text
         .replace(/^\s{0,3}#{1,6}\s+/gm, "")       // headings
         .replace(/^\s*[-*]\s+/gm, "")             // bullets
@@ -1788,8 +1824,9 @@ THIS TURN: he is reporting that something in the interface did not work. Believe
       const paras = body.split(/\n{2,}/);
       const head = paras[0] || body;
       const rest = paras.slice(1).join("\n\n").trim();
-      return rest ? `§§PLAIN\n${head}\n§§MORE\n${rest}` : `§§PLAIN\n${head}`;
+      return capLists(rest ? `§§PLAIN\n${head}\n§§MORE\n${rest}` : `§§PLAIN\n${head}`);
     };
+
 
     /** N3 — the member never sees silence. Any failure says so, in one line. */
     const FAILURE_LINE = SAY.failure(replyLanguage);
