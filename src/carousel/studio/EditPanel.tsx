@@ -12,8 +12,9 @@ import { ARCHETYPE_LABEL, SLOT_LABEL, SLOT_ORDER } from "./slotLabels";
 import { REQUIRED_SLOTS, OPTIONAL_SLOTS } from "../slots";
 import {
   deleteSlide, editSlotText, heroBudgetFor, isLocked, readSlot,
-  setHeroHighlight, setSlidePhoto, swapArchetype, swappableArchetypes, type SlotPath,
+  setHeroHighlight, setSlidePhoto, slideHasPicture, swapArchetype, swappableArchetypes, type SlotPath,
 } from "./deckEdit";
+import { wordBudgetFor } from "../slots";
 
 const labelStyle: React.CSSProperties = {
   fontFamily: "var(--ff-mono)", fontSize: 10, letterSpacing: ".09em",
@@ -40,23 +41,26 @@ function counterColour(len: number, budget: number): string {
 }
 
 function Field({
-  label, value, rows, budget, onChange, right,
+  label, value, rows, budget, count, onChange, right,
 }: {
   label: string;
   value: string;
   rows?: number;
   budget?: number;
+  /** What the counter measures — characters for hero lines, words elsewhere. */
+  count?: number;
   onChange: (v: string) => void;
   right?: React.ReactNode;
 }) {
+  const n = count ?? value.length;
   return (
     <div style={{ display: "grid", gap: 5 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
         <span style={labelStyle}>{label}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {budget !== undefined && (
-            <span style={{ ...labelStyle, color: counterColour(value.length, budget) }}>
-              {value.length}/{budget}
+            <span style={{ ...labelStyle, color: counterColour(n, budget) }}>
+              {n}/{budget}
             </span>
           )}
           {right}
