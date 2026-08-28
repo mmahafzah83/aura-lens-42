@@ -1240,7 +1240,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                           background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
                           borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                           display: "inline-flex", alignItems: "center", gap: 6,
-                        }}>Open in Publish<ArrowUpRight size={13} aria-hidden="true" /></button>
+                        }}>{CH.openInPublish}<ArrowUpRight size={13} aria-hidden="true" /></button>
                       </div>
                     )}
                     {/* The door. Blue because the member taps it; a route to an
@@ -1262,6 +1262,37 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                           >{a.label}<ArrowUpRight size={13} aria-hidden="true" /></button>
                         </div>
                       ))}
+                    {/* Was this right? A verdict that is written down, and a
+                        `No` the nightly learner counts as a refusal. */}
+                    {!loading && guardedPlain.text && (
+                      <div
+                        dir={lang === "ar" ? "rtl" : "ltr"}
+                        style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 12.5, color: "var(--text-muted)" }}
+                      >
+                        {feedback[i] ? (
+                          <span data-testid="ask-feedback-done">{CH.thanks}</span>
+                        ) : (
+                          <>
+                            <span id={`fb-${i}`}>{CH.rightAsk}</span>
+                            {(["yes", "no"] as const).map(v => (
+                              <button
+                                key={v}
+                                type="button"
+                                className="ask-focusable ask-chip"
+                                data-testid={`ask-feedback-${v}`}
+                                aria-describedby={`fb-${i}`}
+                                onClick={() => void sendFeedback(i, v, askedFor, guardedPlain.text)}
+                                style={{
+                                  background: "transparent", border: "1px solid var(--line)",
+                                  color: "var(--text-secondary)", borderRadius: 999,
+                                  padding: "4px 11px", fontSize: 12.5, cursor: "pointer",
+                                }}
+                              >{v === "yes" ? CH.rightYes : CH.rightNo}</button>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                   );
                 })();
