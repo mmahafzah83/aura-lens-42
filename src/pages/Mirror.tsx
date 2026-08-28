@@ -64,13 +64,6 @@ const ERROR_COPY: Record<string, string> = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/** The four things Aura does here. None of them ticks: none has an event of its own. */
-const READING_LINES = [
-  "Opening your LinkedIn",
-  "Reading your recent posts",
-  "Finding what only you have",
-  "Writing your first read",
-];
 
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
