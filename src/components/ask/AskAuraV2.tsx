@@ -279,6 +279,11 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [blocked, setBlocked] = useState<{ capability: CapabilityKey; question: string } | null>(null);
   /** The gear's "Add it", answered in place on the Desk. */
   const [addressOpen, setAddressOpen] = useState(false);
+  /**
+   * "Was this right?" — the verdict per answer. It used to write nowhere, which
+   * taught the member his feedback was decorative. A `No` becomes a rejects row.
+   */
+  const [feedback, setFeedback] = useState<Record<number, "yes" | "no">>({});
 
 
 
