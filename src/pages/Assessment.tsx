@@ -115,6 +115,11 @@ const Assessment = () => {
   /* The run id is minted here and handed to `mirror-read`, so this tab is
      already watching its own run before the work begins. */
   const [readRunId, setReadRunId] = useState<string | null>(null);
+  /* Real ticks, from `operation_runs` — never a timer. */
+  const readRun = useRunStages("linkedin_read", readRunId, {
+    active: stage === "reading",
+    anonToken: token,
+  });
   const [sparse, setSparse] = useState(false);
   const [ageNote, setAgeNote] = useState<string | null>(null);
 
