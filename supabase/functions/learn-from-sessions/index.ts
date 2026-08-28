@@ -53,6 +53,49 @@ const INTENTS: { key: string; label: string; re: RegExp }[] = [
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+/* ── THE SHAPE RULE ────────────────────────────────────────────────────────
+ * Before writing any observation, check that the evidence supports the SHAPE
+ * of the sentence, not just the number in it. Five messages inside a single
+ * afternoon support "you asked five times". They never support "you ask on
+ * Thursdays" — that sentence claims a rhythm the evidence cannot carry.
+ *
+ * So: a temporal claim — a named weekday, a time of day, "most Mondays",
+ * "usually in the morning", or anything implying repetition over time — may
+ * only be written when the evidence spans at least 3 distinct calendar days
+ * AND at least 3 distinct ISO weeks. Below that the observation still states
+ * its count, and says nothing about when.
+ */
+const MIN_TEMPORAL_DAYS = 3;
+const MIN_TEMPORAL_WEEKS = 3;
+
+/** ISO-week key (year + week number), so "3 weeks" means three real weeks. */
+function weekKey(d: Date): string {
+  const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = (t.getUTCDay() + 6) % 7;            // Monday = 0
+  t.setUTCDate(t.getUTCDate() - dayNum + 3);          // nearest Thursday
+  const firstThursday = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  const week = 1 + Math.round(((t.getTime() - firstThursday.getTime()) / 86_400_000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return `${t.getUTCFullYear()}-W${week}`;
+}
+
+/** How far apart in time the evidence actually sits. */
+export function temporalSpread(timestamps: string[]): { days: number; weeks: number } {
+  const days = new Set<string>();
+  const weeks = new Set<string>();
+  for (const ts of timestamps) {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) continue;
+    days.add(d.toISOString().slice(0, 10));
+    weeks.add(weekKey(d));
+  }
+  return { days: days.size, weeks: weeks.size };
+}
+
+/** True only when a rhythm may honestly be named. */
+export function canClaimRhythm(spread: { days: number; weeks: number }): boolean {
+  return spread.days >= MIN_TEMPORAL_DAYS && spread.weeks >= MIN_TEMPORAL_WEEKS;
+}
+
 /** He told the Desk it was wrong. Counted, never interpreted. */
 const CORRECTION = /\b(that'?s (not right|wrong|incorrect)|not true|you'?re wrong|that is wrong|wrong number|incorrect|actually,? (it|i)\b|no,? it'?s)\b/i;
 
