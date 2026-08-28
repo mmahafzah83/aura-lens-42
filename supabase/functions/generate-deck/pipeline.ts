@@ -216,6 +216,60 @@ export function pickSignOff(voice: Record<string, any> | null | undefined): stri
 /* Gateway                                                             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * TRUNCATED-JSON REPAIR (ported from the retired carousel v2 function).
+ *
+ * The model sometimes cuts an argument string mid-slide. Walk char by char
+ * tracking string/escape/depth, cut at the last position that was OUTSIDE a
+ * string and had just closed a bracket, then close whatever is still open.
+ * A truncated argument string used to throw uncaught and kill the run.
+ */
+function repairTruncatedJson(input: string): string {
+  let inStr = false;
+  let esc = false;
+  let lastSafe = -1;
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
+    if (esc) { esc = false; continue; }
+    if (c === "\\") { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === "}" || c === "]") lastSafe = i;
+  }
+  let s = input;
+  if (inStr && lastSafe > 0) s = input.substring(0, lastSafe + 1);
+  // Rebuild the open-bracket stack on the trimmed string and close everything.
+  const stk: string[] = [];
+  let inS = false, es = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (es) { es = false; continue; }
+    if (c === "\\") { es = true; continue; }
+    if (c === '"') { inS = !inS; continue; }
+    if (inS) continue;
+    if (c === "{") stk.push("}");
+    else if (c === "[") stk.push("]");
+    else if (c === "}" || c === "]") stk.pop();
+  }
+  s = s.replace(/[,\s]+$/, "");
+  while (stk.length) s += stk.pop();
+  return s;
+}
+
+export function safeParseToolArgs(raw: string): any {
+  try { return JSON.parse(raw); } catch { /* fall through to repair */ }
+  let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  const start = cleaned.search(/[{[]/);
+  if (start > 0) cleaned = cleaned.substring(start);
+  try { return JSON.parse(cleaned); } catch { /* fall through to repair */ }
+  try {
+    return JSON.parse(repairTruncatedJson(cleaned));
+  } catch (e) {
+    console.error("tool JSON repair failed", { length: raw.length, head: raw.slice(0, 500) });
+    throw new Error(`model returned malformed JSON: ${e instanceof Error ? e.message : String(e)}`);
+  }
+}
+
 export async function callTool(
   system: string,
   user: string,
@@ -232,6 +286,9 @@ export async function callTool(
     ],
     tools: [{ type: "function", function: tool }],
     tool_choice: { type: "function", function: { name: tool.name } },
+    // Explicit ceiling and a low temperature: deck copy is a contract, not prose.
+    max_tokens: 8000,
+    temperature: 0.3,
   });
 
   /**
@@ -281,7 +338,7 @@ export async function callTool(
 
   const args = data.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
   if (typeof args !== "string") throw new Error("model returned no tool call");
-  return JSON.parse(args);
+  return safeParseToolArgs(args);
 }
 
 export function contextBlock(ctx: SignalContext): string {

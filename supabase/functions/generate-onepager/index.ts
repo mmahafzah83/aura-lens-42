@@ -142,7 +142,7 @@ ${voiceBlock}
 OUTPUT: Valid JSON only. No markdown fences. No preamble.`;
 }
 
-// ---- JSON repair (same as generate-carousel-v2) ----
+// ---- JSON repair ----
 function safeParseJSON(raw: string): any {
   try { return JSON.parse(raw); } catch {}
   let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();

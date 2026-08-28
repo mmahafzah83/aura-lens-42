@@ -10,6 +10,7 @@ import { ImagePlus, RefreshCw, Trash2 } from "lucide-react";
 import type { Archetype, DeckIR, Slide, Slots } from "../deckIR";
 import { ARCHETYPE_LABEL, SLOT_LABEL, SLOT_ORDER } from "./slotLabels";
 import { REQUIRED_SLOTS, OPTIONAL_SLOTS } from "../slots";
+import { useMeasuredDrops } from "../render/measuredDrops";
 import {
   deleteSlide, editSlotText, heroBudgetFor, isLocked, readSlot,
   setHeroHighlight, setSlidePhoto, slideHasPicture, swapArchetype, swappableArchetypes, type SlotPath,
@@ -95,6 +96,16 @@ export function EditPanel({
   const locked = isLocked(deck, slide);
   const swaps = swappableArchetypes(deck, slide);
   const canHoldPhoto = mediaSupport !== "none";
+  /**
+   * WHAT THE PHOTO COST. The band variant gives up whole written slots when
+   * measurement proves they cannot be drawn. That is a real loss of the
+   * member's words, so it is named here, next to the way to undo it. This
+   * only reports the drop logic — it never changes it.
+   */
+  const measured = useMeasuredDrops(deck.deck_id, slide.index);
+  const droppedNames = measured.dropped
+    .filter((slot) => slot !== "media")
+    .map((slot) => SLOT_LABEL[slot] ?? slot);
 
   const fields: Array<{ key: string; label: string; path: SlotPath; budget?: number; count?: number; rows?: number; right?: React.ReactNode }> = [];
   // The slide-level word budget is the only contract non-hero slots have;
@@ -207,6 +218,35 @@ export function EditPanel({
           </div>
         </div>
       )}
+
+      {droppedNames.length > 0 && slide.slots.media?.src && (
+        <div
+          role="status"
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            gap: 10, flexWrap: "wrap",
+            border: "1px solid var(--border-default)", borderRadius: 10,
+            padding: "8px 11px", background: "var(--surface-card)",
+            fontSize: 12.5, lineHeight: 1.6, color: "var(--deadline-text)",
+          }}
+        >
+          <span>
+            This photo pushed out {droppedNames.length} line{droppedNames.length === 1 ? "" : "s"}
+            {" "}({droppedNames.join(", ")}). The words are still here — they are not being drawn.
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange(setSlidePhoto(deck, slide.index, null))}
+            style={{
+              ...labelStyle, border: "1px solid var(--border-default)", background: "transparent",
+              borderRadius: 999, padding: "4px 10px", cursor: "pointer", color: "var(--text-primary)",
+            }}
+          >
+            Remove photo
+          </button>
+        </div>
+      )}
+
 
       {fields.map((f) => (
         <Field
