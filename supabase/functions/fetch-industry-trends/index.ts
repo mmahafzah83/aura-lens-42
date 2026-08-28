@@ -672,6 +672,7 @@ async function perplexityDiscover(
           }],
           search_recency_filter: "month",
         }),
+        signal: AbortSignal.timeout(15000),
       });
 
       if (res.ok) {
@@ -1595,13 +1596,44 @@ serve(withObserve("fetch-industry-trends", async (req) => {
     const cronHeader = req.headers.get("x-cron-secret") || "";
     const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
     if (isCron && phase === "discover") {
+      // Cost + reliability gate. See LEDGER 2026-08-29.
+      // Only members active in the last ACTIVE_WINDOW_DAYS receive the nightly sweep.
+      // Dormant members are skipped; their radar refreshes on their next manual pull.
+      const ACTIVE_WINDOW_DAYS = 14;
+      const RUN_BUDGET_MS = 100_000; // stop cleanly before the isolate is killed
+      const cutoff = new Date(Date.now() - ACTIVE_WINDOW_DAYS * 86_400_000).toISOString();
+      const runStart = Date.now();
+
       const { data: profiles } = await adminClient
         .from("diagnostic_profiles")
-        .select("user_id, firm, level, core_practice, sector_focus, north_star_goal, leadership_style");
+        .select("user_id, firm, level, core_practice, sector_focus, north_star_goal, leadership_style, last_active_at")
+        .gt("last_active_at", cutoff);
+
+      const eligible = (profiles || []).filter((p: any) => !!p.user_id);
+
+      // Fair rotation: serve whoever waited longest. Never-served users go first.
+      const ids = eligible.map((p: any) => p.user_id as string);
+      const lastServed = new Map<string, number>();
+      if (ids.length) {
+        const { data: served } = await adminClient
+          .from("industry_trends")
+          .select("user_id, fetched_at")
+          .in("user_id", ids);
+        for (const row of served || []) {
+          const uid = (row as any).user_id as string;
+          const ts = new Date((row as any).fetched_at).getTime();
+          if (!lastServed.has(uid) || ts > (lastServed.get(uid) as number)) lastServed.set(uid, ts);
+        }
+      }
+      eligible.sort((a: any, b: any) =>
+        (lastServed.get(a.user_id) ?? 0) - (lastServed.get(b.user_id) ?? 0));
+
       const summary: any[] = [];
-      for (const p of profiles || []) {
+      let processed = 0;
+      let deferred = 0;
+      for (const p of eligible) {
+        if (Date.now() - runStart > RUN_BUDGET_MS) { deferred = eligible.length - processed; break; }
         const userId = (p as any).user_id as string;
-        if (!userId) continue;
         try {
           const result = await runPhaseA({
             userId, mode, adminClient, perplexityKey, profile: p, supabaseUrl, serviceKey,
@@ -1610,10 +1642,18 @@ serve(withObserve("fetch-industry-trends", async (req) => {
         } catch (e) {
           summary.push({ user_id: userId, error: (e as Error).message });
         }
+        processed++;
       }
-      return new Response(JSON.stringify({ cron: true, users: summary.length, summary }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+      return new Response(JSON.stringify({
+        cron: true,
+        active_window_days: ACTIVE_WINDOW_DAYS,
+        eligible: eligible.length,
+        processed,
+        deferred,
+        elapsed_ms: Date.now() - runStart,
+        summary,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // ── Phase B: self-invoked enrichment ──
