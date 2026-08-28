@@ -62,9 +62,9 @@ export const REPORT_FREE_LINE =
  * THE FREE DOOR — one verb, one label, everywhere.
  * Nine different labels used to resolve to /assessment. Never inline these.
  */
-export const FREE_CTA_LABEL = "Start with my LinkedIn";
+export const FREE_CTA_LABEL = "Start free";
 export const FREE_CTA_SHORT_LABEL = "Start free";
-/** "Start with my LinkedIn ↗" */
+/** "Start free ↗" */
 export const FREE_CTA = `${FREE_CTA_LABEL} ↗`;
 /** "Start free ↗" — nav-width short form. */
 export const FREE_CTA_SHORT = `${FREE_CTA_SHORT_LABEL} ↗`;
