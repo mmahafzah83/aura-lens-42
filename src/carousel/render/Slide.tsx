@@ -1027,31 +1027,10 @@ function InstrumentSlide({ deck, slide, theme: themeName, template, onFit }: Sli
                 : body}
             </div>
           )}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flex: "0 0 auto", gap: 24 }}>
-            {/* The signature block: who signed this, then where to find them. */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6, minWidth: 0 }}>
-              <div style={{ height: 4, width: 96, borderRadius: tpl.geometry.radiusChip, background: theme.accent }} />
-              <Txt
-                node={deck.profile.name}
-                primary={deck.primary_lang}
-                tpl={tpl}
-                style={{ fontFamily: fontFor(deck.primary_lang, "text", tpl.fonts), fontWeight: 700, fontSize: s.chip, color: theme.head, textAlign: "start" }}
-              />
-              {deck.profile.title && (
-                <Txt
-                  node={deck.profile.title}
-                  primary={deck.primary_lang}
-                  tpl={tpl}
-                  style={{ fontFamily: fontFor(deck.primary_lang, "text", tpl.fonts), fontSize: s.source, color: theme.dim, textAlign: "start" }}
-                />
-              )}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <LinkedInGlyph size={Math.round(parseInt(s.source, 10) * 1.1)} color={theme.dim} />
-                <span style={{ fontFamily: tpl.fonts.mono, fontSize: s.source, color: theme.dim }} dir="ltr">
-                  {deck.profile.handle}
-                </span>
-              </div>
-            </div>
+          {/* Identity lives in the IdentityBar at the top, once. The footer
+              carries only the page number, so the freed space below the body
+              is given back to the content column rather than repeated type. */}
+          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", flex: "0 0 auto" }}>
             <span style={{ fontFamily: tpl.fonts.mono, fontSize: s.source, color: theme.dim }} dir="ltr">
               {slide.index + 1} / {deck.slides.length}
             </span>
