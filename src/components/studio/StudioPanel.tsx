@@ -1974,8 +1974,11 @@ export default function StudioPanel({
         // An empty list is no message at all, so it falls back like a missing one.
         const raw: string[] = Array.isArray(result?.failures) ? result.failures.filter((f: unknown) => typeof f === "string" && f.trim()) : [];
         if (runId !== deckRunId.current) return;
+        // Raw rule codes belong in the console, never on the member's screen.
+        console.warn("generate-deck exhausted its attempts", { run_id: slidesRunId, failures: raw });
         setDeckFailures(raw.length > 0 ? raw.map(plainFailure) : [T.slidesFailedPlain[lang]]);
         return;
+
       }
       const parsed = DeckIRSchema.safeParse(result.deck);
       if (runId !== deckRunId.current) return;
