@@ -114,6 +114,25 @@ export const honestFailure = (lang: "ar" | "en" = "en"): string =>
     : "I could not save that. The draft is still here — try again?";
 export const HONEST_FAILURE = honestFailure("en");
 
+/**
+ * Q6.4 — the last two chrome paths that stayed English while the answer was
+ * Arabic. Chrome follows the answer, always; a chip in the wrong language tells
+ * the member the Arabic was a translation layer rather than the real thing.
+ */
+export const CHROME: Record<"ar" | "en", {
+  more: string; less: string; openInPublish: string;
+  rightYes: string; rightNo: string; rightAsk: string; thanks: string;
+}> = {
+  en: {
+    more: "Say more", less: "Less", openInPublish: "Open in Publish",
+    rightYes: "Yes", rightNo: "No", rightAsk: "Was this right?", thanks: "Noted.",
+  },
+  ar: {
+    more: "تفاصيل أكثر", less: "اختصار", openInPublish: "افتحها في النشر",
+    rightYes: "نعم", rightNo: "لا", rightAsk: "هل كان هذا صحيحًا؟", thanks: "سُجّل.",
+  },
+};
+
 /** Arabic if the answer itself is written in Arabic. Chips follow the answer. */
 export function answerLang(text: string): "ar" | "en" {
   const ar = (String(text ?? "").match(/[\u0600-\u06FF]/g) || []).length;

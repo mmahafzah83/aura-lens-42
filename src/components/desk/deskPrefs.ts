@@ -177,6 +177,18 @@ export async function saveDeskPrefs(current: DeskPrefs, patch: DeskPrefs): Promi
   return merged;
 }
 
+/**
+ * Q6.2 — the shipped watch defaults were never written down, so `watch` sat at
+ * `{}` and the four things the Desk says it watches were not actually in force.
+ * On first load the defaults are persisted once, exactly as shown in the gear.
+ */
+export async function ensureWatchDefaults(prefs: DeskPrefs): Promise<DeskPrefs> {
+  if (prefs.watch && Object.keys(prefs.watch).length > 0) return prefs;
+  const watch: Record<string, boolean> = {};
+  for (const o of WATCH_OPTIONS) watch[o.key] = o.on;
+  return await saveDeskPrefs(prefs, { watch });
+}
+
 /** "Later" — the ask is suppressed for thirty days, and the date is his record of it. */
 export function declinePatch(key: CapabilityKey): DeskPrefs {
   return { declined: { [key]: today() } };

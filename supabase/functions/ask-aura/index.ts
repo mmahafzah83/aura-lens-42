@@ -217,6 +217,12 @@ serve(withObserve("ask-aura", async (req) => {
      * block exactly as a real turn would and returns it, generating nothing.
      */
     const factsOnly: boolean = body?.facts_only === true;
+    /**
+     * Q4 — the learned observations can be switched off for one turn, so the
+     * same question can be asked with and without them and the difference in
+     * the answer can be seen rather than claimed.
+     */
+    const useLearning: boolean = body?.learning !== false;
 
     const ctx: { linkedType?: string; linkedId?: string; linkedLabel?: string } =
       body?.context && typeof body.context === "object" ? body.context : {};
@@ -623,6 +629,31 @@ serve(withObserve("ask-aura", async (req) => {
     /* Product knowledge, read live from product_facts. No redeploy to change it. */
     const howAuraWorks = await productFactsBlock(admin);
 
+    /**
+     * Q4 — WHAT I HAVE LEARNED ABOUT WORKING WITH YOU.
+     *
+     * Counted observations written by learn-from-sessions, top five by
+     * evidence, dismissed rows excluded. They describe patterns in how he
+     * works with the Desk — never who he is.
+     */
+    let learnedBlock = "";
+    if (useLearning) {
+      const { data: learned } = await admin
+        .from("desk_learning")
+        .select("kind, observation, evidence_count, confidence")
+        .eq("user_id", user_id)
+        .eq("dismissed", false)
+        .order("evidence_count", { ascending: false })
+        .limit(5);
+      if ((learned || []).length > 0) {
+        learnedBlock = `WHAT I HAVE LEARNED ABOUT WORKING WITH YOU (counted from his own sessions; each line carries its evidence count):
+${(learned || []).map((l: any) => `- [${l.kind}] ${l.observation} (${l.evidence_count} occurrences, ${l.confidence})`).join("\n")}
+RULE: these describe patterns in how he works with you. State them only when they change what you should do. Never recite them back at him as a profile, never list them, and never infer anything about him as a person from them.
+`;
+      }
+    }
+
+
 
 
     const fmtList = (arr: any) =>
@@ -910,6 +941,7 @@ Storytelling patterns: ${fmtList(vp.storytelling_patterns)}
 
 ${accountFactsBlock}
 
+${learnedBlock}
 ${howAuraWorks}
 - The named parts on the home surface are Expertise, Identity, Voice, Audience, Focus, Perception and Confidence. Audience, discernment and conviction can only register once something has been published: they are dormant, not weak.
 
@@ -1640,12 +1672,21 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
     const secretaryTurn = /\b(save (it|this|that)|save to (my )?drafts?|put (it|this|that) in|remind me|chase me|don'?t let me forget|open (my|the)|take me to)\b/i
       .test(lastUserText);
 
+    /**
+     * Q6.3 — an errand is a confirmation, not a briefing. Everything from
+     * §§MORE onward is cut, and the plain layer is held to ONE sentence in
+     * code: the prompt asked for it and the model kept adding a second.
+     */
     const stripAfterMore = (text: string): string => {
       const i = text.search(/§§MORE|§§MOVES/);
       const head = i === -1 ? text : text.slice(0, i);
       const plain = head.replace(/§§PLAIN\s*/, "").trim();
-      return plain ? `§§PLAIN\n${plain}` : text;
+      if (!plain) return text;
+      const firstLine = plain.split("\n").map((l) => l.trim()).filter(Boolean)[0] ?? plain;
+      const oneSentence = (firstLine.match(/^[\s\S]*?[.!?؟…](?=\s|$)/) ?? [firstLine])[0].trim();
+      return `§§PLAIN\n${oneSentence || firstLine}`;
     };
+
 
     /**
      * N4 — the layer contract is enforced here, on the server, for every
@@ -1816,6 +1857,7 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
             retrievedBlock,
             memberContextBlock,
             howAuraWorks,
+            learnedBlock,
             ...toolTexts,
             ...messages.map((m: any) => String(m?.content ?? "")),
           ]);

@@ -9,10 +9,11 @@ import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
 import DeskSlot, { type DeskCardKind } from "@/components/desk/DeskSlot";
 import DeskReturnCard, { loadReturnCard, type ReturnCardData } from "@/components/desk/DeskReturnCard";
 import {
-  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen, saveDeskPrefs,
+  capabilityNeeded, ensureWatchDefaults, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen, saveDeskPrefs,
   type Capabilities, type CapabilityKey, type DeskPrefs,
 } from "@/components/desk/deskPrefs";
-import { cleanMoves, guardClaims, groundBold, honestFailure, answerLang } from "@/components/desk/deskMoves";
+import { cleanMoves, guardClaims, groundBold, honestFailure, answerLang, CHROME } from "@/components/desk/deskMoves";
+import { track } from "@/lib/track";
 import { cleanMemory, type CleanMemoryRow } from "@/components/desk/deskMemory";
 
 
@@ -278,6 +279,11 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [blocked, setBlocked] = useState<{ capability: CapabilityKey; question: string } | null>(null);
   /** The gear's "Add it", answered in place on the Desk. */
   const [addressOpen, setAddressOpen] = useState(false);
+  /**
+   * "Was this right?" — the verdict per answer. It used to write nowhere, which
+   * taught the member his feedback was decorative. A `No` becomes a rejects row.
+   */
+  const [feedback, setFeedback] = useState<Record<number, "yes" | "no">>({});
 
 
 
@@ -288,6 +294,29 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const taRef = useRef<HTMLTextAreaElement | null>(null);
   const firedRef = useRef(false);
   const openerRef = useRef(false);
+  /** Moves already logged as offered, so re-renders never inflate the count. */
+  const offeredRef = useRef<Set<string>>(new Set());
+
+  /**
+   * The feedback control, wired. `Yes` and `No` both land in
+   * desk_answer_feedback with the question that produced the answer; the
+   * nightly learner turns a `No` into a counted `rejects` observation.
+   */
+  const sendFeedback = useCallback(async (index: number, verdict: "yes" | "no", question: string, answer: string) => {
+    setFeedback(p => ({ ...p, [index]: verdict }));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (!uid) return;
+      await (supabase.from("desk_answer_feedback" as any) as any).insert({
+        user_id: uid, question: question.slice(0, 2000), answer: answer.slice(0, 8000), verdict,
+      });
+    } catch (e) {
+      console.error("[desk] feedback write failed", (e as Error)?.message);
+    }
+  }, []);
+
+
 
 
   /**
@@ -374,7 +403,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const refreshDesk = useCallback(async () => {
     const [c, p] = await Promise.all([loadCapabilities(), loadDeskPrefs()]);
     setCaps(c);
-    if (p) setPrefs(p.prefs);
+    /* The four shipped watch defaults are persisted the first time he opens the
+       Desk, so what the gear promises is what is actually in force. */
+    if (p) setPrefs(await ensureWatchDefaults(p.prefs));
     setPrefsLoaded(true);
   }, []);
 
@@ -1117,6 +1148,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                   const guardedMore = guardClaims(groundBold(layers.more, groundedTerms), verified);
                   const failedSave = (m.actions || []).some(a => a.tool === "save_draft" && (!a.ok || !a.post_id));
                   const isOpen = !!expanded[i];
+                  /* Chrome follows the answer, never the interface language. */
+                  const lang = answerLang(`${layers.plain}\n${layers.more}`);
+                  const CH = CHROME[lang];
+                  /* The question this answer came from, for the feedback row. */
+                  const askedFor = [...messages].slice(0, i).reverse().find(x => x.role === "user")?.content ?? "";
+
                   // A failure is not a finished object — errors stay outside the card.
                   if (m.isError) return (
                     <div key={i} style={{ margin: "14px 0", maxWidth: 720 }}>
@@ -1145,7 +1182,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                                   borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                                   display: "inline-flex", alignItems: "center", gap: 6, marginTop: 2,
                                 }}
-                              >{isOpen ? "Less" : "Say more"}</button>
+                              >{isOpen ? CH.less : CH.more}</button>
                               {isOpen && (
                                 <div style={{ marginTop: 8 }}>
                                   <Answer text={guardedMore.text} size={13.8} color="var(--text-secondary)" />
@@ -1155,11 +1192,22 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                           )}
                           {layers.moves.length > 0 && (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 2px" }}>
-                              {layers.moves.map((mv, mi) => (
+                              {layers.moves.map((mv, mi) => {
+                                /* Offered is counted once per answer: acts_on is
+                                   only true if offers are not inflated by re-renders. */
+                                const seenKey = `${i}:${mv}`;
+                                if (!offeredRef.current.has(seenKey)) {
+                                  offeredRef.current.add(seenKey);
+                                  void track("desk_move_offered", { label: mv.slice(0, 60), rank: mi });
+                                }
+                                return (
                                 <button
                                   key={`${mi}:${mv}`} type="button" className="ask-focusable ask-chip"
                                   data-testid="ask-move-chip"
-                                  onClick={() => send(mv)}
+                                  onClick={() => {
+                                    void track("desk_move_taken", { label: mv.slice(0, 60), rank: mi });
+                                    send(mv);
+                                  }}
                                   style={mi === 0 ? {
                                     background: "var(--act)", border: 0, color: "var(--text-inverse)",
                                     borderRadius: 999, padding: "7px 14px", fontSize: 12.5, cursor: "pointer",
@@ -1170,7 +1218,8 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                                     display: "inline-flex", alignItems: "center", gap: 6,
                                   }}
                                 >{mv}<ArrowUpRight size={13} aria-hidden="true" /></button>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </>}
@@ -1193,7 +1242,7 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                           background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
                           borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                           display: "inline-flex", alignItems: "center", gap: 6,
-                        }}>Open in Publish<ArrowUpRight size={13} aria-hidden="true" /></button>
+                        }}>{CH.openInPublish}<ArrowUpRight size={13} aria-hidden="true" /></button>
                       </div>
                     )}
                     {/* The door. Blue because the member taps it; a route to an
@@ -1215,6 +1264,37 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                           >{a.label}<ArrowUpRight size={13} aria-hidden="true" /></button>
                         </div>
                       ))}
+                    {/* Was this right? A verdict that is written down, and a
+                        `No` the nightly learner counts as a refusal. */}
+                    {!loading && guardedPlain.text && (
+                      <div
+                        dir={lang === "ar" ? "rtl" : "ltr"}
+                        style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 12.5, color: "var(--text-muted)" }}
+                      >
+                        {feedback[i] ? (
+                          <span data-testid="ask-feedback-done">{CH.thanks}</span>
+                        ) : (
+                          <>
+                            <span id={`fb-${i}`}>{CH.rightAsk}</span>
+                            {(["yes", "no"] as const).map(v => (
+                              <button
+                                key={v}
+                                type="button"
+                                className="ask-focusable ask-chip"
+                                data-testid={`ask-feedback-${v}`}
+                                aria-describedby={`fb-${i}`}
+                                onClick={() => void sendFeedback(i, v, askedFor, guardedPlain.text)}
+                                style={{
+                                  background: "transparent", border: "1px solid var(--line)",
+                                  color: "var(--text-secondary)", borderRadius: 999,
+                                  padding: "4px 11px", fontSize: 12.5, cursor: "pointer",
+                                }}
+                              >{v === "yes" ? CH.rightYes : CH.rightNo}</button>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                   );
                 })();

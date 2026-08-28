@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import {
-  GROUP_TITLES, MISSING_REASON, PANEL_OPTIONS, WATCH_OPTIONS, isOn, loadCapabilities, loadDeskPrefs,
+  GROUP_TITLES, MISSING_REASON, PANEL_OPTIONS, WATCH_OPTIONS, ensureWatchDefaults, isOn,
+  loadCapabilities, loadDeskPrefs,
   panelOn, saveDeskPrefs, type Capabilities, type DeskPrefs, type WatchOption,
 } from "./deskPrefs";
+import {
+  KIND_LABEL, forgetAll, forgetOne, loadLearning, type LearningRow,
+} from "./deskLearning";
 
 /**
  * What your Desk watches — the gear.
@@ -60,18 +64,24 @@ function Toggle({ on, disabled, label, onChange }: {
 export default function DeskWatchSheet({ open, onClose, onAddLinkedIn }: Props) {
   const [prefs, setPrefs] = useState<DeskPrefs>({});
   const [caps, setCaps] = useState<Capabilities>({ cv_crosscheck: false, linkedin_profile: false });
+  /** What the Desk has learned about working with him — visible, and erasable. */
+  const [learning, setLearning] = useState<LearningRow[]>([]);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
-      const [p, c] = await Promise.all([loadDeskPrefs(), loadCapabilities()]);
+      const [p, c, l] = await Promise.all([loadDeskPrefs(), loadCapabilities(), loadLearning()]);
       if (cancelled) return;
-      if (p) setPrefs(p.prefs);
+      /* The shipped watch defaults are written down on first load, so what the
+         gear shows is what is actually in force. */
+      if (p) setPrefs(await ensureWatchDefaults(p.prefs));
       setCaps(c);
+      setLearning(l);
     })();
     return () => { cancelled = true; };
   }, [open]);
+
 
   useEffect(() => {
     if (!open) return;
@@ -211,7 +221,68 @@ export default function DeskWatchSheet({ open, onClose, onAddLinkedIn }: Props) 
           </div>
         </section>
 
+        {/* What I've learned about you. Every line is a count with its evidence
+            behind it, and every line can be forgotten for good. A system that
+            learns invisibly and cannot be corrected is one to distrust. */}
+        <section style={{ padding: "14px 20px 4px" }}>
+          <h3 style={{
+            margin: "0 0 6px", fontSize: 10.5, letterSpacing: ".12em",
+            textTransform: "uppercase", color: MUTED, fontWeight: 600,
+          }}>What I've learned about you</h3>
+          {learning.length === 0 ? (
+            <p style={{ margin: "0 0 4px", fontSize: 13, color: MUTED }}>
+              Nothing yet. I only write something down once I have seen it at least three times.
+            </p>
+          ) : (
+            <>
+              <div style={{ border: `1px solid ${LINE}`, borderRadius: 14, overflow: "hidden" }}>
+                {learning.map((row, i) => (
+                  <div key={row.id} style={{
+                    display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px",
+                    borderTop: i === 0 ? "none" : `1px solid ${LINE}`, background: WHITE,
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, fontWeight: 600 }}>
+                        {KIND_LABEL[row.kind]}
+                      </div>
+                      <div style={{ fontSize: 14, color: INK, marginTop: 3 }}>{row.observation}</div>
+                      <div style={{ fontSize: 12.5, color: MUTED, marginTop: 2 }}>
+                        Seen {row.evidence_count} times.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="ask-focusable"
+                      data-testid="desk-forget-one"
+                      onClick={async () => {
+                        if (await forgetOne(row.id)) setLearning(l => l.filter(x => x.id !== row.id));
+                      }}
+                      style={{
+                        flex: "0 0 auto", background: "transparent", border: `1px solid ${LINE}`,
+                        color: MUTED, borderRadius: 8, padding: "5px 10px", fontSize: 12.5, cursor: "pointer",
+                      }}
+                    >Forget this</button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="ask-focusable"
+                data-testid="desk-forget-all"
+                onClick={async () => {
+                  if (await forgetAll(learning.map(l => l.id))) setLearning([]);
+                }}
+                style={{
+                  marginTop: 10, background: "transparent", border: `1px solid ${LINE}`,
+                  color: MUTED, borderRadius: 8, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
+                }}
+              >Forget everything</button>
+            </>
+          )}
+        </section>
+
         <div style={{ height: 18 }} />
+
       </div>
     </div>,
     document.body,

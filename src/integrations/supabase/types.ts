@@ -1241,6 +1241,33 @@ export type Database = {
         }
         Relationships: []
       }
+      desk_answer_feedback: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          question: string
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          answer?: string
+          created_at?: string
+          id?: string
+          question?: string
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          question?: string
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
       desk_eval_questions: {
         Row: {
           active: boolean
@@ -1320,6 +1347,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      desk_learning: {
+        Row: {
+          confidence: string
+          dismissed: boolean
+          evidence: Json
+          evidence_count: number
+          first_seen: string
+          id: string
+          kind: string
+          last_seen: string
+          observation: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: string
+          dismissed?: boolean
+          evidence?: Json
+          evidence_count?: number
+          first_seen?: string
+          id?: string
+          kind: string
+          last_seen?: string
+          observation: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence?: string
+          dismissed?: boolean
+          evidence?: Json
+          evidence_count?: number
+          first_seen?: string
+          id?: string
+          kind?: string
+          last_seen?: string
+          observation?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       desk_number_violations: {
         Row: {
