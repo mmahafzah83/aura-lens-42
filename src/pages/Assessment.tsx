@@ -589,9 +589,9 @@ const Assessment = () => {
             <p>We read what is already public and turn it into a first picture of how you land.</p>
           </article>
           <article className="asg-card">
-            <span className="asg-k">THEN · {ASSESSMENT_MINUTES - 3} MINUTES</span>
-            <h2>Your CV and {ASSESSMENT_QUESTIONS_PHRASE}</h2>
-            <p>Upload what you have. Answer in your own words. Stop and come back whenever you like.</p>
+            <span className="asg-k">THEN · {ASSESSMENT_MINUTES} MINUTES</span>
+            <h2>Your CV, your reading, a few questions</h2>
+            <p>Upload your CV, tell us what you&apos;ve been reading, and answer a handful of questions in your own words. Stop and come back whenever you like.</p>
           </article>
           <article className="asg-card">
             <span className="asg-k">AT THE END</span>
