@@ -68,7 +68,9 @@ const OPEN_VERB = /\b(open|go to|show|see|view|take me|jump to)\b|افتح|اذ�
 export function matchNavChip(label: string): (NavTarget & { key: string }) | null {
   const t = norm(label);
   if (!t) return null;
-  if (!OPEN_VERB.test(t)) return null;
+  /* A few labels are destinations on their own, with no verb in them. */
+  const BARE = /\bwhere (i|you) stand\b|^my (library|drafts|signals)$|^موقعي$/u;
+  if (!OPEN_VERB.test(t) && !BARE.test(t)) return null;
   for (const [re, key] of RULES) {
     if (re.test(t)) return { key, ...NAV_TARGETS[key] };
   }
