@@ -1905,6 +1905,10 @@ export default function StudioPanel({
     if (error) console.warn("deck not persisted", error);
   }, []);
 
+  // A typed topic has no signal row, so only a real id is stored.
+  const isUuid = (v: unknown): v is string =>
+    typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
   /**
    * THE DECK ITSELF IS KEPT. `deck_events` only ever held telemetry, so a deck
    * vanished the moment the member left. The IR now lands in its own row,
@@ -1942,7 +1946,7 @@ export default function StudioPanel({
   useEffect(() => {
     if (!deck) return;
     const rowId = postRowRef.current ?? draftId;
-    const signalId = typeof choice?.id === "string" ? choice.id : null;
+    const signalId = isUuid(choice?.id) ? String(choice?.id) : null;
     const t = window.setTimeout(() => {
       if (rowId) {
         void persistDeck(rowId, deck, theme, template).catch((e) =>
