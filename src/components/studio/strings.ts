@@ -574,6 +574,10 @@ export const T = {
     en: "A slide did not come out right. Nothing was lost — try once more.",
     ar: "لم تخرج إحدى الشرائح كما يجب. لم يُفقد شيء — جرّب مرة أخرى.",
   },
+  slidesFailedPickAnother: {
+    en: "Pick a different signal",
+    ar: "اختر إشارة أخرى",
+  },
   slidesFailedShape: {
     en: "The slides came back in a shape Aura could not use. Try once more.",
     ar: "عادت الشرائح بشكل لم تستطع أورا استخدامه. جرّب مرة أخرى.",
