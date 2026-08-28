@@ -27,8 +27,14 @@ const TOOL_LABELS: Record<string, { en: string; ar: string }> = {
 /** Machine-shaped: snake_case, camelCase run-ons, or a bare function call. */
 const MACHINE = /^[a-z0-9]+(_[a-z0-9]+)+(\(\))?$/;
 
-function fourWords(label: string): string {
-  const words = label.trim().split(/\s+/);
+/**
+ * T1 — the four-word cap is not a chip rule. It was only applied to model
+ * moves, which is how a tool label arrived as the whole sentence "View your 194
+ * captures in the library." Exported so every label a member reads goes
+ * through the same door.
+ */
+export function fourWords(label: string): string {
+  const words = String(label ?? "").trim().replace(/[.。؟?!]+$/, "").split(/\s+/).filter(Boolean);
   return words.length <= 4 ? words.join(" ") : words.slice(0, 4).join(" ");
 }
 
