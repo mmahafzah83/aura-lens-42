@@ -96,6 +96,16 @@ export function EditPanel({
   const locked = isLocked(deck, slide);
   const swaps = swappableArchetypes(deck, slide);
   const canHoldPhoto = mediaSupport !== "none";
+  /**
+   * WHAT THE PHOTO COST. The band variant gives up whole written slots when
+   * measurement proves they cannot be drawn. That is a real loss of the
+   * member's words, so it is named here, next to the way to undo it. This
+   * only reports the drop logic — it never changes it.
+   */
+  const measured = useMeasuredDrops(deck.deck_id, slide.index);
+  const droppedNames = measured.dropped
+    .filter((slot) => slot !== "media")
+    .map((slot) => SLOT_LABEL[slot] ?? slot);
 
   const fields: Array<{ key: string; label: string; path: SlotPath; budget?: number; count?: number; rows?: number; right?: React.ReactNode }> = [];
   // The slide-level word budget is the only contract non-hero slots have;
