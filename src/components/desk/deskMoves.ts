@@ -122,14 +122,18 @@ export const HONEST_FAILURE = honestFailure("en");
 export const CHROME: Record<"ar" | "en", {
   more: string; less: string; openInPublish: string;
   rightYes: string; rightNo: string; rightAsk: string; thanks: string;
+  /** T1 — the door, and the two things that can honestly follow a tap. */
+  openIt: string; openedPrefix: string; didNotOpen: string;
 }> = {
   en: {
     more: "Say more", less: "Less", openInPublish: "Open in Publish",
     rightYes: "Yes", rightNo: "No", rightAsk: "Was this right?", thanks: "Noted.",
+    openIt: "Open it", openedPrefix: "Opened", didNotOpen: "It didn't open. Try again?",
   },
   ar: {
     more: "تفاصيل أكثر", less: "اختصار", openInPublish: "افتحها في النشر",
     rightYes: "نعم", rightNo: "لا", rightAsk: "هل كان هذا صحيحًا؟", thanks: "سُجّل.",
+    openIt: "افتحها", openedPrefix: "فُتحت", didNotOpen: "لم تُفتح. جرّب مرة أخرى؟",
   },
 };
 
