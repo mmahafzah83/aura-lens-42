@@ -7,6 +7,7 @@
  * re-run the fit ladder on every keystroke.
  */
 import type { Archetype, DeckIR, HeroLine, Run, Slide, Slots, TextNode } from "../deckIR";
+import { heroBudget } from "../invariants";
 import {
   COVER_TRIM_TARGET, MEDIA_BY_ARCHETYPE, REQUIRED_SLOTS, pictureTextPlan, wordBudgetFor,
 } from "../slots";
@@ -355,10 +356,12 @@ export function shortenSlideForPicture(deck: DeckIR, slideIndex: number): DeckIR
 /* Hero budgets — the one constraint a member cannot otherwise see     */
 /* ------------------------------------------------------------------ */
 
-export const HERO_BUDGET = { en: 14, ar: 20 } as const;
-
-export function heroBudgetFor(text: string): number {
-  return ARABIC_RE.test(text) ? HERO_BUDGET.ar : HERO_BUDGET.en;
+/**
+ * The budget INV-13 will actually test against: the single source of truth
+ * lives in invariants.ts, scaled by the template doing the drawing.
+ */
+export function heroBudgetFor(text: string, template?: string | null): number {
+  return heroBudget(ARABIC_RE.test(text) ? "ar" : "en", template);
 }
 
 /* ------------------------------------------------------------------ */
