@@ -23,7 +23,7 @@ const EDGE_FUNCTIONS = [
   "detect-card-style", "detect-market-gaps", "detect-signals-v2",
   "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
   "fetch-industry-trends", "generate-action-output", "generate-authority-content",
-  "generate-brand-positioning", "generate-branded-post", "generate-carousel-v2",
+  "generate-brand-positioning", "generate-branded-post",
   "generate-framework-diagram", "generate-identity-intelligence", "generate-market-mirror",
   "generate-schematic-spec", "generate-silence-alarm", "ingest-capture", "ingest-document", "knowledge-intelligence",
   "linkedin-claim", "linkedin-expert-advisor", "linkedin-oauth", "linkedin-oauth-callback",

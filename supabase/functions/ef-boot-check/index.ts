@@ -91,7 +91,6 @@ const ALL_FUNCTIONS: string[] = [
   "generate-authority-content",
   "generate-brand-positioning",
   "generate-branded-post",
-  "generate-carousel-v2",
   "generate-deck",
   "generate-edition",
   "generate-framework-diagram",

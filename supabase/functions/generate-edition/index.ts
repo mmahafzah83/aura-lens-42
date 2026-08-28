@@ -30,7 +30,7 @@ NEVER: "في عالم اليوم المتغير", "لا يخفى على أحد",
 7. HUMAN VOICE: Write like a Director talking to a peer over coffee — "خليني أسألك.." / "من خبرتي.." openers are good. One rhetorical question per my_read is welcome. Every field ends with a COMPLETE thought — no "..." endings, no unfinished comparisons.
 `;
 
-// -------- JSON repair (mirror of generate-carousel-v2) --------
+// -------- JSON repair --------
 function safeParseJSON(raw: string): any {
   try { return JSON.parse(raw); } catch {}
   let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
