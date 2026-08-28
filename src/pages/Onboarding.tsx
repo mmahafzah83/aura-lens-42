@@ -3121,21 +3121,15 @@ const Onboarding = () => {
                 </>
               ) : null}
             </p>
-            {/* Mono is for numbers. This is a control, so it is set as one. */}
-            <button
-              type="button"
-              onClick={() => { if (!userId) { void backToRead(); return; } void returnToAddress(); }}
-              style={{
-                background: "none", border: 0, padding: "11px 0", marginBlockStart: 4,
-                fontFamily: OB.ui, fontSize: 13.5, color: OB.muted, cursor: "pointer",
-                textAlign: "start", minBlockSize: 44, display: "inline-flex", alignItems: "center",
-              }}
-            >
-              This isn't me — read a different profile
-            </button>
-
             <Actions style={{ marginBlockStart: 18 }}>
-              <OBButton onClick={() => { void confirmBandIfDetected(); go(CV_SCREEN); }}>Continue</OBButton>
+              <OBButton
+                disabled={!(sector && (levelTitle || band))}
+                aria-describedby={!(sector && (levelTitle || band)) ? "ob-sector-continue-why" : undefined}
+                onClick={() => { void confirmBandIfDetected(); go(CV_SCREEN); }}
+              >
+                Continue
+              </OBButton>
+              {!(sector && (levelTitle || band)) ? whyLine("ob-sector-continue-why", "Add your role and sector to continue.") : null}
               <OBButton variant="tertiary" onClick={() => go(5)}>I'll do that later</OBButton>
             </Actions>
           </>
