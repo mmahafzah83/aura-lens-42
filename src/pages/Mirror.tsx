@@ -17,7 +17,6 @@ const INK = "#0F1519";
 const INK2 = "#5B6673";
 const BLUE = "#0670C4";
 const BLUE_DARK = "#04477C";
-const CYAN = "#00CEC9";
 const AMBER = "#E0A82E";
 const MONO = "'IBM Plex Mono', ui-monospace, monospace";
 const UI = "Inter, system-ui, sans-serif";
