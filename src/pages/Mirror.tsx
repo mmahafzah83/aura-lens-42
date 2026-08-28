@@ -22,7 +22,6 @@ const MONO = "'IBM Plex Mono', ui-monospace, monospace";
 const UI = "Inter, system-ui, sans-serif";
 
 const MIRROR_CSS = `
-@keyframes mr-pulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1)}}
 @keyframes mr-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .mr-line{animation:mr-in .5s ease both}
 .mr-btn:hover{background:${BLUE_DARK} !important}
