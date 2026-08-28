@@ -93,9 +93,8 @@ type Msg = { role: "user" | "assistant"; content: string; isError?: boolean; act
 
 /** T1 — the four-word cap belongs to every label a member reads, tools included. */
 function fourWords(raw: string, fallback: string): string {
-  const t = String(raw ?? "").trim().replace(/^[-•*\s]+/, "").replace(/[.。؟?!]+$/, "");
-  if (!t) return fallback;
-  return t.split(/\s+/).filter(Boolean).slice(0, 4).join(" ") || fallback;
+  const t = capLabel(String(raw ?? "").replace(/^[-•*\s]+/, ""));
+  return t || fallback;
 }
 
 /**
