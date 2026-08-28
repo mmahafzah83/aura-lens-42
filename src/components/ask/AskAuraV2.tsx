@@ -1301,24 +1301,46 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                       </div>
                     )}
                     {/* The door. Blue because the member taps it; a route to an
-                        unknown surface renders nothing at all. */}
+                        unknown surface renders nothing at all. The confirmation
+                        under it is written only once the rail has said the tab
+                        actually changed — and if it did not, it says that. */}
                     {(m.actions || [])
                       .filter(a => a.ok && a.route && (SURFACES as readonly string[]).includes(a.route.surface))
-                      .map((a, k) => (
+                      .map((a, k) => {
+                        const navKey = `${i}-${k}-${a.route!.surface}`;
+                        const state = opened[navKey];
+                        return (
                         <div key={`route-${k}`} style={{ marginTop: 10 }}>
                           <button
                             type="button"
                             className="ask-focusable ask-chip"
                             data-testid="ask-route-button"
-                            onClick={() => openSurface(a.route!.surface, a.route!.subject_id)}
+                            onClick={() => { void openSurface(a.route!.surface, a.route!.subject_id, navKey); }}
                             style={{
                               background: "transparent", border: "1px solid var(--act)", color: "var(--act)",
                               borderRadius: 999, padding: "6px 12px", fontSize: 12.5, cursor: "pointer",
                               display: "inline-flex", alignItems: "center", gap: 6,
                             }}
-                          >{a.label}<ArrowUpRight size={13} aria-hidden="true" /></button>
+                          >{fourWords(a.label, CH.openIt)}<ArrowUpRight size={13} aria-hidden="true" /></button>
+                          {state && (
+                            <div
+                              data-testid={state === "done" ? "ask-nav-confirmed" : "ask-nav-failed"}
+                              style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}
+                            >
+                              <span aria-hidden="true" style={{
+                                width: 7, height: 7, borderRadius: 999,
+                                background: state === "done" ? "var(--machine)" : "var(--text-muted)",
+                              }} />
+                              <span style={{ ...MONO, fontSize: 12, color: state === "done" ? "var(--machine-text)" : "var(--text-muted)" }}>
+                                {state === "done"
+                                  ? `${CH.openedPrefix} ${a.route!.name || a.route!.surface}`
+                                  : CH.didNotOpen}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      ))}
+                        );
+                      })}
                     {/* Was this right? A verdict that is written down, and a
                         `No` the nightly learner counts as a refusal. */}
                     {!loading && guardedPlain.text && (
