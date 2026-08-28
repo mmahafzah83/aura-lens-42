@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import ReadResult from "@/components/read/ReadResult";
+import ReadingScreen from "@/components/read/ReadingScreen";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import { SEAT_CTA, SEAT_PATH } from "@/lib/seatCopy";
 
@@ -157,7 +158,6 @@ export default function Mirror() {
   const [sentOk, setSentOk] = useState(false);
 
   const [result, setResult] = useState<MirrorResponse | null>(null);
-  const [lineIndex, setLineIndex] = useState(0);
   const [showCancel, setShowCancel] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const autoRan = useRef(false);
