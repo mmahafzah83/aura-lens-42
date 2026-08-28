@@ -629,6 +629,31 @@ serve(withObserve("ask-aura", async (req) => {
     /* Product knowledge, read live from product_facts. No redeploy to change it. */
     const howAuraWorks = await productFactsBlock(admin);
 
+    /**
+     * Q4 — WHAT I HAVE LEARNED ABOUT WORKING WITH YOU.
+     *
+     * Counted observations written by learn-from-sessions, top five by
+     * evidence, dismissed rows excluded. They describe patterns in how he
+     * works with the Desk — never who he is.
+     */
+    let learnedBlock = "";
+    if (useLearning) {
+      const { data: learned } = await admin
+        .from("desk_learning")
+        .select("kind, observation, evidence_count, confidence")
+        .eq("user_id", user_id)
+        .eq("dismissed", false)
+        .order("evidence_count", { ascending: false })
+        .limit(5);
+      if ((learned || []).length > 0) {
+        learnedBlock = `WHAT I HAVE LEARNED ABOUT WORKING WITH YOU (counted from his own sessions; each line carries its evidence count):
+${(learned || []).map((l: any) => `- [${l.kind}] ${l.observation} (${l.evidence_count} occurrences, ${l.confidence})`).join("\n")}
+RULE: these describe patterns in how he works with you. State them only when they change what you should do. Never recite them back at him as a profile, never list them, and never infer anything about him as a person from them.
+`;
+      }
+    }
+
+
 
 
     const fmtList = (arr: any) =>
