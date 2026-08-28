@@ -219,6 +219,35 @@ export function EditPanel({
         </div>
       )}
 
+      {droppedNames.length > 0 && slide.slots.media?.src && (
+        <div
+          role="status"
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            gap: 10, flexWrap: "wrap",
+            border: "1px solid var(--border-default)", borderRadius: 10,
+            padding: "8px 11px", background: "var(--surface-card)",
+            fontSize: 12.5, lineHeight: 1.6, color: "var(--deadline-text)",
+          }}
+        >
+          <span>
+            This photo pushed out {droppedNames.length} line{droppedNames.length === 1 ? "" : "s"}
+            {" "}({droppedNames.join(", ")}). The words are still here — they are not being drawn.
+          </span>
+          <button
+            type="button"
+            onClick={() => onChange(setSlidePhoto(deck, slide.index, null))}
+            style={{
+              ...labelStyle, border: "1px solid var(--border-default)", background: "transparent",
+              borderRadius: 999, padding: "4px 10px", cursor: "pointer", color: "var(--text-primary)",
+            }}
+          >
+            Remove photo
+          </button>
+        </div>
+      )}
+
+
       {fields.map((f) => (
         <Field
           key={f.key}
