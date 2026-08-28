@@ -189,16 +189,18 @@ export async function fetchSurfaceCounts(userId?: string | null): Promise<Surfac
 
 /* ── PILLARS ──────────────────────────────────────────────────────────────
  * The few subjects the member wants to be known for. One place: the
- * `brand_pillars` array on the profile. Never re-derived per surface.
+ * `brand_pillars` array on `diagnostic_profiles`, keyed by `user_id` — the
+ * same row Settings reads. Never re-derived per surface.
  */
 export async function fetchPillarCount(userId?: string | null): Promise<number> {
-  let q = supabase.from("profiles").select("brand_pillars").limit(1);
-  if (userId) q = q.eq("id", userId) as any;
+  let q = supabase.from("diagnostic_profiles").select("brand_pillars").limit(1);
+  if (userId) q = q.eq("user_id", userId) as any;
   const { data } = await q;
   const row = ((data as any[]) || [])[0];
   const list = Array.isArray(row?.brand_pillars) ? row.brand_pillars : [];
   return list.filter((s: unknown) => typeof s === "string" && s.trim()).length;
 }
+
 
 /* ── REMINDERS ────────────────────────────────────────────────────────────
  * Notes waiting inside Aura. Unread member reminders only — a reminder the
