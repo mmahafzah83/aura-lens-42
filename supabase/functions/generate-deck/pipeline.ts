@@ -1,3 +1,5 @@
+// Voice profile decides the words and the tone.
+// The slide decides what a slide can physically hold.
 /**
  * Stages 2 and 4 (model calls) plus the deterministic assembly between them.
  * Kept out of index.ts so a test harness can drive the pipeline directly.
@@ -7,6 +9,7 @@ import { type ComposeResult } from "./compose.ts";
 import { REQUIRED_SLOTS, OPTIONAL_SLOTS } from "./slots.ts";
 // ONE definition of handle parsing, shared with the identity resolver.
 import { bareHandle as sharedBareHandle } from "../_shared/identity.ts";
+import { markerPermission, MARKER_LIMITS } from "./invariants.ts";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3-flash-preview";
@@ -106,8 +109,18 @@ export function resolveVoice(
     example_posts: Array.isArray(chosen?.example_posts) ? chosen.example_posts.length : 0,
     use_phrases: vocab(chosen).use.length,
     avoid_rules: vocab(chosen).avoid.length,
+    marker_style: markerStyleOf(chosen),
   }));
   return chosen ?? null;
+}
+
+/**
+ * The member's observed marker habits for this language row. An absent or
+ * empty `marker_style` means no glyph is permitted — the default, and the
+ * behaviour of every deck written before the column existed.
+ */
+export function markerStyleOf(voice: Record<string, any> | null | undefined): unknown {
+  return voice?.marker_style ?? {};
 }
 
 function examplePostText(p: unknown): string {
@@ -581,7 +594,40 @@ export const WRITE_TOOL = {
   },
 };
 
-export function writeSystem(): string {
+/**
+ * Voice profile decides the words and the tone.
+ * The slide decides what a slide can physically hold.
+ *
+ * With no observed marker habit — the default for every member until their
+ * profile is scanned — this returns the absolute ban, word for word as it has
+ * always read. Only a member who demonstrably types a glyph gets a licence,
+ * and even then the physical limits below cannot be overridden.
+ */
+export function markerRule(markerStyle?: unknown): string {
+  const m = markerPermission(markerStyle);
+  if (!m.any) {
+    return `- NO SYMBOL MARKERS ON A SLIDE. A slide is typography, not a text post. Hierarchy comes from the renderer — size, weight, colour and position. Emit no decorative glyphs, no bullet symbols, no arrows and no emoji of any kind inside any text node. A marker inside a paragraph is a rendering defect, not a style, and in a right-to-left paragraph it destroys the edge of the text block.`;
+  }
+  const lines = [
+    "- MARKERS. This member does use a small number of glyphs in their own writing. You may use ONLY the ones listed here, and nothing else — no other glyph, arrow, bullet or emoji of any kind.",
+  ];
+  if (m.symbols.length) {
+    lines.push(
+      `  Symbols permitted: ${m.symbols.join(" ")}. At most ${MARKER_LIMITS.symbols_per_slide} on a slide, only at the START of a list item, never inside a hero line and never inside a headline.`,
+    );
+  }
+  if (m.emoji.length) {
+    lines.push(
+      `  Emoji permitted: ${m.emoji.join(" ")}. At most ${MARKER_LIMITS.emoji_per_deck} in the WHOLE DECK, never on the cover slide and never on the closing slide.`,
+    );
+  }
+  lines.push(
+    "  PHYSICAL LIMITS, which the voice profile cannot override: no glyph in a hero line, on a cover slide or on a close slide; the arrow \u21B3 is forbidden in Arabic text because it breaks the right-to-left edge; a glyph never buys room in the hero character budget.",
+  );
+  return lines.join("\n");
+}
+
+export function writeSystem(markerStyle?: unknown): string {
   return `You write the content of a LinkedIn carousel for a senior operator. You fill ONLY the slots named in the manifest. You never choose slides, order, length, or layout.
 
 THE ONE RULE ABOVE ALL OTHERS: take FACTS from the evidence, LANGUAGE from the member's own example posts. Never the reverse. The evidence fragments are machine summaries written by another model — their register is not the member's, and copying it is the exact failure you are here to prevent. If a sentence you are about to write could not appear in one of their example posts, delete it and write it again. If no example posts are supplied, write plainly and concretely and invent no personality.
@@ -594,7 +640,7 @@ THE ONE RULE ABOVE ALL OTHERS: take FACTS from the evidence, LANGUAGE from the m
 - Never the words: thought leader, personal brand, game-changing, seamless, unlock, elevate, empower, utilize, facilitate, or leverage as a verb.
 - Western digits only, in every language.
 - No ellipsis anywhere.
-- NO SYMBOL MARKERS ON A SLIDE. A slide is typography, not a text post. Hierarchy comes from the renderer — size, weight, colour and position. Emit no decorative glyphs, no bullet symbols, no arrows and no emoji of any kind inside any text node. A marker inside a paragraph is a rendering defect, not a style, and in a right-to-left paragraph it destroys the edge of the text block.
+${markerRule(markerStyle)}
 - THE QUOTE SLOT: a quote is ONE sharp line ABOUT THE SUBJECT, distilled from the member's raw captures or from the evidence. It is never a statement about the member, never a description of what they do for a living, never a sign-off, never a personal motto, and never attributed to a named person. If the material will not yield such a line, say the plainest true thing the evidence supports rather than reaching for something that sounds quotable.
 - Every argument slide (frame, evidence, callout, steps, definition, quote, benchmark) must carry at least one concrete particular in the language you are writing: a named organisation, place, standard or programme, a number, or a first-person observation. A slide made only of abstractions fails. In an Arabic deck a Latin brand or standard name in its own lang "en" run counts, and so does a named entity introduced by its category word.
 - Arabic hero lines are 20 characters INCLUDING spaces. Count them before you emit. Two short words is usually the maximum; split a third word onto its own line.
@@ -869,7 +915,7 @@ export async function writeSlides(
       : "",
   ].join("\n");
 
-  const raw = await callTool(writeSystem(), user, WRITE_TOOL);
+  const raw = await callTool(writeSystem(markerStyleOf(ctx.voice)), user, WRITE_TOOL);
   return Array.isArray(raw.slides) ? raw.slides : [];
 }
 
