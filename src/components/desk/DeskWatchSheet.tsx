@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import {
-  GROUP_TITLES, MISSING_REASON, PANEL_OPTIONS, WATCH_OPTIONS, isOn, loadCapabilities, loadDeskPrefs,
+  GROUP_TITLES, MISSING_REASON, PANEL_OPTIONS, WATCH_OPTIONS, ensureWatchDefaults, isOn,
+  loadCapabilities, loadDeskPrefs,
   panelOn, saveDeskPrefs, type Capabilities, type DeskPrefs, type WatchOption,
 } from "./deskPrefs";
+import {
+  KIND_LABEL, forgetAll, forgetOne, loadLearning, type LearningRow,
+} from "./deskLearning";
 
 /**
  * What your Desk watches — the gear.
