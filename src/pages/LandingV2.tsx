@@ -119,6 +119,10 @@ const LANDING_V2_CSS = `
 .aura-v2 .sv .n.word{font-family:var(--ui);font-weight:700;letter-spacing:-.02em}
 .aura-v2 .sv .l{font-size:13.5px;color:#A7B0BC;line-height:1.5;margin-top:9px}
 .aura-v2 .sv .l b{color:#fff;font-weight:600}
+.aura-v2 .savefoot{border-top:1px solid rgba(255,255,255,.08);padding-top:26px;margin-top:0}
+.aura-v2 .savechip{display:inline-block;max-width:100%;font-size:11.5px;line-height:1.5;padding:6px 12px;border-radius:6px;background:rgba(0,206,201,.08);color:var(--cyan)}
+.aura-v2 .savechip b{font-weight:600}
+.aura-v2 .savechip-rest{opacity:.72}
 .aura-v2 .strike{position:relative;display:inline-block;color:#5D6874}
 .aura-v2 .strike + .strike{margin-left:10px}
 .aura-v2 .strike::after{content:"";position:absolute;left:-2px;right:-2px;top:52%;height:1.5px;background:var(--red)}
@@ -576,21 +580,26 @@ const LANDING_V2_HTML = `
 
   <div class="dark rv"><div class="dark-in">
     <div><h3>And what that<br><em>saves you.</em></h3><p>Every year, without adding a single hour to your week.</p></div>
-    <div class="savegrid">
-      <div class="sv h">
-        <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.2" stroke="#FFFFFF" stroke-width="1.4"/><path d="M12 6.6V12l3.6 2.4" stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round"/></svg></div>
-        <div class="n">260<span style="font-size:.5em"> hrs</span></div>
-        <div class="l">of reading a year that <b>stops vanishing</b> — six working weeks of your own thinking.</div>
+    <div class="savewrap">
+      <div class="savegrid">
+        <div class="sv h">
+          <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9.2" stroke="#FFFFFF" stroke-width="1.4"/><path d="M12 6.6V12l3.6 2.4" stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+          <div class="n">260<span style="font-size:.5em"> hrs</span></div>
+          <div class="l">of reading a year that <b>stops vanishing</b> — six working weeks of your own thinking.</div>
+        </div>
+        <div class="sv m">
+          <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3.4v17.2" stroke="#00CEC9" stroke-width="1.4" stroke-linecap="round"/><path d="M15.8 7.6c0-1.6-1.7-2.6-3.8-2.6S8.2 6 8.2 7.6s1.6 2.3 3.8 2.9 3.8 1.3 3.8 3-1.7 2.9-3.8 2.9-3.8-1.2-3.8-2.9" stroke="#00CEC9" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+          <div class="n">$150<span style="font-size:.5em">–1,000</span></div>
+          <div class="l">a month people pay for <b>a writer, a designer, a consultant and two tools.</b></div>
+        </div>
+        <div class="sv d">
+          <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3.4" y="13" width="4" height="7.6" rx="1.4" fill="#E0A82E"/><rect x="10" y="8.6" width="4" height="12" rx="1.4" fill="#E0A82E" fill-opacity=".7"/><rect x="16.6" y="4.2" width="4" height="16.4" rx="1.4" fill="#E0A82E" fill-opacity=".45"/></svg></div>
+          <div class="n">0</div>
+          <div class="l">hours added to your week. <span class="strike">design tools</span> <span class="strike">designers</span> <span class="strike">blank pages</span></div>
+        </div>
       </div>
-      <div class="sv m">
-        <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3.4v17.2" stroke="#00CEC9" stroke-width="1.4" stroke-linecap="round"/><path d="M15.8 7.6c0-1.6-1.7-2.6-3.8-2.6S8.2 6 8.2 7.6s1.6 2.3 3.8 2.9 3.8 1.3 3.8 3-1.7 2.9-3.8 2.9-3.8-1.2-3.8-2.9" stroke="#00CEC9" stroke-width="1.4" stroke-linecap="round"/></svg></div>
-        <div class="n">$150<span style="font-size:.5em">–1,000</span></div>
-        <div class="l">a month people pay for <b>a writer, a designer, a consultant and two tools.</b></div>
-      </div>
-      <div class="sv d">
-        <div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3.4" y="13" width="4" height="7.6" rx="1.4" fill="#E0A82E"/><rect x="10" y="8.6" width="4" height="12" rx="1.4" fill="#E0A82E" fill-opacity=".7"/><rect x="16.6" y="4.2" width="4" height="16.4" rx="1.4" fill="#E0A82E" fill-opacity=".45"/></svg></div>
-        <div class="n">0</div>
-        <div class="l">hours added to your week. <span class="strike">design tools</span> <span class="strike">designers</span> <span class="strike">blank pages</span></div>
+      <div class="savefoot">
+        <span class="savechip"><span style="margin-right:6px">ⓘ</span><b>Illustrative</b><span class="savechip-rest"> — figures reflect typical market rates, not a guarantee for every user.</span></span>
       </div>
     </div>
   </div></div>
