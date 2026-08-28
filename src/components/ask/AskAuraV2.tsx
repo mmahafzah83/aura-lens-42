@@ -1146,6 +1146,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                   const guardedMore = guardClaims(groundBold(layers.more, groundedTerms), verified);
                   const failedSave = (m.actions || []).some(a => a.tool === "save_draft" && (!a.ok || !a.post_id));
                   const isOpen = !!expanded[i];
+                  /* Chrome follows the answer, never the interface language. */
+                  const lang = answerLang(`${layers.plain}\n${layers.more}`);
+                  const CH = CHROME[lang];
+                  /* The question this answer came from, for the feedback row. */
+                  const askedFor = [...messages].slice(0, i).reverse().find(x => x.role === "user")?.content ?? "";
+
                   // A failure is not a finished object — errors stay outside the card.
                   if (m.isError) return (
                     <div key={i} style={{ margin: "14px 0", maxWidth: 720 }}>
