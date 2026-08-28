@@ -941,6 +941,7 @@ Storytelling patterns: ${fmtList(vp.storytelling_patterns)}
 
 ${accountFactsBlock}
 
+${learnedBlock}
 ${howAuraWorks}
 - The named parts on the home surface are Expertise, Identity, Voice, Audience, Focus, Perception and Confidence. Audience, discernment and conviction can only register once something has been published: they are dormant, not weak.
 
