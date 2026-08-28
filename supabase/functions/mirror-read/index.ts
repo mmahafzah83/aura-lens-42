@@ -589,16 +589,24 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           model: "claude-sonnet-4-5-20250929",
-          max_tokens: 1500,
+          /* The seven-key read runs long; 1500 cut it mid-sentence. */
+          max_tokens: 4000,
+          temperature: 0.3,
           system: SYSTEM_PROMPT,
           messages,
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error("[mirror-read] model call failed:", res.status, JSON.stringify(data?.error ?? {}).slice(0, 300));
+      }
       const text = (data?.content ?? [])
         .map((c: any) => (typeof c?.text === "string" ? c.text : ""))
         .join("")
         .trim();
+      if (data?.stop_reason === "max_tokens") {
+        console.warn("[mirror-read] model output hit the token ceiling; repairing.");
+      }
       await logAIUsage({
         user_id: null,
         function_name: "mirror-read",
