@@ -283,6 +283,16 @@ function parseJsonLoose(raw: string): Record<string, unknown> | null {
   return null;
 }
 
+/**
+ * LinkedIn text sometimes carries half an emoji: a high surrogate with no
+ * partner. That single character makes the request body invalid JSON and the
+ * whole read fails. Drop unpaired surrogates before anything is sent.
+ */
+function stripLoneSurrogates(s: string): string {
+  return (s ?? "").replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, "")
+    .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "");
+}
+
 /** Placeholders are only meaningful inside the model's own sentences. */
 function hasPlaceholderInValues(v: unknown): boolean {
   const re = /\[[^\]]{2,40}\]/;
