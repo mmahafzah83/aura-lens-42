@@ -217,6 +217,12 @@ serve(withObserve("ask-aura", async (req) => {
      * block exactly as a real turn would and returns it, generating nothing.
      */
     const factsOnly: boolean = body?.facts_only === true;
+    /**
+     * Q4 — the learned observations can be switched off for one turn, so the
+     * same question can be asked with and without them and the difference in
+     * the answer can be seen rather than claimed.
+     */
+    const useLearning: boolean = body?.learning !== false;
 
     const ctx: { linkedType?: string; linkedId?: string; linkedLabel?: string } =
       body?.context && typeof body.context === "object" ? body.context : {};
