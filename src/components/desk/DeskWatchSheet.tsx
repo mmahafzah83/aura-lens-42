@@ -64,18 +64,24 @@ function Toggle({ on, disabled, label, onChange }: {
 export default function DeskWatchSheet({ open, onClose, onAddLinkedIn }: Props) {
   const [prefs, setPrefs] = useState<DeskPrefs>({});
   const [caps, setCaps] = useState<Capabilities>({ cv_crosscheck: false, linkedin_profile: false });
+  /** What the Desk has learned about working with him — visible, and erasable. */
+  const [learning, setLearning] = useState<LearningRow[]>([]);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
-      const [p, c] = await Promise.all([loadDeskPrefs(), loadCapabilities()]);
+      const [p, c, l] = await Promise.all([loadDeskPrefs(), loadCapabilities(), loadLearning()]);
       if (cancelled) return;
-      if (p) setPrefs(p.prefs);
+      /* The shipped watch defaults are written down on first load, so what the
+         gear shows is what is actually in force. */
+      if (p) setPrefs(await ensureWatchDefaults(p.prefs));
       setCaps(c);
+      setLearning(l);
     })();
     return () => { cancelled = true; };
   }, [open]);
+
 
   useEffect(() => {
     if (!open) return;
