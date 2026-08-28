@@ -355,22 +355,6 @@ const LANDING_V2_CSS = `
  .aura-v2 .jrail .rdial .c{font-size:10.5px;color:#8E99A6;margin-top:6px}
 .aura-v2 .jrail .rbtn{display:block;width:100%;text-align:center;margin-top:14px}
 }
-.aura-v2 .refuse{background:#0F1519;border-radius:20px;padding:38px 36px;margin-top:26px;position:relative;overflow:hidden}
-.aura-v2 .refuse::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 12% 12%,rgba(0,206,201,.12),transparent 44%),radial-gradient(circle at 92% 92%,rgba(6,112,196,.16),transparent 48%)}
-.aura-v2 .refuse-in{position:relative}
-.aura-v2 .refuse .kick{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#00CEC9;margin-bottom:16px}
-.aura-v2 .refuse h2{color:#fff;margin-top:0;font-size:clamp(30px,4vw,48px)}
-.aura-v2 .refuse .body{font-size:15px;line-height:1.65;color:#9AA5B1;margin-top:14px;max-width:620px}
-.aura-v2 .refuse .bar{display:flex;gap:3px;margin-top:26px;height:7px}
-.aura-v2 .refuse .bar i{flex:1;height:7px;border-radius:2px;background:#39434C;display:block}
-.aura-v2 .refuse .bar i:last-child{background:#00CEC9}
-.aura-v2 .refuse .cap{font-size:13px;color:#8B96A2;margin-top:12px}
-.aura-v2 .refuse .close{font-size:15px;color:#fff;margin-top:18px}
-@media(max-width:700px){
- .aura-v2 .refuse{padding:26px 20px}
- .aura-v2 .refuse .body{font-size:14px}
- .aura-v2 .refuse .close{font-size:14px}
-}
 .aura-v2 .ledger{margin-top:18px;background:var(--white);border:1px solid var(--line);border-radius:20px;padding:32px 28px}
 .aura-v2 .ledger-lead{font-size:16px;color:var(--ink3);line-height:1.6;max-width:560px;margin:0 auto 18px;text-align:center}
 .aura-v2 .ledger .head{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);padding-bottom:14px;border-bottom:1px solid var(--line)}
@@ -895,17 +879,6 @@ const LANDING_V2_HTML = `
     </div>
   </div>
 
-  <div class="eyebrow" style="margin-top:28px">What people pay for the pieces, every month</div>
-  <div class="wide rv">
-    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A ghostwriter</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:88%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$50–400</span></div>
-    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A positioning consultant</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:66%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$30–300</span></div>
-    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A designer</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:40%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$30–160</span></div>
-    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A posting tool</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:26%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–100</span></div>
-    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">An AI writing tool</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:18%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–40</span></div>
-    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center"><span style="font-size:13.5px;color:#0F1519;font-weight:600">Aura, all of it</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:100%;border-radius:7px;background:linear-gradient(90deg,#7FD3B4,#12805C)"></i></span><span class="mi" style="text-align:right;color:#12805C;font-weight:700">${SEAT_PRICE.split(" ")[0]}</span></div>
-    <p style="margin-top:16px;font-size:13.5px;color:var(--ink3);line-height:1.7">Your report is free and stays free. The part that runs every night is ${SEAT_PRICE} — and a founding seat locks that price for as long as you keep it.</p>
-    <p class="mi" style="margin-top:12px;line-height:1.7">EXAMPLE FIGURES, ADJUSTABLE TO YOUR OWN HOURS AND RATE. WE DO NOT PROMISE FOLLOWERS OR LIKES.</p>
-  </div>
 </section>
 
 <section class="pg" id="cmp">
@@ -966,15 +939,16 @@ const LANDING_V2_HTML = `
     </div>
   </div>
 
-  <div class="refuse rv">
-    <div class="refuse-in">
-      <div class="kick">THE PART NOBODY ADVERTISES</div>
-      <h2>It throws away most of what it writes.</h2>
-      <p class="body">Every draft is judged before it ever reaches you — against what you actually said, in your own register, with a real ending. Most do not survive. You only meet the ones that did.</p>
-      <div class="bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-      <p class="cap">Written five times. Shown once. That is the point.</p>
-      <p class="close">Every other tool hands you everything it generates and lets you sort it out.</p>
-    </div>
+  <div class="eyebrow">What people pay for the pieces, every month</div>
+  <div class="wide rv">
+    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A ghostwriter</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:88%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$50–400</span></div>
+    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A positioning consultant</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:66%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$30–300</span></div>
+    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A designer</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:40%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$30–160</span></div>
+    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">A posting tool</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:26%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–100</span></div>
+    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center;margin-bottom:10px"><span style="font-size:13.5px;color:#37424F">An AI writing tool</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:18%;border-radius:7px;background:linear-gradient(90deg,#E77A6E,#C0392B)"></i></span><span class="mi" style="text-align:right">$20–40</span></div>
+    <div style="display:grid;grid-template-columns:170px 1fr 78px;gap:14px;align-items:center"><span style="font-size:13.5px;color:#0F1519;font-weight:600">Aura, all of it</span><span style="height:26px;border-radius:7px;background:#EFF4FA;display:block"><i style="display:block;height:26px;width:100%;border-radius:7px;background:linear-gradient(90deg,#7FD3B4,#12805C)"></i></span><span class="mi" style="text-align:right;color:#12805C;font-weight:700">${SEAT_PRICE.split(" ")[0]}</span></div>
+    <p style="margin-top:16px;font-size:13.5px;color:var(--ink3);line-height:1.7">Your report is free and stays free. The part that runs every night is ${SEAT_PRICE} — and a founding seat locks that price for as long as you keep it.</p>
+    <p class="mi" style="margin-top:12px;line-height:1.7">EXAMPLE FIGURES, ADJUSTABLE TO YOUR OWN HOURS AND RATE. WE DO NOT PROMISE FOLLOWERS OR LIKES.</p>
   </div>
 </section>
 
