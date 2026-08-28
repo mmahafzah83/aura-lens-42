@@ -193,27 +193,14 @@ export default function ReadResult({
       <div>
         <button
           onClick={save}
+          title="This read is anonymous. It lives in this browser only. Clear your history or switch to your phone and it is gone."
           style={{
             inlineSize: "100%", padding: "13px 18px", borderRadius: 8,
             border: `1px solid ${LINE}`, background: "transparent", color: INK,
             fontFamily: UI, fontSize: 15, fontWeight: 600, cursor: "pointer",
             minHeight: 48,
           }}
-        >Save this card</button>
-        <button
-          type="button"
-          disabled
-          aria-describedby="read-share-reason"
-          style={{
-            display: "block", inlineSize: "100%", minHeight: 48,
-            marginBlockStart: 10, padding: "13px 18px", borderRadius: 8,
-            border: `1px solid ${LINE}`, background: "transparent", color: INK2,
-            fontFamily: UI, fontSize: 15, fontWeight: 600, cursor: "not-allowed", opacity: 0.6,
-          }}
-        >Share it</button>
-        <p id="read-share-reason" style={{ margin: "8px 0 0", fontSize: 12.5, lineHeight: 1.5, color: INK2 }}>
-          Sharing opens once the preview card is updated.
-        </p>
+        >Save this card to your desktop</button>
         {shareNote ? <p style={{ margin: "8px 0 0", fontSize: 12.5, color: INK2 }}>{shareNote}</p> : null}
       </div>
     </div>
