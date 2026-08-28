@@ -325,39 +325,33 @@ export default function Mirror() {
   const sparse = !!result?.sparse;
   const postsRead = result?.posts_read ?? 0;
 
-  /* ── STATE B — reading (night) ── */
+  /* ── STATE B — reading. The one honest wait, shared with the assessment gate. ── */
   if (stage === "reading") {
     return (
-      <main style={{ minBlockSize: "100dvh", background: INK, color: "#FFFFFF", fontFamily: UI,
+      <main style={{ minBlockSize: "100dvh", background: CANVAS, color: INK, fontFamily: UI,
         display: "flex", alignItems: "center", padding: 24 }}>
         <style>{MIRROR_CSS}</style>
         <div style={{ inlineSize: "100%", maxInlineSize: 520, marginInline: "auto" }}>
-          <span style={{
-            display: "inline-block", inlineSize: 12, blockSize: 12, borderRadius: 999,
-            background: CYAN, boxShadow: `0 0 18px 4px ${CYAN}55`,
-            animation: "mr-pulse 1.6s ease-in-out infinite",
-          }} />
-          <div style={{ marginBlockStart: 26, display: "flex", flexDirection: "column", gap: 14 }}>
-            {READING_LINES.slice(0, lineIndex + 1).map((l) => (
-              <p key={l} className="mr-line" style={{
-                margin: 0, fontFamily: MONO, fontSize: 14, letterSpacing: "0.04em",
-                color: "rgba(255,255,255,0.86)",
-              }}>{l}</p>
-            ))}
-          </div>
-          {showCancel ? (
-            <button
-              onClick={cancelRead}
-              style={{
-                marginBlockStart: 26, background: "none", border: "none", padding: 0,
-                color: "rgba(255,255,255,0.62)", fontFamily: UI, fontSize: 13.5,
-                textDecoration: "underline", cursor: "pointer",
-              }}
-            >Cancel</button>
-          ) : null}
+          <ReadingScreen
+            heading="Aura is reading your profile."
+            steps={READING_LINES}
+            waitKey="linkedin_read"
+          >
+            {showCancel ? (
+              <button
+                onClick={cancelRead}
+                style={{
+                  marginBlockStart: 22, background: "none", border: "none", padding: 0,
+                  color: INK2, fontFamily: UI, fontSize: 13.5,
+                  textDecoration: "underline", cursor: "pointer",
+                }}
+              >Cancel</button>
+            ) : null}
+          </ReadingScreen>
         </div>
       </main>
     );
+
   }
 
   /* ── STATE C — the read ── */
