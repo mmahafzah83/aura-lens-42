@@ -4072,7 +4072,15 @@ export default function StudioPanel({
               <p style={{ fontFamily: "var(--ff-ui)", fontSize: 13, color: "var(--error)", margin: "4px 0 8px", lineHeight: rtlShell ? 1.9 : 1.7 }}>
                 {attentionText(deckFailures[0], lang)}
               </p>
-              <ButtonGhost onClick={() => void makeSlides()} style={{ minHeight: 44 }}>{T.tryAgain[lang]}</ButtonGhost>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <ButtonGhost onClick={() => void makeSlides()} disabled={deckBusy} style={{ minHeight: 44 }}>{T.tryAgain[lang]}</ButtonGhost>
+                <ButtonGhost
+                  onClick={() => { setDeckFailures([]); setStep(1); setPickStage("signals"); }}
+                  style={{ minHeight: 44 }}
+                >
+                  {T.slidesFailedPickAnother[lang]}
+                </ButtonGhost>
+              </div>
             </div>
           )}
 
