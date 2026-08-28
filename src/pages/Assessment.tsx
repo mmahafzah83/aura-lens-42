@@ -112,6 +112,9 @@ const Assessment = () => {
   const insideRef = useRef<HTMLElement | null>(null);
   const autoRan = useRef(false);
   const [postsRead, setPostsRead] = useState(0);
+  /* The run id is minted here and handed to `mirror-read`, so this tab is
+     already watching its own run before the work begins. */
+  const [readRunId, setReadRunId] = useState<string | null>(null);
   const [sparse, setSparse] = useState(false);
   const [ageNote, setAgeNote] = useState<string | null>(null);
 
