@@ -387,15 +387,11 @@ const Assessment = () => {
                 generatedAt={state.generated_at ?? null}
                 ageNote={ageNote}
               />
-              <section className="asg-loss">
-                <h2>This read is anonymous.</h2>
-                <p>It lives in this browser only. Clear your history or switch to your phone and it is gone.</p>
-              </section>
               <button type="button" className="asg-textbtn" onClick={() => void startNewRead()}>
                 This isn't me — read a different profile
               </button>
               <button className="asg-btn asg-bp asg-full" onClick={() => void continueToOnboarding()}>
-                Continue — your CV and {ASSESSMENT_QUESTIONS_PHRASE} <span className="asg-a">↗</span>
+                Continue <span className="asg-a">↗</span>
               </button>
               <p className="asg-trust">
                 Saved as you go. No account yet — we ask once, at the end.
