@@ -10,6 +10,7 @@ import { ImagePlus, RefreshCw, Trash2 } from "lucide-react";
 import type { Archetype, DeckIR, Slide, Slots } from "../deckIR";
 import { ARCHETYPE_LABEL, SLOT_LABEL, SLOT_ORDER } from "./slotLabels";
 import { REQUIRED_SLOTS, OPTIONAL_SLOTS } from "../slots";
+import { useMeasuredDrops } from "../render/measuredDrops";
 import {
   deleteSlide, editSlotText, heroBudgetFor, isLocked, readSlot,
   setHeroHighlight, setSlidePhoto, slideHasPicture, swapArchetype, swappableArchetypes, type SlotPath,
