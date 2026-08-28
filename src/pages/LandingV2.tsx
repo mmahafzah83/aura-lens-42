@@ -424,9 +424,8 @@ const LANDING_V2_HTML = `
       <p class="sub">Aura reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
       <div class="acts">
         <a class="btn bp" id="heropri" href="/assessment">${FREE_CTA}</a>
-        <button class="btn bg2" data-p="how">See how it works</button>
       </div>
-      <p class="support">${FIRST_READ_LINE}. ${FULL_PICTURE_LINE}. Free, and yours to keep.</p>
+      <p class="support">We'll read your LinkedIn, compare it with your CV, and ask ${ASSESSMENT_QUESTIONS_PHRASE} — then send you a free, honest read on where you stand. ${ASSESSMENT_MINUTES_LINE}.</p>
     </div>
     <div class="loopwrap">
       <div class="jring">
