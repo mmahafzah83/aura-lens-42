@@ -19,6 +19,7 @@ import {
   assemble,
   critique,
   resolveVoice,
+  markerStyleOf,
   vocab,
   type SignalContext,
   type Plan,
@@ -221,7 +222,7 @@ async function readContext(db: any, signalId: string, userId: string): Promise<S
   const { data: voices } = await db
     .from("authority_voice_profiles")
     .select(
-      "language, is_primary, tone, preferred_structures, storytelling_patterns, example_posts, vocabulary_preferences",
+      "language, is_primary, tone, preferred_structures, storytelling_patterns, example_posts, vocabulary_preferences, marker_style",
     )
     .eq("user_id", userId)
     .eq("mode_key", "default")
@@ -319,6 +320,8 @@ async function generate(
     // Read from THIS member's own row at request time — never a static list.
     signoffs: memberVocab.signoffs,
     domainTerms: domainTermsFor(ctx),
+    // The member's own observed glyphs. Empty for everyone until scanned.
+    markerStyle: markerStyleOf(ctx.voice),
   };
 
   const target = requestedLength === 5 || requestedLength === 7 || requestedLength === 10
@@ -356,7 +359,7 @@ async function generate(
     } else {
       // Repair what a machine can undo, then judge what is left. Voice and
       // taste rules mark the deck; they never withhold it.
-      const fixed = repairDeck(parsed.data);
+      const fixed = repairDeck(parsed.data, invOpts.markerStyle);
       const all = checkInvariants(fixed.deck, invOpts);
       const split = splitByTier(all);
       failures = split.blocking;
