@@ -12,7 +12,7 @@ import {
   capabilityNeeded, ensureWatchDefaults, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen, saveDeskPrefs,
   type Capabilities, type CapabilityKey, type DeskPrefs,
 } from "@/components/desk/deskPrefs";
-import { cleanMoves, guardClaims, groundBold, honestFailure, answerLang, CHROME } from "@/components/desk/deskMoves";
+import { cleanMoves, guardClaims, groundBold, honestFailure, answerLang, CHROME, fourWords as capLabel } from "@/components/desk/deskMoves";
 import { track } from "@/lib/track";
 import { cleanMemory, type CleanMemoryRow } from "@/components/desk/deskMemory";
 
