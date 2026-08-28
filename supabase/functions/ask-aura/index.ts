@@ -1672,12 +1672,21 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
     const secretaryTurn = /\b(save (it|this|that)|save to (my )?drafts?|put (it|this|that) in|remind me|chase me|don'?t let me forget|open (my|the)|take me to)\b/i
       .test(lastUserText);
 
+    /**
+     * Q6.3 — an errand is a confirmation, not a briefing. Everything from
+     * §§MORE onward is cut, and the plain layer is held to ONE sentence in
+     * code: the prompt asked for it and the model kept adding a second.
+     */
     const stripAfterMore = (text: string): string => {
       const i = text.search(/§§MORE|§§MOVES/);
       const head = i === -1 ? text : text.slice(0, i);
       const plain = head.replace(/§§PLAIN\s*/, "").trim();
-      return plain ? `§§PLAIN\n${plain}` : text;
+      if (!plain) return text;
+      const firstLine = plain.split("\n").map((l) => l.trim()).filter(Boolean)[0] ?? plain;
+      const oneSentence = (firstLine.match(/^[\s\S]*?[.!?؟…](?=\s|$)/) ?? [firstLine])[0].trim();
+      return `§§PLAIN\n${oneSentence || firstLine}`;
     };
+
 
     /**
      * N4 — the layer contract is enforced here, on the server, for every
