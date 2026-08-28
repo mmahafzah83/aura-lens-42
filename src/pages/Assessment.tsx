@@ -14,7 +14,7 @@ import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult
 import { JourneyChrome, readStageFraction } from "@/components/journey/JourneyShell";
 import {
   ASSESSMENT_MINUTES, FIRST_READ_LINE, FULL_PICTURE_LINE,
-  FIRST_READ_SHORT, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA_LABEL,
+  FIRST_READ_SHORT, ASSESSMENT_QUESTIONS_PHRASE,
 } from "@/lib/brand";
 
 /**
@@ -475,7 +475,7 @@ const Assessment = () => {
 
             <div className="asg-acts">
               <button className="asg-btn asg-bp" onClick={() => void begin()} disabled={busy}>
-                {busy ? "Opening…" : (<>{FREE_CTA_LABEL} <span className="asg-a">↗</span></>)}
+                {busy ? "Opening…" : (<>Start with my LinkedIn <span className="asg-a">↗</span></>)}
               </button>
               <button
                 type="button"
@@ -616,7 +616,7 @@ const Assessment = () => {
 
           <div className="asg-acts asg-acts-c">
             <button className="asg-btn asg-bp" onClick={() => void begin()} disabled={busy}>
-              {busy ? "Opening…" : (<>{FREE_CTA_LABEL} <span className="asg-a">↗</span></>)}
+              {busy ? "Opening…" : (<>Start with my LinkedIn <span className="asg-a">↗</span></>)}
             </button>
           </div>
         </section>
