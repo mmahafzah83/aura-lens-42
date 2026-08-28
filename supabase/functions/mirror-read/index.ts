@@ -576,8 +576,8 @@ Deno.serve(async (req) => {
     }
 
     const messages = [{ role: "user", content: userPrompt }];
-    /* Stage two opens: the model writing the read. */
-    run?.mark(OPERATION_STAGES.linkedin_read[1]);
+    /* Stage four opens: the model writing the read. */
+    run?.mark(OPERATION_STAGES.linkedin_read[3]);
     let raw = await callModel(messages);
     let read = parseJsonLoose(raw);
     if (read && hasPlaceholderInValues(read)) read = null;
