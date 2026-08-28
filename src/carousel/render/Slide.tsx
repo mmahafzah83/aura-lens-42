@@ -753,13 +753,15 @@ function CloseSlide({ deck, slide, theme, s, tpl, hideTails }: PartProps) {
     <div
       style={{
         display: "grid",
-        gridTemplateRows: `auto 1fr ${figureH}px`,
+        gridTemplateRows: figureSrc ? `auto 1fr ${figureH}px` : `1fr ${figureH}px`,
         height: "100%",
         rowGap: s.gap,
       }}
     >
-      {/* No avatar disc here — the standing figure below is the one photo. */}
-      <IdentityBar deck={deck} theme={theme} s={s} tpl={tpl} showAvatar={false} />
+      {/* Identity appears exactly once: the bar above when a cut-out figure
+          stands below, otherwise the signature block in the figure zone.
+          No avatar disc here — the standing figure is the one photo. */}
+      {figureSrc && <IdentityBar deck={deck} theme={theme} s={s} tpl={tpl} showAvatar={false} />}
       <div style={{ display: "flex", flexDirection: "column", gap: s.gap, minHeight: 0, justifyContent: "center" }}>
         <Hero lines={slots.hero_lines} primary={p} theme={theme} s={s} tpl={tpl} />
         <H2 node={slots.headline} primary={p} theme={theme} s={s} tpl={tpl} />
