@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
 import { signOutAndLand } from "@/lib/signOut";
 import { SEAT_PRICE, SEAT_CTA, SEAT_PATH, SEAT_CAP, SEAT_WAVE_SIZE, SEAT_NO_CARD, SEAT_SOLD_OUT_NOTE, waveFrom } from "@/lib/seatCopy";
-import { PRODUCT_DESCRIPTOR, FIRST_READ_LINE, FULL_PICTURE_LINE, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA, FREE_CTA_LABEL, FREE_CTA_SHORT_LABEL, FREE_CTA_ARIA } from "@/lib/brand";
+import { PRODUCT_DESCRIPTOR, ASSESSMENT_MINUTES_LINE, ASSESSMENT_QUESTIONS_PHRASE, FREE_CTA, FREE_CTA_SHORT_LABEL, FREE_CTA_ARIA } from "@/lib/brand";
 import { BRAND } from "@/constants/language";
 
 /* D126 — the headline is single-sourced from BRAND.headline. The hero splits it
@@ -63,8 +63,6 @@ const LANDING_V2_CSS = `
 .aura-v2 .btn{font-family:var(--ui);font-weight:600;font-size:14.5px;padding:14px 26px;border:none;border-radius:9px;cursor:pointer;transition:200ms var(--sp);text-decoration:none;display:inline-block}
 .aura-v2 .bp{background:var(--blue);color:#fff}
 .aura-v2 .bp:hover{background:var(--blue2);transform:translateY(-2px);box-shadow:0 10px 26px rgba(6,112,196,.26)}
-.aura-v2 .bg2{background:var(--white);color:var(--ink);border:1px solid var(--line2)}
-.aura-v2 .bg2:hover{border-color:var(--ink);transform:translateY(-2px)}
 .aura-v2 .acts{display:flex;gap:11px;margin-top:30px;align-items:center;flex-wrap:wrap}
 .aura-v2 .mi{font-family:var(--mono);font-size:10.5px;color:var(--ink4);letter-spacing:.07em}
 .aura-v2 .big{font-size:clamp(34px,3.8vw,46px);font-weight:700;letter-spacing:-.038em;line-height:.98}
@@ -426,9 +424,8 @@ const LANDING_V2_HTML = `
       <p class="sub">Aura reads what you already know and turns it into weekly presence — without turning you into a content creator.</p>
       <div class="acts">
         <a class="btn bp" id="heropri" href="/assessment">${FREE_CTA}</a>
-        <button class="btn bg2" data-p="how">See how it works</button>
       </div>
-      <p class="support">${FIRST_READ_LINE}. ${FULL_PICTURE_LINE}. Free, and yours to keep.</p>
+      <p class="support">We'll read your LinkedIn, compare it with your CV, and ask ${ASSESSMENT_QUESTIONS_PHRASE} — then send you a free, honest read on where you stand. ${ASSESSMENT_MINUTES_LINE}.</p>
     </div>
     <div class="loopwrap">
       <div class="jring">
