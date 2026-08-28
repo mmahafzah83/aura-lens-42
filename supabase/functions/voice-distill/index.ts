@@ -671,7 +671,7 @@ Deno.serve(async (req) => {
       // MERGE into the (user_id, L) row.
       const { data: existing, error: existErr } = await supabase
         .from("authority_voice_profiles")
-        .select("id, tone, vocabulary_preferences, allowed_endings")
+        .select("id, tone, vocabulary_preferences, allowed_endings, example_posts, admired_posts")
         .eq("user_id", user_id)
         .eq("language", L)
         .eq("mode_key", "default")
