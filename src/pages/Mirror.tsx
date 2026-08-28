@@ -189,17 +189,14 @@ export default function Mirror() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // The reading copy advances on its own and holds on the last line.
+  // The quiet way out appears once the wait is long enough to feel like one.
   useEffect(() => {
     if (stage !== "reading") return;
-    setLineIndex(0);
     setShowCancel(false);
-    const timers = READING_DELAYS.slice(1).map((delay, i) =>
-      window.setTimeout(() => setLineIndex(i + 1), delay),
-    );
-    timers.push(window.setTimeout(() => setShowCancel(true), 10_000));
-    return () => timers.forEach(window.clearTimeout);
+    const t = window.setTimeout(() => setShowCancel(true), 10_000);
+    return () => window.clearTimeout(t);
   }, [stage]);
+
 
   const failBack = (key: string) => {
     setFormError(ERROR_COPY[key] ?? ERROR_COPY.network);
