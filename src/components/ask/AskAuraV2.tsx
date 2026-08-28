@@ -9,7 +9,7 @@ import DeskLinkedInField from "@/components/desk/DeskLinkedInField";
 import DeskSlot, { type DeskCardKind } from "@/components/desk/DeskSlot";
 import DeskReturnCard, { loadReturnCard, type ReturnCardData } from "@/components/desk/DeskReturnCard";
 import {
-  capabilityNeeded, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen, saveDeskPrefs,
+  capabilityNeeded, ensureWatchDefaults, isDeclined, loadCapabilities, loadDeskPrefs, panelOn, panelOpen, saveDeskPrefs,
   type Capabilities, type CapabilityKey, type DeskPrefs,
 } from "@/components/desk/deskPrefs";
 import { cleanMoves, guardClaims, groundBold, honestFailure, answerLang, CHROME } from "@/components/desk/deskMoves";
