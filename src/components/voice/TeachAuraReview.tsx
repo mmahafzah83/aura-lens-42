@@ -9,6 +9,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { HOOK_LABEL } from "@/lib/voiceOverview";
+import { nPosts } from "@/constants/vocabulary";
 import { PAGE_SIZE, setCorpusStates, type CorpusPost, type CorpusState } from "@/lib/teachAura";
 import {
   GREEN, INK, LINE, MUTED, SURFACE, TYPE, cardStyle, chipStyle, ghostButton, microLabel, monoNum, primaryButton,
@@ -151,7 +152,7 @@ export default function TeachAuraReview({
           style={{ marginBlockStart: 14 }}
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? "Hide the full list" : `See everything Aura read (${posts.length})`}
+          {open ? "Hide the full list" : `See everything Aura read (${nPosts(posts.length, "en")})`}
         </button>
 
         {open && (

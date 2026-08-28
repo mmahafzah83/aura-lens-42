@@ -23,7 +23,7 @@ import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import AuraMark from "@/components/brand/AuraMark";
 import { filterPublishedRows } from "@/lib/postProvenance";
-import { fetchCaptureCounts, fetchSignalCounts, fetchScore, fetchDraftCount } from "@/lib/counts";
+import { countAll } from "@/lib/counts";
 import { matchNavChip, moveKey } from "@/components/desk/deskSurfaces";
 
 /**
@@ -416,17 +416,14 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       const uid = session?.user?.id;
       if (!uid) return;
 
-      const [postsRes, voiceRes, memRes, sigRes, captureCounts, signalCounts, postCountRes, score, draftCount] = await Promise.all([
+      const [postsRes, voiceRes, memRes, sigRes, dict] = await Promise.all([
         supabase.from("linkedin_posts").select("source_type, tracking_status, theme, theme_tags").eq("user_id", uid),
         supabase.from("authority_voice_profiles").select("tone, example_posts").eq("user_id", uid).eq("is_primary", true).eq("mode_key", "default").maybeSingle(),
         supabase.from("aura_conversation_memory").select("id, session_date, summary, actions_committed").eq("user_id", uid).is("role", null).not("summary", "is", null).order("created_at", { ascending: false }).limit(6),
         supabase.from("strategic_signals").select("id, signal_title, theme_tags, priority_score").eq("user_id", uid).order("priority_score", { ascending: false }).limit(3),
-        /* U1 — the Desk reads the same helpers the library page reads. */
-        fetchCaptureCounts(uid),
-        fetchSignalCounts(uid),
-        supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).eq("user_id", uid),
-        fetchScore(uid),
-        fetchDraftCount(),
+        /* PASS V — one dictionary. Every number here is resolved through the
+           concept's own countFn; the Desk cannot pick a different query. */
+        countAll(uid),
       ]);
 
 
@@ -450,12 +447,12 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
 
       void sigRes;
       setGraph({
-        captures: captureCounts.total,
-        signals: signalCounts.all,
-        openSignals: signalCounts.active,
-        posts: postCountRes.count ?? 0,
-        drafts: draftCount,
-        score,
+        captures: dict.capture ?? 0,
+        signals: dict.signal ?? 0,
+        openSignals: dict.signal ?? 0,
+        posts: dict.post_published ?? 0,
+        drafts: dict.draft ?? 0,
+        score: dict.score ?? null,
       });
 
 
@@ -979,7 +976,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
             {jumpRow(Radar, "Signals", graph && graph.signals > 0 ? String(graph.signals) : null, () => openSurface("intelligence"))}
             {jumpRow(PenLine, "Write", graph && graph.drafts > 0 ? `${graph.drafts} drafts` : null, () => openSurface("authority"))}
             {jumpRow(Inbox, "Capture", graph && graph.captures > 0 ? String(graph.captures) : null, () => openSurface("home"))}
-            {jumpRow(Gauge, "Where you stand", graph && graph.score != null ? `${graph.score}/100` : null, () => openSurface("influence"))}
+            {/* V4 — one number per idea per screen. The score is stated once, in
+                "Where you stand" above; this row is the door, not the number. */}
+            {jumpRow(Gauge, "Where you stand", null, () => openSurface("influence"))}
           </div>}
         </div>
       )}

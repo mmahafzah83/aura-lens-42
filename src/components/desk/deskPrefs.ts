@@ -39,7 +39,9 @@ export interface DeskPrefs {
 
 /** The four sections of the panel, in render order, plus memory last. */
 export const PANEL_OPTIONS: { key: string; title: string; line: string; on: boolean }[] = [
-  { key: "scope", title: "What I can see", line: "The rows your answers are made of.", on: true },
+  // V4 — a row-by-row inventory of the record is a thing nobody has needed
+  // twice. It ships OFF and stays one tap away in the gear.
+  { key: "scope", title: "What I can see", line: "The rows your answers are made of.", on: false },
   { key: "cited", title: "Used in this answer", line: "Every source the answer leaned on.", on: true },
   { key: "standing", title: "Where you stand", line: "One number, and how your voice was learned.", on: true },
   { key: "jump", title: "Jump to", line: "Signals, Write, Capture, Where you stand.", on: true },
