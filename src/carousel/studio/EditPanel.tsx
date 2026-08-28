@@ -145,6 +145,8 @@ export function EditPanel({
       key: slot,
       label: SLOT_LABEL[slot] ?? slot,
       path: { slot },
+      budget: wordBudget,
+      count: wordCount(readSlot(slide.slots, { slot })),
       rows: slot === "body" || slot === "quote" ? 3 : 2,
     });
   }
@@ -213,6 +215,7 @@ export function EditPanel({
           value={readSlot(slide.slots, f.path)}
           rows={f.rows}
           budget={f.budget}
+          count={f.count}
           right={f.right}
           onChange={(v) => onChange(editSlotText(deck, slide.index, f.path, v))}
         />
