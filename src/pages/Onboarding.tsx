@@ -2824,8 +2824,8 @@ const Onboarding = () => {
               stages={[
                 { key: "open", label: "Opening your LinkedIn", state: readDone || postsRead ? "done" : "active" },
                 { key: "posts", label: "Reading your posts", state: readDone || postsRead ? "done" : "waiting" },
-                { key: "only", label: "Finding what only you have", state: readDone ? "done" : (postsRead ? "active" : "waiting") },
-                { key: "write", label: "Writing your first read", state: readDone ? "done" : "waiting" },
+                { key: "evidence", label: "Finding what only you have", state: readDone ? "done" : (postsRead ? "active" : "waiting") },
+                { key: "write", label: "Writing your read", state: readDone ? "done" : "waiting" },
               ]}
               onCarryOn={{ label: "Carry on — I'll pick this up later", action: () => go(5) }}
             />

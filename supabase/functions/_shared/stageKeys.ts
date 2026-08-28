@@ -12,8 +12,8 @@
  */
 
 export const OPERATION_STAGES = {
-  /** mirror-read: fetch the public profile and posts, then write the read. */
-  linkedin_read: ["fetch", "write"],
+  /** mirror-read: open the profile, read the posts, find the evidence, write. */
+  linkedin_read: ["open", "posts", "evidence", "write"],
   /** cv-crosscheck: read the CV, then compare it against the profile. */
   cv_crosscheck: ["extract", "compare"],
   /** brand-assessment / generate-market-mirror: gather evidence, then write. */
@@ -34,7 +34,12 @@ export const INSTRUMENTED_OPERATIONS = Object.keys(OPERATION_STAGES) as Instrume
 
 /** The words a member reads for each stage. Plain English, no jargon. */
 export const STAGE_LABELS: Record<InstrumentedOperation, Record<string, string>> = {
-  linkedin_read: { fetch: "Reading your profile and your posts", write: "Writing what it found" },
+  linkedin_read: {
+    open: "Opening your LinkedIn",
+    posts: "Reading your posts",
+    evidence: "Finding what only you have",
+    write: "Writing your read",
+  },
   cv_crosscheck: { extract: "Reading your CV", compare: "Comparing it with your profile" },
   market_read: { gather: "Gathering what Aura knows about you", write: "Writing your read" },
   capture_ingest: { fetch: "Fetching the source", read: "Reading what is in it" },

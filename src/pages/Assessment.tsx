@@ -5,9 +5,8 @@ import {
   createSession, loadSession, saveSession, startRun,
   readToken, clearToken, joinReadQueue, type AssessmentState,
 } from "@/lib/assessmentSession";
-import {
-  OVER_P95_LINE, mmss, useElapsed, useWaitEstimate, waitCopy,
-} from "@/lib/waitEstimate";
+import { WorkingPanel } from "@/components/ui/WorkingPanel";
+import { useRunStages, newRunId } from "@/lib/useRunStages";
 import PublicMasthead from "@/components/PublicMasthead";
 import PublicFooter from "@/components/PublicFooter";
 import ReadResult, { type Read as ReadShape } from "@/components/read/ReadResult";
@@ -23,44 +22,6 @@ import {
  * questions, the CV, the sliders and the reveal all live in /onboarding.
  */
 type Stage = "gate" | "address" | "reading" | "read" | "resume";
-
-/** The four things Aura does. None of them ticks: none has an event of its own. */
-const READING_STEPS = [
-  "Opening the profile",
-  "Reading recent posts",
-  "Finding what only you have",
-  "Writing your read",
-];
-
-/**
- * The honest wait: named steps that never pretend to finish, a counter of real
- * elapsed time, and an estimate measured from finished reads. No percentage.
- * Reduced motion changes nothing — the same words, the same real counter.
- */
-const ReadingWait = () => {
-  const secs = useElapsed(true);
-  const est = useWaitEstimate("linkedin_read");
-  const over = est.known && secs > est.p95;
-  return (
-    <div role="status" aria-live="polite" style={{ marginBlockStart: 18 }}>
-      <p className="asg-pp">{waitCopy(est)}</p>
-      <ul style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "grid", gap: 6 }}>
-        {READING_STEPS.map((s) => (
-          <li key={s} style={{ fontSize: 14, lineHeight: 1.5, color: "#5B6673" }}>{s}</li>
-        ))}
-      </ul>
-      <p style={{
-        fontFamily: "var(--font-mono, 'IBM Plex Mono', monospace)", fontSize: 13,
-        color: "#5B6673", margin: "12px 0 0", fontVariantNumeric: "tabular-nums",
-      }}>
-        {mmss(secs)}
-      </p>
-      {over ? (
-        <p style={{ fontSize: 12.5, lineHeight: 1.5, color: "#5B6673", margin: "6px 0 0" }}>{OVER_P95_LINE}</p>
-      ) : null}
-    </div>
-  );
-};
 
 /**
  * WHEN WE ARE FULL — a real capture, not a consolation line. The email is
@@ -151,6 +112,14 @@ const Assessment = () => {
   const insideRef = useRef<HTMLElement | null>(null);
   const autoRan = useRef(false);
   const [postsRead, setPostsRead] = useState(0);
+  /* The run id is minted here and handed to `mirror-read`, so this tab is
+     already watching its own run before the work begins. */
+  const [readRunId, setReadRunId] = useState<string | null>(null);
+  /* Real ticks, from `operation_runs` — never a timer. */
+  const readRun = useRunStages("linkedin_read", readRunId, {
+    active: stage === "reading",
+    anonToken: token,
+  });
   const [sparse, setSparse] = useState(false);
   const [ageNote, setAgeNote] = useState<string | null>(null);
 
@@ -237,6 +206,8 @@ const Assessment = () => {
       return;
     }
 
+    const runId = newRunId();
+    setReadRunId(runId);
     setStage("reading");
     try {
       const base = import.meta.env.VITE_SUPABASE_URL;
@@ -244,7 +215,7 @@ const Assessment = () => {
       const res = await fetch(`${base}/functions/v1/mirror-read`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ profile_url: target }),
+        body: JSON.stringify({ profile_url: target, run_id: runId, anon_token: t }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok || !data?.read) {
@@ -367,10 +338,16 @@ const Assessment = () => {
           )}
 
           {stage === "reading" && (
-            <section className="asg-panel asg-center">
+            <section className="asg-panel">
               <span className="asg-k">READING</span>
-              <h1 className="asg-ph">Aura is reading your profile.</h1>
-              <ReadingWait />
+              <div style={{ marginBlockStart: 14 }}>
+                <WorkingPanel
+                  operation="linkedin_read"
+                  runId={readRunId ?? 0}
+                  title="Reading your profile"
+                  stages={readRun.stages}
+                />
+              </div>
             </section>
           )}
 

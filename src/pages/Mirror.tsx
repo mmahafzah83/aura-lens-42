@@ -5,7 +5,8 @@
  */
 import { useEffect, useRef, useState } from "react";
 import ReadResult from "@/components/read/ReadResult";
-import ReadingScreen from "@/components/read/ReadingScreen";
+import { WorkingPanel } from "@/components/ui/WorkingPanel";
+import { useRunStages, newRunId } from "@/lib/useRunStages";
 import { SENIORITY_LEVELS } from "@/constants/seniority";
 import { SEAT_CTA, SEAT_PATH } from "@/lib/seatCopy";
 
@@ -64,13 +65,6 @@ const ERROR_COPY: Record<string, string> = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/** The four things Aura does here. None of them ticks: none has an event of its own. */
-const READING_LINES = [
-  "Opening your LinkedIn",
-  "Reading your recent posts",
-  "Finding what only you have",
-  "Writing your first read",
-];
 
 
 const ARABIC_RE = /[\u0600-\u06FF]/;
@@ -158,6 +152,10 @@ export default function Mirror() {
   const [result, setResult] = useState<MirrorResponse | null>(null);
   const [showCancel, setShowCancel] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  /* The run id is minted here and handed to `mirror-read`, so the ticks below
+     come from real stage boundaries rather than a timer. */
+  const [readRunId, setReadRunId] = useState<string | null>(null);
+  const readRun = useRunStages("linkedin_read", readRunId, { active: stage === "reading" });
   const autoRan = useRef(false);
 
   // list panel
@@ -212,6 +210,8 @@ export default function Mirror() {
     } else setUrlError(undefined);
     if (bad) return;
 
+    const runId = newRunId();
+    setReadRunId(runId);
     setStage("reading");
     const controller = new AbortController();
     abortRef.current = controller;
@@ -222,7 +222,7 @@ export default function Mirror() {
         method: "POST",
         signal: controller.signal,
         headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ profile_url: target, ref: (refArg ?? ref) || undefined }),
+        body: JSON.stringify({ profile_url: target, ref: (refArg ?? ref) || undefined, run_id: runId }),
       });
       const data: MirrorResponse = await res.json().catch(() => ({} as MirrorResponse));
       if (!res.ok || !data.ok || !data.read) {
@@ -330,22 +330,22 @@ export default function Mirror() {
         display: "flex", alignItems: "center", padding: 24 }}>
         <style>{MIRROR_CSS}</style>
         <div style={{ inlineSize: "100%", maxInlineSize: 520, marginInline: "auto" }}>
-          <ReadingScreen
-            heading="Aura is reading your profile."
-            steps={READING_LINES}
-            waitKey="linkedin_read"
-          >
-            {showCancel ? (
-              <button
-                onClick={cancelRead}
-                style={{
-                  marginBlockStart: 22, background: "none", border: "none", padding: 0,
-                  color: INK2, fontFamily: UI, fontSize: 13.5,
-                  textDecoration: "underline", cursor: "pointer",
-                }}
-              >Cancel</button>
-            ) : null}
-          </ReadingScreen>
+          <WorkingPanel
+            operation="linkedin_read"
+            runId={readRunId ?? 0}
+            title="Reading your profile"
+            stages={readRun.stages}
+          />
+          {showCancel ? (
+            <button
+              onClick={cancelRead}
+              style={{
+                marginBlockStart: 22, background: "none", border: "none", padding: 0,
+                color: INK2, fontFamily: UI, fontSize: 13.5,
+                textDecoration: "underline", cursor: "pointer",
+              }}
+            >Cancel</button>
+          ) : null}
         </div>
       </main>
     );

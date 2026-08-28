@@ -399,12 +399,16 @@ Deno.serve(async (req) => {
     }
 
     // --- d) Fetch profile and posts in parallel ---
-    /* Stage one opens: everything until the provider answers. */
+    /* Stage one opens: the profile request, until the provider answers. */
     run?.mark(OPERATION_STAGES.linkedin_read[0]);
-    const [profile, postTexts] = await Promise.all([
-      fetchProfile(canonical_url, APIFY_TOKEN),
-      fetchPosts(canonical_url, handle, APIFY_TOKEN).catch(() => [] as string[]),
-    ]);
+    const profilePromise = fetchProfile(canonical_url, APIFY_TOKEN);
+    const postsPromise = fetchPosts(canonical_url, handle, APIFY_TOKEN).catch(() => [] as string[]);
+    /* Real boundary: the profile is back. Stage two is the posts read. */
+    const profile = await profilePromise;
+    run?.mark(OPERATION_STAGES.linkedin_read[1]);
+    const postTexts = await postsPromise;
+    /* Real boundary: the posts are back. Stage three is the evidence we keep. */
+    run?.mark(OPERATION_STAGES.linkedin_read[2]);
     const item = profile.item;
     if (!item) {
       // The provider cap is ours, not theirs — give the attempt back.
@@ -572,8 +576,8 @@ Deno.serve(async (req) => {
     }
 
     const messages = [{ role: "user", content: userPrompt }];
-    /* Stage two opens: the model writing the read. */
-    run?.mark(OPERATION_STAGES.linkedin_read[1]);
+    /* Stage four opens: the model writing the read. */
+    run?.mark(OPERATION_STAGES.linkedin_read[3]);
     let raw = await callModel(messages);
     let read = parseJsonLoose(raw);
     if (read && hasPlaceholderInValues(read)) read = null;
