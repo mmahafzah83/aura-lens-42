@@ -12,8 +12,8 @@
  */
 
 export const OPERATION_STAGES = {
-  /** mirror-read: fetch the public profile and posts, then write the read. */
-  linkedin_read: ["fetch", "write"],
+  /** mirror-read: open the profile, read the posts, find the evidence, write. */
+  linkedin_read: ["open", "posts", "evidence", "write"],
   /** cv-crosscheck: read the CV, then compare it against the profile. */
   cv_crosscheck: ["extract", "compare"],
   /** brand-assessment / generate-market-mirror: gather evidence, then write. */
