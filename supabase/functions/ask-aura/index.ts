@@ -1848,6 +1848,7 @@ ${(entriesTotalExact < 3 && !(Array.isArray(p.brand_pillars) && p.brand_pillars.
             retrievedBlock,
             memberContextBlock,
             howAuraWorks,
+            learnedBlock,
             ...toolTexts,
             ...messages.map((m: any) => String(m?.content ?? "")),
           ]);
