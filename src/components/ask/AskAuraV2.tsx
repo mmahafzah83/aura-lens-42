@@ -403,7 +403,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const refreshDesk = useCallback(async () => {
     const [c, p] = await Promise.all([loadCapabilities(), loadDeskPrefs()]);
     setCaps(c);
-    if (p) setPrefs(p.prefs);
+    /* The four shipped watch defaults are persisted the first time he opens the
+       Desk, so what the gear promises is what is actually in force. */
+    if (p) setPrefs(await ensureWatchDefaults(p.prefs));
     setPrefsLoaded(true);
   }, []);
 
