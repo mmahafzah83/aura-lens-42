@@ -5,6 +5,8 @@ import { retrieveContext, logRetrievalFailure, SOURCE_KINDS } from "../_shared/r
 import { getUserContext } from "../_shared/userContext.ts";
 import { buildSearchQuery } from "../_shared/queryRewrite.ts";
 import { getCapabilityProfile } from "../_shared/capabilities.ts";
+import { fetchCaptureCounts } from "../_shared/counts.ts";
+
 import {
   buildNumberAllowlist,
   findForeignFigures,
@@ -546,9 +548,12 @@ serve(withObserve("ask-aura", async (req) => {
       : null;
     const activeSignals = cnt(activeSignalsR);
     const draftsTotal = cnt(draftsR);
-    const entriesTotalExact = cnt(entriesTotalR) || entsTotal;
-    const memberCaptures = cnt(memberCapturesR);
-    const agentCaptures = cnt(agentCapturesR);
+    // U1 — one definition of a capture count, shared with the library page.
+    const captureCounts = await fetchCaptureCounts(admin, user_id);
+    const entriesTotalExact = captureCounts.total || cnt(entriesTotalR) || entsTotal;
+    const memberCaptures = captureCounts.user_captures;
+    const agentCaptures = captureCounts.agent_captures;
+
 
     /**
      * K1 — a figure never reaches the model bare. Every number is rendered with

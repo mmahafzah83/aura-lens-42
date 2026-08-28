@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Link, Mic, Type, FileUp, FileText, ImageIcon, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { captureCountsFromRows } from "@/lib/counts";
 import { formatSmartDate } from "@/lib/formatDate";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -47,8 +48,14 @@ const KnowledgeLibrary = () => {
     setLoading(false);
   };
 
-  const foundForYouCount = items.filter((i) => i.agentFound).length;
-  const keptByYouCount = items.length - foundForYouCount;
+  /* U1 — one definition. Captures are entries; documents are documents and are
+     never folded into "you saved". */
+  const captureCounts = captureCountsFromRows(
+    items.filter((i) => i.type === "entry").map((i) => ({ source_type: i.agentFound ? "aura_agent" : "user" })),
+  );
+  const foundForYouCount = captureCounts.agent_captures;
+  const keptByYouCount = captureCounts.user_captures;
+  const documentCount = items.filter((i) => i.type === "document").length;
 
   const filtered = items.filter((item) => {
 
@@ -87,6 +94,9 @@ const KnowledgeLibrary = () => {
           <span className="text-meta bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{keptByYouCount} you saved</span>
           {foundForYouCount > 0 && (
             <span className="text-meta bg-secondary/30 text-muted-foreground px-3 py-1 rounded-full font-medium">{foundForYouCount} found for you</span>
+          )}
+          {documentCount > 0 && (
+            <span className="text-meta bg-secondary/30 text-muted-foreground px-3 py-1 rounded-full font-medium">{documentCount} {documentCount === 1 ? "document" : "documents"}</span>
           )}
         </span>
       </div>

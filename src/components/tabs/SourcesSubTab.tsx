@@ -6,6 +6,7 @@ import {
   Loader2, Zap, ChevronDown, ChevronUp, ExternalLink, Pencil, Download, BookOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { captureCountsFromRows } from "@/lib/counts";
 import { nPages, nSources } from "@/constants/vocabulary";
 import { toast } from "sonner";
 import EmptyState from "@/components/ui/EmptyState";
@@ -601,11 +602,15 @@ const SourcesSubTab = ({
    * fetched for the overnight read. Both stay on screen — the count must not
    * claim the member kept all of them.
    */
-  const foundForYouCount = useMemo(
-    () => entries.filter(e => e.source_type === "aura_agent").length,
+  /* U1 — captures are `entries` rows and nothing else. Document rows share this
+     list for display, but they are documents; folding them into "you saved" is
+     what made this page say 223 while every other surface said 194. */
+  const captureCounts = useMemo(
+    () => captureCountsFromRows(entries.filter(e => e.type !== "document") as any[]),
     [entries],
   );
-  const keptByYouCount = Math.max(0, totalCount - foundForYouCount);
+  const foundForYouCount = captureCounts.agent_captures;
+  const keptByYouCount = captureCounts.user_captures;
 
 
   const typeCounts = useMemo(() => {
@@ -959,9 +964,17 @@ const SourcesSubTab = ({
               {" Aura found for you"}
             </>
           )}
+          {documentsChipCount > 0 && (
+            <>
+              {" · "}
+              <span style={{ fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" }}>{documentsChipCount}</span>
+              {documentsChipCount === 1 ? " document" : " documents"}
+            </>
+          )}
         </span>
 
       </div>
+
 
       {/* Search */}
       <div style={{ position: "relative", marginBottom: 12 }}>

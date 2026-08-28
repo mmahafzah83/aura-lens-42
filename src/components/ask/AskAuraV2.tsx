@@ -23,6 +23,8 @@ import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import AuraMark from "@/components/brand/AuraMark";
 import { filterPublishedRows } from "@/lib/postProvenance";
+import { fetchCaptureCounts, fetchSignalCounts, fetchScore, fetchDraftCount } from "@/lib/counts";
+import { matchNavChip, moveKey } from "@/components/desk/deskSurfaces";
 
 /**
  * AskAuraV2 — System-B V23 `s-ask`.
@@ -105,7 +107,7 @@ function fourWords(raw: string, fallback: string): string {
  * Now the Desk asks the rail to switch, and resolves only when the rail
  * acknowledges the tab it actually landed on. No acknowledgement, no claim.
  */
-function navigateToSurface(tab: string, subjectId?: string | null): Promise<boolean> {
+function navigateToSurface(tab: string, subjectId?: string | null, extraParams?: string): Promise<boolean> {
   if (!(SURFACES as readonly string[]).includes(tab)) return Promise.resolve(false);
   return new Promise<boolean>((resolve) => {
     let done = false;
@@ -122,10 +124,15 @@ function navigateToSurface(tab: string, subjectId?: string | null): Promise<bool
     };
     window.addEventListener("aura:tab-changed", onAck as EventListener);
     const timer = window.setTimeout(() => finish(false), 1500);
-    const params = subjectId ? `signal=${encodeURIComponent(subjectId)}` : "";
-    window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab, params } }));
+    /* U2 — a surface with sub-tabs is landed on the right one, not the parent. */
+    const parts = [
+      subjectId ? `signal=${encodeURIComponent(subjectId)}` : "",
+      extraParams || "",
+    ].filter(Boolean);
+    window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab, params: parts.join("&") } }));
   });
 }
+
 
 
 interface Props {
@@ -369,6 +376,15 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
   const [opened, setOpened] = useState<Record<string, "done" | "failed">>({});
 
   /**
+   * U2 — an action he has already taken is never offered back to him. The chip
+   * he tapped is suppressed from every move set for the rest of the session.
+   */
+  const [usedMoves, setUsedMoves] = useState<Set<string>>(new Set());
+  useEffect(() => { if (!open) setUsedMoves(new Set()); }, [open]);
+  const markMoveUsed = (label: string) =>
+    setUsedMoves(prev => { const n = new Set(prev); n.add(moveKey(label)); return n; });
+
+  /**
    * The one navigation contract on this surface. It asks the rail to switch and
    * waits for the rail to confirm the tab it landed on; the Desk never reports
    * a move it has not seen happen.
@@ -400,18 +416,19 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       const uid = session?.user?.id;
       if (!uid) return;
 
-      const [postsRes, voiceRes, memRes, sigRes, draftRes, captureRes, signalCountRes, postCountRes, openSignalRes, scoreRes] = await Promise.all([
+      const [postsRes, voiceRes, memRes, sigRes, captureCounts, signalCounts, postCountRes, score, draftCount] = await Promise.all([
         supabase.from("linkedin_posts").select("source_type, tracking_status, theme, theme_tags").eq("user_id", uid),
         supabase.from("authority_voice_profiles").select("tone, example_posts").eq("user_id", uid).eq("is_primary", true).eq("mode_key", "default").maybeSingle(),
         supabase.from("aura_conversation_memory").select("id, session_date, summary, actions_committed").eq("user_id", uid).is("role", null).not("summary", "is", null).order("created_at", { ascending: false }).limit(6),
         supabase.from("strategic_signals").select("id, signal_title, theme_tags, priority_score").eq("user_id", uid).order("priority_score", { ascending: false }).limit(3),
-        supabase.from("linkedin_posts").select("id").eq("user_id", uid).eq("tracking_status", "draft"),
-        supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid),
-        supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        /* U1 — the Desk reads the same helpers the library page reads. */
+        fetchCaptureCounts(uid),
+        fetchSignalCounts(uid),
         supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).eq("user_id", uid),
-        supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("status", "active"),
-        supabase.from("score_snapshots").select("score").eq("user_id", uid).order("created_at", { ascending: false }).limit(1),
+        fetchScore(uid),
+        fetchDraftCount(),
       ]);
+
 
       const live = filterPublishedRows((postsRes.data as any[]) || []);
       const counts = new Map<string, number>();
@@ -432,15 +449,15 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
       setMemory(cleanMemory(((memRes.data as any[]) || []) as any));
 
       void sigRes;
-      const drafts = ((draftRes.data as any[]) || []).length;
       setGraph({
-        captures: captureRes.count ?? 0,
-        signals: signalCountRes.count ?? 0,
-        openSignals: openSignalRes.count ?? 0,
+        captures: captureCounts.total,
+        signals: signalCounts.all,
+        openSignals: signalCounts.active,
         posts: postCountRes.count ?? 0,
-        drafts,
-        score: ((scoreRes.data as any[]) || [])[0]?.score ?? null,
+        drafts: draftCount,
+        score,
       });
+
 
     })();
   }, [open]);
@@ -1242,9 +1259,9 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                               )}
                             </>
                           )}
-                          {layers.moves.length > 0 && (
+                          {layers.moves.filter(mv => !usedMoves.has(moveKey(mv))).length > 0 && (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "12px 0 2px" }}>
-                              {layers.moves.map((mv, mi) => {
+                              {layers.moves.filter(mv => !usedMoves.has(moveKey(mv))).map((mv, mi) => {
                                 /* Offered is counted once per answer: acts_on is
                                    only true if offers are not inflated by re-renders. */
                                 const seenKey = `${i}:${mv}`;
@@ -1258,6 +1275,21 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                                   data-testid="ask-move-chip"
                                   onClick={() => {
                                     void track("desk_move_taken", { label: mv.slice(0, 60), rank: mi });
+                                    markMoveUsed(mv);
+                                    /* U2 — the tap IS the approval. A navigation
+                                       chip moves him now; it does not ask the
+                                       model whether he meant it. */
+                                    const dest = matchNavChip(mv);
+                                    if (dest) {
+                                      void (async () => {
+                                        const ok = await navigateToSurface(dest.tab, null, dest.params);
+                                        if (ok) { onClose(); return; }
+                                        /* He can see the screen and we cannot:
+                                           if it did not open, say so plainly. */
+                                        setMessages(prev => [...prev, { role: "assistant", content: CHROME[lang].didNotOpen, isError: true }]);
+                                      })();
+                                      return;
+                                    }
                                     send(mv);
                                   }}
                                   style={mi === 0 ? {
@@ -1321,20 +1353,16 @@ export default function AskAuraV2({ open, onClose, initialMessage, context, find
                               display: "inline-flex", alignItems: "center", gap: 6,
                             }}
                           >{fourWords(a.label, CH.openIt)}<ArrowUpRight size={13} aria-hidden="true" /></button>
-                          {state && (
+                          {state === "failed" && (
                             <div
-                              data-testid={state === "done" ? "ask-nav-confirmed" : "ask-nav-failed"}
+                              data-testid="ask-nav-failed"
                               style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}
                             >
-                              <span aria-hidden="true" style={{
-                                width: 7, height: 7, borderRadius: 999,
-                                background: state === "done" ? "var(--machine)" : "var(--text-muted)",
-                              }} />
-                              <span style={{ ...MONO, fontSize: 12, color: state === "done" ? "var(--machine-text)" : "var(--text-muted)" }}>
-                                {state === "done"
-                                  ? `${CH.openedPrefix} ${a.route!.name || a.route!.surface}`
-                                  : CH.didNotOpen}
-                              </span>
+                              {/* U2 — a navigation that worked needs no card:
+                                  the arrival is the answer. Only a failure
+                                  earns a line, and it believes him. */}
+                              <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 999, background: "var(--text-muted)" }} />
+                              <span style={{ ...MONO, fontSize: 12, color: "var(--text-muted)" }}>{CH.didNotOpen}</span>
                             </div>
                           )}
                         </div>
