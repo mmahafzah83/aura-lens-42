@@ -672,6 +672,7 @@ async function perplexityDiscover(
           }],
           search_recency_filter: "month",
         }),
+        signal: AbortSignal.timeout(15000),
       });
 
       if (res.ok) {
