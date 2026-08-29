@@ -173,7 +173,7 @@ const CapabilityRadar: React.FC<Props> = ({ userId, band, onBandChosen }) => {
     setLevels((prev) => ({ ...prev, [dimensionId]: level }));
     const { error } = await (supabase.from("capability_responses" as any) as any)
       .upsert(
-        { user_id: userId, dimension_id: dimensionId, level, instrument_version: 2, answered_at: new Date().toISOString() },
+        { user_id: userId, dimension_id: dimensionId, level, instrument_version: 2 },
         { onConflict: "user_id,dimension_id" },
       );
     if (error) console.error("[CapabilityRadar] answer save failed", error);
