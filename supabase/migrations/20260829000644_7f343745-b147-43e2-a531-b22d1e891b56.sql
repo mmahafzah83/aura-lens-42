@@ -1,0 +1,1 @@
+revoke execute on function public.guard_profile_billing_columns() from anon, authenticated, public;
