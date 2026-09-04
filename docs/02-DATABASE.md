@@ -565,3 +565,44 @@ id uuid! =gen_random_uuid() | user_id uuid! | event_type text! | source_table te
 C: PK (id) ;; UNIQUE (user_id, source_table, source_id, event_type) ;; FK user_id CASCADE
 The idempotent fan-in point of the unified capture pipeline.
 
+### source_registry (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | source_type text! | source_id uuid! | title text | content_preview text | source_metadata jsonb ='{}' | processed boolean! =false | processed_at timestamptz | fragment_count integer! =0 | created_at timestamptz! =now() | updated_at timestamptz! =now() | signal_status text
+C: PK (id) ;; UNIQUE (user_id, source_type, source_id) ;; FK user_id CASCADE
+One row per ingested source; `evidence_fragments` hang off it.
+
+### strategic_signals (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | signal_title text! | explanation text! | strategic_implications text! | supporting_evidence_ids uuid[]! ='{}' | theme_tags text[]! ='{}' | skill_pillars text[]! ='{}' | confidence numeric! =0.7 | fragment_count integer! =0 | framework_opportunity jsonb ='{}' | content_opportunity jsonb ='{}' | status text! ='active' | created_at timestamptz! =now() | updated_at timestamptz! =now() | consulting_opportunity jsonb ='{}' | unique_orgs integer! =1 | confidence_explanation text | what_it_means_for_you text | priority_score numeric! =0.5 | user_signal_feedback text | signal_velocity double precision | velocity_status text ='stable' | last_decay_at timestamptz | commercial_validation_score double precision | base_confidence numeric | momentum numeric | last_evidence_at timestamptz | lifecycle_tier text | strength_score numeric | pipeline_version smallint! =1 | embedding vector(1536) | tsv tsvector
+C: PK (id) ;; CHECK velocity_status IN ('accelerating','stable','fading','dormant') ;; FK user_id CASCADE
+
+### strategic_signals_orphans_20260811 (RLS ON)
+Dated archive of signals whose owner rows were lost. No constraints.
+
+### sync_errors (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | sync_run_id uuid | error_type text! ='unknown' | error_message text! | context jsonb ='{}' | created_at timestamptz! =now()
+C: PK (id) ;; FK sync_run_id -> sync_runs(id) CASCADE ;; FK user_id SET NULL
+
+### sync_runs (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | account_id uuid | started_at timestamptz! =now() | completed_at timestamptz | status text! ='running' | records_fetched integer! =0 | records_stored integer! =0 | sync_type text! ='full' | error_message text | created_at timestamptz! =now()
+C: PK (id) ;; FK account_id -> linkedin_connections(id) CASCADE ;; FK user_id SET NULL
+
+### theme_aliases (RLS ON)
+id uuid! =gen_random_uuid() | canonical text! | alias text! | locale text! ='en' | source text! ='seed' | active boolean! =true | created_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (alias, canonical, locale). Reference data for the shared text/matching layer.
+
+### training_logs (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | pillar text! | duration_hours numeric(5,2)! =0 | topic text! | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id CASCADE
+
+### user_milestones (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | milestone_id text! | milestone_name text! | context jsonb! ='{}' | earned_at timestamptz! =now() | acknowledged boolean! =false | shared boolean! =false
+C: PK (id) ;; UNIQUE (user_id, milestone_id) ;; FK user_id CASCADE
+
+### user_roles (RLS ON)  — the ONLY place roles live
+id uuid! =gen_random_uuid() | user_id uuid! | role app_role! | created_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id, role) ;; FK user_id CASCADE
+Never store a role on a profile row. Check with `has_role(uuid, app_role)` (SECURITY DEFINER).
+
+### user_widget_layout (RLS ON)
+user_id uuid! | layout jsonb! ='{}' | updated_at timestamptz! =now()
+C: PK (user_id) ;; FK user_id CASCADE
+
