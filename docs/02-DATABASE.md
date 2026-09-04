@@ -811,3 +811,71 @@ is_current_user_admin() -> boolean [SECDEF]
 is_customer(p_user_id uuid) -> boolean [SECDEF]
 join_read_queue(p_email text, p_operation text DEFAULT 'linkedin_read', p_anon_token text DEFAULT NULL, p_fingerprint_hash text DEFAULT NULL) -> integer [SECDEF]
 ```
+
+```text
+learned_intelligence_tsv_trigger() -> trigger
+linkedin_handle_valid(h text) -> boolean
+linkedin_posts_tsv_trigger() -> trigger
+momentum_funnel() -> TABLE(captures int, used_in_signal int, signals int, published int, published_through_aura int, published_live int, published_sent_from_aura int) [SECDEF]
+normalise_linkedin_handle(p_raw text) -> text
+notify_first_signal() -> trigger [SECDEF]
+ops_cron_status(p_hours int DEFAULT 24) -> TABLE(jobid bigint, jobname text, schedule text, active boolean, last_end timestamptz, last_status text, succeeded_24h int, failed_24h int) [SECDEF]
+ops_health_findings_summary(p_hours int DEFAULT 24) -> TABLE(open_count int, newest_title text, newest_at timestamptz) [SECDEF]
+pending_capture_entries(p_limit int DEFAULT 25, p_min_age_minutes int DEFAULT 10, p_max_attempts int DEFAULT 3) -> TABLE(id uuid, user_id uuid, extract_attempts int) [SECDEF]
+posts_attribution() -> TABLE(total bigint, member bigint, aura bigint, machine bigint, unknown bigint) [SECDEF]
+publish_invariants() -> jsonb [SECDEF]
+purge_expired_assessment_sessions() -> integer [SECDEF]
+qa_cron_success_jobs(p_hours int) -> TABLE(jobname text, runs int, last_end timestamptz) [SECDEF]
+recent_cron_http_failures(p_minutes int DEFAULT 90) -> TABLE(status_code int, failures bigint, sample_error text) [SECDEF]
+reconcile_signal_counts() -> TABLE(signals_checked int, signals_fixed int, dead_ids_pruned int) [SECDEF]
+record_brief_run(p_brief_date date, p_payload jsonb, p_audit jsonb, p_is_sent boolean, p_run_reason text, p_rendered_html text) -> TABLE(id uuid, run_seq int) [SECDEF]
+record_guide_miss(_slug text, _surface text) -> void [SECDEF]
+record_post_event() -> trigger [SECDEF]
+reject_stopword_alias() -> trigger
+report_invariants() -> jsonb [SECDEF]
+reset_journey(p_user_id uuid DEFAULT NULL, p_wipe_captures boolean DEFAULT false) -> jsonb [SECDEF]
+resolve_member_handle(p_user_id uuid) -> text [SECDEF]
+rollback_design_version(p_target_version int) -> void [SECDEF]
+save_assessment_session(p_token text, p_state jsonb) -> boolean [SECDEF]
+search_vault(p_user_id uuid, p_query text, p_limit int DEFAULT 15, p_query_embedding vector DEFAULT NULL, p_kinds text[] DEFAULT NULL, p_candidates int DEFAULT 60)
+  -> TABLE(source_kind text, source_id uuid, title text, content text, url text, occurred_at timestamptz, rank real, kw_rank real, vec_distance real, rrf real, metadata jsonb) [SECDEF]
+seed_test_member(p_user_id uuid, p_persona text DEFAULT 'stranger') -> jsonb [SECDEF]
+set_updated_at_facet_states() -> trigger
+start_assessment_run(p_token text, p_daily_cap int DEFAULT 200) -> boolean [SECDEF]
+strategic_signals_tsv_trigger() -> trigger
+sync_tier_from_plan() -> trigger
+tier_rank(t text) -> integer
+touch_capability_response() -> trigger
+undeclared_jobs() -> TABLE(jobid bigint, jobname text, schedule text) [SECDEF]
+update_updated_at_column() -> trigger
+voice_corpus_review(p_user_id uuid) -> TABLE(id uuid, published_at timestamptz, created_at timestamptz, excerpt text, hook_style text, counts_toward_voice boolean, source_label text, set_aside_reason text)
+voice_corpus_stats(p_user_id uuid) -> TABLE(post_count int, newest_published_at timestamptz) [SECDEF]
+voice_opener_diversity(p_user_id uuid) -> numeric [SECDEF]
+voice_profile_readiness(p_profile_id uuid) -> text [SECDEF]
+voice_top_style_share(p_user_id uuid) -> TABLE(share numeric, top_style text, top_count int, window_total int, other_dominant boolean) [SECDEF]
+voice_window(p_user_id uuid) -> TABLE(id uuid, post_text text, hook_style text, ending_type text, published_at timestamptz, created_at timestamptz) [SECDEF]
+```
+
+The remaining public functions are pgvector operator/support functions installed by the `vector`
+extension (`vector_*`, `halfvec_*`, `sparsevec_*`, `hnsw*`, `ivfflat*`, `cosine_distance`,
+`inner_product`, `l2_distance`, `binary_quantize`, `subvector`, …). They are not application code —
+do not port them by hand; `CREATE EXTENSION vector` provides them.
+
+### The functions worth reading first
+
+- `search_vault(...)` — the one retrieval entry point. Hybrid: full-text over `tsv` plus vector
+  distance over `embedding`, fused with reciprocal rank fusion (`rrf`). Sources: entries,
+  documents/chunks, document briefs, evidence fragments, strategic signals, LinkedIn posts,
+  content items, learned intelligence. Always called with an explicit `p_user_id`.
+- `has_role(_user_id, _role)` / `is_current_user_admin()` — the only admin checks. Never read a role
+  from the client.
+- `delete_account(p_user_id)` — the complete account deletion path used by admin and by the member.
+- `reset_journey(p_user_id, p_wipe_captures)` — resets a member's journey for testing.
+- `claim_assessment_session` / `create_assessment_session` / `save_assessment_session` /
+  `get_assessment_session` / `start_assessment_run` — the anonymous assessment lifecycle.
+- `get_shared_read(p_token)` — the only way the public `/r/:token` page reads a shared report.
+- `resolve_member_handle` / `normalise_linkedin_handle` / `linkedin_handle_valid` — the single
+  LinkedIn handle resolution path.
+- `momentum_funnel()`, `publish_invariants()`, `report_invariants()`, `cockpit_freshness()` — the
+  truth checks the admin cockpit renders.
+
