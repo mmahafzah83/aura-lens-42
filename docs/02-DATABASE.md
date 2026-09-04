@@ -606,3 +606,52 @@ Never store a role on a profile row. Check with `has_role(uuid, app_role)` (SECU
 user_id uuid! | layout jsonb! ='{}' | updated_at timestamptz! =now()
 C: PK (user_id) ;; FK user_id CASCADE
 
+### voice_distribution (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | language text! | corpus_n integer! =0 | computed_at timestamptz! =now() | open_type_share jsonb | land_type_share jsonb | move_share jsonb | marker_rate jsonb | length_p25 integer | length_p50 integer | length_p75 integer | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id, language) ;; FK user_id CASCADE
+
+### voice_feedback (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | profile_id uuid | post_id uuid | sample_text text | verdict text! | applied_changes jsonb! ='[]' | mode_scope text | created_at timestamptz! =now()
+C: PK (id) ;; CHECK verdict IN ('sounds_like_me','partly','not_me','too_formal','too_generic','too_aggressive','would_never_say') ;; FK post_id -> linkedin_posts(id) SET NULL ;; FK user_id CASCADE
+
+### voice_learning_prefs (RLS ON)
+user_id uuid! | learn_from_performance boolean! =true | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (user_id) ;; FK user_id CASCADE
+
+### voice_post_outcomes (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | post_id uuid! | published_at timestamptz | followers_at_publish integer | impressions integer | engagement_rate numeric | reactions integer | comments integer | shares integer | performance_index numeric | performance_index_raw numeric | baseline_engagement_rate numeric | sample_traits jsonb! ='{}' | hook_style text | ending_type text | computed_at timestamptz! =now() | excluded boolean! =false | exclusion_reason text | created_at timestamptz! =now() | updated_at timestamptz! =now() | outcome_source text | total_engagement integer | baseline_total_engagement numeric
+C: PK (id) ;; UNIQUE (post_id) ;; CHECK outcome_source IN ('metrics_snapshot','post_counts') ;; FK post_id CASCADE ;; FK user_id CASCADE
+
+### voice_rules (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | profile_id uuid | kind text! | text text! | source text! ='user' | rank integer! =0 | active boolean! =true | created_at timestamptz! =now() | updated_at timestamptz! =now() | status text! ='active' | evidence jsonb | suggested_at timestamptz | decided_at timestamptz | check jsonb | last_applied_at timestamptz | times_applied integer! =0
+C: PK (id) ;; CHECK kind IN ('always','never','anchor') ;; CHECK source IN ('learned','user','aura') ;; CHECK status IN ('suggested','active','dismissed') ;; CHECK check is an object with kind IN ('phrase','opening','ending','marker') and non-empty value ;; FK profile_id -> authority_voice_profiles(id) CASCADE ;; FK user_id CASCADE
+`increment_voice_rule_applied(p_rule_id, p_applied_at)` maintains the applied counters.
+
+### voice_trait_registry (RLS ON)
+id uuid! =gen_random_uuid() | trait_key text! | display_name text! | pole_low text! | pole_high text! | group_key text! | unit text | computable boolean! =true | min_evidence integer! =8 | sort_order integer! =0 | active boolean! =true | created_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (trait_key) ;; CHECK group_key IN ('sound','structure','language'). Reference data.
+
+### voice_trait_rejections (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | profile_id uuid! | trait_key text! | rejected_value numeric | rejected_until timestamptz! =(now() + 30 days) | created_at timestamptz! =now()
+C: PK (id) ;; FK profile_id CASCADE ;; FK user_id CASCADE
+
+### voice_traits (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | profile_id uuid! | trait_key text! | value numeric! | band_low numeric | band_high numeric | raw_value numeric | confidence text! | source text! | evidence_count integer! =0 | locked boolean! =false | last_confirmed_at timestamptz | computed_at timestamptz | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (profile_id, trait_key) ;; CHECK value BETWEEN 0 AND 100 ;; CHECK confidence IN ('low','medium','high') ;; CHECK source IN ('learned','user','aura') ;; FK trait_key -> voice_trait_registry(trait_key) ;; FK profile_id CASCADE ;; FK user_id CASCADE
+
+### weekly_missions (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | mission_type text! | title text! | description text | points integer =5 | status text ='pending' | completed_at timestamptz | expires_at timestamptz | metadata jsonb ='{}' | created_at timestamptz =now()
+C: PK (id) ;; CHECK mission_type IN ('signal','content','rhythm','voice','baseline') ;; CHECK status IN ('pending','completed','expired') ;; FK user_id CASCADE
+
+### whatsapp_links (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | phone_e164 text | pair_token text | token_expires_at timestamptz | status text! ='pending' | bound_at timestamptz | last_message_at timestamptz | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id), (pair_token), (phone_e164) ;; CHECK status IN ('pending','active') ;; FK user_id CASCADE
+
+### whatsapp_messages (RLS ON)
+id uuid! =gen_random_uuid() | wa_message_id text! | user_id uuid | from_phone text | body text | kind text | entry_id uuid | result text | created_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (wa_message_id) ;; FK user_id SET NULL
+
+### widget_slot_votes (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | slot_key text! | created_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id, slot_key) ;; FK user_id CASCADE
+
