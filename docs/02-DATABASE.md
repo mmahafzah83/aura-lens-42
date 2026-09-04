@@ -515,3 +515,53 @@ C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
 id bigint! =nextval(...) | response_id bigint | requested_at timestamptz | status_code integer | error_msg text | url text | failure_kind text | captured_at timestamptz! =now()
 C: PK (id) ;; UNIQUE (response_id). Filled by `capture_request_snapshots()` from pg_net history.
 
+### retrieval_logs (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | caller text! | query text | query_len integer | result_count integer | kinds jsonb | top_rank real | degraded boolean! =false | error text | latency_ms integer | pipeline_version smallint! =1 | created_at timestamptz! =now()
+C: PK (id). Every `search_vault` call from chat-aura / ask-aura logs here.
+
+### score_snapshots (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | score integer! =0 | components jsonb! ='{}' | created_at timestamptz! =now() | tier text
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### seniority_titles (RLS ON)
+title text! | band seniority_band! | position smallint! | active boolean! =true
+C: PK (title). Reference data behind `detect_seniority_band(headline)`.
+
+### ship_markers (RLS ON)
+id uuid! =gen_random_uuid() | shipped_on date! | title text! | notes text | created_at timestamptz! =now()
+C: PK (id)
+
+### signal_engagements (RLS ON)
+user_id uuid! | signal_id uuid! | open_count integer! =0 | last_opened_at timestamptz! =now() | created_at timestamptz! =now()
+C: PK (user_id, signal_id) ;; FK user_id CASCADE. Bumped by `bump_signal_engagement(p_signal_id)`.
+
+### signal_topic_preferences (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | theme_tag text! | preference_score double precision =0.0 | updated_at timestamptz =now()
+C: PK (id) ;; UNIQUE (user_id, theme_tag) ;; FK user_id CASCADE
+
+### signature_events (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | family text | lang text | action text! | payload jsonb | created_at timestamptz! =now()
+C: PK (id) ;; CHECK action IN ('suggested','picked','edited','exported','published') ;; FK user_id CASCADE
+The Signatures feature was removed from the UI; the table remains as history.
+
+### signup_attempts (RLS ON)
+id uuid! =gen_random_uuid() | ip_hash text! | email_hash text | created_at timestamptz! =now()
+C: PK (id). Rate limiting — see `LIMITS.SIGNUPS_PER_IP_PER_DAY`.
+
+### signup_ceiling_alerts (RLS ON)
+ip_hash text! | last_sent_at timestamptz! =now()
+C: PK (ip_hash)
+
+### signup_refusals (RLS ON)
+id uuid! =gen_random_uuid() | ip_hash text | code text! | created_at timestamptz! =now()
+C: PK (id)
+
+### skill_targets (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | pillar text! | target_hours numeric(7,2)! =100 | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id, pillar) ;; FK user_id CASCADE
+
+### source_events (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | event_type text! | source_table text! | source_id uuid! | occurred_at timestamptz! =now() | payload jsonb! ='{}' | processed_at timestamptz | created_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id, source_table, source_id, event_type) ;; FK user_id CASCADE
+The idempotent fan-in point of the unified capture pipeline.
+
