@@ -402,3 +402,61 @@ C: PK (id) ;; FK user_id -> auth.users(id) CASCADE. INSERT only — never upsert
 ### linkedin_profile_snapshots_backup_20260821 (RLS ON)
 Dated backup of the above. No constraints.
 
+### market_mirror_cache (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | headhunter_text text | client_cio_text text | curator_text text | gaps jsonb | generated_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id) ;; FK user_id -> auth.users(id) CASCADE
+
+### master_frameworks (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | entry_id uuid | title text! | source_type text! ='capture' | framework_steps jsonb! ='[]' | summary text | tags text[]! ='{}' | created_at timestamptz! =now() | updated_at timestamptz! =now() | diagram_url text | diagram_description jsonb ='{}'
+C: PK (id) ;; FK entry_id -> entries(id) SET NULL ;; FK user_id -> auth.users(id) CASCADE
+
+### member_issue_reports (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | kind text! | message text! | route text | component_stack text | user_agent text | app_version text | created_at timestamptz! =now()
+C: PK (id) ;; CHECK kind IN ('crash','feedback') ;; FK user_id -> auth.users(id) CASCADE
+Written by the service-role `report-issue` function; members cannot select from it.
+
+### metric_targets (RLS ON)
+id uuid! =gen_random_uuid() | metric_key text! | target_value numeric! | target_by date! | baseline_value numeric | baseline_on date | rationale text! | status text! ='active' | reviewed_on date | review_note text | set_on date! =(now() AT TIME ZONE 'utc')::date | created_at timestamptz! =now()
+C: PK (id) ;; CHECK status IN ('active','kept','revised','dropped')
+
+### mirror_reads (RLS ON)  — anonymous public read cache, keyed by handle
+handle text! | canonical_url text! | read jsonb! | sparse boolean! =false | generated_at timestamptz! =now() | hit_count integer! =1 | name text | posts_read integer | read_version smallint! =1 | emailed_at timestamptz | emailed_to text | avatar_url text | headline text
+C: PK (handle)
+
+### mirror_requests (RLS ON)
+id uuid! =gen_random_uuid() | ip_hash text! | handle text | email text | created_at timestamptz! =now() | ref text | status text! ='ok'
+
+### narrative_suggestions (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | topic text! | angle text! ='' | recommended_format text! ='post' | reason text! ='' | source_signal_id uuid | status text! ='suggested' | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### notification_events (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | type text! | channel text! | title text! | body text | metadata jsonb ='{}' | read boolean =false | acted_on boolean =false | sent_at timestamptz =now() | read_at timestamptz | expires_at timestamptz
+C: PK (id) ;; CHECK channel IN ('inapp','email','whatsapp','push') ;; CHECK type IN ('timing_window','silence_alarm','signal_shift','weekly_brief','knowledge_debt','morning_signal','member_reminder') ;; FK user_id CASCADE
+
+### notifications (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | title text! | body text! | type text! ='progress' | read boolean! =false | metadata jsonb ='{}' | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### onboarding_article_log (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | sector_focus text | core_practice text | outcome text! | url text | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### onboarding_questions (RLS ON)  — reference data, seeded
+id uuid! =gen_random_uuid() | band seniority_band! | sector text | position smallint! | prompt text! | helper text | options jsonb | active boolean! =true | created_at timestamptz! =now() | kind text! ='choice' | max_choices smallint | framework text | feeds text | why_asked text | allow_none boolean! =true | randomise boolean! =true | instrument_version smallint! =2
+C: PK (id) ;; CHECK kind IN ('choice','multi','text','proposed')
+
+### operation_runs (RLS ON)  — realtime progress spine for WorkingPanel
+id uuid! =gen_random_uuid() | operation text! | started_at timestamptz! =now() | finished_at timestamptz | outcome text | reason_code text | attempt integer! =1 | user_id uuid | anon_token text | fingerprint_hash text | cost_usd numeric | meta jsonb! ='{}' | stages jsonb! ='[]'
+C: PK (id) ;; FK user_id -> auth.users(id) SET NULL
+`stages` is appended at real provider/model boundaries; the client subscribes by client-run id.
+Read anonymously with `get_run_stages(p_run_id, p_anon_token)`.
+
+### ops_alerts (RLS ON)
+id uuid! =gen_random_uuid() | created_at timestamptz! =now() | subject text | body text | severity text | source text | emailed boolean! =false | what text | impact text | action text | status text! ='open' | resolved_at timestamptz | last_seen timestamptz =now() | occurrences integer! =1 | last_emailed timestamptz
+C: PK (id)
+
+### output_leak_log (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | function_name text | language text | leak_stage text | first_lines text | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) SET NULL. Records prompt/preamble leaks caught by gates.
+
