@@ -460,3 +460,58 @@ C: PK (id)
 id uuid! =gen_random_uuid() | user_id uuid | function_name text | language text | leak_stage text | first_lines text | created_at timestamptz! =now()
 C: PK (id) ;; FK user_id -> auth.users(id) SET NULL. Records prompt/preamble leaks caught by gates.
 
+### page_backgrounds (RLS ON)
+id uuid! =gen_random_uuid() | page_key text! | theme text! ='both' | image_url text | gradient_overlay text =(dark paper gradient) | tint_color text | opacity numeric =0.07 | position text ='center' | enabled boolean =true | created_at timestamptz =now() | updated_at timestamptz =now()
+C: PK (id) ;; UNIQUE (page_key, theme). Admin appearance settings.
+
+### post_events (RLS ON)
+id uuid! =gen_random_uuid() | post_id uuid! | user_id uuid! | event text! | at timestamptz! =now() | actor text! | details jsonb! ='{}'
+C: PK (id) ;; UNIQUE (post_id, event, at) ;; CHECK actor IN ('aura','member','system','linkedin') ;; CHECK event IN ('drafted','edited','scheduled','publish_attempted','published','discarded','metrics_synced') ;; FK post_id -> linkedin_posts(id) CASCADE ;; FK user_id CASCADE
+
+### product_events (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | event text! | props jsonb! ='{}' | session_id text | occurred_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### product_facts (RLS ON)  — what Your Desk is allowed to claim the product does
+id uuid! =gen_random_uuid() | key text! | title text! | body text! | category text! | active boolean! =true | sort_order integer! =100 | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (key) ;; CHECK category IN ('surface','score','capability','limit'). Seed data.
+
+### profile_copy_drafts (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | target text! | options jsonb! | language text | posts_used integer | created_at timestamptz! =now() | updated_at timestamptz! =now() | copied_at timestamptz | copied_text text | copied_angle text | applied_at timestamptz | source_headline text | source_about text
+C: PK (id) ;; UNIQUE (user_id, target) ;; CHECK target IN ('headline','about') ;; FK user_id CASCADE
+
+### qa_audit_results (RLS ON)
+id uuid! =gen_random_uuid() | run_at timestamptz =now() | run_by uuid | layer text! | category text! | test_id text! | test_name text! | status text! | details jsonb | run_id uuid!
+C: PK (id) ;; FK run_by -> auth.users(id) SET NULL
+
+### qa_reports (RLS ON)
+id uuid! =gen_random_uuid() | run_at timestamptz =now() | total_checks integer | passed integer | failed integer | results jsonb | triggered_by text ='manual'
+C: PK (id)
+
+### qa_runs (RLS ON)
+id uuid! =gen_random_uuid() | run_at timestamptz! =now() | check_key text! | status text! | detail text | value_json jsonb! ='{}'
+C: PK (id) ;; CHECK status IN ('pass','fail','warn')
+
+### read_queue (RLS ON)
+id uuid! =gen_random_uuid() | email text! | requested_at timestamptz! =now() | operation text! ='linkedin_read' | fingerprint_hash text | anon_token text | notified_at timestamptz
+C: PK (id). Fills when the daily instrument-run ceiling is reached (see `_shared/limits.ts`).
+
+### recommended_moves_retired_20260718 (RLS ON)
+Retired moves table. Superseded by `strategic_signals` + `narrative_suggestions`.
+
+### register_options (RLS ON)
+id uuid! =gen_random_uuid() | label text! | language text | sort_order integer | created_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (label). Reference data for target register choice.
+
+### report_shares (RLS ON)  — public share tokens for a read
+token text! | user_id uuid! | headline text | archetype text | market_read text | subjects jsonb ='[]' | own_words text | lang text ='en' | display_name text | views integer! =0 | revoked_at timestamptz | created_at timestamptz! =now()
+C: PK (token) ;; FK user_id -> auth.users(id) CASCADE. Public reads go through `get_shared_read(p_token)`.
+
+### report_snapshots (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | version integer! | data jsonb! | is_current boolean! =true | created_by text! ='system' | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### request_snapshots (RLS ON)
+id bigint! =nextval(...) | response_id bigint | requested_at timestamptz | status_code integer | error_msg text | url text | failure_kind text | captured_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (response_id). Filled by `capture_request_snapshots()` from pg_net history.
+
