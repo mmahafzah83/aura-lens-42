@@ -879,3 +879,66 @@ do not port them by hand; `CREATE EXTENSION vector` provides them.
 - `momentum_funnel()`, `publish_invariants()`, `report_invariants()`, `cockpit_freshness()` — the
   truth checks the admin cockpit renders.
 
+## Row Level Security
+
+RLS is **enabled on all 140 public tables**. 343 policies. The dump below is generated from
+`pg_policies`; each line is `table | policy | command | roles | USING | WITH CHECK`.
+
+### The four patterns (read these once, then the dump reads itself)
+
+1. **Own row** — `USING (auth.uid() = user_id)` / `WITH CHECK (auth.uid() = user_id)`.
+   The member sees and changes only their own row. This covers most tables.
+2. **Admin** — `USING is_current_user_admin()` or `has_role(auth.uid(),'admin')`.
+   Admin-console tables (`admin_action_log`, `admin_settings`, `beta_allowlist`, `ai_usage_log`,
+   `known_issues`, `ops_alerts`, cost/QA tables) are admin-only.
+3. **Reference data** — `SELECT` for `authenticated` (sometimes `anon`) where `active`, writes for
+   admin only. Covers `capability_dimensions`, `onboarding_questions`, `guide_articles`,
+   `product_facts`, `seniority_titles`, `theme_aliases`, `voice_trait_registry`, `register_options`.
+4. **Service-role only** — no member-facing policy at all. The table is written by edge functions
+   with the service key and never read from the browser (`ef_error_log`, `member_issue_reports`,
+   `mirror_reads`, `read_queue`, `signup_*`, `content_gate_cache`, `job_queue`, `_probe_resp`).
+   A table with zero policies is deliberately closed.
+
+Anything that departs from these four is called out inline after the dump.
+
+```text
+admin_action_log | Admins read admin action log | SELECT | public | USING is_current_user_admin()
+admin_settings | Admin manage settings | ALL | public | USING is_current_user_admin() | CHECK is_current_user_admin()
+agent_findings | Users can update their own agent findings | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+agent_findings | Users can view their own agent findings | SELECT | authenticated | USING (auth.uid() = user_id)
+ai_usage_log | Admins can read ai usage log | SELECT | public | USING is_current_user_admin()
+api_health_checks | Admins can view API health checks | SELECT | authenticated | USING is_current_user_admin()
+assessment_sessions | own_rows_read | SELECT | authenticated | USING (user_id = auth.uid())
+audience_demographics | Users can delete own demographics | DELETE | authenticated | USING (auth.uid() = user_id)
+audience_demographics | Users can insert own demographics | INSERT | authenticated | CHECK (auth.uid() = user_id)
+audience_demographics | Users can read own demographics | SELECT | authenticated | USING (auth.uid() = user_id)
+audience_demographics | Users can update own demographics | UPDATE | public | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+audience_insights | Users can read own audience insights | SELECT | authenticated | USING (auth.uid() = user_id)
+audience_insights | Users delete own audience insights | DELETE | authenticated | USING (auth.uid() = user_id)
+audience_insights | Users insert own audience insights | INSERT | authenticated | CHECK (auth.uid() = user_id)
+audience_insights | Users update own audience insights | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+audit_interpretation_backup_20260816 | Users can read their own assessment backup | SELECT | authenticated | USING (auth.uid() = user_id)
+aura_conversation_memory | Users see own memory | ALL | public | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+authority_scores | Users can delete their own authority scores | DELETE | public | USING (auth.uid() = user_id)
+authority_scores | Users can insert own authority scores | INSERT | authenticated | CHECK (auth.uid() = user_id)
+authority_scores | Users can update their own authority scores | UPDATE | public | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+authority_scores | Users can view own authority scores | SELECT | authenticated | USING (auth.uid() = user_id)
+authority_voice_profiles | Users can delete own voice profile | DELETE | authenticated | USING (auth.uid() = user_id)
+authority_voice_profiles | Users can insert own voice profile | INSERT | authenticated | CHECK (auth.uid() = user_id)
+authority_voice_profiles | Users can update own voice profile | UPDATE | authenticated | USING (auth.uid() = user_id)
+authority_voice_profiles | Users can view own voice profile | SELECT | authenticated | USING (auth.uid() = user_id)
+beta_allowlist | Admin only delete | DELETE | public | USING is_current_user_admin()
+beta_allowlist | Admin only insert | INSERT | public | CHECK is_current_user_admin()
+beta_allowlist | Admin only select | SELECT | public | USING is_current_user_admin()
+beta_allowlist | Admin only update | UPDATE | public | USING is_current_user_admin() | CHECK is_current_user_admin()
+beta_feedback | Admin reads all feedback | SELECT | public | USING is_current_user_admin()
+beta_feedback | Users insert own feedback | INSERT | authenticated | CHECK (auth.uid() = user_id)
+beta_feedback | Users read own feedback | SELECT | authenticated | USING (auth.uid() = user_id)
+capability_dimensions | cd_admin | ALL | authenticated | USING has_role(auth.uid(),'admin') | CHECK has_role(auth.uid(),'admin')
+capability_dimensions | cd_read | SELECT | authenticated | USING active
+capability_dimensions | cd_read_anon | SELECT | anon | USING active
+capability_radar_snapshots | Users can insert their own radar snapshots | INSERT | authenticated | CHECK (auth.uid() = user_id)
+capability_radar_snapshots | Users can view own radar snapshots | SELECT | authenticated | USING (auth.uid() = user_id)
+capability_radar_snapshots | crs_admin | ALL | authenticated | USING has_role(auth.uid(),'admin') | CHECK has_role(auth.uid(),'admin')
+capability_responses | Users can delete their own capability responses | DELETE | authenticated | USING (auth.uid() = user_id)
+capability_responses | Users can insert their own capability responses | INSERT | authenticated | CHECK (auth.uid() = user_id)
