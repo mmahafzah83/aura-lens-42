@@ -655,3 +655,101 @@ C: PK (id) ;; UNIQUE (wa_message_id) ;; FK user_id SET NULL
 id uuid! =gen_random_uuid() | user_id uuid! | slot_key text! | created_at timestamptz! =now()
 C: PK (id) ;; UNIQUE (user_id, slot_key) ;; FK user_id CASCADE
 
+## Relationships (ERD in words)
+
+`auth.users(id)` is the hub. Almost every table carries `user_id uuid` with
+`ON DELETE CASCADE` (a few operational/log tables use `SET NULL` so history survives account
+deletion: `ai_usage_log`, `agent_findings`, `ef_error_log`, `eval_metrics`, `operation_runs`,
+`output_leak_log`, `sync_runs`, `sync_errors`, `whatsapp_messages`, `beta_allowlist`,
+`design_system`, `qa_audit_results`, `job_queue`, `learned_intelligence` sources).
+
+Non-user foreign keys, i.e. the real graph:
+
+```text
+documents ──< document_chunks
+documents ──< document_jobs
+documents ──< document_briefs
+documents ──< learned_intelligence.source_document_id (SET NULL)
+entries   ──< learned_intelligence.source_entry_id   (SET NULL)
+entries   ──< master_frameworks.entry_id             (SET NULL)
+source_registry ──< evidence_fragments
+strategic_signals ──< content_items.signal_id        (SET NULL)
+strategic_signals ──< linkedin_posts.source_signal_id
+linkedin_posts ──< linkedin_post_metrics
+linkedin_posts ──< post_events
+linkedin_posts ──< voice_post_outcomes (1:1 via UNIQUE post_id)
+linkedin_posts ──< voice_feedback.post_id            (SET NULL)
+linkedin_connections ──< sync_runs.account_id
+sync_runs ──< sync_errors
+master_frameworks ──< framework_activations
+capability_dimensions ──< capability_responses
+authority_voice_profiles ──< voice_rules, voice_traits, voice_trait_rejections
+voice_trait_registry(trait_key) ──< voice_traits.trait_key
+chat_conversations ──< chat_messages
+desk_eval_questions ──< desk_eval_runs
+```
+
+`content_lineage` is a soft join table: `(content_table, content_id)` points at either
+`linkedin_posts` or `content_items`, `(contributor_kind, contributor_id)` at the thing that
+contributed. It has no FKs on purpose so contributors can be deleted without losing the record.
+
+## Triggers (39)
+
+```text
+beta_allowlist.update_beta_allowlist_updated_at -> update_updated_at_column (BEFORE UPDATE)
+capability_responses.capability_responses_touch -> touch_capability_response (BEFORE INSERT/UPDATE)
+chat_conversations.set_updated_at_chat_conversations -> update_updated_at_column (BEFORE UPDATE)
+content_items.content_items_tsv_update -> content_items_tsv_trigger (BEFORE INSERT/UPDATE)
+content_items.update_content_items_updated_at -> update_updated_at_column (BEFORE UPDATE)
+daily_brief_snapshots.daily_brief_snapshots_no_mutation -> daily_brief_snapshots_immutable (BEFORE DELETE/UPDATE)
+decks.decks_set_updated_at -> update_updated_at_column (BEFORE UPDATE)
+desk_learning.desk_learning_updated_at -> update_updated_at_column (BEFORE UPDATE)
+diagnostic_profiles.diagnostic_profiles_guard_billing -> guard_profile_billing_columns (BEFORE UPDATE)
+diagnostic_profiles.grant_member_role_on_profile_trigger -> grant_member_role_on_profile (AFTER INSERT)
+diagnostic_profiles.guard_account_type_changes -> guard_account_type_changes (BEFORE UPDATE)
+diagnostic_profiles.sync_tier_from_plan -> sync_tier_from_plan (BEFORE INSERT/UPDATE)
+document_briefs.document_briefs_tsv_update -> document_briefs_tsv_trigger (BEFORE INSERT/UPDATE)
+entries.update_entries_updated_at -> update_updated_at_column (BEFORE UPDATE)
+evidence_fragments.evidence_fragments_tsv_update -> evidence_fragments_tsv_trigger (BEFORE INSERT/UPDATE)
+facet_states.facet_states_set_updated_at -> set_updated_at_facet_states (BEFORE UPDATE)
+guide_articles.update_guide_articles_updated_at -> update_updated_at_column (BEFORE UPDATE)
+health_findings.trg_health_findings_updated_at -> update_updated_at_column (BEFORE UPDATE)
+job_queue.job_queue_set_updated_at -> update_updated_at_column (BEFORE UPDATE)
+known_issues.known_issues_set_updated_at -> update_updated_at_column (BEFORE UPDATE)
+learned_intelligence.learned_intelligence_tsv_update -> learned_intelligence_tsv_trigger (BEFORE INSERT/UPDATE)
+linkedin_posts.linkedin_posts_tsv_update -> linkedin_posts_tsv_trigger (BEFORE INSERT/UPDATE)
+linkedin_posts.trg_linkedin_posts_authorship_guard -> enforce_published_authorship (BEFORE INSERT/UPDATE)
+linkedin_posts.trg_record_post_event -> record_post_event (AFTER INSERT/UPDATE)
+linkedin_profile_snapshots.update_..._updated_at -> update_updated_at_column (BEFORE UPDATE)
+product_facts.product_facts_updated_at -> update_updated_at_column (BEFORE UPDATE)
+profile_copy_drafts.update_..._updated_at -> update_updated_at_column (BEFORE UPDATE)
+recommended_moves_retired_20260718.update_..._updated_at -> update_updated_at_column (BEFORE UPDATE)
+skill_targets.update_skill_targets_updated_at -> update_updated_at_column (BEFORE UPDATE)
+strategic_signals.strategic_signals_tsv_update -> strategic_signals_tsv_trigger (BEFORE INSERT/UPDATE)
+strategic_signals.trg_notify_first_signal -> notify_first_signal (AFTER INSERT)
+strategic_signals.update_strategic_signals_updated_at -> update_updated_at_column (BEFORE UPDATE)
+theme_aliases.theme_aliases_reject_stopword -> reject_stopword_alias (BEFORE INSERT/UPDATE)
+voice_distribution.update_..._updated_at -> update_updated_at_column (BEFORE UPDATE)
+voice_learning_prefs.update_..._updated_at -> update_updated_at_column (BEFORE UPDATE)
+voice_post_outcomes.update_..._updated_at -> update_updated_at_column (BEFORE UPDATE)
+voice_rules.voice_rules_updated_at -> update_updated_at_column (BEFORE UPDATE)
+voice_traits.update_voice_traits_updated_at -> update_updated_at_column (BEFORE UPDATE)
+whatsapp_links.update_whatsapp_links_updated_at -> update_updated_at_column (BEFORE UPDATE)
+```
+
+The behaviour-carrying ones (not just `updated_at`):
+
+- `touch_capability_response` — stamps `answered_at` from the **database** clock; the browser must
+  never send a timestamp.
+- `daily_brief_snapshots_immutable` — blocks UPDATE and DELETE; the brief history is append-only.
+- `guard_profile_billing_columns` — reverts client writes to `plan`, `tier`, `account_type`,
+  `plan_source`, `trial_ends_at`, `excluded_at`, `excluded_reason`. Only service role / admin passes.
+- `guard_account_type_changes` — same idea for `account_type` transitions.
+- `sync_tier_from_plan` — keeps the legacy `tier` column consistent with `plan`.
+- `grant_member_role_on_profile` — inserts the `member` row in `user_roles` when a profile appears.
+- `enforce_published_authorship` — a post may not be marked published without honest authorship.
+- `record_post_event` — writes the matching `post_events` row on state change.
+- `notify_first_signal` — fires the first-signal notification.
+- `reject_stopword_alias` — refuses a `theme_aliases` alias that is only a stop word.
+- `*_tsv_trigger` — maintains the full-text `tsv` column used by `search_vault`.
+
