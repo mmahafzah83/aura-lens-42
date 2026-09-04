@@ -753,3 +753,61 @@ The behaviour-carrying ones (not just `updated_at`):
 - `reject_stopword_alias` — refuses a `theme_aliases` alias that is only a stop word.
 - `*_tsv_trigger` — maintains the full-text `tsv` column used by `search_vault`.
 
+## Database functions
+
+Signatures below are exact. `[SECDEF]` = `SECURITY DEFINER` (runs with owner privileges and is the
+supported way to read across RLS). Anything not marked is `SECURITY INVOKER`.
+
+```text
+_clone_member_rows(p_table text, p_donor uuid, p_target uuid, p_limit integer, p_overrides jsonb DEFAULT '{}') -> integer [SECDEF]
+activate_design_version(p_new_tokens jsonb, p_created_by uuid DEFAULT <founder uuid>) -> uuid [SECDEF]
+admin_cohorts() -> TABLE(cohort_week date, size int, captured int, got_signal int, linkedin_live int, opened_writer int, has_draft int, published int) [SECDEF]
+admin_cron_failures_24h() -> TABLE(jobname text, failed int, last_fail timestamptz) [SECDEF]
+admin_economics_denominators() -> TABLE(active_users int, published_posts int, signals_delivered int) [SECDEF]
+admin_list_crons() -> TABLE(jobid bigint, jobname text, schedule text, active boolean, last_status text, last_start timestamptz, last_msg text) [SECDEF]
+admin_run_cron(p_jobid bigint) -> text [SECDEF]
+admin_spend_by_function(p_months_back int DEFAULT 0) -> TABLE(function_name text, spend numeric, calls int) [SECDEF]
+admin_spend_daily(p_days int DEFAULT 30) -> TABLE(day date, spend numeric) [SECDEF]
+admin_stage_timeline(p_days int DEFAULT 90) -> TABLE(day date, signed_up int, finished_setup int, captured int, got_signal int, linkedin_live int, opened_writer int, has_draft int, published int) [SECDEF]
+brief_history(days int DEFAULT 30) -> TABLE(brief_date date, runs int, sent boolean, funnel jsonb) [SECDEF]
+bump_signal_engagement(p_signal_id uuid) -> void [SECDEF]
+capture_request_snapshots() -> integer [SECDEF]
+check_invite_token(p_token text) -> jsonb [SECDEF]
+claim_assessment_session(p_token text) -> uuid [SECDEF]
+claim_job(p_job_type text, p_worker text) -> SETOF job_queue [SECDEF]
+classify_request_failure(p_status integer, p_error text) -> text
+cockpit_freshness() -> TABLE(check_key text, claim text, last_row_at timestamptz, hours_stale numeric, state text) [SECDEF]
+complete_job(p_id uuid, p_success boolean, p_error text DEFAULT NULL) -> void [SECDEF]
+content_items_tsv_trigger() -> trigger
+create_assessment_session(p_ip_hash text DEFAULT NULL) -> text [SECDEF]
+daily_brief_snapshots_immutable() -> trigger
+decisions_due(p_on date DEFAULT NULL) -> TABLE(...) [SECDEF]
+delete_account(p_user_id uuid) -> void [SECDEF]
+detect_seniority_band(headline text) -> seniority_band
+document_briefs_tsv_trigger() -> trigger
+email_crons_ran_without_sends(p_hours int DEFAULT 24) -> TABLE(crons_ran int, rows_added int, ran_jobs text[]) [SECDEF]
+enforce_published_authorship() -> trigger [SECDEF]
+enqueue_voice_distill_jobs() -> integer [SECDEF]
+ensure_diagnostic_profile() -> trigger [SECDEF]
+evidence_fragments_tsv_trigger() -> trigger
+excluded_user_ids() -> TABLE(user_id uuid) [SECDEF]
+founder_brief_data() -> jsonb [SECDEF]
+founder_brief_user_ids() -> TABLE(user_id uuid, email text, last_sign_in_at timestamptz, created_at timestamptz) [SECDEF]
+founder_brief_verify() -> jsonb [SECDEF]
+founding_reservations() -> TABLE(claimed int, cap int) [SECDEF]
+founding_seats() -> TABLE(claimed int, cap int) [SECDEF]
+get_assessment_session(p_token text) -> TABLE(id uuid, created_at timestamptz, expires_at timestamptz, runs_started int, state jsonb) [SECDEF]
+get_run_stages(p_run_id uuid, p_anon_token text DEFAULT NULL) -> jsonb [SECDEF]
+get_shared_read(p_token text) -> TABLE(headline text, archetype text, market_read text, subjects jsonb, own_words text, lang text, display_name text) [SECDEF]
+grant_member_role_on_profile() -> trigger [SECDEF]
+guard_account_type_changes() -> trigger [SECDEF]
+guard_profile_billing_columns() -> trigger [SECDEF]
+has_role(_user_id uuid, _role app_role) -> boolean [SECDEF]
+home_record_themes(p_from date, p_to date, p_uid uuid DEFAULT NULL, p_tz text DEFAULT 'UTC') -> TABLE(id uuid, title text, created_at timestamptz) [SECDEF]
+home_record_timeline(p_uid uuid DEFAULT NULL, p_tz text DEFAULT 'UTC') -> jsonb [SECDEF]
+identity_kind(p_user_id uuid) -> text [SECDEF]
+increment_voice_rule_applied(p_rule_id uuid, p_applied_at timestamptz DEFAULT now()) -> void [SECDEF]
+is_current_user_admin() -> boolean [SECDEF]
+is_customer(p_user_id uuid) -> boolean [SECDEF]
+join_read_queue(p_email text, p_operation text DEFAULT 'linkedin_read', p_anon_token text DEFAULT NULL, p_fingerprint_hash text DEFAULT NULL) -> integer [SECDEF]
+```
