@@ -1071,3 +1071,190 @@ desk_number_violations | Admins read number violations | SELECT | authenticated 
 diagnostic_profiles | Admins can update all profiles | UPDATE | authenticated | USING has_role(auth.uid(),'admin') | CHECK has_role(auth.uid(),'admin')
 diagnostic_profiles | Admins can view all profiles | SELECT | authenticated | USING has_role(auth.uid(),'admin')
 diagnostic_profiles | Users can delete own profile | DELETE | authenticated | USING (auth.uid() = user_id)
+lifecycle_emails | Users can delete their own lifecycle emails | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+lifecycle_emails | Users can insert their own lifecycle emails | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+lifecycle_emails | Users can update their own lifecycle emails | UPDATE | public | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+lifecycle_emails | Users can view their own lifecycle emails | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+linkedin_connections | Users can delete own linkedin connection | DELETE | authenticated | USING (auth.uid() = user_id) | CHECK -
+linkedin_connections | Users can insert own linkedin connection | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+linkedin_connections | Users can update own linkedin connection | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+linkedin_connections | Users can view own linkedin connection | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+linkedin_connections_guessed_20260812 | Admins can read guessed backup | SELECT | authenticated | USING is_current_user_admin() | CHECK -
+linkedin_post_metrics | Users can delete own post metrics | DELETE | authenticated | USING (auth.uid() = user_id) | CHECK -
+linkedin_post_metrics | Users can insert own post metrics | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+linkedin_post_metrics | Users can update own post metrics | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+linkedin_post_metrics | Users can view own post metrics | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+linkedin_posts | Users can delete own linkedin posts | DELETE | authenticated | USING (auth.uid() = user_id) | CHECK -
+linkedin_posts | Users can insert own linkedin posts | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+linkedin_posts | Users can update own linkedin posts | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK -
+linkedin_posts | Users can view own linkedin posts | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+linkedin_profile_snapshots | Members read their own LinkedIn snapshot | SELECT | public | USING ((user_id = auth.uid()) OR has_role(auth.uid(), 'admin'::app_role)) | CHECK -
+linkedin_profile_snapshots_backup_20260821 | own snapshot backup | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+market_mirror_cache | Users delete own mirror | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+market_mirror_cache | Users insert own mirror | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+market_mirror_cache | Users update own mirror | UPDATE | public | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+market_mirror_cache | Users view own mirror | SELECT | public | USING (auth.uid() = user_id) | CHECK -
+master_frameworks | Users can delete own frameworks | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+master_frameworks | Users can insert own frameworks | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+master_frameworks | Users can update own frameworks | UPDATE | public | USING (auth.uid() = user_id) | CHECK -
+master_frameworks | Users can view own frameworks | SELECT | public | USING (auth.uid() = user_id) | CHECK -
+member_issue_reports | Admins can read member issue reports | SELECT | authenticated | USING has_role(auth.uid(), 'admin'::app_role) | CHECK -
+metric_targets | Admins delete targets | DELETE | authenticated | USING is_current_user_admin() | CHECK -
+metric_targets | Admins read targets | SELECT | authenticated | USING is_current_user_admin() | CHECK -
+metric_targets | Admins update targets | UPDATE | authenticated | USING is_current_user_admin() | CHECK is_current_user_admin()
+metric_targets | Admins write targets | INSERT | authenticated | USING - | CHECK is_current_user_admin()
+narrative_suggestions | Users can delete own suggestions | DELETE | authenticated | USING (auth.uid() = user_id) | CHECK -
+narrative_suggestions | Users can insert own suggestions | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+narrative_suggestions | Users can update own suggestions | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK -
+narrative_suggestions | Users can view own suggestions | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+notification_events | Users see own notifications | ALL | public | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+notifications | Service can insert notifications | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+notifications | Users can delete own notifications | DELETE | authenticated | USING (auth.uid() = user_id) | CHECK -
+notifications | Users can update own notifications | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK -
+notifications | Users can view own notifications | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+onboarding_article_log | Admins can read onboarding article log | SELECT | authenticated | USING is_current_user_admin() | CHECK -
+onboarding_questions | oq_admin | ALL | authenticated | USING has_role(auth.uid(), 'admin'::app_role) | CHECK has_role(auth.uid(), 'admin'::app_role)
+onboarding_questions | oq_read | SELECT | authenticated | USING active | CHECK -
+onboarding_questions | oq_read_anon | SELECT | anon | USING active | CHECK -
+operation_runs | members read their own runs | SELECT | authenticated | USING (user_id = auth.uid()) | CHECK -
+operation_runs | operation_runs service role only | ALL | service_role | USING true | CHECK true
+ops_alerts | Admins can resolve ops alerts | UPDATE | public | USING is_current_user_admin() | CHECK is_current_user_admin()
+ops_alerts | Admins can view ops alerts | SELECT | authenticated | USING is_current_user_admin() | CHECK -
+output_leak_log | Admins can view leak log | SELECT | authenticated | USING is_current_user_admin() | CHECK -
+page_backgrounds | admin_manage_page_backgrounds | ALL | public | USING is_current_user_admin() | CHECK is_current_user_admin()
+page_backgrounds | authenticated_read_page_backgrounds | SELECT | public | USING (auth.uid() IS NOT NULL) | CHECK -
+post_events | post_events_select_own | SELECT | public | USING ((user_id = auth.uid()) OR is_current_user_admin()) | CHECK -
+product_events | users insert own product events | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+product_events | users read own product events | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+product_facts | Admin only delete | DELETE | authenticated | USING is_current_user_admin() | CHECK -
+product_facts | Admin only insert | INSERT | authenticated | USING - | CHECK is_current_user_admin()
+product_facts | Admin only update | UPDATE | authenticated | USING is_current_user_admin() | CHECK is_current_user_admin()
+product_facts | Members can read active product facts | SELECT | authenticated | USING true | CHECK -
+profile_copy_drafts | Members create their own profile copy drafts | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+profile_copy_drafts | Members delete their own profile copy drafts | DELETE | authenticated | USING (auth.uid() = user_id) | CHECK -
+profile_copy_drafts | Members read their own profile copy drafts | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+profile_copy_drafts | Members update their own profile copy drafts | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+qa_audit_results | Admin only | ALL | public | USING is_current_user_admin() | CHECK is_current_user_admin()
+qa_reports | Admin can delete qa_reports | DELETE | public | USING is_current_user_admin() | CHECK -
+qa_reports | Admin can insert qa_reports | INSERT | public | USING - | CHECK is_current_user_admin()
+qa_reports | Admin can update qa_reports | UPDATE | public | USING is_current_user_admin() | CHECK is_current_user_admin()
+qa_reports | Admin reads qa reports | SELECT | public | USING is_current_user_admin() | CHECK -
+qa_runs | Admin only insert | INSERT | authenticated | USING - | CHECK false
+qa_runs | Admin only select | SELECT | authenticated | USING is_current_user_admin() | CHECK -
+recommended_moves_retired_20260718 | Users can delete own moves | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+recommended_moves_retired_20260718 | Users can insert own moves | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+recommended_moves_retired_20260718 | Users can update own moves | UPDATE | public | USING (auth.uid() = user_id) | CHECK -
+recommended_moves_retired_20260718 | Users can view own moves | SELECT | public | USING (auth.uid() = user_id) | CHECK -
+register_options | Authenticated users can read register options | SELECT | authenticated | USING true | CHECK -
+register_options | Service role can write register options | ALL | service_role | USING true | CHECK true
+report_shares | own shares insertable | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+report_shares | own shares readable | SELECT | public | USING (auth.uid() = user_id) | CHECK -
+report_shares | own shares updatable | UPDATE | public | USING (auth.uid() = user_id) | CHECK -
+report_snapshots | Admins can view all report snapshots | SELECT | authenticated | USING is_current_user_admin() | CHECK -
+report_snapshots | Users can view their own report snapshots | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+request_snapshots | Admins can read request snapshots | SELECT | authenticated | USING is_current_user_admin() | CHECK -
+retrieval_logs | Service role manages retrieval logs | ALL | service_role | USING true | CHECK true
+retrieval_logs | Users can view their own retrieval logs | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+score_snapshots | Users can delete own snapshots | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+score_snapshots | Users can insert own snapshots | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+score_snapshots | Users can update their own score snapshots | UPDATE | public | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+score_snapshots | Users can view own snapshots | SELECT | public | USING (auth.uid() = user_id) | CHECK -
+seniority_titles | st_admin | ALL | authenticated | USING has_role(auth.uid(), 'admin'::app_role) | CHECK has_role(auth.uid(), 'admin'::app_role)
+seniority_titles | st_read | SELECT | authenticated | USING active | CHECK -
+seniority_titles | st_read_anon | SELECT | anon | USING active | CHECK -
+ship_markers | Admins delete ship markers | DELETE | authenticated | USING is_current_user_admin() | CHECK -
+ship_markers | Admins edit ship markers | UPDATE | authenticated | USING is_current_user_admin() | CHECK is_current_user_admin()
+ship_markers | Admins read ship markers | SELECT | authenticated | USING is_current_user_admin() | CHECK -
+ship_markers | Admins write ship markers | INSERT | authenticated | USING - | CHECK is_current_user_admin()
+signal_engagements | Users insert own signal engagements | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+signal_engagements | Users select own signal engagements | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+signal_engagements | Users update own signal engagements | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+signal_topic_preferences | Users can insert own preferences | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+signal_topic_preferences | Users can select own preferences | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+signal_topic_preferences | Users can update own preferences | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK -
+signature_events | Users insert own signature events | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+signature_events | Users read own signature events | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+skill_targets | Users can delete their own targets | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+skill_targets | Users can insert their own targets | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+skill_targets | Users can update their own targets | UPDATE | public | USING (auth.uid() = user_id) | CHECK -
+skill_targets | Users can view their own targets | SELECT | public | USING (auth.uid() = user_id) | CHECK -
+source_events | Users delete own source events | DELETE | authenticated | USING (auth.uid() = user_id) | CHECK -
+source_events | Users insert own source events | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+source_events | source_events_select_own | SELECT | authenticated | USING (user_id = auth.uid()) | CHECK -
+source_registry | Users can delete own sources | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+source_registry | Users can insert own sources | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+source_registry | Users can update own sources | UPDATE | public | USING (auth.uid() = user_id) | CHECK -
+source_registry | Users can view own sources | SELECT | public | USING (auth.uid() = user_id) | CHECK -
+strategic_signals | Users can delete own signals | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+strategic_signals | Users can insert own signals | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+strategic_signals | Users can update own signals | UPDATE | public | USING (auth.uid() = user_id) | CHECK -
+strategic_signals | Users can view own signals | SELECT | public | USING (auth.uid() = user_id) | CHECK -
+strategic_signals_orphans_20260811 | Admin only delete | DELETE | authenticated | USING is_current_user_admin() | CHECK -
+strategic_signals_orphans_20260811 | Admin only insert | INSERT | authenticated | USING - | CHECK is_current_user_admin()
+strategic_signals_orphans_20260811 | Admin only select | SELECT | authenticated | USING is_current_user_admin() | CHECK -
+strategic_signals_orphans_20260811 | Admin only update | UPDATE | authenticated | USING is_current_user_admin() | CHECK is_current_user_admin()
+sync_errors | Users can insert own sync errors | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+sync_errors | Users can view own sync errors | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+sync_errors | Users delete own sync errors | DELETE | authenticated | USING (auth.uid() = user_id) | CHECK -
+sync_runs | Users can insert own sync runs | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+sync_runs | Users can update own sync runs | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK -
+sync_runs | Users can view own sync runs | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+theme_aliases | theme_aliases_admin_delete | DELETE | authenticated | USING has_role(auth.uid(), 'admin'::app_role) | CHECK -
+theme_aliases | theme_aliases_admin_insert | INSERT | authenticated | USING - | CHECK has_role(auth.uid(), 'admin'::app_role)
+theme_aliases | theme_aliases_admin_update | UPDATE | authenticated | USING has_role(auth.uid(), 'admin'::app_role) | CHECK has_role(auth.uid(), 'admin'::app_role)
+theme_aliases | theme_aliases_read_authenticated | SELECT | authenticated | USING true | CHECK -
+training_logs | Users can delete their own training logs | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+training_logs | Users can insert their own training logs | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+training_logs | Users can update their own training logs | UPDATE | public | USING (auth.uid() = user_id) | CHECK -
+training_logs | Users can view their own training logs | SELECT | public | USING (auth.uid() = user_id) | CHECK -
+user_milestones | Users can delete their own milestones | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+user_milestones | Users can insert their own milestones | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+user_milestones | Users can update their own milestones | UPDATE | public | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+user_milestones | Users can view own milestones | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+user_roles | Members read their own roles | SELECT | authenticated | USING ((auth.uid() = user_id) OR has_role(auth.uid(), 'admin'::app_role)) | CHECK -
+user_roles | Only admins change roles | UPDATE | authenticated | USING has_role(auth.uid(), 'admin'::app_role) | CHECK has_role(auth.uid(), 'admin'::app_role)
+user_roles | Only admins grant roles | INSERT | authenticated | USING - | CHECK has_role(auth.uid(), 'admin'::app_role)
+user_roles | Only admins remove roles | DELETE | authenticated | USING has_role(auth.uid(), 'admin'::app_role) | CHECK -
+user_widget_layout | own layout insert | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+user_widget_layout | own layout select | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+user_widget_layout | own layout update | UPDATE | authenticated | USING (auth.uid() = user_id) | CHECK (auth.uid() = user_id)
+voice_distribution | Members read their own voice distribution | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+voice_feedback | Owner deletes own feedback | DELETE | authenticated | USING (user_id = auth.uid()) | CHECK -
+voice_feedback | Owner inserts own feedback | INSERT | authenticated | USING - | CHECK (user_id = auth.uid())
+voice_feedback | Owner reads own feedback | SELECT | authenticated | USING (user_id = auth.uid()) | CHECK -
+voice_feedback | Owner updates own feedback | UPDATE | authenticated | USING (user_id = auth.uid()) | CHECK (user_id = auth.uid())
+voice_learning_prefs | Owner inserts own learning pref | INSERT | authenticated | USING - | CHECK (user_id = auth.uid())
+voice_learning_prefs | Owner reads own learning pref | SELECT | authenticated | USING (user_id = auth.uid()) | CHECK -
+voice_learning_prefs | Owner updates own learning pref | UPDATE | authenticated | USING (user_id = auth.uid()) | CHECK (user_id = auth.uid())
+voice_post_outcomes | Owner deletes own outcomes | DELETE | authenticated | USING (user_id = auth.uid()) | CHECK -
+voice_post_outcomes | Owner inserts own outcomes | INSERT | authenticated | USING - | CHECK (user_id = auth.uid())
+voice_post_outcomes | Owner reads own outcomes | SELECT | authenticated | USING (user_id = auth.uid()) | CHECK -
+voice_post_outcomes | Owner updates own outcomes | UPDATE | authenticated | USING (user_id = auth.uid()) | CHECK (user_id = auth.uid())
+voice_rules | voice_rules_owner_all | ALL | authenticated | USING (user_id = auth.uid()) | CHECK (user_id = auth.uid())
+voice_trait_registry | Registry readable by authenticated | SELECT | authenticated | USING true | CHECK -
+voice_trait_registry | Registry writable by admin | ALL | authenticated | USING is_current_user_admin() | CHECK is_current_user_admin()
+voice_trait_rejections | voice_trait_rejections_owner_all | ALL | authenticated | USING (user_id = auth.uid()) | CHECK (user_id = auth.uid())
+voice_traits | Owner deletes own traits | DELETE | authenticated | USING (user_id = auth.uid()) | CHECK -
+voice_traits | Owner inserts own traits | INSERT | authenticated | USING - | CHECK (user_id = auth.uid())
+voice_traits | Owner reads own traits | SELECT | authenticated | USING (user_id = auth.uid()) | CHECK -
+voice_traits | Owner updates own traits | UPDATE | authenticated | USING (user_id = auth.uid()) | CHECK (user_id = auth.uid())
+weekly_missions | Users can delete their own weekly missions | DELETE | public | USING (auth.uid() = user_id) | CHECK -
+weekly_missions | Users can insert their own weekly missions | INSERT | public | USING - | CHECK (auth.uid() = user_id)
+weekly_missions | Users see own missions | SELECT | public | USING (auth.uid() = user_id) | CHECK -
+weekly_missions | Users update own missions | UPDATE | public | USING (auth.uid() = user_id) | CHECK -
+whatsapp_links | Users can delete their own whatsapp link | DELETE | authenticated | USING (auth.uid() = user_id) | CHECK -
+whatsapp_links | Users can view their own whatsapp link | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+whatsapp_messages | Users can view their own whatsapp messages | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+widget_slot_votes | own vote delete | DELETE | authenticated | USING (auth.uid() = user_id) | CHECK -
+widget_slot_votes | own vote insert | INSERT | authenticated | USING - | CHECK (auth.uid() = user_id)
+widget_slot_votes | own vote select | SELECT | authenticated | USING (auth.uid() = user_id) | CHECK -
+```
+
+### Departures from the four patterns
+
+- `guide_articles` and `capability_dimensions` are readable by `anon` (public guide pages and the pre-signup capability screen).
+- `content_lineage` uses an EXISTS sub-select against `linkedin_posts`/`content_items` instead of a direct `user_id` column.
+- `eval_metrics` lets an admin read system rows (`user_id IS NULL`) as well as their own.
+- `desk_learning`, `desk_answer_feedback`, `document_briefs`, `content_gate_results` are member-readable but service-role-written; the member can never insert a learning row.
+- `diagnostic_profiles` allows admin read/update as well as own-row access, and billing/privilege columns are additionally locked by the `guard_profile_billing_columns()` trigger, not by RLS.
+- Tables with no policy at all (service-role only): `_probe_resp`, `contact_messages`, `content_gate_cache`, `deleted_test_accounts_20260818`, `funnel_daily_ratio`, `identity_registry`, `job_queue`, `mirror_reads`, `mirror_requests`, `read_queue`, `signup_attempts`, `signup_ceiling_alerts`, `signup_refusals`.
