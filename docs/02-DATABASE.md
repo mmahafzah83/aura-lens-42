@@ -1,0 +1,404 @@
+# 02 — Database
+
+Everything here was read from the live Lovable Cloud (Supabase) Postgres with `pg_catalog`
+introspection on 2026-09-04. Schema `public` only unless stated.
+
+Scale: **140 tables**, **211 functions**, **343 RLS policies**, **20 views**, **5 storage buckets**,
+**44 pg_cron jobs**.
+
+## Notation used in the table listing
+
+```
+col type!  ->  NOT NULL
+=expr      ->  column DEFAULT expr
+```
+Every `FOREIGN KEY ... REFERENCES auth.users(id)` is a reference into the Supabase-managed
+`auth` schema; there is no `public.users` table. Per-user data is keyed by `user_id uuid`.
+
+## Extensions installed
+
+| extension | version | schema |
+|---|---|---|
+| pg_cron | 1.6.4 | pg_catalog |
+| pg_net | 0.20.0 | extensions |
+| pg_stat_statements | 1.11 | extensions |
+| pgcrypto | 1.3 | extensions |
+| plpgsql | 1.0 | pg_catalog |
+| supabase_vault | 0.3.1 | vault |
+| uuid-ossp | 1.1 | extensions |
+| vector | 0.8.0 | public |
+
+## Enums
+
+| type | labels (in sort order) |
+|---|---|
+| `account_type` | customer, staff, test, demo |
+| `app_role` | admin, member |
+| `plan_type` | trial, free, paid |
+| `seniority_band` | work, table, room |
+
+## Views (schema `public`, 20)
+
+`unified_content`, `ef_faults`, `influence_timeline`, `influence_dashboard_view`,
+`runs_classified`, `cockpit_assertions`, `member_accounts`, `cockpit_members`, `cockpit_pulse`,
+`member_drafts`, `member_own_posts`, `member_published`, `mirror_funnel`,
+`morning_promise_state`, `linkedin_connections_safe`, `daily_brief_latest`,
+`linkedin_read_readiness`, `jobs_without_outcome_checks`, `post_provenance`, `aura_output`.
+
+Full view bodies are not reproduced here — run
+`select definition from pg_views where schemaname='public' and viewname='<name>';`
+or search `supabase/migrations/` for `CREATE OR REPLACE VIEW public.<name>`.
+Views were rebuilt with `security_invoker = true` (see the "publication removal" migration set),
+so a view returns only rows the calling member's RLS already allows.
+
+## Storage buckets
+
+| bucket | public | file size limit | notes |
+|---|---|---|---|
+| `capture-images` | **true** | none | Intentionally public — see `mem://technical/storage-security-decision`. |
+| `documents` | false | none | CV / document uploads feeding `documents` + `document_chunks`. |
+| `captures` | false | none | Legacy capture attachments. |
+| `avatars` | **true** | 5 MiB | Profile images. |
+| `deck-media` | false | 25 MiB | Carousel/deck imagery. |
+
+Bucket policies live on `storage.objects`; they are listed in the RLS section below under
+`storage.objects`.
+
+## Tables
+
+### _probe_resp  (RLS ON)
+id bigint | status integer | content text | ts timestamptz =now()
+CONSTRAINTS: none. Internal probe/diagnostic scratch table.
+
+### admin_action_log  (RLS ON)
+id uuid! =gen_random_uuid() | created_at timestamptz! =now() | actor_id uuid | action text! | task text | target_user_id uuid | target_ref text | result text | detail jsonb ='{}'
+CONSTRAINTS: PRIMARY KEY (id)
+INDEXES: idx_admin_action_created (created_at DESC), idx_admin_action_target (target_user_id)
+
+### admin_settings  (RLS ON)
+key text! | value jsonb! ='{}' | updated_at timestamptz! =now()
+CONSTRAINTS: PRIMARY KEY (key)
+
+### agent_findings  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | url text | title text | source text | relevance_score numeric | implication text | status text! ='pending' | entry_id uuid | perplexity_raw jsonb | error_detail text | created_at timestamptz! =now() | themes text[]! ='{}' | dropped_themes text[]! ='{}'
+CONSTRAINTS: PK (id) ;; CHECK status IN ('pending','kept','dismissed','below_bar','duplicate','error','skipped') ;; FK user_id -> auth.users(id) ON DELETE SET NULL
+INDEXES: (user_id, created_at DESC), (user_id, status)
+
+### ai_usage_log  (RLS ON)
+id uuid! =gen_random_uuid() | created_at timestamptz! =now() | user_id uuid | function_name text! | provider text! | model text | input_tokens int =0 | output_tokens int =0 | total_tokens int =(COALESCE(input_tokens,0)+COALESCE(output_tokens,0)) | est_cost_usd numeric(12,6) =0 | success boolean =true | metadata jsonb ='{}'
+CONSTRAINTS: PK (id) ;; FK user_id -> auth.users(id) ON DELETE SET NULL
+INDEXES: created_at DESC, function_name, provider, user_id
+
+### api_health_checks  (RLS ON)
+id uuid! =gen_random_uuid() | run_at timestamptz! =now() | results jsonb! ='[]' | checked int! =0 | failed int! =0 | created_at timestamptz! =now()
+CONSTRAINTS: PK (id)
+
+### assessment_sessions  (RLS ON)
+id uuid! =gen_random_uuid() | token text! | ip_hash text | created_at timestamptz! =now() | last_seen_at timestamptz! =now() | expires_at timestamptz! =(now() + '7 days') | user_id uuid | runs_started int! =0 | state jsonb! ='{}'
+CONSTRAINTS: PK (id) ;; UNIQUE (token) ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+INDEXES: idx_asess_expiry (expires_at) WHERE user_id IS NULL, idx_asess_ip (ip_hash, created_at)
+Anonymous assessment sessions; claimed by `claim_assessment_session(p_token)` at signup.
+
+### audience_demographics  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | category text! | value text! | percentage text! | percentage_numeric numeric | imported_at timestamptz =now() | source_type text ='linkedin_export' | period_start date | period_end date | upload_batch_id uuid
+CONSTRAINTS: PK (id) ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+
+### audience_insights  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | insight_headline text! | insight_body text! | audience_strengths text[] | audience_gaps text[] | next_action text | generated_at timestamptz! =now() | demographics_hash text
+CONSTRAINTS: PK (id) ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+
+### audit_interpretation_backup_20260816  (RLS ON)
+user_id uuid | first_name text | audit_interpretation text | backed_up_at timestamptz
+CONSTRAINTS: none. Dated backup table — safe to drop after verification.
+
+### aura_conversation_memory  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | session_date date! =CURRENT_DATE | summary text | key_decisions text[] | topics_discussed text[] | actions_committed text[] | created_at timestamptz =now() | updated_at timestamptz =now() | role text | content text | session_id text | metadata jsonb ='{}'
+CONSTRAINTS: PK (id) ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+Backs Your Desk (`ask-aura`) memory: per-session rows plus daily summaries.
+
+### authority_scores  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | snapshot_date date! =CURRENT_DATE | authority_score numeric! =0 | momentum_score numeric! =0 | consistency_score numeric! =0 | engagement_score numeric! =0 | strategic_resonance_score numeric! =0 | created_at timestamptz! =now()
+CONSTRAINTS: PK (id) ;; UNIQUE (user_id, snapshot_date) ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+
+### authority_voice_profiles  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | tone text! ='' | preferred_structures jsonb! ='[]' | storytelling_patterns jsonb! ='[]' | example_posts jsonb! ='[]' | admired_posts jsonb! ='[]' | vocabulary_preferences jsonb! ='{}' | created_at timestamptz! =now() | updated_at timestamptz! =now() | language text! ='en' | is_primary boolean! =true | allowed_endings text[]! ='{}' | mode_key text | mode_label text | readiness text | in_voice_moves text[] | in_voice_opens text[] | in_voice_lands text[] | marker_style jsonb! ='{}'
+CONSTRAINTS: PK (id) ;; CHECK mode_key IN ('executive','thought_leadership','educational','personal','contrarian','default') ;; CHECK readiness IN ('forming','developing','working','reliable','distinctive') ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+
+### beta_allowlist  (RLS ON)
+id uuid! =gen_random_uuid() | email text! | name text | seniority text | sector text | status text! ='pending' | source text ='waitlist' | personal_note text | requested_at timestamptz =now() | invited_at timestamptz | activated_at timestamptz | user_id uuid | invited_by uuid | created_at timestamptz =now() | updated_at timestamptz =now() | ref text
+CONSTRAINTS: PK (id) ;; UNIQUE (email) ;; CHECK status IN ('pending','approved','active','invited') ;; FK user_id, invited_by -> auth.users(id) ON DELETE SET NULL
+NOTE: no longer an entitlement gate — entitlements read `diagnostic_profiles.plan` (see 03).
+
+### beta_feedback  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | rating int | message text | page text | feedback_type text ='general' | created_at timestamptz =now()
+CONSTRAINTS: PK (id) ;; CHECK rating BETWEEN 1 AND 10 ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+
+### capability_dimensions  (RLS ON)
+id uuid! =gen_random_uuid() | band seniority_band! | sector text | position smallint! | name text! | why_line text! | anchor_low text! | anchor_high text! | active boolean! =true | created_at timestamptz! =now() | framework text | anchor_mid text | instrument_version smallint! =2
+CONSTRAINTS: PK (id). Reference data — seeded, see supabase/seed.sql.
+
+### capability_radar_snapshots  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | band seniority_band! | instrument_version smallint! =2 | levels jsonb! ='{}' | taken_at timestamptz! =now()
+CONSTRAINTS: PK (id) ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+`taken_at` is DB-clock only — the client must never send it (see 06 known issues).
+
+### capability_responses  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | dimension_id uuid! | level smallint! | instrument_version smallint! =2 | answered_at timestamptz! =now()
+CONSTRAINTS: PK (id) ;; UNIQUE (user_id, dimension_id) ;; CHECK level BETWEEN 1 AND 3 ;; FK dimension_id -> capability_dimensions(id) CASCADE ;; FK user_id -> auth.users(id) CASCADE
+
+### captures  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | type text! | raw_content text | extracted_text text | metadata jsonb ='{}' | processing_status text! ='pending' | error_message text | source_url text | created_at timestamptz! =now()
+CONSTRAINTS: PK (id) ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+LEGACY — `entries` is the canonical knowledge table. Do not write here.
+
+### chat_conversations  (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | title text! ='New Chat' | linked_type text | linked_id uuid | linked_label text | pinned boolean! =false | created_at timestamptz! =now() | updated_at timestamptz! =now()
+CONSTRAINTS: PK (id) ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+
+### chat_messages  (RLS ON)
+id uuid! =gen_random_uuid() | conversation_id uuid! | user_id uuid! | role text! | content text! | mode text | created_at timestamptz! =now()
+CONSTRAINTS: PK (id) ;; CHECK role IN ('user','assistant') ;; FK conversation_id -> chat_conversations(id) CASCADE ;; FK user_id -> auth.users(id) CASCADE
+
+### contact_messages (RLS ON)
+id uuid! =gen_random_uuid() | email text! | name text! | topic text! | message text! | ip_hash text | delivered boolean! =false | created_at timestamptz! =now()
+C: PRIMARY KEY (id)
+
+### content_gate_cache (RLS ON)
+content_hash text! | verdict jsonb! | judge_model text | created_at timestamptz! =now()
+C: PRIMARY KEY (content_hash)
+
+### content_gate_results (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | post_id uuid | function_name text | language text | overall_score integer | pass boolean | assertions jsonb | weaknesses jsonb | skipped boolean! =false | skip_reason text | judge_model text | created_at timestamptz! =now() | content_hash text | expected_ending text
+C: PRIMARY KEY (id) ;; FK user_id -> auth.users(id) ON DELETE CASCADE
+
+### content_items (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | signal_id uuid | type text! | title text! ='' | body text! ='' | language text! ='en' | generation_params jsonb! ='{}' | status text! ='draft' | created_at timestamptz! =now() | updated_at timestamptz! =now() | made_by text! ='unknown' | arrived_by text! ='unknown' | confidence text! ='unknown' | produced_by text | prompt_version text | model_used text | hook_style text | ending_type text | move_id text | beats text[] | shape_repeat text | voice_match numeric | voice_fidelity_flags text[] | tsv tsvector | embedding vector(1536)
+C: PK (id) ;; CHECK arrived_by IN ('published_through_aura','imported_by_member','discovered_by_search','entered_by_member','generated_in_place','unknown') ;; CHECK confidence IN ('confirmed','reported','guessed','unknown') ;; CHECK made_by IN ('member','aura','aura_edited_by_member','machine','unknown') ;; CHECK produced_by IS NULL OR IN ('composer','weekly_drafts','overnight_agent','carousel_studio') ;; CHECK status IN ('draft','published','discarded') ;; CHECK type IN ('linkedin_post','carousel','framework','article','whitepaper') ;; FK signal_id -> strategic_signals(id) SET NULL ;; FK user_id -> auth.users(id) CASCADE
+
+### content_lineage (RLS ON)
+id bigint! =nextval('content_lineage_id_seq') | content_table text! | content_id uuid! | contributor_kind text! | contributor_id uuid | role text! | note text | created_at timestamptz! =now()
+C: PK (id) ;; CHECK content_table IN ('linkedin_posts','content_items') ;; CHECK contributor_kind IN ('signal','capture','evidence_fragment','document','trend','voice_profile') ;; CHECK role IN ('topic','evidence','number','background','timing','voice')
+
+### daily_brief_snapshots (RLS ON)
+id uuid! =gen_random_uuid() | brief_date date! | payload jsonb! ='{}' | audit jsonb! ='{}' | created_at timestamptz! =now() | run_seq integer! | is_sent boolean! =false | rendered_html text | run_reason text
+C: PK (id) ;; UNIQUE (brief_date, run_seq). Append-only — enforced by trigger `daily_brief_snapshots_immutable`.
+
+### decisions (RLS ON)
+id uuid! =gen_random_uuid() | decided_on date! =now()::date | title text! | decision text! | rationale text | expected_outcome text | metric_key text | baseline_value numeric | expected_value numeric | review_on date | status text! ='pending' | actual_value numeric | reviewed_on date | review_note text | created_at timestamptz! =now()
+C: PK (id) ;; CHECK status IN ('pending','open','confirmed','refuted','inconclusive') ;; CHECK status<>'open' OR (review_on IS NOT NULL AND metric_key IS NOT NULL AND (metric_key='none' OR expected_value IS NOT NULL))
+
+### deck_events (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | deck_id text | signal_id uuid | event text! | lang text | theme text | length integer | fit_steps integer | invariant_failures text[] | duration_ms integer | created_at timestamptz! =now() | pdf_bytes bigint | template text
+C: PK (id) ;; CHECK event IN ('generated','validation_failed','rendered','exported','export_failed','published','publish_failed','abandoned','error') ;; FK user_id -> auth.users(id) CASCADE
+
+### decks (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | signal_id uuid | lang text | template text | theme text | slides jsonb | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id)
+
+### deleted_test_accounts_20260818 (RLS ON)
+id bigint! =nextval(...) | source_table text | user_id uuid | row_json jsonb | deleted_at timestamptz =now()
+C: PK (id). Dated archive of purged test accounts.
+
+### design_system (RLS ON)
+id uuid! =gen_random_uuid() | scope text! ='global' | version integer! =1 | is_active boolean! =true | tokens jsonb! ='{}' | created_at timestamptz =now() | updated_at timestamptz =now() | created_by uuid
+C: PK (id) ;; FK created_by -> auth.users(id) SET NULL. Activated through `activate_design_version()`.
+
+### desk_answer_feedback (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | question text! ='' | answer text! ='' | verdict text! | created_at timestamptz! =now()
+C: PK (id) ;; CHECK verdict IN ('yes','no')
+
+### desk_eval_questions (RLS ON)
+id uuid! =gen_random_uuid() | category text! | question text! | expects text! | trap boolean! =false | active boolean! =true | created_at timestamptz! =now() | question_set text! ='set_1'
+C: PK (id). Reference data for the Desk evaluation harness (sets set_1/set_2/set_3/smoke).
+
+### desk_eval_runs (RLS ON)
+id uuid! =gen_random_uuid() | question_id uuid! | run_at timestamptz! =now() | answer text | mode_detected text | verdict text | failure_kind text | notes text | axis_consistency text | axis_asks_when_unclear text
+C: PK (id) ;; CHECK verdict IN ('pass','fail','partial') ;; FK question_id -> desk_eval_questions(id) CASCADE
+
+### desk_learning (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | kind text! | observation text! | evidence_count integer! =0 | evidence jsonb! ='{}' | confidence text! ='observed' | dismissed boolean! =false | first_seen timestamptz! =now() | last_seen timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id, kind, observation) ;; CHECK confidence IN ('observed','strong') ;; CHECK kind IN ('asks_about','acts_on','rejects','talks_like','corrects')
+
+### desk_number_violations (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | run_at timestamptz! =now() | question text | figure text! | resolved text! | answer_excerpt text
+C: PK (id) ;; CHECK resolved IN ('retry_fixed','sentence_dropped')
+
+### diagnostic_profiles (RLS ON)  — the central per-member profile row, 68 columns
+id uuid! =gen_random_uuid() | user_id uuid! | firm text | level text | core_practice text | sector_focus text | north_star_goal text | years_experience text | leadership_style text | generated_skills jsonb! ='[]' | skill_ratings jsonb! ='{}' | completed boolean! =false | created_at timestamptz! =now() | brand_pillars text[]! ='{}' | last_active_at timestamptz =now() | identity_intelligence jsonb! ='{}' | last_visit_at timestamptz =now() | first_name text | onboarding_completed boolean! =false | primary_strength text | audit_results jsonb ='{}' | audit_interpretation text | audit_completed_at timestamptz | brand_assessment_answers jsonb ='{}' | brand_assessment_results jsonb ='{}' | brand_assessment_completed_at timestamptz | avatar_url text | phone_whatsapp text | phone_verified boolean =false | notification_prefs jsonb =(defaults: inapp_all true, push_enabled false, email_weekly_brief true, email_signal_shifts true, whatsapp_silence_alarm false, whatsapp_timing_windows false) | linkedin_url text | last_name text | theme_preference text ='nebula' | linkedin_handle text | onboarding_step integer =0 | audit_method text | shared_learning_consent boolean! =false | lifecycle_opt_out boolean! =false | country text | country_code text | aura_card_ready_at timestamptz | content_language text! ='en' | target_register text | ui_dismissals jsonb! ='{}' | avatar_cutout_url text | display_name_override text | default_template text | default_theme text | timezone text | account_type account_type! ='customer' | excluded_reason text | excluded_at timestamptz | seniority_band seniority_band | band_source text | instrument_version smallint | answered_band seniority_band | cv_crosscheck jsonb | cv_crosscheck_at timestamptz | tier text! ='read' | consented_at timestamptz | consent_version text | journey_reset_at timestamptz | composer_sort_pref text | plan plan_type! ='trial' | plan_started_at timestamptz | trial_ends_at timestamptz | plan_source text | desk_prefs jsonb! ='{}'
+C: PK (id) ;; UNIQUE (user_id) ;; FK user_id -> auth.users(id) CASCADE ;; CHECK band_source IN ('detected','confirmed','corrected') ;; CHECK composer_sort_pref IN ('recommended','newest','most_evidence','never_written') ;; CHECK account_type='customer' OR excluded_reason IS NOT NULL ;; CHECK theme_preference IN ('nebula','prism','terrain') ;; CHECK tier IN ('read','loop')
+GUARDED: trigger `guard_profile_billing_columns` reverts client writes to plan/tier/account_type/
+trial_ends_at/plan_source/excluded_reason/excluded_at unless the caller is admin or service role.
+Trigger `guard_account_type_changes` and `ensure_diagnostic_profile` also run on this table.
+
+### discovery_review_queue (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | candidate_url text! | snippet text | confidence numeric! =0 | rejection_reason text! ='authorship_uncertain' | authorship_signals jsonb! ='[]' | reviewed boolean! =false | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### document_briefs (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | document_id uuid! | thesis text | key_points jsonb! ='[]' | key_figures jsonb! ='[]' | author_pov text | contrarian_angles jsonb! ='[]' | so_what jsonb! ='[]' | coverage jsonb! ='{}' | grounding_score real | pipeline_version smallint! =1 | model text | created_at timestamptz! =now() | tsv tsvector | embedding vector(1536)
+C: PK (id) ;; UNIQUE (document_id, pipeline_version) ;; FK document_id -> documents(id) CASCADE
+
+### document_chunks (RLS ON)
+id uuid! =gen_random_uuid() | document_id uuid! | user_id uuid! | content text! | chunk_index integer! =0 | metadata jsonb ='{}' | tsv tsvector =to_tsvector('english', COALESCE(content,'')) | created_at timestamptz! =now() | embedding vector(1536) | pipeline_version smallint! =1
+C: PK (id) ;; FK document_id -> documents(id) CASCADE ;; FK user_id -> auth.users(id) CASCADE
+
+### document_jobs (RLS ON)
+id uuid! =gen_random_uuid() | document_id uuid! | user_id uuid! | stage text! ='queued' | cursor integer! =0 | total integer | slice_size integer! =25 | attempts integer! =0 | peak_memory_mb integer | failure_code text | error_detail text | last_heartbeat timestamptz! =now() | created_at timestamptz! =now()
+C: PK (id) ;; FK document_id -> documents(id) CASCADE ;; FK user_id -> auth.users(id) CASCADE
+
+### documents (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | filename text! | file_url text! | file_type text! | status text! ='processing' | summary text | page_count integer | created_at timestamptz! =now() | error_message text | file_size bigint | pages_total integer | pages_read integer | extraction_method text | processing_started_at timestamptz | attempt_count integer! =0 | display_title text | document_type text | cv_label text
+C: PK (id) ;; CHECK cv_label IN ('latest','best','target') and only when document_type='cv' ;; CHECK document_type IN ('cv','portfolio','project','testimonial','talk','other') ;; FK user_id -> auth.users(id) CASCADE
+
+### draft_edits (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | post_id uuid | language text | served_text text | published_text text | served_chars integer | published_chars integer | levenshtein_distance integer | similarity_ratio numeric | first_line_changed boolean | numbers_removed integer | numbers_added integer | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE. Feeds voice learning (edit pairs).
+
+### ef_error_log (RLS ON)
+id uuid! =gen_random_uuid() | created_at timestamptz! =now() | function_name text! | user_id uuid | severity text! ='error' | error_message text | context jsonb ='{}'
+C: PK (id) ;; FK user_id -> auth.users(id) SET NULL. Every edge function writes failures here.
+
+### ef_event_log_retired_20260724 (RLS ON)
+Retired predecessor of `ef_error_log`. Same shape. Read-only history.
+
+### entries (RLS ON)  — canonical knowledge/capture table
+id uuid! =gen_random_uuid() | user_id uuid! | type text! | content text! | summary text | created_at timestamptz! =now() | updated_at timestamptz! =now() | skill_pillar text | title text | has_strategic_insight boolean! =false | pinned boolean! =false | image_url text | tsv tsvector =weighted(title A, summary B, content C) | embedding vector(1536) | account_name text | framework_tag text | extract_attempts integer! =0 | source_type text! ='user'
+C: PK (id) ;; CHECK type IN ('link','voice','text','image','doc') ;; FK user_id -> auth.users(id) CASCADE
+`source_type='aura_agent'` rows are Aura-found, NOT member captures — counted separately (see 03).
+
+### eval_metrics (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | metric text! | value numeric! | context jsonb! ='{}' | measured_at timestamptz! =now() | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) SET NULL
+
+### evidence_fragments (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | source_registry_id uuid! | fragment_type text! | title text! | content text! | confidence numeric! =0.7 | skill_pillars text[]! ='{}' | tags text[]! ='{}' | entities jsonb ='[]' | metadata jsonb ='{}' | embedding vector(1536) | tsv tsvector | created_at timestamptz! =now() | pipeline_version smallint! =1
+C: PK (id) ;; FK source_registry_id -> source_registry(id) CASCADE ;; FK user_id -> auth.users(id) CASCADE
+
+### evidence_jobs (RLS ON)
+id uuid! =gen_random_uuid() | source_registry_id uuid! | user_id uuid! | cursor integer! =0 | total integer | fragments_written integer! =0 | status text! ='queued' | last_heartbeat timestamptz! =now() | error_detail text | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### external_costs (RLS ON)
+id uuid! =gen_random_uuid() | name text! | amount_usd numeric! =0 | cycle text! ='monthly' | renews_on date | status text! ='active' | notes text | last_verified date =CURRENT_DATE | created_at timestamptz =now()
+C: PK (id). Admin cost console reference data.
+
+### facet_states (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | facet text! | value numeric! =0 | uncertainty numeric! =1 | last_reinforced_at timestamptz | inputs jsonb! ='{}' | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id, facet) ;; CHECK facet IN ('identity','edge','voice','focus','audience','discernment','conviction') ;; CHECK value BETWEEN 0 AND 1 ;; CHECK uncertainty BETWEEN 0 AND 1 ;; FK user_id -> auth.users(id) CASCADE
+
+### focus_accounts (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | name text! | created_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id, name) ;; FK user_id -> auth.users(id) CASCADE
+
+### framework_activations (RLS ON)
+id uuid! =gen_random_uuid() | framework_id uuid! | user_id uuid! | output_type text! | title text! | content text! | metadata jsonb ='{}' | created_at timestamptz! =now()
+C: PK (id) ;; FK framework_id -> master_frameworks(id) CASCADE ;; FK user_id -> auth.users(id) CASCADE
+
+### freshness_checks (RLS ON)
+check_key text! | claim text! | table_name text! | timestamp_column text! | filter_sql text | warn_after_hours numeric! | error_after_hours numeric! | enabled boolean! =true | owning_job text
+C: PK (check_key). Drives `cockpit_freshness()` — reference data, seed it.
+
+### funnel_daily_ratio (RLS ON)
+day date! | opens_users integer! =0 | signals_users integer! =0 | ratio numeric! =0 | created_at timestamptz! =now()
+C: PK (day)
+
+### guide_articles (RLS ON)
+id uuid! =gen_random_uuid() | slug text! | tab text! | category text! | question_en text | answer_en text! | formula_note_en text | related_terms text[]! ='{}' | surfaces text[]! ='{}' | sort_order integer! =0 | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (slug). Public help content — seed data.
+
+### guide_slug_misses (RLS ON)
+slug text! | surface text! | count integer! =1 | first_seen timestamptz! =now() | last_seen timestamptz! =now()
+C: PK (slug, surface). Records requests for guide entries that do not exist.
+
+### health_findings (RLS ON)
+id uuid! =gen_random_uuid() | code text! | severity text! | detail text! | first_seen timestamptz! =now() | last_seen timestamptz! =now() | resolved_at timestamptz | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; CHECK severity IN ('critical','warn','info')
+
+### home_address (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | address_date date! | lens text! | lens_reason text! | address_md text! | moves jsonb! ='[]' | facts jsonb! ='{}' | model text | generated_at timestamptz! =now() | quality jsonb! ='{}'
+C: PK (id) ;; UNIQUE (user_id, address_date) ;; CHECK lens IN ('record','room','shape') ;; FK user_id -> auth.users(id) CASCADE
+
+### identity_registry (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | email text | linkedin_handle text | kind text! | note text | created_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id) ;; CHECK kind IN ('founder','qa','fixture','customer','unknown') ;; FK user_id -> auth.users(id) CASCADE
+
+### impact_narratives (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | hero_narrative text! | footprint_insight text! | content_insight text! | post_insight text! | one_action text! | data_hash text | generated_at timestamptz =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### import_jobs (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | import_type text! ='csv' | filename text | status text! ='pending' | total_rows integer! =0 | imported_rows integer! =0 | skipped_rows integer! =0 | duplicate_rows integer! =0 | error_details jsonb ='[]' | started_at timestamptz | completed_at timestamptz | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### imprint_snapshots (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | imprint numeric! | components jsonb! ='{}' | facet_vector jsonb! ='{}' | formula_version integer! =1 | created_at timestamptz! =now() | tier text
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### industry_trends (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | headline text! | insight text! | source text! | url text | published_at timestamptz | fetched_at timestamptz! =now() | status text! ='new' | canonical_url text | content_markdown text | summary text | relevance_score integer! =0 | validation_status text! ='unknown' | last_checked_at timestamptz | content_text text | validation_score integer! =0 | topic_relevance_score integer! =0 | final_score numeric! =0 | rejection_reason text | selection_reason text | category text | impact_level text | confidence_level text | opportunity_type text | action_recommendation text | content_angle text | signal_type text | snapshot_quality integer! =0 | is_valid boolean! =true | decision_label text | content_raw text | content_clean text | content_quality_score integer! =0
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+`fetched_at` also drives fair rotation in the `fetch-industry-trends` cron (oldest served first).
+
+### influence_snapshots (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | snapshot_date date! =CURRENT_DATE | followers integer | follower_growth integer! =0 | engagement_rate numeric! =0 | top_format text | top_topic text | authority_themes jsonb! ='[]' | audience_breakdown jsonb! ='{}' | recommendations jsonb! ='[]' | created_at timestamptz! =now() | tone_analysis jsonb! ='[]' | format_breakdown jsonb! ='{}' | post_count integer! =0 | authority_trajectory text | impressions integer! =0 | reactions integer! =0 | comments integer! =0 | shares integer! =0 | saves integer! =0 | posts_count integer! =0 | source_type text! ='unknown' | members_reached integer | total_impressions_annual integer
+C: PK (id) ;; UNIQUE (user_id, snapshot_date, source_type) ;; FK user_id -> auth.users(id) CASCADE
+
+### instrument_runs (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | kind text! ='assessment' | created_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE. Counted against `LIMITS.INSTRUMENT_RUNS_PER_ACCOUNT`.
+
+### job_queue (RLS ON)
+id uuid! =gen_random_uuid() | job_type text! | user_id uuid | payload jsonb! ='{}' | status text! ='pending' | priority integer! =0 | attempts integer! =0 | max_attempts integer! =3 | claimed_at timestamptz | claimed_by text | scheduled_for timestamptz! =now() | last_error text | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; CHECK status IN ('pending','claimed','done','failed','dead') ;; FK user_id -> auth.users(id) SET NULL
+Claimed with `claim_job(p_job_type, p_worker)`, closed with `complete_job(p_id, p_success, p_error)`.
+
+### known_issues (RLS ON)
+id uuid! =gen_random_uuid() | title text! | detail text | severity text! | status text! ='open' | area text | trigger_note text | detected_at timestamptz! =now() | resolved_at timestamptz | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; CHECK severity IN ('low','medium','high') ;; CHECK status IN ('open','monitoring','resolved')
+
+### learned_intelligence (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | source_entry_id uuid | source_document_id uuid | intelligence_type text! ='framework' | title text! | content text! | skill_pillars text[]! ='{}' | skill_boost_pct numeric! =3 | tags text[]! ='{}' | embedding vector(1536) | tsv tsvector | created_at timestamptz! =now()
+C: PK (id) ;; FK source_document_id -> documents(id) SET NULL ;; FK source_entry_id -> entries(id) SET NULL ;; FK user_id -> auth.users(id) CASCADE
+
+### lifecycle_email_log (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | message_key text! | sent_at timestamptz! =now()
+C: PK (id) ;; UNIQUE (user_id, message_key) — the send-once guarantee ;; FK user_id CASCADE
+
+### lifecycle_emails (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid | email_type text! | sent_at timestamptz =now() | metadata jsonb ='{}'
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE
+
+### linkedin_connections (RLS ON)  — holds OAuth tokens; never expose directly
+id uuid! =gen_random_uuid() | user_id uuid! | linkedin_id text | display_name text | access_token text! | refresh_token text | token_expires_at timestamptz | scopes text[] ='{}' | connected_at timestamptz =now() | last_synced_at timestamptz | status text! ='active' | created_at timestamptz =now() | updated_at timestamptz =now() | handle text | profile_name text | profile_url text | source_status text! ='unknown' | timezone text | claim_token_hash text | followers_total integer | followers_total_at timestamptz | can_post boolean | post_checked_at timestamptz | post_check_error text
+C: PK (id) ;; CHECK handle ~ '^[A-Za-z0-9][A-Za-z0-9-]{1,99}$' ;; FK user_id -> auth.users(id) CASCADE
+The client reads the token-free view `linkedin_connections_safe`, never this table.
+
+### linkedin_connections_guessed_20260812 (RLS ON)
+Dated archive of rows whose handle was inferred rather than claimed. No constraints.
+
+### linkedin_post_metrics (RLS ON)
+id uuid! =gen_random_uuid() | user_id uuid! | post_id uuid! | snapshot_date date! =CURRENT_DATE | impressions integer! =0 | reactions integer! =0 | comments integer! =0 | shares integer! =0 | saves integer! =0 | engagement_rate numeric! =0 | created_at timestamptz! =now() | source_type text! ='manual' | members_reached integer! =0 | sends integer! =0 | link_clicks integer! =0 | profile_views integer! =0 | followers_gained integer! =0
+C: PK (id) ;; UNIQUE (post_id, snapshot_date) ;; FK post_id -> linkedin_posts(id) CASCADE ;; FK user_id CASCADE
+
+### linkedin_posts (RLS ON)  — 61 columns, the post ledger
+id uuid! =gen_random_uuid() | user_id uuid! | linkedin_post_id text | post_text text | created_at timestamptz! =now() | published_at timestamptz | like_count integer! =0 | comment_count integer! =0 | repost_count integer! =0 | engagement_score numeric! =0 | media_type text ='text' | theme text | tone text | format_type text | synced_at timestamptz! =now() | post_url text | title text | hook text | topic_label text | framework_type text | visual_style text | content_type text | carousel_structure_type text | hook_style text | cta_style text | content_engine_output_type text | visual_strategy_type text | tracking_status text! ='discovered' | rejection_reason text | source_type text! ='search_discovery' | source_metadata jsonb! ='{}' | enriched_by text[]! ='{}' | source_trust integer! =1 | source_signal_id uuid | published_confirmed_at timestamptz | linkedin_url text | quality_score jsonb | authorship text! ='unset' | acquisition text! ='unset' | claimed_at timestamptz | publish_attempted_at timestamptz | original_generated_text text | ending_type text | stance text | moment_id uuid | voice_match numeric | unsourced_numbers_removed integer! =0 | edited_at timestamptz | edit_distance numeric | unsourced_entities_removed integer! =0 | voice_corpus_status text ='included' | voice_corpus_reason text | made_by text! ='unknown' | arrived_by text! ='unknown' | confidence text! ='unknown' | produced_by text | prompt_version text | model_used text | text_is_snippet boolean! =false | embedding vector(1536) | tsv tsvector
+C: PK (id) ;; UNIQUE (user_id, linkedin_post_id) ;; FK user_id CASCADE ;; FK source_signal_id -> strategic_signals(id)
+  CHECK acquisition IN ('published_via_aura','imported','discovered','api_synced','unset')
+  CHECK arrived_by IN ('published_through_aura','imported_by_member','discovered_by_search','entered_by_member','generated_in_place','unknown')
+  CHECK authorship IN ('user_written','aura_drafted','aura_assisted','unknown','unset')
+  CHECK confidence IN ('confirmed','reported','guessed','unknown')
+  CHECK made_by IN ('member','aura','aura_edited_by_member','machine','unknown')
+  CHECK produced_by IN ('composer','weekly_drafts','overnight_agent','carousel_studio')
+  CHECK ending_type IN ('question','suspended','reframe','equation','number','cta','other')
+  CHECK hook_style IN ('contrarian_claim','number_first','short_story','question','experience_led','announcement','other')
+  CHECK stance IN ('asserts','story','teaches','doubts','analysis')
+  CHECK voice_corpus_status IN ('included','excluded','auto_excluded')
+Trigger `enforce_published_authorship` guards the published/authorship combination.
+
+### linkedin_profile_snapshots (RLS ON)  — append-only, one row per read
+id uuid! =gen_random_uuid() | user_id uuid! | fetched_at timestamptz! =now() | full_name text | headline text | about text | photo_url text | location text | followers integer | connections integer | experience jsonb | education jsonb | skills jsonb | languages jsonb | certifications jsonb | raw jsonb | created_at timestamptz! =now() | updated_at timestamptz! =now()
+C: PK (id) ;; FK user_id -> auth.users(id) CASCADE. INSERT only — never upsert (profile-destruction rule).
+
+### linkedin_profile_snapshots_backup_20260821 (RLS ON)
+Dated backup of the above. No constraints.
+
