@@ -377,7 +377,22 @@ serve(async (req) => {
       byUser.set(f.user_id, arr);
     }
 
-    const userIds = Array.from(byUser.keys());
+    // A member with an unsent card today is a candidate even if the night was
+    // quiet for findings. The card is the reason to write.
+    const candidateIds = new Set(byUser.keys());
+    if (OE_CARDS_ENABLED) {
+      const from = new Date(now.getTime() - 36 * 3600 * 1000).toISOString().slice(0, 10);
+      let cq = admin.from("oe_cards").select("user_id").is("sent_at", null).gte("card_date", from);
+      if (onlyUserId) cq = cq.eq("user_id", onlyUserId);
+      const { data: cardUsers } = await cq;
+      for (const c of (cardUsers || []) as Array<{ user_id: string }>) {
+        if (!c.user_id) continue;
+        if (adminIds.has(c.user_id) && !(dryRun && onlyUserId === c.user_id)) continue;
+        candidateIds.add(c.user_id);
+      }
+    }
+
+    const userIds = Array.from(candidateIds);
     if (userIds.length === 0) {
       quiet = 1; // nothing fresh anywhere — silence is the correct outcome
     }
