@@ -27,6 +27,118 @@ const BASE_CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
 const PAUSE_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
 const FRESH_WINDOW_HOURS = 14;
 
+// The opportunity card block. Behind a flag so it can be switched off without
+// touching anything else this function does.
+const OE_CARDS_ENABLED = (Deno.env.get("OE_CARDS_IN_EMAIL") ?? "true") !== "false";
+const APP_URL = "https://www.aura-intel.org";
+const AMBER = "#B4802A";
+
+const CHAIR_LABEL: Record<string, { en: string; ar: string }> = {
+  board: { en: "Board seat", ar: "مقعد مجلس" },
+  mandate: { en: "Mandate", ar: "تكليف" },
+  role: { en: "Role", ar: "دور" },
+  room: { en: "Room", ar: "غرفة" },
+  speaking: { en: "Speaking", ar: "منصة" },
+  media: { en: "Media", ar: "إعلام" },
+  advisory: { en: "Advisory", ar: "استشارة" },
+  award: { en: "Award", ar: "جائزة" },
+  learning: { en: "Learning", ar: "تعلّم" },
+};
+const BAND_WORD: Record<string, { en: string; ar: string }> = {
+  strong: { en: "strong", ar: "قوية" },
+  worth_a_look: { en: "worth a look", ar: "تستحق النظر" },
+  stretch: { en: "a stretch", ar: "بعيدة" },
+};
+const TAP_LABEL = {
+  right: { en: "That's right", ar: "صحيح" },
+  not_quite: { en: "Not quite", ar: "ليس تماماً" },
+  not_my_area: { en: "Not my area", ar: "ليس مجالي" },
+  less_from_here: { en: "Less from this issuer", ar: "أقل من هذه الجهة" },
+};
+
+type Card = {
+  id: string;
+  opportunity_id: string | null;
+  why_lines: Array<{ text?: string }> | null;
+  gap_line: { text?: string } | null;
+  quote: string | null;
+  clock_text: string | null;
+  fit_band: string | null;
+  win_band: string | null;
+  tap_token: string | null;
+  oe_opportunities?: { title?: string; chair_type?: string; time_kind?: string; source_url?: string } | null;
+};
+
+function tapButton(href: string, label: string): string {
+  return `<a href="${href}" style="display:inline-block;margin:0 6px 6px 0;padding:0 16px;height:36px;line-height:36px;border:1px solid ${BORDER};border-radius:8px;font-family:${BODY};font-size:13px;font-weight:600;color:${INK};text-decoration:none;">${escapeHtml(label)}</a>`;
+}
+
+function bandBox(caption: string, word: string): string {
+  return `<td style="padding:10px 14px;background:${CANVAS};border:1px solid ${BORDER};border-radius:8px;font-family:${BODY};font-size:13px;color:${INK_SOFT};">${escapeHtml(caption)}: <strong style="color:${INK};">${escapeHtml(word)}</strong></td>`;
+}
+
+/** The card, rendered. Returns html and the plain-text twin. */
+function buildCardBlock(card: Card, lang: "en" | "ar"): { html: string; text: string } {
+  const L = (k: keyof typeof TAP_LABEL) => TAP_LABEL[k][lang];
+
+  if (!card.opportunity_id) {
+    const line = lang === "ar" ? "لا شيء قوي اليوم" : "Nothing strong today";
+    return {
+      html: `<p style="margin:0 0 16px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_FAINT};">${escapeHtml(line)}</p>${divider()}`,
+      text: `${line}\n`,
+    };
+  }
+
+  const opp = card.oe_opportunities ?? {};
+  const kind = CHAIR_LABEL[String(opp.chair_type ?? "")]?.[lang] ?? String(opp.chair_type ?? "");
+  const tag = opp.time_kind === "early_signal"
+    ? (lang === "ar" ? "إشارة مبكرة" : "early signal")
+    : (lang === "ar" ? "مفتوح الآن" : "open now");
+  const why = (card.why_lines ?? []).map((w) => String(w?.text ?? "").trim()).filter(Boolean);
+  const gap = String(card.gap_line?.text ?? "").trim();
+  const base = `${APP_URL}/t/${card.tap_token ?? ""}`;
+
+  const whyHtml = why.map((w) =>
+    `<p style="margin:0 0 8px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};"><span style="color:${INK_FAINT};">&bull;</span> ${escapeHtml(w)}</p>`).join("");
+  const gapHtml = gap
+    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};"><span style="color:${AMBER};">&bull;</span> ${escapeHtml(gap)}</p>`
+    : "";
+  const quoteHtml = card.quote
+    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;line-height:1.6;color:${INK_FAINT};">&ldquo;${escapeHtml(card.quote)}&rdquo;${opp.source_url ? ` <a href="${escapeHtml(opp.source_url)}" style="color:${ACCENT};text-decoration:underline;">${lang === "ar" ? "المصدر" : "source"}</a>` : ""}</p>`
+    : "";
+
+  const html = `
+    <p style="margin:0 0 6px;font-family:${MONO};font-size:10px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">${escapeHtml(kind)} &middot; ${escapeHtml(tag)}</p>
+    <p style="margin:0 0 8px;font-family:${BODY};font-size:19px;line-height:1.35;font-weight:700;color:${INK};">${escapeHtml(String(opp.title ?? ""))}</p>
+    ${card.clock_text ? `<p style="margin:0 0 12px;font-family:${MONO};font-size:12px;line-height:1.5;color:${AMBER};">${escapeHtml(card.clock_text)}</p>` : ""}
+    ${whyHtml}${gapHtml}${quoteHtml}
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px;"><tr>
+      ${bandBox(lang === "ar" ? "تناسبك" : "Fits you", BAND_WORD[String(card.fit_band ?? "stretch")]?.[lang] ?? "")}
+      <td style="width:10px;">&nbsp;</td>
+      ${bandBox(lang === "ar" ? "تستطيع الفوز بها" : "You could win it", BAND_WORD[String(card.win_band ?? "stretch")]?.[lang] ?? "")}
+    </tr></table>
+    <p style="margin:0 0 6px;">${tapButton(`${base}?a=right`, L("right"))}${tapButton(`${base}?a=not_quite`, L("not_quite"))}${tapButton(`${base}?a=not_my_area`, L("not_my_area"))}</p>
+    <p style="margin:0 0 4px;font-family:${BODY};font-size:12px;line-height:1.5;"><a href="${base}?a=less_from_here" style="color:${INK_FAINT};text-decoration:underline;">${escapeHtml(L("less_from_here"))}</a></p>
+    ${divider()}`;
+
+  const text = [
+    `${kind} · ${tag}`,
+    String(opp.title ?? ""),
+    card.clock_text ?? "",
+    ...why.map((w) => `- ${w}`),
+    gap ? `- ${gap}` : "",
+    card.quote ? `"${card.quote}"${opp.source_url ? ` (${opp.source_url})` : ""}` : "",
+    `${lang === "ar" ? "تناسبك" : "Fits you"}: ${BAND_WORD[String(card.fit_band ?? "stretch")]?.[lang] ?? ""}`,
+    `${lang === "ar" ? "تستطيع الفوز بها" : "You could win it"}: ${BAND_WORD[String(card.win_band ?? "stretch")]?.[lang] ?? ""}`,
+    `${L("right")}: ${base}?a=right`,
+    `${L("not_quite")}: ${base}?a=not_quite`,
+    `${L("not_my_area")}: ${base}?a=not_my_area`,
+    `${L("less_from_here")}: ${base}?a=less_from_here`,
+  ].filter(Boolean).join("\n");
+
+  return { html, text };
+}
+
 type Finding = {
   id: string;
   user_id: string;
