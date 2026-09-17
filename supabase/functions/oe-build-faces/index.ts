@@ -97,10 +97,11 @@ const NOT_A_NAME = new Set([
 
 /** Initialism of a multi-word English name: "National Water Company" → "NWC". */
 function initialism(name: string): string | null {
-  const words = name.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w) && !NOT_A_NAME.has(w.toLowerCase()) === false || /^[A-Z]/.test(w));
-  const caps = name.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w) && w.length > 1 && !["and", "of", "the", "for"].includes(w.toLowerCase()));
-  if (caps.length < 2 || words.length < 0) return null;
-  const abbr = caps.map((w) => w[0].toUpperCase()).join("");
+  const words = name
+    .split(/[\s,]+/)
+    .filter((w) => /^[A-Za-z]{2,}$/.test(w) && !["and", "of", "the", "for"].includes(w.toLowerCase()));
+  if (words.length < 2) return null;
+  const abbr = words.map((w) => w[0].toUpperCase()).join("");
   return abbr.length >= 2 && abbr.length <= 6 ? abbr : null;
 }
 
