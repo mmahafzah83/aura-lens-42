@@ -528,8 +528,8 @@ serve(async (req) => {
             read_at: new Date().toISOString(),
             metadata: {
               message_key: userKey,
-              lead_finding_id: lead.id,
-              finding_ids: [lead.id, ...others.slice(0, 3).map((o) => o.id)],
+              lead_finding_id: lead?.id ?? null,
+              finding_ids: lead ? [lead.id, ...others.slice(0, 3).map((o) => o.id)] : [],
               resend_id: resendId,
             },
           });
