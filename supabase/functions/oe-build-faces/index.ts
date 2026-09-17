@@ -504,7 +504,25 @@ Deno.serve(async (req) => {
       },
     };
 
-    const userMessage = JSON.stringify(facts);
+    /* ---------- ORGANISATION-NAME SCRUB ----------
+       Every organisation name we can find for this member, plus obvious
+       variants, replaced by a neutral descriptor before the facts leave here.
+       identity_intelligence.clients is READ ONLY for this list and is never
+       part of the payload. */
+    const rawNames: (string | null | undefined)[] = [
+      ...(Array.isArray(snap.experience) ? snap.experience : [])
+        .map((e: any) => e?.company || e?.companyName || e?.organisation),
+      ...(Array.isArray(ii.clients) ? ii.clients : [])
+        .map((c: any) => (typeof c === "string" ? c : c?.name || c?.client)),
+      ...entriesAll.map((e: any) => e?.account_name),
+      p.firm,
+    ];
+    const corpus = JSON.stringify(facts);
+    const scrubList = buildScrubList(rawNames, corpus);
+    const scrubCounter = { hits: 0 };
+    const safeFacts = scrubDeep(facts, scrubList, scrubCounter);
+
+    const userMessage = JSON.stringify(safeFacts);
 
     // ---------- MODEL ----------
     const valid = (o: any) =>
