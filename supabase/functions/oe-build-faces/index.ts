@@ -17,7 +17,7 @@ const corsHeaders = {
 };
 
 const FN = "oe-build-faces";
-const PROMPT_VERSION = "p1-1.0";
+const PROMPT_VERSION = "p1-1.1";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
 const FACES = ["done", "wants", "reads", "stands", "avoid"] as const;
