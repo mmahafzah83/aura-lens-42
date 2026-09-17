@@ -31,7 +31,7 @@ const FRESH_WINDOW_HOURS = 14;
 // touching anything else this function does.
 const OE_CARDS_ENABLED = (Deno.env.get("OE_CARDS_IN_EMAIL") ?? "true") !== "false";
 const APP_URL = "https://www.aura-intel.org";
-const AMBER = "#B4802A";
+const AMBER = "#9A6F12";
 
 const CHAIR_LABEL: Record<string, { en: string; ar: string }> = {
   board: { en: "Board seat", ar: "مقعد مجلس" },
@@ -365,6 +365,24 @@ serve(async (req) => {
       }
     }
   } catch { /* stay in dry-run */ }
+
+  // Pilot: an admin who has actively consented to matching may receive the live
+  // send — but only on the strength of a card or an outstanding outcome ask.
+  // Their findings stay excluded, so the email leads with the card.
+  const pilotAdminIds = new Set<string>();
+  if (adminIds.size) {
+    const { data: consentRows } = await admin
+      .from("oe_consents")
+      .select("user_id")
+      .eq("kind", "matching")
+      .is("revoked_at", null)
+      .in("user_id", Array.from(adminIds));
+    for (const r of (consentRows ?? []) as Array<{ user_id: string }>) {
+      if (adminIds.has(r.user_id)) pilotAdminIds.add(r.user_id);
+    }
+  }
+  const cardEligible = (uid: string) =>
+    !adminIds.has(uid) || pilotAdminIds.has(uid) || (dryRun && onlyUserId === uid);
 
   const now = new Date();
   const dateKey = riyadhDateKey(now);
