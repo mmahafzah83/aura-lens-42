@@ -242,3 +242,12 @@ verify_jwt = false
 
 [functions.oe-judge-member]
 verify_jwt = false
+
+[functions.oe-learn-taps]
+verify_jwt = false
+
+[functions.oe-weekly-rules]
+verify_jwt = false
+
+[functions.oe-outcome-ask]
+verify_jwt = false

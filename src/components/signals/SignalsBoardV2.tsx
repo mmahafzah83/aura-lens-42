@@ -10,6 +10,7 @@ import { LayoutGrid, List as ListIcon, Plus, ChevronRight } from "lucide-react";
 import SignalDetail from "@/components/signals/SignalDetail";
 import ReadingStrip from "@/components/signals/ReadingStrip";
 import { nEvidence } from "@/constants/vocabulary";
+import { OpportunitiesSection } from "@/features/opportunities/OpportunitiesSection";
 
 /**
  * SignalsBoardV2 — THE Signals page.
@@ -659,6 +660,7 @@ const SignalsBoardV2: React.FC<Props> = ({ initialFilter, onOpenCapture, onOpenC
         <SectionLabel>Recommended reading</SectionLabel>
         <ReadingStrip onOpenCapture={onOpenCapture} />
       </div>
+      <OpportunitiesSection />
     </section>
   );
 };

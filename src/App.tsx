@@ -67,6 +67,7 @@ const ReadAlias = () => {
 const Assessment = lazy(() => import("./pages/Assessment"));
 // The public destination of a minted share link. Ungated by design.
 const SharedRead = lazy(() => import("./pages/SharedRead"));
+const OpportunityTapPage = lazy(() => import("./pages/OpportunityTapPage"));
 // Dev-only carousel renderer harness. Registered below only when import.meta.env.DEV.
 const CarouselPreview = lazy(() => import("./carousel/render/CarouselPreview"));
 
@@ -118,6 +119,7 @@ const App = () => (
             <Route path="/assessment" element={<Assessment />} />
             <Route path="/mirror" element={<ReadAlias />} />
             <Route path="/r/:token" element={<SharedRead />} />
+            <Route path="/t/:token" element={<OpportunityTapPage />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/auth" element={<Auth />} />

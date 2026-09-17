@@ -16,7 +16,7 @@ const corsHeaders = {
 };
 
 const FN = "oe-fetch-feed";
-const READER_VERSION = "p2-1.1";
+const READER_VERSION = "p2-1.2";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
@@ -57,7 +57,19 @@ const P2_SYSTEM =
   `(listing/IPO application, new strategy or entity, director term ending or resignation, large digital contract awarded, event dates announced, executive appointment); ` +
   `open_now needs a route or a deadline; seniority_band: work = senior professional, table = director/head, room = C-suite/board. ` +
   `A calendar, directory, aggregator, newsroom index, listing page, company-governance profile page or 'about us' page is NEVER an opportunity — ` +
-  `only one specific event, vacancy, notice, mandate, tender or announcement is. If the page describes many events or many roles, return is_opportunity=false.`;
+  `only one specific event, vacancy, notice, mandate, tender or announcement is. If the page describes many events or many roles, return is_opportunity=false. ` +
+  `If the page reports an event that has already taken place, it is an early_signal for the NEXT edition only when the event is recurring ` +
+  `(annual summit, forum, exhibition); set title to '<event> — next edition', signal_date = the past date, and add requirements[] from the recap. ` +
+  `If the event is not recurring, is_opportunity=false.`;
+
+function pastOpenEvent(rec: Record<string, any>): boolean {
+  if (!['speaking', 'room', 'learning'].includes(String(rec.chair_type)) || rec.time_kind !== 'open_now') return false;
+  const today = new Date().toISOString().slice(0, 10);
+  if (typeof rec.deadline === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rec.deadline) && rec.deadline < today) return true;
+  const quote = String(rec.evidence_quote ?? '');
+  const dates = quote.match(/\b20\d{2}-\d{2}-\d{2}\b/g) ?? [];
+  return dates.some((date) => date < today);
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -390,7 +402,7 @@ Deno.serve(async (req) => {
   const startedAt = new Date().toISOString();
   const counts = {
     pages: 0, candidates: 0, inserted: 0, updated: 0,
-    dropped_no_quote: 0, dropped_not_opportunity: 0, dropped_aggregator: 0,
+    dropped_no_quote: 0, dropped_not_opportunity: 0, dropped_aggregator: 0, dropped_past: 0,
     dedup_hits: 0, leadtime_pairs: 0, errors: 0,
   };
   let costUsd = 0;
@@ -658,6 +670,11 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        if (pastOpenEvent(rec)) {
+          counts.dropped_past++;
+          continue;
+        }
+
         // 3. VERIFY the quote against the page.
         const quote = normaliseForQuote(rec.evidence_quote);
         const pageNorm = normaliseForQuote(cand.text);
@@ -767,6 +784,7 @@ Deno.serve(async (req) => {
             prompt_version: READER_VERSION,
             model: MODEL,
             lane,
+            page_text: String(cand.text ?? "").slice(0, 12_000),
             ...(cand.extra ?? {}),
           },
         };

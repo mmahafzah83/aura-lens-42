@@ -69,6 +69,23 @@ type Card = {
   oe_opportunities?: { title?: string; chair_type?: string; time_kind?: string; source_url?: string } | null;
 };
 
+type OutcomeAsk = {
+  id: string;
+  card_id: string;
+  oe_cards?: { tap_token?: string; oe_opportunities?: { title?: string } | null } | null;
+};
+
+function buildOutcomeBlock(row: OutcomeAsk, lang: "en" | "ar"): { html: string; text: string } {
+  const title = String(row.oe_cards?.oe_opportunities?.title ?? "");
+  const base = `${APP_URL}/t/${row.oe_cards?.tap_token ?? ""}`;
+  const question = lang === "ar" ? `قبل أسبوعين قلت إن هذه الفرصة تناسبك: ${title}. هل حدث شيء بسببها؟` : `Two weeks ago you said this fitted: ${title}. Did anything come of it?`;
+  const labels = lang === "ar" ? { applied: "تقدّمت", won: "حصلت عليها", nothing: "لا شيء" } : { applied: "Applied", won: "Won it", nothing: "Nothing" };
+  return {
+    html: `${divider()}<p style="margin:0 0 12px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK};">${escapeHtml(question)}</p><p style="margin:0 0 6px;">${tapButton(`${base}?o=applied`, labels.applied)}${tapButton(`${base}?o=won`, labels.won)}${tapButton(`${base}?o=nothing`, labels.nothing)}</p>`,
+    text: `${question}\n${labels.applied}: ${base}?o=applied\n${labels.won}: ${base}?o=won\n${labels.nothing}: ${base}?o=nothing`,
+  };
+}
+
 function tapButton(href: string, label: string): string {
   return `<a href="${href}" style="display:inline-block;margin:0 6px 6px 0;padding:0 16px;height:36px;line-height:36px;border:1px solid ${BORDER};border-radius:8px;font-family:${BODY};font-size:13px;font-weight:600;color:${INK};text-decoration:none;">${escapeHtml(label)}</a>`;
 }
@@ -218,6 +235,7 @@ function buildEmail(
   lead: Finding | null,
   others: Finding[],
   card?: { html: string; text: string; subject?: string } | null,
+  outcome?: { html: string; text: string } | null,
 ) {
   const subject = lead ? buildSubject(lead) : (card?.subject || "Aura has one opportunity for you today");
   const kicker = lead ? `THE OVERNIGHT · ${riyadhHHMM(lead.created_at)}` : "THE OVERNIGHT";
@@ -257,6 +275,7 @@ function buildEmail(
       ${implicationHtml}
       ${provHtml}
       ${extrasHtml}
+      ${outcome?.html ?? ""}
       ${divider()}
       ${paragraph("Sent because last night produced something. Quiet nights send nothing.")}
     `,
@@ -274,6 +293,7 @@ function buildEmail(
     textLines.push("", "Also last night:");
     for (const e of extras) textLines.push(`- ${(e.title || e.url || "").trim()}${e.url ? ` (${e.url})` : ""}`);
   }
+  if (outcome?.text) textLines.push("", outcome.text);
   textLines.push("", "Sent because last night produced something. Quiet nights send nothing.", `Pause these emails: ${PAUSE_URL}`);
 
   return { subject, html, text: textLines.join("\n") };
@@ -391,6 +411,16 @@ serve(async (req) => {
         candidateIds.add(c.user_id);
       }
     }
+    const outcomeByUser = new Map<string, OutcomeAsk>();
+    let oq = admin.from("oe_outcomes")
+      .select("id,user_id,card_id,oe_cards(tap_token,oe_opportunities(title))")
+      .eq("stage", "asked").is("note", null).order("created_at", { ascending: true });
+    if (onlyUserId) oq = oq.eq("user_id", onlyUserId);
+    const { data: outcomeRows } = await oq;
+    for (const row of (outcomeRows ?? []) as unknown as Array<OutcomeAsk & { user_id: string }>) {
+      if (!outcomeByUser.has(row.user_id)) outcomeByUser.set(row.user_id, row);
+      if (!adminIds.has(row.user_id) || (dryRun && onlyUserId === row.user_id)) candidateIds.add(row.user_id);
+    }
 
     const userIds = Array.from(candidateIds);
     if (userIds.length === 0) {
@@ -473,17 +503,20 @@ serve(async (req) => {
           cardRow = (c as unknown as Card) ?? null;
         }
 
-        if (!lead && !cardRow) { results.push({ user_id: uid, outcome: "skipped_quiet" }); continue; }
+        const outcomeRow = outcomeByUser.get(uid) ?? null;
+        if (!lead && !cardRow && !outcomeRow) { results.push({ user_id: uid, outcome: "skipped_quiet" }); continue; }
 
         const lang = langByUser.get(uid) ?? "en";
         const cardBlock = cardRow ? buildCardBlock(cardRow, lang) : null;
-        const { subject, html, text } = buildEmail(lead, others, cardBlock);
+        const outcomeBlock = outcomeRow ? buildOutcomeBlock(outcomeRow, lang) : null;
+        const { subject, html, text } = buildEmail(lead, others, cardBlock, outcomeBlock);
 
         if (dryRun) {
           results.push({
             user_id: uid, to, outcome: "would_send", subject, html, text,
             finding_ids: lead ? [lead.id, ...others.slice(0, 3).map((o) => o.id)] : [],
             card_id: cardRow?.id ?? null,
+            outcome_id: outcomeRow?.id ?? null,
           });
           continue;
         }
@@ -516,6 +549,7 @@ serve(async (req) => {
             metadata: { card_id: cardRow.id, opportunity_id: cardRow.opportunity_id, message_key: userKey },
           });
         }
+        if (outcomeRow) await admin.from("oe_outcomes").update({ note: "sent" }).eq("id", outcomeRow.id);
         sent++;
         // The send ledger every dashboard reads. Bookkeeping must never be able
         // to break a delivery: if this write fails we log it and carry on.

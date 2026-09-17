@@ -1,0 +1,34 @@
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { OpportunityCardData } from "./types";
+
+const CARD_SELECT = "id,opportunity_id,card_date,why_lines,gap_line,quote,clock_text,fit_band,win_band,explore_slot,tap_token,oe_opportunities(id,title,chair_type,time_kind,source_url,issuer_id,seniority_band,location),oe_taps(tap,scope,tapped_at)";
+
+export function memberDate(timezone?: string | null) {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: timezone || "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  } catch { return new Date().toISOString().slice(0, 10); }
+}
+
+export function useOpportunityCards(userId?: string | null, days = 30) {
+  const [cards, setCards] = useState<OpportunityCardData[]>([]);
+  const [language, setLanguage] = useState<"en" | "ar">("en");
+  const [timezone, setTimezone] = useState("Asia/Riyadh");
+  const [loading, setLoading] = useState(true);
+  const refresh = useCallback(async () => {
+    if (!userId) { setCards([]); setLoading(false); return; }
+    setLoading(true);
+    const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
+      .select("content_language,timezone").eq("user_id", userId).maybeSingle();
+    const lang = profile?.content_language === "ar" ? "ar" : "en";
+    const tz = profile?.timezone || "Asia/Riyadh";
+    setLanguage(lang); setTimezone(tz);
+    const since = new Date(Date.now() - Math.max(1, days) * 86_400_000).toISOString().slice(0, 10);
+    const { data } = await (supabase.from("oe_cards" as any) as any).select(CARD_SELECT)
+      .eq("user_id", userId).gte("card_date", since).order("card_date", { ascending: false }).order("created_at", { ascending: false });
+    setCards((data ?? []) as OpportunityCardData[]);
+    setLoading(false);
+  }, [days, userId]);
+  useEffect(() => { void refresh(); }, [refresh]);
+  return { cards, language, timezone, today: memberDate(timezone), loading, refresh };
+}
