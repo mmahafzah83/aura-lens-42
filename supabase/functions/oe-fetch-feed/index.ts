@@ -431,22 +431,22 @@ Deno.serve(async (req) => {
         counts.pages++;
         if (/calendar|\.ics/.test(ct) || text.startsWith("BEGIN:VCALENDAR")) {
           candidates = parseIcs(text);
-        } else if (firecrawlKey) {
-          const fc = await firecrawlScrape(firecrawlKey, url, true);
+        } else {
+          const fc = await scrapePage(firecrawlKey, url, true);
           if (fc.ok) candidates = [{ url, title: fc.title, text: fc.markdown }];
         }
       }
     } else if (kind === "listing") {
-      if (!firecrawlKey) throw new Error("FIRECRAWL_API_KEY not configured");
-      const fc = await firecrawlScrape(firecrawlKey, url!, true);
+      const fc = await scrapePage(firecrawlKey, url!, true);
       counts.pages++;
-      if (!fc.ok) throw new Error(`firecrawl ${fc.status}: ${fc.error}`);
+      if (!fc.ok) throw new Error(`read failed ${fc.status}: ${fc.error}`);
 
       const chairWords = (feed.chair_types ?? []) as string[];
       const wanted = /ترشح|nomination|board|مجلس إدارة|vacanc|شاغر|tender|منافسة|call for|دعوة/i;
       const links = (fc.links ?? [])
         .map((l) => canonicalise(l))
         .filter((l) => l.startsWith("http") && !blocked(l))
+        .filter((l) => canonicalise(url!) !== l)
         .filter((l, i, arr) => arr.indexOf(l) === i)
         .filter((l) => wanted.test(decodeURIComponent(l)) || chairWords.length === 0)
         .slice(0, MAX_DETAIL_PAGES * 2);
@@ -457,7 +457,7 @@ Deno.serve(async (req) => {
       const fresh = links.filter((l) => !knownSet.has(l)).slice(0, MAX_DETAIL_PAGES);
 
       for (const link of fresh) {
-        const d = await firecrawlScrape(firecrawlKey, link);
+        const d = await scrapePage(firecrawlKey, link);
         counts.pages++;
         if (!d.ok) { counts.errors++; continue; }
         const raw = d.markdown || "";
@@ -467,24 +467,32 @@ Deno.serve(async (req) => {
         if (noise > MAX_NOISE_RATIO) continue;
         candidates.push({ url: link, title: d.title, text: clean });
       }
-      // The listing page itself can carry the whole notice.
-      if (!candidates.length && fc.markdown) {
-        candidates.push({ url: url!, title: fc.title, text: squash(stripTags(fc.markdown)) });
-      }
+      // A listing page is a page, not a chair. If no detail page was reachable,
+      // this feed produces nothing today. We never turn the index into a record.
     } else if (kind === "api") {
       const isWorldBank = /worldbank\.org/i.test(url || "");
       if (isWorldBank && url) {
-        const r = await fetch(`${url}?format=json&rows=25`, { signal: AbortSignal.timeout(20_000) });
+        const r = await fetch(`${url}?format=json&rows=100`, { signal: AbortSignal.timeout(20_000) });
         counts.pages++;
         const j = await r.json().catch(() => null);
         const rows: any[] = j?.procnotices ?? j?.notices ?? [];
-        candidates = rows.slice(0, 25).map((n) => ({
-          url: n.url || n.noticeurl || null,
+        const kept = rows.filter((n) => {
+          const kindText = `${n.notice_type ?? ""} ${n.procurement_method_name ?? ""} ${n.procurement_method ?? ""} ${n.noticetype ?? ""}`;
+          const consulting = WB_CONSULTING.test(kindText);
+          if (!consulting) return false;
+          const country = squash(String(n.country_name ?? n.countryname ?? ""));
+          const inRegion = WB_REGION.some((c) => country.toLowerCase().includes(c));
+          const title = `${n.project_name ?? ""} ${n.bid_description ?? ""}`;
+          return inRegion || WB_THEMES.test(title);
+        });
+        candidates = kept.slice(0, MAX_DETAIL_PAGES).map((n) => ({
+          url: worldBankNoticeUrl(n),
           title: n.project_name || n.notice_type || "",
-          text: [n.project_name, n.notice_type, n.country_name, n.noticedate, n.submission_deadline_date, n.notice_lang_name, n.bid_description]
+          text: [n.project_name, n.notice_type, n.procurement_method_name, n.country_name, n.noticedate, n.submission_deadline_date, n.notice_lang_name, n.bid_description]
             .filter(Boolean).join("\n"),
         }));
       } else if (perplexityKey && firecrawlKey) {
+
         // Discovery: round-robin over the queries the faces already wrote.
         const { data: faces } = await admin
           .from("oe_faces").select("user_id, face, queries")
