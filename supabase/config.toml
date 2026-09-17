@@ -223,3 +223,7 @@ verify_jwt = false
 
 [functions.backfill-document-briefs]
 verify_jwt = false
+
+[functions.oe-build-faces]
+verify_jwt = false
+
