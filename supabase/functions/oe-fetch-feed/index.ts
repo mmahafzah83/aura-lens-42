@@ -1,0 +1,756 @@
+/**
+ * oe-fetch-feed — reads one feed, turns each page or message into at most one
+ * opportunity record, proves every record with a quote copied from the page,
+ * resolves who is issuing it, and writes it once. Nothing is guessed: a record
+ * without a verbatim quote for an open chair is dropped.
+ */
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { logAIUsage } from "../_shared/logAIUsage.ts";
+import { logEfError } from "../_shared/observe.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
+};
+
+const FN = "oe-fetch-feed";
+const READER_VERSION = "p2-1.0";
+const MODEL = "google/gemini-3-flash-preview";
+const EMBED_MODEL = "text-embedding-3-small";
+const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
+const MIN_CLEAN_TEXT_CHARS = 800;
+const MAX_NOISE_RATIO = 0.30;
+const MAX_DETAIL_PAGES = 25;
+const MAX_PAGE_CHARS = 24_000; // ≈ 6,000 tokens; head and tail kept, middle cut
+
+const P2_SYSTEM =
+  `You turn one web page or message into at most one opportunity record for senior professionals, or null. ` +
+  `Return strict JSON {is_opportunity:boolean, chair_type:'board'|'mandate'|'role'|'room'|'speaking'|'media'|'advisory'|'award'|'learning'|null, ` +
+  `time_kind:'open_now'|'early_signal'|null, title, scope (<=60 words), issuer_raw, sector, seniority_band:'work'|'table'|'room'|null, ` +
+  `location, remote:boolean|null, requirements:[{text, quote}], deadline:YYYY-MM-DD|null, signal_date:YYYY-MM-DD|null, ` +
+  `evidence_quote (a verbatim sentence from the page that proves chair_type and, when present, the deadline), language:'ar'|'en', extraction_confidence:0-1}. ` +
+  `Rules: null over guess; evidence_quote must be copied verbatim; early_signal is for facts that imply a chair will open ` +
+  `(listing/IPO application, new strategy or entity, director term ending or resignation, large digital contract awarded, event dates announced, executive appointment); ` +
+  `open_now needs a route or a deadline; seniority_band: work = senior professional, table = director/head, room = C-suite/board.`;
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+// ───────── small helpers ─────────
+
+function normaliseJson(text: string): any {
+  let t = (text || "").trim();
+  if (t.startsWith("```")) t = t.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  let parsed: any;
+  try {
+    parsed = JSON.parse(t);
+  } catch {
+    const s = t.indexOf("{");
+    const e = t.lastIndexOf("}");
+    if (s >= 0 && e > s) parsed = JSON.parse(t.slice(s, e + 1));
+    else throw new Error("unparseable model output");
+  }
+  if (Array.isArray(parsed)) parsed = parsed[0];
+  if (!parsed || typeof parsed !== "object") throw new Error("model output is not an object");
+  return parsed;
+}
+
+const squash = (s: string) => (s || "").replace(/\s+/g, " ").trim();
+
+function stripTags(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function canonicalise(raw: string): string {
+  try {
+    const u = new URL(raw);
+    u.hash = "";
+    const drop: string[] = [];
+    u.searchParams.forEach((_v, k) => {
+      if (/^utm_/i.test(k) || /^(fbclid|ref|ref_src|gclid|mc_cid|mc_eid)$/i.test(k)) drop.push(k);
+    });
+    for (const k of drop) u.searchParams.delete(k);
+    return u.toString().replace(/\/$/, "");
+  } catch {
+    return raw;
+  }
+}
+
+async function sha256(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function hostOf(url: string): string {
+  try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; }
+}
+
+function truncateMiddle(text: string, max = MAX_PAGE_CHARS): string {
+  if (text.length <= max) return text;
+  const head = text.slice(0, Math.floor(max * 0.6));
+  const tail = text.slice(-Math.floor(max * 0.4));
+  return `${head}\n\n[…middle of the page removed…]\n\n${tail}`;
+}
+
+function cosine(a: number[], b: number[]): number {
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length && i < b.length; i++) { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+  return na && nb ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0;
+}
+
+// ───────── outside calls ─────────
+
+async function firecrawlScrape(apiKey: string, url: string, withLinks = false) {
+  const res = await fetch(`${FIRECRAWL_BASE}/scrape`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url,
+      formats: withLinks ? ["markdown", "links"] : ["markdown"],
+      onlyMainContent: true,
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) return { ok: false as const, status: res.status, error: data?.error || "scrape failed" };
+  const d = data?.data ?? data ?? {};
+  return {
+    ok: true as const,
+    markdown: (d.markdown ?? "") as string,
+    links: (d.links ?? []) as string[],
+    title: (d.metadata?.title ?? "") as string,
+    sourceURL: (d.metadata?.sourceURL ?? d.metadata?.url ?? url) as string,
+  };
+}
+
+async function perplexity(apiKey: string, query: string) {
+  const r = await fetch("https://api.perplexity.ai/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "sonar",
+      messages: [
+        { role: "system", content: "Find real, current opportunities. Cite the page that proves each one." },
+        { role: "user", content: query },
+      ],
+      search_recency_filter: "week",
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!r.ok) return { ok: false as const, citations: [] as string[], usage: {} };
+  const j = await r.json();
+  const citations: string[] = j?.citations ?? j?.search_results?.map((s: any) => s.url) ?? [];
+  return { ok: true as const, citations: citations.filter(Boolean), usage: j?.usage ?? {} };
+}
+
+async function embed(key: string, input: string): Promise<number[] | null> {
+  const r = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: EMBED_MODEL, input }),
+  });
+  if (!r.ok) {
+    console.error(`[${FN}] embed failed`, r.status);
+    return null;
+  }
+  const j = await r.json();
+  return j?.data?.[0]?.embedding ?? null;
+}
+
+async function readPage(apiKey: string, header: string, pageText: string) {
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: MODEL,
+      temperature: 0.1,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: P2_SYSTEM },
+        { role: "user", content: `${header}\n\nPAGE TEXT:\n${truncateMiddle(pageText)}` },
+      ],
+    }),
+  });
+  if (!r.ok) throw new Error(`gateway ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  const data = await r.json();
+  return { content: data?.choices?.[0]?.message?.content || "", usage: data?.usage || {} };
+}
+
+// ───────── candidate gathering ─────────
+
+interface Candidate { url: string | null; title: string; text: string; extra?: Record<string, unknown> }
+
+function parseRss(xml: string): Candidate[] {
+  const out: Candidate[] = [];
+  const items = xml.match(/<(item|entry)[\s\S]*?<\/\1>/gi) ?? [];
+  for (const it of items.slice(0, 40)) {
+    const link = it.match(/<link[^>]*href="([^"]+)"/i)?.[1] || it.match(/<link>([\s\S]*?)<\/link>/i)?.[1] || "";
+    const title = squash(stripTags(it.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ""));
+    const desc = squash(stripTags(it.match(/<(description|summary|content[^>]*)>([\s\S]*?)<\/\1>/i)?.[2] || ""));
+    if (!link && !title) continue;
+    out.push({ url: squash(link) || null, title, text: `${title}\n\n${desc}` });
+  }
+  return out;
+}
+
+function parseSitemap(xml: string): Candidate[] {
+  const locs = [...xml.matchAll(/<loc>([\s\S]*?)<\/loc>/gi)].map((m) => squash(m[1]));
+  return locs.slice(0, 40).map((u) => ({ url: u, title: "", text: "" }));
+}
+
+function parseTelegram(html: string): Candidate[] {
+  const blocks = [...html.matchAll(
+    /<div class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+  )].map((m) => squash(stripTags(m[1])));
+  return blocks.filter((t) => t.length > 80).slice(0, 25).map((t) => ({
+    url: null,
+    title: t.slice(0, 80),
+    text: t,
+  }));
+}
+
+function parseIcs(text: string): Candidate[] {
+  const events = text.split(/BEGIN:VEVENT/i).slice(1);
+  return events.slice(0, 40).map((e) => {
+    const get = (k: string) => squash(e.match(new RegExp(`${k}[^:]*:(.*)`, "i"))?.[1] || "");
+    const title = get("SUMMARY");
+    return {
+      url: get("URL") || null,
+      title,
+      text: [title, get("DTSTART"), get("LOCATION"), get("DESCRIPTION")].filter(Boolean).join("\n"),
+    };
+  });
+}
+
+// ───────── issuer resolution ─────────
+
+function guessIssuerKind(name: string): string {
+  const n = name.toLowerCase();
+  if (/وزارة|ministry/.test(n)) return "ministry";
+  if (/هيئة|authority|commission|regulator/.test(n)) return "authority";
+  if (/جامعة|universit|college/.test(n)) return "university";
+  if (/صندوق|fund|pif/.test(n)) return "fund";
+  if (/بنك|bank|شركة|company|holding|plc|listed/.test(n)) return "listed_company";
+  if (/consult|advisory|firm/.test(n)) return "firm";
+  if (/event|conference|summit|forum/.test(n)) return "event_host";
+  return "other";
+}
+
+/**
+ * Exact name match, then domain. The similarity tier is skipped: pg_trgm is not
+ * installed on this database, so there is no trigram operator to match on.
+ */
+async function resolveIssuer(
+  admin: SupabaseClient,
+  issuerRaw: string,
+  sourceUrl: string | null,
+  sector: string | null,
+): Promise<string | null> {
+  const name = squash(issuerRaw || "");
+  if (!name) return null;
+
+  const { data: byName } = await admin
+    .from("oe_issuers")
+    .select("id, canonical_name, name_ar, name_en, aliases")
+    .or(`canonical_name.ilike.${name},name_ar.ilike.${name},name_en.ilike.${name}`)
+    .limit(1);
+  if (byName?.length) return byName[0].id;
+
+  const { data: byAlias } = await admin
+    .from("oe_issuers")
+    .select("id")
+    .contains("aliases", [name])
+    .limit(1);
+  if (byAlias?.length) return byAlias[0].id;
+
+  const domain = sourceUrl ? hostOf(sourceUrl) : "";
+  if (domain) {
+    const { data: byDomain } = await admin.from("oe_issuers").select("id").eq("domain", domain).limit(1);
+    if (byDomain?.length) return byDomain[0].id;
+  }
+
+  const { data: inserted } = await admin
+    .from("oe_issuers")
+    .insert({
+      canonical_name: name,
+      name_en: /[A-Za-z]/.test(name) ? name : null,
+      name_ar: /[\u0600-\u06FF]/.test(name) ? name : null,
+      domain: domain || null,
+      kind: guessIssuerKind(name),
+      sector: sector || null,
+    })
+    .select("id")
+    .maybeSingle();
+  return inserted?.id ?? null;
+}
+
+// ───────── the function ─────────
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const CRON_SECRET = Deno.env.get("cron_secret") || Deno.env.get("CRON_SECRET") || "";
+  const cronHeader = req.headers.get("x-cron-secret") || "";
+  const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!((!!CRON_SECRET && cronHeader === CRON_SECRET) || bearer === SERVICE_ROLE)) {
+    return json({ error: "Forbidden" }, 403);
+  }
+
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
+  const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
+  const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY") || "";
+  const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
+
+  const body = await req.json().catch(() => ({}));
+  const feedId = body.feed_id as string | undefined;
+  const memberId = (body.user_id ?? null) as string | null;
+  if (!feedId) return json({ error: "feed_id required" }, 400);
+
+  const startedAt = new Date().toISOString();
+  const counts = {
+    pages: 0, candidates: 0, inserted: 0, updated: 0,
+    dropped_no_quote: 0, dropped_not_opportunity: 0,
+    dedup_hits: 0, leadtime_pairs: 0, errors: 0,
+  };
+  let costUsd = 0;
+
+  const { data: feed, error: feedErr } = await admin
+    .from("oe_feeds").select("*").eq("id", feedId).maybeSingle();
+  if (feedErr || !feed) return json({ error: "feed not found" }, 404);
+
+  const { data: policy } = await admin
+    .from("oe_policy_versions").select("params").eq("active", true).maybeSingle();
+  const params = (policy?.params ?? {}) as Record<string, any>;
+  const neverRead: string[] = params.never_read ?? [];
+  const dedupCosine: number = params.dedup_cosine ?? 0.92;
+  const discoveryBudget: number = params.discovery_queries_per_night ?? 30;
+
+  const blocked = (url: string | null) =>
+    !!url && neverRead.some((h) => hostOf(url) === h || hostOf(url).endsWith(`.${h}`));
+
+  try {
+    // ── 1. FETCH ───────────────────────────────────────────────────────────
+    const kind = (body.kind ?? feed.kind) as string;
+    const url = (body.url ?? feed.url) as string | null;
+    const lane = (body.lane ?? feed.lane) as string;
+    let candidates: Candidate[] = [];
+
+    if (url && blocked(url)) {
+      await logEfError(admin, {
+        function_name: FN, error: `never_read host skipped: ${url}`, severity: "low",
+        context: { feed_id: feedId },
+      });
+    } else if (kind === "rss" || kind === "sitemap") {
+      const r = await fetch(url!, { signal: AbortSignal.timeout(20_000) });
+      const xml = await r.text();
+      counts.pages++;
+      candidates = kind === "rss" ? parseRss(xml) : parseSitemap(xml);
+      // A sitemap gives links only; fetch each one plainly.
+      if (kind === "sitemap") {
+        const picked = candidates.slice(0, MAX_DETAIL_PAGES);
+        candidates = [];
+        for (const c of picked) {
+          if (blocked(c.url)) continue;
+          try {
+            const p = await fetch(c.url!, { signal: AbortSignal.timeout(20_000) });
+            const text = squash(stripTags(await p.text()));
+            counts.pages++;
+            if (text.length >= 400) candidates.push({ url: c.url, title: "", text });
+          } catch { counts.errors++; }
+        }
+      }
+    } else if (kind === "telegram") {
+      if (url) {
+        const r = await fetch(url.replace("t.me/", "t.me/s/").replace("/s/s/", "/s/"), {
+          signal: AbortSignal.timeout(20_000),
+        });
+        counts.pages++;
+        candidates = parseTelegram(await r.text());
+      }
+    } else if (kind === "calendar") {
+      if (url) {
+        const r = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+        const ct = r.headers.get("content-type") || "";
+        const text = await r.text();
+        counts.pages++;
+        if (/calendar|\.ics/.test(ct) || text.startsWith("BEGIN:VCALENDAR")) {
+          candidates = parseIcs(text);
+        } else if (firecrawlKey) {
+          const fc = await firecrawlScrape(firecrawlKey, url, true);
+          if (fc.ok) candidates = [{ url, title: fc.title, text: fc.markdown }];
+        }
+      }
+    } else if (kind === "listing") {
+      if (!firecrawlKey) throw new Error("FIRECRAWL_API_KEY not configured");
+      const fc = await firecrawlScrape(firecrawlKey, url!, true);
+      counts.pages++;
+      if (!fc.ok) throw new Error(`firecrawl ${fc.status}: ${fc.error}`);
+
+      const chairWords = (feed.chair_types ?? []) as string[];
+      const wanted = /ترشح|nomination|board|مجلس إدارة|vacanc|شاغر|tender|منافسة|call for|دعوة/i;
+      const links = (fc.links ?? [])
+        .map((l) => canonicalise(l))
+        .filter((l) => l.startsWith("http") && !blocked(l))
+        .filter((l, i, arr) => arr.indexOf(l) === i)
+        .filter((l) => wanted.test(decodeURIComponent(l)) || chairWords.length === 0)
+        .slice(0, MAX_DETAIL_PAGES * 2);
+
+      const { data: known } = await admin
+        .from("oe_opportunities").select("canonical_url").in("canonical_url", links.slice(0, 200));
+      const knownSet = new Set((known ?? []).map((k: any) => k.canonical_url));
+      const fresh = links.filter((l) => !knownSet.has(l)).slice(0, MAX_DETAIL_PAGES);
+
+      for (const link of fresh) {
+        const d = await firecrawlScrape(firecrawlKey, link);
+        counts.pages++;
+        if (!d.ok) { counts.errors++; continue; }
+        const raw = d.markdown || "";
+        const clean = squash(stripTags(raw));
+        if (clean.length < MIN_CLEAN_TEXT_CHARS) continue;
+        const noise = raw.length ? 1 - clean.length / raw.length : 1;
+        if (noise > MAX_NOISE_RATIO) continue;
+        candidates.push({ url: link, title: d.title, text: clean });
+      }
+      // The listing page itself can carry the whole notice.
+      if (!candidates.length && fc.markdown) {
+        candidates.push({ url: url!, title: fc.title, text: squash(stripTags(fc.markdown)) });
+      }
+    } else if (kind === "api") {
+      const isWorldBank = /worldbank\.org/i.test(url || "");
+      if (isWorldBank && url) {
+        const r = await fetch(`${url}?format=json&rows=25`, { signal: AbortSignal.timeout(20_000) });
+        counts.pages++;
+        const j = await r.json().catch(() => null);
+        const rows: any[] = j?.procnotices ?? j?.notices ?? [];
+        candidates = rows.slice(0, 25).map((n) => ({
+          url: n.url || n.noticeurl || null,
+          title: n.project_name || n.notice_type || "",
+          text: [n.project_name, n.notice_type, n.country_name, n.noticedate, n.submission_deadline_date, n.notice_lang_name, n.bid_description]
+            .filter(Boolean).join("\n"),
+        }));
+      } else if (perplexityKey && firecrawlKey) {
+        // Discovery: round-robin over the queries the faces already wrote.
+        const { data: faces } = await admin
+          .from("oe_faces").select("user_id, face, queries")
+          .in("face", ["done", "wants", "stands"]);
+        const byUser = new Map<string, string[]>();
+        for (const f of faces ?? []) {
+          const list = byUser.get(f.user_id) ?? [];
+          list.push(...((f.queries ?? []) as string[]));
+          byUser.set(f.user_id, list);
+        }
+        const rota: string[] = [];
+        let i = 0;
+        while (rota.length < discoveryBudget) {
+          let added = false;
+          for (const list of byUser.values()) {
+            if (list[i]) { rota.push(list[i]); added = true; }
+            if (rota.length >= discoveryBudget) break;
+          }
+          if (!added) break;
+          i++;
+        }
+        const urls = new Set<string>();
+        for (const q of rota) {
+          const p = await perplexity(perplexityKey, q);
+          if (!p.ok) { counts.errors++; continue; }
+          costUsd += 0.001;
+          await logAIUsage({
+            function_name: FN, provider: "perplexity", model: "sonar",
+            input_tokens: p.usage?.prompt_tokens ?? 0, output_tokens: p.usage?.completion_tokens ?? 0,
+            metadata: { feed_id: feedId },
+          });
+          for (const c of p.citations) {
+            const cu = canonicalise(c);
+            if (!blocked(cu)) urls.add(cu);
+          }
+          if (urls.size >= MAX_DETAIL_PAGES) break;
+        }
+        for (const u of [...urls].slice(0, MAX_DETAIL_PAGES)) {
+          const d = await firecrawlScrape(firecrawlKey, u);
+          counts.pages++;
+          if (!d.ok) { counts.errors++; continue; }
+          const clean = squash(stripTags(d.markdown || ""));
+          if (clean.length < MIN_CLEAN_TEXT_CHARS) continue;
+          candidates.push({ url: u, title: d.title, text: clean });
+        }
+      }
+    } else if (kind === "member_forward") {
+      if (!memberId) throw new Error("member_forward job without user_id");
+      const since = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+      const { data: entries } = await admin
+        .from("entries")
+        .select("id, title, content, summary, created_at")
+        .eq("user_id", memberId)
+        .eq("source_type", "member_forward")
+        .gte("created_at", since)
+        .limit(20);
+      for (const e of entries ?? []) {
+        const text = squash(`${e.title ?? ""}\n${e.content ?? e.summary ?? ""}`);
+        if (text.length < 40) continue;
+        candidates.push({ url: null, title: e.title ?? "", text, extra: { entry_id: e.id } });
+        // Look for the public twin of what he forwarded.
+        if (perplexityKey && firecrawlKey) {
+          const p = await perplexity(perplexityKey, `Find the original public page for this: ${text.slice(0, 200)}`);
+          const twin = p.citations.map(canonicalise).find((u) => !blocked(u));
+          if (twin) {
+            const d = await firecrawlScrape(firecrawlKey, twin);
+            counts.pages++;
+            if (d.ok) {
+              const clean = squash(stripTags(d.markdown || ""));
+              if (clean.length >= 400) {
+                candidates.push({ url: twin, title: d.title, text: clean, extra: { twin_of: e.id } });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    counts.candidates = candidates.length;
+
+    // ── 2–6. READ, VERIFY, RESOLVE, DEDUP, WRITE ──────────────────────────
+    if (!lovableKey && candidates.length) throw new Error("LOVABLE_API_KEY not configured");
+    let insertedAnything = false;
+
+    for (const cand of candidates) {
+      try {
+        const header = [
+          `FEED: ${feed.name}`, `LANE: ${lane}`,
+          `ISSUER HINT: ${feed.issuer_hint ?? "unknown"}`,
+          `URL: ${cand.url ?? "(forwarded message, no url)"}`,
+        ].join("\n");
+        const out = await readPage(lovableKey, header, cand.text);
+        costUsd += 0.0005;
+        await logAIUsage({
+          user_id: memberId, function_name: FN, provider: "lovable", model: MODEL,
+          input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
+          metadata: { feed_id: feedId, prompt_version: READER_VERSION },
+        });
+        const rec = normaliseJson(out.content);
+        if (!rec?.is_opportunity || !rec.chair_type || !rec.time_kind) {
+          counts.dropped_not_opportunity++;
+          continue;
+        }
+
+        // 3. VERIFY the quote against the page.
+        const quote = squash(rec.evidence_quote || "");
+        const pageNorm = squash(cand.text);
+        const quoteVerified = !!quote && pageNorm.includes(quote);
+        let confidence = Number(rec.extraction_confidence ?? 0.5);
+        if (!quoteVerified) {
+          if (rec.time_kind === "open_now") { counts.dropped_no_quote++; continue; }
+          confidence = Math.min(confidence, 0.5);
+        }
+
+        // 4. ISSUER
+        const issuerId = await resolveIssuer(admin, rec.issuer_raw || feed.issuer_hint || "", cand.url, rec.sector ?? null);
+
+        // 5. DEDUP
+        // A forwarded message or an API record has no page of its own. It still
+        // needs a source that says where it came from, so we name it honestly.
+        const sourceUrl = cand.url
+          ?? (cand.extra?.entry_id ? `urn:aura:entry:${cand.extra.entry_id}` : (url ?? `urn:aura:feed:${feedId}`));
+        const canonicalUrl = cand.url ? canonicalise(cand.url) : null;
+        const contentHash = await sha256(
+          `${(rec.title || "").toLowerCase()}|${(rec.issuer_raw || "").toLowerCase()}|${rec.deadline ?? ""}`,
+        );
+
+        let existing: any = null;
+        if (canonicalUrl) {
+          const { data } = await admin.from("oe_opportunities").select("id").eq("canonical_url", canonicalUrl).maybeSingle();
+          existing = data;
+        }
+        if (!existing) {
+          const { data } = await admin.from("oe_opportunities").select("id").eq("content_hash", contentHash).maybeSingle();
+          existing = data;
+        }
+        if (existing) {
+          await admin.from("oe_opportunities")
+            .update({ last_seen_at: new Date().toISOString(), alive: true })
+            .eq("id", existing.id);
+          counts.updated++;
+          continue;
+        }
+
+        const reqText = Array.isArray(rec.requirements)
+          ? rec.requirements.map((r: any) => r?.text).filter(Boolean).join(" ")
+          : "";
+        const vector = openaiKey ? await embed(openaiKey, `${rec.title}\n${rec.scope}\n${reqText}`) : null;
+        if (vector) {
+          costUsd += 0.00002;
+          await logAIUsage({
+            function_name: FN, provider: "openai", model: EMBED_MODEL,
+            input_tokens: Math.ceil((rec.title + rec.scope + reqText).length / 4),
+            metadata: { feed_id: feedId },
+          });
+          // Nearest neighbour among live records of the same chair type.
+          const { data: near } = await admin
+            .from("oe_opportunities")
+            .select("id, embedding, raw")
+            .eq("chair_type", rec.chair_type)
+            .eq("alive", true)
+            .not("embedding", "is", null)
+            .order("last_seen_at", { ascending: false })
+            .limit(200);
+          for (const n of near ?? []) {
+            const emb = typeof n.embedding === "string" ? JSON.parse(n.embedding) : n.embedding;
+            if (!Array.isArray(emb)) continue;
+            if (cosine(vector, emb) >= dedupCosine) {
+              const alsoSeen = [...((n.raw?.also_seen ?? []) as string[])];
+              if (sourceUrl && !alsoSeen.includes(sourceUrl)) alsoSeen.push(sourceUrl);
+              await admin.from("oe_opportunities")
+                .update({
+                  last_seen_at: new Date().toISOString(),
+                  alive: true,
+                  raw: { ...(n.raw ?? {}), also_seen: alsoSeen },
+                })
+                .eq("id", n.id);
+              counts.dedup_hits++;
+              existing = n;
+              break;
+            }
+          }
+          if (existing) continue;
+        }
+
+        const row: Record<string, unknown> = {
+          feed_id: feedId,
+          issuer_id: issuerId,
+          issuer_raw: rec.issuer_raw ?? null,
+          chair_type: rec.chair_type,
+          time_kind: rec.time_kind,
+          title: (rec.title || "").slice(0, 500),
+          scope: rec.scope ?? null,
+          sector: rec.sector ?? null,
+          seniority_band: rec.seniority_band ?? null,
+          location: rec.location ?? null,
+          remote: typeof rec.remote === "boolean" ? rec.remote : null,
+          requirements: Array.isArray(rec.requirements) ? rec.requirements : [],
+          deadline: rec.deadline || null,
+          signal_date: rec.signal_date || null,
+          posting_date: new Date().toISOString().slice(0, 10),
+          evidence_quote: rec.evidence_quote ?? null,
+          quote_verified: quoteVerified,
+          source_url: sourceUrl,
+          canonical_url: canonicalUrl,
+          content_hash: contentHash,
+          language: rec.language === "ar" ? "ar" : "en",
+          extraction_confidence: confidence,
+          alive: true,
+          raw: {
+            prompt_version: READER_VERSION,
+            model: MODEL,
+            lane,
+            ...(cand.extra ?? {}),
+          },
+        };
+        if (vector) row.embedding = `[${vector.join(",")}]`;
+
+        const { data: ins, error: insErr } = await admin
+          .from("oe_opportunities").insert(row).select("id, issuer_id, chair_type, posting_date, first_seen_at").maybeSingle();
+        if (insErr) {
+          if ((insErr as any).code === "23505") { counts.updated++; continue; }
+          throw new Error(insErr.message);
+        }
+        counts.inserted++;
+        insertedAnything = true;
+
+        // 6. LEAD-TIME PAIRS
+        if (rec.time_kind === "open_now" && ins?.issuer_id) {
+          const since = new Date(Date.now() - 180 * 24 * 3600_000).toISOString();
+          const { data: early } = await admin
+            .from("oe_opportunities")
+            .select("id, signal_date, first_seen_at")
+            .eq("issuer_id", ins.issuer_id)
+            .eq("chair_type", ins.chair_type)
+            .eq("time_kind", "early_signal")
+            .gte("first_seen_at", since)
+            .order("first_seen_at", { ascending: true })
+            .limit(1);
+          const e = early?.[0];
+          if (e) {
+            const { error: pairErr } = await admin.from("oe_leadtime_pairs").insert({
+              opportunity_id: e.id,
+              posted_opportunity_id: ins.id,
+              chair_type: ins.chair_type,
+              signal_date: e.signal_date ?? String(e.first_seen_at).slice(0, 10),
+              posting_date: ins.posting_date ?? String(ins.first_seen_at).slice(0, 10),
+            });
+            if (!pairErr) counts.leadtime_pairs++;
+          }
+        }
+      } catch (e) {
+        counts.errors++;
+        await logEfError(admin, {
+          function_name: FN, error: e, severity: "low",
+          context: { feed_id: feedId, url: cand.url },
+        });
+      }
+    }
+
+    // ── 7. ALIVE sweep for listing feeds ───────────────────────────────────
+    if (kind === "listing") {
+      const cutoff = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+      const today = new Date().toISOString().slice(0, 10);
+      await admin.from("oe_opportunities")
+        .update({ alive: false })
+        .eq("feed_id", feedId).eq("alive", true)
+        .lt("last_seen_at", cutoff)
+        .or(`deadline.is.null,deadline.lt.${today}`);
+    }
+
+    // ── 8. FEED STATE ──────────────────────────────────────────────────────
+    await admin.from("oe_feeds").update({
+      last_fetched_at: new Date().toISOString(),
+      ...(insertedAnything ? { last_changed_at: new Date().toISOString() } : {}),
+      last_error: null,
+    }).eq("id", feedId);
+
+    // ── 9. LOG ─────────────────────────────────────────────────────────────
+    const { data: run } = await admin.from("oe_runs").insert({
+      run_kind: "fetch_feed", feed_id: feedId, user_id: memberId,
+      started_at: startedAt, finished_at: new Date().toISOString(),
+      outcome: "ok", counts, cost_usd: +costUsd.toFixed(6),
+    }).select("id").maybeSingle();
+
+    await logEfError(admin, {
+      function_name: FN,
+      error: `OE_FETCH_OK feed=${feed.name} inserted=${counts.inserted}`,
+      severity: "info",
+      context: { feed_id: feedId, counts },
+    });
+
+    return json({ ok: true, feed: feed.name, counts, run_id: run?.id ?? null });
+  } catch (e) {
+    const msg = String((e as Error).message ?? e).slice(0, 500);
+    await admin.from("oe_feeds").update({
+      last_fetched_at: new Date().toISOString(), last_error: msg,
+    }).eq("id", feedId);
+    await admin.from("oe_runs").insert({
+      run_kind: "fetch_feed", feed_id: feedId, user_id: memberId,
+      started_at: startedAt, finished_at: new Date().toISOString(),
+      outcome: "error", counts, cost_usd: +costUsd.toFixed(6), error: msg,
+    });
+    await logEfError(admin, { function_name: FN, error: e, severity: "high", context: { feed_id: feedId } });
+    return json({ ok: false, error: msg, counts }, 500);
+  }
+});
