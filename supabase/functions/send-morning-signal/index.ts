@@ -453,14 +453,35 @@ serve(async (req) => {
           (Number(b.relevance_score ?? 0) - Number(a.relevance_score ?? 0)) ||
           (new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         );
-        const lead = list[0];
+        const lead = list[0] ?? null;
         const others = list.slice(1);
-        const { subject, html, text } = buildEmail(lead, others);
+
+        // Today's card, in this member's own day.
+        let cardRow: Card | null = null;
+        if (OE_CARDS_ENABLED) {
+          const { data: c } = await admin
+            .from("oe_cards")
+            .select("id, opportunity_id, why_lines, gap_line, quote, clock_text, fit_band, win_band, tap_token, oe_opportunities(title, chair_type, time_kind, source_url)")
+            .eq("user_id", uid)
+            .eq("card_date", lp.dateKey)
+            .is("sent_at", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          cardRow = (c as unknown as Card) ?? null;
+        }
+
+        if (!lead && !cardRow) { results.push({ user_id: uid, outcome: "skipped_quiet" }); continue; }
+
+        const lang = langByUser.get(uid) ?? "en";
+        const cardBlock = cardRow ? buildCardBlock(cardRow, lang) : null;
+        const { subject, html, text } = buildEmail(lead, others, cardBlock);
 
         if (dryRun) {
           results.push({
             user_id: uid, to, outcome: "would_send", subject, html, text,
-            finding_ids: [lead.id, ...others.slice(0, 3).map((o) => o.id)],
+            finding_ids: lead ? [lead.id, ...others.slice(0, 3).map((o) => o.id)] : [],
+            card_id: cardRow?.id ?? null,
           });
           continue;
         }
@@ -473,12 +494,26 @@ serve(async (req) => {
           email_type: "morning_signal",
           metadata: {
             message_key: userKey,
-            finding_ids: [lead.id, ...others.slice(0, 3).map((o) => o.id)],
-            lead_finding_id: lead.id,
+            finding_ids: lead ? [lead.id, ...others.slice(0, 3).map((o) => o.id)] : [],
+            lead_finding_id: lead?.id ?? null,
+            card_id: cardRow?.id ?? null,
             subject,
             resend_id: resendId,
           },
         });
+        if (cardRow) {
+          await admin.from("oe_cards").update({ sent_at: new Date().toISOString() }).eq("id", cardRow.id);
+          await admin.from("notification_events").insert({
+            user_id: uid,
+            type: "opportunity_card",
+            channel: "email",
+            title: "Opportunity card sent",
+            body: String(cardRow.oe_opportunities?.title ?? cardRow.clock_text ?? ""),
+            read: true,
+            read_at: new Date().toISOString(),
+            metadata: { card_id: cardRow.id, opportunity_id: cardRow.opportunity_id, message_key: userKey },
+          });
+        }
         sent++;
         // The send ledger every dashboard reads. Bookkeeping must never be able
         // to break a delivery: if this write fails we log it and carry on.
