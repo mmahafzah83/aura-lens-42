@@ -262,12 +262,17 @@ Deno.serve(async (req) => {
     const today = new Date();
     const inTwoDays = new Date(today.getTime() + 2 * 86400_000).toISOString().slice(0, 10);
     const todayStr = today.toISOString().slice(0, 10);
+    // The instrument serves the Saudi market. A chair counts if it sits in
+    // Saudi Arabia, if it can be held from anywhere, if it sits in the
+    // member's own country, or if it has no place yet and is only a signal.
+    const SAUDI = /saudi|السعودية|riyadh|jeddah|dammam|neom|الرياض|جدة|مكة|المدينة|medina|khobar/i;
     const countryOk = (o: any) => {
-      const loc = String(o.location ?? "").toLowerCase();
+      const loc = String(o.location ?? "");
       if (o.remote === true) return true;
       if (!o.location) return o.time_kind === "early_signal";
-      if (memberCountry.toUpperCase() === "SA") return /saudi|السعودية|riyadh|jeddah|الرياض|remote/.test(loc);
-      return loc.includes(memberCountry.toLowerCase());
+      if (SAUDI.test(loc)) return true;
+      if (memberCountry && loc.toLowerCase().includes(memberCountry.toLowerCase())) return true;
+      return false;
     };
 
     const filtered = pool.filter((o) => {
