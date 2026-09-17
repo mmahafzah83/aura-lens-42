@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
 
   const startedAt = new Date().toISOString();
   const counts = {
-    filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
+    alive: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
     unstable: 0, carded: 0, empty_day: 0,
   };
   let costUsd = 0;
@@ -289,6 +289,7 @@ Deno.serve(async (req) => {
       if (excluded.just_this.has(String(o.id).toLowerCase())) return false;
       return true;
     });
+    counts.alive = pool.length;
     counts.filtered = pool.length - filtered.length;
 
     const scored = filtered.map((o) => {
@@ -483,7 +484,7 @@ Deno.serve(async (req) => {
 
     await logEfError(admin, {
       function_name: FN, severity: "info",
-      error: `OE_JUDGE_OK user=${userId} carded=${counts.carded}`,
+      error: `OE_JUDGE_OK user=${userId} alive=${counts.alive} filtered=${counts.filtered} shortlisted=${counts.shortlisted} judged=${counts.judged} gate=${counts.gate_passed} unstable=${counts.unstable} carded=${counts.carded} empty=${counts.empty_day}`,
       context: { user_id: userId, job_id: jobId, counts },
     });
 

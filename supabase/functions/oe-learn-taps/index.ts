@@ -46,11 +46,16 @@ Deno.serve(async (req) => {
       const { data: faces, error: facesError } = await admin.from("oe_faces")
         .select("id,face,weight,few_shot").eq("user_id", userId);
       if (facesError) throw new Error(facesError.message);
+      // 'avoid' is never nudged and never normalised. Its weight is a magnitude
+      // the judge subtracts by, not a share of the four positive faces.
       const next = new Map<string, { weight: number; few_shot: unknown[] }>();
-      for (const face of faces ?? []) next.set(face.id, {
-        weight: Number(face.weight ?? 0.2),
-        few_shot: Array.isArray(face.few_shot) ? face.few_shot : [],
-      });
+      for (const face of faces ?? []) {
+        if (face.face === "avoid") continue;
+        next.set(face.id, {
+          weight: Number(face.weight ?? 0.2),
+          few_shot: Array.isArray(face.few_shot) ? face.few_shot : [],
+        });
+      }
 
       for (const tap of userTaps) {
         const { data: card } = await admin.from("oe_cards")
