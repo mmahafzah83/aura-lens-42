@@ -356,7 +356,8 @@ Deno.serve(async (req) => {
       postsRes, itemsRes, signalsRes, prefsRes, corrRes, findingsRes, facesRes, policyRes,
     ] = await Promise.all([
       admin.from("diagnostic_profiles").select(
-        "level, core_practice, sector_focus, seniority_band, years_experience, primary_strength, brand_pillars, identity_intelligence, audit_results, north_star_goal, brand_assessment_results, desk_prefs",
+        /* firm is read ONLY to build the scrub list; it never reaches the model. */
+        "level, core_practice, sector_focus, seniority_band, years_experience, primary_strength, brand_pillars, identity_intelligence, audit_results, north_star_goal, brand_assessment_results, desk_prefs, firm",
       ).eq("user_id", user_id).maybeSingle(),
       admin.from("capability_responses")
         .select("level, instrument_version, capability_dimensions(name)")
@@ -365,7 +366,8 @@ Deno.serve(async (req) => {
         .select("headline, experience, skills, certifications, created_at")
         .eq("user_id", user_id).order("created_at", { ascending: false }).limit(1),
       admin.from("entries")
-        .select("id, type, title, summary, skill_pillar, framework_tag, created_at")
+        /* account_name is read ONLY for the scrub list. */
+        .select("id, type, title, summary, skill_pillar, framework_tag, account_name, created_at")
         .eq("user_id", user_id).gte("created_at", sinceEntries)
         .order("created_at", { ascending: false }).limit(120),
       admin.from("evidence_fragments")
