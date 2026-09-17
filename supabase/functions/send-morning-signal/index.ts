@@ -12,7 +12,7 @@ import { adminUserIds } from "../_shared/adminRole.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   renderEmail, heading, paragraph, quote, divider,
-  INK_SOFT, INK_FAINT, BODY, MONO,
+  INK, INK_SOFT, INK_FAINT, BODY, MONO, CANVAS, BORDER, ACCENT,
 } from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
