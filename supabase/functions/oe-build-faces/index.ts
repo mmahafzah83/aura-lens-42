@@ -578,13 +578,93 @@ Deno.serve(async (req) => {
       };
     }
 
+    /* ---------- POST-CHECKS: names, banned words, length ----------
+       The prompt asks; the code enforces. */
+    let scrubbed = scrubCounter.hits;
+    let bannedFixed = 0;
+    let shortened = 0;
+
+    // 1) Any organisation name that came back is replaced, not negotiated.
+    for (const f of FACES) {
+      const s = scrubText(built[f].summary, scrubList);
+      built[f].summary = s.text;
+      scrubbed += s.hits;
+      built[f].keywords = built[f].keywords.map((k) => {
+        const r = scrubText(k, scrubList);
+        scrubbed += r.hits;
+        return r.text;
+      });
+      built[f].queries = built[f].queries.map((q) => {
+        const r = scrubText(q, scrubList);
+        scrubbed += r.hits;
+        return r.text;
+      });
+    }
+
+    // 2) Banned words: one rewrite, then drop the item.
+    const fixBanned = async (text: string): Promise<string | null> => {
+      if (!findBannedTerm(text)) return text;
+      const rewritten = await rewriteOnce(
+        lovableKey,
+        `Rewrite this without any of these words: ${OE_BANNED_FOR_PROMPT}. Same meaning, same language, same length.`,
+        text,
+      );
+      const cleaned = rewritten ? scrubText(rewritten, scrubList).text : null;
+      if (cleaned && !findBannedTerm(cleaned)) {
+        bannedFixed++;
+        return cleaned;
+      }
+      return null;
+    };
+
+    for (const f of FACES) {
+      const fixedSummary = await fixBanned(built[f].summary);
+      if (fixedSummary !== null) built[f].summary = fixedSummary;
+
+      const keywords: string[] = [];
+      for (const k of built[f].keywords) {
+        const fixed = await fixBanned(k);
+        if (fixed !== null) keywords.push(fixed);
+        else bannedFixed++; // dropped
+      }
+      built[f].keywords = keywords;
+
+      const queries: string[] = [];
+      for (const q of built[f].queries) {
+        const fixed = await fixBanned(q);
+        if (fixed !== null) queries.push(fixed);
+        else bannedFixed++; // dropped
+      }
+      built[f].queries = queries;
+    }
+
+    // 3) Ninety words, enforced.
+    for (const f of FACES) {
+      if (wordCount(built[f].summary) <= 90) continue;
+      const short = await rewriteOnce(
+        lovableKey,
+        "Shorten this to 90 words or fewer. Keep every fact. Same language.",
+        built[f].summary,
+      );
+      let candidate = short ? scrubText(short, scrubList).text : built[f].summary;
+      if (findBannedTerm(candidate)) candidate = built[f].summary;
+      built[f].summary = truncateToWords(candidate, 90);
+      shortened++;
+    }
+
+    let queriesTotalFinal = 0;
+    for (const f of FACES) queriesTotalFinal += built[f].queries.length;
+
     const counts = {
       entries: entriesRanked.length,
       posts: posts.length,
       signals: signals.length,
       fragments: frags.length,
       corrections: corrections.length,
-      queries_total: queriesTotal,
+      queries_total: queriesTotalFinal,
+      scrubbed,
+      banned_fixed: bannedFixed,
+      shortened,
     };
 
     if (dryRun) {
