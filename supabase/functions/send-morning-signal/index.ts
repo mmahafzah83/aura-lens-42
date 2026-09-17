@@ -425,7 +425,7 @@ serve(async (req) => {
       const { data: cardUsers } = await cq;
       for (const c of (cardUsers || []) as Array<{ user_id: string }>) {
         if (!c.user_id) continue;
-        if (adminIds.has(c.user_id) && !(dryRun && onlyUserId === c.user_id)) continue;
+        if (!cardEligible(c.user_id)) continue;
         candidateIds.add(c.user_id);
       }
     }
@@ -437,7 +437,7 @@ serve(async (req) => {
     const { data: outcomeRows } = await oq;
     for (const row of (outcomeRows ?? []) as unknown as Array<OutcomeAsk & { user_id: string }>) {
       if (!outcomeByUser.has(row.user_id)) outcomeByUser.set(row.user_id, row);
-      if (!adminIds.has(row.user_id) || (dryRun && onlyUserId === row.user_id)) candidateIds.add(row.user_id);
+      if (cardEligible(row.user_id)) candidateIds.add(row.user_id);
     }
 
     const userIds = Array.from(candidateIds);
