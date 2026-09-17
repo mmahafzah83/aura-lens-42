@@ -113,23 +113,36 @@ function initialism(name: string): string | null {
 export function buildScrubList(rawNames: (string | null | undefined)[], corpus: string): ScrubItem[] {
   const seen = new Map<string, ScrubItem>();
   const add = (name: string, to: string) => {
-    const key = name.toLowerCase();
-    if (key.length < 3 || NOT_A_NAME.has(key) || seen.has(key)) return;
-    seen.set(key, { name, re: new RegExp(escapeRe(name), "gi"), to });
+    const clean = name.trim().replace(/\s+/g, " ").replace(/[,;:.]+$/, "");
+    const key = clean.toLowerCase();
+    // Two letters is enough for a house name like EY, but only in capitals.
+    const longEnough = clean.length >= 3 || /^[A-Z]{2}$/.test(clean);
+    if (!longEnough || NOT_A_NAME.has(key) || seen.has(key)) return;
+    const body = escapeRe(clean);
+    const lead = /^[\w\u0600-\u06FF]/.test(clean) ? "\\b" : "";
+    const tail = /[\w\u0600-\u06FF]$/.test(clean) ? "\\b" : "";
+    seen.set(key, { name: clean, re: new RegExp(`${lead}${body}${tail}`, "gi"), to });
   };
   for (const raw of rawNames) {
     const name = (raw || "").trim().replace(/\s+/g, " ");
-    if (!name || name.length < 3) continue;
+    if (!name || name.length < 2) continue;
     const to = descriptorFor(name);
+    // A long descriptive line (a client blurb) is not a name; mine it for names.
+    if (name.split(" ").length > 6) {
+      for (const m of name.matchAll(/\(([^)]+)\)/g)) {
+        for (const part of m[1].split(/[,،/]/)) add(part, descriptorFor(part));
+      }
+      for (const m of name.matchAll(/\b[A-Z]{2,6}\b/g)) add(m[0], descriptorFor(m[0]));
+      continue;
+    }
     add(name, to);
-    // The name without a legal suffix, and without a leading article.
+    // The name without a legal suffix.
     add(name.replace(/\b(co\.?|company|corporation|llc|ltd\.?|plc|inc\.?)\b/gi, "").trim(), to);
     const abbr = initialism(name);
     if (abbr) add(abbr, to);
     // An uppercase acronym standing next to the name in the same text.
     for (const m of corpus.matchAll(/\b[A-Z]{3,6}\b/g)) {
-      const cand = m[0];
-      if (abbr && cand === abbr) add(cand, to);
+      if (abbr && m[0] === abbr) add(m[0], to);
     }
   }
   // Longest first, so "National Water Company" is replaced before "National".
