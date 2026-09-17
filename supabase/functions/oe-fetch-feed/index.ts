@@ -7,6 +7,7 @@
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
+import { isAggregator, normaliseForQuote } from "../_shared/oeGuards.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,7 +16,7 @@ const corsHeaders = {
 };
 
 const FN = "oe-fetch-feed";
-const READER_VERSION = "p2-1.0";
+const READER_VERSION = "p2-1.1";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
@@ -54,7 +55,9 @@ const P2_SYSTEM =
   `evidence_quote (a verbatim sentence from the page that proves chair_type and, when present, the deadline), language:'ar'|'en', extraction_confidence:0-1}. ` +
   `Rules: null over guess; evidence_quote must be copied verbatim; early_signal is for facts that imply a chair will open ` +
   `(listing/IPO application, new strategy or entity, director term ending or resignation, large digital contract awarded, event dates announced, executive appointment); ` +
-  `open_now needs a route or a deadline; seniority_band: work = senior professional, table = director/head, room = C-suite/board.`;
+  `open_now needs a route or a deadline; seniority_band: work = senior professional, table = director/head, room = C-suite/board. ` +
+  `A calendar, directory, aggregator, newsroom index, listing page, company-governance profile page or 'about us' page is NEVER an opportunity — ` +
+  `only one specific event, vacancy, notice, mandate, tender or announcement is. If the page describes many events or many roles, return is_opportunity=false.`;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -387,7 +390,7 @@ Deno.serve(async (req) => {
   const startedAt = new Date().toISOString();
   const counts = {
     pages: 0, candidates: 0, inserted: 0, updated: 0,
-    dropped_no_quote: 0, dropped_not_opportunity: 0,
+    dropped_no_quote: 0, dropped_not_opportunity: 0, dropped_aggregator: 0,
     dedup_hits: 0, leadtime_pairs: 0, errors: 0,
   };
   let costUsd = 0;
@@ -402,9 +405,13 @@ Deno.serve(async (req) => {
   const neverRead: string[] = params.never_read ?? [];
   const dedupCosine: number = params.dedup_cosine ?? 0.92;
   const discoveryBudget: number = params.discovery_queries_per_night ?? 30;
+  const skipHosts: string[] = params.discovery_skip_hosts ?? [];
 
-  const blocked = (url: string | null) =>
-    !!url && neverRead.some((h) => hostOf(url) === h || hostOf(url).endsWith(`.${h}`));
+  const blocked = (url: string | null) => {
+    if (!url) return false;
+    const h = hostOf(url);
+    return [...neverRead, ...skipHosts].some((b) => h === b || h.endsWith(`.${b}`));
+  };
 
   try {
     // ── 1. FETCH ───────────────────────────────────────────────────────────
@@ -455,7 +462,24 @@ Deno.serve(async (req) => {
           candidates = parseIcs(text);
         } else {
           const fc = await scrapePage(firecrawlKey, url, true);
-          if (fc.ok) candidates = [{ url, title: fc.title, text: fc.markdown }];
+          // A calendar page lists many events. Only its item pages can be records.
+          if (fc.ok) {
+            const items = (fc.links ?? [])
+              .map((l) => canonicalise(l))
+              .filter((l) => l.startsWith("http") && !blocked(l))
+              .filter((l) => canonicalise(url) !== l)
+              .filter((l) => !isAggregator(l))
+              .filter((l, i, arr) => arr.indexOf(l) === i)
+              .slice(0, MAX_DETAIL_PAGES);
+            for (const link of items) {
+              const d = await scrapePage(firecrawlKey, link);
+              counts.pages++;
+              if (!d.ok) { counts.errors++; continue; }
+              const clean = squash(stripTags(d.markdown || ""));
+              if (clean.length < MIN_CLEAN_TEXT_CHARS) continue;
+              candidates.push({ url: link, title: d.title, text: clean });
+            }
+          }
         }
       }
     } else if (kind === "listing") {
@@ -537,7 +561,16 @@ Deno.serve(async (req) => {
           i++;
         }
         const urls = new Set<string>();
-        for (const q of rota) {
+        const { data: memberCountries } = await admin
+          .from("diagnostic_profiles").select("country").not("country", "is", null).limit(200);
+        const countryNames = [...new Set((memberCountries ?? []).map((r: any) => String(r.country)).filter(Boolean))];
+        const anchor = (q: string) => {
+          const isAr = /[\u0600-\u06FF]/.test(q);
+          const places = [...countryNames.slice(0, 3), isAr ? "السعودية" : "Saudi Arabia"];
+          return `${q} (${places.join(isAr ? " أو " : " or ")})`;
+        };
+        for (const q0 of rota) {
+          const q = anchor(q0);
           const p = await perplexity(perplexityKey, q);
           if (!p.ok) { counts.errors++; continue; }
           costUsd += 0.001;
@@ -619,10 +652,16 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // A directory is not a chair, whatever the model said.
+        if (isAggregator(cand.url, rec.title, rec.scope)) {
+          counts.dropped_aggregator++;
+          continue;
+        }
+
         // 3. VERIFY the quote against the page.
-        const quote = squash(rec.evidence_quote || "");
-        const pageNorm = squash(cand.text);
-        const quoteVerified = !!quote && pageNorm.includes(quote);
+        const quote = normaliseForQuote(rec.evidence_quote);
+        const pageNorm = normaliseForQuote(cand.text);
+        const quoteVerified = quote.length > 10 && pageNorm.includes(quote);
         let confidence = Number(rec.extraction_confidence ?? 0.5);
         if (!quoteVerified) {
           if (rec.time_kind === "open_now") { counts.dropped_no_quote++; continue; }

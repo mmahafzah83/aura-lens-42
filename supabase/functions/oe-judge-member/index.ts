@@ -265,7 +265,7 @@ Deno.serve(async (req) => {
     // The instrument serves the Saudi market. A chair counts if it sits in
     // Saudi Arabia, if it can be held from anywhere, if it sits in the
     // member's own country, or if it has no place yet and is only a signal.
-    const SAUDI = /saudi|السعودية|riyadh|jeddah|dammam|neom|الرياض|جدة|مكة|المدينة|medina|khobar/i;
+    const SAUDI = /saudi|السعودية|riyadh|jeddah|dammam|neom|الرياض|جدة|مكة|المدينة|medina|khobar|gcc|gulf|\bu\.?a\.?e\b|emirates|dubai|abu dhabi|qatar|doha|kuwait|bahrain|manama|oman|muscat|الإمارات|دبي|أبوظبي|قطر|الدوحة|الكويت|البحرين|عمان|مسقط/i;
     const countryOk = (o: any) => {
       const loc = String(o.location ?? "");
       if (o.remote === true) return true;
