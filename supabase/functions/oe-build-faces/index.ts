@@ -9,6 +9,7 @@ import {
 } from "../_shared/postProvenance.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
+import { findBannedTerm, OE_BANNED_FOR_PROMPT } from "../_shared/oeVocabulary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +18,7 @@ const corsHeaders = {
 };
 
 const FN = "oe-build-faces";
-const PROMPT_VERSION = "p1-1.0";
+const PROMPT_VERSION = "p1-1.1";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
 const FACES = ["done", "wants", "reads", "stands", "avoid"] as const;
@@ -31,7 +32,7 @@ const DEFAULT_WEIGHTS: Record<Face, number> = {
   avoid: -1,
 };
 
-const P1_SYSTEM = `You build five faces of one senior professional for an opportunity-matching engine. You receive pseudonymised facts only. Return strict JSON: {done:{summary,keywords,queries}, wants:{summary,keywords,queries}, reads:{summary,keywords,queries}, stands:{summary,keywords,queries}, avoid:{summary,keywords}}. Rules: summary ≤ 90 words, plain language, third person, no names, no employers, no email, no city unless it is in the facts. keywords: 8–15 short terms in the language of the facts (Arabic terms stay Arabic, English stay English). queries: 6–10 concrete search questions a researcher would type to find opportunities for this person — board seats, advisory mandates and tenders, senior roles, executive rooms and dinners, speaking slots, media requests, awards, trainings — half in Arabic and half in English, each ≤ 14 words, specific to sector, level and place (e.g. 'عضو مجلس إدارة مستقل بنك مدرج خبرة تحول رقمي', 'independent director listed utility Saudi digital transformation'). avoid lists only what the facts say the person rejects or is not; never guess. Do not use these words: authority (as a noun), thought leader, personal brand, trajectory, leverage (as a verb).`;
+const P1_SYSTEM = `You build five faces of one senior professional for an opportunity-matching engine. You receive pseudonymised facts only. Return strict JSON: {done:{summary,keywords,queries}, wants:{summary,keywords,queries}, reads:{summary,keywords,queries}, stands:{summary,keywords,queries}, avoid:{summary,keywords}}. Rules: summary <= 90 words, plain language, third person, no names, no employers, no email, no city unless it is in the facts. keywords: 8-15 short terms in the language of the facts (Arabic terms stay Arabic, English stay English). queries: 6-10 concrete search questions a researcher would type to find opportunities for this person — board seats, advisory mandates and tenders, senior roles, executive rooms and dinners, speaking slots, media requests, awards, trainings — half in Arabic and half in English, each <= 14 words, specific to sector, level and place (e.g. 'عضو مجلس إدارة مستقل بنك مدرج خبرة تحول رقمي', 'independent director listed utility Saudi digital transformation'). queries for the reads face find rooms, panels, calls for speakers, advisory groups, trainings and awards about these topics — not reading material. avoid lists only what the facts say the person rejects or is not; never guess. Do not use these words: ${OE_BANNED_FOR_PROMPT}.`;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -59,26 +60,137 @@ function normaliseJson(text: string): any {
 }
 
 /**
- * Employers never travel to the model. A company name is replaced by a generic
- * descriptor, or dropped when the heuristic is unsure.
+ * ORGANISATION NAMES NEVER TRAVEL. Every name we can find for this member is
+ * replaced by a neutral descriptor before the facts reach the model, and again
+ * after the model answers. Sector words (water, energy, utilities, tax) are not
+ * organisations and are left alone.
  */
-function genericEmployer(name?: string | null): string | null {
+export function descriptorFor(name?: string | null): string {
   const n = (name || "").toLowerCase();
-  if (!n) return null;
-  if (/\b(pwc|kpmg|deloitte|ey|ernst|mckinsey|bcg|bain|accenture|consult)/.test(n)) {
+  if (!n) return "an organisation";
+  if (/\b(pwc|kpmg|deloitte|ey\b|ernst|mckinsey|bcg|bain|accenture|consult|advisory firm)/.test(n)) {
     return "a professional services firm";
   }
-  if (/bank|capital|financial|finance|invest|مصرف|بنك/.test(n)) return "a bank";
-  if (/ministry|authority|government|municipal|وزارة|هيئة|أمانة/.test(n)) return "a government body";
-  if (/university|college|school|جامعة|كلية/.test(n)) return "a university";
-  if (/hospital|health|clinic|صحة|مستشفى/.test(n)) return "a healthcare provider";
-  if (/telecom|stc|mobile|اتصالات/.test(n)) return "a telecom operator";
-  if (/energy|oil|petro|aramco|utility|power|water|طاقة|كهرباء|مياه/.test(n)) {
-    return "an energy or utility company";
+  if (/ministry|authority|commission|regulator|government|municipal|وزارة|هيئة|أمانة|مؤسسة عامة/.test(n)) {
+    return "a government authority";
   }
-  if (/holding|group|company|llc|ltd|plc|شركة|مجموعة/.test(n)) return "a listed or private company";
-  return null;
+  if (/bank|مصرف|بنك/.test(n)) return "a bank";
+  if (/universit|college|school|جامعة|كلية/.test(n)) return "a university";
+  if (/\b(plc|listed|tadawul|holding|group|co\.|company|corporation|llc|ltd)\b|شركة|مجموعة/.test(n)) {
+    return "a listed company";
+  }
+  return "an organisation";
 }
+
+/** A name, an escaped regexp for it, and what it becomes. */
+interface ScrubItem { name: string; re: RegExp; to: string }
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Words that are a sector or a place, never an organisation on their own. */
+const NOT_A_NAME = new Set([
+  "water", "energy", "utilities", "utility", "tax", "customs", "digital", "technology",
+  "saudi", "arabia", "gcc", "riyadh", "jeddah", "government", "national", "company",
+  "authority", "ministry", "group", "holding", "bank", "the", "and", "of",
+  "مياه", "طاقة", "ضريبة", "جمارك", "السعودية", "الرياض", "جدة", "هيئة", "وزارة", "شركة",
+]);
+
+/** Initialism of a multi-word English name: "National Water Company" → "NWC". */
+function initialism(name: string): string | null {
+  const words = name
+    .split(/[\s,]+/)
+    .filter((w) => /^[A-Za-z]{2,}$/.test(w) && !["and", "of", "the", "for"].includes(w.toLowerCase()));
+  if (words.length < 2) return null;
+  const abbr = words.map((w) => w[0].toUpperCase()).join("");
+  return abbr.length >= 2 && abbr.length <= 6 ? abbr : null;
+}
+
+/**
+ * Build the scrub list. Each raw name yields the name itself plus obvious
+ * variants: an initialism, and any uppercase token in the same text that
+ * matches that initialism (e.g. "ZATCA" next to "Zakat, Tax and Customs").
+ */
+export function buildScrubList(rawNames: (string | null | undefined)[], corpus: string): ScrubItem[] {
+  const seen = new Map<string, ScrubItem>();
+  const add = (name: string, to: string) => {
+    const clean = name.trim().replace(/\s+/g, " ").replace(/[,;:.]+$/, "");
+    const key = clean.toLowerCase();
+    // Two letters is enough for a house name like EY, but only in capitals.
+    const longEnough = clean.length >= 3 || /^[A-Z]{2}$/.test(clean);
+    if (!longEnough || NOT_A_NAME.has(key) || seen.has(key)) return;
+    const body = escapeRe(clean);
+    const lead = /^[\w\u0600-\u06FF]/.test(clean) ? "\\b" : "";
+    const tail = /[\w\u0600-\u06FF]$/.test(clean) ? "\\b" : "";
+    seen.set(key, { name: clean, re: new RegExp(`${lead}${body}${tail}`, "gi"), to });
+  };
+  for (const raw of rawNames) {
+    const name = (raw || "").trim().replace(/\s+/g, " ");
+    if (!name || name.length < 2) continue;
+    const to = descriptorFor(name);
+    // A long descriptive line (a client blurb) is not a name; mine it for names.
+    if (name.split(" ").length > 6) {
+      for (const m of name.matchAll(/\(([^)]+)\)/g)) {
+        for (const part of m[1].split(/[,،/]/)) add(part, descriptorFor(part));
+      }
+      for (const m of name.matchAll(/\b[A-Z]{2,6}\b/g)) add(m[0], descriptorFor(m[0]));
+      continue;
+    }
+    add(name, to);
+    // The name without a legal suffix.
+    add(name.replace(/\b(co\.?|company|corporation|llc|ltd\.?|plc|inc\.?)\b/gi, "").trim(), to);
+    const abbr = initialism(name);
+    if (abbr) add(abbr, to);
+    // An uppercase acronym standing next to the name in the same text.
+    for (const m of corpus.matchAll(/\b[A-Z]{3,6}\b/g)) {
+      if (abbr && m[0] === abbr) add(m[0], to);
+    }
+  }
+  // Longest first, so "National Water Company" is replaced before "National".
+  return [...seen.values()].sort((a, b) => b.name.length - a.name.length);
+}
+
+/** Replace every scrub-list name in the text. Returns the text and a hit count. */
+export function scrubText(text: string, list: ScrubItem[]): { text: string; hits: number } {
+  let out = text;
+  let hits = 0;
+  for (const item of list) {
+    out = out.replace(item.re, () => { hits++; return item.to; });
+  }
+  return { text: out, hits };
+}
+
+/** Scrub every string inside a nested structure. */
+function scrubDeep(value: any, list: ScrubItem[], counter: { hits: number }): any {
+  if (typeof value === "string") {
+    const r = scrubText(value, list);
+    counter.hits += r.hits;
+    return r.text;
+  }
+  if (Array.isArray(value)) return value.map((v) => scrubDeep(v, list, counter));
+  if (value && typeof value === "object") {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = scrubDeep(v, list, counter);
+    return out;
+  }
+  return value;
+}
+
+/** Words in a string, counted the way a reader would. */
+const wordCount = (s: string) => (s.trim().match(/\S+/g) || []).length;
+
+/** Cut at the last full sentence that stays under the word limit. */
+function truncateToWords(text: string, limit: number): string {
+  if (wordCount(text) <= limit) return text;
+  const sentences = text.match(/[^.!?؟]+[.!?؟]+|\S[^.!?؟]*$/g) || [text];
+  let out = "";
+  for (const s of sentences) {
+    if (wordCount(out + s) > limit) break;
+    out += s;
+  }
+  if (!out.trim()) out = (text.trim().match(/\S+/g) || []).slice(0, limit).join(" ");
+  return out.trim();
+}
+
 
 const daysSince = (iso?: string | null) =>
   iso ? Math.max(0, (Date.now() - Date.parse(iso)) / 86_400_000) : 999;
@@ -125,6 +237,41 @@ async function callModel(apiKey: string, userMessage: string) {
   const content = data?.choices?.[0]?.message?.content || "";
   return { content, usage: data?.usage || {} };
 }
+
+/** One small text-in, text-out call used by the post-checks. */
+async function rewriteOnce(apiKey: string, instruction: string, text: string): Promise<string | null> {
+  try {
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: MODEL,
+        temperature: 0.2,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You rewrite one short piece of text. Return only the rewritten text, nothing else. Keep the original language (Arabic stays Arabic, English stays English).",
+          },
+          { role: "user", content: `${instruction}\n\n${text}` },
+        ],
+      }),
+    });
+    if (!r.ok) {
+      console.error(`[${FN}] rewrite failed`, r.status);
+      return null;
+    }
+    const data = await r.json();
+    const out = String(data?.choices?.[0]?.message?.content || "").trim()
+      .replace(/^["'`]+|["'`]+$/g, "");
+    return out || null;
+  } catch (e) {
+    console.error(`[${FN}] rewrite threw:`, (e as Error).message);
+    return null;
+  }
+}
+
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -222,7 +369,8 @@ Deno.serve(async (req) => {
       postsRes, itemsRes, signalsRes, prefsRes, corrRes, findingsRes, facesRes, policyRes,
     ] = await Promise.all([
       admin.from("diagnostic_profiles").select(
-        "level, core_practice, sector_focus, seniority_band, years_experience, primary_strength, brand_pillars, identity_intelligence, audit_results, north_star_goal, brand_assessment_results, desk_prefs",
+        /* firm is read ONLY to build the scrub list; it never reaches the model. */
+        "level, core_practice, sector_focus, seniority_band, years_experience, primary_strength, brand_pillars, identity_intelligence, audit_results, north_star_goal, brand_assessment_results, desk_prefs, firm",
       ).eq("user_id", user_id).maybeSingle(),
       admin.from("capability_responses")
         .select("level, instrument_version, capability_dimensions(name)")
@@ -231,7 +379,8 @@ Deno.serve(async (req) => {
         .select("headline, experience, skills, certifications, created_at")
         .eq("user_id", user_id).order("created_at", { ascending: false }).limit(1),
       admin.from("entries")
-        .select("id, type, title, summary, skill_pillar, framework_tag, created_at")
+        /* account_name is read ONLY for the scrub list. */
+        .select("id, type, title, summary, skill_pillar, framework_tag, account_name, created_at")
         .eq("user_id", user_id).gte("created_at", sinceEntries)
         .order("created_at", { ascending: false }).limit(120),
       admin.from("evidence_fragments")
@@ -268,10 +417,10 @@ Deno.serve(async (req) => {
     const ba: any = (p.brand_assessment_results && typeof p.brand_assessment_results === "object") ? p.brand_assessment_results : {};
     const snap: any = ((snapRes.data as any[]) || [])[0] || {};
 
-    // Employers are mapped to generic descriptors; titles and years only.
+    // Employers are mapped to neutral descriptors; titles and years only.
     const experience = (Array.isArray(snap.experience) ? snap.experience : []).slice(0, 12).map((e: any) => ({
       title: clip(e?.title || e?.position, 120),
-      kind: genericEmployer(e?.company || e?.companyName || e?.organisation),
+      kind: descriptorFor(e?.company || e?.companyName || e?.organisation),
       industry: clip(e?.industry, 80),
       years: clip(e?.duration || e?.dateRange || e?.years, 40),
     })).filter((e: any) => e.title);
@@ -368,7 +517,25 @@ Deno.serve(async (req) => {
       },
     };
 
-    const userMessage = JSON.stringify(facts);
+    /* ---------- ORGANISATION-NAME SCRUB ----------
+       Every organisation name we can find for this member, plus obvious
+       variants, replaced by a neutral descriptor before the facts leave here.
+       identity_intelligence.clients is READ ONLY for this list and is never
+       part of the payload. */
+    const rawNames: (string | null | undefined)[] = [
+      ...(Array.isArray(snap.experience) ? snap.experience : [])
+        .map((e: any) => e?.company || e?.companyName || e?.organisation),
+      ...(Array.isArray(ii.clients) ? ii.clients : [])
+        .map((c: any) => (typeof c === "string" ? c : c?.name || c?.client)),
+      ...entriesAll.map((e: any) => e?.account_name),
+      p.firm,
+    ];
+    const corpus = JSON.stringify(facts);
+    const scrubList = buildScrubList(rawNames, corpus);
+    const scrubCounter = { hits: 0 };
+    const safeFacts = scrubDeep(facts, scrubList, scrubCounter);
+
+    const userMessage = JSON.stringify(safeFacts);
 
     // ---------- MODEL ----------
     const valid = (o: any) =>
@@ -424,13 +591,93 @@ Deno.serve(async (req) => {
       };
     }
 
+    /* ---------- POST-CHECKS: names, banned words, length ----------
+       The prompt asks; the code enforces. */
+    let scrubbed = scrubCounter.hits;
+    let bannedFixed = 0;
+    let shortened = 0;
+
+    // 1) Any organisation name that came back is replaced, not negotiated.
+    for (const f of FACES) {
+      const s = scrubText(built[f].summary, scrubList);
+      built[f].summary = s.text;
+      scrubbed += s.hits;
+      built[f].keywords = built[f].keywords.map((k) => {
+        const r = scrubText(k, scrubList);
+        scrubbed += r.hits;
+        return r.text;
+      });
+      built[f].queries = built[f].queries.map((q) => {
+        const r = scrubText(q, scrubList);
+        scrubbed += r.hits;
+        return r.text;
+      });
+    }
+
+    // 2) Banned words: one rewrite, then drop the item.
+    const fixBanned = async (text: string): Promise<string | null> => {
+      if (!findBannedTerm(text)) return text;
+      const rewritten = await rewriteOnce(
+        lovableKey,
+        `Rewrite this without any of these words: ${OE_BANNED_FOR_PROMPT}. Same meaning, same language, same length.`,
+        text,
+      );
+      const cleaned = rewritten ? scrubText(rewritten, scrubList).text : null;
+      if (cleaned && !findBannedTerm(cleaned)) {
+        bannedFixed++;
+        return cleaned;
+      }
+      return null;
+    };
+
+    for (const f of FACES) {
+      const fixedSummary = await fixBanned(built[f].summary);
+      if (fixedSummary !== null) built[f].summary = fixedSummary;
+
+      const keywords: string[] = [];
+      for (const k of built[f].keywords) {
+        const fixed = await fixBanned(k);
+        if (fixed !== null) keywords.push(fixed);
+        else bannedFixed++; // dropped
+      }
+      built[f].keywords = keywords;
+
+      const queries: string[] = [];
+      for (const q of built[f].queries) {
+        const fixed = await fixBanned(q);
+        if (fixed !== null) queries.push(fixed);
+        else bannedFixed++; // dropped
+      }
+      built[f].queries = queries;
+    }
+
+    // 3) Ninety words, enforced.
+    for (const f of FACES) {
+      if (wordCount(built[f].summary) <= 90) continue;
+      const short = await rewriteOnce(
+        lovableKey,
+        "Shorten this to 90 words or fewer. Keep every fact. Same language.",
+        built[f].summary,
+      );
+      let candidate = short ? scrubText(short, scrubList).text : built[f].summary;
+      if (findBannedTerm(candidate)) candidate = built[f].summary;
+      built[f].summary = truncateToWords(candidate, 90);
+      shortened++;
+    }
+
+    let queriesTotalFinal = 0;
+    for (const f of FACES) queriesTotalFinal += built[f].queries.length;
+
     const counts = {
       entries: entriesRanked.length,
       posts: posts.length,
       signals: signals.length,
       fragments: frags.length,
       corrections: corrections.length,
-      queries_total: queriesTotal,
+      queries_total: queriesTotalFinal,
+      scrubbed,
+      banned_fixed: bannedFixed,
+      shortened,
     };
 
     if (dryRun) {
