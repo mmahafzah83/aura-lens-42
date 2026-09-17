@@ -223,6 +223,7 @@ export default function PreferencesPanel({
   onRetakeBrandAssessment,
 }: PreferencesPanelProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [opportunityEmailOn, setOpportunityEmailOn] = useState(false);
 
   // Body scroll lock + Esc to close.
   useEffect(() => {
@@ -252,6 +253,9 @@ export default function PreferencesPanel({
       if (!cancelled) {
         setProfile((data as Profile) || null);
       }
+      const { data: matching } = await (supabase.from("oe_consents" as any) as any)
+        .select("id").eq("user_id", userId).eq("kind", "matching").is("revoked_at", null).limit(1);
+      if (!cancelled) setOpportunityEmailOn((matching?.length ?? 0) > 0);
     })();
     return () => { cancelled = true; };
   }, [open, userId]);
@@ -341,6 +345,32 @@ export default function PreferencesPanel({
     }
   };
 
+  const updateOpportunityEmail = async (value: boolean) => {
+    if (!userId) return;
+    const previous = opportunityEmailOn;
+    setOpportunityEmailOn(value);
+    try {
+      if (!value) {
+        const { error } = await (supabase.from("oe_consents" as any) as any).update({ revoked_at: new Date().toISOString() })
+          .eq("user_id", userId).eq("kind", "matching").is("revoked_at", null);
+        if (error) throw error;
+      } else {
+        const { data: latest } = await (supabase.from("oe_consents" as any) as any).select("id,version")
+          .eq("user_id", userId).eq("kind", "matching").order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (latest) {
+          const { error } = await (supabase.from("oe_consents" as any) as any).update({ revoked_at: null, granted_at: new Date().toISOString() }).eq("id", latest.id);
+          if (error) throw error;
+        } else {
+          const { error } = await (supabase.from("oe_consents" as any) as any).insert({ user_id: userId, kind: "matching", version: "1.0" });
+          if (error) throw error;
+        }
+      }
+    } catch {
+      setOpportunityEmailOn(previous);
+      toast.error("That didn't save — try once more.");
+    }
+  };
+
   const displayName = useMemo(() => {
     const fn = (profile?.first_name || "").trim();
     const ln = (profile?.last_name || "").trim();
@@ -378,6 +408,12 @@ export default function PreferencesPanel({
         description="One relevant finding, only when it clears the bar. Turn off any time."
         on={overnightReadingOn}
         onChange={(v) => updatePref("overnight_reading_enabled", v)}
+      />
+      <ToggleRow
+        label="Daily opportunity card in the morning email"
+        description="One carefully matched opportunity, only when it clears the bar."
+        on={opportunityEmailOn}
+        onChange={updateOpportunityEmail}
       />
       <div
         style={{
