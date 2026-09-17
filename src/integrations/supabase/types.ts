@@ -8484,6 +8484,15 @@ export type Database = {
         }[]
       }
       normalise_linkedin_handle: { Args: { p_raw: string }; Returns: string }
+      oe_candidates: {
+        Args: { p_face: string; p_k: number; p_user_id: string }
+        Returns: {
+          fts_rank: number
+          opportunity_id: string
+          rrf_score: number
+          vec_rank: number
+        }[]
+      }
       oe_record_tap: {
         Args: {
           p_scope?: string

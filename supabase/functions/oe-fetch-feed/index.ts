@@ -24,6 +24,28 @@ const MAX_NOISE_RATIO = 0.30;
 const MAX_DETAIL_PAGES = 25;
 const MAX_PAGE_CHARS = 24_000; // ≈ 6,000 tokens; head and tail kept, middle cut
 
+// World Bank procurement notices: we want chairs a person can sit in, in the
+// region this instrument serves, not construction tenders on other continents.
+const WB_CONSULTING =
+  /request for expression of interest|expression of interest|individual consultant|consultant|consulting|advisory|technical assistance|qcbs|cqs|\bic\b/i;
+const WB_REGION = [
+  "saudi", "united arab emirates", "emirates", "qatar", "kuwait", "bahrain", "oman",
+  "jordan", "egypt", "morocco", "tunisia", "iraq", "lebanon", "yemen", "djibouti", "pakistan",
+];
+const WB_THEMES =
+  /digital|transformation|governance|utilit|water|energy|public[- ]private|\bppp\b/i;
+
+function worldBankNoticeUrl(n: Record<string, any>): string | null {
+  const direct = n.url || n.noticeurl || n.notice_url || n.bid_reference_no_url;
+  if (typeof direct === "string" && /^https?:/i.test(direct)) return direct;
+  const id = n.id || n.notice_id || n.noticeid;
+  if (id) return `https://projects.worldbank.org/en/projects-operations/procurement-detail/${id}`;
+  const project = n.project_id || n.proj_id;
+  if (project) return `https://projects.worldbank.org/en/projects-operations/project-detail/${project}`;
+  return null;
+}
+
+
 const P2_SYSTEM =
   `You turn one web page or message into at most one opportunity record for senior professionals, or null. ` +
   `Return strict JSON {is_opportunity:boolean, chair_type:'board'|'mandate'|'role'|'room'|'speaking'|'media'|'advisory'|'award'|'learning'|null, ` +
@@ -137,6 +159,44 @@ async function firecrawlScrape(apiKey: string, url: string, withLinks = false) {
     sourceURL: (d.metadata?.sourceURL ?? d.metadata?.url ?? url) as string,
   };
 }
+
+/**
+ * Plain fetch with a browser user agent, for pages that refuse every Firecrawl
+ * engine. Tags and scripts are stripped; whatever text is left is what we read.
+ */
+async function plainFetchText(url: string) {
+  try {
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en,ar;q=0.9",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(25_000),
+    });
+    if (!r.ok) return { ok: false as const, status: r.status, error: `plain fetch ${r.status}` };
+    const html = await r.text();
+    const title = squash(stripTags(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ""));
+    const links = [...html.matchAll(/href="([^"#]+)"/gi)]
+      .map((m) => { try { return new URL(m[1], url).toString(); } catch { return ""; } })
+      .filter(Boolean);
+    return { ok: true as const, markdown: squash(stripTags(html)), links, title, sourceURL: url };
+  } catch (e) {
+    return { ok: false as const, status: 0, error: String((e as Error).message ?? e) };
+  }
+}
+
+/** Firecrawl first. If every engine fails, read the page plainly. */
+async function scrapePage(apiKey: string, url: string, withLinks = false) {
+  if (apiKey) {
+    const fc = await firecrawlScrape(apiKey, url, withLinks);
+    if (fc.ok && squash(stripTags(fc.markdown || "")).length >= 200) return fc;
+  }
+  return await plainFetchText(url);
+}
+
 
 async function perplexity(apiKey: string, query: string) {
   const r = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -393,22 +453,22 @@ Deno.serve(async (req) => {
         counts.pages++;
         if (/calendar|\.ics/.test(ct) || text.startsWith("BEGIN:VCALENDAR")) {
           candidates = parseIcs(text);
-        } else if (firecrawlKey) {
-          const fc = await firecrawlScrape(firecrawlKey, url, true);
+        } else {
+          const fc = await scrapePage(firecrawlKey, url, true);
           if (fc.ok) candidates = [{ url, title: fc.title, text: fc.markdown }];
         }
       }
     } else if (kind === "listing") {
-      if (!firecrawlKey) throw new Error("FIRECRAWL_API_KEY not configured");
-      const fc = await firecrawlScrape(firecrawlKey, url!, true);
+      const fc = await scrapePage(firecrawlKey, url!, true);
       counts.pages++;
-      if (!fc.ok) throw new Error(`firecrawl ${fc.status}: ${fc.error}`);
+      if (!fc.ok) throw new Error(`read failed ${fc.status}: ${fc.error}`);
 
       const chairWords = (feed.chair_types ?? []) as string[];
       const wanted = /ترشح|nomination|board|مجلس إدارة|vacanc|شاغر|tender|منافسة|call for|دعوة/i;
       const links = (fc.links ?? [])
         .map((l) => canonicalise(l))
         .filter((l) => l.startsWith("http") && !blocked(l))
+        .filter((l) => canonicalise(url!) !== l)
         .filter((l, i, arr) => arr.indexOf(l) === i)
         .filter((l) => wanted.test(decodeURIComponent(l)) || chairWords.length === 0)
         .slice(0, MAX_DETAIL_PAGES * 2);
@@ -419,7 +479,7 @@ Deno.serve(async (req) => {
       const fresh = links.filter((l) => !knownSet.has(l)).slice(0, MAX_DETAIL_PAGES);
 
       for (const link of fresh) {
-        const d = await firecrawlScrape(firecrawlKey, link);
+        const d = await scrapePage(firecrawlKey, link);
         counts.pages++;
         if (!d.ok) { counts.errors++; continue; }
         const raw = d.markdown || "";
@@ -429,24 +489,32 @@ Deno.serve(async (req) => {
         if (noise > MAX_NOISE_RATIO) continue;
         candidates.push({ url: link, title: d.title, text: clean });
       }
-      // The listing page itself can carry the whole notice.
-      if (!candidates.length && fc.markdown) {
-        candidates.push({ url: url!, title: fc.title, text: squash(stripTags(fc.markdown)) });
-      }
+      // A listing page is a page, not a chair. If no detail page was reachable,
+      // this feed produces nothing today. We never turn the index into a record.
     } else if (kind === "api") {
       const isWorldBank = /worldbank\.org/i.test(url || "");
       if (isWorldBank && url) {
-        const r = await fetch(`${url}?format=json&rows=25`, { signal: AbortSignal.timeout(20_000) });
+        const r = await fetch(`${url}?format=json&rows=100`, { signal: AbortSignal.timeout(20_000) });
         counts.pages++;
         const j = await r.json().catch(() => null);
         const rows: any[] = j?.procnotices ?? j?.notices ?? [];
-        candidates = rows.slice(0, 25).map((n) => ({
-          url: n.url || n.noticeurl || null,
+        const kept = rows.filter((n) => {
+          const kindText = `${n.notice_type ?? ""} ${n.procurement_method_name ?? ""} ${n.procurement_method ?? ""} ${n.noticetype ?? ""}`;
+          const consulting = WB_CONSULTING.test(kindText);
+          if (!consulting) return false;
+          const country = squash(String(n.country_name ?? n.countryname ?? ""));
+          const inRegion = WB_REGION.some((c) => country.toLowerCase().includes(c));
+          const title = `${n.project_name ?? ""} ${n.bid_description ?? ""}`;
+          return inRegion || WB_THEMES.test(title);
+        });
+        candidates = kept.slice(0, MAX_DETAIL_PAGES).map((n) => ({
+          url: worldBankNoticeUrl(n),
           title: n.project_name || n.notice_type || "",
-          text: [n.project_name, n.notice_type, n.country_name, n.noticedate, n.submission_deadline_date, n.notice_lang_name, n.bid_description]
+          text: [n.project_name, n.notice_type, n.procurement_method_name, n.country_name, n.noticedate, n.submission_deadline_date, n.notice_lang_name, n.bid_description]
             .filter(Boolean).join("\n"),
         }));
       } else if (perplexityKey && firecrawlKey) {
+
         // Discovery: round-robin over the queries the faces already wrote.
         const { data: faces } = await admin
           .from("oe_faces").select("user_id, face, queries")

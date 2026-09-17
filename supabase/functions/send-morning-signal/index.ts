@@ -12,7 +12,7 @@ import { adminUserIds } from "../_shared/adminRole.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   renderEmail, heading, paragraph, quote, divider,
-  INK_SOFT, INK_FAINT, BODY, MONO,
+  INK, INK_SOFT, INK_FAINT, BODY, MONO, CANVAS, BORDER, ACCENT,
 } from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
@@ -26,6 +26,118 @@ const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 const BASE_CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
 const PAUSE_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
 const FRESH_WINDOW_HOURS = 14;
+
+// The opportunity card block. Behind a flag so it can be switched off without
+// touching anything else this function does.
+const OE_CARDS_ENABLED = (Deno.env.get("OE_CARDS_IN_EMAIL") ?? "true") !== "false";
+const APP_URL = "https://www.aura-intel.org";
+const AMBER = "#B4802A";
+
+const CHAIR_LABEL: Record<string, { en: string; ar: string }> = {
+  board: { en: "Board seat", ar: "مقعد مجلس" },
+  mandate: { en: "Mandate", ar: "تكليف" },
+  role: { en: "Role", ar: "دور" },
+  room: { en: "Room", ar: "غرفة" },
+  speaking: { en: "Speaking", ar: "منصة" },
+  media: { en: "Media", ar: "إعلام" },
+  advisory: { en: "Advisory", ar: "استشارة" },
+  award: { en: "Award", ar: "جائزة" },
+  learning: { en: "Learning", ar: "تعلّم" },
+};
+const BAND_WORD: Record<string, { en: string; ar: string }> = {
+  strong: { en: "strong", ar: "قوية" },
+  worth_a_look: { en: "worth a look", ar: "تستحق النظر" },
+  stretch: { en: "a stretch", ar: "بعيدة" },
+};
+const TAP_LABEL = {
+  right: { en: "That's right", ar: "صحيح" },
+  not_quite: { en: "Not quite", ar: "ليس تماماً" },
+  not_my_area: { en: "Not my area", ar: "ليس مجالي" },
+  less_from_here: { en: "Less from this issuer", ar: "أقل من هذه الجهة" },
+};
+
+type Card = {
+  id: string;
+  opportunity_id: string | null;
+  why_lines: Array<{ text?: string }> | null;
+  gap_line: { text?: string } | null;
+  quote: string | null;
+  clock_text: string | null;
+  fit_band: string | null;
+  win_band: string | null;
+  tap_token: string | null;
+  oe_opportunities?: { title?: string; chair_type?: string; time_kind?: string; source_url?: string } | null;
+};
+
+function tapButton(href: string, label: string): string {
+  return `<a href="${href}" style="display:inline-block;margin:0 6px 6px 0;padding:0 16px;height:36px;line-height:36px;border:1px solid ${BORDER};border-radius:8px;font-family:${BODY};font-size:13px;font-weight:600;color:${INK};text-decoration:none;">${escapeHtml(label)}</a>`;
+}
+
+function bandBox(caption: string, word: string): string {
+  return `<td style="padding:10px 14px;background:${CANVAS};border:1px solid ${BORDER};border-radius:8px;font-family:${BODY};font-size:13px;color:${INK_SOFT};">${escapeHtml(caption)}: <strong style="color:${INK};">${escapeHtml(word)}</strong></td>`;
+}
+
+/** The card, rendered. Returns html and the plain-text twin. */
+function buildCardBlock(card: Card, lang: "en" | "ar"): { html: string; text: string } {
+  const L = (k: keyof typeof TAP_LABEL) => TAP_LABEL[k][lang];
+
+  if (!card.opportunity_id) {
+    const line = lang === "ar" ? "لا شيء قوي اليوم" : "Nothing strong today";
+    return {
+      html: `<p style="margin:0 0 16px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_FAINT};">${escapeHtml(line)}</p>${divider()}`,
+      text: `${line}\n`,
+    };
+  }
+
+  const opp = card.oe_opportunities ?? {};
+  const kind = CHAIR_LABEL[String(opp.chair_type ?? "")]?.[lang] ?? String(opp.chair_type ?? "");
+  const tag = opp.time_kind === "early_signal"
+    ? (lang === "ar" ? "إشارة مبكرة" : "early signal")
+    : (lang === "ar" ? "مفتوح الآن" : "open now");
+  const why = (card.why_lines ?? []).map((w) => String(w?.text ?? "").trim()).filter(Boolean);
+  const gap = String(card.gap_line?.text ?? "").trim();
+  const base = `${APP_URL}/t/${card.tap_token ?? ""}`;
+
+  const whyHtml = why.map((w) =>
+    `<p style="margin:0 0 8px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};"><span style="color:${INK_FAINT};">&bull;</span> ${escapeHtml(w)}</p>`).join("");
+  const gapHtml = gap
+    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};"><span style="color:${AMBER};">&bull;</span> ${escapeHtml(gap)}</p>`
+    : "";
+  const quoteHtml = card.quote
+    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;line-height:1.6;color:${INK_FAINT};">&ldquo;${escapeHtml(card.quote)}&rdquo;${opp.source_url ? ` <a href="${escapeHtml(opp.source_url)}" style="color:${ACCENT};text-decoration:underline;">${lang === "ar" ? "المصدر" : "source"}</a>` : ""}</p>`
+    : "";
+
+  const html = `
+    <p style="margin:0 0 6px;font-family:${MONO};font-size:10px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">${escapeHtml(kind)} &middot; ${escapeHtml(tag)}</p>
+    <p style="margin:0 0 8px;font-family:${BODY};font-size:19px;line-height:1.35;font-weight:700;color:${INK};">${escapeHtml(String(opp.title ?? ""))}</p>
+    ${card.clock_text ? `<p style="margin:0 0 12px;font-family:${MONO};font-size:12px;line-height:1.5;color:${AMBER};">${escapeHtml(card.clock_text)}</p>` : ""}
+    ${whyHtml}${gapHtml}${quoteHtml}
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px;"><tr>
+      ${bandBox(lang === "ar" ? "تناسبك" : "Fits you", BAND_WORD[String(card.fit_band ?? "stretch")]?.[lang] ?? "")}
+      <td style="width:10px;">&nbsp;</td>
+      ${bandBox(lang === "ar" ? "تستطيع الفوز بها" : "You could win it", BAND_WORD[String(card.win_band ?? "stretch")]?.[lang] ?? "")}
+    </tr></table>
+    <p style="margin:0 0 6px;">${tapButton(`${base}?a=right`, L("right"))}${tapButton(`${base}?a=not_quite`, L("not_quite"))}${tapButton(`${base}?a=not_my_area`, L("not_my_area"))}</p>
+    <p style="margin:0 0 4px;font-family:${BODY};font-size:12px;line-height:1.5;"><a href="${base}?a=less_from_here" style="color:${INK_FAINT};text-decoration:underline;">${escapeHtml(L("less_from_here"))}</a></p>
+    ${divider()}`;
+
+  const text = [
+    `${kind} · ${tag}`,
+    String(opp.title ?? ""),
+    card.clock_text ?? "",
+    ...why.map((w) => `- ${w}`),
+    gap ? `- ${gap}` : "",
+    card.quote ? `"${card.quote}"${opp.source_url ? ` (${opp.source_url})` : ""}` : "",
+    `${lang === "ar" ? "تناسبك" : "Fits you"}: ${BAND_WORD[String(card.fit_band ?? "stretch")]?.[lang] ?? ""}`,
+    `${lang === "ar" ? "تستطيع الفوز بها" : "You could win it"}: ${BAND_WORD[String(card.win_band ?? "stretch")]?.[lang] ?? ""}`,
+    `${L("right")}: ${base}?a=right`,
+    `${L("not_quite")}: ${base}?a=not_quite`,
+    `${L("not_my_area")}: ${base}?a=not_my_area`,
+    `${L("less_from_here")}: ${base}?a=less_from_here`,
+  ].filter(Boolean).join("\n");
+
+  return { html, text };
+}
 
 type Finding = {
   id: string;
@@ -102,16 +214,22 @@ function provenanceParts(f: Finding): string[] {
   return parts;
 }
 
-function buildEmail(lead: Finding, others: Finding[]) {
-  const subject = buildSubject(lead);
-  const kicker = `THE OVERNIGHT · ${riyadhHHMM(lead.created_at)}`;
-  const headline = (lead.title || "").trim() || (lead.url || "").trim();
-  const prov = provenanceParts(lead);
+function buildEmail(
+  lead: Finding | null,
+  others: Finding[],
+  card?: { html: string; text: string; subject?: string } | null,
+) {
+  const subject = lead ? buildSubject(lead) : (card?.subject || "Aura has one opportunity for you today");
+  const kicker = lead ? `THE OVERNIGHT · ${riyadhHHMM(lead.created_at)}` : "THE OVERNIGHT";
+  const headline = lead ? ((lead.title || "").trim() || (lead.url || "").trim()) : "";
+  const prov = lead ? provenanceParts(lead) : [];
   const extras = others.slice(0, 3);
   // The button must land on the thing we found, not a generic tab.
-  const leadUrl = `https://www.aura-intel.org/dashboard?desk=1&finding=${lead.id}`;
+  const leadUrl = lead
+    ? `https://www.aura-intel.org/dashboard?desk=1&finding=${lead.id}`
+    : BASE_CTA_URL;
 
-  const implicationHtml = (lead.implication || "").trim()
+  const implicationHtml = lead && (lead.implication || "").trim()
     ? quote(escapeHtml(lead.implication!.trim()))
     : "";
 
@@ -128,13 +246,14 @@ function buildEmail(lead: Finding, others: Finding[]) {
     : "";
 
   const html = renderEmail({
-    preheader: headline,
+    preheader: headline || (card?.subject ?? subject),
     prefsHref: PAUSE_URL,
     prefsLabel: "Pause these emails",
-    cta: { href: leadUrl, label: "Open it in Aura" },
+    cta: lead ? { href: leadUrl, label: "Open it in Aura" } : undefined,
     body: `
       <p style="margin:0 0 14px;font-family:${MONO};font-size:11px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">${escapeHtml(kicker)}</p>
-      ${heading(escapeHtml(headline))}
+      ${card?.html ?? ""}
+      ${lead ? heading(escapeHtml(headline)) : ""}
       ${implicationHtml}
       ${provHtml}
       ${extrasHtml}
@@ -143,14 +262,14 @@ function buildEmail(lead: Finding, others: Finding[]) {
     `,
   });
 
-  const textLines = [
-    kicker,
-    "",
-    headline,
-  ];
-  if ((lead.implication || "").trim()) { textLines.push("", lead.implication!.trim()); }
-  if (prov.length) { textLines.push("", prov.join(" · ")); }
-  textLines.push("", `Open it in Aura: ${leadUrl}`);
+  const textLines = [kicker, ""];
+  if (card?.text) textLines.push(card.text, "");
+  if (lead) {
+    textLines.push(headline);
+    if ((lead.implication || "").trim()) { textLines.push("", lead.implication!.trim()); }
+    if (prov.length) { textLines.push("", prov.join(" · ")); }
+    textLines.push("", `Open it in Aura: ${leadUrl}`);
+  }
   if (extras.length) {
     textLines.push("", "Also last night:");
     for (const e of extras) textLines.push(`- ${(e.title || e.url || "").trim()}${e.url ? ` (${e.url})` : ""}`);
@@ -258,7 +377,22 @@ serve(async (req) => {
       byUser.set(f.user_id, arr);
     }
 
-    const userIds = Array.from(byUser.keys());
+    // A member with an unsent card today is a candidate even if the night was
+    // quiet for findings. The card is the reason to write.
+    const candidateIds = new Set(byUser.keys());
+    if (OE_CARDS_ENABLED) {
+      const from = new Date(now.getTime() - 36 * 3600 * 1000).toISOString().slice(0, 10);
+      let cq = admin.from("oe_cards").select("user_id").is("sent_at", null).gte("card_date", from);
+      if (onlyUserId) cq = cq.eq("user_id", onlyUserId);
+      const { data: cardUsers } = await cq;
+      for (const c of (cardUsers || []) as Array<{ user_id: string }>) {
+        if (!c.user_id) continue;
+        if (adminIds.has(c.user_id) && !(dryRun && onlyUserId === c.user_id)) continue;
+        candidateIds.add(c.user_id);
+      }
+    }
+
+    const userIds = Array.from(candidateIds);
     if (userIds.length === 0) {
       quiet = 1; // nothing fresh anywhere — silence is the correct outcome
     }
@@ -278,14 +412,16 @@ serve(async (req) => {
     // Timezone rides along: 07:00 must mean 07:00 where the member actually is.
     const optedOut = new Set<string>();
     const tzByUser = new Map<string, string | null>();
+    const langByUser = new Map<string, "en" | "ar">();
     if (userIds.length) {
       const { data: prefRows } = await admin
         .from("diagnostic_profiles")
-        .select("user_id, notification_prefs, timezone")
+        .select("user_id, notification_prefs, timezone, content_language")
         .in("user_id", userIds);
-      for (const r of (prefRows || []) as Array<{ user_id: string; notification_prefs: Record<string, unknown> | null; timezone: string | null }>) {
+      for (const r of (prefRows || []) as Array<{ user_id: string; notification_prefs: Record<string, unknown> | null; timezone: string | null; content_language: string | null }>) {
         if (r?.notification_prefs?.overnight_reading_enabled === false) optedOut.add(r.user_id);
         tzByUser.set(r.user_id, r.timezone ?? null);
+        langByUser.set(r.user_id, r.content_language === "ar" ? "ar" : "en");
       }
     }
 
@@ -298,7 +434,9 @@ serve(async (req) => {
 
         // 07:00 in THIS member's timezone, and an idempotency key on THEIR local date.
         const lp = localParts(tzByUser.get(uid) ?? null, now);
-        if (lp.hour !== 7) { results.push({ user_id: uid, outcome: "skipped_off_hour" }); continue; }
+        // A targeted dry run is an inspection, not a send: it may look at any hour.
+        const hourGate = !(dryRun && onlyUserId === uid);
+        if (hourGate && lp.hour !== 7) { results.push({ user_id: uid, outcome: "skipped_off_hour" }); continue; }
         const userKey = `morning_signal:${lp.dateKey}`;
 
         const { data: alreadyRow } = await admin
@@ -317,14 +455,35 @@ serve(async (req) => {
           (Number(b.relevance_score ?? 0) - Number(a.relevance_score ?? 0)) ||
           (new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         );
-        const lead = list[0];
+        const lead = list[0] ?? null;
         const others = list.slice(1);
-        const { subject, html, text } = buildEmail(lead, others);
+
+        // Today's card, in this member's own day.
+        let cardRow: Card | null = null;
+        if (OE_CARDS_ENABLED) {
+          const { data: c } = await admin
+            .from("oe_cards")
+            .select("id, opportunity_id, why_lines, gap_line, quote, clock_text, fit_band, win_band, tap_token, oe_opportunities(title, chair_type, time_kind, source_url)")
+            .eq("user_id", uid)
+            .eq("card_date", lp.dateKey)
+            .is("sent_at", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          cardRow = (c as unknown as Card) ?? null;
+        }
+
+        if (!lead && !cardRow) { results.push({ user_id: uid, outcome: "skipped_quiet" }); continue; }
+
+        const lang = langByUser.get(uid) ?? "en";
+        const cardBlock = cardRow ? buildCardBlock(cardRow, lang) : null;
+        const { subject, html, text } = buildEmail(lead, others, cardBlock);
 
         if (dryRun) {
           results.push({
             user_id: uid, to, outcome: "would_send", subject, html, text,
-            finding_ids: [lead.id, ...others.slice(0, 3).map((o) => o.id)],
+            finding_ids: lead ? [lead.id, ...others.slice(0, 3).map((o) => o.id)] : [],
+            card_id: cardRow?.id ?? null,
           });
           continue;
         }
@@ -337,12 +496,26 @@ serve(async (req) => {
           email_type: "morning_signal",
           metadata: {
             message_key: userKey,
-            finding_ids: [lead.id, ...others.slice(0, 3).map((o) => o.id)],
-            lead_finding_id: lead.id,
+            finding_ids: lead ? [lead.id, ...others.slice(0, 3).map((o) => o.id)] : [],
+            lead_finding_id: lead?.id ?? null,
+            card_id: cardRow?.id ?? null,
             subject,
             resend_id: resendId,
           },
         });
+        if (cardRow) {
+          await admin.from("oe_cards").update({ sent_at: new Date().toISOString() }).eq("id", cardRow.id);
+          await admin.from("notification_events").insert({
+            user_id: uid,
+            type: "opportunity_card",
+            channel: "email",
+            title: "Opportunity card sent",
+            body: String(cardRow.oe_opportunities?.title ?? cardRow.clock_text ?? ""),
+            read: true,
+            read_at: new Date().toISOString(),
+            metadata: { card_id: cardRow.id, opportunity_id: cardRow.opportunity_id, message_key: userKey },
+          });
+        }
         sent++;
         // The send ledger every dashboard reads. Bookkeeping must never be able
         // to break a delivery: if this write fails we log it and carry on.
@@ -357,8 +530,8 @@ serve(async (req) => {
             read_at: new Date().toISOString(),
             metadata: {
               message_key: userKey,
-              lead_finding_id: lead.id,
-              finding_ids: [lead.id, ...others.slice(0, 3).map((o) => o.id)],
+              lead_finding_id: lead?.id ?? null,
+              finding_ids: lead ? [lead.id, ...others.slice(0, 3).map((o) => o.id)] : [],
               resend_id: resendId,
             },
           });
