@@ -214,16 +214,22 @@ function provenanceParts(f: Finding): string[] {
   return parts;
 }
 
-function buildEmail(lead: Finding, others: Finding[]) {
-  const subject = buildSubject(lead);
-  const kicker = `THE OVERNIGHT · ${riyadhHHMM(lead.created_at)}`;
-  const headline = (lead.title || "").trim() || (lead.url || "").trim();
-  const prov = provenanceParts(lead);
+function buildEmail(
+  lead: Finding | null,
+  others: Finding[],
+  card?: { html: string; text: string; subject?: string } | null,
+) {
+  const subject = lead ? buildSubject(lead) : (card?.subject || "Aura has one opportunity for you today");
+  const kicker = lead ? `THE OVERNIGHT · ${riyadhHHMM(lead.created_at)}` : "THE OVERNIGHT";
+  const headline = lead ? ((lead.title || "").trim() || (lead.url || "").trim()) : "";
+  const prov = lead ? provenanceParts(lead) : [];
   const extras = others.slice(0, 3);
   // The button must land on the thing we found, not a generic tab.
-  const leadUrl = `https://www.aura-intel.org/dashboard?desk=1&finding=${lead.id}`;
+  const leadUrl = lead
+    ? `https://www.aura-intel.org/dashboard?desk=1&finding=${lead.id}`
+    : BASE_CTA_URL;
 
-  const implicationHtml = (lead.implication || "").trim()
+  const implicationHtml = lead && (lead.implication || "").trim()
     ? quote(escapeHtml(lead.implication!.trim()))
     : "";
 
@@ -240,13 +246,14 @@ function buildEmail(lead: Finding, others: Finding[]) {
     : "";
 
   const html = renderEmail({
-    preheader: headline,
+    preheader: headline || (card?.subject ?? subject),
     prefsHref: PAUSE_URL,
     prefsLabel: "Pause these emails",
-    cta: { href: leadUrl, label: "Open it in Aura" },
+    cta: lead ? { href: leadUrl, label: "Open it in Aura" } : undefined,
     body: `
       <p style="margin:0 0 14px;font-family:${MONO};font-size:11px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">${escapeHtml(kicker)}</p>
-      ${heading(escapeHtml(headline))}
+      ${card?.html ?? ""}
+      ${lead ? heading(escapeHtml(headline)) : ""}
       ${implicationHtml}
       ${provHtml}
       ${extrasHtml}
@@ -255,14 +262,14 @@ function buildEmail(lead: Finding, others: Finding[]) {
     `,
   });
 
-  const textLines = [
-    kicker,
-    "",
-    headline,
-  ];
-  if ((lead.implication || "").trim()) { textLines.push("", lead.implication!.trim()); }
-  if (prov.length) { textLines.push("", prov.join(" · ")); }
-  textLines.push("", `Open it in Aura: ${leadUrl}`);
+  const textLines = [kicker, ""];
+  if (card?.text) textLines.push(card.text, "");
+  if (lead) {
+    textLines.push(headline);
+    if ((lead.implication || "").trim()) { textLines.push("", lead.implication!.trim()); }
+    if (prov.length) { textLines.push("", prov.join(" · ")); }
+    textLines.push("", `Open it in Aura: ${leadUrl}`);
+  }
   if (extras.length) {
     textLines.push("", "Also last night:");
     for (const e of extras) textLines.push(`- ${(e.title || e.url || "").trim()}${e.url ? ` (${e.url})` : ""}`);
