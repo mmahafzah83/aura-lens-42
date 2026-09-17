@@ -121,7 +121,7 @@ function buildCardBlock(card: Card, lang: "en" | "ar"): { html: string; text: st
     ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};"><span style="color:${AMBER};">&bull;</span> ${escapeHtml(gap)}</p>`
     : "";
   const quoteHtml = card.quote
-    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;line-height:1.6;color:${INK_FAINT};">&ldquo;${escapeHtml(card.quote)}&rdquo;${opp.source_url ? ` <a href="${escapeHtml(opp.source_url)}" style="color:${ACCENT};text-decoration:underline;">${lang === "ar" ? "المصدر" : "source"}</a>` : ""}</p>`
+    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;line-height:1.6;color:${INK_FAINT};">&ldquo;${escapeHtml(card.quote)}&rdquo;${opp.source_url ? ` <a href="${escapeHtml(opp.source_url)}" style="color:${ACCENT};text-decoration:underline;">${lang === "ar" ? "النص الأصلي" : "original"}</a>` : ""}</p>`
     : "";
 
   const html = `

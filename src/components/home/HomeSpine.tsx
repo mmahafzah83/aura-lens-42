@@ -102,6 +102,7 @@ function useLivePresence(userId: string | null | undefined) {
 
 export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActive, activeTab }: HomeSpineProps) {
   const opportunities = useOpportunityCards(userId, 2);
+  const todayOpportunity = opportunities.cards.find((card) => card.card_date === opportunities.today);
   const uid = userId ?? "anon";
   const address = useHomeAddress(userId);
   const live = useLivePresence(userId);
@@ -300,9 +301,9 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
   return (
     <div className="home-spine" style={{ display: "grid", gap: 22, marginBlockStart: 22 }}>
       <HomeMasthead userId={userId} />
-      {opportunities.cards.find((card) => card.card_date === opportunities.today) && (
+      {todayOpportunity && (
         <OpportunityCard
-          card={opportunities.cards.find((card) => card.card_date === opportunities.today)!}
+          card={todayOpportunity}
           language={opportunities.language}
           onSaved={opportunities.refresh}
         />
