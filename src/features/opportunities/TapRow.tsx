@@ -30,18 +30,24 @@ export function TapRow({ token, language, source, card, initialTap = null, autoT
   const record = async (nextTap: OpportunityTap, nextScope?: OpportunityScope) => {
     if (!token || saving) return;
     setSaving(true);
-    const effectiveTap = nextTap === "less_from_here" ? "not_quite" : nextTap;
+    const effectiveTap = nextTap;
     const effectiveScope = nextTap === "less_from_here" ? "issuer" : nextScope ?? null;
     const { data } = await (supabase.rpc as any)("oe_record_tap", {
       p_token: token, p_tap: effectiveTap, p_scope: effectiveScope,
       p_scope_value: effectiveScope ? String(scopeValue[effectiveScope] ?? "") : null,
       p_source: source,
     });
-    if (data?.ok) { setTap(effectiveTap); setScope(effectiveScope); onSaved?.(); }
+    if (data?.ok) { setTap(nextTap === "less_from_here" ? "not_quite" : effectiveTap); setScope(effectiveScope); onSaved?.(); }
     setSaving(false);
   };
 
-  useEffect(() => { if (autoTap && !initialTap) void record(autoTap); }, []); // token-link action runs once
+  useEffect(() => {
+    if (!autoTap) return;
+    const key = `oe:tap:${token}:${autoTap}`;
+    if (window.sessionStorage.getItem(key)) return;
+    window.sessionStorage.setItem(key, "1");
+    void record(autoTap);
+  }, []); // token-link action runs once per browser session
 
   if (readOnly && tap) return <p style={{ margin: 0, color: "#5B6673", fontSize: 14 }}>{L.noted}</p>;
   if (scope) return <p style={{ margin: 0, color: "#12805C", fontSize: 14 }}>{scope === "type" || scope === "issuer" ? L.understoodLong : L.understood}</p>;

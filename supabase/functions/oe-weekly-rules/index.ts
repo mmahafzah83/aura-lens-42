@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
       if (right > 0) { cadence = "daily"; if (feed.cadence !== cadence) counts.promoted++; }
       else if (inserted28 > 0 && scoreYield === 0 && scoreTaps <= 0) cadence = "weekly";
       else if (inserted42 > 0 && carded === 0 && scoreTaps <= 0 && feed.cadence === "weekly") { cadence = "paused"; counts.paused++; }
-      await admin.from("oe_feeds").update({ score_speed: scoreSpeed, score_yield: scoreYield, cadence }).eq("id", feed.id);
+      await admin.from("oe_feeds").update({ score_speed: scoreSpeed, score_yield: scoreYield, score_quality: scoreTaps, cadence }).eq("id", feed.id);
       counts.feeds_scored++;
     }
     await admin.from("oe_runs").insert({ run_kind: "weekly_rules", started_at: startedAt, finished_at: new Date().toISOString(), outcome: "ok", counts });
