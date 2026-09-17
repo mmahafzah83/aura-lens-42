@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-cron-secret" };
 
 const FN = "oe-learn-taps";
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
     const fewShotK = Math.max(1, Number(params.few_shot_k ?? 8));
 
     const { data: taps, error: tapsError } = await admin.from("oe_taps")
-      .select("id,user_id,card_id,tap,scope,scope_value,tapped_at,oe_cards(title:oe_opportunities(title),match:oe_matches(scores),opportunity:oe_opportunities(id,issuer_id,seniority_band,location,chair_type))")
+      .select("id,user_id,card_id,tap,scope,scope_value,tapped_at")
       .is("applied_at", null).order("tapped_at", { ascending: true }).limit(200);
     if (tapsError) throw new Error(tapsError.message);
 
@@ -52,9 +53,13 @@ Deno.serve(async (req) => {
       });
 
       for (const tap of userTaps) {
-        const card = tap.oe_cards as any;
-        const title = String(card?.title?.title ?? "");
-        const ids = citedFaceIds(card?.match?.scores);
+        const { data: card } = await admin.from("oe_cards")
+          .select("match_id,opportunity_id,oe_matches(scores),oe_opportunities(id,title,issuer_id,seniority_band,location,chair_type)")
+          .eq("id", tap.card_id).maybeSingle();
+        const opportunity = card?.oe_opportunities as any;
+        const match = card?.oe_matches as any;
+        const title = String(opportunity?.title ?? "");
+        const ids = citedFaceIds(match?.scores);
         const label = tap.tap === "right" ? "right" : tap.tap === "not_my_area" ? "not_my_area" : null;
         for (const id of ids) {
           const face = next.get(id);
@@ -67,7 +72,6 @@ Deno.serve(async (req) => {
         }
 
         if (tap.tap === "not_quite" || tap.tap === "not_my_area" || tap.tap === "less_from_here") {
-          const opportunity = card?.opportunity ?? {};
           const reach = tap.scope || (tap.tap === "not_my_area" ? "type" : tap.tap === "less_from_here" ? "issuer" : "just_this");
           const reachValue = tap.scope_value || ({
             issuer: opportunity.issuer_id,
