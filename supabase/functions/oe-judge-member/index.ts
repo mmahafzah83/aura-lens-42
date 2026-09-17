@@ -1,0 +1,496 @@
+/**
+ * oe-judge-member — decides, for one member, whether any live opportunity is
+ * worth his morning. Hard filters first (no model sees a record it should never
+ * have seen), then hybrid retrieval per face, then one model call per item,
+ * twice, so an unstable judgement can be seen and withheld. What survives the
+ * gate becomes at most params.cards_per_day cards. A quiet day is stated, not
+ * filled: the gate is never lowered to produce a card.
+ *
+ * The job row itself is completed by oe-worker, which invoked this function.
+ */
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { logAIUsage } from "../_shared/logAIUsage.ts";
+import { logEfError } from "../_shared/observe.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
+};
+
+const FN = "oe-judge-member";
+const MODEL = "google/gemini-3-flash-preview";
+const EMBED_MODEL = "text-embedding-3-small";
+const P3_VERSION = "p3-1.0";
+const P4_VERSION = "p4-1.0";
+const QUESTIONS = ["role_fit", "sector_fit", "seniority_fit", "timing", "strategic_value"] as const;
+const RETRIEVAL_FACES = ["done", "wants", "reads", "stands"] as const;
+const BANDS = { work: 0, table: 1, room: 2 } as const;
+/**
+ * One gateway call per item per pass. The worker aborts at 110 seconds, so the
+ * judged set is capped; the shortlist is still built at params.shortlist_k and
+ * the best of it is what gets judged.
+ */
+const DEFAULT_JUDGE_MAX = 12;
+
+const P3_SYSTEM =
+  `You judge whether one opportunity fits one senior professional. You receive the five faces (pseudonymised), ` +
+  `up to 8 of his past judgements (title → that's right / not quite / not my area), and one opportunity record. ` +
+  `Return strict JSON {role_fit:0-4, sector_fit:0-4, seniority_fit:0-4, timing:0-4, strategic_value:0-4, ` +
+  `justification:{role_fit,sector_fit,seniority_fit,timing,strategic_value} (each <= 20 words), ` +
+  `eligibility_met:true|false|null, gap:'one sentence naming the single most important thing he lacks for this, or empty', ` +
+  `cites:[{kind:'face'|'requirement', id}]}. ` +
+  `Anchors: 0 = not at all; 2 = half; 4 = fully. Timing: 0 if deadline under 3 days or signal vague; ` +
+  `2 if under two weeks or signal within two quarters; 4 if workable window or signal within one quarter. ` +
+  `Strategic value is measured against the wants face.`;
+
+function p4System(lang: string) {
+  return `Write for this professional, in ${lang === "ar" ? "Arabic" : "English"}, in the second person, plain words, ` +
+    `no percentages, no banned words (authority as a noun, thought leader, personal brand, trajectory, leverage). ` +
+    `Return strict JSON {why:[{text, cites:[ids]},{text, cites:[ids]}], gap:{text, cites:[ids]}, clock:text}. ` +
+    `Each text <= 45 words. Every why line must cite at least one face id or requirement id from the provided list; ` +
+    `a line with no cite is dropped. The gap line names the single missing thing, or says plainly that nothing is missing. ` +
+    `clock: 'closes in N days' / 'no date given' / 'early signal, likely within a quarter' in the member's language.`;
+}
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function normaliseJson(text: string): any {
+  let t = (text || "").trim();
+  if (t.startsWith("```")) t = t.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  let parsed: any;
+  try { parsed = JSON.parse(t); } catch {
+    const s = t.indexOf("{"), e = t.lastIndexOf("}");
+    if (s >= 0 && e > s) parsed = JSON.parse(t.slice(s, e + 1));
+    else throw new Error("unparseable model output");
+  }
+  if (Array.isArray(parsed)) parsed = parsed[0];
+  if (!parsed || typeof parsed !== "object") throw new Error("model output is not an object");
+  return parsed;
+}
+
+const clamp04 = (v: unknown) => Math.max(0, Math.min(4, Number(v ?? 0) || 0));
+
+function cosine(a: number[], b: number[]): number {
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length && i < b.length; i++) { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+  return na && nb ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0;
+}
+
+function asVector(v: unknown): number[] | null {
+  if (Array.isArray(v)) return v as number[];
+  if (typeof v === "string") { try { const p = JSON.parse(v); return Array.isArray(p) ? p : null; } catch { return null; } }
+  return null;
+}
+
+function localToday(tz: string | null | undefined): string {
+  const zone = tz && String(tz).trim() ? String(tz).trim() : "Asia/Riyadh";
+  const fmt = (z: string) => new Intl.DateTimeFormat("en-CA", {
+    timeZone: z, year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  try { return fmt(zone); } catch { return fmt("Asia/Riyadh"); }
+}
+
+async function gateway(key: string, system: string, user: string) {
+  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: MODEL, temperature: 0.1, response_format: { type: "json_object" },
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+    }),
+    signal: AbortSignal.timeout(45_000),
+  });
+  if (!r.ok) throw new Error(`gateway ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  const data = await r.json();
+  return { content: data?.choices?.[0]?.message?.content || "", usage: data?.usage || {} };
+}
+
+async function embed(key: string, input: string): Promise<number[] | null> {
+  const r = await fetch("https://api.openai.com/v1/embeddings", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: EMBED_MODEL, input }),
+  });
+  if (!r.ok) return null;
+  const j = await r.json();
+  return j?.data?.[0]?.embedding ?? null;
+}
+
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+const BANNED = /\bthought leader|personal brand|trajectory|leverage\b/i;
+const hasPercent = (s: string) => /%|\bper ?cent|في المائة|بالمئة/i.test(s);
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const CRON_SECRET = Deno.env.get("cron_secret") || Deno.env.get("CRON_SECRET") || "";
+  const cronHeader = req.headers.get("x-cron-secret") || "";
+  const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!((!!CRON_SECRET && cronHeader === CRON_SECRET) || bearer === SERVICE_ROLE)) {
+    return json({ error: "Forbidden" }, 403);
+  }
+
+  const admin: SupabaseClient = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
+  const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
+
+  const body = await req.json().catch(() => ({} as any));
+  const userId = (body.user_id ?? null) as string | null;
+  const jobId = (body.job_id ?? null) as string | null;
+  if (!userId) return json({ error: "user_id required" }, 400);
+
+  const startedAt = new Date().toISOString();
+  const counts = {
+    filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
+    unstable: 0, carded: 0, empty_day: 0,
+  };
+  let costUsd = 0;
+
+  try {
+    // ── policy ────────────────────────────────────────────────────────────
+    const { data: policy } = await admin
+      .from("oe_policy_versions").select("version, params, rubric").eq("active", true).maybeSingle();
+    const params = (policy?.params ?? {}) as Record<string, any>;
+    const rubric = (policy?.rubric ?? {}) as Record<string, any>;
+    const rubricVersion = String(rubric.version ?? policy?.version ?? "1.0");
+    const weights: Record<string, number> = rubric.weights ?? {
+      role_fit: 0.3, sector_fit: 0.2, seniority_fit: 0.15, timing: 0.15, strategic_value: 0.2,
+    };
+    const shortlistK = Number(params.shortlist_k ?? 50);
+    const judgePasses = Math.max(1, Number(params.judge_passes ?? 2));
+    const judgeMax = Number(params.judge_max ?? DEFAULT_JUDGE_MAX);
+    const gateMin = Number(params.gate_min_avg ?? 3);
+    const gateNoZero = params.gate_no_zero !== false;
+    const bands = params.bands ?? { strong: 3.4, worth_a_look: 3 };
+    const cardsPerDay = Math.max(1, Number(params.cards_per_day ?? 1));
+    const exploreShare = Number(params.explore_share ?? 0);
+    const fewShotK = Number(params.few_shot_k ?? 8);
+    const alarmRun = Number(params.empty_day_alarm_run ?? 3);
+
+    // ── the member ────────────────────────────────────────────────────────
+    const { data: faces } = await admin
+      .from("oe_faces").select("id, face, summary, keywords, weight, embedding").eq("user_id", userId);
+    const faceList = faces ?? [];
+    if (faceList.length < 5) throw new Error("faces incomplete");
+    const faceById = new Map(faceList.map((f: any) => [f.id, f]));
+    const faceByName = new Map(faceList.map((f: any) => [f.face, f]));
+    const avoidVec = asVector(faceByName.get("avoid")?.embedding);
+
+    const { data: profile } = await admin
+      .from("diagnostic_profiles")
+      .select("seniority_band, sector_focus, country, content_language, timezone")
+      .eq("user_id", userId).maybeSingle();
+    const memberBand = (profile?.seniority_band ?? "table") as keyof typeof BANDS;
+    const memberSector = profile?.sector_focus ?? null;
+    const memberCountry = (profile?.country ?? "SA") as string;
+    const lang = (profile?.content_language === "ar" ? "ar" : "en") as "ar" | "en";
+    const cardDate = localToday(profile?.timezone);
+
+    const { data: corrections } = await admin
+      .from("oe_corrections").select("reach, reach_value, chair_type, seniority_band, expires_at")
+      .eq("user_id", userId).gt("expires_at", new Date().toISOString());
+    const excluded = { type: new Set<string>(), issuer: new Set<string>(), place: new Set<string>(), level: new Set<string>(), just_this: new Set<string>() };
+    for (const c of corrections ?? []) {
+      const reach = String(c.reach ?? "");
+      const value = String(c.reach_value ?? c.chair_type ?? c.seniority_band ?? "").toLowerCase();
+      if (reach in excluded && value) (excluded as any)[reach].add(value);
+    }
+
+    // Past judgements, in his words.
+    const { data: labelled } = await admin
+      .from("oe_taps")
+      .select("tap, scope, tapped_at, oe_cards!inner(opportunity_id, oe_opportunities(title))")
+      .eq("user_id", userId)
+      .order("tapped_at", { ascending: false })
+      .limit(fewShotK);
+    const fewShots = (labelled ?? []).map((t: any) => ({
+      title: t?.oe_cards?.oe_opportunities?.title ?? "",
+      tap: t.tap, scope: t.scope ?? null,
+    })).filter((t: any) => t.title);
+
+    // ── 1+2. SHORTLIST, then the hard filters, before any model ───────────
+    const merged = new Map<string, { score: number; retrieval: Record<string, any> }>();
+    for (const faceName of RETRIEVAL_FACES) {
+      const face = faceByName.get(faceName);
+      if (!face) continue;
+      if (!asVector(face.embedding) && openaiKey && face.summary) {
+        const v = await embed(openaiKey, `${face.summary}\n${(face.keywords ?? []).join(", ")}`);
+        if (v) {
+          await admin.from("oe_faces").update({ embedding: `[${v.join(",")}]` }).eq("id", face.id);
+          face.embedding = v;
+        }
+      }
+      const { data: rows, error } = await admin.rpc("oe_candidates", {
+        p_user_id: userId, p_face: faceName, p_k: shortlistK,
+      });
+      if (error) throw new Error(`oe_candidates(${faceName}): ${error.message}`);
+      const w = Number(face.weight ?? params.face_weights_default?.[faceName] ?? 0.2);
+      for (const r of rows ?? []) {
+        const prev = merged.get(r.opportunity_id) ?? { score: 0, retrieval: {} };
+        prev.score += w * Number(r.rrf_score ?? 0);
+        prev.retrieval[faceName] = { rrf: Number(r.rrf_score ?? 0), fts_rank: r.fts_rank, vec_rank: r.vec_rank };
+        merged.set(r.opportunity_id, prev);
+      }
+    }
+
+    const ids = [...merged.keys()];
+    let pool: any[] = [];
+    if (ids.length) {
+      const { data: opps } = await admin
+        .from("oe_opportunities")
+        .select("id, title, scope, sector, chair_type, time_kind, seniority_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, issuer_id, issuer_raw, language, embedding")
+        .in("id", ids);
+      pool = opps ?? [];
+    }
+
+    const { data: alreadyCarded } = await admin
+      .from("oe_cards").select("opportunity_id").eq("user_id", userId).not("opportunity_id", "is", null);
+    const cardedIds = new Set((alreadyCarded ?? []).map((c: any) => c.opportunity_id));
+
+    const today = new Date();
+    const inTwoDays = new Date(today.getTime() + 2 * 86400_000).toISOString().slice(0, 10);
+    const todayStr = today.toISOString().slice(0, 10);
+    const countryOk = (o: any) => {
+      const loc = String(o.location ?? "").toLowerCase();
+      if (o.remote === true) return true;
+      if (!o.location) return o.time_kind === "early_signal";
+      if (memberCountry.toUpperCase() === "SA") return /saudi|السعودية|riyadh|jeddah|الرياض|remote/.test(loc);
+      return loc.includes(memberCountry.toLowerCase());
+    };
+
+    const filtered = pool.filter((o) => {
+      if (cardedIds.has(o.id)) return false;
+      if (o.deadline && o.deadline < todayStr) return false;
+      if (o.time_kind !== "early_signal" && o.deadline && o.deadline < inTwoDays) return false;
+      if (o.seniority_band && Math.abs(BANDS[o.seniority_band as keyof typeof BANDS] - BANDS[memberBand]) > 1) return false;
+      if (!countryOk(o)) return false;
+      if (excluded.type.has(String(o.chair_type).toLowerCase())) return false;
+      if (o.issuer_id && excluded.issuer.has(String(o.issuer_id).toLowerCase())) return false;
+      if (o.issuer_raw && excluded.issuer.has(String(o.issuer_raw).toLowerCase())) return false;
+      if (o.location && excluded.place.has(String(o.location).toLowerCase())) return false;
+      if (o.seniority_band && excluded.level.has(String(o.seniority_band).toLowerCase())) return false;
+      if (excluded.just_this.has(String(o.id).toLowerCase())) return false;
+      return true;
+    });
+    counts.filtered = pool.length - filtered.length;
+
+    const scored = filtered.map((o) => {
+      const m = merged.get(o.id)!;
+      const vec = asVector(o.embedding);
+      const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
+      return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
+    }).sort((a, b) => b.score - a.score).slice(0, shortlistK);
+    counts.shortlisted = scored.length;
+
+    // ── 3. JUDGE ──────────────────────────────────────────────────────────
+    if (!lovableKey && scored.length) throw new Error("LOVABLE_API_KEY not configured");
+    const judged: Array<any> = [];
+
+    for (const cand of scored.slice(0, judgeMax)) {
+      const o = cand.o;
+      const reqs = Array.isArray(o.requirements) ? o.requirements : [];
+      const requirementIds = reqs.map((_: any, i: number) => `req:${i}`);
+      const oppBlock = JSON.stringify({
+        title: o.title, scope: o.scope, sector: o.sector, chair_type: o.chair_type,
+        time_kind: o.time_kind, seniority_band: o.seniority_band, location: o.location,
+        remote: o.remote, deadline: o.deadline, signal_date: o.signal_date,
+        issuer: o.issuer_raw, evidence_quote: o.evidence_quote,
+        requirements: reqs.map((r: any, i: number) => ({ id: `req:${i}`, text: r?.text ?? "" })),
+      });
+
+      const passes: any[] = [];
+      for (let p = 0; p < judgePasses; p++) {
+        const faceBlock = JSON.stringify(shuffled(faceList).map((f: any) => ({
+          id: f.id, face: f.face, summary: f.summary, keywords: f.keywords,
+        })));
+        const user = [
+          `FACES:\n${faceBlock}`,
+          `PAST JUDGEMENTS:\n${JSON.stringify(fewShots)}`,
+          `OPPORTUNITY:\n${oppBlock}`,
+        ].join("\n\n");
+        const out = await gateway(lovableKey, P3_SYSTEM, user);
+        costUsd += 0.0006;
+        await logAIUsage({
+          user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
+          input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
+          metadata: { prompt_version: P3_VERSION, opportunity_id: o.id, pass: p + 1 },
+        });
+        passes.push(normaliseJson(out.content));
+      }
+      counts.judged++;
+
+      const avg: Record<string, number> = {};
+      let unstable = false;
+      for (const q of QUESTIONS) {
+        const vals = passes.map((p) => clamp04(p[q]));
+        avg[q] = vals.reduce((a, b) => a + b, 0) / vals.length;
+        if (Math.max(...vals) - Math.min(...vals) >= 2) unstable = true;
+      }
+      if (unstable) counts.unstable++;
+
+      const scoreAvg = QUESTIONS.reduce((sum, q) => sum + avg[q] * Number(weights[q] ?? 0), 0);
+      const noZero = !gateNoZero || QUESTIONS.every((q) => avg[q] > 0);
+      const gatePassed = scoreAvg >= gateMin && noZero && !!o.quote_verified;
+      if (gatePassed) counts.gate_passed++;
+
+      const fitBand = scoreAvg >= Number(bands.strong ?? 3.4)
+        ? "strong" : scoreAvg >= Number(bands.worth_a_look ?? 3) ? "worth_a_look" : "stretch";
+      const last = passes[passes.length - 1];
+      const eligibility = typeof last?.eligibility_met === "boolean" ? last.eligibility_met : null;
+      const winBand = eligibility === true ? fitBand
+        : eligibility === false ? "stretch"
+        : fitBand === "strong" ? "worth_a_look" : fitBand === "worth_a_look" ? "stretch" : "stretch";
+
+      let issuerHistory = 0;
+      if (o.issuer_id) {
+        const { count } = await admin.from("oe_opportunities")
+          .select("id", { count: "exact", head: true }).eq("issuer_id", o.issuer_id);
+        issuerHistory = count ?? 0;
+      }
+
+      const gateReason = gatePassed ? null
+        : !o.quote_verified ? "quote_not_verified"
+        : !noZero ? "zero_question" : "below_gate";
+
+      const { data: match } = await admin.from("oe_matches").upsert({
+        user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
+        retrieval: cand.retrieval,
+        scores: { avg, passes, justification: last?.justification ?? null, cites: last?.cites ?? [], gap: last?.gap ?? "", prompt_version: P3_VERSION },
+        score_avg: +scoreAvg.toFixed(4), unstable, fit_band: fitBand, win_band: winBand,
+        win_basis: { eligibility_met: eligibility, issuer_history: issuerHistory, past_winner_similarity: null },
+        gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
+      }, { onConflict: "user_id,opportunity_id,rubric_version" }).select("id").maybeSingle();
+
+      judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, matchId: match?.id ?? null, requirementIds });
+    }
+
+    // ── 4. PICK ───────────────────────────────────────────────────────────
+    const eligible = judged.filter((j) => j.gatePassed && !j.unstable).sort((a, b) => b.scoreAvg - a.scoreAvg);
+    let picks = eligible.slice(0, cardsPerDay).map((j) => ({ ...j, explore: false }));
+    if (picks.length && Math.random() < exploreShare) {
+      const explore = eligible.find((j) => j.o.sector && memberSector && j.o.sector !== memberSector && !picks.includes(j as any));
+      if (explore) picks[picks.length - 1] = { ...explore, explore: true };
+    }
+
+    const cardsWritten: string[] = [];
+
+    if (!picks.length) {
+      const clockText = lang === "ar" ? "لا شيء قوي اليوم" : "nothing strong today";
+      const { data: empty } = await admin.from("oe_cards").insert({
+        user_id: userId, opportunity_id: null, card_date: cardDate,
+        why_lines: [], gap_line: null, clock_text: clockText, channel: "email",
+      }).select("id").maybeSingle();
+      if (empty?.id) cardsWritten.push(empty.id);
+      counts.empty_day = 1;
+
+      // Coverage alarm: several quiet days in a row is a supply problem, not a
+      // reason to lower the gate.
+      const { data: recent } = await admin.from("oe_cards")
+        .select("opportunity_id").eq("user_id", userId)
+        .order("created_at", { ascending: false }).limit(alarmRun);
+      if ((recent?.length ?? 0) >= alarmRun && (recent ?? []).every((c: any) => c.opportunity_id === null)) {
+        await logEfError(admin, {
+          function_name: FN, severity: "high",
+          error: `OE_COVERAGE user=${userId} empty_days=${alarmRun}`,
+          context: { user_id: userId, empty_days: alarmRun },
+        });
+      }
+    }
+
+    // ── 5+6. REASONS, then the card ───────────────────────────────────────
+    for (const pick of picks) {
+      const o = pick.o;
+      const allowedIds = new Set<string>([...faceList.map((f: any) => f.id), ...pick.requirementIds]);
+      const faceBlock = JSON.stringify(faceList.map((f: any) => ({ id: f.id, face: f.face, summary: f.summary })));
+      const oppBlock = JSON.stringify({
+        title: o.title, scope: o.scope, issuer: o.issuer_raw, sector: o.sector,
+        location: o.location, deadline: o.deadline, signal_date: o.signal_date,
+        time_kind: o.time_kind, chair_type: o.chair_type,
+        requirements: (Array.isArray(o.requirements) ? o.requirements : []).map((r: any, i: number) => ({ id: `req:${i}`, text: r?.text ?? "" })),
+      });
+      const userMsg = [
+        `FACES (cite these ids):\n${faceBlock}`,
+        `OPPORTUNITY:\n${oppBlock}`,
+        `ALLOWED CITE IDS: ${[...allowedIds].join(", ")}`,
+      ].join("\n\n");
+
+      let why: Array<{ text: string; cites: string[] }> = [];
+      let gapLine: { text: string; cites: string[] } | null = null;
+      let clockText = "";
+
+      for (let attempt = 0; attempt < 2 && why.length < 1; attempt++) {
+        const out = await gateway(lovableKey, p4System(lang), userMsg);
+        costUsd += 0.0004;
+        await logAIUsage({
+          user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
+          input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
+          metadata: { prompt_version: P4_VERSION, opportunity_id: o.id },
+        });
+        const rec = normaliseJson(out.content);
+        why = (Array.isArray(rec.why) ? rec.why : [])
+          .map((w: any) => ({ text: String(w?.text ?? "").trim(), cites: (Array.isArray(w?.cites) ? w.cites : []).map(String).filter((c: string) => allowedIds.has(c)) }))
+          .filter((w: any) => w.text && w.cites.length && !hasPercent(w.text) && !BANNED.test(w.text))
+          .slice(0, 2);
+        const g = rec.gap;
+        const gText = String(g?.text ?? "").trim();
+        gapLine = gText && !hasPercent(gText) && !BANNED.test(gText)
+          ? { text: gText, cites: (Array.isArray(g?.cites) ? g.cites : []).map(String).filter((c: string) => allowedIds.has(c)) }
+          : null;
+        clockText = String(rec.clock ?? "").trim();
+      }
+      if (!why.length) continue; // nothing honest to say about this one
+
+      const { data: card } = await admin.from("oe_cards").insert({
+        user_id: userId,
+        opportunity_id: o.id,
+        match_id: pick.matchId,
+        card_date: cardDate,
+        why_lines: why,
+        gap_line: gapLine,
+        quote: o.evidence_quote,
+        clock_text: clockText,
+        fit_band: pick.fitBand,
+        win_band: pick.winBand,
+        explore_slot: !!pick.explore,
+        channel: "email",
+      }).select("id").maybeSingle();
+      if (card?.id) { cardsWritten.push(card.id); counts.carded++; }
+    }
+
+    // ── 7. LOG ────────────────────────────────────────────────────────────
+    const { data: run } = await admin.from("oe_runs").insert({
+      run_kind: "judge_member", user_id: userId,
+      started_at: startedAt, finished_at: new Date().toISOString(),
+      outcome: "ok", counts, cost_usd: +costUsd.toFixed(6),
+    }).select("id").maybeSingle();
+
+    await logEfError(admin, {
+      function_name: FN, severity: "info",
+      error: `OE_JUDGE_OK user=${userId} carded=${counts.carded}`,
+      context: { user_id: userId, job_id: jobId, counts },
+    });
+
+    return json({ ok: true, counts, cards: cardsWritten, run_id: run?.id ?? null });
+  } catch (e) {
+    const msg = String((e as Error).message ?? e).slice(0, 500);
+    await admin.from("oe_runs").insert({
+      run_kind: "judge_member", user_id: userId, started_at: startedAt,
+      finished_at: new Date().toISOString(), outcome: "error", counts,
+      cost_usd: +costUsd.toFixed(6), error: msg,
+    });
+    await logEfError(admin, { function_name: FN, error: e, severity: "high", context: { user_id: userId, job_id: jobId } });
+    return json({ ok: false, error: msg, counts }, 500);
+  }
+});
