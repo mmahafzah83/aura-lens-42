@@ -7,6 +7,7 @@ export interface AuraCardProps {
   onClick?: () => void;
   selected?: boolean;
   className?: string;
+  style?: CSSProperties;
 }
 
 export function AuraCard({
@@ -16,6 +17,7 @@ export function AuraCard({
   onClick,
   selected = false,
   className,
+  style: styleOverride,
 }: AuraCardProps) {
   const [isHover, setIsHover] = useState(false);
 
@@ -45,6 +47,7 @@ export function AuraCard({
     transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
     cursor: onClick ? "pointer" : undefined,
     transform: isHover && hover === "lift" ? "translateY(-1px)" : undefined,
+    ...styleOverride,
   };
 
   const beforeStyle: CSSProperties = {
