@@ -138,6 +138,44 @@ async function firecrawlScrape(apiKey: string, url: string, withLinks = false) {
   };
 }
 
+/**
+ * Plain fetch with a browser user agent, for pages that refuse every Firecrawl
+ * engine. Tags and scripts are stripped; whatever text is left is what we read.
+ */
+async function plainFetchText(url: string) {
+  try {
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en,ar;q=0.9",
+      },
+      redirect: "follow",
+      signal: AbortSignal.timeout(25_000),
+    });
+    if (!r.ok) return { ok: false as const, status: r.status, error: `plain fetch ${r.status}` };
+    const html = await r.text();
+    const title = squash(stripTags(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || ""));
+    const links = [...html.matchAll(/href="([^"#]+)"/gi)]
+      .map((m) => { try { return new URL(m[1], url).toString(); } catch { return ""; } })
+      .filter(Boolean);
+    return { ok: true as const, markdown: squash(stripTags(html)), links, title, sourceURL: url };
+  } catch (e) {
+    return { ok: false as const, status: 0, error: String((e as Error).message ?? e) };
+  }
+}
+
+/** Firecrawl first. If every engine fails, read the page plainly. */
+async function scrapePage(apiKey: string, url: string, withLinks = false) {
+  if (apiKey) {
+    const fc = await firecrawlScrape(apiKey, url, withLinks);
+    if (fc.ok && squash(stripTags(fc.markdown || "")).length >= 200) return fc;
+  }
+  return await plainFetchText(url);
+}
+
+
 async function perplexity(apiKey: string, query: string) {
   const r = await fetch("https://api.perplexity.ai/chat/completions", {
     method: "POST",
