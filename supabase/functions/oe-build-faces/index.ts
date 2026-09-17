@@ -225,6 +225,41 @@ async function callModel(apiKey: string, userMessage: string) {
   return { content, usage: data?.usage || {} };
 }
 
+/** One small text-in, text-out call used by the post-checks. */
+async function rewriteOnce(apiKey: string, instruction: string, text: string): Promise<string | null> {
+  try {
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: MODEL,
+        temperature: 0.2,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You rewrite one short piece of text. Return only the rewritten text, nothing else. Keep the original language (Arabic stays Arabic, English stays English).",
+          },
+          { role: "user", content: `${instruction}\n\n${text}` },
+        ],
+      }),
+    });
+    if (!r.ok) {
+      console.error(`[${FN}] rewrite failed`, r.status);
+      return null;
+    }
+    const data = await r.json();
+    const out = String(data?.choices?.[0]?.message?.content || "").trim()
+      .replace(/^["'`]+|["'`]+$/g, "");
+    return out || null;
+  } catch (e) {
+    console.error(`[${FN}] rewrite threw:`, (e as Error).message);
+    return null;
+  }
+}
+
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
