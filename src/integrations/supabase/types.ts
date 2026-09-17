@@ -4102,6 +4102,811 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_cards: {
+        Row: {
+          card_date: string
+          channel: string
+          clock_text: string | null
+          created_at: string
+          dismissed_unread: boolean
+          explore_slot: boolean
+          fit_band: string | null
+          gap_line: Json | null
+          id: string
+          kit_offered: boolean
+          match_id: string | null
+          opened_at: string | null
+          opportunity_id: string | null
+          quote: string | null
+          sent_at: string | null
+          tap_token: string
+          token_expires_at: string
+          updated_at: string
+          user_id: string
+          why_lines: Json
+          win_band: string | null
+        }
+        Insert: {
+          card_date: string
+          channel?: string
+          clock_text?: string | null
+          created_at?: string
+          dismissed_unread?: boolean
+          explore_slot?: boolean
+          fit_band?: string | null
+          gap_line?: Json | null
+          id?: string
+          kit_offered?: boolean
+          match_id?: string | null
+          opened_at?: string | null
+          opportunity_id?: string | null
+          quote?: string | null
+          sent_at?: string | null
+          tap_token?: string
+          token_expires_at?: string
+          updated_at?: string
+          user_id: string
+          why_lines?: Json
+          win_band?: string | null
+        }
+        Update: {
+          card_date?: string
+          channel?: string
+          clock_text?: string | null
+          created_at?: string
+          dismissed_unread?: boolean
+          explore_slot?: boolean
+          fit_band?: string | null
+          gap_line?: Json | null
+          id?: string
+          kit_offered?: boolean
+          match_id?: string | null
+          opened_at?: string | null
+          opportunity_id?: string | null
+          quote?: string | null
+          sent_at?: string | null
+          tap_token?: string
+          token_expires_at?: string
+          updated_at?: string
+          user_id?: string
+          why_lines?: Json
+          win_band?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_cards_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "oe_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_cards_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oe_consents: {
+        Row: {
+          created_at: string
+          granted_at: string
+          id: string
+          kind: string
+          revoked_at: string | null
+          user_id: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          granted_at?: string
+          id?: string
+          kind: string
+          revoked_at?: string | null
+          user_id: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          granted_at?: string
+          id?: string
+          kind?: string
+          revoked_at?: string | null
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      oe_corrections: {
+        Row: {
+          card_id: string | null
+          chair_type: string | null
+          created_at: string
+          expires_at: string | null
+          feed_lane: string | null
+          id: string
+          issuer_kind: string | null
+          reach: string | null
+          reach_value: string | null
+          sector: string | null
+          seniority_band: string | null
+          user_id: string
+          what_he_changed: Json | null
+          what_we_said: Json | null
+        }
+        Insert: {
+          card_id?: string | null
+          chair_type?: string | null
+          created_at?: string
+          expires_at?: string | null
+          feed_lane?: string | null
+          id?: string
+          issuer_kind?: string | null
+          reach?: string | null
+          reach_value?: string | null
+          sector?: string | null
+          seniority_band?: string | null
+          user_id: string
+          what_he_changed?: Json | null
+          what_we_said?: Json | null
+        }
+        Update: {
+          card_id?: string | null
+          chair_type?: string | null
+          created_at?: string
+          expires_at?: string | null
+          feed_lane?: string | null
+          id?: string
+          issuer_kind?: string | null
+          reach?: string | null
+          reach_value?: string | null
+          sector?: string | null
+          seniority_band?: string | null
+          user_id?: string
+          what_he_changed?: Json | null
+          what_we_said?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_corrections_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oe_faces: {
+        Row: {
+          built_at: string
+          created_at: string
+          embedding: string | null
+          face: string
+          id: string
+          inputs: Json
+          keywords: string[]
+          queries: string[]
+          summary: string
+          updated_at: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          built_at?: string
+          created_at?: string
+          embedding?: string | null
+          face: string
+          id?: string
+          inputs?: Json
+          keywords?: string[]
+          queries?: string[]
+          summary: string
+          updated_at?: string
+          user_id: string
+          weight?: number
+        }
+        Update: {
+          built_at?: string
+          created_at?: string
+          embedding?: string | null
+          face?: string
+          id?: string
+          inputs?: Json
+          keywords?: string[]
+          queries?: string[]
+          summary?: string
+          updated_at?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      oe_feeds: {
+        Row: {
+          active: boolean
+          cadence: string
+          chair_types: string[]
+          country: string
+          created_at: string
+          id: string
+          issuer_hint: string | null
+          kind: string
+          lane: string
+          language: string
+          last_changed_at: string | null
+          last_error: string | null
+          last_fetched_at: string | null
+          name: string
+          notes: string | null
+          owner: string | null
+          read_method: string | null
+          score_cost: number | null
+          score_legality: number | null
+          score_quality: number | null
+          score_speed: number | null
+          score_yield: number | null
+          terms_note: string | null
+          terms_ok: boolean
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          active?: boolean
+          cadence?: string
+          chair_types?: string[]
+          country?: string
+          created_at?: string
+          id?: string
+          issuer_hint?: string | null
+          kind: string
+          lane: string
+          language?: string
+          last_changed_at?: string | null
+          last_error?: string | null
+          last_fetched_at?: string | null
+          name: string
+          notes?: string | null
+          owner?: string | null
+          read_method?: string | null
+          score_cost?: number | null
+          score_legality?: number | null
+          score_quality?: number | null
+          score_speed?: number | null
+          score_yield?: number | null
+          terms_note?: string | null
+          terms_ok?: boolean
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          active?: boolean
+          cadence?: string
+          chair_types?: string[]
+          country?: string
+          created_at?: string
+          id?: string
+          issuer_hint?: string | null
+          kind?: string
+          lane?: string
+          language?: string
+          last_changed_at?: string | null
+          last_error?: string | null
+          last_fetched_at?: string | null
+          name?: string
+          notes?: string | null
+          owner?: string | null
+          read_method?: string | null
+          score_cost?: number | null
+          score_legality?: number | null
+          score_quality?: number | null
+          score_speed?: number | null
+          score_yield?: number | null
+          terms_note?: string | null
+          terms_ok?: boolean
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      oe_issuers: {
+        Row: {
+          aliases: string[]
+          canonical_name: string
+          created_at: string
+          domain: string | null
+          history: Json
+          id: string
+          kind: string | null
+          name_ar: string | null
+          name_en: string | null
+          sector: string | null
+          tadawul_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          aliases?: string[]
+          canonical_name: string
+          created_at?: string
+          domain?: string | null
+          history?: Json
+          id?: string
+          kind?: string | null
+          name_ar?: string | null
+          name_en?: string | null
+          sector?: string | null
+          tadawul_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aliases?: string[]
+          canonical_name?: string
+          created_at?: string
+          domain?: string | null
+          history?: Json
+          id?: string
+          kind?: string | null
+          name_ar?: string | null
+          name_en?: string | null
+          sector?: string | null
+          tadawul_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      oe_kits: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          profile_fixes: Json
+          status: string
+          talking_points: Json
+          updated_at: string
+          used_at: string | null
+          user_id: string
+          voice_profile_id: string | null
+          writing: string | null
+          writing_lang: string | null
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          profile_fixes?: Json
+          status?: string
+          talking_points?: Json
+          updated_at?: string
+          used_at?: string | null
+          user_id: string
+          voice_profile_id?: string | null
+          writing?: string | null
+          writing_lang?: string | null
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          profile_fixes?: Json
+          status?: string
+          talking_points?: Json
+          updated_at?: string
+          used_at?: string | null
+          user_id?: string
+          voice_profile_id?: string | null
+          writing?: string | null
+          writing_lang?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_kits_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oe_leadtime_pairs: {
+        Row: {
+          chair_type: string | null
+          confirmed: boolean
+          created_at: string
+          id: string
+          lead_days: number | null
+          note: string | null
+          opportunity_id: string
+          posted_opportunity_id: string | null
+          posting_date: string | null
+          signal_date: string
+        }
+        Insert: {
+          chair_type?: string | null
+          confirmed?: boolean
+          created_at?: string
+          id?: string
+          lead_days?: number | null
+          note?: string | null
+          opportunity_id: string
+          posted_opportunity_id?: string | null
+          posting_date?: string | null
+          signal_date: string
+        }
+        Update: {
+          chair_type?: string | null
+          confirmed?: boolean
+          created_at?: string
+          id?: string
+          lead_days?: number | null
+          note?: string | null
+          opportunity_id?: string
+          posted_opportunity_id?: string | null
+          posting_date?: string | null
+          signal_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_leadtime_pairs_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_leadtime_pairs_posted_opportunity_id_fkey"
+            columns: ["posted_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oe_matches: {
+        Row: {
+          created_at: string
+          explore_slot: boolean
+          fit_band: string | null
+          gate_passed: boolean
+          gate_reason: string | null
+          id: string
+          judged_at: string
+          opportunity_id: string
+          retrieval: Json | null
+          rubric_version: string
+          score_avg: number | null
+          scores: Json
+          unstable: boolean
+          user_id: string
+          win_band: string | null
+          win_basis: Json | null
+        }
+        Insert: {
+          created_at?: string
+          explore_slot?: boolean
+          fit_band?: string | null
+          gate_passed?: boolean
+          gate_reason?: string | null
+          id?: string
+          judged_at?: string
+          opportunity_id: string
+          retrieval?: Json | null
+          rubric_version: string
+          score_avg?: number | null
+          scores: Json
+          unstable?: boolean
+          user_id: string
+          win_band?: string | null
+          win_basis?: Json | null
+        }
+        Update: {
+          created_at?: string
+          explore_slot?: boolean
+          fit_band?: string | null
+          gate_passed?: boolean
+          gate_reason?: string | null
+          id?: string
+          judged_at?: string
+          opportunity_id?: string
+          retrieval?: Json | null
+          rubric_version?: string
+          score_avg?: number | null
+          scores?: Json
+          unstable?: boolean
+          user_id?: string
+          win_band?: string | null
+          win_basis?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_matches_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oe_opportunities: {
+        Row: {
+          alive: boolean
+          canonical_url: string | null
+          chair_type: string
+          content_hash: string | null
+          created_at: string
+          deadline: string | null
+          embedding: string | null
+          evidence_quote: string | null
+          extraction_confidence: number | null
+          feed_id: string | null
+          first_seen_at: string
+          id: string
+          issuer_id: string | null
+          issuer_raw: string | null
+          language: string | null
+          last_seen_at: string
+          location: string | null
+          pipeline_version: number
+          posting_date: string | null
+          quote_verified: boolean
+          raw: Json | null
+          remote: boolean | null
+          requirements: Json
+          scope: string | null
+          sector: string | null
+          seniority_band: string | null
+          signal_date: string | null
+          source_url: string
+          time_kind: string
+          title: string
+          tsv: unknown
+          updated_at: string
+        }
+        Insert: {
+          alive?: boolean
+          canonical_url?: string | null
+          chair_type: string
+          content_hash?: string | null
+          created_at?: string
+          deadline?: string | null
+          embedding?: string | null
+          evidence_quote?: string | null
+          extraction_confidence?: number | null
+          feed_id?: string | null
+          first_seen_at?: string
+          id?: string
+          issuer_id?: string | null
+          issuer_raw?: string | null
+          language?: string | null
+          last_seen_at?: string
+          location?: string | null
+          pipeline_version?: number
+          posting_date?: string | null
+          quote_verified?: boolean
+          raw?: Json | null
+          remote?: boolean | null
+          requirements?: Json
+          scope?: string | null
+          sector?: string | null
+          seniority_band?: string | null
+          signal_date?: string | null
+          source_url: string
+          time_kind: string
+          title: string
+          tsv?: unknown
+          updated_at?: string
+        }
+        Update: {
+          alive?: boolean
+          canonical_url?: string | null
+          chair_type?: string
+          content_hash?: string | null
+          created_at?: string
+          deadline?: string | null
+          embedding?: string | null
+          evidence_quote?: string | null
+          extraction_confidence?: number | null
+          feed_id?: string | null
+          first_seen_at?: string
+          id?: string
+          issuer_id?: string | null
+          issuer_raw?: string | null
+          language?: string | null
+          last_seen_at?: string
+          location?: string | null
+          pipeline_version?: number
+          posting_date?: string | null
+          quote_verified?: boolean
+          raw?: Json | null
+          remote?: boolean | null
+          requirements?: Json
+          scope?: string | null
+          sector?: string | null
+          seniority_band?: string | null
+          signal_date?: string | null
+          source_url?: string
+          time_kind?: string
+          title?: string
+          tsv?: unknown
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_opportunities_feed_id_fkey"
+            columns: ["feed_id"]
+            isOneToOne: false
+            referencedRelation: "oe_feeds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_opportunities_issuer_id_fkey"
+            columns: ["issuer_id"]
+            isOneToOne: false
+            referencedRelation: "oe_issuers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oe_outcomes: {
+        Row: {
+          answered_at: string
+          card_id: string
+          created_at: string
+          id: string
+          note: string | null
+          stage: string
+          user_id: string
+        }
+        Insert: {
+          answered_at?: string
+          card_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          stage: string
+          user_id: string
+        }
+        Update: {
+          answered_at?: string
+          card_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          stage?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_outcomes_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oe_policy_versions: {
+        Row: {
+          active: boolean
+          changed_by: string | null
+          created_at: string
+          evidence: string | null
+          id: string
+          params: Json
+          reason: string | null
+          rubric: Json
+          version: string
+        }
+        Insert: {
+          active?: boolean
+          changed_by?: string | null
+          created_at?: string
+          evidence?: string | null
+          id?: string
+          params: Json
+          reason?: string | null
+          rubric: Json
+          version: string
+        }
+        Update: {
+          active?: boolean
+          changed_by?: string | null
+          created_at?: string
+          evidence?: string | null
+          id?: string
+          params?: Json
+          reason?: string | null
+          rubric?: Json
+          version?: string
+        }
+        Relationships: []
+      }
+      oe_runs: {
+        Row: {
+          cost_usd: number | null
+          counts: Json
+          created_at: string
+          error: string | null
+          feed_id: string | null
+          finished_at: string | null
+          id: string
+          outcome: string | null
+          run_kind: string
+          started_at: string
+          user_id: string | null
+        }
+        Insert: {
+          cost_usd?: number | null
+          counts?: Json
+          created_at?: string
+          error?: string | null
+          feed_id?: string | null
+          finished_at?: string | null
+          id?: string
+          outcome?: string | null
+          run_kind: string
+          started_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          cost_usd?: number | null
+          counts?: Json
+          created_at?: string
+          error?: string | null
+          feed_id?: string | null
+          finished_at?: string | null
+          id?: string
+          outcome?: string | null
+          run_kind?: string
+          started_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      oe_taps: {
+        Row: {
+          card_id: string
+          created_at: string
+          id: string
+          scope: string | null
+          scope_value: string | null
+          source: string | null
+          tap: string
+          tapped_at: string
+          user_id: string
+        }
+        Insert: {
+          card_id: string
+          created_at?: string
+          id?: string
+          scope?: string | null
+          scope_value?: string | null
+          source?: string | null
+          tap: string
+          tapped_at?: string
+          user_id: string
+        }
+        Update: {
+          card_id?: string
+          created_at?: string
+          id?: string
+          scope?: string | null
+          scope_value?: string | null
+          source?: string | null
+          tap?: string
+          tapped_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_taps_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "oe_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_article_log: {
         Row: {
           core_practice: string | null
@@ -7163,6 +7968,51 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_connected_brain: {
+        Row: {
+          chair_type: string | null
+          created_at: string | null
+          expires_at: string | null
+          feed_lane: string | null
+          id: string | null
+          issuer_kind: string | null
+          reach: string | null
+          reach_value: string | null
+          sector: string | null
+          seniority_band: string | null
+          what_he_changed: Json | null
+          what_we_said: Json | null
+        }
+        Insert: {
+          chair_type?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          feed_lane?: string | null
+          id?: string | null
+          issuer_kind?: string | null
+          reach?: string | null
+          reach_value?: string | null
+          sector?: string | null
+          seniority_band?: string | null
+          what_he_changed?: Json | null
+          what_we_said?: Json | null
+        }
+        Update: {
+          chair_type?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          feed_lane?: string | null
+          id?: string | null
+          issuer_kind?: string | null
+          reach?: string | null
+          reach_value?: string | null
+          sector?: string | null
+          seniority_band?: string | null
+          what_he_changed?: Json | null
+          what_we_said?: Json | null
+        }
+        Relationships: []
+      }
       post_provenance: {
         Row: {
           acquisition: string | null
@@ -7634,6 +8484,16 @@ export type Database = {
         }[]
       }
       normalise_linkedin_handle: { Args: { p_raw: string }; Returns: string }
+      oe_record_tap: {
+        Args: {
+          p_scope?: string
+          p_scope_value?: string
+          p_source?: string
+          p_tap: string
+          p_token: string
+        }
+        Returns: Json
+      }
       ops_cron_status: {
         Args: { p_hours?: number }
         Returns: {
