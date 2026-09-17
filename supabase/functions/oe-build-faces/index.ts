@@ -404,10 +404,10 @@ Deno.serve(async (req) => {
     const ba: any = (p.brand_assessment_results && typeof p.brand_assessment_results === "object") ? p.brand_assessment_results : {};
     const snap: any = ((snapRes.data as any[]) || [])[0] || {};
 
-    // Employers are mapped to generic descriptors; titles and years only.
+    // Employers are mapped to neutral descriptors; titles and years only.
     const experience = (Array.isArray(snap.experience) ? snap.experience : []).slice(0, 12).map((e: any) => ({
       title: clip(e?.title || e?.position, 120),
-      kind: genericEmployer(e?.company || e?.companyName || e?.organisation),
+      kind: descriptorFor(e?.company || e?.companyName || e?.organisation),
       industry: clip(e?.industry, 80),
       years: clip(e?.duration || e?.dateRange || e?.years, 40),
     })).filter((e: any) => e.title);
