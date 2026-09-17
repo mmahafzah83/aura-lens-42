@@ -24,6 +24,28 @@ const MAX_NOISE_RATIO = 0.30;
 const MAX_DETAIL_PAGES = 25;
 const MAX_PAGE_CHARS = 24_000; // ≈ 6,000 tokens; head and tail kept, middle cut
 
+// World Bank procurement notices: we want chairs a person can sit in, in the
+// region this instrument serves, not construction tenders on other continents.
+const WB_CONSULTING =
+  /request for expression of interest|expression of interest|individual consultant|consultant|consulting|advisory|technical assistance|qcbs|cqs|\bic\b/i;
+const WB_REGION = [
+  "saudi", "united arab emirates", "emirates", "qatar", "kuwait", "bahrain", "oman",
+  "jordan", "egypt", "morocco", "tunisia", "iraq", "lebanon", "yemen", "djibouti", "pakistan",
+];
+const WB_THEMES =
+  /digital|transformation|governance|utilit|water|energy|public[- ]private|\bppp\b/i;
+
+function worldBankNoticeUrl(n: Record<string, any>): string | null {
+  const direct = n.url || n.noticeurl || n.notice_url || n.bid_reference_no_url;
+  if (typeof direct === "string" && /^https?:/i.test(direct)) return direct;
+  const id = n.id || n.notice_id || n.noticeid;
+  if (id) return `https://projects.worldbank.org/en/projects-operations/procurement-detail/${id}`;
+  const project = n.project_id || n.proj_id;
+  if (project) return `https://projects.worldbank.org/en/projects-operations/project-detail/${project}`;
+  return null;
+}
+
+
 const P2_SYSTEM =
   `You turn one web page or message into at most one opportunity record for senior professionals, or null. ` +
   `Return strict JSON {is_opportunity:boolean, chair_type:'board'|'mandate'|'role'|'room'|'speaking'|'media'|'advisory'|'award'|'learning'|null, ` +
