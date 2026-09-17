@@ -227,3 +227,12 @@ verify_jwt = false
 [functions.oe-build-faces]
 verify_jwt = false
 
+
+[functions.oe-enqueue-feeds]
+verify_jwt = false
+
+[functions.oe-worker]
+verify_jwt = false
+
+[functions.oe-fetch-feed]
+verify_jwt = false

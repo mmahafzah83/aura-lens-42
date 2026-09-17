@@ -1,0 +1,151 @@
+/**
+ * oe-enqueue-feeds — once a night, decides which feeds are due and puts one job
+ * on job_queue for each. It reads nothing from the web itself. Member-forwarded
+ * messages get one job per member who has forwarded something in the last week
+ * that the engine has not read yet.
+ */
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { logEfError } from "../_shared/observe.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
+};
+
+const FN = "oe-enqueue-feeds";
+const FETCHABLE_KINDS = new Set(["listing", "rss", "sitemap", "calendar", "telegram", "api"]);
+const CADENCE_HOURS: Record<string, number> = { daily: 20, weekly: 24 * 6, monthly: 24 * 27 };
+const LANE_PRIORITY: Record<string, number> = { official: 3, licensed: 3, open: 2, member: 1 };
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const CRON_SECRET = Deno.env.get("cron_secret") || Deno.env.get("CRON_SECRET") || "";
+  const cronHeader = req.headers.get("x-cron-secret") || "";
+  const bearer = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!((!!CRON_SECRET && cronHeader === CRON_SECRET) || bearer === SERVICE_ROLE)) {
+    return json({ error: "Forbidden" }, 403);
+  }
+
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const startedAt = new Date().toISOString();
+  let enqueued = 0;
+  let skippedTerms = 0;
+  let skippedCadence = 0;
+
+  /** Insert one job; a duplicate live job for the same feed is not an error. */
+  async function enqueue(row: Record<string, unknown>) {
+    const { error } = await admin.from("job_queue").insert(row);
+    if (!error) {
+      enqueued++;
+      return;
+    }
+    // 23505 = the partial unique index already holds a live job for this feed.
+    if ((error as any).code === "23505") return;
+    throw new Error(`enqueue failed: ${error.message}`);
+  }
+
+  try {
+    const { data: feeds, error: feedErr } = await admin
+      .from("oe_feeds")
+      .select("id, name, lane, kind, url, cadence, terms_ok, active, last_fetched_at");
+    if (feedErr) throw new Error(feedErr.message);
+
+    for (const f of feeds ?? []) {
+      if (!f.active) continue;
+      if (f.kind === "member_forward") {
+        if (!f.terms_ok) { skippedTerms++; continue; }
+        continue; // handled below, one job per member
+      }
+      if (!FETCHABLE_KINDS.has(f.kind)) continue;
+      if (!f.terms_ok) { skippedTerms++; continue; }
+      if (f.cadence === "paused" || f.cadence === "out") { skippedCadence++; continue; }
+
+      const hours = CADENCE_HOURS[f.cadence as string] ?? CADENCE_HOURS.daily;
+      const last = f.last_fetched_at ? new Date(f.last_fetched_at).getTime() : 0;
+      if (last && Date.now() - last < hours * 3600_000) { skippedCadence++; continue; }
+
+      await enqueue({
+        job_type: "oe_fetch_feed",
+        user_id: null,
+        payload: { feed_id: f.id, kind: f.kind, url: f.url, lane: f.lane },
+        priority: LANE_PRIORITY[f.lane as string] ?? 1,
+        max_attempts: 3,
+      });
+    }
+
+    // ── Member-forwarded messages ───────────────────────────────────────────
+    const memberFeed = (feeds ?? []).find((f) => f.kind === "member_forward" && f.active && f.terms_ok);
+    if (memberFeed) {
+      const { data: consents } = await admin
+        .from("oe_consents")
+        .select("user_id")
+        .eq("kind", "forwarding")
+        .is("revoked_at", null);
+
+      const since = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+      for (const c of consents ?? []) {
+        const { data: fwd } = await admin
+          .from("entries")
+          .select("id")
+          .eq("user_id", c.user_id)
+          .eq("source_type", "member_forward")
+          .gte("created_at", since)
+          .limit(50);
+        if (!fwd?.length) continue;
+
+        const { data: already } = await admin
+          .from("oe_opportunities")
+          .select("raw")
+          .in("raw->>entry_id", fwd.map((e) => e.id));
+        const seen = new Set((already ?? []).map((r: any) => r?.raw?.entry_id).filter(Boolean));
+        if (fwd.every((e) => seen.has(e.id))) continue;
+
+        await enqueue({
+          job_type: "oe_fetch_feed",
+          user_id: c.user_id,
+          payload: { feed_id: memberFeed.id, kind: "member_forward", url: null, lane: "member", user_id: c.user_id },
+          priority: LANE_PRIORITY.member,
+          max_attempts: 3,
+        });
+      }
+    }
+
+    const counts = { enqueued, skipped_terms: skippedTerms, skipped_cadence: skippedCadence };
+    await admin.from("oe_runs").insert({
+      run_kind: "enqueue_feeds",
+      started_at: startedAt,
+      finished_at: new Date().toISOString(),
+      outcome: "ok",
+      counts,
+    });
+    await logEfError(admin, {
+      function_name: FN,
+      error: `OE_ENQUEUE_OK enqueued=${enqueued}`,
+      severity: "info",
+      context: counts,
+    });
+    return json({ ok: true, counts });
+  } catch (e) {
+    await admin.from("oe_runs").insert({
+      run_kind: "enqueue_feeds",
+      started_at: startedAt,
+      finished_at: new Date().toISOString(),
+      outcome: "error",
+      counts: { enqueued, skipped_terms: skippedTerms, skipped_cadence: skippedCadence },
+      error: String((e as Error).message).slice(0, 500),
+    });
+    await logEfError(admin, { function_name: FN, error: e, severity: "high" });
+    return json({ ok: false, error: String((e as Error).message) }, 500);
+  }
+});
