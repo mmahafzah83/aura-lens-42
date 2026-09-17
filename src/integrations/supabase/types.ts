@@ -8510,7 +8510,9 @@ export type Database = {
           language: string
           location: string
           opportunity_id: string
+          quote: string
           seniority_band: string
+          source_url: string
           time_kind: string
           title: string
         }[]

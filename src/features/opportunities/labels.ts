@@ -6,7 +6,7 @@ export const opportunityLabels = {
     part: "Which part?", understood: "Understood — fewer like this for the next six weeks.",
     understoodLong: "Understood — fewer like this for the next ninety days.", empty: "Nothing strong today",
     issuer: "This issuer", level: "This level", place: "This place", type: "This type", just: "Just this one",
-    openAura: "Open Aura", expired: "This link has expired.", unanswered: "unanswered",
+    openAura: "Open Aura", original: "original", expired: "This link has expired.", unanswered: "unanswered",
   },
   ar: {
     opportunity: "فرصة", opportunities: "الفرص", open: "متاحة الآن", early: "إشارة مبكرة",
@@ -15,7 +15,7 @@ export const opportunityLabels = {
     part: "أي جزء تحديداً؟", understood: "فهمنا — سنقلّل ما يشبهها خلال الأسابيع الستة المقبلة.",
     understoodLong: "فهمنا — سنقلّل ما يشبهها خلال التسعين يوماً المقبلة.", empty: "لا شيء قوي اليوم",
     issuer: "هذه الجهة", level: "هذا المستوى", place: "هذا المكان", type: "هذا النوع", just: "هذه فقط",
-    openAura: "افتح Aura", expired: "انتهت صلاحية هذا الرابط.", unanswered: "بلا رد",
+    openAura: "افتح Aura", original: "النص الأصلي", expired: "انتهت صلاحية هذا الرابط.", unanswered: "بلا رد",
   },
 } as const;
 

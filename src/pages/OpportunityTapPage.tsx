@@ -37,6 +37,7 @@ export default function OpportunityTapPage() {
         {card === undefined ? <p style={{ margin: 0, color: "#5B6673" }}>…</p> : !card ? <p style={{ margin: 0, color: "#5B6673" }}>{L.expired}</p> : <div style={{ display: "grid", gap: 16, lineHeight: rtl ? 1.9 : 1.55 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: "#5B6673" }}>{chairLabels[String(card.chair_type)]?.[language] ?? card.chair_type}</span>
           <h1 style={{ margin: 0, fontFamily: "inherit", fontSize: 23, lineHeight: rtl ? 1.7 : 1.3 }}>{card.title}</h1>
+           {card.quote && <p style={{ margin: 0, color: "#5B6673", fontSize: 13 }}>“{card.quote}” {card.source_url && <a href={card.source_url} target="_blank" rel="noreferrer" style={{ color: "#0670C4" }}>{L.original}</a>}</p>}
           {outcomeDone ? <p style={{ margin: 0, color: "#12805C" }}>{L.noted}</p> : <TapRow token={token} language={language} source="email" initialTap={card.current_tap} autoTap={validAction} card={card} />}
           <Link to="/" style={{ color: "#5B6673", fontSize: 13, textDecoration: "underline" }}>{L.openAura}</Link>
         </div>}
