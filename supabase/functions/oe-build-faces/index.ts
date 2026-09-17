@@ -60,26 +60,123 @@ function normaliseJson(text: string): any {
 }
 
 /**
- * Employers never travel to the model. A company name is replaced by a generic
- * descriptor, or dropped when the heuristic is unsure.
+ * ORGANISATION NAMES NEVER TRAVEL. Every name we can find for this member is
+ * replaced by a neutral descriptor before the facts reach the model, and again
+ * after the model answers. Sector words (water, energy, utilities, tax) are not
+ * organisations and are left alone.
  */
-function genericEmployer(name?: string | null): string | null {
+export function descriptorFor(name?: string | null): string {
   const n = (name || "").toLowerCase();
-  if (!n) return null;
-  if (/\b(pwc|kpmg|deloitte|ey|ernst|mckinsey|bcg|bain|accenture|consult)/.test(n)) {
+  if (!n) return "an organisation";
+  if (/\b(pwc|kpmg|deloitte|ey\b|ernst|mckinsey|bcg|bain|accenture|consult|advisory firm)/.test(n)) {
     return "a professional services firm";
   }
-  if (/bank|capital|financial|finance|invest|مصرف|بنك/.test(n)) return "a bank";
-  if (/ministry|authority|government|municipal|وزارة|هيئة|أمانة/.test(n)) return "a government body";
-  if (/university|college|school|جامعة|كلية/.test(n)) return "a university";
-  if (/hospital|health|clinic|صحة|مستشفى/.test(n)) return "a healthcare provider";
-  if (/telecom|stc|mobile|اتصالات/.test(n)) return "a telecom operator";
-  if (/energy|oil|petro|aramco|utility|power|water|طاقة|كهرباء|مياه/.test(n)) {
-    return "an energy or utility company";
+  if (/ministry|authority|commission|regulator|government|municipal|وزارة|هيئة|أمانة|مؤسسة عامة/.test(n)) {
+    return "a government authority";
   }
-  if (/holding|group|company|llc|ltd|plc|شركة|مجموعة/.test(n)) return "a listed or private company";
-  return null;
+  if (/bank|مصرف|بنك/.test(n)) return "a bank";
+  if (/universit|college|school|جامعة|كلية/.test(n)) return "a university";
+  if (/\b(plc|listed|tadawul|holding|group|co\.|company|corporation|llc|ltd)\b|شركة|مجموعة/.test(n)) {
+    return "a listed company";
+  }
+  return "an organisation";
 }
+
+/** A name, an escaped regexp for it, and what it becomes. */
+interface ScrubItem { name: string; re: RegExp; to: string }
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Words that are a sector or a place, never an organisation on their own. */
+const NOT_A_NAME = new Set([
+  "water", "energy", "utilities", "utility", "tax", "customs", "digital", "technology",
+  "saudi", "arabia", "gcc", "riyadh", "jeddah", "government", "national", "company",
+  "authority", "ministry", "group", "holding", "bank", "the", "and", "of",
+  "مياه", "طاقة", "ضريبة", "جمارك", "السعودية", "الرياض", "جدة", "هيئة", "وزارة", "شركة",
+]);
+
+/** Initialism of a multi-word English name: "National Water Company" → "NWC". */
+function initialism(name: string): string | null {
+  const words = name.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w) && !NOT_A_NAME.has(w.toLowerCase()) === false || /^[A-Z]/.test(w));
+  const caps = name.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w) && w.length > 1 && !["and", "of", "the", "for"].includes(w.toLowerCase()));
+  if (caps.length < 2 || words.length < 0) return null;
+  const abbr = caps.map((w) => w[0].toUpperCase()).join("");
+  return abbr.length >= 2 && abbr.length <= 6 ? abbr : null;
+}
+
+/**
+ * Build the scrub list. Each raw name yields the name itself plus obvious
+ * variants: an initialism, and any uppercase token in the same text that
+ * matches that initialism (e.g. "ZATCA" next to "Zakat, Tax and Customs").
+ */
+export function buildScrubList(rawNames: (string | null | undefined)[], corpus: string): ScrubItem[] {
+  const seen = new Map<string, ScrubItem>();
+  const add = (name: string, to: string) => {
+    const key = name.toLowerCase();
+    if (key.length < 3 || NOT_A_NAME.has(key) || seen.has(key)) return;
+    seen.set(key, { name, re: new RegExp(escapeRe(name), "gi"), to });
+  };
+  for (const raw of rawNames) {
+    const name = (raw || "").trim().replace(/\s+/g, " ");
+    if (!name || name.length < 3) continue;
+    const to = descriptorFor(name);
+    add(name, to);
+    // The name without a legal suffix, and without a leading article.
+    add(name.replace(/\b(co\.?|company|corporation|llc|ltd\.?|plc|inc\.?)\b/gi, "").trim(), to);
+    const abbr = initialism(name);
+    if (abbr) add(abbr, to);
+    // An uppercase acronym standing next to the name in the same text.
+    for (const m of corpus.matchAll(/\b[A-Z]{3,6}\b/g)) {
+      const cand = m[0];
+      if (abbr && cand === abbr) add(cand, to);
+    }
+  }
+  // Longest first, so "National Water Company" is replaced before "National".
+  return [...seen.values()].sort((a, b) => b.name.length - a.name.length);
+}
+
+/** Replace every scrub-list name in the text. Returns the text and a hit count. */
+export function scrubText(text: string, list: ScrubItem[]): { text: string; hits: number } {
+  let out = text;
+  let hits = 0;
+  for (const item of list) {
+    out = out.replace(item.re, () => { hits++; return item.to; });
+  }
+  return { text: out, hits };
+}
+
+/** Scrub every string inside a nested structure. */
+function scrubDeep(value: any, list: ScrubItem[], counter: { hits: number }): any {
+  if (typeof value === "string") {
+    const r = scrubText(value, list);
+    counter.hits += r.hits;
+    return r.text;
+  }
+  if (Array.isArray(value)) return value.map((v) => scrubDeep(v, list, counter));
+  if (value && typeof value === "object") {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = scrubDeep(v, list, counter);
+    return out;
+  }
+  return value;
+}
+
+/** Words in a string, counted the way a reader would. */
+const wordCount = (s: string) => (s.trim().match(/\S+/g) || []).length;
+
+/** Cut at the last full sentence that stays under the word limit. */
+function truncateToWords(text: string, limit: number): string {
+  if (wordCount(text) <= limit) return text;
+  const sentences = text.match(/[^.!?؟]+[.!?؟]+|\S[^.!?؟]*$/g) || [text];
+  let out = "";
+  for (const s of sentences) {
+    if (wordCount(out + s) > limit) break;
+    out += s;
+  }
+  if (!out.trim()) out = (text.trim().match(/\S+/g) || []).slice(0, limit).join(" ");
+  return out.trim();
+}
+
 
 const daysSince = (iso?: string | null) =>
   iso ? Math.max(0, (Date.now() - Date.parse(iso)) / 86_400_000) : 999;
