@@ -9,6 +9,7 @@ import {
 } from "../_shared/postProvenance.ts";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
+import { findBannedTerm, OE_BANNED_FOR_PROMPT } from "../_shared/oeVocabulary.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
