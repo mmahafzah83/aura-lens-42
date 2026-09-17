@@ -434,7 +434,9 @@ serve(async (req) => {
 
         // 07:00 in THIS member's timezone, and an idempotency key on THEIR local date.
         const lp = localParts(tzByUser.get(uid) ?? null, now);
-        if (lp.hour !== 7) { results.push({ user_id: uid, outcome: "skipped_off_hour" }); continue; }
+        // A targeted dry run is an inspection, not a send: it may look at any hour.
+        const hourGate = !(dryRun && onlyUserId === uid);
+        if (hourGate && lp.hour !== 7) { results.push({ user_id: uid, outcome: "skipped_off_hour" }); continue; }
         const userKey = `morning_signal:${lp.dateKey}`;
 
         const { data: alreadyRow } = await admin
