@@ -40,4 +40,6 @@ export type PublicOpportunityCard = {
   seniority_band: string | null;
   location: string | null;
   opportunity_id: string | null;
+  quote: string | null;
+  source_url: string | null;
 };

@@ -6,4 +6,4 @@
 - [x] Home, Intelligence, and Settings integration
 - [x] Member-safe oe-build-faces path
 - [x] Learner functions and outcome follow-up email
-- [ ] Deploy, test, reversible founder checks, mobile screenshots, cleanup
+- [x] Deploy, test, reversible founder checks, mobile screenshots, cleanup
