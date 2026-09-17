@@ -412,14 +412,16 @@ serve(async (req) => {
     // Timezone rides along: 07:00 must mean 07:00 where the member actually is.
     const optedOut = new Set<string>();
     const tzByUser = new Map<string, string | null>();
+    const langByUser = new Map<string, "en" | "ar">();
     if (userIds.length) {
       const { data: prefRows } = await admin
         .from("diagnostic_profiles")
-        .select("user_id, notification_prefs, timezone")
+        .select("user_id, notification_prefs, timezone, content_language")
         .in("user_id", userIds);
-      for (const r of (prefRows || []) as Array<{ user_id: string; notification_prefs: Record<string, unknown> | null; timezone: string | null }>) {
+      for (const r of (prefRows || []) as Array<{ user_id: string; notification_prefs: Record<string, unknown> | null; timezone: string | null; content_language: string | null }>) {
         if (r?.notification_prefs?.overnight_reading_enabled === false) optedOut.add(r.user_id);
         tzByUser.set(r.user_id, r.timezone ?? null);
+        langByUser.set(r.user_id, r.content_language === "ar" ? "ar" : "en");
       }
     }
 
