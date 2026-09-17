@@ -4284,6 +4284,7 @@ export type Database = {
           created_at: string
           embedding: string | null
           face: string
+          few_shot: Json
           id: string
           inputs: Json
           keywords: string[]
@@ -4298,6 +4299,7 @@ export type Database = {
           created_at?: string
           embedding?: string | null
           face: string
+          few_shot?: Json
           id?: string
           inputs?: Json
           keywords?: string[]
@@ -4312,6 +4314,7 @@ export type Database = {
           created_at?: string
           embedding?: string | null
           face?: string
+          few_shot?: Json
           id?: string
           inputs?: Json
           keywords?: string[]
@@ -4865,6 +4868,7 @@ export type Database = {
       }
       oe_taps: {
         Row: {
+          applied_at: string | null
           card_id: string
           created_at: string
           id: string
@@ -4876,6 +4880,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          applied_at?: string | null
           card_id: string
           created_at?: string
           id?: string
@@ -4887,6 +4892,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          applied_at?: string | null
           card_id?: string
           created_at?: string
           id?: string
@@ -8492,6 +8498,26 @@ export type Database = {
           rrf_score: number
           vec_rank: number
         }[]
+      }
+      oe_card_public: {
+        Args: { p_token: string }
+        Returns: {
+          card_id: string
+          chair_type: string
+          current_scope: string
+          current_tap: string
+          issuer_id: string
+          language: string
+          location: string
+          opportunity_id: string
+          seniority_band: string
+          time_kind: string
+          title: string
+        }[]
+      }
+      oe_record_outcome: {
+        Args: { p_outcome: string; p_token: string }
+        Returns: Json
       }
       oe_record_tap: {
         Args: {
