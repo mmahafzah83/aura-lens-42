@@ -565,8 +565,11 @@ Deno.serve(async (req) => {
         const issuerId = await resolveIssuer(admin, rec.issuer_raw || feed.issuer_hint || "", cand.url, rec.sector ?? null);
 
         // 5. DEDUP
-        const sourceUrl = cand.url;
-        const canonicalUrl = sourceUrl ? canonicalise(sourceUrl) : null;
+        // A forwarded message or an API record has no page of its own. It still
+        // needs a source that says where it came from, so we name it honestly.
+        const sourceUrl = cand.url
+          ?? (cand.extra?.entry_id ? `urn:aura:entry:${cand.extra.entry_id}` : (url ?? `urn:aura:feed:${feedId}`));
+        const canonicalUrl = cand.url ? canonicalise(cand.url) : null;
         const contentHash = await sha256(
           `${(rec.title || "").toLowerCase()}|${(rec.issuer_raw || "").toLowerCase()}|${rec.deadline ?? ""}`,
         );
