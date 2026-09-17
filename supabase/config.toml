@@ -236,3 +236,9 @@ verify_jwt = false
 
 [functions.oe-fetch-feed]
 verify_jwt = false
+
+[functions.oe-enqueue-judging]
+verify_jwt = false
+
+[functions.oe-judge-member]
+verify_jwt = false
