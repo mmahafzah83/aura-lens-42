@@ -109,12 +109,15 @@ Deno.serve(async (req) => {
         counts.applied++;
       }
 
+      // F1. The floor is applied first, then every face — 'avoid' included —
+      // is divided by the new sum, so a member's faces sum to exactly 1.000.
       const floor = 0.05;
       const raw = [...next.entries()].map(([id, value]) => ({ id, ...value, weight: Math.max(floor, value.weight) }));
       const total = raw.reduce((sum, face) => sum + face.weight, 0) || 1;
       for (const face of raw) {
         await admin.from("oe_faces").update({ weight: face.weight / total, few_shot: face.few_shot }).eq("id", face.id);
       }
+
     }
 
     await admin.from("oe_runs").insert({ run_kind: FN.replace("oe-", "").replaceAll("-", "_"), started_at: startedAt, finished_at: new Date().toISOString(), outcome: "ok", counts });
