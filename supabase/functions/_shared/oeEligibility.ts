@@ -79,12 +79,16 @@ export function countryOfPlace(location?: string | null): string | null {
  * The level a record asks for, read off its own words. Ordered, because
  * "senior director" must be seen before "director". Unmatched is null, and a
  * null never fails the level screen — we do not punish silence.
+ *
+ * This ladder is the ONLY level vocabulary. oe_opportunities.seniority_band
+ * holds a different vocabulary entirely (work/table/room, a chair grouping);
+ * it must never reach this screen. The parsed ladder lives in level_band.
  */
 const LEVEL_PATTERNS: Array<[RegExp, Level]> = [
   [/board (nomination|member|seat|directorship)|nomination (for|of) (the )?board|non-?executive director|عضوية مجلس|الترشح لعضوية مجلس|عضو مجلس إدارة/i, "board"],
-  [/\bchief\s|^ceo\b|\bceo\b|^cfo\b|\bcfo\b|^coo\b|\bcoo\b|\bcto\b|group c[fe]o|president\b|الرئيس التنفيذي|المدير العام التنفيذي/i, "c_suite"],
+  [/\bchief\s|^ceo\b|\bceo\b|^cfo\b|\bcfo\b|^coo\b|\bcoo\b|\bcto\b|group c[fe]o|president\b|رئيس تنفيذي|الرئيس التنفيذي|المدير العام التنفيذي/i, "c_suite"],
   [/managing director|general manager|\bvp\b|vice president|نائب رئيس|المدير العام/i, "vp"],
-  [/senior director|head of|رئيس قسم|مدير تنفيذي أول/i, "senior_director"],
+  [/senior director|head of|رئيس قطاع|رئيس قسم|مدير تنفيذي أول/i, "senior_director"],
   [/\bdirector\b|مدير تنفيذي/i, "director"],
   [/senior manager|مدير أول/i, "senior_manager"],
   [/\bmanager\b|\blead\b|مدير/i, "manager"],
