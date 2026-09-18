@@ -64,7 +64,9 @@ export function OpportunitiesSection() {
 
   return <section dir={rtl ? "rtl" : "ltr"} style={{ marginTop: 34, borderTop: "1px solid #E2E7EE", paddingTop: 24, fontFamily: rtl ? "Cairo, sans-serif" : "Inter, sans-serif" }}>
     <SectionHeader label={S.opportunities} />
+    {matching ? <WhatYouCanHold userId={userId} language={language} /> : null}
     {matching === false ? <AuraCard hover="none" style={{ background: "#FFFFFF", border: "1px solid #E2E7EE", borderRadius: 20, padding: 20 }}>
+
       <div style={{ display: "grid", gap: 16, lineHeight: rtl ? 1.9 : 1.55 }}>
         <p style={{ margin: 0, color: "#5B6673" }}>{rtl ? "يمكن لـ Aura أن تبحث لك عن مقاعد وتكليفات وغرف ومنصات تناسب ما أنجزته — فرصة واحدة يومياً، لا أكثر." : "Aura can look for chairs, mandates, rooms and stages that fit what you have done — one a day, nothing more."}</p>
         <AuraButton onClick={() => void enable("matching")} loading={busy} style={{ justifySelf: "start", background: "#0670C4" }}>{rtl ? "ابدأ البحث" : "Start looking"}</AuraButton>
