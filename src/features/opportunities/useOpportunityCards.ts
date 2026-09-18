@@ -27,7 +27,20 @@ export function useOpportunityCards(userId?: string | null, days = 30) {
     const since = new Date(Date.now() - Math.max(1, days) * 86_400_000).toISOString().slice(0, 10);
     const { data } = await (supabase.from("oe_cards" as any) as any).select(CARD_SELECT)
       .eq("user_id", userId).gte("card_date", since).order("card_date", { ascending: false }).order("created_at", { ascending: false });
-    setCards((data ?? []) as OpportunityCardData[]);
+    const rows = (data ?? []) as OpportunityCardData[];
+    // Warmth sits beside the bands; it is never folded into them.
+    const oppIds = rows.map((c) => c.opportunity_id).filter(Boolean) as string[];
+    let warmth: Record<string, any[]> = {};
+    if (oppIds.length) {
+      const { data: w } = await (supabase.from("oe_warmth" as any) as any)
+        .select("opportunity_id,kind,strength,detail").eq("user_id", userId).in("opportunity_id", oppIds);
+      warmth = (w ?? []).reduce((acc: Record<string, any[]>, r: any) => {
+        if (r.kind === "none") return acc;
+        (acc[r.opportunity_id] ||= []).push(r);
+        return acc;
+      }, {});
+    }
+    setCards(rows.map((c) => ({ ...c, warmth: c.opportunity_id ? warmth[c.opportunity_id] ?? [] : [] })));
     // The win mark stays quiet until he has answered at least once.
     const { count } = await (supabase.from("oe_outcomes" as any) as any)
       .select("id", { count: "exact", head: true }).eq("user_id", userId).neq("stage", "asked");

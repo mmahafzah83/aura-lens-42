@@ -27,6 +27,32 @@ export function OpportunityCard({ card, language, readOnly, winKnown, onSaved }:
             {(card.why_lines ?? []).slice(0, 2).map((why, i) => <p key={i} style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#00CEC9" }} />{why.text}</p>)}
             {card.gap_line?.text && <p style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#E0A82E" }} /><span><strong style={{ color: "#0F1519" }}>{v("the_distance")}: </strong>{card.gap_line.text}</span></p>}
           </div>
+          {(() => {
+            const check = card.oe_matches;
+            const total = Number(check?.total_count ?? 0);
+            const met = Number(check?.met_count ?? 0);
+            const missing = (check?.requirement_check ?? []).filter((r) => !r.met).map((r) => r.requirement);
+            if (!check) return null;
+            return (
+              <div style={{ border: "1px solid #E2E7EE", borderRadius: 12, padding: 11, display: "grid", gap: 6 }}>
+                <span style={{ fontSize: 12, color: "#5B6673" }}>
+                  <strong style={{ color: "#0F1519" }}>{v("what_they_ask")}: </strong>
+                  {total === 0 ? v("no_requirements_stated") : `${met} / ${total}`}
+                </span>
+                {missing.length > 0 && (
+                  <ul style={{ margin: 0, paddingInlineStart: 18, color: "#5B6673", fontSize: 13 }}>
+                    {missing.slice(0, 4).map((m, i) => <li key={i}>{m}</li>)}
+                  </ul>
+                )}
+              </div>
+            );
+          })()}
+          {(card.warmth ?? []).length > 0 && (
+            <p style={{ margin: 0, fontSize: 12, color: "#5B6673" }}>
+              <strong style={{ color: "#0F1519" }}>{v("warmth")}: </strong>
+              {(card.warmth ?? []).map((w) => v(`warmth_${w.kind}`) || w.kind).join(" · ")}
+            </p>
+          )}
           <p style={{ margin: 0, fontSize: 13 }}>{routeUrl
             ? <a href={routeUrl} target="_blank" rel="noreferrer" style={{ color: "#0670C4", fontWeight: 600 }}>{v("the_way_in")}</a>
             : <span style={{ color: "#5B6673" }}>{v("no_way_in")}</span>}</p>
