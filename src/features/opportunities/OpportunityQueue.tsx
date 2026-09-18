@@ -87,7 +87,7 @@ export function OpportunityQueue() {
     if (!card || renderedRef.current.has(card.id)) return;
     renderedRef.current.add(card.id);
     if (!validWhy(card)) return;
-    void (supabase.rpc as any)("oe_app_render", { p_opportunity: card.opportunity_id });
+    void (supabase.rpc as any)("oe_app_render", { p_card: card.opportunity_id });
   }, [card]);
 
   const advance = () => {
@@ -100,14 +100,14 @@ export function OpportunityQueue() {
     if (!card || busy) return;
     if (action === "later") {
       setBusy(true);
-      await (supabase.rpc as any)("oe_app_decide", { p_opportunity: card.opportunity_id, p_action: "later" });
+      await (supabase.rpc as any)("oe_app_decide", { p_card: card.opportunity_id, p_action: "later" });
       setBusy(false);
       setLater((current) => new Set(current).add(card.id));
       setExpanded(false); setDeclining(false); setQueueIndex(0);
       return;
     }
     setBusy(true);
-    const { data: result } = await (supabase.rpc as any)("oe_app_decide", { p_opportunity: card.opportunity_id, p_action: "right" });
+    const { data: result } = await (supabase.rpc as any)("oe_app_decide", { p_card: card.opportunity_id, p_action: "right" });
     setBusy(false);
     if (result?.ok) {
       if (card.lane === "write") navigate(`/studio?opportunity=${card.opportunity_id}`);
@@ -119,7 +119,7 @@ export function OpportunityQueue() {
     if (!card || busy) return;
     setBusy(true);
     const { data: result } = await (supabase.rpc as any)("oe_app_decide", {
-      p_opportunity: card.opportunity_id, p_action: "not_quite", p_scope: scope, p_scope_value: value, p_truth: truth,
+      p_card: card.opportunity_id, p_action: "not_quite", p_scope: scope, p_scope_value: value, p_truth: truth,
     });
     setBusy(false);
     if (result?.ok) {
