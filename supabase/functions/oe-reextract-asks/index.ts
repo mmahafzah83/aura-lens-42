@@ -41,8 +41,32 @@ const SYSTEM =
   `departure (a named executive leaving), arabic_only_source (an Arabic page carrying a fact English sources do not), ` +
   `posted_opening (an ordinary published call anyone can read).`;
 
+/**
+ * Arabic is written several ways for the same word: with diacritics, with
+ * tatweel, with a different alef. A quote check that ignores this rejects every
+ * true Arabic quotation, which is exactly what it did on first run.
+ */
 function normalise(s: string) {
-  return String(s ?? "").replace(/[\u2018\u2019\u201c\u201d]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
+  return String(s ?? "")
+    .replace(/[\u2018\u2019\u201c\u201d«»]/g, "'")
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+    .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/ؤ/g, "و").replace(/ئ/g, "ي")
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/** A quote counts as found when a run of five of its words appears on the page. */
+function quoteOnPage(hay: string, quote: string) {
+  const q = normalise(quote);
+  if (!q) return false;
+  if (hay.includes(q)) return true;
+  const w = q.split(" ").filter(Boolean);
+  if (w.length < 5) return false;
+  for (let i = 0; i + 5 <= w.length; i++) {
+    if (hay.includes(w.slice(i, i + 5).join(" "))) return true;
+  }
+  return false;
 }
 
 async function readOne(key: string, page: string, title: string, scope: string) {
