@@ -168,12 +168,51 @@ export function screen(opportunity: any, eligibility: Eligibility | null | undef
 /** The route kinds that count as a real door. */
 export const OPEN_ROUTE_KINDS = ["application", "contact", "call_for_speakers", "registration"];
 
-export function hasRoute(o: any): boolean {
-  return !!o?.route_url && o?.route_dead !== true &&
-    OPEN_ROUTE_KINDS.includes(String(o?.route_kind ?? ""));
+/** A site-root contact or about page is a wall, not a door. */
+const GENERIC_ROUTE_PATH = /^\/?(contact|contact-us|contactus|get-in-touch|about|about-us|اتصل-بنا|اتصل|من-نحن)\/?$/i;
+
+const hostOf = (url?: string | null): string | null => {
+  try { return new URL(String(url)).hostname.toLowerCase().replace(/^www\./, ""); } catch { return null; }
+};
+
+const sameSite = (a: string, b: string): boolean =>
+  a === b || a.endsWith(`.${b}`) || b.endsWith(`.${a}`);
+
+/**
+ * The ladder level a record asks for: the stored level_band when it is a real
+ * ladder value, otherwise read off the title. seniority_band is a different
+ * vocabulary and is deliberately ignored here.
+ */
+export function levelOf(o: any): Level | null {
+  const stored = String(o?.level_band ?? "").trim();
+  if (LEVELS.includes(stored as Level)) return stored as Level;
+  return parseLevel(o?.title, o?.scope);
+}
+
+/**
+ * A real door. `contact` only counts when the page belongs to the issuer's own
+ * site and points at something more specific than its front-door contact page;
+ * anything else is a wall a member would tap into nothing.
+ */
+export function hasRoute(o: any, issuerDomain?: string | null): boolean {
+  if (!o?.route_url || o?.route_dead === true) return false;
+  const kind = String(o?.route_kind ?? "");
+  if (!OPEN_ROUTE_KINDS.includes(kind)) return false;
+  if (kind !== "contact") return true;
+
+  const host = hostOf(o.route_url);
+  if (!host) return false;
+
+  const issuer = String(issuerDomain ?? "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+  if (!issuer || !sameSite(host, issuer)) return false;
+
+  let path = "/";
+  try { path = new URL(String(o.route_url)).pathname; } catch { return false; }
+  if (GENERIC_ROUTE_PATH.test(decodeURIComponent(path))) return false;
+  return true;
 }
 
 /** 'act' when he can both hold it and reach it; otherwise 'write'. */
-export function laneFor(o: any, screened: Screened): "act" | "write" {
-  return screened.pass && hasRoute(o) ? "act" : "write";
+export function laneFor(o: any, screened: Screened, issuerDomain?: string | null): "act" | "write" {
+  return screened.pass && hasRoute(o, issuerDomain) ? "act" : "write";
 }
