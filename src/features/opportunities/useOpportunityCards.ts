@@ -2,7 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { OpportunityCardData } from "./types";
 
-const CARD_SELECT = "id,opportunity_id,card_date,why_lines,gap_line,quote,clock_text,fit_band,win_band,lane,cited_ids,explore_slot,tap_token,oe_opportunities(id,title,chair_type,time_kind,source_url,route_url,route_kind,issuer_id,seniority_band,location),oe_matches(requirement_check,met_count,total_count),oe_taps(tap,scope,tapped_at)";
+const CARD_SELECT = "id,opportunity_id,card_date,why_lines,gap_line,quote,clock_text,fit_band,win_band,lane,cited_ids,explore_slot,tap_token,oe_opportunities(id,title,chair_type,time_kind,source_url,route_url,route_kind,issuer_id,seniority_band,location,discovery_kind),oe_matches(requirement_check,met_count,total_count),oe_taps(tap,scope,tapped_at)";
+
+/** Lead time is only ever the measured median, carried with its sample size. */
+const LEAD_KINDS = ["term_ending", "corporate_event_inference"];
 
 export function memberDate(timezone?: string | null) {
   try {
