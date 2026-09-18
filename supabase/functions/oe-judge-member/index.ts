@@ -799,6 +799,78 @@ Deno.serve(async (req) => {
       void citedIds;
     }
 
+    // ── THE WRITING LANE ──────────────────────────────────────────────────
+    // Nothing he can act on is not the same as nothing at all. If a real
+    // finding sits in the writing lane, the day carries that instead — with
+    // no score, no band and no clock, because none of those apply.
+    if (!cardsWritten.length && writePool.length && lovableKey) {
+      const ranked = writePool
+        .map((o) => ({ o, score: merged.get(o.id)?.score ?? 0 }))
+        .sort((a, b) => b.score - a.score);
+      for (const { o } of ranked.slice(0, 3)) {
+        if (cardedIds.has(o.id)) continue;
+        const oppVec = asVector(o.embedding);
+        const mine = await memberEvidence(admin, userId, oppVec);
+        if (!mine.length) { counts.no_evidence++; continue; }
+        const allowedIds = new Map<string, any>(mine.map((r: any) => [String(r.id), r]));
+        const mineBlock = mine.map((r: any, i: number) =>
+          `${i + 1}. kind=${r.kind} id=${r.id}\n"${String(r.title ? `${r.title}. ` : "")}${String(r.body ?? "").replace(/\s+/g, " ").slice(0, 1200)}"`
+        ).join("\n\n");
+        const userMsg = [
+          `HIS OWN MATERIAL (cite these, quote from these):\n${mineBlock}`,
+          `WHAT HAPPENED:\n${JSON.stringify({ title: o.title, scope: o.scope, issuer: o.issuer_raw, sector: o.sector, location: o.location, signal_date: o.signal_date, quote: o.evidence_quote })}`,
+          `ALLOWED CITE IDS: ${[...allowedIds.keys()].join(", ")}`,
+        ].join("\n\n");
+
+        const out = await gateway(lovableKey, p6System(lang), userMsg);
+        costUsd += 0.0004;
+        await logAIUsage({
+          user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
+          input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
+          metadata: { prompt_version: P6_VERSION, opportunity_id: o.id, lane: "write" },
+        });
+        const rec = normaliseJson(out.content);
+
+        const clean = (t: unknown) => {
+          const text = String(t ?? "").trim();
+          if (!text || hasPercent(text) || BANNED.test(text) || registerFault(text, lang)) return "";
+          return text;
+        };
+        const knowText = clean(rec?.what_you_know?.text);
+        const knowCites = (Array.isArray(rec?.what_you_know?.cites) ? rec.what_you_know.cites : [])
+          .map((c: any) => ({ kind: String(c?.kind ?? ""), id: String(typeof c === "string" ? c : c?.id ?? "") }))
+          .filter((c: any) => allowedIds.has(c.id));
+        const grounded = !!knowText && knowCites.some((c: any) => {
+          const item = allowedIds.get(c.id);
+          const run = quotedRun(knowText, `${item?.title ?? ""} ${item?.body ?? ""}`);
+          return run >= 3 && run <= 15;
+        });
+        const happened = clean(rec?.what_happened);
+        const matters = clean(rec?.why_it_matters);
+        const opening = clean(rec?.open_with);
+        if (!grounded || !happened) { counts.no_citation++; continue; }
+
+        const lines = [
+          { text: happened, label: vocab("what_happened", lang), cites: [] as any[] },
+          ...(matters ? [{ text: matters, label: vocab("why_it_matters", lang), cites: [] as any[] }] : []),
+          { text: knowText, label: vocab("what_you_know", lang), cites: knowCites },
+          ...(opening ? [{ text: opening, label: vocab("open_with", lang), cites: [] as any[] }] : []),
+        ];
+        const card = await writeCard(admin, userId, cardDate, {
+          opportunity_id: o.id, match_id: null,
+          why_lines: lines, gap_line: null,
+          cited_ids: knowCites,
+          lane: "write",
+          quote: o.evidence_quote,
+          clock_text: vocab("nothing_to_act_on", lang),
+          fit_band: null, win_band: null,
+          channel: "email",
+        });
+        if (card) { cardsWritten.push(card); counts.write_carded++; }
+        break;
+      }
+    }
+
     if (!cardsWritten.length) {
       const empty = await writeCard(admin, userId, cardDate, {
         opportunity_id: null, match_id: null, why_lines: [], gap_line: null,
@@ -806,6 +878,7 @@ Deno.serve(async (req) => {
       });
       if (empty) cardsWritten.push(empty);
       counts.empty_day = 1;
+
 
       // Coverage alarm: several quiet days in a row is a supply problem, not a
       // reason to lower the gate.
