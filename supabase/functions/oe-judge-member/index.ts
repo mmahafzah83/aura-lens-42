@@ -150,6 +150,32 @@ function quotedRun(line: string, item: string): number {
 }
 const hasPercent = (s: string) => /%|\bper ?cent|في المائة|بالمئة/i.test(s);
 
+/**
+ * One card per member per local day. A day that already holds an unsent card is
+ * rewritten in place; a card already sent is never overwritten.
+ */
+async function writeCard(
+  admin: SupabaseClient,
+  userId: string,
+  cardDate: string,
+  fields: Record<string, unknown>,
+): Promise<string | null> {
+  const { data: existing } = await admin
+    .from("oe_cards").select("id")
+    .eq("user_id", userId).eq("card_date", cardDate).is("sent_at", null)
+    .maybeSingle();
+  if (existing?.id) {
+    const { data } = await admin.from("oe_cards")
+      .update(fields).eq("id", existing.id).select("id").maybeSingle();
+    return data?.id ?? existing.id;
+  }
+  const { data } = await admin.from("oe_cards")
+    .insert({ user_id: userId, card_date: cardDate, ...fields })
+    .select("id").maybeSingle();
+  return data?.id ?? null;
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -498,11 +524,9 @@ Deno.serve(async (req) => {
       if (!why.length) { counts.no_citation++; continue; } // nothing of his own to stand on
 
       const citedIds = [...new Set(why.flatMap((w) => w.cites.map((c) => c.id)))];
-      const { data: card } = await admin.from("oe_cards").insert({
-        user_id: userId,
+      const card = await writeCard(admin, userId, cardDate, {
         opportunity_id: o.id,
         match_id: pick.matchId,
-        card_date: cardDate,
         why_lines: why,
         gap_line: distanceLine,
         cited_ids: why.flatMap((w) => w.cites),
@@ -513,17 +537,17 @@ Deno.serve(async (req) => {
         win_band: pick.winBand,
         explore_slot: !!pick.explore,
         channel: "email",
-      }).select("id").maybeSingle();
-      if (card?.id) { cardsWritten.push(card.id); counts.carded++; }
+      });
+      if (card) { cardsWritten.push(card); counts.carded++; }
       void citedIds;
     }
 
     if (!cardsWritten.length) {
-      const { data: empty } = await admin.from("oe_cards").insert({
-        user_id: userId, opportunity_id: null, card_date: cardDate,
-        why_lines: [], gap_line: null, clock_text: vocab("nothing_today", lang), channel: "email",
-      }).select("id").maybeSingle();
-      if (empty?.id) cardsWritten.push(empty.id);
+      const empty = await writeCard(admin, userId, cardDate, {
+        opportunity_id: null, match_id: null, why_lines: [], gap_line: null,
+        clock_text: vocab("nothing_today", lang), channel: "email",
+      });
+      if (empty) cardsWritten.push(empty);
       counts.empty_day = 1;
 
       // Coverage alarm: several quiet days in a row is a supply problem, not a
