@@ -9,6 +9,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { adminUserIds } from "../_shared/adminRole.ts";
+import { loadVocab } from "../_shared/oeVocab.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   renderEmail, heading, paragraph, quote, divider,
@@ -33,7 +34,7 @@ const OE_CARDS_ENABLED = (Deno.env.get("OE_CARDS_IN_EMAIL") ?? "true") !== "fals
 const APP_URL = "https://www.aura-intel.org";
 const AMBER = "#9A6F12";
 
-type Vocab = (key: string, lang?: "en" | "ar") => string;
+type Vocab = (key: string, lang: "en" | "ar") => string;
 
 type Card = {
   id: string;
