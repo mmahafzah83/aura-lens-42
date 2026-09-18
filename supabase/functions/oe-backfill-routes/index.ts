@@ -77,6 +77,43 @@ async function readStored(key: string, header: string, pageText: string) {
   return data?.choices?.[0]?.message?.content || "";
 }
 
+const stripTags = (html: string) =>
+  html.replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+const squash = (s: string) => s.replace(/\s+/g, " ").trim();
+
+/** Firecrawl when a key exists, otherwise a plain read with a browser agent. */
+async function fetchPageText(url: string, firecrawlKey: string): Promise<string> {
+  if (firecrawlKey) {
+    try {
+      const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${firecrawlKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true }),
+        signal: AbortSignal.timeout(40_000),
+      });
+      if (r.ok) {
+        const j = await r.json();
+        const md = squash(stripTags(String(j?.markdown ?? j?.data?.markdown ?? "")));
+        if (md.length >= 200) return md;
+      }
+    } catch { /* fall through to the plain read */ }
+  }
+  const r = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml",
+      "Accept-Language": "en,ar;q=0.9",
+    },
+    redirect: "follow",
+    signal: AbortSignal.timeout(25_000),
+  });
+  if (!r.ok) throw new Error(`fetch ${r.status}`);
+  return squash(stripTags(await r.text()));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
