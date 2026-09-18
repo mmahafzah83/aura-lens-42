@@ -53,7 +53,7 @@ function worldBankNoticeUrl(n: Record<string, any>): string | null {
 
 const P2_SYSTEM =
   `You turn one web page or message into at most one opportunity record for senior professionals, or null. ` +
-  `Return strict JSON {is_opportunity:boolean, chair_type:'board'|'mandate'|'role'|'room'|'speaking'|'media'|'advisory'|'award'|'learning'|null, ` +
+  `Return strict JSON {is_opportunity:boolean, chair_type:'board'|'mandate'|'role'|'room'|'speaking'|'media'|'advisory'|'award'|'learning'|'consultation'|null, ` +
   `time_kind:'open_now'|'early_signal'|null, title, scope (<=60 words), issuer_raw, sector, seniority_band:'work'|'table'|'room'|null, ` +
   `location, remote:boolean|null, requirements:[{text, quote}], conditions:[{text, quote}], deadline:YYYY-MM-DD|null, signal_date:YYYY-MM-DD|null, ` +
   `evidence_quote (a verbatim sentence from the page that proves chair_type and, when present, the deadline), ` +
@@ -66,6 +66,8 @@ const P2_SYSTEM =
   `Anything attached to the transaction or the institution — regulatory approvals, competition clearance, shareholder or assembly votes, ` +
   `closing conditions, governance procedure — is NOT a requirement; put it in conditions. ` +
   `If the page states nothing asked of a person, requirements is an empty array. Never move a condition into requirements to fill it. ` +
+  `chair_type consultation = a named, dated government invitation for the public or for experts to comment on a draft regulation, ` +
+  `strategy or standard; the route is the comment form and the deadline is the closing date for comments. ` +
   `discovery_kind: corporate_event_inference = an acquisition, restructuring or contract award implying a mandate nobody has posted; ` +
   `term_ending = a board or committee term running out; new_entity = a new authority, company or programme being formed; ` +
   `departure = a named executive leaving; arabic_only_source = the page is Arabic and the fact is not carried in English; ` +

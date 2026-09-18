@@ -4402,6 +4402,7 @@ export type Database = {
       }
       oe_feeds: {
         Row: {
+          access_finding: string
           active: boolean
           cadence: string
           chair_types: string[]
@@ -4433,6 +4434,7 @@ export type Database = {
           url: string | null
         }
         Insert: {
+          access_finding?: string
           active?: boolean
           cadence?: string
           chair_types?: string[]
@@ -4464,6 +4466,7 @@ export type Database = {
           url?: string | null
         }
         Update: {
+          access_finding?: string
           active?: boolean
           cadence?: string
           chair_types?: string[]
@@ -5064,6 +5067,39 @@ export type Database = {
           reason?: string | null
           rubric?: Json
           version?: string
+        }
+        Relationships: []
+      }
+      oe_registrations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          status: string
+          updated_at: string
+          url: string
+          what_it_unlocks: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          url: string
+          what_it_unlocks: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          url?: string
+          what_it_unlocks?: string
         }
         Relationships: []
       }
