@@ -731,7 +731,7 @@ Deno.serve(async (req) => {
       const check = pick.check ?? { list: [], met: 0, total: 0 };
       const firstUnmet = (check.list ?? []).find((r: any) => !r.met) ?? null;
       const distanceLine = check.total === 0
-        ? { text: vocab("no_requirements_stated", lang), no_requirements: true }
+        ? { text: vocab("no_requirements_published", lang), no_requirements: true }
         : firstUnmet
         ? { text: String(firstUnmet.requirement), derived_from: "requirement_check" }
         : null;
