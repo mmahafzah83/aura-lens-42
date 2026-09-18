@@ -553,13 +553,31 @@ Deno.serve(async (req) => {
     counts.alive = pool.length;
     counts.filtered = pool.length - filtered.length;
 
-    const scored = filtered.map((o) => {
+    // ── THE ELIGIBILITY GATE — free, deterministic, and before the model ──
+    // A seat he cannot hold is never read. It is not thrown away either: it
+    // goes to the writing lane, which is material, not a rejection.
+    const actPool: any[] = [];
+    const writePool: any[] = [];
+    for (const o of filtered) {
+      const s = screen(o, eligibility);
+      const lane = laneFor(o, s);
+      if (!s.pass) counts.skipped_ineligible++;
+      (lane === "act" ? actPool : writePool).push({ ...o, _screen: s });
+      await admin.from("oe_opportunities")
+        .update({ lane_final: lane, eligibility_fail: s.fails })
+        .eq("id", o.id);
+    }
+    counts.lane_act = actPool.length;
+    counts.lane_write = writePool.length;
+
+    const scored = actPool.map((o) => {
       const m = merged.get(o.id)!;
       const vec = asVector(o.embedding);
       const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
       return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
     }).sort((a, b) => b.score - a.score).slice(0, shortlistK);
     counts.shortlisted = scored.length;
+
 
     // ── 3. JUDGE ──────────────────────────────────────────────────────────
     if (!lovableKey && scored.length) throw new Error("LOVABLE_API_KEY not configured");
