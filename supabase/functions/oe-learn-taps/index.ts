@@ -77,13 +77,15 @@ Deno.serve(async (req) => {
         const label = tap.tap === "right" ? "right" : tap.tap === "not_my_area" ? "not_my_area" : null;
         for (const id of ids) {
           const face = next.get(id);
-          if (!face) continue;
+          if (!face || face.face === "avoid") continue;
+          if (!mayMoveWeights) { counts.held_at_stage++; continue; }
           if (tap.tap === "right") face.weight += alpha * (1 - face.weight);
           else if (tap.tap === "not_quite") face.weight -= alpha * face.weight * 0.5;
           else if (tap.tap === "not_my_area") face.weight -= alpha * face.weight;
           if (label) face.few_shot = [...face.few_shot, { title, tap: label }].slice(-fewShotK);
           counts.weight_moves++;
         }
+
 
         if (tap.tap === "not_quite" || tap.tap === "not_my_area" || tap.tap === "less_from_here") {
           const reach = tap.scope || (tap.tap === "not_my_area" ? "type" : tap.tap === "less_from_here" ? "issuer" : "just_this");
