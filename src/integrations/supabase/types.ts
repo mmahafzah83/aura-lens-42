@@ -9389,6 +9389,23 @@ export type Database = {
         }[]
       }
       normalise_linkedin_handle: { Args: { p_raw: string }; Returns: string }
+      oe_app_decide: {
+        Args: {
+          p_action: string
+          p_card: string
+          p_scope?: string
+          p_scope_value?: string
+          p_truth?: string
+        }
+        Returns: Json
+      }
+      oe_app_proposal: {
+        Args: { p_accept: boolean; p_id: string }
+        Returns: undefined
+      }
+      oe_app_queue: { Args: never; Returns: Json }
+      oe_app_render: { Args: { p_card: string }; Returns: Json }
+      oe_app_show_anyway: { Args: { p_suppressed: string }; Returns: undefined }
       oe_candidates: {
         Args: { p_face: string; p_k: number; p_user_id: string }
         Returns: {
