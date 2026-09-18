@@ -39,6 +39,8 @@ export type OpportunityCardData = {
     issuer_id?: string | null;
     seniority_band?: string | null;
     location?: string | null;
+    /** How we came to see it. Anything but posted_opening is a find of ours. */
+    discovery_kind?: string | null;
   } | null;
   oe_taps?: Array<{ tap: OpportunityTap; scope?: OpportunityScope | null; tapped_at?: string }> | null;
   /** The checklist with its denominator, carried from the judged match. */
@@ -49,6 +51,8 @@ export type OpportunityCardData = {
   } | null;
   /** Whether anything of his own already touches this. Never part of the score. */
   warmth?: WarmthRow[] | null;
+  /** Measured, never guessed: null when we hold no pairs of this kind. */
+  lead?: { days: number; sample: number } | null;
 };
 
 export type PublicOpportunityCard = {
