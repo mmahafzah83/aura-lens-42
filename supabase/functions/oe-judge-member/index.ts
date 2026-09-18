@@ -24,7 +24,8 @@ const FN = "oe-judge-member";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
 const P3_VERSION = "p3-1.0";
-const P4_VERSION = "p4-2.0";
+const P4_VERSION = "p4-2.1";
+const P5_VERSION = "p5-1.0";
 const QUESTIONS = ["role_fit", "sector_fit", "seniority_fit", "timing", "strategic_value"] as const;
 const RETRIEVAL_FACES = ["done", "wants", "reads", "stands"] as const;
 const BANDS = { work: 0, table: 1, room: 2 } as const;
@@ -46,15 +47,24 @@ const P3_SYSTEM =
   `2 if under two weeks or signal within two quarters; 4 if workable window or signal within one quarter. ` +
   `Strategic value is measured against the wants face.`;
 
+/**
+ * The checklist, with a denominator. A requirement is met only when one of his
+ * own items shows it, and the quote is verified in code before it is stored.
+ */
+const P5_SYSTEM =
+  `You check one record's stated requirements against this professional's own material. ` +
+  `Return strict JSON {checks:[{id, met:true|false, cite:{kind,id}|null, quote:string}]} — one entry per requirement id, ` +
+  `in the order given. A requirement is met ONLY when one supplied item shows it. ` +
+  `quote must be between 3 and 15 words copied verbatim from the cited item; when nothing shows it, ` +
+  `met=false, cite=null, quote="". Write no other text and no label words.`;
+
 function p4System(lang: string) {
   return `Write for this professional, in ${lang === "ar" ? "Arabic" : "English"}, in the second person, plain words, ` +
     `no percentages, no label words — you write sentences only. ${OE_REGISTER_FOR_PROMPT} ` +
-    `Return strict JSON {why:[{text, cites:[{kind, id}]},{text, cites:[{kind, id}]}], distance:{text}, clock:text}. ` +
+    `Return strict JSON {why:[{text, cites:[{kind, id}]},{text, cites:[{kind, id}]}], clock:text}. ` +
     `Each text <= 45 words. HIS OWN MATERIAL is the only ground for a why line: every why line must cite one item ` +
     `from HIS OWN MATERIAL by its kind and id, and must quote at most 15 words copied verbatim from that item inside ` +
     `the line. A line that cites nothing, or quotes nothing from what it cites, is dropped. ` +
-    `distance: name in one sentence the single thing his material does NOT show against the record's requirements. ` +
-    `Say nothing is missing only when every requirement is matched by an item you cited. ` +
     `clock: 'closes in N days' / 'no date given' / 'early signal, likely within a quarter' in the member's language.`;
 }
 
