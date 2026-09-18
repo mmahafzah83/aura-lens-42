@@ -8,7 +8,9 @@ import { OpportunityCard } from "./OpportunityCard";
 import { opportunitySentences } from "./labels";
 import { bandKey, chairKey, useVocab } from "./useVocab";
 import { useOpportunityCards } from "./useOpportunityCards";
+import { WhatYouCanHold } from "./WhatYouCanHold";
 import type { OpportunityCardData } from "./types";
+
 
 export function OpportunitiesSection() {
   const [userId, setUserId] = useState<string | null>(null);

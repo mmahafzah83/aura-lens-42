@@ -11,7 +11,10 @@ export function OpportunityCard({ card, language, readOnly, winKnown, onSaved }:
   const tap = card.oe_taps?.slice().sort((a, b) => String(b.tapped_at).localeCompare(String(a.tapped_at)))[0]?.tap ?? null;
   const rtl = language === "ar";
   const font = rtl ? "Cairo, sans-serif" : "Inter, sans-serif";
-  const lane = card.lane === "lane_forming" ? "lane_forming" : "lane_open";
+  // The writing lane carries no score, no band and no clock — none apply.
+  const writeLane = card.lane === "write";
+  const lane = writeLane ? "lane_write" : card.lane === "lane_forming" ? "lane_forming" : "lane_open";
+
   const routeUrl = opp?.route_url ?? null;
   return (
     <AuraCard hover="none" style={{ background: "#FFFFFF", border: "1px solid #E2E7EE", borderRadius: 20, padding: 20, boxShadow: "0 1px 2px rgba(15,21,25,.04)", fontFamily: font }}>
