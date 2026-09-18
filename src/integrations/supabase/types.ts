@@ -4419,6 +4419,53 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_issuer_people: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          is_public_spokesperson: boolean
+          issuer_id: string
+          linkedin_url: string | null
+          role_title: string | null
+          source_url: string
+          updated_at: string
+          verified_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          is_public_spokesperson?: boolean
+          issuer_id: string
+          linkedin_url?: string | null
+          role_title?: string | null
+          source_url: string
+          updated_at?: string
+          verified_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_public_spokesperson?: boolean
+          issuer_id?: string
+          linkedin_url?: string | null
+          role_title?: string | null
+          source_url?: string
+          updated_at?: string
+          verified_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_issuer_people_issuer_id_fkey"
+            columns: ["issuer_id"]
+            isOneToOne: false
+            referencedRelation: "oe_issuers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oe_issuers: {
         Row: {
           aliases: string[]
@@ -4739,9 +4786,11 @@ export type Database = {
           alive: boolean
           canonical_url: string | null
           chair_type: string
+          conditions: Json
           content_hash: string | null
           created_at: string
           deadline: string | null
+          discovery_kind: string
           embedding: string | null
           evidence_quote: string | null
           extraction_confidence: number | null
@@ -4776,9 +4825,11 @@ export type Database = {
           alive?: boolean
           canonical_url?: string | null
           chair_type: string
+          conditions?: Json
           content_hash?: string | null
           created_at?: string
           deadline?: string | null
+          discovery_kind?: string
           embedding?: string | null
           evidence_quote?: string | null
           extraction_confidence?: number | null
@@ -4813,9 +4864,11 @@ export type Database = {
           alive?: boolean
           canonical_url?: string | null
           chair_type?: string
+          conditions?: Json
           content_hash?: string | null
           created_at?: string
           deadline?: string | null
+          discovery_kind?: string
           embedding?: string | null
           evidence_quote?: string | null
           extraction_confidence?: number | null
@@ -8695,6 +8748,13 @@ export type Database = {
           title: string
         }[]
       }
+      oe_expected_lead_days: {
+        Args: { p_chair_type?: string; p_discovery_kind: string }
+        Returns: {
+          expected_lead_days: number
+          sample_size: number
+        }[]
+      }
       oe_member_evidence: {
         Args: { p_embedding: string; p_k?: number; p_user_id: string }
         Returns: {
@@ -8720,12 +8780,36 @@ export type Database = {
         }
         Returns: Json
       }
+      oe_warmth_issuer_text: {
+        Args: { p_issuer_names: string[]; p_user_id: string }
+        Returns: {
+          engagement: number
+          id: string
+          item_kind: string
+          kind: string
+          occurred_at: string
+          similarity: number
+          snippet: string
+        }[]
+      }
       oe_warmth_signals: {
         Args: {
           p_embedding: string
           p_issuer_names?: string[]
           p_user_id: string
         }
+        Returns: {
+          engagement: number
+          id: string
+          item_kind: string
+          kind: string
+          occurred_at: string
+          similarity: number
+          snippet: string
+        }[]
+      }
+      oe_warmth_signals_captures: {
+        Args: { p_embedding: string; p_user_id: string }
         Returns: {
           engagement: number
           id: string

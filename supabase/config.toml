@@ -260,3 +260,6 @@ verify_jwt = false
 
 [functions.oe-prepare-move]
 verify_jwt = false
+
+[functions.oe-reextract-asks]
+verify_jwt = false
