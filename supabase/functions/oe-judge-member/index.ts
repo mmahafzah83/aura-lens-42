@@ -11,6 +11,8 @@
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
+import { loadVocab } from "../_shared/oeVocab.ts";
+import { OE_REGISTER_FOR_PROMPT, registerFault } from "../_shared/oeRegister.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +24,7 @@ const FN = "oe-judge-member";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
 const P3_VERSION = "p3-1.0";
-const P4_VERSION = "p4-1.0";
+const P4_VERSION = "p4-2.0";
 const QUESTIONS = ["role_fit", "sector_fit", "seniority_fit", "timing", "strategic_value"] as const;
 const RETRIEVAL_FACES = ["done", "wants", "reads", "stands"] as const;
 const BANDS = { work: 0, table: 1, room: 2 } as const;
@@ -46,10 +48,13 @@ const P3_SYSTEM =
 
 function p4System(lang: string) {
   return `Write for this professional, in ${lang === "ar" ? "Arabic" : "English"}, in the second person, plain words, ` +
-    `no percentages, no banned words (authority as a noun, thought leader, personal brand, trajectory, leverage). ` +
-    `Return strict JSON {why:[{text, cites:[ids]},{text, cites:[ids]}], gap:{text, cites:[ids]}, clock:text}. ` +
-    `Each text <= 45 words. Every why line must cite at least one face id or requirement id from the provided list; ` +
-    `a line with no cite is dropped. The gap line names the single missing thing, or says plainly that nothing is missing. ` +
+    `no percentages, no label words — you write sentences only. ${OE_REGISTER_FOR_PROMPT} ` +
+    `Return strict JSON {why:[{text, cites:[{kind, id}]},{text, cites:[{kind, id}]}], distance:{text}, clock:text}. ` +
+    `Each text <= 45 words. HIS OWN MATERIAL is the only ground for a why line: every why line must cite one item ` +
+    `from HIS OWN MATERIAL by its kind and id, and must quote at most 15 words copied verbatim from that item inside ` +
+    `the line. A line that cites nothing, or quotes nothing from what it cites, is dropped. ` +
+    `distance: name in one sentence the single thing his material does NOT show against the record's requirements. ` +
+    `Say nothing is missing only when every requirement is matched by an item you cited. ` +
     `clock: 'closes in N days' / 'no date given' / 'early signal, likely within a quarter' in the member's language.`;
 }
 
@@ -128,6 +133,21 @@ function shuffled<T>(arr: T[]): T[] {
 }
 
 const BANNED = /\bthought leader|personal brand|trajectory|leverage\b/i;
+const wordsOf = (s: string) => String(s ?? "").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter(Boolean);
+
+/** Longest run of consecutive words the line copied out of the item. */
+function quotedRun(line: string, item: string): number {
+  const L = wordsOf(line), I = wordsOf(item).slice(0, 400);
+  let best = 0;
+  for (let i = 0; i < I.length; i++) {
+    for (let j = 0; j < L.length; j++) {
+      let k = 0;
+      while (i + k < I.length && j + k < L.length && I[i + k] === L[j + k]) k++;
+      if (k > best) best = k;
+    }
+  }
+  return best;
+}
 const hasPercent = (s: string) => /%|\bper ?cent|في المائة|بالمئة/i.test(s);
 
 Deno.serve(async (req) => {
@@ -382,21 +402,122 @@ Deno.serve(async (req) => {
       judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, matchId: match?.id ?? null, requirementIds });
     }
 
-    // ── 4. PICK ───────────────────────────────────────────────────────────
-    const eligible = judged.filter((j) => j.gatePassed && !j.unstable).sort((a, b) => b.scoreAvg - a.scoreAvg);
-    let picks = eligible.slice(0, cardsPerDay).map((j) => ({ ...j, explore: false }));
-    if (picks.length && Math.random() < exploreShare) {
-      const explore = eligible.find((j) => j.o.sector && memberSector && j.o.sector !== memberSector && !picks.includes(j as any));
-      if (explore) picks[picks.length - 1] = { ...explore, explore: true };
+    // ── 4. PICK — Lane A only. No way in, no card. ────────────────────────
+    const eligible = judged
+      .filter((j) => j.gatePassed && !j.unstable && j.lane === "lane_open")
+      .sort((a, b) => b.scoreAvg - a.scoreAvg);
+    counts.lane_forming = judged.filter((j) => j.lane === "lane_forming").length;
+    let order = eligible.map((j) => ({ ...j, explore: false }));
+    if (order.length > 1 && Math.random() < exploreShare) {
+      const idx = order.findIndex((j) => j.o.sector && memberSector && j.o.sector !== memberSector);
+      if (idx > 0) order = [{ ...order[idx], explore: true }, ...order.filter((_, i) => i !== idx)];
     }
 
     const cardsWritten: string[] = [];
+    const vocab = await loadVocab(admin);
 
-    if (!picks.length) {
-      const clockText = lang === "ar" ? "لا شيء قوي اليوم" : "nothing strong today";
+    // ── 5+6. HIS OWN EVIDENCE, the reasons, then the card ─────────────────
+    for (const pick of order) {
+      if (cardsWritten.length >= cardsPerDay) break;
+      const o = pick.o;
+
+      // GATE 1 — no card without his own material.
+      const oppVec = asVector(o.embedding);
+      let mine: any[] = [];
+      if (oppVec) {
+        const { data: own, error: ownErr } = await admin.rpc("oe_member_evidence", {
+          p_user_id: userId, p_embedding: `[${oppVec.join(",")}]`, p_k: 8,
+        });
+        if (ownErr) throw new Error(`oe_member_evidence: ${ownErr.message}`);
+        mine = (own ?? []).filter((r: any) => String(r.body ?? "").trim().length > 40);
+      }
+      if (!mine.length) { counts.no_evidence++; continue; }
+
+      const allowedIds = new Map<string, any>(mine.map((r: any) => [String(r.id), r]));
+      const mineBlock = mine.map((r: any, i: number) => [
+        `${i + 1}. kind=${r.kind} id=${r.id} date=${String(r.occurred_at ?? "").slice(0, 10)}`,
+        `"${String(r.title ? `${r.title}. ` : "")}${String(r.body ?? "").replace(/\s+/g, " ").slice(0, 1200)}"`,
+      ].join("\n")).join("\n\n");
+
+      const oppBlock = JSON.stringify({
+        title: o.title, scope: o.scope, issuer: o.issuer_raw, sector: o.sector,
+        location: o.location, deadline: o.deadline, signal_date: o.signal_date,
+        time_kind: o.time_kind, chair_type: o.chair_type,
+        route_kind: o.route_kind,
+        requirements: (Array.isArray(o.requirements) ? o.requirements : []).map((r: any, i: number) => ({ id: `req:${i}`, text: r?.text ?? "" })),
+      });
+      const userMsg = [
+        `HIS OWN MATERIAL (cite these, quote from these):\n${mineBlock}`,
+        `OPPORTUNITY:\n${oppBlock}`,
+        `ALLOWED CITE IDS: ${[...allowedIds.keys()].join(", ")}`,
+      ].join("\n\n");
+
+      let why: Array<{ text: string; cites: Array<{ kind: string; id: string }> }> = [];
+      let distanceLine: { text: string } | null = null;
+      let clockText = "";
+
+      for (let attempt = 0; attempt < 2 && why.length < 1; attempt++) {
+        const out = await gateway(lovableKey, p4System(lang), userMsg);
+        costUsd += 0.0004;
+        await logAIUsage({
+          user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
+          input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
+          metadata: { prompt_version: P4_VERSION, opportunity_id: o.id },
+        });
+        const rec = normaliseJson(out.content);
+        why = (Array.isArray(rec.why) ? rec.why : [])
+          .map((w: any) => {
+            const text = String(w?.text ?? "").trim();
+            const cites = (Array.isArray(w?.cites) ? w.cites : [])
+              .map((c: any) => ({ kind: String(c?.kind ?? ""), id: String(typeof c === "string" ? c : c?.id ?? "") }))
+              .filter((c: any) => allowedIds.has(c.id));
+            return { text, cites };
+          })
+          .filter((w: any) => {
+            if (!w.text || !w.cites.length) return false;
+            if (hasPercent(w.text) || BANNED.test(w.text)) return false;
+            if (registerFault(w.text, lang)) return false;
+            // The line must quote his own words, and no more than fifteen of them.
+            return w.cites.some((c: any) => {
+              const item = allowedIds.get(c.id);
+              const run = quotedRun(w.text, `${item?.title ?? ""} ${item?.body ?? ""}`);
+              return run >= 3 && run <= 15;
+            });
+          })
+          .slice(0, 2);
+        const dText = String(rec.distance?.text ?? rec.distance ?? "").trim();
+        distanceLine = dText && !hasPercent(dText) && !BANNED.test(dText) && !registerFault(dText, lang)
+          ? { text: dText } : null;
+        const clock = String(rec.clock ?? "").trim();
+        clockText = clock && !registerFault(clock, lang) ? clock : "";
+      }
+      if (!why.length) { counts.no_citation++; continue; } // nothing of his own to stand on
+
+      const citedIds = [...new Set(why.flatMap((w) => w.cites.map((c) => c.id)))];
+      const { data: card } = await admin.from("oe_cards").insert({
+        user_id: userId,
+        opportunity_id: o.id,
+        match_id: pick.matchId,
+        card_date: cardDate,
+        why_lines: why,
+        gap_line: distanceLine,
+        cited_ids: why.flatMap((w) => w.cites),
+        lane: "lane_open",
+        quote: o.evidence_quote,
+        clock_text: clockText,
+        fit_band: pick.fitBand,
+        win_band: pick.winBand,
+        explore_slot: !!pick.explore,
+        channel: "email",
+      }).select("id").maybeSingle();
+      if (card?.id) { cardsWritten.push(card.id); counts.carded++; }
+      void citedIds;
+    }
+
+    if (!cardsWritten.length) {
       const { data: empty } = await admin.from("oe_cards").insert({
         user_id: userId, opportunity_id: null, card_date: cardDate,
-        why_lines: [], gap_line: null, clock_text: clockText, channel: "email",
+        why_lines: [], gap_line: null, clock_text: vocab("nothing_today", lang), channel: "email",
       }).select("id").maybeSingle();
       if (empty?.id) cardsWritten.push(empty.id);
       counts.empty_day = 1;
@@ -413,66 +534,6 @@ Deno.serve(async (req) => {
           context: { user_id: userId, empty_days: alarmRun },
         });
       }
-    }
-
-    // ── 5+6. REASONS, then the card ───────────────────────────────────────
-    for (const pick of picks) {
-      const o = pick.o;
-      const allowedIds = new Set<string>([...faceList.map((f: any) => f.id), ...pick.requirementIds]);
-      const faceBlock = JSON.stringify(faceList.map((f: any) => ({ id: f.id, face: f.face, summary: f.summary })));
-      const oppBlock = JSON.stringify({
-        title: o.title, scope: o.scope, issuer: o.issuer_raw, sector: o.sector,
-        location: o.location, deadline: o.deadline, signal_date: o.signal_date,
-        time_kind: o.time_kind, chair_type: o.chair_type,
-        requirements: (Array.isArray(o.requirements) ? o.requirements : []).map((r: any, i: number) => ({ id: `req:${i}`, text: r?.text ?? "" })),
-      });
-      const userMsg = [
-        `FACES (cite these ids):\n${faceBlock}`,
-        `OPPORTUNITY:\n${oppBlock}`,
-        `ALLOWED CITE IDS: ${[...allowedIds].join(", ")}`,
-      ].join("\n\n");
-
-      let why: Array<{ text: string; cites: string[] }> = [];
-      let gapLine: { text: string; cites: string[] } | null = null;
-      let clockText = "";
-
-      for (let attempt = 0; attempt < 2 && why.length < 1; attempt++) {
-        const out = await gateway(lovableKey, p4System(lang), userMsg);
-        costUsd += 0.0004;
-        await logAIUsage({
-          user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
-          input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
-          metadata: { prompt_version: P4_VERSION, opportunity_id: o.id },
-        });
-        const rec = normaliseJson(out.content);
-        why = (Array.isArray(rec.why) ? rec.why : [])
-          .map((w: any) => ({ text: String(w?.text ?? "").trim(), cites: (Array.isArray(w?.cites) ? w.cites : []).map(String).filter((c: string) => allowedIds.has(c)) }))
-          .filter((w: any) => w.text && w.cites.length && !hasPercent(w.text) && !BANNED.test(w.text))
-          .slice(0, 2);
-        const g = rec.gap;
-        const gText = String(g?.text ?? "").trim();
-        gapLine = gText && !hasPercent(gText) && !BANNED.test(gText)
-          ? { text: gText, cites: (Array.isArray(g?.cites) ? g.cites : []).map(String).filter((c: string) => allowedIds.has(c)) }
-          : null;
-        clockText = String(rec.clock ?? "").trim();
-      }
-      if (!why.length) continue; // nothing honest to say about this one
-
-      const { data: card } = await admin.from("oe_cards").insert({
-        user_id: userId,
-        opportunity_id: o.id,
-        match_id: pick.matchId,
-        card_date: cardDate,
-        why_lines: why,
-        gap_line: gapLine,
-        quote: o.evidence_quote,
-        clock_text: clockText,
-        fit_band: pick.fitBand,
-        win_band: pick.winBand,
-        explore_slot: !!pick.explore,
-        channel: "email",
-      }).select("id").maybeSingle();
-      if (card?.id) { cardsWritten.push(card.id); counts.carded++; }
     }
 
     // ── 7. LOG ────────────────────────────────────────────────────────────
