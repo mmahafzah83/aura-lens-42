@@ -33,6 +33,58 @@ const CAREERS_HOSTS = ["careers", "jobs", "career"];
 const CAREERS_TEXT = /careers?|jobs|vacanc|join us|opportunit|وظائف|التوظيف|الوظائف|انضم/i;
 const NEWSROOM_TEXT = /newsroom|news\s*room|media\s*cent|press\s*release|press\s*cent|\bnews\b|\bmedia\b|الأخبار|المركز الإعلامي|البيانات الصحفية/i;
 
+/**
+ * ONE SITE, MANY SURFACES.
+ *
+ * A website is not one door. A consulting firm's site carries roles on its
+ * careers page, live topics in its insights, appointments in its news, rooms
+ * on its events page and the people to know on its leadership page. Each is a
+ * surface with its own reader, its own rhythm and its own yield.
+ */
+type SurfaceType =
+  | "careers" | "news" | "press" | "insights" | "events"
+  | "tenders" | "leadership" | "investor_relations" | "blog" | "podcast" | "directory";
+
+const SURFACE_RULES: Array<{
+  type: SurfaceType;
+  text: RegExp;
+  path: RegExp;
+  yields: string[];
+  cadence: "daily" | "weekly";
+}> = [
+  { type: "careers", text: CAREERS_TEXT, path: /\/(careers?|jobs|vacanc\w*|join-?us|wazaif|وظائف|التوظيف)(\/|$|\?)/i,
+    yields: ["role"], cadence: "daily" },
+  { type: "tenders", text: /tender|procurement|supplier|bid\b|rfp|المشتريات|الموردين|المنافسات|كراسة/i,
+    path: /\/(tenders?|procurement|suppliers?|bids?|rfps?|المشتريات|الموردين)(\/|$|\?)/i,
+    yields: ["mandate"], cadence: "daily" },
+  { type: "news", text: /\bnews\b|newsroom|news\s*room|media\s*cent|الأخبار|المركز الإعلامي/i,
+    path: /\/(news|newsroom|media-?cent\w*|الأخبار)(\/|$|\?)/i,
+    yields: ["board", "role", "mandate", "advisory"], cadence: "weekly" },
+  { type: "press", text: /press\s*release|press\s*cent|press\s*room|البيانات الصحفية/i,
+    path: /\/(press|press-?releases?|press-?room)(\/|$|\?)/i,
+    yields: ["board", "role", "mandate", "advisory"], cadence: "weekly" },
+  { type: "insights", text: /insight|publication|research|perspective|our thinking|report\b|رؤى|تقارير|منشورات|أبحاث/i,
+    path: /\/(insights?|publications?|research|perspectives?|our-thinking|reports?|رؤى|تقارير)(\/|$|\?)/i,
+    yields: ["speaking", "media"], cadence: "weekly" },
+  { type: "events", text: /\bevents?\b|conference|webinar|summit|forum|الفعاليات|المؤتمرات|ندوة/i,
+    path: /\/(events?|conferences?|webinars?|summits?|forums?|الفعاليات)(\/|$|\?)/i,
+    yields: ["room", "speaking", "learning"], cadence: "weekly" },
+  { type: "leadership", text: /leadership|our people|management team|executive team|board of|القيادة|مجلس الإدارة|فريق الإدارة/i,
+    path: /\/(leadership|our-people|people|management|executives?|board|القيادة)(\/|$|\?)/i,
+    yields: [], cadence: "weekly" },
+  { type: "investor_relations", text: /investor relation|investors?\b|shareholder|علاقات المستثمرين|المساهمين/i,
+    path: /\/(investor-?relations?|investors?|ir)(\/|$|\?)/i,
+    yields: ["board"], cadence: "weekly" },
+  { type: "blog", text: /\bblog\b|مدونة/i, path: /\/(blog|مدونة)(\/|$|\?)/i,
+    yields: ["speaking", "media"], cadence: "weekly" },
+  { type: "podcast", text: /podcast|بودكاست/i, path: /\/(podcasts?|بودكاست)(\/|$|\?)/i,
+    yields: ["speaking", "media"], cadence: "weekly" },
+  { type: "directory", text: /member directory|our members|licensee|licensed (firms|entities)|firm index|company directory|دليل الأعضاء|المرخص/i,
+    path: /\/(directory|directories|members?|licensees?|licen[cs]es?-directory|firms?-index)(\/|$|\?)/i,
+    yields: [], cadence: "weekly" },
+];
+
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -244,6 +296,46 @@ function linkByText(html: string, base: string, re: RegExp): string | null {
   return null;
 }
 
+/** Every link on a page, with its visible text. The raw material of discovery. */
+function allLinks(html: string, base: string): Array<{ url: string; text: string }> {
+  const out: Array<{ url: string; text: string }> = [];
+  const seen = new Set<string>();
+  for (const m of html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]{0,200}?)<\/a>/gi)) {
+    let u: URL;
+    try { u = new URL(m[1], base); } catch { continue; }
+    if (!/^https?:$/.test(u.protocol)) continue;
+    u.hash = "";
+    const url = u.toString();
+    if (seen.has(url)) continue;
+    seen.add(url);
+    out.push({ url, text: squash(m[2].replace(/<[^>]+>/g, " ")).slice(0, 160) });
+    if (out.length > 600) break;
+  }
+  return out;
+}
+
+/** How a surface can actually be read: a feed first, then structure, then plain HTML. */
+function readerFor(url: string, html: string): { kind: string; feed: string | null } {
+  const feed = (() => {
+    for (const m of html.matchAll(/<link\b[^>]*>/gi)) {
+      const tag = m[0];
+      if (!/rel=["']?alternate/i.test(tag)) continue;
+      const type = tag.match(/type=["']([^"']+)["']/i)?.[1] ?? "";
+      const href = tag.match(/href=["']([^"']+)["']/i)?.[1];
+      if (!href) continue;
+      if (/rss\+xml/i.test(type) || /atom\+xml/i.test(type)) {
+        try { return { url: new URL(href, url).toString(), atom: /atom/i.test(type) }; } catch { /* next */ }
+      }
+    }
+    return null;
+  })();
+  if (feed) return { kind: feed.atom ? "atom" : "rss", feed: feed.url };
+  if (/<script[^>]+type=["']application\/ld\+json["']/i.test(html)) return { kind: "json_ld", feed: null };
+  return { kind: "html_list", feed: null };
+}
+
+
+
 /** One search, and only when the list gave us no website at all. */
 async function searchDomain(key: string, name: string): Promise<string | null> {
   try {
@@ -296,9 +388,13 @@ Deno.serve(async (req) => {
 
   const counts: Record<string, any> = {
     seen: 0, resolved: 0, no_ats: 0, no_careers: 0, failed: 0,
-    searched: 0, by_platform: {} as Record<string, number>,
+    searched: 0, surfaces: 0, by_platform: {} as Record<string, number>,
+    by_surface: {} as Record<string, number>,
   };
   const detail: Array<Record<string, unknown>> = [];
+  /** Directory surfaces produce organisations, not opportunities: they go back to the seeder. */
+  const directories: Array<{ entity_id: string; url: string }> = [];
+
 
   try {
     // An organisation whose list already carried its official website costs
@@ -311,6 +407,8 @@ Deno.serve(async (req) => {
       .order("domain", { ascending: true, nullsFirst: false })
       .limit(batch);
     if (body.with_domain_only === true) q = q.not("domain", "is", null);
+    if (typeof body.seed_source === "string") q = q.eq("seed_source", body.seed_source);
+
     if (body.entity_id) q = admin.from("oe_entities")
       .select("id, name, domain, careers_url").eq("id", body.entity_id);
 
@@ -321,7 +419,100 @@ Deno.serve(async (req) => {
       return json({ ok: true, counts, note: "nothing new to resolve" });
     }
 
+    /**
+     * Every surface on one site. A careers page and a newsroom were the old
+     * answer; a firm's insights page tells us what the market is thinking, its
+     * events page names the rooms, its leadership page names the people, and a
+     * directory page hands us more organisations.
+     */
+    async function discoverSurfaces(
+      entityId: string,
+      domain: string,
+      home: Fetched,
+      disallows: string[],
+      careers: Fetched | null,
+      print: Print | null,
+    ): Promise<Map<string, string>> {
+      const chosen = new Map<string, string>();
+      const rows: Array<Record<string, unknown>> = [];
+      const root = domain.split(".").slice(-2).join(".");
+
+      // candidates from the homepage, one per surface type, same site only
+      const candidates = new Map<SurfaceType, string>();
+      if (home.ok) {
+        for (const { url, text } of allLinks(home.body, home.finalUrl)) {
+          let u: URL;
+          try { u = new URL(url); } catch { continue; }
+          if (!u.hostname.endsWith(root)) continue;
+          for (const rule of SURFACE_RULES) {
+            if (!(rule.text.test(text) || rule.path.test(u.pathname))) continue;
+            // The section, not an article inside it: the shallowest path wins.
+            const held = candidates.get(rule.type);
+            const depth = (x: string) => new URL(x).pathname.replace(/\/+$/, "").split("/").length;
+            if (!held || depth(url) < depth(held)) candidates.set(rule.type, url);
+          }
+        }
+      }
+      if (careers) candidates.set("careers", careers.finalUrl);
+
+      for (const rule of SURFACE_RULES) {
+        const url = candidates.get(rule.type);
+        if (!url) continue;
+        if (Date.now() > deadline) break;
+
+        const ok = allowed(disallows, url);
+        let kind = "html_list";
+        let readUrl = url;
+        let health = "unknown";
+        let access: string | null = ok ? null : "robots_disallows";
+
+        if (rule.type === "careers" && careers && print) {
+          kind = "ats_api";
+          readUrl = print.endpoint;
+          health = "ok";
+        } else if (ok) {
+          const page = rule.type === "careers" && careers ? careers : await get(url);
+          if (page.ok && page.body.length > 300) {
+            const reader = readerFor(page.finalUrl, page.body);
+            kind = reader.kind;
+            readUrl = reader.feed ?? page.finalUrl;
+            health = "ok";
+          } else {
+            health = "unreadable";
+            access = access ?? (page.status === 403 ? "bot_defended" : "no_response");
+            counts.surface_unreadable = (counts.surface_unreadable ?? 0) + 1;
+          }
+        }
+
+        chosen.set(rule.type, readUrl);
+        rows.push({
+          entity_id: entityId,
+          surface_type: rule.type,
+          url: readUrl,
+          harvest_kind: kind,
+          ats_platform: rule.type === "careers" ? print?.platform ?? null : null,
+          ats_token: rule.type === "careers" ? print?.token ?? null : null,
+          yields: rule.yields,
+          cadence: rule.cadence,
+          terms_ok: ok,
+          access_finding: access,
+          health,
+          updated_at: new Date().toISOString(),
+        });
+        counts.by_surface[rule.type] = (counts.by_surface[rule.type] ?? 0) + 1;
+        if (rule.type === "directory") directories.push({ entity_id: entityId, url: readUrl });
+      }
+
+      if (rows.length) {
+        const { error } = await admin.from("oe_surfaces")
+          .upsert(rows, { onConflict: "entity_id,surface_type,url" });
+        if (!error) counts.surfaces += rows.length;
+      }
+      return chosen;
+    }
+
     /** One organisation, start to finish. */
+
     async function resolveOne(e: any) {
       const update: Record<string, unknown> = { last_resolved_at: new Date().toISOString() };
       try {
@@ -380,28 +571,31 @@ Deno.serve(async (req) => {
           }
         }
 
-        // 4. the newsroom, by the same link-text method.
-        const newsroom = home.ok ? linkByText(home.body, home.finalUrl, NEWSROOM_TEXT) : null;
+        // 3. the fingerprint — read off the final URL and the page source.
+        const print = careers ? fingerprint(careers.finalUrl, careers.body) : null;
+
+        // 4. every surface on the site, not two. The careers page we already
+        // hold is one of them; the rest are found by link text and path.
+        const found = await discoverSurfaces(e.id, domain, home, disallows, careers, print);
+        const newsroom = found.get("news") ?? found.get("press") ?? null;
         if (newsroom) update.newsroom_url = newsroom;
+        if (careers) update.careers_url = careers.finalUrl;
 
         if (!careers) {
           counts.no_careers++;
           await admin.from("oe_entities").update({
             ...update, resolve_status: "no_careers", resolve_error: null,
           }).eq("id", e.id);
-          detail.push({ name: e.name, domain, result: "no_careers" });
+          detail.push({ name: e.name, domain, result: "no_careers", surfaces: found.size });
           return;
         }
-        update.careers_url = careers.finalUrl;
 
-        // 3. the fingerprint — read off the final URL and the page source.
-        const print = fingerprint(careers.finalUrl, careers.body);
         if (!print) {
           counts.no_ats++;
           await admin.from("oe_entities").update({
             ...update, resolve_status: "no_ats", resolve_error: null,
           }).eq("id", e.id);
-          detail.push({ name: e.name, domain, result: "no_ats", careers: careers.finalUrl });
+          detail.push({ name: e.name, domain, result: "no_ats", careers: careers.finalUrl, surfaces: found.size });
           return;
         }
         counts.resolved++;
@@ -410,7 +604,8 @@ Deno.serve(async (req) => {
           ...update, resolve_status: "resolved", resolve_error: null,
           ats_platform: print.platform, ats_token: print.token, ats_endpoint: print.endpoint,
         }).eq("id", e.id);
-        detail.push({ name: e.name, domain, result: print.platform, token: print.token });
+        detail.push({ name: e.name, domain, result: print.platform, token: print.token, surfaces: found.size });
+
       } catch (err) {
         counts.failed++;
         await admin.from("oe_entities").update({
@@ -432,9 +627,26 @@ Deno.serve(async (req) => {
     });
     await Promise.all(lanes);
 
+    // A directory page is not an opportunity; it is more organisations.
+    if (directories.length && body.seed_directories !== false) {
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/oe-seed-entities`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${SERVICE_ROLE}`,
+            "x-cron-secret": CRON_SECRET,
+          },
+          body: JSON.stringify({ sources: [], directory_urls: directories.slice(0, 20).map((d) => d.url) }),
+          signal: AbortSignal.timeout(60_000),
+        });
+        counts.directories_sent = Math.min(directories.length, 20);
+      } catch { counts.directories_sent = 0; }
+    }
 
     const { count: remaining } = await admin.from("oe_entities")
       .select("id", { count: "exact", head: true }).eq("resolve_status", "new");
+
 
     await admin.from("oe_runs").insert({
       run_kind: "resolve_entity", started_at: startedAt, finished_at: new Date().toISOString(),

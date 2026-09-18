@@ -5302,6 +5302,80 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_surfaces: {
+        Row: {
+          access_finding: string | null
+          ats_platform: string | null
+          ats_token: string | null
+          cadence: string
+          created_at: string
+          entity_id: string
+          harvest_kind: string
+          harvest_yield: number | null
+          health: string | null
+          id: string
+          last_harvested_at: string | null
+          read_yield: number | null
+          selector: string | null
+          surface_type: string
+          terms_note: string | null
+          terms_ok: boolean | null
+          updated_at: string
+          url: string
+          yields: string[]
+        }
+        Insert: {
+          access_finding?: string | null
+          ats_platform?: string | null
+          ats_token?: string | null
+          cadence?: string
+          created_at?: string
+          entity_id: string
+          harvest_kind: string
+          harvest_yield?: number | null
+          health?: string | null
+          id?: string
+          last_harvested_at?: string | null
+          read_yield?: number | null
+          selector?: string | null
+          surface_type: string
+          terms_note?: string | null
+          terms_ok?: boolean | null
+          updated_at?: string
+          url: string
+          yields?: string[]
+        }
+        Update: {
+          access_finding?: string | null
+          ats_platform?: string | null
+          ats_token?: string | null
+          cadence?: string
+          created_at?: string
+          entity_id?: string
+          harvest_kind?: string
+          harvest_yield?: number | null
+          health?: string | null
+          id?: string
+          last_harvested_at?: string | null
+          read_yield?: number | null
+          selector?: string | null
+          surface_type?: string
+          terms_note?: string | null
+          terms_ok?: boolean | null
+          updated_at?: string
+          url?: string
+          yields?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_surfaces_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oe_taps: {
         Row: {
           applied_at: string | null
