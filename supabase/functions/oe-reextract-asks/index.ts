@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
         const out = await readOne(lovableKey, page, o.title ?? "", o.scope ?? "");
         const hay = normalise(page);
         const keep = (arr: any) => (Array.isArray(arr) ? arr : [])
-          .filter((r) => r?.text && (!r.quote || hay.includes(normalise(r.quote))))
+          .filter((r) => r?.text && (!r.quote || quoteOnPage(hay, r.quote)))
           .slice(0, 8);
         const requirements = keep(out.requirements);
         const conditions = keep(out.conditions);
