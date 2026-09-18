@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 
   const admin = createClient(url, service);
   const startedAt = new Date().toISOString();
-  const counts = { applied: 0, corrections: 0, weight_moves: 0 };
+  const counts = { applied: 0, corrections: 0, weight_moves: 0, held_at_stage: 0 };
   try {
     const { data: policy, error: policyError } = await admin.from("oe_policy_versions").select("params").eq("active", true).maybeSingle();
     if (policyError) throw new Error(policyError.message);
@@ -43,32 +43,45 @@ Deno.serve(async (req) => {
     for (const tap of taps ?? []) byUser.set(tap.user_id, [...(byUser.get(tap.user_id) ?? []), tap]);
 
     for (const [userId, userTaps] of byUser) {
+      // LEARNING STAGE. Below stage 2 nothing moves on its own: the rules in
+      // Book One decide, and a tap only writes a correction.
+      const { data: stageRow } = await admin.from("oe_learning_stage")
+        .select("stage").eq("user_id", userId).maybeSingle();
+      const stage = Number(stageRow?.stage ?? 0);
+      const mayMoveWeights = stage >= 2;
+
       const { data: faces, error: facesError } = await admin.from("oe_faces")
         .select("id,face,weight,few_shot").eq("user_id", userId);
       if (facesError) throw new Error(facesError.message);
-      // 'avoid' is never nudged and never normalised. Its weight is a magnitude
-      // the judge subtracts by, not a share of the four positive faces.
-      const next = new Map<string, { weight: number; few_shot: unknown[] }>();
+      // 'avoid' is never nudged and carries no few-shot examples. It still
+      // takes its share of the normalisation, so the faces of one member sum
+      // to exactly one.
+      const next = new Map<string, { weight: number; few_shot: unknown[]; face: string }>();
       for (const face of faces ?? []) {
-        if (face.face === "avoid") continue;
         next.set(face.id, {
+          face: String(face.face),
           weight: Number(face.weight ?? 0.2),
           few_shot: Array.isArray(face.few_shot) ? face.few_shot : [],
         });
       }
 
+
       for (const tap of userTaps) {
         const { data: card } = await admin.from("oe_cards")
           .select("match_id,opportunity_id,oe_matches(scores),oe_opportunities(id,title,issuer_id,seniority_band,location,chair_type)")
           .eq("id", tap.card_id).maybeSingle();
-        const opportunity = card?.oe_opportunities as any;
+        // A card can carry no record at all (a quiet day). A tap on one of
+        // those teaches nothing about the world, so there is nothing to write.
+        const opportunity = (card?.oe_opportunities ?? null) as any;
+
         const match = card?.oe_matches as any;
         const title = String(opportunity?.title ?? "");
         const ids = citedFaceIds(match?.scores);
         const label = tap.tap === "right" ? "right" : tap.tap === "not_my_area" ? "not_my_area" : null;
         for (const id of ids) {
           const face = next.get(id);
-          if (!face) continue;
+          if (!face || face.face === "avoid") continue;
+          if (!mayMoveWeights) { counts.held_at_stage++; continue; }
           if (tap.tap === "right") face.weight += alpha * (1 - face.weight);
           else if (tap.tap === "not_quite") face.weight -= alpha * face.weight * 0.5;
           else if (tap.tap === "not_my_area") face.weight -= alpha * face.weight;
@@ -76,7 +89,8 @@ Deno.serve(async (req) => {
           counts.weight_moves++;
         }
 
-        if (tap.tap === "not_quite" || tap.tap === "not_my_area" || tap.tap === "less_from_here") {
+
+        if (opportunity && (tap.tap === "not_quite" || tap.tap === "not_my_area" || tap.tap === "less_from_here")) {
           const reach = tap.scope || (tap.tap === "not_my_area" ? "type" : tap.tap === "less_from_here" ? "issuer" : "just_this");
           const reachValue = tap.scope_value || ({
             issuer: opportunity.issuer_id,
@@ -98,12 +112,15 @@ Deno.serve(async (req) => {
         counts.applied++;
       }
 
+      // F1. The floor is applied first, then every face — 'avoid' included —
+      // is divided by the new sum, so a member's faces sum to exactly 1.000.
       const floor = 0.05;
       const raw = [...next.entries()].map(([id, value]) => ({ id, ...value, weight: Math.max(floor, value.weight) }));
       const total = raw.reduce((sum, face) => sum + face.weight, 0) || 1;
       for (const face of raw) {
         await admin.from("oe_faces").update({ weight: face.weight / total, few_shot: face.few_shot }).eq("id", face.id);
       }
+
     }
 
     await admin.from("oe_runs").insert({ run_kind: FN.replace("oe-", "").replaceAll("-", "_"), started_at: startedAt, finished_at: new Date().toISOString(), outcome: "ok", counts });

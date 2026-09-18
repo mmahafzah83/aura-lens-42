@@ -9,6 +9,10 @@ import { opportunitySentences } from "./labels";
 import { bandKey, chairKey, useVocab } from "./useVocab";
 import { useOpportunityCards } from "./useOpportunityCards";
 import { WhatYouCanHold } from "./WhatYouCanHold";
+import { YourRules } from "./YourRules";
+import { WhatWeSentYou } from "./WhatWeSentYou";
+import { WhatTheMachineLearned } from "./WhatTheMachineLearned";
+
 import type { OpportunityCardData } from "./types";
 
 
@@ -64,7 +68,7 @@ export function OpportunitiesSection() {
 
   return <section dir={rtl ? "rtl" : "ltr"} style={{ marginTop: 34, borderTop: "1px solid #E2E7EE", paddingTop: 24, fontFamily: rtl ? "Cairo, sans-serif" : "Inter, sans-serif" }}>
     <SectionHeader label={S.opportunities} />
-    {matching ? <WhatYouCanHold userId={userId} language={language} /> : null}
+    {matching ? <><WhatYouCanHold userId={userId} language={language} /><YourRules userId={userId} language={language} /></> : null}
     {matching === false ? <AuraCard hover="none" style={{ background: "#FFFFFF", border: "1px solid #E2E7EE", borderRadius: 20, padding: 20 }}>
 
       <div style={{ display: "grid", gap: 16, lineHeight: rtl ? 1.9 : 1.55 }}>
@@ -86,5 +90,7 @@ export function OpportunitiesSection() {
       <div><strong style={{ fontSize: 14 }}>{rtl ? "أرسل لي ما أسمع عنه" : "Forward me things I hear about"}</strong><p style={{ margin: "3px 0 0", color: "#5B6673", fontSize: 12 }}>{rtl ? "أرسل رسالة أو رابطاً إلى Aura لتبحث عن نسخته العامة." : "Send a message or a link to Aura and it looks for the public version."}</p></div>
       <button type="button" role="switch" aria-checked={forwarding} aria-label="Forwarding consent" onClick={() => void (forwarding ? disableForwarding() : enable("forwarding"))} style={{ width: 44, height: 24, flex: "0 0 44px", border: 0, borderRadius: 12, background: forwarding ? "#0670C4" : "#E2E7EE", padding: 2, cursor: "pointer" }}><span style={{ display: "block", width: 20, height: 20, borderRadius: 10, background: "#FFFFFF", transform: forwarding ? (rtl ? "translateX(-20px)" : "translateX(20px)") : "none", transition: "transform 160ms" }} /></button>
     </div>
+    {matching ? <><WhatWeSentYou userId={userId} language={language} /><WhatTheMachineLearned language={language} /></> : null}
   </section>;
+
 }

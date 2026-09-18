@@ -4795,6 +4795,42 @@ export type Database = {
           },
         ]
       }
+      oe_labels: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          labelled_at: string
+          note: string | null
+          opportunity_id: string | null
+          source: string
+          user_id: string
+          why: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          labelled_at?: string
+          note?: string | null
+          opportunity_id?: string | null
+          source?: string
+          user_id: string
+          why?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          labelled_at?: string
+          note?: string | null
+          opportunity_id?: string | null
+          source?: string
+          user_id?: string
+          why?: string | null
+        }
+        Relationships: []
+      }
       oe_leadtime_pairs: {
         Row: {
           chair_type: string | null
@@ -4848,6 +4884,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      oe_learning_stage: {
+        Row: {
+          created_at: string
+          labels_count: number
+          notes: string | null
+          outcomes_count: number
+          promoted_at: string | null
+          stage: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          labels_count?: number
+          notes?: string | null
+          outcomes_count?: number
+          promoted_at?: string | null
+          stage?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          labels_count?: number
+          notes?: string | null
+          outcomes_count?: number
+          promoted_at?: string | null
+          stage?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       oe_matches: {
         Row: {
@@ -5011,6 +5080,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      oe_notebook: {
+        Row: {
+          active: boolean
+          created_at: string
+          expires_at: string | null
+          field: string | null
+          id: string
+          kind: string
+          op: string | null
+          origin: string
+          proposal_status: string
+          proposed_because: Json | null
+          rule_text: string
+          rule_text_ar: string | null
+          stated_on: string
+          updated_at: string
+          user_id: string
+          value: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string | null
+          field?: string | null
+          id?: string
+          kind: string
+          op?: string | null
+          origin: string
+          proposal_status?: string
+          proposed_because?: Json | null
+          rule_text: string
+          rule_text_ar?: string | null
+          stated_on?: string
+          updated_at?: string
+          user_id: string
+          value?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string | null
+          field?: string | null
+          id?: string
+          kind?: string
+          op?: string | null
+          origin?: string
+          proposal_status?: string
+          proposed_because?: Json | null
+          rule_text?: string
+          rule_text_ar?: string | null
+          stated_on?: string
+          updated_at?: string
+          user_id?: string
+          value?: string | null
+        }
+        Relationships: []
       }
       oe_opportunities: {
         Row: {
@@ -5305,6 +5431,168 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_serves: {
+        Row: {
+          card_id: string | null
+          channel: string | null
+          created_at: string
+          id: string
+          lane: string | null
+          opportunity_id: string | null
+          outcome: string | null
+          outcome_at: string | null
+          pursued: boolean | null
+          pursued_at: string | null
+          shown_at: string
+          signal_class: string | null
+          tap: string | null
+          tap_scope: string | null
+          tap_scope_value: string | null
+          tapped_at: string | null
+          truth_code: string | null
+          updated_at: string
+          user_id: string
+          why: Json
+        }
+        Insert: {
+          card_id?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          lane?: string | null
+          opportunity_id?: string | null
+          outcome?: string | null
+          outcome_at?: string | null
+          pursued?: boolean | null
+          pursued_at?: string | null
+          shown_at?: string
+          signal_class?: string | null
+          tap?: string | null
+          tap_scope?: string | null
+          tap_scope_value?: string | null
+          tapped_at?: string | null
+          truth_code?: string | null
+          updated_at?: string
+          user_id: string
+          why?: Json
+        }
+        Update: {
+          card_id?: string | null
+          channel?: string | null
+          created_at?: string
+          id?: string
+          lane?: string | null
+          opportunity_id?: string | null
+          outcome?: string | null
+          outcome_at?: string | null
+          pursued?: boolean | null
+          pursued_at?: string | null
+          shown_at?: string
+          signal_class?: string | null
+          tap?: string | null
+          tap_scope?: string | null
+          tap_scope_value?: string | null
+          tapped_at?: string | null
+          truth_code?: string | null
+          updated_at?: string
+          user_id?: string
+          why?: Json
+        }
+        Relationships: []
+      }
+      oe_source_facts: {
+        Row: {
+          cadence: string | null
+          computed_at: string
+          feed_id: string | null
+          id: string
+          items_kept: number
+          items_pulled: number
+          last_ok_at: string | null
+          median_discovery_lag_hours: number | null
+          quote_fail_rate: number | null
+          route_death_rate: number | null
+          surface_id: string | null
+          window_days: number
+          yield: number | null
+        }
+        Insert: {
+          cadence?: string | null
+          computed_at?: string
+          feed_id?: string | null
+          id?: string
+          items_kept?: number
+          items_pulled?: number
+          last_ok_at?: string | null
+          median_discovery_lag_hours?: number | null
+          quote_fail_rate?: number | null
+          route_death_rate?: number | null
+          surface_id?: string | null
+          window_days?: number
+          yield?: number | null
+        }
+        Update: {
+          cadence?: string | null
+          computed_at?: string
+          feed_id?: string | null
+          id?: string
+          items_kept?: number
+          items_pulled?: number
+          last_ok_at?: string | null
+          median_discovery_lag_hours?: number | null
+          quote_fail_rate?: number | null
+          route_death_rate?: number | null
+          surface_id?: string | null
+          window_days?: number
+          yield?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_source_facts_feed_id_fkey"
+            columns: ["feed_id"]
+            isOneToOne: false
+            referencedRelation: "oe_feeds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_source_facts_surface_id_fkey"
+            columns: ["surface_id"]
+            isOneToOne: false
+            referencedRelation: "oe_surfaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oe_suppressed: {
+        Row: {
+          created_at: string
+          day: string
+          id: string
+          opportunity_id: string | null
+          rank: number | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day?: string
+          id?: string
+          opportunity_id?: string | null
+          rank?: number | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          id?: string
+          opportunity_id?: string | null
+          rank?: number | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       oe_surfaces: {
         Row: {
           access_finding: string | null
@@ -5490,6 +5778,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      oe_world_facts: {
+        Row: {
+          computed_at: string
+          confidence: number | null
+          entity_id: string | null
+          evidence_quote: string | null
+          evidence_url: string | null
+          id: string
+          kind: string
+          payload: Json
+        }
+        Insert: {
+          computed_at?: string
+          confidence?: number | null
+          entity_id?: string | null
+          evidence_quote?: string | null
+          evidence_url?: string | null
+          id?: string
+          kind: string
+          payload?: Json
+        }
+        Update: {
+          computed_at?: string
+          confidence?: number | null
+          entity_id?: string | null
+          evidence_quote?: string | null
+          evidence_url?: string | null
+          id?: string
+          kind?: string
+          payload?: Json
+        }
+        Relationships: []
       }
       onboarding_article_log: {
         Row: {
@@ -9113,6 +9434,7 @@ export type Database = {
           title: string
         }[]
       }
+      oe_rebuild_eligibility: { Args: { p_user: string }; Returns: undefined }
       oe_record_outcome: {
         Args: { p_outcome: string; p_token: string }
         Returns: Json
@@ -9125,6 +9447,10 @@ export type Database = {
           p_tap: string
           p_token: string
         }
+        Returns: Json
+      }
+      oe_record_truth: {
+        Args: { p_code: string; p_source?: string; p_token: string }
         Returns: Json
       }
       oe_warmth_issuer_text: {
