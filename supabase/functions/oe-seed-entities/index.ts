@@ -32,6 +32,8 @@ type Ent = {
   listed_symbol?: string | null;
   size_hint?: string | null;
   seed_source: string;
+  country?: string | null;
+
 };
 
 function json(body: unknown, status = 200) {
@@ -431,6 +433,40 @@ Deno.serve(async (req) => {
       notes.forbes_me = r.notes;
     }
 
+    // A directory surface found by the resolver — a regulator's licensee list,
+    // a chamber's member list, an industry paper's firm index — is not an
+    // opportunity. It is more organisations, so it comes back here.
+    if (Array.isArray(body.directory_urls) && body.directory_urls.length) {
+      notes.directory_surface = [];
+      for (const raw of body.directory_urls.slice(0, 20)) {
+        const url = String(raw);
+        const r = await seedHtmlDirectory(`directory ${url}`, url, "directory_surface", "other");
+        collected.push(...r.ents);
+        notes.directory_surface.push(...r.notes);
+      }
+    }
+
+    // A named list, handed in rather than crawled: the member's own industry.
+    if (Array.isArray(body.entities) && body.entities.length) {
+      let taken = 0;
+      for (const raw of body.entities) {
+        const name = squash(String(raw?.name ?? ""));
+        if (name.length < 3) continue;
+        collected.push({
+          name,
+          name_ar: raw?.name_ar ?? null,
+          domain: raw?.domain ? String(raw.domain).replace(/^www\./i, "").toLowerCase() : null,
+          industry: raw?.industry ?? null,
+          entity_kind: raw?.entity_kind ?? "other",
+          seed_source: String(raw?.seed_source ?? "curated"),
+          country: raw?.country ?? null,
+        });
+        taken++;
+      }
+      notes.curated = [`${taken} organisations handed in`];
+    }
+
+
     // ── deduplicate hard: once on the normalised name, once on the domain ──
     const byName = new Map<string, Ent>();
     const byDomain = new Map<string, string>();
@@ -467,7 +503,7 @@ Deno.serve(async (req) => {
       name: e.name.slice(0, 200),
       name_ar: e.name_ar ?? null,
       domain: e.domain ?? null,
-      country,
+      country: e.country ?? country,
       industry: e.industry ?? null,
       entity_kind: e.entity_kind ?? "other",
       listed_symbol: e.listed_symbol ?? null,
