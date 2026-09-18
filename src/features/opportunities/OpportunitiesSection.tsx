@@ -64,7 +64,7 @@ export function OpportunitiesSection() {
 
   return <section dir={rtl ? "rtl" : "ltr"} style={{ marginTop: 34, borderTop: "1px solid #E2E7EE", paddingTop: 24, fontFamily: rtl ? "Cairo, sans-serif" : "Inter, sans-serif" }}>
     <SectionHeader label={S.opportunities} />
-    {matching ? <WhatYouCanHold userId={userId} language={language} /> : null}
+    {matching ? <><WhatYouCanHold userId={userId} language={language} /><YourRules userId={userId} language={language} /></> : null}
     {matching === false ? <AuraCard hover="none" style={{ background: "#FFFFFF", border: "1px solid #E2E7EE", borderRadius: 20, padding: 20 }}>
 
       <div style={{ display: "grid", gap: 16, lineHeight: rtl ? 1.9 : 1.55 }}>
