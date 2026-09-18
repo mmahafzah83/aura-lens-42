@@ -131,30 +131,48 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({} as any));
   const dryRun = body.dry_run === true;
   const limit = Math.max(1, Math.min(100, Number(body.limit ?? 50)));
+  /** Re-queueing a feed does not re-read a record that already exists, so a row
+   *  with no stored text is read from its own page here. */
+  const refetch = body.refetch === true;
+  const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
 
   const startedAt = new Date().toISOString();
   const counts = {
-    alive: 0, backfilled: 0, retired: 0, needs_refetch: 0, feeds_requeued: 0, errors: 0,
+    alive: 0, backfilled: 0, retired: 0, needs_refetch: 0, refetched: 0, feeds_requeued: 0, errors: 0,
   };
   const byRouteKind: Record<string, number> = {};
 
   try {
-    const { data: rows, error } = await admin
+    let q = admin
       .from("oe_opportunities")
       .select("id, title, source_url, feed_id, raw")
-      .eq("alive", true)
-      .limit(limit);
+      .eq("alive", true);
+    if (body.only_unexamined === true) q = q.eq("route_kind", "not_checked");
+    const { data: rows, error } = await q.limit(limit);
     if (error) throw new Error(error.message);
     counts.alive = (rows ?? []).length;
 
     const refetchFeeds = new Set<string>();
 
     for (const o of rows ?? []) {
-      const pageText = String((o.raw as any)?.page_text ?? "");
+      let pageText = String((o.raw as any)?.page_text ?? "");
       if (pageText.trim().length < 200) {
         counts.needs_refetch++;
         if (o.feed_id) refetchFeeds.add(o.feed_id);
-        continue;
+        if (!refetch || !o.source_url || dryRun) continue;
+        try {
+          pageText = await fetchPageText(String(o.source_url), firecrawlKey);
+          if (pageText.length < 200) continue;
+          counts.refetched++;
+          await admin.from("oe_opportunities")
+            .update({ raw: { ...(o.raw as any ?? {}), page_text: pageText.slice(0, 12_000) } })
+            .eq("id", o.id);
+          (o as any).raw = { ...(o.raw as any ?? {}), page_text: pageText.slice(0, 12_000) };
+        } catch (e) {
+          counts.errors++;
+          console.error(`[${FN}] refetch ${o.id}: ${String((e as Error).message ?? e).slice(0, 160)}`);
+          continue;
+        }
       }
       if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
       try {
