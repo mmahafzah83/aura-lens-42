@@ -6,7 +6,7 @@ import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { OpportunityCard } from "./OpportunityCard";
 import { opportunitySentences } from "./labels";
-import { bandKey, chairKey, useVocab } from "./useVocab";
+import { chairKey, useVocab } from "./useVocab";
 import { useOpportunityCards } from "./useOpportunityCards";
 import { WhatYouCanHold } from "./WhatYouCanHold";
 import { YourRules } from "./YourRules";
@@ -80,10 +80,10 @@ export function OpportunitiesSection() {
       const expanded = openId === card.id;
       return <div style={{ borderBottom: "1px solid #E2E7EE" }}>
         <button type="button" onClick={() => setOpenId(expanded ? null : card.id)} aria-expanded={expanded} style={{ width: "100%", display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 10, padding: "13px 0", border: 0, background: "transparent", color: "#0F1519", textAlign: "start", cursor: "pointer", fontFamily: "inherit" }}>
-          <span><strong style={{ display: "block", fontSize: 14 }}>{card.oe_opportunities?.title ?? v("nothing_today")}</strong><span style={{ display: "block", color: "#5B6673", fontSize: 12, marginTop: 3 }}>{v(chairKey(card.oe_opportunities?.chair_type))} · {v(bandKey(card.fit_band))} · {card.clock_text ?? ""}</span></span>
+          <span><strong style={{ display: "block", fontSize: 14 }}>{card.oe_opportunities?.title ?? v("nothing_today")}</strong><span style={{ display: "block", color: "#5B6673", fontSize: 12, marginTop: 3 }}>{v(chairKey(card.oe_opportunities?.chair_type))} · {card.clock_text ?? ""}</span></span>
           <span style={{ color: "#5B6673", fontSize: 12 }}>{tap === "right" ? `✓ ${v("tap_right")}` : tap === "not_quite" ? `— ${v("tap_not_quite")}` : tap === "not_my_area" ? `✕ ${v("tap_not_mine")}` : S.unanswered}</span>
         </button>
-        {expanded && <div style={{ paddingBottom: 14 }}><OpportunityCard card={card} language={language} readOnly={!!tap} winKnown={opportunities.winKnown} onSaved={opportunities.refresh} /></div>}
+        {expanded && <div style={{ paddingBottom: 14 }}><OpportunityCard card={card} language={language} readOnly={!!tap} onSaved={opportunities.refresh} /></div>}
       </div>;
     }} /> : !opportunities.loading && <AuraCard hover="none" style={{ background: "#FFFFFF", border: "1px solid #E2E7EE", borderRadius: 20 }}><p style={{ margin: 0, color: "#5B6673" }}>{v("nothing_today")}</p></AuraCard>}
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 18, padding: "14px 0" }}>
