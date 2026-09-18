@@ -5034,6 +5034,7 @@ export type Database = {
           lane_final: string | null
           language: string | null
           last_seen_at: string
+          level_band: string | null
           location: string | null
           pipeline_version: number
           posting_date: string | null
@@ -5075,6 +5076,7 @@ export type Database = {
           lane_final?: string | null
           language?: string | null
           last_seen_at?: string
+          level_band?: string | null
           location?: string | null
           pipeline_version?: number
           posting_date?: string | null
@@ -5116,6 +5118,7 @@ export type Database = {
           lane_final?: string | null
           language?: string | null
           last_seen_at?: string
+          level_band?: string | null
           location?: string | null
           pipeline_version?: number
           posting_date?: string | null
