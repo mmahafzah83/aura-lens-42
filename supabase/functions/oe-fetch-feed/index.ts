@@ -631,6 +631,17 @@ Deno.serve(async (req) => {
           c_suite: ["chief executive", "الرئيس التنفيذي"], board: ["board member", "عضو مجلس إدارة"],
         };
         const LEVEL_ORDER = ["ic", "manager", "senior_manager", "director", "senior_director", "vp", "c_suite", "board"];
+        // An Arabic question written half in English finds nothing.
+        const SECTOR_WORDS: Record<string, string> = {
+          government: "القطاع الحكومي", public_sector: "القطاع العام",
+          utilities_water: "قطاع المياه", water: "المياه", utilities: "المرافق",
+          energy: "الطاقة", logistics: "الخدمات اللوجستية", transport: "النقل",
+          digital_transformation: "التحول الرقمي", technology: "التقنية",
+          healthcare: "الرعاية الصحية", education: "التعليم", finance: "التمويل",
+          banking: "القطاع المصرفي", construction: "الإنشاءات", mining: "التعدين",
+          tourism: "السياحة", telecom: "الاتصالات", manufacturing: "الصناعة",
+        };
+
         const CHAIR_WORDS: Record<string, [string, string]> = {
           role: ["role", "وظيفة"], mandate: ["advisory mandate", "تكليف استشاري"],
           advisory: ["advisory seat", "مقعد استشاري"], speaking: ["speaker call", "دعوة متحدثين"],
