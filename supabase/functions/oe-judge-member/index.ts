@@ -710,13 +710,21 @@ Deno.serve(async (req) => {
             });
           })
           .slice(0, 2);
-        const dText = String(rec.distance?.text ?? rec.distance ?? "").trim();
-        distanceLine = dText && !hasPercent(dText) && !BANNED.test(dText) && !registerFault(dText, lang)
-          ? { text: dText } : null;
         const clock = String(rec.clock ?? "").trim();
         clockText = clock && !registerFault(clock, lang) ? clock : "";
       }
       if (!why.length) { counts.no_citation++; continue; } // nothing of his own to stand on
+
+      // THE DISTANCE is derived, never written freehand: it is the first thing
+      // the record asks for that his own material does not show. When the
+      // record asks for nothing, we say that instead of claiming completeness.
+      const check = pick.check ?? { list: [], met: 0, total: 0 };
+      const firstUnmet = (check.list ?? []).find((r: any) => !r.met) ?? null;
+      const distanceLine = check.total === 0
+        ? { text: vocab("no_requirements_stated", lang), no_requirements: true }
+        : firstUnmet
+        ? { text: String(firstUnmet.requirement), derived_from: "requirement_check" }
+        : null;
 
       const citedIds = [...new Set(why.flatMap((w) => w.cites.map((c) => c.id)))];
       const card = await writeCard(admin, userId, cardDate, {
