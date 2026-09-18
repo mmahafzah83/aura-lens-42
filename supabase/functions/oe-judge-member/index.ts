@@ -13,7 +13,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { loadVocab } from "../_shared/oeVocab.ts";
 import { OE_REGISTER_FOR_PROMPT, registerFault } from "../_shared/oeRegister.ts";
-import { laneFor, screen, type Eligibility } from "../_shared/oeEligibility.ts";
+import { laneFor, levelOf, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -511,7 +511,7 @@ Deno.serve(async (req) => {
     if (ids.length) {
       const { data: opps } = await admin
         .from("oe_opportunities")
-        .select("id, title, scope, sector, chair_type, time_kind, seniority_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, issuer_id, issuer_raw, language, embedding")
+        .select("id, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, issuer:oe_issuers(domain)")
         .in("id", ids);
       pool = opps ?? [];
     }
@@ -559,12 +559,15 @@ Deno.serve(async (req) => {
     const actPool: any[] = [];
     const writePool: any[] = [];
     for (const o of filtered) {
-      const s = screen(o, eligibility);
-      const lane = laneFor(o, s);
+      const level = levelOf(o);
+      const withLevel = { ...o, level_band: level };
+      const s = screen(withLevel, eligibility);
+      const issuerDomain = (o as any).issuer?.domain ?? null;
+      const lane = laneFor(withLevel, s, issuerDomain);
       if (!s.pass) counts.skipped_ineligible++;
-      (lane === "act" ? actPool : writePool).push({ ...o, _screen: s });
+      (lane === "act" ? actPool : writePool).push({ ...withLevel, _screen: s });
       await admin.from("oe_opportunities")
-        .update({ lane_final: lane, eligibility_fail: s.fails })
+        .update({ lane_final: lane, eligibility_fail: s.fails, level_band: level })
         .eq("id", o.id);
     }
     counts.lane_act = actPool.length;

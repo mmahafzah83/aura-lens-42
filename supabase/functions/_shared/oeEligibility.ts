@@ -79,12 +79,16 @@ export function countryOfPlace(location?: string | null): string | null {
  * The level a record asks for, read off its own words. Ordered, because
  * "senior director" must be seen before "director". Unmatched is null, and a
  * null never fails the level screen — we do not punish silence.
+ *
+ * This ladder is the ONLY level vocabulary. oe_opportunities.seniority_band
+ * holds a different vocabulary entirely (work/table/room, a chair grouping);
+ * it must never reach this screen. The parsed ladder lives in level_band.
  */
 const LEVEL_PATTERNS: Array<[RegExp, Level]> = [
   [/board (nomination|member|seat|directorship)|nomination (for|of) (the )?board|non-?executive director|عضوية مجلس|الترشح لعضوية مجلس|عضو مجلس إدارة/i, "board"],
-  [/\bchief\s|^ceo\b|\bceo\b|^cfo\b|\bcfo\b|^coo\b|\bcoo\b|\bcto\b|group c[fe]o|president\b|الرئيس التنفيذي|المدير العام التنفيذي/i, "c_suite"],
+  [/\bchief\s|^ceo\b|\bceo\b|^cfo\b|\bcfo\b|^coo\b|\bcoo\b|\bcto\b|group c[fe]o|president\b|رئيس تنفيذي|الرئيس التنفيذي|المدير العام التنفيذي/i, "c_suite"],
   [/managing director|general manager|\bvp\b|vice president|نائب رئيس|المدير العام/i, "vp"],
-  [/senior director|head of|رئيس قسم|مدير تنفيذي أول/i, "senior_director"],
+  [/senior director|head of|رئيس قطاع|رئيس قسم|مدير تنفيذي أول/i, "senior_director"],
   [/\bdirector\b|مدير تنفيذي/i, "director"],
   [/senior manager|مدير أول/i, "senior_manager"],
   [/\bmanager\b|\blead\b|مدير/i, "manager"],
@@ -133,10 +137,9 @@ export function screen(opportunity: any, eligibility: Eligibility | null | undef
   const chair = String(o.chair_type ?? "").toLowerCase();
   if (chair && blocked.includes(chair)) fails.push("chair");
 
-  // 3. LEVEL — above his ceiling or below his floor.
-  const asked = (o.seniority_band && LEVELS.includes(String(o.seniority_band) as Level))
-    ? (String(o.seniority_band) as Level)
-    : parseLevel(o.title, o.scope);
+  // 3. LEVEL — above his ceiling or below his floor. Only the ladder counts;
+  // an unreadable title gives null, and a null never fails this screen.
+  const asked = levelOf(o);
   if (asked) {
     const i = levelIndex(asked);
     const ceiling = levelIndex(eligibility.level_ceiling);
@@ -165,12 +168,51 @@ export function screen(opportunity: any, eligibility: Eligibility | null | undef
 /** The route kinds that count as a real door. */
 export const OPEN_ROUTE_KINDS = ["application", "contact", "call_for_speakers", "registration"];
 
-export function hasRoute(o: any): boolean {
-  return !!o?.route_url && o?.route_dead !== true &&
-    OPEN_ROUTE_KINDS.includes(String(o?.route_kind ?? ""));
+/** A site-root contact or about page is a wall, not a door. */
+const GENERIC_ROUTE_PATH = /^\/?(contact|contact-us|contactus|get-in-touch|about|about-us|اتصل-بنا|اتصل|من-نحن)\/?$/i;
+
+const hostOf = (url?: string | null): string | null => {
+  try { return new URL(String(url)).hostname.toLowerCase().replace(/^www\./, ""); } catch { return null; }
+};
+
+const sameSite = (a: string, b: string): boolean =>
+  a === b || a.endsWith(`.${b}`) || b.endsWith(`.${a}`);
+
+/**
+ * The ladder level a record asks for: the stored level_band when it is a real
+ * ladder value, otherwise read off the title. seniority_band is a different
+ * vocabulary and is deliberately ignored here.
+ */
+export function levelOf(o: any): Level | null {
+  const stored = String(o?.level_band ?? "").trim();
+  if (LEVELS.includes(stored as Level)) return stored as Level;
+  return parseLevel(o?.title, o?.scope);
+}
+
+/**
+ * A real door. `contact` only counts when the page belongs to the issuer's own
+ * site and points at something more specific than its front-door contact page;
+ * anything else is a wall a member would tap into nothing.
+ */
+export function hasRoute(o: any, issuerDomain?: string | null): boolean {
+  if (!o?.route_url || o?.route_dead === true) return false;
+  const kind = String(o?.route_kind ?? "");
+  if (!OPEN_ROUTE_KINDS.includes(kind)) return false;
+  if (kind !== "contact") return true;
+
+  const host = hostOf(o.route_url);
+  if (!host) return false;
+
+  const issuer = String(issuerDomain ?? "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+  if (!issuer || !sameSite(host, issuer)) return false;
+
+  let path = "/";
+  try { path = new URL(String(o.route_url)).pathname; } catch { return false; }
+  if (GENERIC_ROUTE_PATH.test(decodeURIComponent(path))) return false;
+  return true;
 }
 
 /** 'act' when he can both hold it and reach it; otherwise 'write'. */
-export function laneFor(o: any, screened: Screened): "act" | "write" {
-  return screened.pass && hasRoute(o) ? "act" : "write";
+export function laneFor(o: any, screened: Screened, issuerDomain?: string | null): "act" | "write" {
+  return screened.pass && hasRoute(o, issuerDomain) ? "act" : "write";
 }

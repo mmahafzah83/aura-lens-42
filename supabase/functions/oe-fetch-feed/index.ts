@@ -8,6 +8,7 @@ import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supa
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { isAggregator, normaliseForQuote } from "../_shared/oeGuards.ts";
+import { parseLevel } from "../_shared/oeEligibility.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -903,6 +904,9 @@ Deno.serve(async (req) => {
           scope: rec.scope ?? null,
           sector: rec.sector ?? null,
           seniority_band: rec.seniority_band ?? null,
+          // The ladder level, read in code from the record's own words. Never
+          // from seniority_band, which is a different (work/table/room) vocabulary.
+          level_band: parseLevel(rec.title, rec.scope),
           location: rec.location ?? null,
           remote: typeof rec.remote === "boolean" ? rec.remote : null,
           requirements: Array.isArray(rec.requirements) ? rec.requirements : [],
