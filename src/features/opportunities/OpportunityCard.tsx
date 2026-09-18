@@ -30,7 +30,7 @@ export function OpportunityCard({ card, language, readOnly, winKnown, onSaved }:
           <p style={{ margin: 0, fontSize: 13 }}>{routeUrl
             ? <a href={routeUrl} target="_blank" rel="noreferrer" style={{ color: "#0670C4", fontWeight: 600 }}>{v("the_way_in")}</a>
             : <span style={{ color: "#5B6673" }}>{v("no_way_in")}</span>}</p>
-          {card.quote && <p style={{ margin: 0, color: "#5B6673", fontSize: 13 }}>“{card.quote}” {opp?.source_url && <a href={opp.source_url} target="_blank" rel="noreferrer" style={{ color: "#0670C4" }}>{v("source")}</a>}</p>}
+          {card.quote && <p style={{ margin: 0, color: "#5B6673", fontSize: 13 }}>“{card.quote}” {opp?.source_url && <a href={opp.source_url} target="_blank" rel="noreferrer" style={{ color: "#0670C4" }}>{v("source_link")}</a>}</p>}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
             {([[v("fits_you"), v(bandKey(card.fit_band))], [v("your_chance"), winKnown ? v(bandKey(card.win_band)) : v("not_known_yet")]] as const).map(([label, word]) => <div key={label} style={{ border: "1px solid #E2E7EE", borderRadius: 12, padding: 11, color: "#5B6673", fontSize: 12 }}><span>{label}</span><strong style={{ display: "block", color: "#0F1519", fontSize: 14, marginTop: 2 }}>{word}</strong></div>)}
           </div>
