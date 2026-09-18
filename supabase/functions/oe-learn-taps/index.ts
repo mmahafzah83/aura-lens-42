@@ -43,19 +43,28 @@ Deno.serve(async (req) => {
     for (const tap of taps ?? []) byUser.set(tap.user_id, [...(byUser.get(tap.user_id) ?? []), tap]);
 
     for (const [userId, userTaps] of byUser) {
+      // LEARNING STAGE. Below stage 2 nothing moves on its own: the rules in
+      // Book One decide, and a tap only writes a correction.
+      const { data: stageRow } = await admin.from("oe_learning_stage")
+        .select("stage").eq("user_id", userId).maybeSingle();
+      const stage = Number(stageRow?.stage ?? 0);
+      const mayMoveWeights = stage >= 2;
+
       const { data: faces, error: facesError } = await admin.from("oe_faces")
         .select("id,face,weight,few_shot").eq("user_id", userId);
       if (facesError) throw new Error(facesError.message);
-      // 'avoid' is never nudged and never normalised. Its weight is a magnitude
-      // the judge subtracts by, not a share of the four positive faces.
-      const next = new Map<string, { weight: number; few_shot: unknown[] }>();
+      // 'avoid' is never nudged and carries no few-shot examples. It still
+      // takes its share of the normalisation, so the faces of one member sum
+      // to exactly one.
+      const next = new Map<string, { weight: number; few_shot: unknown[]; face: string }>();
       for (const face of faces ?? []) {
-        if (face.face === "avoid") continue;
         next.set(face.id, {
+          face: String(face.face),
           weight: Number(face.weight ?? 0.2),
           few_shot: Array.isArray(face.few_shot) ? face.few_shot : [],
         });
       }
+
 
       for (const tap of userTaps) {
         const { data: card } = await admin.from("oe_cards")
