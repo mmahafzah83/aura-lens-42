@@ -32,6 +32,9 @@ const SYSTEM =
   `Anything attached to the transaction or the institution — regulatory approvals, competition clearance, shareholder or ` +
   `assembly votes, closing conditions, governance procedure — is NOT a requirement; put it in conditions. ` +
   `If the page states nothing asked of a person, requirements is an empty array. Never move a condition across to fill it. ` +
+  `Read the whole page, including Arabic body text buried among navigation links: nomination notices often list the forms ` +
+  `a candidate must file, the fit-and-proper declaration, the cap on how many boards a person may sit on, and the ` +
+  `experience asked for. Those are requirements. ` +
   `Every quote must be copied verbatim from the page. ` +
   `discovery_kind is one of corporate_event_inference (a deal, restructuring or award implying a mandate nobody posted), ` +
   `term_ending (a board or committee term running out), new_entity (a new authority, company or programme being formed), ` +
