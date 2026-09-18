@@ -4362,6 +4362,60 @@ export type Database = {
           },
         ]
       }
+      oe_eligibility: {
+        Row: {
+          blocked_reasons: Json
+          chair_types_blocked: string[] | null
+          chair_types_never_held: string[] | null
+          countries_allowed: string[] | null
+          created_at: string
+          level_ceiling: string | null
+          level_floor: string | null
+          level_now: string | null
+          nationality: string | null
+          remote_ok: boolean
+          residence_country: string | null
+          sectors_core: string[] | null
+          stated_rules: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blocked_reasons?: Json
+          chair_types_blocked?: string[] | null
+          chair_types_never_held?: string[] | null
+          countries_allowed?: string[] | null
+          created_at?: string
+          level_ceiling?: string | null
+          level_floor?: string | null
+          level_now?: string | null
+          nationality?: string | null
+          remote_ok?: boolean
+          residence_country?: string | null
+          sectors_core?: string[] | null
+          stated_rules?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blocked_reasons?: Json
+          chair_types_blocked?: string[] | null
+          chair_types_never_held?: string[] | null
+          countries_allowed?: string[] | null
+          created_at?: string
+          level_ceiling?: string | null
+          level_floor?: string | null
+          level_now?: string | null
+          nationality?: string | null
+          remote_ok?: boolean
+          residence_country?: string | null
+          sectors_core?: string[] | null
+          stated_rules?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oe_entities: {
         Row: {
           ats_endpoint: string | null
@@ -4968,6 +5022,7 @@ export type Database = {
           created_at: string
           deadline: string | null
           discovery_kind: string
+          eligibility_fail: string[] | null
           embedding: string | null
           evidence_quote: string | null
           extraction_confidence: number | null
@@ -4976,6 +5031,7 @@ export type Database = {
           id: string
           issuer_id: string | null
           issuer_raw: string | null
+          lane_final: string | null
           language: string | null
           last_seen_at: string
           location: string | null
@@ -5007,6 +5063,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           discovery_kind?: string
+          eligibility_fail?: string[] | null
           embedding?: string | null
           evidence_quote?: string | null
           extraction_confidence?: number | null
@@ -5015,6 +5072,7 @@ export type Database = {
           id?: string
           issuer_id?: string | null
           issuer_raw?: string | null
+          lane_final?: string | null
           language?: string | null
           last_seen_at?: string
           location?: string | null
@@ -5046,6 +5104,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           discovery_kind?: string
+          eligibility_fail?: string[] | null
           embedding?: string | null
           evidence_quote?: string | null
           extraction_confidence?: number | null
@@ -5054,6 +5113,7 @@ export type Database = {
           id?: string
           issuer_id?: string | null
           issuer_raw?: string | null
+          lane_final?: string | null
           language?: string | null
           last_seen_at?: string
           location?: string | null

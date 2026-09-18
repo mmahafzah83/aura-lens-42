@@ -13,6 +13,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { loadVocab } from "../_shared/oeVocab.ts";
 import { OE_REGISTER_FOR_PROMPT, registerFault } from "../_shared/oeRegister.ts";
+import { laneFor, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -67,6 +68,23 @@ function p4System(lang: string) {
     `the line. A line that cites nothing, or quotes nothing from what it cites, is dropped. ` +
     `clock: 'closes in N days' / 'no date given' / 'early signal, likely within a quarter' in the member's language.`;
 }
+
+const P6_VERSION = "p6-1.0";
+
+/**
+ * The writing lane. Not a chair he can take — material he can write from.
+ * No score, no clock, no band: four plain parts, the third of which must
+ * stand on his own material.
+ */
+function p6System(lang: string) {
+  return `Write for this professional, in ${lang === "ar" ? "Arabic" : "English"}, in the second person, plain words, ` +
+    `no percentages, no label words, no score words. ${OE_REGISTER_FOR_PROMPT} ` +
+    `Return strict JSON {what_happened, why_it_matters, what_you_know:{text, cites:[{kind,id}]}, open_with}. ` +
+    `Each field <= 40 words. what_you_know must cite one item from HIS OWN MATERIAL by kind and id and quote ` +
+    `between 3 and 15 words copied verbatim from that item. open_with is one question he could open a post with.`;
+}
+
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -390,7 +408,9 @@ Deno.serve(async (req) => {
     alive: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
     unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
     no_evidence: 0, no_citation: 0, warmth_rows: 0, requirement_checked: 0,
+    skipped_ineligible: 0, lane_act: 0, lane_write: 0, write_carded: 0,
   };
+
   let costUsd = 0;
 
   try {
@@ -432,6 +452,12 @@ Deno.serve(async (req) => {
     const memberCountry = (profile?.country ?? "SA") as string;
     const lang = (profile?.content_language === "ar" ? "ar" : "en") as "ar" | "en";
     const cardDate = localToday(profile?.timezone);
+
+    // What he can actually hold. His own row, in his own words.
+    const { data: eligRow } = await admin
+      .from("oe_eligibility").select("*").eq("user_id", userId).maybeSingle();
+    const eligibility = (eligRow ?? null) as Eligibility | null;
+
 
     const { data: corrections } = await admin
       .from("oe_corrections").select("reach, reach_value, chair_type, seniority_band, expires_at")
