@@ -3,6 +3,16 @@ export type OpportunityScope = "issuer" | "level" | "place" | "type" | "just_thi
 
 export type WhyLine = { text?: string; cites?: Array<string | { kind?: string; id?: string }> };
 
+/** One thing the record asks for, and whether his own material shows it. */
+export type RequirementRow = {
+  requirement: string;
+  met: boolean;
+  cite?: { kind?: string; id?: string } | null;
+  quote?: string;
+};
+
+export type WarmthRow = { kind: string; strength?: number | null; detail?: unknown };
+
 export type OpportunityCardData = {
   id: string;
   opportunity_id: string | null;
