@@ -24,7 +24,8 @@ const FN = "oe-judge-member";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
 const P3_VERSION = "p3-1.0";
-const P4_VERSION = "p4-2.0";
+const P4_VERSION = "p4-2.1";
+const P5_VERSION = "p5-1.0";
 const QUESTIONS = ["role_fit", "sector_fit", "seniority_fit", "timing", "strategic_value"] as const;
 const RETRIEVAL_FACES = ["done", "wants", "reads", "stands"] as const;
 const BANDS = { work: 0, table: 1, room: 2 } as const;
@@ -46,15 +47,24 @@ const P3_SYSTEM =
   `2 if under two weeks or signal within two quarters; 4 if workable window or signal within one quarter. ` +
   `Strategic value is measured against the wants face.`;
 
+/**
+ * The checklist, with a denominator. A requirement is met only when one of his
+ * own items shows it, and the quote is verified in code before it is stored.
+ */
+const P5_SYSTEM =
+  `You check one record's stated requirements against this professional's own material. ` +
+  `Return strict JSON {checks:[{id, met:true|false, cite:{kind,id}|null, quote:string}]} — one entry per requirement id, ` +
+  `in the order given. A requirement is met ONLY when one supplied item shows it. ` +
+  `quote must be between 3 and 15 words copied verbatim from the cited item; when nothing shows it, ` +
+  `met=false, cite=null, quote="". Write no other text and no label words.`;
+
 function p4System(lang: string) {
   return `Write for this professional, in ${lang === "ar" ? "Arabic" : "English"}, in the second person, plain words, ` +
     `no percentages, no label words — you write sentences only. ${OE_REGISTER_FOR_PROMPT} ` +
-    `Return strict JSON {why:[{text, cites:[{kind, id}]},{text, cites:[{kind, id}]}], distance:{text}, clock:text}. ` +
+    `Return strict JSON {why:[{text, cites:[{kind, id}]},{text, cites:[{kind, id}]}], clock:text}. ` +
     `Each text <= 45 words. HIS OWN MATERIAL is the only ground for a why line: every why line must cite one item ` +
     `from HIS OWN MATERIAL by its kind and id, and must quote at most 15 words copied verbatim from that item inside ` +
     `the line. A line that cites nothing, or quotes nothing from what it cites, is dropped. ` +
-    `distance: name in one sentence the single thing his material does NOT show against the record's requirements. ` +
-    `Say nothing is missing only when every requirement is matched by an item you cited. ` +
     `clock: 'closes in N days' / 'no date given' / 'early signal, likely within a quarter' in the member's language.`;
 }
 
@@ -150,6 +160,174 @@ function quotedRun(line: string, item: string): number {
 }
 const hasPercent = (s: string) => /%|\bper ?cent|في المائة|بالمئة/i.test(s);
 
+/** His own eight closest items. The only ground a card is ever allowed to stand on. */
+async function memberEvidence(admin: SupabaseClient, userId: string, oppVec: number[] | null) {
+  if (!oppVec) return [] as any[];
+  const { data, error } = await admin.rpc("oe_member_evidence", {
+    p_user_id: userId, p_embedding: `[${oppVec.join(",")}]`, p_k: 8,
+  });
+  if (error) throw new Error(`oe_member_evidence: ${error.message}`);
+  return (data ?? []).filter((r: any) => String(r.body ?? "").trim().length > 40);
+}
+
+/** Every name the issuer answers to, for the text side of warmth. */
+async function issuerNames(admin: SupabaseClient, o: any): Promise<string[]> {
+  const names = new Set<string>();
+  if (o.issuer_raw) names.add(String(o.issuer_raw));
+  if (o.issuer_id) {
+    const { data } = await admin.from("oe_issuers")
+      .select("canonical_name, name_en, name_ar, aliases").eq("id", o.issuer_id).maybeSingle();
+    for (const n of [data?.canonical_name, data?.name_en, data?.name_ar, ...((data?.aliases ?? []) as string[])]) {
+      if (n) names.add(String(n));
+    }
+  }
+  return [...names].map((s) => s.trim()).filter((s) => s.length >= 4);
+}
+
+/**
+ * WARMTH — whether anything of his already touches this chair. Read only from
+ * what we hold: his published posts, his captures, his fragments, the issuer's
+ * name in his own text. It never moves the score, the band or the gate; it is
+ * shown beside them and breaks a tie in ordering, nothing more.
+ */
+async function computeWarmth(
+  admin: SupabaseClient, userId: string, o: any, oppVec: number[] | null,
+): Promise<{ total: number; kinds: string[] }> {
+  if (!oppVec) return { total: 0, kinds: [] };
+  const names = await issuerNames(admin, o);
+  const { data, error } = await admin.rpc("oe_warmth_signals", {
+    p_user_id: userId, p_embedding: `[${oppVec.join(",")}]`, p_issuer_names: names,
+  });
+  if (error) throw new Error(`oe_warmth_signals: ${error.message}`);
+  const rows = (data ?? []) as any[];
+
+  const byKind = new Map<string, any[]>();
+  for (const r of rows) {
+    const k = String(r.kind);
+    if (!byKind.has(k)) byKind.set(k, []);
+    byKind.get(k)!.push(r);
+  }
+
+  const written: Array<{ kind: string; detail: any; strength: number }> = [];
+  const dates = (rs: any[]) => rs.map((r) => String(r.occurred_at ?? "").slice(0, 10)).filter(Boolean).sort();
+
+  const wrote = byKind.get("wrote_about_it") ?? [];
+  if (wrote.length) {
+    const d = dates(wrote);
+    written.push({
+      kind: "wrote_about_it",
+      detail: {
+        post_ids: [...new Set(wrote.map((r) => r.id))], count: wrote.length,
+        latest_date: d[d.length - 1] ?? null,
+        top_engagement: Math.max(...wrote.map((r) => Number(r.engagement ?? 0))),
+      },
+      strength: +Math.max(...wrote.map((r) => Number(r.similarity ?? 0))).toFixed(4),
+    });
+  }
+
+  const captured = byKind.get("captured_it") ?? [];
+  if (captured.length) {
+    const d = dates(captured);
+    written.push({
+      kind: "captured_it",
+      detail: {
+        ids: [...new Set(captured.map((r) => r.id))], count: captured.length,
+        latest_date: d[d.length - 1] ?? null,
+      },
+      strength: +Math.max(...captured.map((r) => Number(r.similarity ?? 0))).toFixed(4),
+    });
+  }
+
+  const worked = byKind.get("worked_with_issuer") ?? [];
+  if (worked.length) {
+    const d = dates(worked);
+    written.push({
+      kind: "worked_with_issuer",
+      detail: {
+        where: [...new Set(worked.map((r) => String(r.item_kind)))],
+        ids: [...new Set(worked.map((r) => r.id))],
+        first_seen: d[0] ?? null,
+        names_matched: names,
+      },
+      strength: +Math.min(1, 0.5 + 0.1 * worked.length).toFixed(4),
+    });
+  }
+
+  const nowIso = new Date().toISOString();
+  if (!written.length) written.push({ kind: "none", detail: {}, strength: 0 });
+
+  await admin.from("oe_warmth").upsert(
+    written.map((w) => ({
+      user_id: userId, opportunity_id: o.id, kind: w.kind,
+      detail: w.detail, strength: w.strength, computed_at: nowIso,
+    })),
+    { onConflict: "user_id,opportunity_id,kind" },
+  );
+  // A kind that no longer holds must not linger as yesterday's claim.
+  const keep = written.map((w) => w.kind);
+  await admin.from("oe_warmth").delete()
+    .eq("user_id", userId).eq("opportunity_id", o.id).not("kind", "in", `(${keep.join(",")})`);
+
+  return {
+    total: +written.reduce((s, w) => s + w.strength, 0).toFixed(4),
+    kinds: written.filter((w) => w.kind !== "none").map((w) => w.kind),
+  };
+}
+
+/**
+ * THE CHECKLIST with a denominator. Every requirement the record states,
+ * against his own material, with the quote verified in code — a quote the
+ * model did not copy out of his item is not evidence, so the line is unmet.
+ */
+async function requirementCheck(
+  admin: SupabaseClient, lovableKey: string, userId: string, fnName: string,
+  o: any, mine: any[],
+): Promise<{ list: any[]; met: number; total: number }> {
+  const reqs = (Array.isArray(o.requirements) ? o.requirements : [])
+    .map((r: any) => (typeof r === "string" ? r : String(r?.text ?? ""))).filter(Boolean);
+  if (!reqs.length) return { list: [], met: 0, total: 0 };
+
+  const base = reqs.map((text: string) => ({ requirement: text, met: false, cite: null as any, quote: "" }));
+  if (!mine.length || !lovableKey) return { list: base, met: 0, total: reqs.length };
+
+  const allowed = new Map<string, any>(mine.map((r: any) => [String(r.id), r]));
+  const userMsg = [
+    `HIS OWN MATERIAL:\n${mine.map((r: any, i: number) =>
+      `${i + 1}. kind=${r.kind} id=${r.id} date=${String(r.occurred_at ?? "").slice(0, 10)}\n"${String(r.body ?? "").replace(/\s+/g, " ").slice(0, 1200)}"`,
+    ).join("\n\n")}`,
+    `REQUIREMENTS:\n${JSON.stringify(reqs.map((text: string, i: number) => ({ id: `req:${i}`, text })))}`,
+    `ALLOWED CITE IDS: ${[...allowed.keys()].join(", ")}`,
+  ].join("\n\n");
+
+  let parsed: any;
+  try {
+    const out = await gateway(lovableKey, P5_SYSTEM, userMsg);
+    await logAIUsage({
+      user_id: userId, function_name: fnName, provider: "lovable", model: MODEL,
+      input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
+      metadata: { prompt_version: P5_VERSION, opportunity_id: o.id },
+    });
+    parsed = normaliseJson(out.content);
+  } catch (_e) {
+    return { list: base, met: 0, total: reqs.length };
+  }
+
+  const checks = Array.isArray(parsed?.checks) ? parsed.checks : [];
+  const list = base.map((row, i) => {
+    const c = checks.find((x: any) => String(x?.id ?? "") === `req:${i}`) ?? checks[i];
+    const citeId = String(c?.cite?.id ?? "");
+    const item = allowed.get(citeId);
+    const quote = String(c?.quote ?? "").trim();
+    const words = wordsOf(quote).length;
+    const verified = !!item && words >= 3 && words <= 15 &&
+      quotedRun(quote, `${item?.title ?? ""} ${item?.body ?? ""}`) >= Math.min(3, words);
+    return verified && c?.met === true
+      ? { requirement: row.requirement, met: true, cite: { kind: String(item.kind), id: citeId }, quote }
+      : row;
+  });
+  return { list, met: list.filter((r) => r.met).length, total: reqs.length };
+}
+
 /**
  * One card per member per local day. A day that already holds an unsent card is
  * rewritten in place; a card already sent is never overwritten.
@@ -201,7 +379,7 @@ Deno.serve(async (req) => {
   const counts = {
     alive: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
     unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
-    no_evidence: 0, no_citation: 0,
+    no_evidence: 0, no_citation: 0, warmth_rows: 0, requirement_checked: 0,
   };
   let costUsd = 0;
 
@@ -424,6 +602,22 @@ Deno.serve(async (req) => {
         : !o.quote_verified ? "quote_not_verified"
         : !noZero ? "zero_question" : "below_gate";
 
+      // WARMTH — computed for every judged record, kept out of the score.
+      const oppVecJ = asVector(o.embedding);
+      let warmth = { total: 0, kinds: [] as string[] };
+      try {
+        warmth = await computeWarmth(admin, userId, o, oppVecJ);
+        if (warmth.kinds.length) counts.warmth_rows += warmth.kinds.length;
+      } catch (e) {
+        console.warn(`warmth failed for ${o.id}: ${(e as Error)?.message}`);
+      }
+
+      // THE CHECKLIST — his own material against what the record asks.
+      const mineForReqs = await memberEvidence(admin, userId, oppVecJ);
+      const check = await requirementCheck(admin, lovableKey, userId, FN, o, mineForReqs);
+      if (check.total > 0) counts.requirement_checked++;
+      costUsd += check.total > 0 ? 0.0004 : 0;
+
       const { data: match } = await admin.from("oe_matches").upsert({
         user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
         retrieval: cand.retrieval,
@@ -431,16 +625,20 @@ Deno.serve(async (req) => {
         score_avg: +scoreAvg.toFixed(4), unstable, fit_band: fitBand, win_band: winBand,
         win_basis: { eligibility_met: eligibility, issuer_history: issuerHistory, past_winner_similarity: null },
         lane,
+        requirement_check: check.list, met_count: check.met, total_count: check.total,
         gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
       }, { onConflict: "user_id,opportunity_id,rubric_version" }).select("id").maybeSingle();
 
-      judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, lane, matchId: match?.id ?? null, requirementIds });
+      judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, lane, matchId: match?.id ?? null, requirementIds, warmth, check, mine: mineForReqs });
     }
 
     // ── 4. PICK — Lane A only. No way in, no card. ────────────────────────
+    // Warmth never moves the score; it only breaks a tie in the ordering.
     const eligible = judged
       .filter((j) => j.gatePassed && !j.unstable && j.lane === "lane_open")
-      .sort((a, b) => b.scoreAvg - a.scoreAvg);
+      .sort((a, b) => Math.abs(b.scoreAvg - a.scoreAvg) < 0.01
+        ? (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0)
+        : b.scoreAvg - a.scoreAvg);
     counts.lane_forming = judged.filter((j) => j.lane === "lane_forming").length;
     let order = eligible.map((j) => ({ ...j, explore: false }));
     if (order.length > 1 && Math.random() < exploreShare) {
@@ -458,14 +656,7 @@ Deno.serve(async (req) => {
 
       // GATE 1 — no card without his own material.
       const oppVec = asVector(o.embedding);
-      let mine: any[] = [];
-      if (oppVec) {
-        const { data: own, error: ownErr } = await admin.rpc("oe_member_evidence", {
-          p_user_id: userId, p_embedding: `[${oppVec.join(",")}]`, p_k: 8,
-        });
-        if (ownErr) throw new Error(`oe_member_evidence: ${ownErr.message}`);
-        mine = (own ?? []).filter((r: any) => String(r.body ?? "").trim().length > 40);
-      }
+      const mine: any[] = pick.mine?.length ? pick.mine : await memberEvidence(admin, userId, oppVec);
       if (!mine.length) { counts.no_evidence++; continue; }
 
       const allowedIds = new Map<string, any>(mine.map((r: any) => [String(r.id), r]));
@@ -488,7 +679,6 @@ Deno.serve(async (req) => {
       ].join("\n\n");
 
       let why: Array<{ text: string; cites: Array<{ kind: string; id: string }> }> = [];
-      let distanceLine: { text: string } | null = null;
       let clockText = "";
 
       for (let attempt = 0; attempt < 2 && why.length < 1; attempt++) {
@@ -520,13 +710,21 @@ Deno.serve(async (req) => {
             });
           })
           .slice(0, 2);
-        const dText = String(rec.distance?.text ?? rec.distance ?? "").trim();
-        distanceLine = dText && !hasPercent(dText) && !BANNED.test(dText) && !registerFault(dText, lang)
-          ? { text: dText } : null;
         const clock = String(rec.clock ?? "").trim();
         clockText = clock && !registerFault(clock, lang) ? clock : "";
       }
       if (!why.length) { counts.no_citation++; continue; } // nothing of his own to stand on
+
+      // THE DISTANCE is derived, never written freehand: it is the first thing
+      // the record asks for that his own material does not show. When the
+      // record asks for nothing, we say that instead of claiming completeness.
+      const check = pick.check ?? { list: [], met: 0, total: 0 };
+      const firstUnmet = (check.list ?? []).find((r: any) => !r.met) ?? null;
+      const distanceLine = check.total === 0
+        ? { text: vocab("no_requirements_stated", lang), no_requirements: true }
+        : firstUnmet
+        ? { text: String(firstUnmet.requirement), derived_from: "requirement_check" }
+        : null;
 
       const citedIds = [...new Set(why.flatMap((w) => w.cites.map((c) => c.id)))];
       const card = await writeCard(admin, userId, cardDate, {

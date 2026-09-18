@@ -4581,11 +4581,14 @@ export type Database = {
           id: string
           judged_at: string
           lane: string | null
+          met_count: number | null
           opportunity_id: string
+          requirement_check: Json | null
           retrieval: Json | null
           rubric_version: string
           score_avg: number | null
           scores: Json
+          total_count: number | null
           unstable: boolean
           user_id: string
           win_band: string | null
@@ -4600,11 +4603,14 @@ export type Database = {
           id?: string
           judged_at?: string
           lane?: string | null
+          met_count?: number | null
           opportunity_id: string
+          requirement_check?: Json | null
           retrieval?: Json | null
           rubric_version: string
           score_avg?: number | null
           scores: Json
+          total_count?: number | null
           unstable?: boolean
           user_id: string
           win_band?: string | null
@@ -4619,11 +4625,14 @@ export type Database = {
           id?: string
           judged_at?: string
           lane?: string | null
+          met_count?: number | null
           opportunity_id?: string
+          requirement_check?: Json | null
           retrieval?: Json | null
           rubric_version?: string
           score_avg?: number | null
           scores?: Json
+          total_count?: number | null
           unstable?: boolean
           user_id?: string
           win_band?: string | null
@@ -4632,6 +4641,92 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "oe_matches_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oe_moves: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          kind: string
+          lane: string | null
+          linkedin_post_id: string | null
+          opportunity_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          kind: string
+          lane?: string | null
+          linkedin_post_id?: string | null
+          opportunity_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          kind?: string
+          lane?: string | null
+          linkedin_post_id?: string | null
+          opportunity_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_moves_linkedin_post_id_fkey"
+            columns: ["linkedin_post_id"]
+            isOneToOne: false
+            referencedRelation: "aura_output"
+            referencedColumns: ["post_id"]
+          },
+          {
+            foreignKeyName: "oe_moves_linkedin_post_id_fkey"
+            columns: ["linkedin_post_id"]
+            isOneToOne: false
+            referencedRelation: "influence_dashboard_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_moves_linkedin_post_id_fkey"
+            columns: ["linkedin_post_id"]
+            isOneToOne: false
+            referencedRelation: "linkedin_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_moves_linkedin_post_id_fkey"
+            columns: ["linkedin_post_id"]
+            isOneToOne: false
+            referencedRelation: "member_own_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_moves_linkedin_post_id_fkey"
+            columns: ["linkedin_post_id"]
+            isOneToOne: false
+            referencedRelation: "member_published"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_moves_linkedin_post_id_fkey"
+            columns: ["linkedin_post_id"]
+            isOneToOne: false
+            referencedRelation: "post_provenance"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_moves_opportunity_id_fkey"
             columns: ["opportunity_id"]
             isOneToOne: false
             referencedRelation: "oe_opportunities"
@@ -4664,6 +4759,7 @@ export type Database = {
           raw: Json | null
           remote: boolean | null
           requirements: Json
+          route_dead: boolean
           route_kind: string | null
           route_url: string | null
           scope: string | null
@@ -4700,6 +4796,7 @@ export type Database = {
           raw?: Json | null
           remote?: boolean | null
           requirements?: Json
+          route_dead?: boolean
           route_kind?: string | null
           route_url?: string | null
           scope?: string | null
@@ -4736,6 +4833,7 @@ export type Database = {
           raw?: Json | null
           remote?: boolean | null
           requirements?: Json
+          route_dead?: boolean
           route_kind?: string | null
           route_url?: string | null
           scope?: string | null
@@ -4954,6 +5052,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      oe_warmth: {
+        Row: {
+          computed_at: string
+          detail: Json
+          id: string
+          kind: string
+          opportunity_id: string
+          strength: number
+          user_id: string
+        }
+        Insert: {
+          computed_at?: string
+          detail?: Json
+          id?: string
+          kind: string
+          opportunity_id: string
+          strength?: number
+          user_id: string
+        }
+        Update: {
+          computed_at?: string
+          detail?: Json
+          id?: string
+          kind?: string
+          opportunity_id?: string
+          strength?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_warmth_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       onboarding_article_log: {
         Row: {
@@ -8583,6 +8719,22 @@ export type Database = {
           p_token: string
         }
         Returns: Json
+      }
+      oe_warmth_signals: {
+        Args: {
+          p_embedding: string
+          p_issuer_names?: string[]
+          p_user_id: string
+        }
+        Returns: {
+          engagement: number
+          id: string
+          item_kind: string
+          kind: string
+          occurred_at: string
+          similarity: number
+          snippet: string
+        }[]
       }
       ops_cron_status: {
         Args: { p_hours?: number }

@@ -3,6 +3,16 @@ export type OpportunityScope = "issuer" | "level" | "place" | "type" | "just_thi
 
 export type WhyLine = { text?: string; cites?: Array<string | { kind?: string; id?: string }> };
 
+/** One thing the record asks for, and whether his own material shows it. */
+export type RequirementRow = {
+  requirement: string;
+  met: boolean;
+  cite?: { kind?: string; id?: string } | null;
+  quote?: string;
+};
+
+export type WarmthRow = { kind: string; strength?: number | null; detail?: unknown };
+
 export type OpportunityCardData = {
   id: string;
   opportunity_id: string | null;
@@ -31,6 +41,14 @@ export type OpportunityCardData = {
     location?: string | null;
   } | null;
   oe_taps?: Array<{ tap: OpportunityTap; scope?: OpportunityScope | null; tapped_at?: string }> | null;
+  /** The checklist with its denominator, carried from the judged match. */
+  oe_matches?: {
+    requirement_check?: RequirementRow[] | null;
+    met_count?: number | null;
+    total_count?: number | null;
+  } | null;
+  /** Whether anything of his own already touches this. Never part of the score. */
+  warmth?: WarmthRow[] | null;
 };
 
 export type PublicOpportunityCard = {
