@@ -20,7 +20,7 @@ import AuraRing from "@/components/systemb/AuraRing";
  * (live strip only, never a button except the Ask Aura gradient).
  */
 
-export type RailTab = "home" | "intelligence" | "library" | "overnight" | "authority" | "influence" | "momentum" | "widgets" | "identity";
+export type RailTab = "home" | "intelligence" | "opportunities" | "library" | "overnight" | "authority" | "influence" | "momentum" | "widgets" | "identity";
 
 interface AuraRailProps {
   activeTab: string;
@@ -256,6 +256,14 @@ export default function AuraRail({
   const open = (g: NavGroup) => {
     setFlyout(null);
     if (isGroupActive(g, activeTab)) return;
+    if (g.key === "opportunities") {
+      navigate("/opportunities");
+      return;
+    }
+    if (window.location.pathname === "/opportunities") {
+      navigate(`/dashboard?tab=${g.primary}`);
+      return;
+    }
     onSelect(g.primary as RailTab);
   };
 

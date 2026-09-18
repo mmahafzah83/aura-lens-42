@@ -9,7 +9,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { adminUserIds } from "../_shared/adminRole.ts";
-import { loadVocab } from "../_shared/oeVocab.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   renderEmail, heading, paragraph, quote, divider,
@@ -27,118 +26,6 @@ const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 const BASE_CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
 const PAUSE_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
 const FRESH_WINDOW_HOURS = 14;
-
-// The opportunity card block. Behind a flag so it can be switched off without
-// touching anything else this function does.
-const OE_CARDS_ENABLED = (Deno.env.get("OE_CARDS_IN_EMAIL") ?? "true") !== "false";
-const APP_URL = "https://www.aura-intel.org";
-const AMBER = "#9A6F12";
-
-type Vocab = (key: string, lang: "en" | "ar") => string;
-
-type Card = {
-  id: string;
-  opportunity_id: string | null;
-  why_lines: Array<{ text?: string }> | null;
-  gap_line: { text?: string } | null;
-  quote: string | null;
-  clock_text: string | null;
-  fit_band: string | null;
-  win_band: string | null;
-  tap_token: string | null;
-  lane?: string | null;
-  oe_opportunities?: { title?: string; chair_type?: string; time_kind?: string; source_url?: string; route_url?: string | null } | null;
-};
-
-type OutcomeAsk = {
-  id: string;
-  card_id: string;
-  oe_cards?: { tap_token?: string; oe_opportunities?: { title?: string } | null } | null;
-};
-
-function buildOutcomeBlock(row: OutcomeAsk, lang: "en" | "ar", v: Vocab): { html: string; text: string } {
-  const title = String(row.oe_cards?.oe_opportunities?.title ?? "");
-  const base = `${APP_URL}/t/${row.oe_cards?.tap_token ?? ""}`;
-  const question = lang === "ar" ? `قبل أسبوعين قلت إن هذه الفرصة تناسبك: ${title}. هل حدث شيء بسببها؟` : `Two weeks ago you said this fitted: ${title}. Did anything come of it?`;
-  const labels = lang === "ar" ? { applied: "تقدّمت", won: "حصلت عليها", nothing: "لا شيء" } : { applied: "Applied", won: "Won it", nothing: "Nothing" };
-  void v;
-  return {
-    html: `${divider()}<p style="margin:0 0 12px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK};">${escapeHtml(question)}</p><p style="margin:0 0 6px;">${tapButton(`${base}?o=applied`, labels.applied)}${tapButton(`${base}?o=won`, labels.won)}${tapButton(`${base}?o=nothing`, labels.nothing)}</p>`,
-    text: `${question}\n${labels.applied}: ${base}?o=applied\n${labels.won}: ${base}?o=won\n${labels.nothing}: ${base}?o=nothing`,
-  };
-}
-
-function tapButton(href: string, label: string): string {
-  return `<a href="${href}" style="display:inline-block;margin:0 6px 6px 0;padding:0 16px;height:36px;line-height:36px;border:1px solid ${BORDER};border-radius:8px;font-family:${BODY};font-size:13px;font-weight:600;color:${INK};text-decoration:none;">${escapeHtml(label)}</a>`;
-}
-
-function bandBox(caption: string, word: string): string {
-  return `<td style="padding:10px 14px;background:${CANVAS};border:1px solid ${BORDER};border-radius:8px;font-family:${BODY};font-size:13px;color:${INK_SOFT};">${escapeHtml(caption)}: <strong style="color:${INK};">${escapeHtml(word)}</strong></td>`;
-}
-
-/** The card, rendered. Every label word comes from oe_vocabulary. */
-function buildCardBlock(card: Card, lang: "en" | "ar", v: Vocab, winKnown: boolean): { html: string; text: string } {
-  if (!card.opportunity_id) {
-    const line = v("nothing_today", lang);
-    return {
-      html: `<p style="margin:0 0 16px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_FAINT};">${escapeHtml(line)}</p>${divider()}`,
-      text: `${line}\n`,
-    };
-  }
-
-  const opp = card.oe_opportunities ?? {};
-  const kind = v(`chair_${String(opp.chair_type ?? "")}`, lang) || String(opp.chair_type ?? "");
-  const tag = v(card.lane === "lane_forming" ? "lane_forming" : "lane_open", lang);
-  const why = (card.why_lines ?? []).map((w) => String(w?.text ?? "").trim()).filter(Boolean);
-  const distance = String(card.gap_line?.text ?? "").trim();
-  const base = `${APP_URL}/t/${card.tap_token ?? ""}`;
-  const fitWord = v(`fit_${String(card.fit_band ?? "stretch")}`, lang);
-  const winWord = winKnown ? v(`fit_${String(card.win_band ?? "stretch")}`, lang) : v("not_known_yet", lang);
-  const wayIn = opp.route_url
-    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;"><a href="${escapeHtml(opp.route_url)}" style="color:${ACCENT};text-decoration:underline;">${escapeHtml(v("the_way_in", lang))}</a></p>`
-    : `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;color:${INK_FAINT};">${escapeHtml(v("no_way_in", lang))}</p>`;
-
-  const whyHtml = why.map((w) =>
-    `<p style="margin:0 0 8px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};"><span style="color:${INK_FAINT};">&bull;</span> ${escapeHtml(w)}</p>`).join("");
-  const distanceHtml = distance
-    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};"><span style="color:${AMBER};">&bull;</span> <strong>${escapeHtml(v("the_distance", lang))}:</strong> ${escapeHtml(distance)}</p>`
-    : "";
-  const quoteHtml = card.quote
-    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;line-height:1.6;color:${INK_FAINT};">&ldquo;${escapeHtml(card.quote)}&rdquo;${opp.source_url ? ` <a href="${escapeHtml(opp.source_url)}" style="color:${ACCENT};text-decoration:underline;">${escapeHtml(v("source_link", lang))}</a>` : ""}</p>`
-    : "";
-
-  const html = `
-    <p style="margin:0 0 6px;font-family:${MONO};font-size:10px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">${escapeHtml(kind)} &middot; ${escapeHtml(tag)}</p>
-    <p style="margin:0 0 8px;font-family:${BODY};font-size:19px;line-height:1.35;font-weight:700;color:${INK};">${escapeHtml(String(opp.title ?? ""))}</p>
-    ${card.clock_text ? `<p style="margin:0 0 12px;font-family:${MONO};font-size:12px;line-height:1.5;color:${AMBER};">${escapeHtml(card.clock_text)}</p>` : ""}
-    ${whyHtml}${distanceHtml}${wayIn}${quoteHtml}
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px;"><tr>
-      ${bandBox(v("fits_you", lang), fitWord)}
-      <td style="width:10px;">&nbsp;</td>
-      ${bandBox(v("your_chance", lang), winWord)}
-    </tr></table>
-    <p style="margin:0 0 6px;">${tapButton(`${base}?a=right`, v("tap_right", lang))}${tapButton(`${base}?a=not_quite`, v("tap_not_quite", lang))}${tapButton(`${base}?a=not_my_area`, v("tap_not_mine", lang))}</p>
-    <p style="margin:0 0 4px;font-family:${BODY};font-size:12px;line-height:1.5;"><a href="${base}?a=less_from_here" style="color:${INK_FAINT};text-decoration:underline;">${escapeHtml(v("less_from_source", lang))}</a></p>
-    ${divider()}`;
-
-  const text = [
-    `${kind} · ${tag}`,
-    String(opp.title ?? ""),
-    card.clock_text ?? "",
-    ...why.map((w) => `- ${w}`),
-    distance ? `- ${v("the_distance", lang)}: ${distance}` : "",
-    opp.route_url ? `${v("the_way_in", lang)}: ${opp.route_url}` : v("no_way_in", lang),
-    card.quote ? `"${card.quote}"${opp.source_url ? ` (${opp.source_url})` : ""}` : "",
-    `${v("fits_you", lang)}: ${fitWord}`,
-    `${v("your_chance", lang)}: ${winWord}`,
-    `${v("tap_right", lang)}: ${base}?a=right`,
-    `${v("tap_not_quite", lang)}: ${base}?a=not_quite`,
-    `${v("tap_not_mine", lang)}: ${base}?a=not_my_area`,
-    `${v("less_from_source", lang)}: ${base}?a=less_from_here`,
-  ].filter(Boolean).join("\n");
-
-  return { html, text };
-}
 
 type Finding = {
   id: string;
@@ -218,10 +105,8 @@ function provenanceParts(f: Finding): string[] {
 function buildEmail(
   lead: Finding | null,
   others: Finding[],
-  card?: { html: string; text: string; subject?: string } | null,
-  outcome?: { html: string; text: string } | null,
 ) {
-  const subject = lead ? buildSubject(lead) : (card?.subject || "Aura has one opportunity for you today");
+  const subject = lead ? buildSubject(lead) : "Aura found something while you slept";
   const kicker = lead ? `THE OVERNIGHT · ${riyadhHHMM(lead.created_at)}` : "THE OVERNIGHT";
   const headline = lead ? ((lead.title || "").trim() || (lead.url || "").trim()) : "";
   const prov = lead ? provenanceParts(lead) : [];
@@ -248,25 +133,22 @@ function buildEmail(
     : "";
 
   const html = renderEmail({
-    preheader: headline || (card?.subject ?? subject),
+    preheader: headline || subject,
     prefsHref: PAUSE_URL,
     prefsLabel: "Pause these emails",
     cta: lead ? { href: leadUrl, label: "Open it in Aura" } : undefined,
     body: `
       <p style="margin:0 0 14px;font-family:${MONO};font-size:11px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">${escapeHtml(kicker)}</p>
-      ${card?.html ?? ""}
       ${lead ? heading(escapeHtml(headline)) : ""}
       ${implicationHtml}
       ${provHtml}
       ${extrasHtml}
-      ${outcome?.html ?? ""}
       ${divider()}
       ${paragraph("Sent because last night produced something. Quiet nights send nothing.")}
     `,
   });
 
   const textLines = [kicker, ""];
-  if (card?.text) textLines.push(card.text, "");
   if (lead) {
     textLines.push(headline);
     if ((lead.implication || "").trim()) { textLines.push("", lead.implication!.trim()); }
@@ -277,7 +159,6 @@ function buildEmail(
     textLines.push("", "Also last night:");
     for (const e of extras) textLines.push(`- ${(e.title || e.url || "").trim()}${e.url ? ` (${e.url})` : ""}`);
   }
-  if (outcome?.text) textLines.push("", outcome.text);
   textLines.push("", "Sent because last night produced something. Quiet nights send nothing.", `Pause these emails: ${PAUSE_URL}`);
 
   return { subject, html, text: textLines.join("\n") };
@@ -399,30 +280,8 @@ serve(async (req) => {
       byUser.set(f.user_id, arr);
     }
 
-    // A member with an unsent card today is a candidate even if the night was
-    // quiet for findings. The card is the reason to write.
+    // Opportunity cards and their follow-up questions are app-only.
     const candidateIds = new Set(byUser.keys());
-    if (OE_CARDS_ENABLED) {
-      const from = new Date(now.getTime() - 36 * 3600 * 1000).toISOString().slice(0, 10);
-      let cq = admin.from("oe_cards").select("user_id").is("sent_at", null).gte("card_date", from);
-      if (onlyUserId) cq = cq.eq("user_id", onlyUserId);
-      const { data: cardUsers } = await cq;
-      for (const c of (cardUsers || []) as Array<{ user_id: string }>) {
-        if (!c.user_id) continue;
-        if (!cardEligible(c.user_id)) continue;
-        candidateIds.add(c.user_id);
-      }
-    }
-    const outcomeByUser = new Map<string, OutcomeAsk>();
-    let oq = admin.from("oe_outcomes")
-      .select("id,user_id,card_id,oe_cards(tap_token,oe_opportunities(title))")
-      .eq("stage", "asked").is("note", null).order("created_at", { ascending: true });
-    if (onlyUserId) oq = oq.eq("user_id", onlyUserId);
-    const { data: outcomeRows } = await oq;
-    for (const row of (outcomeRows ?? []) as unknown as Array<OutcomeAsk & { user_id: string }>) {
-      if (!outcomeByUser.has(row.user_id)) outcomeByUser.set(row.user_id, row);
-      if (cardEligible(row.user_id)) candidateIds.add(row.user_id);
-    }
 
     const userIds = Array.from(candidateIds);
     if (userIds.length === 0) {
@@ -490,39 +349,14 @@ serve(async (req) => {
         const lead = list[0] ?? null;
         const others = list.slice(1);
 
-        // Today's card, in this member's own day.
-        let cardRow: Card | null = null;
-        if (OE_CARDS_ENABLED) {
-          const { data: c } = await admin
-            .from("oe_cards")
-            .select("id, opportunity_id, why_lines, gap_line, quote, clock_text, fit_band, win_band, lane, tap_token, oe_opportunities(title, chair_type, time_kind, source_url, route_url)")
-            .eq("user_id", uid)
-            .eq("card_date", lp.dateKey)
-            .is("sent_at", null)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          cardRow = (c as unknown as Card) ?? null;
-        }
-
-        const outcomeRow = outcomeByUser.get(uid) ?? null;
-        if (!lead && !cardRow && !outcomeRow) { results.push({ user_id: uid, outcome: "skipped_quiet" }); continue; }
-
-        const lang = langByUser.get(uid) ?? "en";
-        const vocab = await loadVocab(admin);
-        // The win mark stays quiet until he has answered an outcome ask once.
-        const { count: answered } = await admin.from("oe_outcomes")
-          .select("id", { count: "exact", head: true }).eq("user_id", uid).neq("stage", "asked");
-        const cardBlock = cardRow ? buildCardBlock(cardRow, lang, vocab, (answered ?? 0) > 0) : null;
-        const outcomeBlock = outcomeRow ? buildOutcomeBlock(outcomeRow, lang, vocab) : null;
-        const { subject, html, text } = buildEmail(lead, others, cardBlock, outcomeBlock);
+        if (!lead) { results.push({ user_id: uid, outcome: "skipped_quiet" }); continue; }
+        const { subject, html, text } = buildEmail(lead, others);
 
         if (dryRun) {
           results.push({
             user_id: uid, to, outcome: "would_send", subject, html, text,
             finding_ids: lead ? [lead.id, ...others.slice(0, 3).map((o) => o.id)] : [],
-            card_id: cardRow?.id ?? null,
-            outcome_id: outcomeRow?.id ?? null,
+            opportunity_cards_in_email: false,
           });
           continue;
         }
@@ -537,25 +371,11 @@ serve(async (req) => {
             message_key: userKey,
             finding_ids: lead ? [lead.id, ...others.slice(0, 3).map((o) => o.id)] : [],
             lead_finding_id: lead?.id ?? null,
-            card_id: cardRow?.id ?? null,
+            opportunity_cards_in_email: false,
             subject,
             resend_id: resendId,
           },
         });
-        if (cardRow) {
-          await admin.from("oe_cards").update({ sent_at: new Date().toISOString() }).eq("id", cardRow.id);
-          await admin.from("notification_events").insert({
-            user_id: uid,
-            type: "opportunity_card",
-            channel: "email",
-            title: "Opportunity card sent",
-            body: String(cardRow.oe_opportunities?.title ?? cardRow.clock_text ?? ""),
-            read: true,
-            read_at: new Date().toISOString(),
-            metadata: { card_id: cardRow.id, opportunity_id: cardRow.opportunity_id, message_key: userKey },
-          });
-        }
-        if (outcomeRow) await admin.from("oe_outcomes").update({ note: "sent" }).eq("id", outcomeRow.id);
         sent++;
         // The send ledger every dashboard reads. Bookkeeping must never be able
         // to break a delivery: if this write fails we log it and carry on.

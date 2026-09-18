@@ -52,6 +52,7 @@ import useFirstFlight from "@/hooks/useFirstFlight";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import SignalsBoardV2 from "@/components/signals/SignalsBoardV2";
+import OpportunityQueue from "@/features/opportunities/OpportunityQueue";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
 import MilestoneNotification from "@/components/MilestoneNotification";
 import useTierFromImprint from "@/hooks/useTierFromImprint";
@@ -88,6 +89,7 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 const NAV_ITEMS = [
   { value: "home", label: "Home", pageHeader: "Home", icon: Compass, docTitle: "Aura — Home" },
   { value: "intelligence", label: "Signals", pageHeader: "Signals", icon: Shield, docTitle: "Aura — Signals" },
+  { value: "opportunities", label: "Opportunities", pageHeader: "Opportunities", icon: Crown, docTitle: "Aura — Opportunities" },
   { value: "library", label: "Library", pageHeader: "Library", icon: LibraryIcon, docTitle: "Aura — Library" },
   { value: "drafts", label: "Drafts", pageHeader: "Drafts", icon: FileText, docTitle: "Aura — Drafts" },
   { value: "overnight", label: "The Overnight", pageHeader: "The Overnight", icon: Moon, docTitle: "Aura — The Overnight" },
@@ -128,7 +130,7 @@ const Dashboard = () => {
     description: "Your strategic intelligence command center: signals, captures, content, and presence growth in one place.",
     path: "/dashboard",
   });
-  const [activeTab, setActiveTab] = useState<TabValue>("home");
+  const [activeTab, setActiveTab] = useState<TabValue>(() => window.location.pathname === "/opportunities" ? "opportunities" : "home");
   const [captureOpen, setCaptureOpen] = useState(false);
   const [capturePrefillUrl, setCapturePrefillUrl] = useState<string | null>(null);
   const [capturePrefillText, setCapturePrefillText] = useState<string | null>(null);
@@ -808,6 +810,17 @@ const Dashboard = () => {
       navigate((tab as string) === "preferences" ? "/settings?tab=preferences" : "/settings");
       return;
     }
+    if (tab === "opportunities") {
+      navigate("/opportunities");
+      setActiveTab(tab);
+      setMobileSidebarOpen(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (location.pathname === "/opportunities") {
+      navigate(`/dashboard?tab=${tab}`);
+      return;
+    }
     setActiveTab(tab);
     setMobileSidebarOpen(false);
     setSearchParams({ tab });
@@ -1320,6 +1333,12 @@ const Dashboard = () => {
                     />
                   </LockedPanel>
                 </ErrorBoundary>
+              </div>
+            )}
+
+            {activeTab === "opportunities" && (
+              <div className="animate-tab-spring aura-page">
+                <ErrorBoundary><OpportunityQueue /></ErrorBoundary>
               </div>
             )}
 

@@ -124,6 +124,7 @@ const App = () => (
             <Route path="/t/:token" element={<OpportunityTapPage />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
+            <Route path="/opportunities" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/request-access" element={<RequestAccess />} />
