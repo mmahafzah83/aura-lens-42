@@ -379,7 +379,7 @@ Deno.serve(async (req) => {
   const counts = {
     alive: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
     unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
-    no_evidence: 0, no_citation: 0,
+    no_evidence: 0, no_citation: 0, warmth_rows: 0, requirement_checked: 0,
   };
   let costUsd = 0;
 
@@ -602,6 +602,22 @@ Deno.serve(async (req) => {
         : !o.quote_verified ? "quote_not_verified"
         : !noZero ? "zero_question" : "below_gate";
 
+      // WARMTH — computed for every judged record, kept out of the score.
+      const oppVecJ = asVector(o.embedding);
+      let warmth = { total: 0, kinds: [] as string[] };
+      try {
+        warmth = await computeWarmth(admin, userId, o, oppVecJ);
+        if (warmth.kinds.length) counts.warmth_rows += warmth.kinds.length;
+      } catch (e) {
+        console.warn(`warmth failed for ${o.id}: ${(e as Error)?.message}`);
+      }
+
+      // THE CHECKLIST — his own material against what the record asks.
+      const mineForReqs = await memberEvidence(admin, userId, oppVecJ);
+      const check = await requirementCheck(admin, lovableKey, userId, FN, o, mineForReqs);
+      if (check.total > 0) counts.requirement_checked++;
+      costUsd += check.total > 0 ? 0.0004 : 0;
+
       const { data: match } = await admin.from("oe_matches").upsert({
         user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
         retrieval: cand.retrieval,
@@ -609,16 +625,20 @@ Deno.serve(async (req) => {
         score_avg: +scoreAvg.toFixed(4), unstable, fit_band: fitBand, win_band: winBand,
         win_basis: { eligibility_met: eligibility, issuer_history: issuerHistory, past_winner_similarity: null },
         lane,
+        requirement_check: check.list, met_count: check.met, total_count: check.total,
         gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
       }, { onConflict: "user_id,opportunity_id,rubric_version" }).select("id").maybeSingle();
 
-      judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, lane, matchId: match?.id ?? null, requirementIds });
+      judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, lane, matchId: match?.id ?? null, requirementIds, warmth, check, mine: mineForReqs });
     }
 
     // ── 4. PICK — Lane A only. No way in, no card. ────────────────────────
+    // Warmth never moves the score; it only breaks a tie in the ordering.
     const eligible = judged
       .filter((j) => j.gatePassed && !j.unstable && j.lane === "lane_open")
-      .sort((a, b) => b.scoreAvg - a.scoreAvg);
+      .sort((a, b) => Math.abs(b.scoreAvg - a.scoreAvg) < 0.01
+        ? (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0)
+        : b.scoreAvg - a.scoreAvg);
     counts.lane_forming = judged.filter((j) => j.lane === "lane_forming").length;
     let order = eligible.map((j) => ({ ...j, explore: false }));
     if (order.length > 1 && Math.random() < exploreShare) {
