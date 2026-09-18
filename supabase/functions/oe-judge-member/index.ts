@@ -160,6 +160,174 @@ function quotedRun(line: string, item: string): number {
 }
 const hasPercent = (s: string) => /%|\bper ?cent|في المائة|بالمئة/i.test(s);
 
+/** His own eight closest items. The only ground a card is ever allowed to stand on. */
+async function memberEvidence(admin: SupabaseClient, userId: string, oppVec: number[] | null) {
+  if (!oppVec) return [] as any[];
+  const { data, error } = await admin.rpc("oe_member_evidence", {
+    p_user_id: userId, p_embedding: `[${oppVec.join(",")}]`, p_k: 8,
+  });
+  if (error) throw new Error(`oe_member_evidence: ${error.message}`);
+  return (data ?? []).filter((r: any) => String(r.body ?? "").trim().length > 40);
+}
+
+/** Every name the issuer answers to, for the text side of warmth. */
+async function issuerNames(admin: SupabaseClient, o: any): Promise<string[]> {
+  const names = new Set<string>();
+  if (o.issuer_raw) names.add(String(o.issuer_raw));
+  if (o.issuer_id) {
+    const { data } = await admin.from("oe_issuers")
+      .select("canonical_name, name_en, name_ar, aliases").eq("id", o.issuer_id).maybeSingle();
+    for (const n of [data?.canonical_name, data?.name_en, data?.name_ar, ...((data?.aliases ?? []) as string[])]) {
+      if (n) names.add(String(n));
+    }
+  }
+  return [...names].map((s) => s.trim()).filter((s) => s.length >= 4);
+}
+
+/**
+ * WARMTH — whether anything of his already touches this chair. Read only from
+ * what we hold: his published posts, his captures, his fragments, the issuer's
+ * name in his own text. It never moves the score, the band or the gate; it is
+ * shown beside them and breaks a tie in ordering, nothing more.
+ */
+async function computeWarmth(
+  admin: SupabaseClient, userId: string, o: any, oppVec: number[] | null,
+): Promise<{ total: number; kinds: string[] }> {
+  if (!oppVec) return { total: 0, kinds: [] };
+  const names = await issuerNames(admin, o);
+  const { data, error } = await admin.rpc("oe_warmth_signals", {
+    p_user_id: userId, p_embedding: `[${oppVec.join(",")}]`, p_issuer_names: names,
+  });
+  if (error) throw new Error(`oe_warmth_signals: ${error.message}`);
+  const rows = (data ?? []) as any[];
+
+  const byKind = new Map<string, any[]>();
+  for (const r of rows) {
+    const k = String(r.kind);
+    if (!byKind.has(k)) byKind.set(k, []);
+    byKind.get(k)!.push(r);
+  }
+
+  const written: Array<{ kind: string; detail: any; strength: number }> = [];
+  const dates = (rs: any[]) => rs.map((r) => String(r.occurred_at ?? "").slice(0, 10)).filter(Boolean).sort();
+
+  const wrote = byKind.get("wrote_about_it") ?? [];
+  if (wrote.length) {
+    const d = dates(wrote);
+    written.push({
+      kind: "wrote_about_it",
+      detail: {
+        post_ids: [...new Set(wrote.map((r) => r.id))], count: wrote.length,
+        latest_date: d[d.length - 1] ?? null,
+        top_engagement: Math.max(...wrote.map((r) => Number(r.engagement ?? 0))),
+      },
+      strength: +Math.max(...wrote.map((r) => Number(r.similarity ?? 0))).toFixed(4),
+    });
+  }
+
+  const captured = byKind.get("captured_it") ?? [];
+  if (captured.length) {
+    const d = dates(captured);
+    written.push({
+      kind: "captured_it",
+      detail: {
+        ids: [...new Set(captured.map((r) => r.id))], count: captured.length,
+        latest_date: d[d.length - 1] ?? null,
+      },
+      strength: +Math.max(...captured.map((r) => Number(r.similarity ?? 0))).toFixed(4),
+    });
+  }
+
+  const worked = byKind.get("worked_with_issuer") ?? [];
+  if (worked.length) {
+    const d = dates(worked);
+    written.push({
+      kind: "worked_with_issuer",
+      detail: {
+        where: [...new Set(worked.map((r) => String(r.item_kind)))],
+        ids: [...new Set(worked.map((r) => r.id))],
+        first_seen: d[0] ?? null,
+        names_matched: names,
+      },
+      strength: +Math.min(1, 0.5 + 0.1 * worked.length).toFixed(4),
+    });
+  }
+
+  const nowIso = new Date().toISOString();
+  if (!written.length) written.push({ kind: "none", detail: {}, strength: 0 });
+
+  await admin.from("oe_warmth").upsert(
+    written.map((w) => ({
+      user_id: userId, opportunity_id: o.id, kind: w.kind,
+      detail: w.detail, strength: w.strength, computed_at: nowIso,
+    })),
+    { onConflict: "user_id,opportunity_id,kind" },
+  );
+  // A kind that no longer holds must not linger as yesterday's claim.
+  const keep = written.map((w) => w.kind);
+  await admin.from("oe_warmth").delete()
+    .eq("user_id", userId).eq("opportunity_id", o.id).not("kind", "in", `(${keep.join(",")})`);
+
+  return {
+    total: +written.reduce((s, w) => s + w.strength, 0).toFixed(4),
+    kinds: written.filter((w) => w.kind !== "none").map((w) => w.kind),
+  };
+}
+
+/**
+ * THE CHECKLIST with a denominator. Every requirement the record states,
+ * against his own material, with the quote verified in code — a quote the
+ * model did not copy out of his item is not evidence, so the line is unmet.
+ */
+async function requirementCheck(
+  admin: SupabaseClient, lovableKey: string, userId: string, fnName: string,
+  o: any, mine: any[],
+): Promise<{ list: any[]; met: number; total: number }> {
+  const reqs = (Array.isArray(o.requirements) ? o.requirements : [])
+    .map((r: any) => (typeof r === "string" ? r : String(r?.text ?? ""))).filter(Boolean);
+  if (!reqs.length) return { list: [], met: 0, total: 0 };
+
+  const base = reqs.map((text: string) => ({ requirement: text, met: false, cite: null as any, quote: "" }));
+  if (!mine.length || !lovableKey) return { list: base, met: 0, total: reqs.length };
+
+  const allowed = new Map<string, any>(mine.map((r: any) => [String(r.id), r]));
+  const userMsg = [
+    `HIS OWN MATERIAL:\n${mine.map((r: any, i: number) =>
+      `${i + 1}. kind=${r.kind} id=${r.id} date=${String(r.occurred_at ?? "").slice(0, 10)}\n"${String(r.body ?? "").replace(/\s+/g, " ").slice(0, 1200)}"`,
+    ).join("\n\n")}`,
+    `REQUIREMENTS:\n${JSON.stringify(reqs.map((text: string, i: number) => ({ id: `req:${i}`, text })))}`,
+    `ALLOWED CITE IDS: ${[...allowed.keys()].join(", ")}`,
+  ].join("\n\n");
+
+  let parsed: any;
+  try {
+    const out = await gateway(lovableKey, P5_SYSTEM, userMsg);
+    await logAIUsage({
+      user_id: userId, function_name: fnName, provider: "lovable", model: MODEL,
+      input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
+      metadata: { prompt_version: P5_VERSION, opportunity_id: o.id },
+    });
+    parsed = normaliseJson(out.content);
+  } catch (_e) {
+    return { list: base, met: 0, total: reqs.length };
+  }
+
+  const checks = Array.isArray(parsed?.checks) ? parsed.checks : [];
+  const list = base.map((row, i) => {
+    const c = checks.find((x: any) => String(x?.id ?? "") === `req:${i}`) ?? checks[i];
+    const citeId = String(c?.cite?.id ?? "");
+    const item = allowed.get(citeId);
+    const quote = String(c?.quote ?? "").trim();
+    const words = wordsOf(quote).length;
+    const verified = !!item && words >= 3 && words <= 15 &&
+      quotedRun(quote, `${item?.title ?? ""} ${item?.body ?? ""}`) >= Math.min(3, words);
+    return verified && c?.met === true
+      ? { requirement: row.requirement, met: true, cite: { kind: String(item.kind), id: citeId }, quote }
+      : row;
+  });
+  return { list, met: list.filter((r) => r.met).length, total: reqs.length };
+}
+
 /**
  * One card per member per local day. A day that already holds an unsent card is
  * rewritten in place; a card already sent is never overwritten.
