@@ -511,7 +511,7 @@ Deno.serve(async (req) => {
     if (ids.length) {
       const { data: opps } = await admin
         .from("oe_opportunities")
-        .select("id, title, scope, sector, chair_type, time_kind, seniority_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, issuer_id, issuer_raw, language, embedding")
+        .select("id, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, issuer:oe_issuers(domain)")
         .in("id", ids);
       pool = opps ?? [];
     }
