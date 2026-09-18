@@ -918,7 +918,8 @@ Deno.serve(async (req) => {
       const empty = await writeCard(admin, userId, cardDate, {
         opportunity_id: null, match_id: null, why_lines: [], gap_line: null,
         clock_text: vocab("nothing_today", lang), channel: "email",
-      });
+      }, { rules: ruleIds, faces: [], scores: {}, gate: "no_candidate" });
+
       if (empty) cardsWritten.push(empty);
       counts.empty_day = 1;
 
