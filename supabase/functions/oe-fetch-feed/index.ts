@@ -608,16 +608,91 @@ Deno.serve(async (req) => {
         }));
       } else if (perplexityKey && firecrawlKey) {
 
-        // Discovery: round-robin over the queries the faces already wrote.
+        // Discovery is built from what each member can actually hold, first,
+        // and from his faces second. Anything closed to him never enters the
+        // query text at all — which is why the set used to fill with seats he
+        // could never take.
+        const { data: eligRows } = await admin
+          .from("oe_eligibility")
+          .select("user_id, countries_allowed, level_floor, level_ceiling, chair_types_blocked, sectors_core");
         const { data: faces } = await admin
           .from("oe_faces").select("user_id, face, queries")
           .in("face", ["done", "wants", "stands"]);
-        const byUser = new Map<string, string[]>();
+
+        const COUNTRY_WORDS: Record<string, [string, string]> = {
+          SA: ["Saudi Arabia", "السعودية"], AE: ["United Arab Emirates", "الإمارات"],
+          QA: ["Qatar", "قطر"], KW: ["Kuwait", "الكويت"], BH: ["Bahrain", "البحرين"],
+          OM: ["Oman", "سلطنة عمان"], JO: ["Jordan", "الأردن"], EG: ["Egypt", "مصر"],
+        };
+        const LEVEL_WORDS: Record<string, [string, string]> = {
+          ic: ["specialist", "أخصائي"], manager: ["manager", "مدير"],
+          senior_manager: ["senior manager", "مدير أول"], director: ["director", "مدير تنفيذي"],
+          senior_director: ["head of", "رئيس قسم"], vp: ["vice president", "نائب رئيس"],
+          c_suite: ["chief executive", "الرئيس التنفيذي"], board: ["board member", "عضو مجلس إدارة"],
+        };
+        const LEVEL_ORDER = ["ic", "manager", "senior_manager", "director", "senior_director", "vp", "c_suite", "board"];
+        const CHAIR_WORDS: Record<string, [string, string]> = {
+          role: ["role", "وظيفة"], mandate: ["advisory mandate", "تكليف استشاري"],
+          advisory: ["advisory seat", "مقعد استشاري"], speaking: ["speaker call", "دعوة متحدثين"],
+          room: ["committee", "لجنة"], media: ["expert comment", "رأي خبير"],
+          board: ["board seat", "مقعد مجلس إدارة"], consultation: ["public consultation", "استطلاع عام"],
+          learning: ["executive programme", "برنامج تنفيذي"],
+        };
+        const excludeTerms: string[] = params.discovery_exclude_terms
+          ?? ["board of directors", "مجلس إدارة", "nomination for board", "World Bank pipeline"];
+
+        const facesByUser = new Map<string, string[]>();
         for (const f of faces ?? []) {
-          const list = byUser.get(f.user_id) ?? [];
+          const list = facesByUser.get(f.user_id) ?? [];
           list.push(...((f.queries ?? []) as string[]));
-          byUser.set(f.user_id, list);
+          facesByUser.set(f.user_id, list);
         }
+
+        const byUser = new Map<string, string[]>();
+        for (const e of eligRows ?? []) {
+          const blockedChairs = (e.chair_types_blocked ?? []).map((c: string) => String(c).toLowerCase());
+          const floor = LEVEL_ORDER.indexOf(String(e.level_floor ?? ""));
+          const ceiling = LEVEL_ORDER.indexOf(String(e.level_ceiling ?? ""));
+          const levels = LEVEL_ORDER
+            .filter((_, i) => (floor < 0 || i >= floor) && (ceiling < 0 || i <= ceiling))
+            .filter((l) => !blockedChairs.includes(l));
+          const countries = (e.countries_allowed ?? []).map((c: string) => String(c).toUpperCase());
+          const chairs = Object.keys(CHAIR_WORDS).filter((c) => !blockedChairs.includes(c));
+          const sectors = (e.sectors_core ?? []).map((s: string) => String(s).replace(/_/g, " "));
+
+          const built: string[] = [];
+          for (const lang of [0, 1] as const) {
+            const places = countries.map((c) => COUNTRY_WORDS[c]?.[lang]).filter(Boolean);
+            if (!places.length) continue;
+            const place = places.join(lang ? " أو " : " or ");
+            for (const sector of sectors.slice(0, 4)) {
+              for (const lvl of levels.slice(0, 3)) {
+                built.push(`${LEVEL_WORDS[lvl]?.[lang] ?? lvl} ${sector} ${place}`);
+              }
+              for (const ch of chairs.slice(0, 4)) {
+                built.push(`${CHAIR_WORDS[ch][lang]} ${sector} ${place}`);
+              }
+            }
+          }
+          // Faces come second, and are anchored to the same places.
+          for (const q of (facesByUser.get(e.user_id) ?? []).slice(0, 6)) {
+            const isAr = /[\u0600-\u06FF]/.test(q);
+            const places = countries.map((c) => COUNTRY_WORDS[c]?.[isAr ? 1 : 0]).filter(Boolean);
+            built.push(places.length ? `${q} (${places.join(isAr ? " أو " : " or ")})` : q);
+          }
+          const clean = built.filter((q) =>
+            !excludeTerms.some((t) => q.toLowerCase().includes(String(t).toLowerCase())) &&
+            !blockedChairs.some((c) => {
+              const w = CHAIR_WORDS[c];
+              return w ? q.toLowerCase().includes(w[0].toLowerCase()) || q.includes(w[1]) : false;
+            }));
+          byUser.set(e.user_id, [...new Set(clean)]);
+        }
+        // A member with no eligibility row keeps the old face-only behaviour.
+        for (const [uid, list] of facesByUser) {
+          if (!byUser.has(uid)) byUser.set(uid, list);
+        }
+
         const rota: string[] = [];
         let i = 0;
         while (rota.length < discoveryBudget) {
@@ -630,16 +705,7 @@ Deno.serve(async (req) => {
           i++;
         }
         const urls = new Set<string>();
-        const { data: memberCountries } = await admin
-          .from("diagnostic_profiles").select("country").not("country", "is", null).limit(200);
-        const countryNames = [...new Set((memberCountries ?? []).map((r: any) => String(r.country)).filter(Boolean))];
-        const anchor = (q: string) => {
-          const isAr = /[\u0600-\u06FF]/.test(q);
-          const places = [...countryNames.slice(0, 3), isAr ? "السعودية" : "Saudi Arabia"];
-          return `${q} (${places.join(isAr ? " أو " : " or ")})`;
-        };
-        for (const q0 of rota) {
-          const q = anchor(q0);
+        for (const q of rota) {
           const p = await perplexity(perplexityKey, q);
           if (!p.ok) { counts.errors++; continue; }
           costUsd += 0.001;
@@ -654,6 +720,7 @@ Deno.serve(async (req) => {
           }
           if (urls.size >= MAX_DETAIL_PAGES) break;
         }
+
         for (const u of [...urls].slice(0, MAX_DETAIL_PAGES)) {
           const d = await firecrawlScrape(firecrawlKey, u);
           counts.pages++;
