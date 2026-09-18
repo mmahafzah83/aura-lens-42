@@ -269,3 +269,13 @@ verify_jwt = false
 
 [functions.oe-triage]
 verify_jwt = false
+
+[functions.oe-seed-entities]
+verify_jwt = false
+
+[functions.oe-resolve-entity]
+verify_jwt = false
+
+[functions.oe-harvest-ats]
+verify_jwt = false
+
