@@ -20,8 +20,21 @@ export function OpportunityCard({ card, language, readOnly, winKnown, onSaved }:
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 12, fontWeight: 700 }}>
             <span>{v(chairKey(opp?.chair_type)) || opp?.chair_type}</span>
             <span style={{ border: "1px solid #E2E7EE", borderRadius: 4, padding: "2px 7px", color: lane === "lane_forming" ? "#9A6F12" : "#0670C4", background: "#FFFFFF" }}>{v(lane)}</span>
+            {/* Everything except an ordinary published call is a find only we made. */}
+            {opp?.discovery_kind && opp.discovery_kind !== "posted_opening" && (
+              <span style={{ border: "1px solid #E0A82E", borderRadius: 4, padding: "2px 7px", color: "#9A6F12", background: "#FFFFFF" }}>{v("hidden_find")}</span>
+            )}
           </div>
           <h3 style={{ margin: 0, fontFamily: font, fontSize: 21, lineHeight: rtl ? 1.75 : 1.3, fontWeight: 700 }}>{opp?.title}</h3>
+          {opp?.discovery_kind && opp.discovery_kind !== "posted_opening" && (
+            <p style={{ margin: 0, fontSize: 12, color: "#5B6673" }}>
+              <strong style={{ color: "#0F1519" }}>{v("hidden_why")}: </strong>
+              {v(`discovery_${opp.discovery_kind}`) || opp.discovery_kind}
+              {card.lead
+                ? ` · ${v("expected_lead")} ${card.lead.days} ${v("days")} (${v("sample_of")} ${card.lead.sample})`
+                : ["term_ending", "corporate_event_inference"].includes(opp.discovery_kind) ? ` · ${v("not_measured_yet")}` : ""}
+            </p>
+          )}
           {card.clock_text && <p style={{ margin: 0, color: "#9A6F12", fontFamily: "IBM Plex Mono, monospace", fontSize: 13 }}>{card.clock_text}</p>}
           <div style={{ display: "grid", gap: 8 }}>
             {(card.why_lines ?? []).slice(0, 2).map((why, i) => <p key={i} style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#00CEC9" }} />{why.text}</p>)}
@@ -37,7 +50,7 @@ export function OpportunityCard({ card, language, readOnly, winKnown, onSaved }:
               <div style={{ border: "1px solid #E2E7EE", borderRadius: 12, padding: 11, display: "grid", gap: 6 }}>
                 <span style={{ fontSize: 12, color: "#5B6673" }}>
                   <strong style={{ color: "#0F1519" }}>{v("what_they_ask")}: </strong>
-                  {total === 0 ? v("no_requirements_stated") : `${met} / ${total}`}
+                  {total === 0 ? v("no_requirements_published") : `${met} / ${total}`}
                 </span>
                 {missing.length > 0 && (
                   <ul style={{ margin: 0, paddingInlineStart: 18, color: "#5B6673", fontSize: 13 }}>

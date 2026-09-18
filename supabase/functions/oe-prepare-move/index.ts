@@ -174,11 +174,73 @@ Deno.serve(async (req) => {
   const rejected: Array<{ line: string; fault: string }> = [];
   let costUsd = 0;
 
+/**
+ * Who the post may name, decided in code and not by the model.
+ *
+ * The organisation may always be named. A person may be named only on one of
+ * three bases: the post answers something that person said publicly and quotes
+ * it, the person is the named public voice for this announcement, or the member
+ * already knows them. We hold no person-level connection data, so the third
+ * basis never fires today. Never more than two people, never without a basis —
+ * tagging a stranger reads as a supplicant's move, and standing is the asset.
+ */
+async function buildMentions(
+  admin: SupabaseClient, o: any, postText: string,
+): Promise<{ organisation: { name: string; linkedin_url: string | null }; people: any[] }> {
+  const organisation = {
+    name: String(o.issuer_raw ?? "").trim() || null,
+    linkedin_url: null as string | null,
+  };
+  const out: any[] = [];
+  if (!o.issuer_id) return { organisation: organisation as any, people: out };
+
+  const { data: people } = await admin.from("oe_issuer_people")
+    .select("full_name, role_title, is_public_spokesperson, source_url, linkedin_url")
+    .eq("issuer_id", o.issuer_id);
+
+  const page = `${String((o.raw as any)?.page_text ?? "")} ${String(o.evidence_quote ?? "")}`;
+  const pageLower = page.toLowerCase();
+  const postLower = postText.toLowerCase();
+
+  for (const p of people ?? []) {
+    if (out.length >= 2) break;
+    const name = String(p.full_name ?? "").trim();
+    if (!name) continue;
+    const namedHere = pageLower.includes(name.toLowerCase());
+    if (!namedHere) continue;
+
+    // quoted — the record carries a quotation attributed to this person and
+    // the post repeats a run of at least five of those words.
+    let basis: string | null = null;
+    const quoteMatches = page.match(/[“"«]([^”"»]{20,400})[”"»]/g) ?? [];
+    for (const raw of quoteMatches) {
+      const said = raw.replace(/[“"«»”]/g, "").trim();
+      const near = pageLower.indexOf(said.toLowerCase());
+      const windowText = pageLower.slice(Math.max(0, near - 200), near + said.length + 200);
+      if (!windowText.includes(name.toLowerCase())) continue;
+      const words = said.toLowerCase().split(/\s+/).filter(Boolean);
+      for (let i = 0; i + 5 <= words.length; i++) {
+        if (postLower.includes(words.slice(i, i + 5).join(" "))) { basis = "quoted"; break; }
+      }
+      if (basis) break;
+    }
+    if (!basis && p.is_public_spokesperson === true) basis = "spokesperson";
+    if (!basis) continue;
+
+    out.push({
+      name, role: p.role_title ?? null, basis,
+      source_url: p.source_url ?? null, linkedin_url: p.linkedin_url ?? null,
+    });
+  }
+
+  return { organisation: organisation as any, people: out };
+}
+
   try {
     if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
 
     const { data: o } = await admin.from("oe_opportunities")
-      .select("id, title, scope, sector, chair_type, time_kind, location, deadline, signal_date, issuer_raw, issuer_id, requirements, evidence_quote, source_url, route_url, route_kind, route_dead, embedding")
+      .select("id, title, scope, sector, chair_type, time_kind, location, deadline, signal_date, issuer_raw, issuer_id, requirements, conditions, discovery_kind, evidence_quote, source_url, route_url, route_kind, route_dead, embedding, raw")
       .eq("id", opportunityId).maybeSingle();
     if (!o) return json({ ok: false, error: "opportunity not found" }, 404);
 
@@ -445,6 +507,7 @@ Deno.serve(async (req) => {
         why_now: whyNow || null,
         hook: hookLine && !lineFault(hookLine, lang) ? hookLine : null,
         cited_evidence: cited,
+        mentions: await buildMentions(admin, o, postText),
         language: lang,
       };
     }

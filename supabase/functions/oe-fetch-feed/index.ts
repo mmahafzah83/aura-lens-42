@@ -16,7 +16,7 @@ const corsHeaders = {
 };
 
 const FN = "oe-fetch-feed";
-const READER_VERSION = "p2-2.0";
+const READER_VERSION = "p2-3.0";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
@@ -24,6 +24,9 @@ const MIN_CLEAN_TEXT_CHARS = 800;
 const MAX_NOISE_RATIO = 0.30;
 const MAX_DETAIL_PAGES = 25;
 const ROUTE_KINDS = ["application", "nomination", "tender", "call_for_speakers", "registration", "contact", "none"];
+const DISCOVERY_KINDS = [
+  "corporate_event_inference", "term_ending", "new_entity", "departure", "arabic_only_source", "posted_opening",
+];
 const MAX_PAGE_CHARS = 24_000; // ≈ 6,000 tokens; head and tail kept, middle cut
 
 // World Bank procurement notices: we want chairs a person can sit in, in the
@@ -52,11 +55,21 @@ const P2_SYSTEM =
   `You turn one web page or message into at most one opportunity record for senior professionals, or null. ` +
   `Return strict JSON {is_opportunity:boolean, chair_type:'board'|'mandate'|'role'|'room'|'speaking'|'media'|'advisory'|'award'|'learning'|null, ` +
   `time_kind:'open_now'|'early_signal'|null, title, scope (<=60 words), issuer_raw, sector, seniority_band:'work'|'table'|'room'|null, ` +
-  `location, remote:boolean|null, requirements:[{text, quote}], deadline:YYYY-MM-DD|null, signal_date:YYYY-MM-DD|null, ` +
+  `location, remote:boolean|null, requirements:[{text, quote}], conditions:[{text, quote}], deadline:YYYY-MM-DD|null, signal_date:YYYY-MM-DD|null, ` +
   `evidence_quote (a verbatim sentence from the page that proves chair_type and, when present, the deadline), ` +
   `route_url (the page where a person actually applies, nominates, registers, submits or writes in — null when the page has none), ` +
   `route_kind:'application'|'nomination'|'tender'|'call_for_speakers'|'registration'|'contact'|'none', ` +
+  `discovery_kind:'corporate_event_inference'|'term_ending'|'new_entity'|'departure'|'arabic_only_source'|'posted_opening', ` +
   `language:'ar'|'en', extraction_confidence:0-1}. ` +
+  `requirements means ONLY what is asked of a candidate, nominee, bidder or speaker: qualifications, years of experience, licences, ` +
+  `documents, membership, nationality or other eligibility a PERSON can hold or fail to hold. ` +
+  `Anything attached to the transaction or the institution — regulatory approvals, competition clearance, shareholder or assembly votes, ` +
+  `closing conditions, governance procedure — is NOT a requirement; put it in conditions. ` +
+  `If the page states nothing asked of a person, requirements is an empty array. Never move a condition into requirements to fill it. ` +
+  `discovery_kind: corporate_event_inference = an acquisition, restructuring or contract award implying a mandate nobody has posted; ` +
+  `term_ending = a board or committee term running out; new_entity = a new authority, company or programme being formed; ` +
+  `departure = a named executive leaving; arabic_only_source = the page is Arabic and the fact is not carried in English; ` +
+  `posted_opening = an ordinary published call anyone can read. ` +
   `Rules: null over guess; evidence_quote must be copied verbatim; early_signal is for facts that imply a chair will open ` +
   `(listing/IPO application, new strategy or entity, director term ending or resignation, large digital contract awarded, event dates announced, executive appointment); ` +
   `open_now needs a route or a deadline; seniority_band: work = senior professional, table = director/head, room = C-suite/board. ` +
@@ -781,6 +794,10 @@ Deno.serve(async (req) => {
           location: rec.location ?? null,
           remote: typeof rec.remote === "boolean" ? rec.remote : null,
           requirements: Array.isArray(rec.requirements) ? rec.requirements : [],
+          conditions: Array.isArray(rec.conditions) ? rec.conditions : [],
+          discovery_kind: DISCOVERY_KINDS.includes(String(rec.discovery_kind))
+            ? String(rec.discovery_kind)
+            : "posted_opening",
           deadline: rec.deadline || null,
           signal_date: rec.signal_date || null,
           posting_date: new Date().toISOString().slice(0, 10),

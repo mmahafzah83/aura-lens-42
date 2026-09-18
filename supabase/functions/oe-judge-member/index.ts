@@ -195,11 +195,21 @@ async function computeWarmth(
 ): Promise<{ total: number; kinds: string[] }> {
   if (!oppVec) return { total: 0, kinds: [] };
   const names = await issuerNames(admin, o);
-  const { data, error } = await admin.rpc("oe_warmth_signals", {
-    p_user_id: userId, p_embedding: `[${oppVec.join(",")}]`, p_issuer_names: names,
-  });
-  if (error) throw new Error(`oe_warmth_signals: ${error.message}`);
-  const rows = (data ?? []) as any[];
+  const vec = `[${oppVec.join(",")}]`;
+  // Three reads, because each one ranks and caps on its own terms.
+  const [posts, caps, issuerText] = await Promise.all([
+    admin.rpc("oe_warmth_signals", { p_user_id: userId, p_embedding: vec, p_issuer_names: names }),
+    admin.rpc("oe_warmth_signals_captures", { p_user_id: userId, p_embedding: vec }),
+    admin.rpc("oe_warmth_issuer_text", { p_user_id: userId, p_issuer_names: names }),
+  ]);
+  for (const r of [posts, caps, issuerText]) {
+    if (r.error) throw new Error(`warmth: ${r.error.message}`);
+  }
+  const rows = [
+    ...((posts.data ?? []) as any[]),
+    ...((caps.data ?? []) as any[]),
+    ...((issuerText.data ?? []) as any[]),
+  ];
 
   const byKind = new Map<string, any[]>();
   for (const r of rows) {
@@ -721,7 +731,7 @@ Deno.serve(async (req) => {
       const check = pick.check ?? { list: [], met: 0, total: 0 };
       const firstUnmet = (check.list ?? []).find((r: any) => !r.met) ?? null;
       const distanceLine = check.total === 0
-        ? { text: vocab("no_requirements_stated", lang), no_requirements: true }
+        ? { text: vocab("no_requirements_published", lang), no_requirements: true }
         : firstUnmet
         ? { text: String(firstUnmet.requirement), derived_from: "requirement_check" }
         : null;
