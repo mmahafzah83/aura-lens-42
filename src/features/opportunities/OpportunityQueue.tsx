@@ -13,9 +13,9 @@ type WhyLine = { text?: string; label?: string };
 type QueueCard = {
   id: string; opportunity_id: string; lane: "act" | "write"; why_lines: WhyLine[] | null;
   gap_line: WhyLine | null; quote: string | null; clock_text: string | null; title: string;
-  chair_type: string | null; location: string | null; scope: string | null; deadline: string | null;
+  chair_type: string | null; level_band: string | null; sector: string | null; location: string | null; scope: string | null; deadline: string | null;
   source_url: string | null; route_url: string | null; route_kind: string | null; issuer_id: string | null;
-  issuer_name: string | null; last_checked: string | null;
+  issuer_name: string | null; last_checked: string | null; rule_count: number;
 };
 type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; rule_text_ar: string | null; field: string | null; value: string | null; stated_on: string };
 type Held = { id: string; day: string; reason: string | null; rank: number | null; title: string | null };
@@ -87,7 +87,7 @@ export function OpportunityQueue() {
     if (!card || renderedRef.current.has(card.id)) return;
     renderedRef.current.add(card.id);
     if (!validWhy(card)) return;
-    void (supabase.rpc as any)("oe_app_render", { p_card: card.id });
+    void (supabase.rpc as any)("oe_app_render", { p_opportunity: card.opportunity_id });
   }, [card]);
 
   const advance = () => {
@@ -99,12 +99,15 @@ export function OpportunityQueue() {
   const decide = useCallback(async (action: "right" | "later") => {
     if (!card || busy) return;
     if (action === "later") {
+      setBusy(true);
+      await (supabase.rpc as any)("oe_app_decide", { p_opportunity: card.opportunity_id, p_action: "later" });
+      setBusy(false);
       setLater((current) => new Set(current).add(card.id));
-      setExpanded(false); setDeclining(false);
+      setExpanded(false); setDeclining(false); setQueueIndex(0);
       return;
     }
     setBusy(true);
-    const { data: result } = await (supabase.rpc as any)("oe_app_decide", { p_card: card.id, p_action: "right" });
+    const { data: result } = await (supabase.rpc as any)("oe_app_decide", { p_opportunity: card.opportunity_id, p_action: "right" });
     setBusy(false);
     if (result?.ok) {
       if (card.lane === "write") navigate(`/studio?opportunity=${card.opportunity_id}`);
@@ -116,7 +119,7 @@ export function OpportunityQueue() {
     if (!card || busy) return;
     setBusy(true);
     const { data: result } = await (supabase.rpc as any)("oe_app_decide", {
-      p_card: card.id, p_action: "not_quite", p_scope: scope, p_scope_value: value, p_truth: truth,
+      p_opportunity: card.opportunity_id, p_action: "not_quite", p_scope: scope, p_scope_value: value, p_truth: truth,
     });
     setBusy(false);
     if (result?.ok) {
@@ -179,8 +182,8 @@ export function OpportunityQueue() {
   const count = cards.length;
   const lead = card?.why_lines?.find((line) => String(line?.text ?? "").trim())?.text ?? "";
   const taste = card ? [
-    ["queue_wrong_level", "Wrong level", "level", card.chair_type],
-    ["queue_wrong_sector", "Wrong sector", "type", card.chair_type],
+    ["queue_wrong_level", "Wrong level", "level", card.level_band],
+    ["queue_wrong_sector", "Wrong sector", "sector", card.sector],
     ["queue_wrong_org", "Not this organisation", "issuer", card.issuer_id],
     ["queue_wrong_place", "Wrong place", "place", card.location],
     ["queue_just_one", "Just this one", "just_this", card.opportunity_id],
@@ -221,7 +224,7 @@ export function OpportunityQueue() {
           {expanded && <div className="oe-why-more">
             {(card.why_lines ?? []).slice(1).map((line, index) => <p key={index}><span className="oe-dot-evidence" aria-hidden />{line.text}</p>)}
             {card.gap_line?.text && <p><span className="oe-dot-risk" aria-hidden /><strong>{t("queue_risk", "You would have to answer for")}:</strong> {card.gap_line.text}</p>}
-            <p><span className="oe-dot-rule" aria-hidden /><strong>{t("queue_clears_rules", "Clears all of your rules")}</strong></p>
+            <p><span className="oe-dot-rule" aria-hidden /><strong>{t("queue_clears_n_rules", "Clears {n} of your rules").replace("{n}", String(card.rule_count))}</strong></p>
             {card.quote && <blockquote>“{card.quote}” {card.source_url && <a href={card.source_url} target="_blank" rel="noreferrer">{t("source_link", "Source")}</a>}{card.last_checked && <small style={mono}>{String(card.last_checked).slice(0, 10)}</small>}</blockquote>}
           </div>}
         </div>
