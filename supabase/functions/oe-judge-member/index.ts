@@ -13,7 +13,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { loadVocab } from "../_shared/oeVocab.ts";
 import { OE_REGISTER_FOR_PROMPT, registerFault } from "../_shared/oeRegister.ts";
-import { laneFor, screen, type Eligibility } from "../_shared/oeEligibility.ts";
+import { laneFor, levelOf, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
