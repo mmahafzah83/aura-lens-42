@@ -26,8 +26,10 @@ const TIMEOUT = 9_000;
 
 const CAREERS_PATHS = [
   "/careers", "/en/careers", "/jobs", "/career", "/ar/careers",
-  "/about/careers", "/en/jobs", "/careers/", "/join-us", "/en/about-us/careers",
+  "/about/careers", "/en/jobs", "/join-us", "/en/about-us/careers",
 ];
+/** The other usual door: a careers host beside the main site, not a guess at a domain. */
+const CAREERS_HOSTS = ["careers", "jobs", "career"];
 const CAREERS_TEXT = /careers?|jobs|vacanc|join us|opportunit|وظائف|التوظيف|الوظائف|انضم/i;
 const NEWSROOM_TEXT = /newsroom|news\s*room|media\s*cent|press\s*release|press\s*cent|\bnews\b|\bmedia\b|الأخبار|المركز الإعلامي|البيانات الصحفية/i;
 
@@ -174,12 +176,20 @@ function fingerprint(url: string, html: string): Print | null {
     };
   }
 
-  // SuccessFactors: the /go/{Slug}/{id}/ shape is how Aramco and SABIC build theirs.
-  m = hay.match(/https?:\/\/([a-zA-Z0-9.-]+)\/go\/([A-Za-z0-9%_-]{2,80})\/(\d{3,12})\//);
-  if (m) {
+  // SuccessFactors recruiting marketing: by far the most common system in the
+  // Kingdom. Three tells, any one of which is conclusive: the /go/{Slug}/{id}/
+  // category links, a relative /job/{slug}/{id}/ role link, or the sapsf host
+  // the page loads its own machinery from. The list itself lives at /search.
+  const sfHost = (() => {
+    try { return new URL(url).origin; } catch { return null; }
+  })();
+  const sfGo = /\/go\/[A-Za-z0-9%_-]{2,80}\/\d{3,12}\//.test(hay);
+  const sfJob = /href=["'][^"']*\/job\/[A-Za-z0-9%_&;.,-]{2,120}\/\d{4,12}\//.test(hay);
+  const sfMachinery = /career\d?\.sapsf\.com|successfactors|rmkcdn\.successfactors|sfmc-|jobDetailsShareButtons/i.test(hay);
+  if (sfHost && (sfGo || sfJob || sfMachinery)) {
     return {
-      platform: "successfactors_rmk", token: `${m[1]}|${m[2]}|${m[3]}`,
-      endpoint: `https://${m[1]}/go/${m[2]}/${m[3]}/`,
+      platform: "successfactors_rmk", token: sfHost,
+      endpoint: `${sfHost}/search/?q=`,
     };
   }
   m = hay.match(/career\d?\.sapsf\.com\/careers\?company=([A-Za-z0-9_-]{2,40})/);
@@ -296,7 +306,7 @@ Deno.serve(async (req) => {
     // wait for the search budget to come round.
     let q = admin.from("oe_entities")
       .select("id, name, domain, careers_url")
-      .eq("resolve_status", "new")
+      .in("resolve_status", Array.isArray(body.recheck) ? body.recheck : ["new"])
       .order("domain", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true })
       .limit(batch);
@@ -343,18 +353,22 @@ Deno.serve(async (req) => {
         const origin = `https://${domain}`;
         // robots and the homepage are wanted whatever happens next, so they
         // are asked for at the same time as the usual careers doors.
+        const doors = [
+          ...CAREERS_HOSTS.map((h) => `https://${h}.${domain}`),
+          ...CAREERS_PATHS.map((p) => origin + p),
+        ];
         const [disallows, homeFirst, ...probes] = await Promise.all([
           robotsDisallows(origin),
           get(origin),
-          ...CAREERS_PATHS.map((p) => get(origin + p)),
+          ...doors.map((d) => get(d)),
         ]);
 
         // 2. the careers page: the first usual door that answers, in priority
         // order, and only where robots permits it.
         let careers: Fetched | null = null;
-        for (let i = 0; i < CAREERS_PATHS.length; i++) {
+        for (let i = 0; i < doors.length; i++) {
           const r = probes[i];
-          if (!allowed(disallows, origin + CAREERS_PATHS[i])) continue;
+          if (doors[i].startsWith(origin) && !allowed(disallows, doors[i])) continue;
           if (r.ok && r.body.length > 500) { careers = r; break; }
         }
         const home: Fetched = homeFirst;
