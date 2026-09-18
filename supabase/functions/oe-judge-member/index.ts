@@ -938,7 +938,35 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── WHAT WE HELD BACK ─────────────────────────────────────────────────
+    // The five best things the member did not see today, with the reason.
+    // Without this we can tell whether the card was good, but never whether
+    // the gate threw away the best thing in the room.
+    {
+      const carded = new Set(cardsWritten);
+      void carded;
+      const held = [...actPool, ...writePool]
+        .filter((o: any) => !cardsWritten.length || o.id !== (order[0]?.o?.id ?? null))
+        .map((o: any) => ({
+          opportunity_id: o.id,
+          score: merged.get(o.id)?.score ?? 0,
+          reason: o._screen?.pass === false
+            ? (o._screen?.fails ?? ["gate_fail"]).join(",")
+            : "outranked",
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+      if (held.length) {
+        await admin.from("oe_suppressed").delete().eq("user_id", userId).eq("day", cardDate);
+        await admin.from("oe_suppressed").insert(held.map((h, i) => ({
+          user_id: userId, day: cardDate, opportunity_id: h.opportunity_id,
+          reason: h.reason, rank: i + 1,
+        })));
+      }
+    }
+
     // ── 7. LOG ────────────────────────────────────────────────────────────
+
     const { data: run } = await admin.from("oe_runs").insert({
       run_kind: "judge_member", user_id: userId,
       started_at: startedAt, finished_at: new Date().toISOString(),
