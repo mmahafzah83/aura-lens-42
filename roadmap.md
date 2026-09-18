@@ -17,3 +17,11 @@
 - [ ] Discovery queries rebuilt from eligibility first
 - [ ] "What you can hold" panel in the Opportunities tab
 - [x] Self-check items 1–8
+
+## Step 14 — app-only opportunities queue
+- [ ] Snapshot `pre-step14-opportunities-tab`
+- [ ] Standalone side-rail route and bilingual queue
+- [ ] App serve ledger, decisions, proposal threshold, and suppression recovery
+- [ ] Tuning drawer, completed-day state, outcomes, and history
+- [ ] Disable opportunity email block without changing schedules
+- [ ] 375px and database self-checks
