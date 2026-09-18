@@ -9449,6 +9449,10 @@ export type Database = {
         }
         Returns: Json
       }
+      oe_record_truth: {
+        Args: { p_code: string; p_source?: string; p_token: string }
+        Returns: Json
+      }
       oe_warmth_issuer_text: {
         Args: { p_issuer_names: string[]; p_user_id: string }
         Returns: {
