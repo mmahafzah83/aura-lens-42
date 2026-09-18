@@ -51,7 +51,6 @@ const GuideThoughtLeadershipStrategy = lazy(() => import("./pages/GuideThoughtLe
 const SignatureStudio = lazy(() => import("./pages/SignatureStudio"));
 const SignatureHarness = lazy(() => import("./pages/SignatureHarness"));
 const VoiceHarness = lazy(() => import("./pages/VoiceHarness"));
-const HoldHarness = lazy(() => import("./pages/HoldHarness"));
 
 const Studio = lazy(() => import("./pages/Studio"));
 /** The second door, closed: /read and /mirror carry ?url= and ?ref= into /assessment. */
@@ -116,7 +115,6 @@ const App = () => (
           >
           <Routes>
             <Route path="/" element={<LandingV2 />} />
-            <Route path="/hold-harness" element={<HoldHarness />} />
 
             <Route path="/v2" element={<LandingV2 />} />
             <Route path="/read" element={<ReadAlias />} />
