@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
         }
 
 
-        if (tap.tap === "not_quite" || tap.tap === "not_my_area" || tap.tap === "less_from_here") {
+        if (opportunity && (tap.tap === "not_quite" || tap.tap === "not_my_area" || tap.tap === "less_from_here")) {
           const reach = tap.scope || (tap.tap === "not_my_area" ? "type" : tap.tap === "less_from_here" ? "issuer" : "just_this");
           const reachValue = tap.scope_value || ({
             issuer: opportunity.issuer_id,
