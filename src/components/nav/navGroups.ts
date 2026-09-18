@@ -1,4 +1,4 @@
-import { Compass, Radar, PenLine, BarChart3, User } from "lucide-react";
+import { Compass, Radar, PenLine, BarChart3, User, BriefcaseBusiness } from "lucide-react";
 
 /**
  * BUILD 10 — nine doors become five.
@@ -7,7 +7,7 @@ import { Compass, Radar, PenLine, BarChart3, User } from "lucide-react";
  * values, deep links, `aura:switch-tab` events and every `onSwitchTab` call
  * site are untouched: a group simply says which tabs live behind one door.
  */
-export type NavGroupKey = "home" | "signals" | "write" | "record" | "you";
+export type NavGroupKey = "home" | "signals" | "opportunities" | "write" | "record" | "you";
 
 export interface NavGroup {
   key: NavGroupKey;
@@ -31,6 +31,11 @@ export const NAV_GROUPS: NavGroup[] = [
     key: "signals", label: "Signals", icon: Radar, testId: "nav-intelligence",
     blurb: "What Aura found, and what it read overnight to find it.",
     primary: "intelligence", members: ["intelligence", "overnight"],
+  },
+  {
+    key: "opportunities", label: "Opportunities", icon: BriefcaseBusiness, testId: "nav-opportunities",
+    blurb: "The decisions waiting for you today.",
+    primary: "opportunities", members: ["opportunities"],
   },
   {
     key: "write", label: "Write", icon: PenLine, testId: "nav-publish",

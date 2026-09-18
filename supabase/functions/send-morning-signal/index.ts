@@ -9,7 +9,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { adminUserIds } from "../_shared/adminRole.ts";
-import { loadVocab } from "../_shared/oeVocab.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   renderEmail, heading, paragraph, quote, divider,
@@ -28,9 +27,8 @@ const BASE_CTA_URL = "https://www.aura-intel.org/dashboard?tab=overnight";
 const PAUSE_URL = "https://www.aura-intel.org/dashboard?settings=notifications";
 const FRESH_WINDOW_HOURS = 14;
 
-// The opportunity card block. Behind a flag so it can be switched off without
-// touching anything else this function does.
-const OE_CARDS_ENABLED = (Deno.env.get("OE_CARDS_IN_EMAIL") ?? "true") !== "false";
+// Opportunity cards are app-only. Keep this false regardless of environment.
+const OE_CARDS_ENABLED = false;
 const APP_URL = "https://www.aura-intel.org";
 const AMBER = "#9A6F12";
 
@@ -509,7 +507,7 @@ serve(async (req) => {
         if (!lead && !cardRow && !outcomeRow) { results.push({ user_id: uid, outcome: "skipped_quiet" }); continue; }
 
         const lang = langByUser.get(uid) ?? "en";
-        const vocab = await loadVocab(admin);
+        const vocab = ((key: string) => key) as Vocab;
         // The win mark stays quiet until he has answered an outcome ask once.
         const { count: answered } = await admin.from("oe_outcomes")
           .select("id", { count: "exact", head: true }).eq("user_id", uid).neq("stage", "asked");
