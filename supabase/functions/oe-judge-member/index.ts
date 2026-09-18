@@ -200,7 +200,8 @@ Deno.serve(async (req) => {
   const startedAt = new Date().toISOString();
   const counts = {
     alive: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
-    unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, no_evidence: 0, no_citation: 0,
+    unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
+    no_evidence: 0, no_citation: 0,
   };
   let costUsd = 0;
 
