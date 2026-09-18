@@ -669,14 +669,15 @@ Deno.serve(async (req) => {
             .filter((l) => !blockedChairs.includes(l));
           const countries = (e.countries_allowed ?? []).map((c: string) => String(c).toUpperCase());
           const chairs = Object.keys(CHAIR_WORDS).filter((c) => !blockedChairs.includes(c));
-          const sectors = (e.sectors_core ?? []).map((s: string) => String(s).replace(/_/g, " "));
+          const sectorKeys = (e.sectors_core ?? []).map((s: string) => String(s).toLowerCase());
 
           const built: string[] = [];
           for (const lang of [0, 1] as const) {
             const places = countries.map((c) => COUNTRY_WORDS[c]?.[lang]).filter(Boolean);
             if (!places.length) continue;
             const place = places.join(lang ? " أو " : " or ");
-            for (const sector of sectors.slice(0, 4)) {
+            for (const key of sectorKeys.slice(0, 4)) {
+              const sector = lang ? (SECTOR_WORDS[key] ?? key.replace(/_/g, " ")) : key.replace(/_/g, " ");
               for (const lvl of levels.slice(0, 3)) {
                 built.push(`${LEVEL_WORDS[lvl]?.[lang] ?? lvl} ${sector} ${place}`);
               }
@@ -685,6 +686,7 @@ Deno.serve(async (req) => {
               }
             }
           }
+
           // Faces come second, and are anchored to the same places.
           for (const q of (facesByUser.get(e.user_id) ?? []).slice(0, 6)) {
             const isAr = /[\u0600-\u06FF]/.test(q);
