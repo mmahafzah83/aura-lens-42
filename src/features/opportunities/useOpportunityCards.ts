@@ -43,7 +43,18 @@ export function useOpportunityCards(userId?: string | null, days = 30) {
         return acc;
       }, {});
     }
-    setCards(rows.map((c) => ({ ...c, warmth: c.opportunity_id ? warmth[c.opportunity_id] ?? [] : [] })));
+    const kinds = Array.from(new Set(rows.map((c) => c.oe_opportunities?.discovery_kind).filter((k): k is string => !!k && LEAD_KINDS.includes(k))));
+    const lead: Record<string, { days: number; sample: number } | null> = {};
+    for (const kind of kinds) {
+      const { data: l } = await (supabase.rpc as any)("oe_expected_lead_days", { p_discovery_kind: kind });
+      const row = Array.isArray(l) ? l[0] : l;
+      lead[kind] = row?.expected_lead_days != null ? { days: Number(row.expected_lead_days), sample: Number(row.sample_size ?? 0) } : null;
+    }
+    setCards(rows.map((c) => ({
+      ...c,
+      warmth: c.opportunity_id ? warmth[c.opportunity_id] ?? [] : [],
+      lead: lead[c.oe_opportunities?.discovery_kind ?? ""] ?? null,
+    })));
     // The win mark stays quiet until he has answered at least once.
     const { count } = await (supabase.from("oe_outcomes" as any) as any)
       .select("id", { count: "exact", head: true }).eq("user_id", userId).neq("stage", "asked");
