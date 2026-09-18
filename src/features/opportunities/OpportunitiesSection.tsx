@@ -90,5 +90,7 @@ export function OpportunitiesSection() {
       <div><strong style={{ fontSize: 14 }}>{rtl ? "أرسل لي ما أسمع عنه" : "Forward me things I hear about"}</strong><p style={{ margin: "3px 0 0", color: "#5B6673", fontSize: 12 }}>{rtl ? "أرسل رسالة أو رابطاً إلى Aura لتبحث عن نسخته العامة." : "Send a message or a link to Aura and it looks for the public version."}</p></div>
       <button type="button" role="switch" aria-checked={forwarding} aria-label="Forwarding consent" onClick={() => void (forwarding ? disableForwarding() : enable("forwarding"))} style={{ width: 44, height: 24, flex: "0 0 44px", border: 0, borderRadius: 12, background: forwarding ? "#0670C4" : "#E2E7EE", padding: 2, cursor: "pointer" }}><span style={{ display: "block", width: 20, height: 20, borderRadius: 10, background: "#FFFFFF", transform: forwarding ? (rtl ? "translateX(-20px)" : "translateX(20px)") : "none", transition: "transform 160ms" }} /></button>
     </div>
+    {matching ? <><WhatWeSentYou userId={userId} language={language} /><WhatTheMachineLearned language={language} /></> : null}
   </section>;
+
 }
