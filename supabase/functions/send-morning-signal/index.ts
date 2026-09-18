@@ -33,28 +33,7 @@ const OE_CARDS_ENABLED = (Deno.env.get("OE_CARDS_IN_EMAIL") ?? "true") !== "fals
 const APP_URL = "https://www.aura-intel.org";
 const AMBER = "#9A6F12";
 
-const CHAIR_LABEL: Record<string, { en: string; ar: string }> = {
-  board: { en: "Board seat", ar: "مقعد مجلس" },
-  mandate: { en: "Mandate", ar: "تكليف" },
-  role: { en: "Role", ar: "دور" },
-  room: { en: "Room", ar: "غرفة" },
-  speaking: { en: "Speaking", ar: "منصة" },
-  media: { en: "Media", ar: "إعلام" },
-  advisory: { en: "Advisory", ar: "استشارة" },
-  award: { en: "Award", ar: "جائزة" },
-  learning: { en: "Learning", ar: "تعلّم" },
-};
-const BAND_WORD: Record<string, { en: string; ar: string }> = {
-  strong: { en: "strong", ar: "قوية" },
-  worth_a_look: { en: "worth a look", ar: "تستحق النظر" },
-  stretch: { en: "a stretch", ar: "بعيدة" },
-};
-const TAP_LABEL = {
-  right: { en: "That's right", ar: "صحيح" },
-  not_quite: { en: "Not quite", ar: "ليس تماماً" },
-  not_my_area: { en: "Not my area", ar: "ليس مجالي" },
-  less_from_here: { en: "Less from this issuer", ar: "أقل من هذه الجهة" },
-};
+type Vocab = (key: string, lang?: "en" | "ar") => string;
 
 type Card = {
   id: string;
@@ -66,7 +45,8 @@ type Card = {
   fit_band: string | null;
   win_band: string | null;
   tap_token: string | null;
-  oe_opportunities?: { title?: string; chair_type?: string; time_kind?: string; source_url?: string } | null;
+  lane?: string | null;
+  oe_opportunities?: { title?: string; chair_type?: string; time_kind?: string; source_url?: string; route_url?: string | null } | null;
 };
 
 type OutcomeAsk = {
@@ -75,11 +55,12 @@ type OutcomeAsk = {
   oe_cards?: { tap_token?: string; oe_opportunities?: { title?: string } | null } | null;
 };
 
-function buildOutcomeBlock(row: OutcomeAsk, lang: "en" | "ar"): { html: string; text: string } {
+function buildOutcomeBlock(row: OutcomeAsk, lang: "en" | "ar", v: Vocab): { html: string; text: string } {
   const title = String(row.oe_cards?.oe_opportunities?.title ?? "");
   const base = `${APP_URL}/t/${row.oe_cards?.tap_token ?? ""}`;
   const question = lang === "ar" ? `قبل أسبوعين قلت إن هذه الفرصة تناسبك: ${title}. هل حدث شيء بسببها؟` : `Two weeks ago you said this fitted: ${title}. Did anything come of it?`;
   const labels = lang === "ar" ? { applied: "تقدّمت", won: "حصلت عليها", nothing: "لا شيء" } : { applied: "Applied", won: "Won it", nothing: "Nothing" };
+  void v;
   return {
     html: `${divider()}<p style="margin:0 0 12px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK};">${escapeHtml(question)}</p><p style="margin:0 0 6px;">${tapButton(`${base}?o=applied`, labels.applied)}${tapButton(`${base}?o=won`, labels.won)}${tapButton(`${base}?o=nothing`, labels.nothing)}</p>`,
     text: `${question}\n${labels.applied}: ${base}?o=applied\n${labels.won}: ${base}?o=won\n${labels.nothing}: ${base}?o=nothing`,
@@ -94,12 +75,10 @@ function bandBox(caption: string, word: string): string {
   return `<td style="padding:10px 14px;background:${CANVAS};border:1px solid ${BORDER};border-radius:8px;font-family:${BODY};font-size:13px;color:${INK_SOFT};">${escapeHtml(caption)}: <strong style="color:${INK};">${escapeHtml(word)}</strong></td>`;
 }
 
-/** The card, rendered. Returns html and the plain-text twin. */
-function buildCardBlock(card: Card, lang: "en" | "ar"): { html: string; text: string } {
-  const L = (k: keyof typeof TAP_LABEL) => TAP_LABEL[k][lang];
-
+/** The card, rendered. Every label word comes from oe_vocabulary. */
+function buildCardBlock(card: Card, lang: "en" | "ar", v: Vocab, winKnown: boolean): { html: string; text: string } {
   if (!card.opportunity_id) {
-    const line = lang === "ar" ? "لا شيء قوي اليوم" : "Nothing strong today";
+    const line = v("nothing_today", lang);
     return {
       html: `<p style="margin:0 0 16px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_FAINT};">${escapeHtml(line)}</p>${divider()}`,
       text: `${line}\n`,
@@ -107,35 +86,38 @@ function buildCardBlock(card: Card, lang: "en" | "ar"): { html: string; text: st
   }
 
   const opp = card.oe_opportunities ?? {};
-  const kind = CHAIR_LABEL[String(opp.chair_type ?? "")]?.[lang] ?? String(opp.chair_type ?? "");
-  const tag = opp.time_kind === "early_signal"
-    ? (lang === "ar" ? "إشارة مبكرة" : "early signal")
-    : (lang === "ar" ? "مفتوح الآن" : "open now");
+  const kind = v(`chair_${String(opp.chair_type ?? "")}`, lang) || String(opp.chair_type ?? "");
+  const tag = v(card.lane === "lane_forming" ? "lane_forming" : "lane_open", lang);
   const why = (card.why_lines ?? []).map((w) => String(w?.text ?? "").trim()).filter(Boolean);
-  const gap = String(card.gap_line?.text ?? "").trim();
+  const distance = String(card.gap_line?.text ?? "").trim();
   const base = `${APP_URL}/t/${card.tap_token ?? ""}`;
+  const fitWord = v(`fit_${String(card.fit_band ?? "stretch")}`, lang);
+  const winWord = winKnown ? v(`fit_${String(card.win_band ?? "stretch")}`, lang) : v("not_known_yet", lang);
+  const wayIn = opp.route_url
+    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;"><a href="${escapeHtml(opp.route_url)}" style="color:${ACCENT};text-decoration:underline;">${escapeHtml(v("the_way_in", lang))}</a></p>`
+    : `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;color:${INK_FAINT};">${escapeHtml(v("no_way_in", lang))}</p>`;
 
   const whyHtml = why.map((w) =>
     `<p style="margin:0 0 8px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};"><span style="color:${INK_FAINT};">&bull;</span> ${escapeHtml(w)}</p>`).join("");
-  const gapHtml = gap
-    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};"><span style="color:${AMBER};">&bull;</span> ${escapeHtml(gap)}</p>`
+  const distanceHtml = distance
+    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:14px;line-height:1.6;color:${INK_SOFT};"><span style="color:${AMBER};">&bull;</span> <strong>${escapeHtml(v("the_distance", lang))}:</strong> ${escapeHtml(distance)}</p>`
     : "";
   const quoteHtml = card.quote
-    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;line-height:1.6;color:${INK_FAINT};">&ldquo;${escapeHtml(card.quote)}&rdquo;${opp.source_url ? ` <a href="${escapeHtml(opp.source_url)}" style="color:${ACCENT};text-decoration:underline;">${lang === "ar" ? "النص الأصلي" : "original"}</a>` : ""}</p>`
+    ? `<p style="margin:0 0 12px;font-family:${BODY};font-size:13px;line-height:1.6;color:${INK_FAINT};">&ldquo;${escapeHtml(card.quote)}&rdquo;${opp.source_url ? ` <a href="${escapeHtml(opp.source_url)}" style="color:${ACCENT};text-decoration:underline;">${escapeHtml(v("source", lang))}</a>` : ""}</p>`
     : "";
 
   const html = `
     <p style="margin:0 0 6px;font-family:${MONO};font-size:10px;line-height:1.4;letter-spacing:.16em;text-transform:uppercase;color:${INK_FAINT};">${escapeHtml(kind)} &middot; ${escapeHtml(tag)}</p>
     <p style="margin:0 0 8px;font-family:${BODY};font-size:19px;line-height:1.35;font-weight:700;color:${INK};">${escapeHtml(String(opp.title ?? ""))}</p>
     ${card.clock_text ? `<p style="margin:0 0 12px;font-family:${MONO};font-size:12px;line-height:1.5;color:${AMBER};">${escapeHtml(card.clock_text)}</p>` : ""}
-    ${whyHtml}${gapHtml}${quoteHtml}
+    ${whyHtml}${distanceHtml}${wayIn}${quoteHtml}
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px;"><tr>
-      ${bandBox(lang === "ar" ? "تناسبك" : "Fits you", BAND_WORD[String(card.fit_band ?? "stretch")]?.[lang] ?? "")}
+      ${bandBox(v("fits_you", lang), fitWord)}
       <td style="width:10px;">&nbsp;</td>
-      ${bandBox(lang === "ar" ? "تستطيع الفوز بها" : "You could win it", BAND_WORD[String(card.win_band ?? "stretch")]?.[lang] ?? "")}
+      ${bandBox(v("your_chance", lang), winWord)}
     </tr></table>
-    <p style="margin:0 0 6px;">${tapButton(`${base}?a=right`, L("right"))}${tapButton(`${base}?a=not_quite`, L("not_quite"))}${tapButton(`${base}?a=not_my_area`, L("not_my_area"))}</p>
-    <p style="margin:0 0 4px;font-family:${BODY};font-size:12px;line-height:1.5;"><a href="${base}?a=less_from_here" style="color:${INK_FAINT};text-decoration:underline;">${escapeHtml(L("less_from_here"))}</a></p>
+    <p style="margin:0 0 6px;">${tapButton(`${base}?a=right`, v("tap_right", lang))}${tapButton(`${base}?a=not_quite`, v("tap_not_quite", lang))}${tapButton(`${base}?a=not_my_area`, v("tap_not_mine", lang))}</p>
+    <p style="margin:0 0 4px;font-family:${BODY};font-size:12px;line-height:1.5;"><a href="${base}?a=less_from_here" style="color:${INK_FAINT};text-decoration:underline;">${escapeHtml(v("less_from_source", lang))}</a></p>
     ${divider()}`;
 
   const text = [
@@ -143,14 +125,15 @@ function buildCardBlock(card: Card, lang: "en" | "ar"): { html: string; text: st
     String(opp.title ?? ""),
     card.clock_text ?? "",
     ...why.map((w) => `- ${w}`),
-    gap ? `- ${gap}` : "",
+    distance ? `- ${v("the_distance", lang)}: ${distance}` : "",
+    opp.route_url ? `${v("the_way_in", lang)}: ${opp.route_url}` : v("no_way_in", lang),
     card.quote ? `"${card.quote}"${opp.source_url ? ` (${opp.source_url})` : ""}` : "",
-    `${lang === "ar" ? "تناسبك" : "Fits you"}: ${BAND_WORD[String(card.fit_band ?? "stretch")]?.[lang] ?? ""}`,
-    `${lang === "ar" ? "تستطيع الفوز بها" : "You could win it"}: ${BAND_WORD[String(card.win_band ?? "stretch")]?.[lang] ?? ""}`,
-    `${L("right")}: ${base}?a=right`,
-    `${L("not_quite")}: ${base}?a=not_quite`,
-    `${L("not_my_area")}: ${base}?a=not_my_area`,
-    `${L("less_from_here")}: ${base}?a=less_from_here`,
+    `${v("fits_you", lang)}: ${fitWord}`,
+    `${v("your_chance", lang)}: ${winWord}`,
+    `${v("tap_right", lang)}: ${base}?a=right`,
+    `${v("tap_not_quite", lang)}: ${base}?a=not_quite`,
+    `${v("tap_not_mine", lang)}: ${base}?a=not_my_area`,
+    `${v("less_from_source", lang)}: ${base}?a=less_from_here`,
   ].filter(Boolean).join("\n");
 
   return { html, text };
@@ -511,7 +494,7 @@ serve(async (req) => {
         if (OE_CARDS_ENABLED) {
           const { data: c } = await admin
             .from("oe_cards")
-            .select("id, opportunity_id, why_lines, gap_line, quote, clock_text, fit_band, win_band, tap_token, oe_opportunities(title, chair_type, time_kind, source_url)")
+            .select("id, opportunity_id, why_lines, gap_line, quote, clock_text, fit_band, win_band, lane, tap_token, oe_opportunities(title, chair_type, time_kind, source_url, route_url)")
             .eq("user_id", uid)
             .eq("card_date", lp.dateKey)
             .is("sent_at", null)
@@ -525,8 +508,12 @@ serve(async (req) => {
         if (!lead && !cardRow && !outcomeRow) { results.push({ user_id: uid, outcome: "skipped_quiet" }); continue; }
 
         const lang = langByUser.get(uid) ?? "en";
-        const cardBlock = cardRow ? buildCardBlock(cardRow, lang) : null;
-        const outcomeBlock = outcomeRow ? buildOutcomeBlock(outcomeRow, lang) : null;
+        const vocab = await loadVocab(admin);
+        // The win mark stays quiet until he has answered an outcome ask once.
+        const { count: answered } = await admin.from("oe_outcomes")
+          .select("id", { count: "exact", head: true }).eq("user_id", uid).neq("stage", "asked");
+        const cardBlock = cardRow ? buildCardBlock(cardRow, lang, vocab, (answered ?? 0) > 0) : null;
+        const outcomeBlock = outcomeRow ? buildOutcomeBlock(outcomeRow, lang, vocab) : null;
         const { subject, html, text } = buildEmail(lead, others, cardBlock, outcomeBlock);
 
         if (dryRun) {
