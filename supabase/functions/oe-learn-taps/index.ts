@@ -70,7 +70,10 @@ Deno.serve(async (req) => {
         const { data: card } = await admin.from("oe_cards")
           .select("match_id,opportunity_id,oe_matches(scores),oe_opportunities(id,title,issuer_id,seniority_band,location,chair_type)")
           .eq("id", tap.card_id).maybeSingle();
-        const opportunity = card?.oe_opportunities as any;
+        // A card can carry no record at all (a quiet day). A tap on one of
+        // those teaches nothing about the world, so there is nothing to write.
+        const opportunity = (card?.oe_opportunities ?? null) as any;
+
         const match = card?.oe_matches as any;
         const title = String(opportunity?.title ?? "");
         const ids = citedFaceIds(match?.scores);
