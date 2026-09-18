@@ -559,12 +559,15 @@ Deno.serve(async (req) => {
     const actPool: any[] = [];
     const writePool: any[] = [];
     for (const o of filtered) {
-      const s = screen(o, eligibility);
-      const lane = laneFor(o, s);
+      const level = levelOf(o);
+      const withLevel = { ...o, level_band: level };
+      const s = screen(withLevel, eligibility);
+      const issuerDomain = (o as any).issuer?.domain ?? null;
+      const lane = laneFor(withLevel, s, issuerDomain);
       if (!s.pass) counts.skipped_ineligible++;
-      (lane === "act" ? actPool : writePool).push({ ...o, _screen: s });
+      (lane === "act" ? actPool : writePool).push({ ...withLevel, _screen: s });
       await admin.from("oe_opportunities")
-        .update({ lane_final: lane, eligibility_fail: s.fails })
+        .update({ lane_final: lane, eligibility_fail: s.fails, level_band: level })
         .eq("id", o.id);
     }
     counts.lane_act = actPool.length;
