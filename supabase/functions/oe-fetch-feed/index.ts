@@ -903,6 +903,9 @@ Deno.serve(async (req) => {
           scope: rec.scope ?? null,
           sector: rec.sector ?? null,
           seniority_band: rec.seniority_band ?? null,
+          // The ladder level, read in code from the record's own words. Never
+          // from seniority_band, which is a different (work/table/room) vocabulary.
+          level_band: parseLevel(rec.title, rec.scope),
           location: rec.location ?? null,
           remote: typeof rec.remote === "boolean" ? rec.remote : null,
           requirements: Array.isArray(rec.requirements) ? rec.requirements : [],
