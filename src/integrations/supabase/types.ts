@@ -4362,6 +4362,39 @@ export type Database = {
           },
         ]
       }
+      oe_direction: {
+        Row: {
+          ambition_text: string | null
+          mix: string | null
+          mix_set_on: string | null
+          priority: string | null
+          priority_expires_at: string | null
+          priority_set_on: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ambition_text?: string | null
+          mix?: string | null
+          mix_set_on?: string | null
+          priority?: string | null
+          priority_expires_at?: string | null
+          priority_set_on?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ambition_text?: string | null
+          mix?: string | null
+          mix_set_on?: string | null
+          priority?: string | null
+          priority_expires_at?: string | null
+          priority_set_on?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oe_eligibility: {
         Row: {
           blocked_reasons: Json
@@ -4930,6 +4963,7 @@ export type Database = {
           lane: string | null
           met_count: number | null
           opportunity_id: string
+          purpose: string | null
           requirement_check: Json | null
           retrieval: Json | null
           rubric_version: string
@@ -4952,6 +4986,7 @@ export type Database = {
           lane?: string | null
           met_count?: number | null
           opportunity_id: string
+          purpose?: string | null
           requirement_check?: Json | null
           retrieval?: Json | null
           rubric_version: string
@@ -4974,6 +5009,7 @@ export type Database = {
           lane?: string | null
           met_count?: number | null
           opportunity_id?: string
+          purpose?: string | null
           requirement_check?: Json | null
           retrieval?: Json | null
           rubric_version?: string
@@ -9433,6 +9469,10 @@ export type Database = {
           title: string
         }[]
       }
+      oe_direction_save: {
+        Args: { p_defer?: boolean; p_mix?: string; p_priority?: string }
+        Returns: Json
+      }
       oe_expected_lead_days: {
         Args: { p_chair_type?: string; p_discovery_kind: string }
         Returns: {
@@ -9451,6 +9491,7 @@ export type Database = {
           title: string
         }[]
       }
+      oe_normalize_terms: { Args: { p_text: string }; Returns: string[] }
       oe_rebuild_eligibility: { Args: { p_user: string }; Returns: undefined }
       oe_record_outcome: {
         Args: { p_outcome: string; p_token: string }
@@ -9469,6 +9510,13 @@ export type Database = {
       oe_record_truth: {
         Args: { p_code: string; p_source?: string; p_token: string }
         Returns: Json
+      }
+      oe_refresh_purpose: {
+        Args: { p_user: string }
+        Returns: {
+          opportunity_id: string
+          purpose: string
+        }[]
       }
       oe_warmth_issuer_text: {
         Args: { p_issuer_names: string[]; p_user_id: string }

@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { AuraCard } from "@/components/ui/AuraCard";
+import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useVocab } from "./useVocab";
 
@@ -15,18 +16,24 @@ type QueueCard = {
   gap_line: WhyLine | null; quote: string | null; clock_text: string | null; title: string;
   chair_type: string | null; level_band: string | null; sector: string | null; location: string | null; scope: string | null; deadline: string | null;
   source_url: string | null; route_url: string | null; route_kind: string | null; issuer_id: string | null;
-  issuer_name: string | null; last_checked: string | null; rule_count: number;
+  issuer_name: string | null; last_checked: string | null; rule_count: number; purpose: "strength" | "build" | "explore";
 };
+type Priority = "bigger_seat" | "known_for_one" | "new_rooms" | "out_of_sector" | "stay_current";
+type Mix = "win" | "build" | "explore";
+type Direction = { priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null; mix: Mix | null; mix_set_on: string | null };
 type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; rule_text_ar: string | null; field: string | null; value: string | null; stated_on: string };
 type Held = { id: string; day: string; reason: string | null; rank: number | null; title: string | null };
 type History = { id: string; shown_at: string; lane: string | null; tap: string | null; signal_class: string | null; truth_code: string | null; outcome: string | null; why: Record<string, unknown> | null; title: string | null };
 type DueOutcome = { id: string; title: string | null };
-type QueueData = { cards: QueueCard[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[] };
+type QueueData = { cards: QueueCard[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[] };
 type Proposal = { id: string; count: number; value: string };
+type DirectionQuestion = "priority" | "mix" | null;
 
-const emptyData: QueueData = { cards: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, rules: [], held: [], history: [], due_outcomes: [] };
+const emptyData: QueueData = { cards: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, rules: [], held: [], history: [], due_outcomes: [] };
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
 const chipBase = { minHeight: 36, padding: "7px 10px", borderRadius: 4, background: "var(--surface-card)", color: "var(--text-primary)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 } as const;
+const priorities: Priority[] = ["bigger_seat", "known_for_one", "new_rooms", "out_of_sector", "stay_current"];
+const mixes: Mix[] = ["win", "build", "explore"];
 
 function validWhy(card: QueueCard) {
   return (card.why_lines ?? []).some((line) => String(line?.text ?? "").trim());
@@ -50,6 +57,8 @@ export function OpportunityQueue() {
   const [busy, setBusy] = useState(false);
   const [newRule, setNewRule] = useState("");
   const [newRuleType, setNewRuleType] = useState<"sector" | "issuer">("sector");
+  const [directionQuestion, setDirectionQuestion] = useState<DirectionQuestion>(null);
+  const [directionAsked, setDirectionAsked] = useState(false);
   const renderedRef = useRef<Set<string>>(new Set());
   const v = useVocab(language);
   const rtl = language === "ar";
@@ -66,7 +75,21 @@ export function OpportunityQueue() {
     ]);
     setFirstName(String(profile?.first_name ?? ""));
     setLanguage(profile?.content_language === "ar" ? "ar" : "en");
-    if (!error && payload) setData({ ...emptyData, ...(payload as QueueData) });
+    if (!error && payload) {
+      const next = { ...emptyData, ...(payload as QueueData) };
+      setData(next);
+      const askedKey = `oe-direction-asked:${uid}`;
+      const asked = window.sessionStorage.getItem(askedKey) === "true";
+      setDirectionAsked(asked);
+      if (!asked && next.cards.length > 0) {
+        const today = new Date().toISOString().slice(0, 10);
+        const priorityDue = !next.direction?.priority && (!next.direction?.priority_expires_at || next.direction.priority_expires_at <= today);
+        const priorityExpired = Boolean(next.direction?.priority && next.direction.priority_expires_at && next.direction.priority_expires_at <= today);
+        if (priorityDue || priorityExpired) setDirectionQuestion("priority");
+        else if (next.direction?.priority && !next.direction.mix) setDirectionQuestion("mix");
+        else setDirectionQuestion(null);
+      } else setDirectionQuestion(null);
+    }
     setLoading(false);
   }, []);
 
@@ -178,6 +201,35 @@ export function OpportunityQueue() {
     void load();
   };
 
+  const markDirectionAsked = () => {
+    if (userId) window.sessionStorage.setItem(`oe-direction-asked:${userId}`, "true");
+    setDirectionAsked(true);
+    setDirectionQuestion(null);
+  };
+
+  const saveDirection = async (value: Priority | Mix) => {
+    if (busy) return;
+    setBusy(true);
+    const params = directionQuestion === "priority" ? { p_priority: value } : { p_mix: value };
+    const { error } = await (supabase.rpc as any)("oe_direction_save", params);
+    setBusy(false);
+    if (!error) { markDirectionAsked(); setQueueIndex(0); void load(); }
+  };
+
+  const deferDirection = async () => {
+    if (busy) return;
+    setBusy(true);
+    const { error } = await (supabase.rpc as any)("oe_direction_save", { p_defer: true });
+    setBusy(false);
+    if (!error) { markDirectionAsked(); void load(); }
+  };
+
+  const changeDirection = (question: Exclude<DirectionQuestion, null>) => {
+    if (directionAsked || data.cards.length === 0) return;
+    setDrawerOpen(false);
+    setDirectionQuestion(question);
+  };
+
   const t = (key: string, fallback: string) => v(key) || fallback;
   const count = cards.length;
   const lead = card?.why_lines?.find((line) => String(line?.text ?? "").trim())?.text ?? "";
@@ -213,9 +265,16 @@ export function OpportunityQueue() {
       <p><strong>{rtl ? `هذه المرة رقم ${proposal.count} التي ترفض فيها ${proposal.value}.` : `That is the ${proposal.count}th ${proposal.value} ${t("queue_proposal_seen", "item you have turned down.")}`}</strong></p>
       <p>{t("queue_proposal_question", "Shall we stop showing them? You can undo it any time, and it will not touch anything else.")}</p>
       <div className="oe-actions"><AuraButton onClick={() => void answerProposal(true)} loading={busy}>{t("queue_yes_stop", "Yes, stop")}</AuraButton><AuraButton variant="ghost" onClick={() => void answerProposal(false)} disabled={busy}>{t("queue_no_keep", "No, keep them")}</AuraButton></div>
-    </AuraCard> : card && validWhy(card) ? <>
+    </AuraCard> : directionQuestion && card ? <DirectionCard
+      kind={directionQuestion}
+      direction={data.direction}
+      busy={busy}
+      v={v}
+      onChoose={(value) => void saveDirection(value)}
+      onDefer={() => void deferDirection()}
+    /> : card && validWhy(card) ? <>
       <AuraCard hover="none" className="oe-decision-card" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)", borderRadius: 20 }}>
-        <div className={`oe-lane oe-lane-${card.lane}`}><span aria-hidden />{card.lane === "act" ? t("queue_open_now", "Open now") : t("queue_worth_writing", "Worth writing about")}{card.clock_text && <em> · {card.clock_text}</em>}</div>
+        <div className="oe-card-flags"><div className={`oe-lane oe-lane-${card.lane}`}><span aria-hidden />{card.lane === "act" ? t("queue_open_now", "Open now") : t("queue_worth_writing", "Worth writing about")}{card.clock_text && <em> · {card.clock_text}</em>}</div>{card.purpose === "explore" && <span className="oe-purpose-chip">{v("purpose_explore")}</span>}</div>
         <h2>{card.title}</h2>
         <p className="oe-meta">{[card.issuer_name, card.location].filter(Boolean).join(" · ")}</p>
         {card.scope && <p className="oe-summary">{card.scope}</p>}
@@ -246,11 +305,32 @@ export function OpportunityQueue() {
 
     {drawerOpen && createPortal(<div className="oe-drawer-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}><aside className="oe-drawer" role="dialog" aria-modal="true" aria-label={t("queue_tuning_title", "What reaches you")}>
       <div className="oe-drawer-head"><h2>{t("queue_tuning_title", "What reaches you")}</h2><button type="button" onClick={() => setDrawerOpen(false)} aria-label={t("queue_close", "Close")}><X size={18}/></button></div>
+      {data.direction?.priority && <section className="oe-direction-summary">
+        <div className="oe-rule"><div><strong>{v("direction_priority_sentence").replace("{priority}", v(`priority_${data.direction.priority}`)).replace("{date}", data.direction.priority_set_on ?? "")}</strong></div><button type="button" className="v23-textlink" disabled={directionAsked} onClick={() => changeDirection("priority")}>{v("direction_change")}</button></div>
+        {data.direction.mix && <div className="oe-rule"><div><strong>{v("direction_mix_sentence").replace("{mix}", v(`mix_${data.direction.mix}`))}</strong></div><button type="button" className="v23-textlink" disabled={directionAsked} onClick={() => changeDirection("mix")}>{v("direction_change")}</button></div>}
+      </section>}
       <section><SectionHeader label={t("queue_must_true", "Must be true")} />{data.rules.filter((rule) => rule.kind === "hard").map((rule) => <RuleRow key={rule.id} rule={rule} rtl={rtl} onDeactivate={deactivate} />)}</section>
       <section><SectionHeader label={t("queue_better_true", "Better if true")} />{data.rules.filter((rule) => rule.kind === "soft").map((rule) => <RuleRow key={rule.id} rule={rule} rtl={rtl} onDeactivate={deactivate} />)}<div className="oe-add-rule"><select value={newRuleType} onChange={(e) => setNewRuleType(e.target.value as "sector"|"issuer")}><option value="sector">Sector</option><option value="issuer">Organisation</option></select><input value={newRule} onChange={(e) => setNewRule(e.target.value)} placeholder={t("queue_add_control", "Add a sector or organisation")} /><AuraButton size="sm" variant="ghost" onClick={() => void saveRule()} disabled={!newRule.trim() || busy}>+</AuraButton></div></section>
       <section><SectionHeader label={t("queue_held_title", "Held back this month")} />{data.held.map((held) => <div key={held.id} className="oe-held"><div><strong>{held.title ?? "—"}</strong><span>{held.reason ?? "—"}</span></div><AuraButton size="sm" variant="ghost" onClick={() => void showAnyway(held.id)}>{t("queue_show_anyway", "Show me anyway")}</AuraButton></div>)}<p className="oe-commitment">{t("queue_never_locked", "Filtering never locks you out. You can reopen anything held back here.")}</p></section>
     </aside></div>, document.body)}
   </section>;
+}
+
+function DirectionCard({ kind, direction, busy, v, onChoose, onDefer }: { kind: Exclude<DirectionQuestion, null>; direction: Direction | null; busy: boolean; v: ReturnType<typeof useVocab>; onChoose: (value: Priority | Mix) => void; onDefer: () => void }) {
+  const isRenewal = kind === "priority" && Boolean(direction?.priority);
+  const options = kind === "priority" ? priorities : mixes;
+  return <AuraCard hover="none" className="oe-direction-card" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)", borderRadius: 20 }}>
+    <h2>{v(kind === "priority" ? (isRenewal ? "direction_priority_renew" : "direction_priority_question") : "direction_mix_question")}</h2>
+    <div className="oe-direction-options">
+      {options.map((option) => {
+        const selected = kind === "priority" && direction?.priority === option;
+        return <Button key={option} type="button" variant="outline" className={`oe-direction-option${selected ? " is-selected" : ""}`} disabled={busy} onClick={() => onChoose(option)} aria-pressed={selected}>
+          <span><strong>{v(`${kind}_${option}`)}</strong>{kind === "priority" && <small>{v(`priority_${option}_sub`)}</small>}</span>
+        </Button>;
+      })}
+    </div>
+    {kind === "priority" && !isRenewal && <button type="button" className="v23-textlink oe-direction-later" disabled={busy} onClick={onDefer}>{v("direction_not_now")}</button>}
+  </AuraCard>;
 }
 
 function RuleRow({ rule, rtl, onDeactivate }: { rule: Rule; rtl: boolean; onDeactivate: (id: string) => Promise<void> }) {
