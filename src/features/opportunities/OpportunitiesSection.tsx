@@ -9,6 +9,10 @@ import { opportunitySentences } from "./labels";
 import { bandKey, chairKey, useVocab } from "./useVocab";
 import { useOpportunityCards } from "./useOpportunityCards";
 import { WhatYouCanHold } from "./WhatYouCanHold";
+import { YourRules } from "./YourRules";
+import { WhatWeSentYou } from "./WhatWeSentYou";
+import { WhatTheMachineLearned } from "./WhatTheMachineLearned";
+
 import type { OpportunityCardData } from "./types";
 
 
