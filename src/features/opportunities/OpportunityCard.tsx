@@ -22,7 +22,7 @@ export function OpportunityCard({ card, language, readOnly, winKnown, onSaved }:
         {!card.opportunity_id ? <p style={{ margin: 0, color: "#5B6673", display: "flex", alignItems: "center", gap: 8 }}><span aria-hidden style={{ width: 6, height: 6, borderRadius: 99, background: "#00CEC9" }} />{v("nothing_today")}</p> : <>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 12, fontWeight: 700 }}>
             <span>{v(chairKey(opp?.chair_type)) || opp?.chair_type}</span>
-            <span style={{ border: "1px solid #E2E7EE", borderRadius: 4, padding: "2px 7px", color: lane === "lane_forming" ? "#9A6F12" : "#0670C4", background: "#FFFFFF" }}>{v(lane)}</span>
+            <span style={{ border: "1px solid #E2E7EE", borderRadius: 4, padding: "2px 7px", color: lane === "lane_open" ? "#0670C4" : "#9A6F12", background: "#FFFFFF" }}>{v(lane)}</span>
             {/* Everything except an ordinary published call is a find only we made. */}
             {opp?.discovery_kind && opp.discovery_kind !== "posted_opening" && (
               <span style={{ border: "1px solid #E0A82E", borderRadius: 4, padding: "2px 7px", color: "#9A6F12", background: "#FFFFFF" }}>{v("hidden_find")}</span>
@@ -40,7 +40,7 @@ export function OpportunityCard({ card, language, readOnly, winKnown, onSaved }:
           )}
           {card.clock_text && <p style={{ margin: 0, color: "#9A6F12", fontFamily: "IBM Plex Mono, monospace", fontSize: 13 }}>{card.clock_text}</p>}
           <div style={{ display: "grid", gap: 8 }}>
-            {(card.why_lines ?? []).slice(0, 2).map((why, i) => <p key={i} style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#00CEC9" }} />{why.text}</p>)}
+            {(card.why_lines ?? []).slice(0, writeLane ? 4 : 2).map((why, i) => <p key={i} style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#00CEC9" }} /><span>{(why as { label?: string }).label && <strong style={{ color: "#0F1519" }}>{(why as { label?: string }).label}: </strong>}{why.text}</span></p>)}
             {card.gap_line?.text && <p style={{ margin: 0, color: "#5B6673", display: "flex", gap: 9 }}><span aria-hidden style={{ flex: "0 0 6px", width: 6, height: 6, marginTop: rtl ? 12 : 8, borderRadius: 99, background: "#E0A82E" }} /><span><strong style={{ color: "#0F1519" }}>{v("the_distance")}: </strong>{card.gap_line.text}</span></p>}
           </div>
           {(() => {
@@ -73,9 +73,10 @@ export function OpportunityCard({ card, language, readOnly, winKnown, onSaved }:
             ? <a href={routeUrl} target="_blank" rel="noreferrer" style={{ color: "#0670C4", fontWeight: 600 }}>{v("the_way_in")}</a>
             : <span style={{ color: "#5B6673" }}>{v("no_way_in")}</span>}</p>
           {card.quote && <p style={{ margin: 0, color: "#5B6673", fontSize: 13 }}>“{card.quote}” {opp?.source_url && <a href={opp.source_url} target="_blank" rel="noreferrer" style={{ color: "#0670C4" }}>{v("source_link")}</a>}</p>}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
+          {!writeLane && <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
             {([[v("fits_you"), v(bandKey(card.fit_band))], [v("your_chance"), winKnown ? v(bandKey(card.win_band)) : v("not_known_yet")]] as const).map(([label, word]) => <div key={label} style={{ border: "1px solid #E2E7EE", borderRadius: 12, padding: 11, color: "#5B6673", fontSize: 12 }}><span>{label}</span><strong style={{ display: "block", color: "#0F1519", fontSize: 14, marginTop: 2 }}>{word}</strong></div>)}
-          </div>
+          </div>}
+
           <TapRow token={card.tap_token} language={language} source="app" initialTap={tap} readOnly={readOnly || !!tap} onSaved={onSaved} card={{ issuer_id: opp?.issuer_id ?? null, seniority_band: opp?.seniority_band ?? null, location: opp?.location ?? null, opportunity_id: card.opportunity_id, chair_type: opp?.chair_type ?? null }} />
         </>}
       </div>
