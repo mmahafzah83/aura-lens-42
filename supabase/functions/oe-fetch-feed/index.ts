@@ -16,13 +16,14 @@ const corsHeaders = {
 };
 
 const FN = "oe-fetch-feed";
-const READER_VERSION = "p2-1.2";
+const READER_VERSION = "p2-2.0";
 const MODEL = "google/gemini-3-flash-preview";
 const EMBED_MODEL = "text-embedding-3-small";
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
 const MIN_CLEAN_TEXT_CHARS = 800;
 const MAX_NOISE_RATIO = 0.30;
 const MAX_DETAIL_PAGES = 25;
+const ROUTE_KINDS = ["application", "nomination", "tender", "call_for_speakers", "registration", "contact", "none"];
 const MAX_PAGE_CHARS = 24_000; // ≈ 6,000 tokens; head and tail kept, middle cut
 
 // World Bank procurement notices: we want chairs a person can sit in, in the
@@ -52,15 +53,26 @@ const P2_SYSTEM =
   `Return strict JSON {is_opportunity:boolean, chair_type:'board'|'mandate'|'role'|'room'|'speaking'|'media'|'advisory'|'award'|'learning'|null, ` +
   `time_kind:'open_now'|'early_signal'|null, title, scope (<=60 words), issuer_raw, sector, seniority_band:'work'|'table'|'room'|null, ` +
   `location, remote:boolean|null, requirements:[{text, quote}], deadline:YYYY-MM-DD|null, signal_date:YYYY-MM-DD|null, ` +
-  `evidence_quote (a verbatim sentence from the page that proves chair_type and, when present, the deadline), language:'ar'|'en', extraction_confidence:0-1}. ` +
+  `evidence_quote (a verbatim sentence from the page that proves chair_type and, when present, the deadline), ` +
+  `route_url (the page where a person actually applies, nominates, registers, submits or writes in — null when the page has none), ` +
+  `route_kind:'application'|'nomination'|'tender'|'call_for_speakers'|'registration'|'contact'|'none', ` +
+  `language:'ar'|'en', extraction_confidence:0-1}. ` +
   `Rules: null over guess; evidence_quote must be copied verbatim; early_signal is for facts that imply a chair will open ` +
   `(listing/IPO application, new strategy or entity, director term ending or resignation, large digital contract awarded, event dates announced, executive appointment); ` +
   `open_now needs a route or a deadline; seniority_band: work = senior professional, table = director/head, room = C-suite/board. ` +
   `A calendar, directory, aggregator, newsroom index, listing page, company-governance profile page or 'about us' page is NEVER an opportunity — ` +
   `only one specific event, vacancy, notice, mandate, tender or announcement is. If the page describes many events or many roles, return is_opportunity=false. ` +
-  `If the page reports an event that has already taken place, it is an early_signal for the NEXT edition only when the event is recurring ` +
-  `(annual summit, forum, exhibition); set title to '<event> — next edition', signal_date = the past date, and add requirements[] from the recap. ` +
-  `If the event is not recurring, is_opportunity=false.`;
+  `If the page reports an event or a call that has already taken place or already closed, is_opportunity=false — a recap is not a chair. ` +
+  `route_url must be a real link found on the page; never invent one, and never use the page's own address unless that page itself takes the submission.`;
+
+/** A chair whose date has passed is not a chair. */
+function pastEvent(rec: Record<string, any>): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  if (typeof rec.deadline === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rec.deadline) && rec.deadline < today) return true;
+  if (!["speaking", "room", "learning"].includes(String(rec.chair_type))) return false;
+  const dates = String(rec.evidence_quote ?? "").match(/\b20\d{2}-\d{2}-\d{2}\b/g) ?? [];
+  return dates.some((date) => date < today);
+}
 
 function pastOpenEvent(rec: Record<string, any>): boolean {
   if (!['speaking', 'room', 'learning'].includes(String(rec.chair_type)) || rec.time_kind !== 'open_now') return false;
@@ -670,7 +682,7 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        if (pastOpenEvent(rec)) {
+        if (pastEvent(rec)) {
           counts.dropped_past++;
           continue;
         }
@@ -773,6 +785,8 @@ Deno.serve(async (req) => {
           signal_date: rec.signal_date || null,
           posting_date: new Date().toISOString().slice(0, 10),
           evidence_quote: rec.evidence_quote ?? null,
+          route_url: typeof rec.route_url === "string" && /^https?:/i.test(rec.route_url) ? rec.route_url : null,
+          route_kind: ROUTE_KINDS.includes(String(rec.route_kind)) ? String(rec.route_kind) : "none",
           quote_verified: quoteVerified,
           source_url: sourceUrl,
           canonical_url: canonicalUrl,

@@ -4106,6 +4106,7 @@ export type Database = {
         Row: {
           card_date: string
           channel: string
+          cited_ids: Json
           clock_text: string | null
           created_at: string
           dismissed_unread: boolean
@@ -4114,6 +4115,7 @@ export type Database = {
           gap_line: Json | null
           id: string
           kit_offered: boolean
+          lane: string | null
           match_id: string | null
           opened_at: string | null
           opportunity_id: string | null
@@ -4129,6 +4131,7 @@ export type Database = {
         Insert: {
           card_date: string
           channel?: string
+          cited_ids?: Json
           clock_text?: string | null
           created_at?: string
           dismissed_unread?: boolean
@@ -4137,6 +4140,7 @@ export type Database = {
           gap_line?: Json | null
           id?: string
           kit_offered?: boolean
+          lane?: string | null
           match_id?: string | null
           opened_at?: string | null
           opportunity_id?: string | null
@@ -4152,6 +4156,7 @@ export type Database = {
         Update: {
           card_date?: string
           channel?: string
+          cited_ids?: Json
           clock_text?: string | null
           created_at?: string
           dismissed_unread?: boolean
@@ -4160,6 +4165,7 @@ export type Database = {
           gap_line?: Json | null
           id?: string
           kit_offered?: boolean
+          lane?: string | null
           match_id?: string | null
           opened_at?: string | null
           opportunity_id?: string | null
@@ -4574,6 +4580,7 @@ export type Database = {
           gate_reason: string | null
           id: string
           judged_at: string
+          lane: string | null
           opportunity_id: string
           retrieval: Json | null
           rubric_version: string
@@ -4592,6 +4599,7 @@ export type Database = {
           gate_reason?: string | null
           id?: string
           judged_at?: string
+          lane?: string | null
           opportunity_id: string
           retrieval?: Json | null
           rubric_version: string
@@ -4610,6 +4618,7 @@ export type Database = {
           gate_reason?: string | null
           id?: string
           judged_at?: string
+          lane?: string | null
           opportunity_id?: string
           retrieval?: Json | null
           rubric_version?: string
@@ -4655,6 +4664,8 @@ export type Database = {
           raw: Json | null
           remote: boolean | null
           requirements: Json
+          route_kind: string | null
+          route_url: string | null
           scope: string | null
           sector: string | null
           seniority_band: string | null
@@ -4689,6 +4700,8 @@ export type Database = {
           raw?: Json | null
           remote?: boolean | null
           requirements?: Json
+          route_kind?: string | null
+          route_url?: string | null
           scope?: string | null
           sector?: string | null
           seniority_band?: string | null
@@ -4723,6 +4736,8 @@ export type Database = {
           raw?: Json | null
           remote?: boolean | null
           requirements?: Json
+          route_kind?: string | null
+          route_url?: string | null
           scope?: string | null
           sector?: string | null
           seniority_band?: string | null
@@ -4912,6 +4927,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      oe_vocabulary: {
+        Row: {
+          ar: string
+          en: string
+          key: string
+          kind: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          ar: string
+          en: string
+          key: string
+          kind: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ar?: string
+          en?: string
+          key?: string
+          kind?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       onboarding_article_log: {
         Row: {
@@ -8514,6 +8556,17 @@ export type Database = {
           seniority_band: string
           source_url: string
           time_kind: string
+          title: string
+        }[]
+      }
+      oe_member_evidence: {
+        Args: { p_embedding: string; p_k?: number; p_user_id: string }
+        Returns: {
+          body: string
+          distance: number
+          id: string
+          kind: string
+          occurred_at: string
           title: string
         }[]
       }

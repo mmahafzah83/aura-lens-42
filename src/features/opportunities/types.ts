@@ -1,18 +1,21 @@
 export type OpportunityTap = "right" | "not_quite" | "not_my_area" | "less_from_here";
 export type OpportunityScope = "issuer" | "level" | "place" | "type" | "just_this";
 
-export type WhyLine = { text?: string; cites?: string[] };
+export type WhyLine = { text?: string; cites?: Array<string | { kind?: string; id?: string }> };
 
 export type OpportunityCardData = {
   id: string;
   opportunity_id: string | null;
   card_date: string;
   why_lines: WhyLine[] | null;
+  /** The distance: the one thing his own material does not show. */
   gap_line: WhyLine | null;
   quote: string | null;
   clock_text: string | null;
   fit_band: string | null;
   win_band: string | null;
+  lane?: string | null;
+  cited_ids?: unknown;
   explore_slot?: boolean | null;
   tap_token: string;
   oe_opportunities?: {
@@ -21,6 +24,8 @@ export type OpportunityCardData = {
     chair_type?: string;
     time_kind?: string;
     source_url?: string;
+    route_url?: string | null;
+    route_kind?: string | null;
     issuer_id?: string | null;
     seniority_band?: string | null;
     location?: string | null;

@@ -305,6 +305,7 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
         <OpportunityCard
           card={todayOpportunity}
           language={opportunities.language}
+          winKnown={opportunities.winKnown}
           onSaved={opportunities.refresh}
         />
       )}
