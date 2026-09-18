@@ -656,14 +656,7 @@ Deno.serve(async (req) => {
 
       // GATE 1 — no card without his own material.
       const oppVec = asVector(o.embedding);
-      let mine: any[] = [];
-      if (oppVec) {
-        const { data: own, error: ownErr } = await admin.rpc("oe_member_evidence", {
-          p_user_id: userId, p_embedding: `[${oppVec.join(",")}]`, p_k: 8,
-        });
-        if (ownErr) throw new Error(`oe_member_evidence: ${ownErr.message}`);
-        mine = (own ?? []).filter((r: any) => String(r.body ?? "").trim().length > 40);
-      }
+      const mine: any[] = pick.mine?.length ? pick.mine : await memberEvidence(admin, userId, oppVec);
       if (!mine.length) { counts.no_evidence++; continue; }
 
       const allowedIds = new Map<string, any>(mine.map((r: any) => [String(r.id), r]));
