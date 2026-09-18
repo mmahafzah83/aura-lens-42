@@ -359,13 +359,19 @@ async function requirementCheck(
 /**
  * One card per member per local day. A day that already holds an unsent card is
  * rewritten in place; a card already sent is never overwritten.
+ *
+ * BOOK TWO. Every card written here also writes its serve row, carrying the
+ * reason it appeared. A card with no `why` is a bug: the member must always be
+ * able to ask why he saw it and get a true answer.
  */
 async function writeCard(
   admin: SupabaseClient,
   userId: string,
   cardDate: string,
   fields: Record<string, unknown>,
+  why: Record<string, unknown> = {},
 ): Promise<string | null> {
+  let cardId: string | null = null;
   const { data: existing } = await admin
     .from("oe_cards").select("id")
     .eq("user_id", userId).eq("card_date", cardDate).is("sent_at", null)
@@ -373,13 +379,26 @@ async function writeCard(
   if (existing?.id) {
     const { data } = await admin.from("oe_cards")
       .update(fields).eq("id", existing.id).select("id").maybeSingle();
-    return data?.id ?? existing.id;
+    cardId = data?.id ?? existing.id;
+  } else {
+    const { data } = await admin.from("oe_cards")
+      .insert({ user_id: userId, card_date: cardDate, ...fields })
+      .select("id").maybeSingle();
+    cardId = data?.id ?? null;
   }
-  const { data } = await admin.from("oe_cards")
-    .insert({ user_id: userId, card_date: cardDate, ...fields })
-    .select("id").maybeSingle();
-  return data?.id ?? null;
+  if (cardId) {
+    await admin.from("oe_serves").upsert({
+      user_id: userId,
+      card_id: cardId,
+      opportunity_id: (fields.opportunity_id as string | null) ?? null,
+      channel: "email",
+      lane: (fields.lane as string | null) ?? null,
+      why,
+    }, { onConflict: "card_id" });
+  }
+  return cardId;
 }
+
 
 
 Deno.serve(async (req) => {
@@ -706,6 +725,12 @@ Deno.serve(async (req) => {
     const cardsWritten: string[] = [];
     const vocab = await loadVocab(admin);
 
+    // BOOK ONE ids, so every serve can name the rules that were in force.
+    const { data: bookOne } = await admin.from("oe_notebook")
+      .select("id").eq("user_id", userId).eq("active", true).eq("proposal_status", "signed");
+    const ruleIds = (bookOne ?? []).map((r: any) => r.id);
+
+
     // ── 5+6. HIS OWN EVIDENCE, the reasons, then the card ─────────────────
     for (const pick of order) {
       if (cardsWritten.length >= cardsPerDay) break;
@@ -797,7 +822,14 @@ Deno.serve(async (req) => {
         win_band: pick.winBand,
         explore_slot: !!pick.explore,
         channel: "email",
+      }, {
+        rules: ruleIds,
+        faces: (pick.faceIds ?? []),
+        scores: { fit: pick.fitBand, win: pick.winBand, retrieval: merged.get(o.id)?.score ?? null },
+        gate: "pass",
+        lane: "act",
       });
+
       if (card) { cardsWritten.push(card); counts.carded++; }
       void citedIds;
     }
@@ -868,7 +900,15 @@ Deno.serve(async (req) => {
           clock_text: vocab("nothing_to_act_on", lang),
           fit_band: null, win_band: null,
           channel: "email",
+        }, {
+          rules: ruleIds,
+          faces: [],
+          scores: { retrieval: merged.get(o.id)?.score ?? null },
+          gate: (o as any)._screen?.pass === false ? "fail" : "pass",
+          gate_fail: (o as any)._screen?.fails ?? [],
+          lane: "write",
         });
+
         if (card) { cardsWritten.push(card); counts.write_carded++; }
         break;
       }
