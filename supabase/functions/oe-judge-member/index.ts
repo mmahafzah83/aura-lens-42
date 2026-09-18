@@ -13,6 +13,7 @@ import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
 import { loadVocab } from "../_shared/oeVocab.ts";
 import { OE_REGISTER_FOR_PROMPT, registerFault } from "../_shared/oeRegister.ts";
+import { laneFor, screen, type Eligibility } from "../_shared/oeEligibility.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -67,6 +68,23 @@ function p4System(lang: string) {
     `the line. A line that cites nothing, or quotes nothing from what it cites, is dropped. ` +
     `clock: 'closes in N days' / 'no date given' / 'early signal, likely within a quarter' in the member's language.`;
 }
+
+const P6_VERSION = "p6-1.0";
+
+/**
+ * The writing lane. Not a chair he can take — material he can write from.
+ * No score, no clock, no band: four plain parts, the third of which must
+ * stand on his own material.
+ */
+function p6System(lang: string) {
+  return `Write for this professional, in ${lang === "ar" ? "Arabic" : "English"}, in the second person, plain words, ` +
+    `no percentages, no label words, no score words. ${OE_REGISTER_FOR_PROMPT} ` +
+    `Return strict JSON {what_happened, why_it_matters, what_you_know:{text, cites:[{kind,id}]}, open_with}. ` +
+    `Each field <= 40 words. what_you_know must cite one item from HIS OWN MATERIAL by kind and id and quote ` +
+    `between 3 and 15 words copied verbatim from that item. open_with is one question he could open a post with.`;
+}
+
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -390,7 +408,9 @@ Deno.serve(async (req) => {
     alive: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
     unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
     no_evidence: 0, no_citation: 0, warmth_rows: 0, requirement_checked: 0,
+    skipped_ineligible: 0, lane_act: 0, lane_write: 0, write_carded: 0,
   };
+
   let costUsd = 0;
 
   try {
@@ -432,6 +452,12 @@ Deno.serve(async (req) => {
     const memberCountry = (profile?.country ?? "SA") as string;
     const lang = (profile?.content_language === "ar" ? "ar" : "en") as "ar" | "en";
     const cardDate = localToday(profile?.timezone);
+
+    // What he can actually hold. His own row, in his own words.
+    const { data: eligRow } = await admin
+      .from("oe_eligibility").select("*").eq("user_id", userId).maybeSingle();
+    const eligibility = (eligRow ?? null) as Eligibility | null;
+
 
     const { data: corrections } = await admin
       .from("oe_corrections").select("reach, reach_value, chair_type, seniority_band, expires_at")
@@ -527,13 +553,31 @@ Deno.serve(async (req) => {
     counts.alive = pool.length;
     counts.filtered = pool.length - filtered.length;
 
-    const scored = filtered.map((o) => {
+    // ── THE ELIGIBILITY GATE — free, deterministic, and before the model ──
+    // A seat he cannot hold is never read. It is not thrown away either: it
+    // goes to the writing lane, which is material, not a rejection.
+    const actPool: any[] = [];
+    const writePool: any[] = [];
+    for (const o of filtered) {
+      const s = screen(o, eligibility);
+      const lane = laneFor(o, s);
+      if (!s.pass) counts.skipped_ineligible++;
+      (lane === "act" ? actPool : writePool).push({ ...o, _screen: s });
+      await admin.from("oe_opportunities")
+        .update({ lane_final: lane, eligibility_fail: s.fails })
+        .eq("id", o.id);
+    }
+    counts.lane_act = actPool.length;
+    counts.lane_write = writePool.length;
+
+    const scored = actPool.map((o) => {
       const m = merged.get(o.id)!;
       const vec = asVector(o.embedding);
       const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
       return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
     }).sort((a, b) => b.score - a.score).slice(0, shortlistK);
     counts.shortlisted = scored.length;
+
 
     // ── 3. JUDGE ──────────────────────────────────────────────────────────
     if (!lovableKey && scored.length) throw new Error("LOVABLE_API_KEY not configured");
@@ -743,7 +787,7 @@ Deno.serve(async (req) => {
         why_lines: why,
         gap_line: distanceLine,
         cited_ids: why.flatMap((w) => w.cites),
-        lane: "lane_open",
+        lane: "act",
         quote: o.evidence_quote,
         clock_text: clockText,
         fit_band: pick.fitBand,
@@ -755,6 +799,78 @@ Deno.serve(async (req) => {
       void citedIds;
     }
 
+    // ── THE WRITING LANE ──────────────────────────────────────────────────
+    // Nothing he can act on is not the same as nothing at all. If a real
+    // finding sits in the writing lane, the day carries that instead — with
+    // no score, no band and no clock, because none of those apply.
+    if (!cardsWritten.length && writePool.length && lovableKey) {
+      const ranked = writePool
+        .map((o) => ({ o, score: merged.get(o.id)?.score ?? 0 }))
+        .sort((a, b) => b.score - a.score);
+      for (const { o } of ranked.slice(0, 3)) {
+        if (cardedIds.has(o.id)) continue;
+        const oppVec = asVector(o.embedding);
+        const mine = await memberEvidence(admin, userId, oppVec);
+        if (!mine.length) { counts.no_evidence++; continue; }
+        const allowedIds = new Map<string, any>(mine.map((r: any) => [String(r.id), r]));
+        const mineBlock = mine.map((r: any, i: number) =>
+          `${i + 1}. kind=${r.kind} id=${r.id}\n"${String(r.title ? `${r.title}. ` : "")}${String(r.body ?? "").replace(/\s+/g, " ").slice(0, 1200)}"`
+        ).join("\n\n");
+        const userMsg = [
+          `HIS OWN MATERIAL (cite these, quote from these):\n${mineBlock}`,
+          `WHAT HAPPENED:\n${JSON.stringify({ title: o.title, scope: o.scope, issuer: o.issuer_raw, sector: o.sector, location: o.location, signal_date: o.signal_date, quote: o.evidence_quote })}`,
+          `ALLOWED CITE IDS: ${[...allowedIds.keys()].join(", ")}`,
+        ].join("\n\n");
+
+        const out = await gateway(lovableKey, p6System(lang), userMsg);
+        costUsd += 0.0004;
+        await logAIUsage({
+          user_id: userId, function_name: FN, provider: "lovable", model: MODEL,
+          input_tokens: out.usage?.prompt_tokens ?? 0, output_tokens: out.usage?.completion_tokens ?? 0,
+          metadata: { prompt_version: P6_VERSION, opportunity_id: o.id, lane: "write" },
+        });
+        const rec = normaliseJson(out.content);
+
+        const clean = (t: unknown) => {
+          const text = String(t ?? "").trim();
+          if (!text || hasPercent(text) || BANNED.test(text) || registerFault(text, lang)) return "";
+          return text;
+        };
+        const knowText = clean(rec?.what_you_know?.text);
+        const knowCites = (Array.isArray(rec?.what_you_know?.cites) ? rec.what_you_know.cites : [])
+          .map((c: any) => ({ kind: String(c?.kind ?? ""), id: String(typeof c === "string" ? c : c?.id ?? "") }))
+          .filter((c: any) => allowedIds.has(c.id));
+        const grounded = !!knowText && knowCites.some((c: any) => {
+          const item = allowedIds.get(c.id);
+          const run = quotedRun(knowText, `${item?.title ?? ""} ${item?.body ?? ""}`);
+          return run >= 3 && run <= 15;
+        });
+        const happened = clean(rec?.what_happened);
+        const matters = clean(rec?.why_it_matters);
+        const opening = clean(rec?.open_with);
+        if (!grounded || !happened) { counts.no_citation++; continue; }
+
+        const lines = [
+          { text: happened, label: vocab("what_happened", lang), cites: [] as any[] },
+          ...(matters ? [{ text: matters, label: vocab("why_it_matters", lang), cites: [] as any[] }] : []),
+          { text: knowText, label: vocab("what_you_know", lang), cites: knowCites },
+          ...(opening ? [{ text: opening, label: vocab("open_with", lang), cites: [] as any[] }] : []),
+        ];
+        const card = await writeCard(admin, userId, cardDate, {
+          opportunity_id: o.id, match_id: null,
+          why_lines: lines, gap_line: null,
+          cited_ids: knowCites,
+          lane: "write",
+          quote: o.evidence_quote,
+          clock_text: vocab("nothing_to_act_on", lang),
+          fit_band: null, win_band: null,
+          channel: "email",
+        });
+        if (card) { cardsWritten.push(card); counts.write_carded++; }
+        break;
+      }
+    }
+
     if (!cardsWritten.length) {
       const empty = await writeCard(admin, userId, cardDate, {
         opportunity_id: null, match_id: null, why_lines: [], gap_line: null,
@@ -762,6 +878,7 @@ Deno.serve(async (req) => {
       });
       if (empty) cardsWritten.push(empty);
       counts.empty_day = 1;
+
 
       // Coverage alarm: several quiet days in a row is a supply problem, not a
       // reason to lower the gate.

@@ -249,21 +249,32 @@ const ADAPTERS: Record<
   // SuccessFactors publishes no open JSON. We read its list page as HTML and
   // keep only the /go/…/id/ role links it already shows the public.
   async successfactors_rmk(token, endpoint) {
-    const url = endpoint || token;
-    const r = await req(url, { headers: { Accept: "text/html" } });
-    if (!r.ok) throw new Error(`http_${r.status}`);
-    const html = await r.text();
+    const base = endpoint || token;
     const out: Job[] = [];
     const seen = new Set<string>();
-    for (const m of html.matchAll(/<a\b[^>]*href=["']([^"']*\/job\/[^"']+)["'][^>]*>([\s\S]{0,200}?)<\/a>/gi)) {
-      const title = strip(m[2]);
-      if (title.length < 6) continue;
-      let href: string;
-      try { href = new URL(m[1], url).toString(); } catch { continue; }
-      if (seen.has(href)) continue;
-      seen.add(href);
-      out.push({ url: href, title, snippet: title, published_at: null });
+    // The list page shows 25 roles at a time and pages with startrow.
+    for (let startrow = 0; startrow < MAX_PER_ENTITY; startrow += 25) {
+      const url = base + (base.includes("?") ? "&" : "?") + `startrow=${startrow}`;
+      const r = await req(url, { headers: { Accept: "text/html" } });
+      if (!r.ok) {
+        if (startrow === 0) throw new Error(`http_${r.status}`);
+        break;
+      }
+      const html = await r.text();
+      let added = 0;
+      for (const m of html.matchAll(/<a\b[^>]*href=["']([^"']*\/job\/[^"']+)["'][^>]*>([\s\S]{0,200}?)<\/a>/gi)) {
+        const title = strip(m[2]);
+        if (title.length < 6) continue;
+        let href: string;
+        try { href = new URL(m[1], url).toString(); } catch { continue; }
+        if (seen.has(href)) continue;
+        seen.add(href);
+        out.push({ url: href, title, snippet: title, published_at: null });
+        added++;
+      }
+      if (!added) break;
     }
+    if (!out.length) throw new Error("no_listings_in_html");
     return out;
   },
 

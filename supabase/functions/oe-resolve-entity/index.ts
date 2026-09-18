@@ -307,8 +307,8 @@ Deno.serve(async (req) => {
     let q = admin.from("oe_entities")
       .select("id, name, domain, careers_url")
       .in("resolve_status", Array.isArray(body.recheck) ? body.recheck : ["new"])
+      .order("last_resolved_at", { ascending: true, nullsFirst: true })
       .order("domain", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: true })
       .limit(batch);
     if (body.with_domain_only === true) q = q.not("domain", "is", null);
     if (body.entity_id) q = admin.from("oe_entities")
