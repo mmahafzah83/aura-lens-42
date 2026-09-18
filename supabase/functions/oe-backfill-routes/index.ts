@@ -77,6 +77,43 @@ async function readStored(key: string, header: string, pageText: string) {
   return data?.choices?.[0]?.message?.content || "";
 }
 
+const stripTags = (html: string) =>
+  html.replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+const squash = (s: string) => s.replace(/\s+/g, " ").trim();
+
+/** Firecrawl when a key exists, otherwise a plain read with a browser agent. */
+async function fetchPageText(url: string, firecrawlKey: string): Promise<string> {
+  if (firecrawlKey) {
+    try {
+      const r = await fetch("https://api.firecrawl.dev/v2/scrape", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${firecrawlKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true }),
+        signal: AbortSignal.timeout(40_000),
+      });
+      if (r.ok) {
+        const j = await r.json();
+        const md = squash(stripTags(String(j?.markdown ?? j?.data?.markdown ?? "")));
+        if (md.length >= 200) return md;
+      }
+    } catch { /* fall through to the plain read */ }
+  }
+  const r = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml",
+      "Accept-Language": "en,ar;q=0.9",
+    },
+    redirect: "follow",
+    signal: AbortSignal.timeout(25_000),
+  });
+  if (!r.ok) throw new Error(`fetch ${r.status}`);
+  return squash(stripTags(await r.text()));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -94,30 +131,48 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({} as any));
   const dryRun = body.dry_run === true;
   const limit = Math.max(1, Math.min(100, Number(body.limit ?? 50)));
+  /** Re-queueing a feed does not re-read a record that already exists, so a row
+   *  with no stored text is read from its own page here. */
+  const refetch = body.refetch === true;
+  const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
 
   const startedAt = new Date().toISOString();
   const counts = {
-    alive: 0, backfilled: 0, retired: 0, needs_refetch: 0, feeds_requeued: 0, errors: 0,
+    alive: 0, backfilled: 0, retired: 0, needs_refetch: 0, refetched: 0, feeds_requeued: 0, errors: 0,
   };
   const byRouteKind: Record<string, number> = {};
 
   try {
-    const { data: rows, error } = await admin
+    let q = admin
       .from("oe_opportunities")
       .select("id, title, source_url, feed_id, raw")
-      .eq("alive", true)
-      .limit(limit);
+      .eq("alive", true);
+    if (body.only_unexamined === true) q = q.eq("route_kind", "not_checked");
+    const { data: rows, error } = await q.limit(limit);
     if (error) throw new Error(error.message);
     counts.alive = (rows ?? []).length;
 
     const refetchFeeds = new Set<string>();
 
     for (const o of rows ?? []) {
-      const pageText = String((o.raw as any)?.page_text ?? "");
+      let pageText = String((o.raw as any)?.page_text ?? "");
       if (pageText.trim().length < 200) {
         counts.needs_refetch++;
         if (o.feed_id) refetchFeeds.add(o.feed_id);
-        continue;
+        if (!refetch || !o.source_url || dryRun) continue;
+        try {
+          pageText = await fetchPageText(String(o.source_url), firecrawlKey);
+          if (pageText.length < 200) continue;
+          counts.refetched++;
+          await admin.from("oe_opportunities")
+            .update({ raw: { ...(o.raw as any ?? {}), page_text: pageText.slice(0, 12_000) } })
+            .eq("id", o.id);
+          (o as any).raw = { ...(o.raw as any ?? {}), page_text: pageText.slice(0, 12_000) };
+        } catch (e) {
+          counts.errors++;
+          console.error(`[${FN}] refetch ${o.id}: ${String((e as Error).message ?? e).slice(0, 160)}`);
+          continue;
+        }
       }
       if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
       try {
