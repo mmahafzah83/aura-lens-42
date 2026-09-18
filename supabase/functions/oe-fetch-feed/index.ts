@@ -420,9 +420,20 @@ Deno.serve(async (req) => {
   const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
 
   const body = await req.json().catch(() => ({}));
-  const feedId = body.feed_id as string | undefined;
   const memberId = (body.user_id ?? null) as string | null;
-  if (!feedId) return json({ error: "feed_id required" }, 400);
+
+  // Two doors into the same reader: a whole feed, or one candidate the triage
+  // layer has already judged worth the money.
+  const candidateId = (body.candidate_id ?? null) as string | null;
+  let candidateRow: Record<string, any> | null = null;
+  let feedId = (body.feed_id ?? null) as string | null;
+  if (candidateId) {
+    const { data: c } = await admin.from("oe_candidates").select("*").eq("id", candidateId).maybeSingle();
+    if (!c) return json({ error: "candidate not found" }, 404);
+    candidateRow = c;
+    feedId = (c.feed_id ?? null) as string | null;
+  }
+  if (!feedId && !candidateRow) return json({ error: "feed_id or candidate_id required" }, 400);
 
   const startedAt = new Date().toISOString();
   const counts = {
@@ -432,9 +443,15 @@ Deno.serve(async (req) => {
   };
   let costUsd = 0;
 
-  const { data: feed, error: feedErr } = await admin
-    .from("oe_feeds").select("*").eq("id", feedId).maybeSingle();
-  if (feedErr || !feed) return json({ error: "feed not found" }, 404);
+  let feed: Record<string, any> | null = null;
+  if (feedId) {
+    const { data } = await admin.from("oe_feeds").select("*").eq("id", feedId).maybeSingle();
+    feed = data as Record<string, any> | null;
+  }
+  if (!feed) {
+    if (!candidateRow) return json({ error: "feed not found" }, 404);
+    feed = { id: null, name: "triaged candidate", lane: "open", kind: "candidate", issuer_hint: null, url: null };
+  }
 
   const { data: policy } = await admin
     .from("oe_policy_versions").select("params").eq("active", true).maybeSingle();
@@ -452,8 +469,8 @@ Deno.serve(async (req) => {
 
   try {
     // ── 1. FETCH ───────────────────────────────────────────────────────────
-    const kind = (body.kind ?? feed.kind) as string;
-    const url = (body.url ?? feed.url) as string | null;
+    const kind = candidateRow ? "candidate" : ((body.kind ?? feed.kind) as string);
+    const url = (candidateRow?.url ?? body.url ?? feed.url) as string | null;
     const lane = (body.lane ?? feed.lane) as string;
     let candidates: Candidate[] = [];
 
@@ -462,6 +479,19 @@ Deno.serve(async (req) => {
         function_name: FN, error: `never_read host skipped: ${url}`, severity: "low",
         context: { feed_id: feedId },
       });
+    } else if (candidateRow) {
+      // One page, already chosen. Read it the same way as any other page.
+      const d = await scrapePage(firecrawlKey, candidateRow.url, true);
+      counts.pages++;
+      const clean = d.ok ? squash(stripTags(d.markdown ?? "")) : "";
+      if (clean.length >= 400) {
+        candidates = [{
+          url: candidateRow.url,
+          title: candidateRow.title ?? (d.ok ? d.title : "") ?? "",
+          text: clean,
+          extra: { candidate_id: candidateRow.id },
+        }];
+      }
     } else if (kind === "rss" || kind === "sitemap") {
       const r = await fetch(url!, { signal: AbortSignal.timeout(20_000) });
       const xml = await r.text();
@@ -875,11 +905,16 @@ Deno.serve(async (req) => {
     }
 
     // ── 8. FEED STATE ──────────────────────────────────────────────────────
-    await admin.from("oe_feeds").update({
-      last_fetched_at: new Date().toISOString(),
-      ...(insertedAnything ? { last_changed_at: new Date().toISOString() } : {}),
-      last_error: null,
-    }).eq("id", feedId);
+    if (feedId) {
+      await admin.from("oe_feeds").update({
+        last_fetched_at: new Date().toISOString(),
+        ...(insertedAnything ? { last_changed_at: new Date().toISOString() } : {}),
+        last_error: null,
+      }).eq("id", feedId);
+    }
+    if (candidateRow) {
+      await admin.from("oe_candidates").update({ triage_state: "read" }).eq("id", candidateRow.id);
+    }
 
     // ── 9. LOG ─────────────────────────────────────────────────────────────
     const { data: run } = await admin.from("oe_runs").insert({
@@ -898,9 +933,15 @@ Deno.serve(async (req) => {
     return json({ ok: true, feed: feed.name, counts, run_id: run?.id ?? null });
   } catch (e) {
     const msg = String((e as Error).message ?? e).slice(0, 500);
-    await admin.from("oe_feeds").update({
-      last_fetched_at: new Date().toISOString(), last_error: msg,
-    }).eq("id", feedId);
+    if (feedId) {
+      await admin.from("oe_feeds").update({
+        last_fetched_at: new Date().toISOString(), last_error: msg,
+      }).eq("id", feedId);
+    }
+    if (candidateRow) {
+      await admin.from("oe_candidates").update({ triage_state: "error", rejected_reason: msg.slice(0, 200) })
+        .eq("id", candidateRow.id);
+    }
     await admin.from("oe_runs").insert({
       run_kind: "fetch_feed", feed_id: feedId, user_id: memberId,
       started_at: startedAt, finished_at: new Date().toISOString(),

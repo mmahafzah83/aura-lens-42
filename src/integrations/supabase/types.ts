@@ -4102,6 +4102,74 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_candidates: {
+        Row: {
+          canonical_url: string | null
+          content_hash: string | null
+          created_at: string
+          embedding: string | null
+          feed_id: string | null
+          first_seen_at: string
+          id: string
+          lang: string | null
+          published_at: string | null
+          raw: Json
+          rejected_reason: string | null
+          snippet: string | null
+          title: string | null
+          triage_score: number | null
+          triage_state: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          canonical_url?: string | null
+          content_hash?: string | null
+          created_at?: string
+          embedding?: string | null
+          feed_id?: string | null
+          first_seen_at?: string
+          id?: string
+          lang?: string | null
+          published_at?: string | null
+          raw?: Json
+          rejected_reason?: string | null
+          snippet?: string | null
+          title?: string | null
+          triage_score?: number | null
+          triage_state?: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          canonical_url?: string | null
+          content_hash?: string | null
+          created_at?: string
+          embedding?: string | null
+          feed_id?: string | null
+          first_seen_at?: string
+          id?: string
+          lang?: string | null
+          published_at?: string | null
+          raw?: Json
+          rejected_reason?: string | null
+          snippet?: string | null
+          title?: string | null
+          triage_score?: number | null
+          triage_state?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_candidates_feed_id_fkey"
+            columns: ["feed_id"]
+            isOneToOne: false
+            referencedRelation: "oe_feeds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oe_cards: {
         Row: {
           card_date: string
@@ -4339,6 +4407,7 @@ export type Database = {
           chair_types: string[]
           country: string
           created_at: string
+          harvest_yield: number | null
           id: string
           issuer_hint: string | null
           kind: string
@@ -4347,10 +4416,12 @@ export type Database = {
           last_changed_at: string | null
           last_error: string | null
           last_fetched_at: string | null
+          list_selector: string | null
           name: string
           notes: string | null
           owner: string | null
           read_method: string | null
+          read_yield: number | null
           score_cost: number | null
           score_legality: number | null
           score_quality: number | null
@@ -4367,6 +4438,7 @@ export type Database = {
           chair_types?: string[]
           country?: string
           created_at?: string
+          harvest_yield?: number | null
           id?: string
           issuer_hint?: string | null
           kind: string
@@ -4375,10 +4447,12 @@ export type Database = {
           last_changed_at?: string | null
           last_error?: string | null
           last_fetched_at?: string | null
+          list_selector?: string | null
           name: string
           notes?: string | null
           owner?: string | null
           read_method?: string | null
+          read_yield?: number | null
           score_cost?: number | null
           score_legality?: number | null
           score_quality?: number | null
@@ -4395,6 +4469,7 @@ export type Database = {
           chair_types?: string[]
           country?: string
           created_at?: string
+          harvest_yield?: number | null
           id?: string
           issuer_hint?: string | null
           kind?: string
@@ -4403,10 +4478,12 @@ export type Database = {
           last_changed_at?: string | null
           last_error?: string | null
           last_fetched_at?: string | null
+          list_selector?: string | null
           name?: string
           notes?: string | null
           owner?: string | null
           read_method?: string | null
+          read_yield?: number | null
           score_cost?: number | null
           score_legality?: number | null
           score_quality?: number | null

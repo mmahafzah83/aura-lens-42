@@ -14,6 +14,7 @@ const corsHeaders = {
 
 const JOB_ROUTES: Array<{ job_type: string; fn: string }> = [
   { job_type: "oe_fetch_feed", fn: "oe-fetch-feed" },
+  { job_type: "oe_read_candidate", fn: "oe-fetch-feed" },
   { job_type: "oe_judge_member", fn: "oe-judge-member" },
 ];
 

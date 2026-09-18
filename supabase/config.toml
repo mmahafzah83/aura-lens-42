@@ -263,3 +263,9 @@ verify_jwt = false
 
 [functions.oe-reextract-asks]
 verify_jwt = false
+
+[functions.oe-harvest]
+verify_jwt = false
+
+[functions.oe-triage]
+verify_jwt = false
