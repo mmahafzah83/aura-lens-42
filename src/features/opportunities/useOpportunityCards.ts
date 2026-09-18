@@ -46,7 +46,7 @@ export function useOpportunityCards(userId?: string | null, days = 30) {
     const kinds = Array.from(new Set(rows.map((c) => c.oe_opportunities?.discovery_kind).filter((k): k is string => !!k && LEAD_KINDS.includes(k))));
     const lead: Record<string, { days: number; sample: number } | null> = {};
     for (const kind of kinds) {
-      const { data: l } = await (supabase.rpc as any)("oe_expected_lead_days", { p_discovery_kind: kind });
+      const { data: l } = await (supabase.rpc as any)("oe_expected_lead_days", { p_discovery_kind: kind, p_chair_type: null });
       const row = Array.isArray(l) ? l[0] : l;
       lead[kind] = row?.expected_lead_days != null ? { days: Number(row.expected_lead_days), sample: Number(row.sample_size ?? 0) } : null;
     }
