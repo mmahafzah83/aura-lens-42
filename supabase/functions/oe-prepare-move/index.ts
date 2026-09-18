@@ -89,11 +89,25 @@ async function gateway(key: string, system: string, user: string) {
 }
 
 /** A line is kept only if it is clean in both languages. Reject → regenerate once → drop. */
+/**
+ * Inside a name, a banned word is a name: "the General Authority for
+ * Competition" is who issued the notice, not our vocabulary slipping.
+ * A Title Case run of two or more capitalised words is read as a name.
+ */
+const PROPER_NOUN_RUN = /\b(?:[A-Z][\p{L}&'’-]*)(?:\s+(?:of|for|the|and|&|[A-Z][\p{L}&'’-]*)){1,}\b/gu;
+function stripProperNouns(text: string): string {
+  return text.replace(PROPER_NOUN_RUN, (run) => {
+    const caps = run.split(/\s+/).filter((w) => /^[A-Z]/.test(w));
+    return caps.length >= 2 ? " " : run;
+  });
+}
+
 function lineFault(text: string, lang: "en" | "ar"): string | null {
   const t = String(text ?? "").trim();
   if (!t) return "empty";
-  if (BANNED.test(t)) return `banned word: ${t.match(BANNED)?.[0]}`;
-  return registerFault(t, lang);
+  const named = stripProperNouns(t);
+  if (BANNED.test(named)) return `banned word: ${named.match(BANNED)?.[0]}`;
+  return registerFault(named, lang);
 }
 
 /** Every line of a block, checked. Returns the faults found, by line. */
