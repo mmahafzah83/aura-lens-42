@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
   const startedAt = new Date().toISOString();
   const counts = {
     alive: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
-    unstable: 0, carded: 0, empty_day: 0,
+    unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, no_evidence: 0, no_citation: 0,
   };
   let costUsd = 0;
 
@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
     if (ids.length) {
       const { data: opps } = await admin
         .from("oe_opportunities")
-        .select("id, title, scope, sector, chair_type, time_kind, seniority_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, issuer_id, issuer_raw, language, embedding")
+        .select("id, title, scope, sector, chair_type, time_kind, seniority_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, issuer_id, issuer_raw, language, embedding")
         .in("id", ids);
       pool = opps ?? [];
     }
@@ -386,6 +386,9 @@ Deno.serve(async (req) => {
         issuerHistory = count ?? 0;
       }
 
+      // GATE 2 — a way in, or it is only forming.
+      const lane = o.route_url && o.route_kind && o.route_kind !== "none" ? "lane_open" : "lane_forming";
+
       const gateReason = gatePassed ? null
         : !o.quote_verified ? "quote_not_verified"
         : !noZero ? "zero_question" : "below_gate";
@@ -396,10 +399,11 @@ Deno.serve(async (req) => {
         scores: { avg, passes, justification: last?.justification ?? null, cites: last?.cites ?? [], gap: last?.gap ?? "", prompt_version: P3_VERSION },
         score_avg: +scoreAvg.toFixed(4), unstable, fit_band: fitBand, win_band: winBand,
         win_basis: { eligibility_met: eligibility, issuer_history: issuerHistory, past_winner_similarity: null },
+        lane,
         gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
       }, { onConflict: "user_id,opportunity_id,rubric_version" }).select("id").maybeSingle();
 
-      judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, matchId: match?.id ?? null, requirementIds });
+      judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, lane, matchId: match?.id ?? null, requirementIds });
     }
 
     // ── 4. PICK — Lane A only. No way in, no card. ────────────────────────
