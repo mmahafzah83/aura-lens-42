@@ -12,7 +12,7 @@ import { adminUserIds } from "../_shared/adminRole.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   renderEmail, heading, paragraph, quote, divider,
-  INK, INK_SOFT, INK_FAINT, BODY, MONO, CANVAS, BORDER, ACCENT,
+  INK_SOFT, INK_FAINT, BODY, MONO,
 } from "../_shared/emailTemplate.ts";
 
 const corsHeaders = {
@@ -231,24 +231,6 @@ serve(async (req) => {
     }
   } catch { /* stay in dry-run */ }
 
-  // Pilot: an admin who has actively consented to matching may receive the live
-  // send — but only on the strength of a card or an outstanding outcome ask.
-  // Their findings stay excluded, so the email leads with the card.
-  const pilotAdminIds = new Set<string>();
-  if (adminIds.size) {
-    const { data: consentRows } = await admin
-      .from("oe_consents")
-      .select("user_id")
-      .eq("kind", "matching")
-      .is("revoked_at", null)
-      .in("user_id", Array.from(adminIds));
-    for (const r of (consentRows ?? []) as Array<{ user_id: string }>) {
-      if (adminIds.has(r.user_id)) pilotAdminIds.add(r.user_id);
-    }
-  }
-  const cardEligible = (uid: string) =>
-    !adminIds.has(uid) || pilotAdminIds.has(uid) || (dryRun && onlyUserId === uid);
-
   const now = new Date();
   const dateKey = riyadhDateKey(now);
   const messageKey = `morning_signal:${dateKey}`;
@@ -303,16 +285,14 @@ serve(async (req) => {
     // Timezone rides along: 07:00 must mean 07:00 where the member actually is.
     const optedOut = new Set<string>();
     const tzByUser = new Map<string, string | null>();
-    const langByUser = new Map<string, "en" | "ar">();
     if (userIds.length) {
       const { data: prefRows } = await admin
         .from("diagnostic_profiles")
-        .select("user_id, notification_prefs, timezone, content_language")
+        .select("user_id, notification_prefs, timezone")
         .in("user_id", userIds);
-      for (const r of (prefRows || []) as Array<{ user_id: string; notification_prefs: Record<string, unknown> | null; timezone: string | null; content_language: string | null }>) {
+      for (const r of (prefRows || []) as Array<{ user_id: string; notification_prefs: Record<string, unknown> | null; timezone: string | null }>) {
         if (r?.notification_prefs?.overnight_reading_enabled === false) optedOut.add(r.user_id);
         tzByUser.set(r.user_id, r.timezone ?? null);
-        langByUser.set(r.user_id, r.content_language === "ar" ? "ar" : "en");
       }
     }
 
