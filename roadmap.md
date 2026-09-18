@@ -25,3 +25,12 @@
 - [ ] Tuning drawer, completed-day state, outcomes, and history
 - [ ] Disable opportunity email block without changing schedules
 - [ ] 375px and database self-checks
+
+## Step 15 — direction and mix
+- [ ] Snapshot `pre-step15-direction-and-mix` (no repository snapshot command is available)
+- [x] Owner-only ninety-day priority and current mix
+- [x] Per-member deterministic purpose tagging
+- [x] Tunable weighted queue interleaving
+- [x] One ordinary direction question per session
+- [x] Explore exception chip and drawer answers
+- [ ] 375px and live founder self-checks
