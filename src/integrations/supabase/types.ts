@@ -4108,6 +4108,7 @@ export type Database = {
           content_hash: string | null
           created_at: string
           embedding: string | null
+          entity_id: string | null
           feed_id: string | null
           first_seen_at: string
           id: string
@@ -4127,6 +4128,7 @@ export type Database = {
           content_hash?: string | null
           created_at?: string
           embedding?: string | null
+          entity_id?: string | null
           feed_id?: string | null
           first_seen_at?: string
           id?: string
@@ -4146,6 +4148,7 @@ export type Database = {
           content_hash?: string | null
           created_at?: string
           embedding?: string | null
+          entity_id?: string | null
           feed_id?: string | null
           first_seen_at?: string
           id?: string
@@ -4161,6 +4164,13 @@ export type Database = {
           url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "oe_candidates_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_entities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "oe_candidates_feed_id_fkey"
             columns: ["feed_id"]
@@ -4351,6 +4361,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      oe_entities: {
+        Row: {
+          ats_endpoint: string | null
+          ats_platform: string | null
+          ats_token: string | null
+          careers_url: string | null
+          changed_runs: number
+          country: string | null
+          created_at: string
+          domain: string | null
+          entity_kind: string | null
+          harvest_cadence: string
+          harvest_runs: number
+          id: string
+          industry: string | null
+          last_harvested_at: string | null
+          last_job_count: number | null
+          last_resolved_at: string | null
+          listed_symbol: string | null
+          name: string
+          name_ar: string | null
+          newsroom_url: string | null
+          resolve_error: string | null
+          resolve_status: string
+          seed_source: string
+          size_hint: string | null
+          sub_industry: string | null
+          updated_at: string
+        }
+        Insert: {
+          ats_endpoint?: string | null
+          ats_platform?: string | null
+          ats_token?: string | null
+          careers_url?: string | null
+          changed_runs?: number
+          country?: string | null
+          created_at?: string
+          domain?: string | null
+          entity_kind?: string | null
+          harvest_cadence?: string
+          harvest_runs?: number
+          id?: string
+          industry?: string | null
+          last_harvested_at?: string | null
+          last_job_count?: number | null
+          last_resolved_at?: string | null
+          listed_symbol?: string | null
+          name: string
+          name_ar?: string | null
+          newsroom_url?: string | null
+          resolve_error?: string | null
+          resolve_status?: string
+          seed_source: string
+          size_hint?: string | null
+          sub_industry?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ats_endpoint?: string | null
+          ats_platform?: string | null
+          ats_token?: string | null
+          careers_url?: string | null
+          changed_runs?: number
+          country?: string | null
+          created_at?: string
+          domain?: string | null
+          entity_kind?: string | null
+          harvest_cadence?: string
+          harvest_runs?: number
+          id?: string
+          industry?: string | null
+          last_harvested_at?: string | null
+          last_job_count?: number | null
+          last_resolved_at?: string | null
+          listed_symbol?: string | null
+          name?: string
+          name_ar?: string | null
+          newsroom_url?: string | null
+          resolve_error?: string | null
+          resolve_status?: string
+          seed_source?: string
+          size_hint?: string | null
+          sub_industry?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       oe_faces: {
         Row: {

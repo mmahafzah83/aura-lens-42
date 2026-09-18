@@ -16,7 +16,10 @@ const JOB_ROUTES: Array<{ job_type: string; fn: string }> = [
   { job_type: "oe_fetch_feed", fn: "oe-fetch-feed" },
   { job_type: "oe_read_candidate", fn: "oe-fetch-feed" },
   { job_type: "oe_judge_member", fn: "oe-judge-member" },
+  { job_type: "oe_resolve_entity", fn: "oe-resolve-entity" },
+  { job_type: "oe_harvest_ats", fn: "oe-harvest-ats" },
 ];
+
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
