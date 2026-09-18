@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useVocab } from "./useVocab";
 
-type Language = "en" | "ar";
 type WhyLine = { text?: string; label?: string };
 type QueueCard = {
   id: string; opportunity_id: string; lane: "act" | "write"; why_lines: WhyLine[] | null;
@@ -43,7 +42,6 @@ export function OpportunityQueue() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [firstName, setFirstName] = useState("");
-  const [language, setLanguage] = useState<Language>("en");
   const [data, setData] = useState<QueueData>(emptyData);
   const [loading, setLoading] = useState(true);
   const [queueIndex, setQueueIndex] = useState(0);
@@ -60,8 +58,7 @@ export function OpportunityQueue() {
   const [directionQuestion, setDirectionQuestion] = useState<DirectionQuestion>(null);
   const [directionAsked, setDirectionAsked] = useState(false);
   const renderedRef = useRef<Set<string>>(new Set());
-  const v = useVocab(language);
-  const rtl = language === "ar";
+  const v = useVocab("en");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,11 +67,10 @@ export function OpportunityQueue() {
     setUserId(uid);
     if (!uid) { setLoading(false); return; }
     const [{ data: profile }, { data: payload, error }] = await Promise.all([
-      (supabase.from("diagnostic_profiles" as any) as any).select("first_name,content_language").eq("user_id", uid).maybeSingle(),
+      (supabase.from("diagnostic_profiles" as any) as any).select("first_name").eq("user_id", uid).maybeSingle(),
       (supabase.rpc as any)("oe_app_queue"),
     ]);
     setFirstName(String(profile?.first_name ?? ""));
-    setLanguage(profile?.content_language === "ar" ? "ar" : "en");
     if (!error && payload) {
       const next = { ...emptyData, ...(payload as QueueData) };
       setData(next);
@@ -248,7 +244,7 @@ export function OpportunityQueue() {
     ["queue_wrong_issuer", "Wrong organisation", "wrong_issuer"],
   ] as const;
 
-  return <section className="oe-queue" dir={rtl ? "rtl" : "ltr"} aria-busy={loading}>
+  return <section className="oe-queue" dir="ltr" aria-busy={loading}>
     <header className="oe-queue-header">
       <h1>{t("queue_morning", "Morning")}{firstName ? `, ${firstName}` : ""}</h1>
       <p>{count === 0 ? t("queue_nothing_today", "Nothing today.") : <><span style={mono}>{count}</span> {t("queue_things_today", "things today. About a minute.")}</>}</p>
@@ -262,7 +258,7 @@ export function OpportunityQueue() {
     </header>
 
     {proposal ? <AuraCard hover="none" className="oe-proposal" style={{ background: "var(--act-tint)", border: "1px solid var(--act)", borderRadius: 12 }}>
-      <p><strong>{rtl ? `هذه المرة رقم ${proposal.count} التي ترفض فيها ${proposal.value}.` : `That is the ${proposal.count}th ${proposal.value} ${t("queue_proposal_seen", "item you have turned down.")}`}</strong></p>
+      <p><strong>{`That is the ${proposal.count}th ${proposal.value} ${t("queue_proposal_seen", "item you have turned down.")}`}</strong></p>
       <p>{t("queue_proposal_question", "Shall we stop showing them? You can undo it any time, and it will not touch anything else.")}</p>
       <div className="oe-actions"><AuraButton onClick={() => void answerProposal(true)} loading={busy}>{t("queue_yes_stop", "Yes, stop")}</AuraButton><AuraButton variant="ghost" onClick={() => void answerProposal(false)} disabled={busy}>{t("queue_no_keep", "No, keep them")}</AuraButton></div>
     </AuraCard> : directionQuestion && card ? <DirectionCard
@@ -309,8 +305,8 @@ export function OpportunityQueue() {
         <div className="oe-rule"><div><strong>{v("direction_priority_sentence").replace("{priority}", v(`priority_${data.direction.priority}`)).replace("{date}", data.direction.priority_set_on ?? "")}</strong></div><button type="button" className="v23-textlink" disabled={directionAsked} onClick={() => changeDirection("priority")}>{v("direction_change")}</button></div>
         {data.direction.mix && <div className="oe-rule"><div><strong>{v("direction_mix_sentence").replace("{mix}", v(`mix_${data.direction.mix}`))}</strong></div><button type="button" className="v23-textlink" disabled={directionAsked} onClick={() => changeDirection("mix")}>{v("direction_change")}</button></div>}
       </section>}
-      <section><SectionHeader label={t("queue_must_true", "Must be true")} />{data.rules.filter((rule) => rule.kind === "hard").map((rule) => <RuleRow key={rule.id} rule={rule} rtl={rtl} onDeactivate={deactivate} />)}</section>
-      <section><SectionHeader label={t("queue_better_true", "Better if true")} />{data.rules.filter((rule) => rule.kind === "soft").map((rule) => <RuleRow key={rule.id} rule={rule} rtl={rtl} onDeactivate={deactivate} />)}<div className="oe-add-rule"><select value={newRuleType} onChange={(e) => setNewRuleType(e.target.value as "sector"|"issuer")}><option value="sector">Sector</option><option value="issuer">Organisation</option></select><input value={newRule} onChange={(e) => setNewRule(e.target.value)} placeholder={t("queue_add_control", "Add a sector or organisation")} /><AuraButton size="sm" variant="ghost" onClick={() => void saveRule()} disabled={!newRule.trim() || busy}>+</AuraButton></div></section>
+      <section><SectionHeader label={t("queue_must_true", "Must be true")} />{data.rules.filter((rule) => rule.kind === "hard").map((rule) => <RuleRow key={rule.id} rule={rule} onDeactivate={deactivate} />)}</section>
+      <section><SectionHeader label={t("queue_better_true", "Better if true")} />{data.rules.filter((rule) => rule.kind === "soft").map((rule) => <RuleRow key={rule.id} rule={rule} onDeactivate={deactivate} />)}<div className="oe-add-rule"><select value={newRuleType} onChange={(e) => setNewRuleType(e.target.value as "sector"|"issuer")}><option value="sector">Sector</option><option value="issuer">Organisation</option></select><input value={newRule} onChange={(e) => setNewRule(e.target.value)} placeholder={t("queue_add_control", "Add a sector or organisation")} /><AuraButton size="sm" variant="ghost" onClick={() => void saveRule()} disabled={!newRule.trim() || busy}>+</AuraButton></div></section>
       <section><SectionHeader label={t("queue_held_title", "Held back this month")} />{data.held.map((held) => <div key={held.id} className="oe-held"><div><strong>{held.title ?? "—"}</strong><span>{held.reason ?? "—"}</span></div><AuraButton size="sm" variant="ghost" onClick={() => void showAnyway(held.id)}>{t("queue_show_anyway", "Show me anyway")}</AuraButton></div>)}<p className="oe-commitment">{t("queue_never_locked", "Filtering never locks you out. You can reopen anything held back here.")}</p></section>
     </aside></div>, document.body)}
   </section>;
@@ -333,8 +329,8 @@ function DirectionCard({ kind, direction, busy, v, onChoose, onDefer }: { kind: 
   </AuraCard>;
 }
 
-function RuleRow({ rule, rtl, onDeactivate }: { rule: Rule; rtl: boolean; onDeactivate: (id: string) => Promise<void> }) {
-  return <div className="oe-rule"><div><strong>{rtl && rule.rule_text_ar ? rule.rule_text_ar : rule.rule_text}</strong><span><span style={mono}>{rule.stated_on}</span> · {rule.field ?? "—"}</span></div><button type="button" className="v23-textlink" onClick={() => void onDeactivate(rule.id)}>{rtl ? "إيقاف" : "Deactivate"}</button></div>;
+function RuleRow({ rule, onDeactivate }: { rule: Rule; onDeactivate: (id: string) => Promise<void> }) {
+  return <div className="oe-rule"><div><strong>{rule.rule_text}</strong><span><span style={mono}>{rule.stated_on}</span> · {rule.field ?? "—"}</span></div><button type="button" className="v23-textlink" onClick={() => void onDeactivate(rule.id)}>Deactivate</button></div>;
 }
 
 export default OpportunityQueue;
