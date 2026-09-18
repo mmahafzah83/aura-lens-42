@@ -413,7 +413,11 @@ Deno.serve(async (req) => {
       }
 
       // GATE 2 — a way in, or it is only forming.
-      const lane = o.route_url && o.route_kind && o.route_kind !== "none" ? "lane_open" : "lane_forming";
+      // 'not_checked' means the reader has never examined the page: never a card,
+      // and never reported as "no way in".
+      const examined = !!o.route_kind && o.route_kind !== "not_checked";
+      const lane = examined && o.route_url && o.route_kind !== "none" ? "lane_open" : "lane_forming";
+      if (!examined) counts.unexamined++;
 
       const gateReason = gatePassed ? null
         : !o.quote_verified ? "quote_not_verified"
