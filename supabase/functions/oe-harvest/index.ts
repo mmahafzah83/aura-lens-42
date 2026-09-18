@@ -228,8 +228,52 @@ function parseHtmlList(html: string, pageUrl: string, selector: string | null): 
   return out;
 }
 
-/** A JSON list: we look for the first array of objects and read obvious keys. */
-function parseJsonApi(body: any, pageUrl: string): Cand[] {
+/**
+ * A page that renders client-side but ships its list inside the page's own
+ * JSON payload (Next.js and friends). We read only what the page already
+ * carries in public HTML — never a private API.
+ *
+ * `template` is the detail-page pattern held on the feed, e.g.
+ * "https://www.spa.gov.sa/en/{id}".
+ */
+function parseEmbeddedJson(html: string, template: string | null): Cand[] {
+  if (!template || !template.includes("{id}")) return [];
+  const out: Cand[] = [];
+  const seen = new Set<string>();
+  const unescape = (s: string) =>
+    s.replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+      .replace(/\\"/g, '"').replace(/\\\\/g, "\\").replace(/\\n/g, " ");
+  const re =
+    /"(?:uuid|id|slug)"\s*:\s*"([A-Za-z0-9][\w-]{3,64})"[\s\S]{0,400}?"title"\s*:\s*"((?:[^"\\]|\\.){8,300})"/g;
+  for (const m of html.matchAll(re)) {
+    const id = m[1];
+    const title = squash(unescape(m[2]));
+    if (!title || title.length < 12) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const tail = html.slice(m.index ?? 0, (m.index ?? 0) + 1200);
+    const epoch = tail.match(/"published_at"\s*:\s*(\d{9,13})/)?.[1];
+    const iso = tail.match(/"(?:published_at|date|created_at)"\s*:\s*"([^"]{8,40})"/)?.[1];
+    let published: string | null = null;
+    if (epoch) published = new Date(Number(epoch) * (epoch.length > 10 ? 1 : 1000)).toISOString();
+    else if (iso && !isNaN(Date.parse(iso))) published = new Date(iso).toISOString();
+    out.push({
+      url: template.replace("{id}", encodeURIComponent(id)),
+      title: title.slice(0, 200),
+      snippet: title.slice(0, 600),
+      published_at: published,
+      lang: guessLang(title),
+    });
+  }
+  return out;
+}
+
+/**
+ * A JSON list: the first array of objects, or an object whose values are
+ * objects (the World Bank shape). Where the records carry no link of their
+ * own, the feed may hold a detail-page template in list_selector.
+ */
+function parseJsonApi(body: any, pageUrl: string, template?: string | null): Cand[] {
   const pick = (o: any, keys: string[]) => {
     for (const k of keys) {
       const v = o?.[k];
@@ -241,17 +285,31 @@ function parseJsonApi(body: any, pageUrl: string): Cand[] {
   if (!arr && body && typeof body === "object") {
     for (const v of Object.values(body)) {
       if (Array.isArray(v) && v.length && typeof v[0] === "object") { arr = v as any[]; break; }
+      if (v && typeof v === "object" && !Array.isArray(v)) {
+        const vals = Object.values(v as Record<string, unknown>);
+        if (vals.length && vals.every((x) => x && typeof x === "object")) { arr = vals as any[]; break; }
+      }
     }
   }
   if (!arr) return [];
+  const idTemplate = template && template.includes("{id}") ? template : null;
   const out: Cand[] = [];
   for (const o of arr) {
     let url = pick(o, ["url", "link", "href", "permalink", "notice_url", "detail_url"]);
+    if (!url && idTemplate) {
+      const id = pick(o, ["id", "proj_id", "project_id", "code"]);
+      if (id) url = idTemplate.replace("{id}", encodeURIComponent(id));
+    }
     if (!url) continue;
     try { url = new URL(url, pageUrl).toString(); } catch { continue; }
-    const title = pick(o, ["title", "name", "subject", "headline", "notice_title"]);
-    const snippet = pick(o, ["description", "summary", "snippet", "body", "details"]);
-    const date = pick(o, ["published_at", "date", "created_at", "publication_date", "noticedate"]);
+    const title = pick(o, ["title", "name", "subject", "headline", "notice_title", "project_name"]);
+    const snippet = pick(o, [
+      "description", "summary", "snippet", "body", "details",
+      "pdo", "impagency", "borrower", "sector1",
+    ]);
+    const date = pick(o, [
+      "published_at", "date", "created_at", "publication_date", "noticedate", "boardapprovaldate",
+    ]);
     out.push({
       url,
       title: title.slice(0, 200),
@@ -262,6 +320,7 @@ function parseJsonApi(body: any, pageUrl: string): Cand[] {
   }
   return out;
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -284,7 +343,9 @@ Deno.serve(async (req) => {
     .from("oe_policy_versions").select("params").eq("active", true).maybeSingle();
   const neverRead: string[] = (policy?.params as any)?.never_read ?? [];
 
-  const HARVEST_KINDS = ["rss", "atom", "sitemap", "json_api", "html_list", "telegram"];
+  const HARVEST_KINDS = [
+    "rss", "atom", "sitemap", "json_api", "html_list", "embedded_json", "telegram",
+  ];
   let q = admin.from("oe_feeds")
     .select("id,name,kind,url,list_selector,terms_ok,active,language")
     .eq("active", true).eq("terms_ok", true).in("kind", HARVEST_KINDS).not("url", "is", null);
@@ -323,7 +384,7 @@ Deno.serve(async (req) => {
       if (!r.ok) throw new Error(`http_${r.status}`);
       let cands: Cand[] = [];
       if (feed.kind === "json_api") {
-        cands = parseJsonApi(await r.json().catch(() => null), url);
+        cands = parseJsonApi(await r.json().catch(() => null), url, feed.list_selector ?? null);
       } else {
         const text = await r.text();
         cands = feed.kind === "rss"
@@ -334,6 +395,8 @@ Deno.serve(async (req) => {
           ? parseSitemap(text)
           : feed.kind === "telegram"
           ? parseTelegram(text, url)
+          : feed.kind === "embedded_json"
+          ? parseEmbeddedJson(text, feed.list_selector ?? null)
           : parseHtmlList(text, url, feed.list_selector ?? null);
         // A selector that matches nothing is worse than no selector at all.
         if (!cands.length && feed.kind === "html_list") cands = parseHtmlList(text, url, null);

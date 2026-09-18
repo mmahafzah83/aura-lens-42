@@ -29,7 +29,7 @@ const ADVISORY_RE =
 
 // Structural patterns worth reading whatever the score says.
 const STRUCTURAL_RE =
-  /\b(board nomination|nomination (for|of) (board|directors)|opening of (the )?nomination|term (is )?ending|end of term|call for speakers|speaker (applications|submissions)|expression of interest|advisory (committee|board|panel)|request for proposal[s]? for (consult|advis)|call for (papers|proposals)|invitation to (nominate|submit))\b|فتح باب الترشح|الترشح لعضوية مجلس|دعوة للمتحدثين|إبداء الاهتمام|اللجنة الاستشارية/i;
+  /\b(board nomination|nomination (for|of) (board|directors)|opening of (the )?nomination|term (is )?ending|end of term|call for speakers|speaker (applications|submissions)|expression of interest|advisory (committee|board|panel)|request for proposal[s]? for (consult|advis)|call for (papers|proposals)|invitation to (nominate|submit)|public consultation|open for (public )?comment|draft (regulation|rules|law|standard) for (public )?consultation)\b|فتح باب الترشح|الترشح لعضوية مجلس|دعوة للمتحدثين|إبداء الاهتمام|اللجنة الاستشارية|استطلاع (عام|مرئيات)|طلب مرئيات/i;
 
 // Places we do not serve, named as a place rather than as a passing mention.
 const FAR_PLACE_RE =
