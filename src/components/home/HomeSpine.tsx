@@ -7,8 +7,6 @@ import { toast } from "@/hooks/use-toast";
 import AuraLogo from "@/components/brand/AuraLogo";
 import ResumeJourneyCard from "@/components/home/ResumeJourneyCard";
 import HomeMasthead from "@/components/home/HomeMasthead";
-import { OpportunityCard } from "@/features/opportunities/OpportunityCard";
-import { useOpportunityCards } from "@/features/opportunities/useOpportunityCards";
 import {
   useHomeAddress, useReadChips, useSignalsStrengthened,
   type HomeMove,
@@ -101,8 +99,6 @@ function useLivePresence(userId: string | null | undefined) {
 }
 
 export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActive, activeTab }: HomeSpineProps) {
-  const opportunities = useOpportunityCards(userId, 2);
-  const todayOpportunity = opportunities.cards.find((card) => card.card_date === opportunities.today);
   const uid = userId ?? "anon";
   const address = useHomeAddress(userId);
   const live = useLivePresence(userId);
@@ -301,14 +297,6 @@ export default function HomeSpine({ userId, onSwitchTab, onOpenDraft, guidedActi
   return (
     <div className="home-spine" style={{ display: "grid", gap: 22, marginBlockStart: 22 }}>
       <HomeMasthead userId={userId} />
-      {todayOpportunity && (
-        <OpportunityCard
-          card={todayOpportunity}
-          language={opportunities.language}
-          winKnown={opportunities.winKnown}
-          onSaved={opportunities.refresh}
-        />
-      )}
       <ResumeJourneyCard userId={userId ?? null} />
       {/* 1 — THE ADDRESS */}
       <section style={{
