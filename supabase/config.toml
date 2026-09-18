@@ -251,3 +251,9 @@ verify_jwt = false
 
 [functions.oe-outcome-ask]
 verify_jwt = false
+
+[functions.oe-backfill-routes]
+verify_jwt = false
+
+[functions.oe-p4-dryrun]
+verify_jwt = false
