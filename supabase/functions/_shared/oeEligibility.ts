@@ -137,10 +137,9 @@ export function screen(opportunity: any, eligibility: Eligibility | null | undef
   const chair = String(o.chair_type ?? "").toLowerCase();
   if (chair && blocked.includes(chair)) fails.push("chair");
 
-  // 3. LEVEL — above his ceiling or below his floor.
-  const asked = (o.seniority_band && LEVELS.includes(String(o.seniority_band) as Level))
-    ? (String(o.seniority_band) as Level)
-    : parseLevel(o.title, o.scope);
+  // 3. LEVEL — above his ceiling or below his floor. Only the ladder counts;
+  // an unreadable title gives null, and a null never fails this screen.
+  const asked = levelOf(o);
   if (asked) {
     const i = levelIndex(asked);
     const ceiling = levelIndex(eligibility.level_ceiling);
