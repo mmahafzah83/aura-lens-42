@@ -16,4 +16,4 @@
 - [ ] Judge: screen before the model; lanes `act` / `write` / dropped; card lane and copy
 - [ ] Discovery queries rebuilt from eligibility first
 - [ ] "What you can hold" panel in the Opportunities tab
-- [ ] Self-check items 1–8
+- [x] Self-check items 1–8
