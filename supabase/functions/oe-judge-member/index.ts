@@ -679,7 +679,6 @@ Deno.serve(async (req) => {
       ].join("\n\n");
 
       let why: Array<{ text: string; cites: Array<{ kind: string; id: string }> }> = [];
-      let distanceLine: { text: string } | null = null;
       let clockText = "";
 
       for (let attempt = 0; attempt < 2 && why.length < 1; attempt++) {
