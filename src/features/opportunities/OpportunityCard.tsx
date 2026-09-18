@@ -50,7 +50,7 @@ export function OpportunityCard({ card, language, readOnly, winKnown, onSaved }:
               <div style={{ border: "1px solid #E2E7EE", borderRadius: 12, padding: 11, display: "grid", gap: 6 }}>
                 <span style={{ fontSize: 12, color: "#5B6673" }}>
                   <strong style={{ color: "#0F1519" }}>{v("what_they_ask")}: </strong>
-                  {total === 0 ? v("no_requirements_stated") : `${met} / ${total}`}
+                  {total === 0 ? v("no_requirements_published") : `${met} / ${total}`}
                 </span>
                 {missing.length > 0 && (
                   <ul style={{ margin: 0, paddingInlineStart: 18, color: "#5B6673", fontSize: 13 }}>
