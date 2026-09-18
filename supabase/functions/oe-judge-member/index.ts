@@ -787,7 +787,7 @@ Deno.serve(async (req) => {
         why_lines: why,
         gap_line: distanceLine,
         cited_ids: why.flatMap((w) => w.cites),
-        lane: "lane_open",
+        lane: "act",
         quote: o.evidence_quote,
         clock_text: clockText,
         fit_band: pick.fitBand,
