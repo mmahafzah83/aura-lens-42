@@ -309,7 +309,7 @@ async function seedWikipediaCategory(maxDepth = 2): Promise<{ ents: Ent[]; notes
     }
     await sleep(150);
   }
-  notes.push(`walked ${walked} categories, ${pages.size} organisation pages`);
+  notes.push(`walked: ${walked} / pages seen: ${pages.size}`);
   const extra = await wikidataForTitles([...pages]);
   const ents: Ent[] = [...pages].map((t) => ({
     name: t.replace(/\s*\([^)]*\)\s*$/, "").trim(),
