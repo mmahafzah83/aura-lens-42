@@ -106,12 +106,15 @@ Deno.serve(async (req) => {
         const conditions = keep(out.conditions);
         const discovery = DISCOVERY_KINDS.includes(String(out.discovery_kind))
           ? String(out.discovery_kind) : "posted_opening";
+        const raised = (Array.isArray(out.requirements) ? out.requirements.length : 0) +
+          (Array.isArray(out.conditions) ? out.conditions.length : 0);
 
         results.push({
           id: o.id, title: o.title,
           before: (o.requirements as any[])?.map((r: any) => r?.text) ?? [],
           requirements: requirements.map((r: any) => r.text),
           conditions: conditions.map((r: any) => r.text),
+          dropped_for_unverified_quote: raised - requirements.length - conditions.length,
           discovery_kind: discovery,
         });
 
