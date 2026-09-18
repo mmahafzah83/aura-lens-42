@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 
   const admin = createClient(url, service);
   const startedAt = new Date().toISOString();
-  const counts = { applied: 0, corrections: 0, weight_moves: 0 };
+  const counts = { applied: 0, corrections: 0, weight_moves: 0, held_at_stage: 0 };
   try {
     const { data: policy, error: policyError } = await admin.from("oe_policy_versions").select("params").eq("active", true).maybeSingle();
     if (policyError) throw new Error(policyError.message);
