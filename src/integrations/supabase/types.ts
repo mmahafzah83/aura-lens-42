@@ -9637,11 +9637,11 @@ export type Database = {
       oe_investigate_unknowns: {
         Args: { p_user: string }
         Returns: {
-          detail: string
-          field: string
-          opportunity_id: string
-          outcome: string
-          title: string
+          o_detail: string
+          o_field: string
+          o_opportunity_id: string
+          o_outcome: string
+          o_title: string
         }[]
       }
       oe_member_evidence: {
