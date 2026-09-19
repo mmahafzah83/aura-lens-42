@@ -5219,6 +5219,11 @@ export type Database = {
           location: string | null
           pipeline_version: number
           posting_date: string | null
+          quote_abandoned: boolean
+          quote_attempts: number
+          quote_fail_detail: string | null
+          quote_fail_reason: string | null
+          quote_last_attempt_at: string | null
           quote_verified: boolean
           raw: Json | null
           remote: boolean | null
@@ -5259,6 +5264,11 @@ export type Database = {
           location?: string | null
           pipeline_version?: number
           posting_date?: string | null
+          quote_abandoned?: boolean
+          quote_attempts?: number
+          quote_fail_detail?: string | null
+          quote_fail_reason?: string | null
+          quote_last_attempt_at?: string | null
           quote_verified?: boolean
           raw?: Json | null
           remote?: boolean | null
@@ -5299,6 +5309,11 @@ export type Database = {
           location?: string | null
           pipeline_version?: number
           posting_date?: string | null
+          quote_abandoned?: boolean
+          quote_attempts?: number
+          quote_fail_detail?: string | null
+          quote_fail_reason?: string | null
+          quote_last_attempt_at?: string | null
           quote_verified?: boolean
           raw?: Json | null
           remote?: boolean | null
@@ -9565,6 +9580,16 @@ export type Database = {
         }[]
       }
       oe_normalize_terms: { Args: { p_text: string }; Returns: string[] }
+      oe_quote_recheck_due: {
+        Args: { p_limit?: number; p_max_attempts?: number }
+        Returns: {
+          content_hash: string
+          evidence_quote: string
+          id: string
+          quote_attempts: number
+          source_url: string
+        }[]
+      }
       oe_rebuild_eligibility: { Args: { p_user: string }; Returns: undefined }
       oe_record_outcome: {
         Args: { p_outcome: string; p_token: string }
