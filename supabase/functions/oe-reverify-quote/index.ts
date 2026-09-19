@@ -150,8 +150,12 @@ Deno.serve(async (req) => {
       // that way for a day, so the verdict is cleared and the record re-enters
       // the next review run. Nothing is promoted here — only re-opened.
       if (verified) {
+        // judged_at is the resume guard: anything judged inside a day is
+        // skipped. Dating the stale verdict two days back re-opens it without
+        // pretending it was never judged.
+        const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000).toISOString();
         await admin.from("oe_matches")
-          .update({ judged_at: null })
+          .update({ judged_at: twoDaysAgo })
           .eq("opportunity_id", row.id).eq("gate_reason", "quote_not_verified");
       }
 
