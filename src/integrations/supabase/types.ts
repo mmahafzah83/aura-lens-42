@@ -4683,6 +4683,59 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_investigations: {
+        Row: {
+          attempts: number
+          created_at: string
+          field: string
+          first_seen: string
+          id: string
+          last_attempt_at: string | null
+          opportunity_id: string
+          reason: string | null
+          resolved_value: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          field: string
+          first_seen?: string
+          id?: string
+          last_attempt_at?: string | null
+          opportunity_id: string
+          reason?: string | null
+          resolved_value?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          field?: string
+          first_seen?: string
+          id?: string
+          last_attempt_at?: string | null
+          opportunity_id?: string
+          reason?: string | null
+          resolved_value?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_investigations_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oe_issuer_people: {
         Row: {
           created_at: string
@@ -4965,6 +5018,7 @@ export type Database = {
           judged_at: string
           lane: string | null
           lane_final: string | null
+          member_access_confirmed: boolean
           met_count: number | null
           opportunity_id: string
           purpose: string | null
@@ -4992,6 +5046,7 @@ export type Database = {
           judged_at?: string
           lane?: string | null
           lane_final?: string | null
+          member_access_confirmed?: boolean
           met_count?: number | null
           opportunity_id: string
           purpose?: string | null
@@ -5019,6 +5074,7 @@ export type Database = {
           judged_at?: string
           lane?: string | null
           lane_final?: string | null
+          member_access_confirmed?: boolean
           met_count?: number | null
           opportunity_id?: string
           purpose?: string | null
@@ -5197,6 +5253,9 @@ export type Database = {
       }
       oe_opportunities: {
         Row: {
+          access_state: string | null
+          access_state_at: string | null
+          access_state_reason: string | null
           alive: boolean
           canonical_url: string | null
           chair_type: string
@@ -5242,6 +5301,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_state?: string | null
+          access_state_at?: string | null
+          access_state_reason?: string | null
           alive?: boolean
           canonical_url?: string | null
           chair_type: string
@@ -5287,6 +5349,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_state?: string | null
+          access_state_at?: string | null
+          access_state_reason?: string | null
           alive?: boolean
           canonical_url?: string | null
           chair_type?: string
@@ -9548,6 +9613,7 @@ export type Database = {
           title: string
         }[]
       }
+      oe_derive_access_state: { Args: never; Returns: number }
       oe_derive_rules: { Args: { p_user: string }; Returns: number }
       oe_direction_save: {
         Args: { p_defer?: boolean; p_mix?: string; p_priority?: string }
@@ -9568,6 +9634,16 @@ export type Database = {
           sample_size: number
         }[]
       }
+      oe_investigate_unknowns: {
+        Args: { p_user: string }
+        Returns: {
+          detail: string
+          field: string
+          opportunity_id: string
+          outcome: string
+          title: string
+        }[]
+      }
       oe_member_evidence: {
         Args: { p_embedding: string; p_k?: number; p_user_id: string }
         Returns: {
@@ -9580,6 +9656,7 @@ export type Database = {
         }[]
       }
       oe_normalize_terms: { Args: { p_text: string }; Returns: string[] }
+      oe_place_country: { Args: { p_location: string }; Returns: string }
       oe_quote_recheck_due: {
         Args: { p_limit?: number; p_max_attempts?: number }
         Returns: {
@@ -9615,6 +9692,10 @@ export type Database = {
           opportunity_id: string
           purpose: string
         }[]
+      }
+      oe_route_is_specific: {
+        Args: { p_kind: string; p_url: string }
+        Returns: boolean
       }
       oe_warmth_issuer_text: {
         Args: { p_issuer_names: string[]; p_user_id: string }
