@@ -223,7 +223,20 @@ Deno.serve(async (req) => {
     record("member_unjudged_share_above_quarter", bad);
   }
 
-
+  // 10. The cache cannot drift. Every value held in oe_eligibility must trace
+  //     back to a rule the member ratified. An orphan means a comment, or a
+  //     guess, is quietly running the gate.
+  {
+    const { data: rows } = await admin.from("oe_eligibility").select("user_id");
+    const bad: unknown[] = [];
+    for (const r of rows ?? []) {
+      const { data: orphans } = await admin.rpc("oe_eligibility_orphans", { p_user: r.user_id });
+      for (const o of (orphans ?? []) as any[]) {
+        bad.push({ user_id: r.user_id, field: o.field, value: o.value, reason: o.reason });
+      }
+    }
+    record("eligibility_value_without_ratified_rule", bad);
+  }
 
   for (const v of violations) {
     await admin.from("ef_error_log").insert({
@@ -237,10 +250,11 @@ Deno.serve(async (req) => {
     await admin.from("ef_error_log").insert({
       function_name: FN,
       severity: "info",
-      error_message: "OE_INVARIANTS ok — all nine assertions hold",
+      error_message: "OE_INVARIANTS ok — all ten assertions hold",
       context: {},
     });
   }
+
 
   return json({ ok: violations.length === 0, violations });
 });

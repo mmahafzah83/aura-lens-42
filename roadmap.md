@@ -46,3 +46,11 @@
 - [x] F7 morning email job unscheduled; function carries no opportunity code
 - [x] F8 daily model-call ceiling (500, tunable) across harvest, triage and judging
 - [x] F9 on-demand Refresh, once a minute; "next at 07:00" removed
+
+## Step 18 — comments are not rules (done 2026-09-19)
+- oe_notebook split into comments (verbatim, never executed) and rules (field/op/value, derived_from, ratified_at).
+- All 8 founder sentences reclassified as comments; 8 rules derived (1 place, 5 sector, 1 never-held board, 1 Saudi-nationality requirement with legal basis).
+- oe_eligibility rebuilt from ratified rules only; level_ceiling and level_floor deleted as exclusions.
+- screen() is now profile-versus-requirement: excluded / unknown / eligible, stored on oe_matches.
+- Purpose re-tagged: stretch above current level counts as build.
+- Invariant 10 added: any eligibility value without a ratified rule.
