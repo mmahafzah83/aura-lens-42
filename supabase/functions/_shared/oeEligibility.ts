@@ -123,7 +123,63 @@ export function parseLevel(title?: string | null, scope?: string | null): Level 
   return null;
 }
 
-const NATIONALITY_RE = /saudi national|saudi citizen|saudi nationality|سعودي الجنسية|مواطن سعودي|السعوديين فقط/i;
+/**
+ * NATIONALITY — any stated citizenship requirement, in either language, not
+ * just the Saudi one. Each entry maps a phrase to the country code that
+ * satisfies it; a member whose nationality is not that code cannot meet it.
+ */
+const NATIONALITY_PATTERNS: Array<[RegExp, string]> = [
+  [/saudi national|saudi citizen|saudi nationality|nationals? of saudi|سعودي الجنسية|سعودي الجنسيه|مواطن سعودي|الجنسية السعودية|السعوديين فقط|للسعوديين/i, "SA"],
+  [/uae national|emirati|u\.?a\.?e\.? citizen|nationals? of the u\.?a\.?e|إماراتي الجنسية|مواطن إماراتي|الجنسية الإماراتية/i, "AE"],
+  [/qatari (national|citizen)|nationals? of qatar|قطري الجنسية|مواطن قطري|الجنسية القطرية/i, "QA"],
+  [/kuwaiti (national|citizen)|كويتي الجنسية|مواطن كويتي/i, "KW"],
+  [/bahraini (national|citizen)|بحريني الجنسية|مواطن بحريني/i, "BH"],
+  [/omani (national|citizen)|عماني الجنسية|مواطن عماني/i, "OM"],
+  [/jordanian (national|citizen)|أردني الجنسية|مواطن أردني/i, "JO"],
+  [/gcc national|gcc citizen|مواطني دول مجلس التعاون|خليجي الجنسية/i, "GCC"],
+  [/citizens only|nationals only|must be a citizen|must hold .{0,20}citizenship|مواطنون فقط|يشترط الجنسية|حاملي الجنسية/i, "*"],
+];
+
+const GCC = ["SA", "AE", "QA", "KW", "BH", "OM"];
+
+/**
+ * A title is not a requirements list. "Saudi National Water Strategy" names a
+ * document; "Head of Procurement - UAE National" states a requirement. In a
+ * title or scope the phrase only counts when it is set off as a qualifier —
+ * in brackets, after a dash or comma, at the end, or spelled out as a demand.
+ */
+const QUALIFIER_LEFT = /[\-–—(\[,/|:]\s*$|\b(only|must be|open to|restricted to|candidates?|applicants?|يشترط|فقط)\s*$/i;
+const QUALIFIER_RIGHT = /^\s*[)\]\-–—,/|.]|^\s*(only|candidates?|applicants?|required|فقط)\b|^\s*$/i;
+
+/**
+ * The first stated nationality requirement the member does not satisfy, with
+ * the phrase that stated it. Null when nothing is stated or he satisfies it.
+ * '*' means a citizenship is demanded without naming one — unknown, not a fail.
+ * `loose` is for a requirements array, where every line is already a demand.
+ */
+export function nationalityMismatch(
+  text: string,
+  nationality: string,
+  loose = true,
+): { phrase: string; wants: string } | null {
+  for (const [re, wants] of NATIONALITY_PATTERNS) {
+    const global = new RegExp(re.source, "gi");
+    let hit: RegExpExecArray | null;
+    while ((hit = global.exec(text))) {
+      if (!loose) {
+        const before = text.slice(0, hit.index);
+        const after = text.slice(hit.index + hit[0].length);
+        if (!(QUALIFIER_LEFT.test(before) && QUALIFIER_RIGHT.test(after))) continue;
+      }
+      const satisfied = wants === nationality || (wants === "GCC" && GCC.includes(nationality));
+      if (satisfied) break;
+      return { phrase: hit[0], wants };
+    }
+  }
+  return null;
+}
+
+
 const PRIOR_BOARD_RE = /prior board|previous board (service|experience)|served on a board|existing board member|سبق له عضوية مجلس|خبرة سابقة في مجالس/i;
 const MANDATORY_RE = /\bmust\b|\brequired\b|\bmandatory\b|\bminimum\b|يشترط|إلزامي|يجب/i;
 const YEARS_RE = /(\d{1,2})\s*\+?\s*(?:years|yrs|سنة|سنوات)/i;
@@ -132,6 +188,7 @@ const requirementTexts = (o: any): string[] =>
   (Array.isArray(o?.requirements) ? o.requirements : [])
     .map((r: any) => (typeof r === "string" ? r : String(r?.text ?? "")))
     .filter(Boolean);
+
 
 /**
  * THE SCREEN — profile against stated requirement, never a band he set.
@@ -178,11 +235,27 @@ export function screen(
   const nationality = String(eligibility.nationality ?? "").toUpperCase();
   const neverHeld = (eligibility.chair_types_never_held ?? []).map((c) => String(c).toLowerCase());
   const years = typeof evidence?.years_experience === "number" ? evidence.years_experience : null;
+
+  // NATIONALITY — read off the whole record, not the requirements array alone.
+  // A title is where this is stated most often ("Head of Procurement - UAE
+  // National"), so the title and the scope are searched too.
+  const reqLines = requirementTexts(o);
+  const natHit =
+    (reqLines.length
+      ? nationalityMismatch(reqLines.join(" \u2022 "), nationality || "__none__", true)
+      : null) ??
+    nationalityMismatch(
+      [o.title, o.scope].filter(Boolean).join(" \u2022 "),
+      nationality || "__none__",
+      false,
+    );
+  if (natHit) {
+    if (!nationality || natHit.wants === "*") unknowns.push(`requirement_nationality: ${natHit.phrase}`);
+    else fails.push(`requirement_nationality: ${natHit.phrase}`);
+  }
+
+
   for (const text of requirementTexts(o)) {
-    if (NATIONALITY_RE.test(text)) {
-      if (nationality && nationality !== "SA") { fails.push("requirement_nationality"); continue; }
-      if (!nationality) { unknowns.push("requirement_nationality"); continue; }
-    }
     if (PRIOR_BOARD_RE.test(text)) {
       if (neverHeld.includes("board")) { fails.push("requirement_prior_board"); continue; }
       unknowns.push("requirement_prior_board");
@@ -198,6 +271,7 @@ export function screen(
     // Something stated as mandatory that no test of ours can establish.
     if (MANDATORY_RE.test(text)) unknowns.push("requirement_unestablished");
   }
+
 
   return done();
 }
