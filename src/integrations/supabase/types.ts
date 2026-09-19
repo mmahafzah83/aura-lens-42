@@ -4995,7 +4995,7 @@ export type Database = {
           retrieval?: Json | null
           rubric_version: string
           score_avg?: number | null
-          scores: Json
+          scores?: Json
           total_count?: number | null
           unstable?: boolean
           user_id: string

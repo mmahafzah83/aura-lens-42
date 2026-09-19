@@ -1,0 +1,1 @@
+ALTER TABLE public.oe_matches ALTER COLUMN scores SET DEFAULT '{}'::jsonb;
