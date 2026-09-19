@@ -145,6 +145,16 @@ Deno.serve(async (req) => {
         ...(verified && hash ? { content_hash: hash } : {}),
       }).eq("id", row.id);
 
+      // A verdict of 'quote_not_verified' was reached on a quote that now
+      // reads. It is stale, and the judge's own resume guard would keep it
+      // that way for a day, so the verdict is cleared and the record re-enters
+      // the next review run. Nothing is promoted here — only re-opened.
+      if (verified) {
+        await admin.from("oe_matches")
+          .update({ judged_at: null })
+          .eq("opportunity_id", row.id).eq("gate_reason", "quote_not_verified");
+      }
+
       if (!verified) {
         await admin.from("ef_error_log").insert({
           function_name: FN,
