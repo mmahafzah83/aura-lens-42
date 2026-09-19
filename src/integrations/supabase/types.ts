@@ -9809,6 +9809,7 @@ export type Database = {
         Returns: undefined
       }
       oe_app_queue: { Args: never; Returns: Json }
+      oe_app_queue_core: { Args: never; Returns: Json }
       oe_app_refresh: { Args: never; Returns: Json }
       oe_app_render: { Args: { p_card: string }; Returns: Json }
       oe_app_show_anyway: { Args: { p_suppressed: string }; Returns: undefined }
