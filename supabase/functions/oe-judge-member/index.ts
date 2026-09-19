@@ -472,7 +472,7 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await admin
       .from("diagnostic_profiles")
-      .select("seniority_band, sector_focus, country, content_language, timezone")
+      .select("seniority_band, sector_focus, country, content_language, timezone, years_experience, core_practice")
       .eq("user_id", userId).maybeSingle();
     const memberBand = (profile?.seniority_band ?? "table") as keyof typeof BANDS;
     const memberSector = profile?.sector_focus ?? null;
@@ -484,6 +484,18 @@ Deno.serve(async (req) => {
     const { data: eligRow } = await admin
       .from("oe_eligibility").select("*").eq("user_id", userId).maybeSingle();
     const eligibility = (eligRow ?? null) as Eligibility | null;
+
+    // What he can SHOW. A stated requirement is tested against this, never
+    // against a band he once mentioned in passing.
+    const yearsText = String((profile as any)?.years_experience ?? "");
+    const yearsMatch = /(\d{1,2})/.exec(yearsText);
+    const evidence = {
+      years_experience: yearsMatch ? Number(yearsMatch[1]) : null,
+      practice: (profile as any)?.core_practice ?? null,
+      sectors: eligibility?.sectors_core ?? null,
+    };
+
+
 
 
     const { data: corrections } = await admin
@@ -588,7 +600,7 @@ Deno.serve(async (req) => {
     for (const o of filtered) {
       const level = levelOf(o);
       const withLevel = { ...o, level_band: level };
-      const s = screen(withLevel, eligibility);
+      const s = screen(withLevel, eligibility, evidence);
       const issuerDomain = (o as any).issuer?.domain ?? null;
       const lane = laneFor(withLevel, s, issuerDomain);
       if (!s.pass) counts.skipped_ineligible++;
@@ -601,7 +613,9 @@ Deno.serve(async (req) => {
       const { error: laneErr } = await admin.from("oe_matches").upsert({
         user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
         lane_final: lane, eligibility_fail: s.fails,
+        eligibility_outcome: s.outcome, eligibility_unknowns: s.unknowns,
       }, { onConflict: "user_id,opportunity_id,rubric_version" });
+
       if (laneErr) {
         await logEfError(admin, {
           function_name: FN, error: new Error(`lane upsert failed: ${laneErr.message}`),

@@ -25,7 +25,27 @@ export type Eligibility = {
   sectors_core?: string[] | null;
 };
 
-export type Screened = { pass: boolean; fails: string[] };
+/**
+ * What the member can show, read off his own record. Used to test a stated
+ * requirement against evidence rather than against a band he once mentioned.
+ */
+export type Evidence = {
+  years_experience?: number | null;
+  practice?: string | null;
+  sectors?: string[] | null;
+  faces_text?: string | null;
+};
+
+/**
+ * Three outcomes and three only.
+ *  excluded — the record states a mandatory requirement he demonstrably
+ *             cannot meet.
+ *  unknown  — the requirement cannot be established. Marked, never excluded.
+ *  eligible — including a stretch above his current title.
+ */
+export type Outcome = "excluded" | "unknown" | "eligible";
+export type Screened = { pass: boolean; fails: string[]; outcome: Outcome; unknowns: string[] };
+
 
 /** The ladder. Order is the whole point; an index is a level. */
 export const LEVELS = [
@@ -105,6 +125,8 @@ export function parseLevel(title?: string | null, scope?: string | null): Level 
 
 const NATIONALITY_RE = /saudi national|saudi citizen|saudi nationality|سعودي الجنسية|مواطن سعودي|السعوديين فقط/i;
 const PRIOR_BOARD_RE = /prior board|previous board (service|experience)|served on a board|existing board member|سبق له عضوية مجلس|خبرة سابقة في مجالس/i;
+const MANDATORY_RE = /\bmust\b|\brequired\b|\bmandatory\b|\bminimum\b|يشترط|إلزامي|يجب/i;
+const YEARS_RE = /(\d{1,2})\s*\+?\s*(?:years|yrs|سنة|سنوات)/i;
 
 const requirementTexts = (o: any): string[] =>
   (Array.isArray(o?.requirements) ? o.requirements : [])
@@ -112,57 +134,72 @@ const requirementTexts = (o: any): string[] =>
     .filter(Boolean);
 
 /**
- * The four screens, in order. Returns every code that failed, because a member
- * is owed the whole reason and not just the first one.
+ * THE SCREEN — profile against stated requirement, never a band he set.
+ *
+ * Place and a seat kind he has ruled out still close a record. Everything else
+ * is a test of what the record asks for against what his own record shows. A
+ * requirement we cannot establish is unknown: it is marked and queued, and it
+ * does NOT exclude. Seniority is not tested at all any more; a role above his
+ * current title is eligible when he meets its stated experience and scope.
  */
-export function screen(opportunity: any, eligibility: Eligibility | null | undefined): Screened {
+export function screen(
+  opportunity: any,
+  eligibility: Eligibility | null | undefined,
+  evidence?: Evidence | null,
+): Screened {
   const fails: string[] = [];
-  if (!eligibility) return { pass: true, fails };
+  const unknowns: string[] = [];
+  const done = (): Screened => {
+    const outcome: Outcome = fails.length ? "excluded" : unknowns.length ? "unknown" : "eligible";
+    // Unknown never excludes. Only a demonstrated exclusion closes a record.
+    return { pass: outcome !== "excluded", fails: [...new Set(fails)], outcome, unknowns: [...new Set(unknowns)] };
+  };
+  if (!eligibility) return done();
 
   const o = opportunity ?? {};
 
-  // 1. PLACE — where he can actually work.
+  // 1. PLACE — where he can actually work. A place we cannot read is unknown.
   const allowed = (eligibility.countries_allowed ?? []).map((c) => String(c).toUpperCase());
   if (allowed.length) {
     const explicitlyRemote = o.remote === true || REMOTE_RE.test(String(o.location ?? o.title ?? ""));
     if (!(explicitlyRemote && eligibility.remote_ok === true)) {
       const country = countryOfPlace(o.location);
-      if (!country) fails.push("place_unknown");
+      if (!country) unknowns.push("place_unknown");
       else if (!allowed.includes(country)) fails.push("place");
     }
   }
 
-  // 2. CHAIR — a kind of seat he has told us is closed.
+  // 2. CHAIR — a kind of seat he has ruled out, ratified as a rule.
   const blocked = (eligibility.chair_types_blocked ?? []).map((c) => String(c).toLowerCase());
   const chair = String(o.chair_type ?? "").toLowerCase();
   if (chair && blocked.includes(chair)) fails.push("chair");
 
-  // 3. LEVEL — above his ceiling or below his floor. Only the ladder counts;
-  // an unreadable title gives null, and a null never fails this screen.
-  const asked = levelOf(o);
-  if (asked) {
-    const i = levelIndex(asked);
-    const ceiling = levelIndex(eligibility.level_ceiling);
-    const floor = levelIndex(eligibility.level_floor);
-    if (ceiling >= 0 && i > ceiling) fails.push("level");
-    else if (floor >= 0 && i < floor) fails.push("level");
-  }
-
-  // 4. REQUIREMENT — something asked of a person that he cannot satisfy.
+  // 3. REQUIREMENT versus EVIDENCE.
   const nationality = String(eligibility.nationality ?? "").toUpperCase();
   const neverHeld = (eligibility.chair_types_never_held ?? []).map((c) => String(c).toLowerCase());
+  const years = typeof evidence?.years_experience === "number" ? evidence.years_experience : null;
   for (const text of requirementTexts(o)) {
-    if (NATIONALITY_RE.test(text) && nationality && nationality !== "SA") {
-      fails.push("requirement");
-      break;
+    if (NATIONALITY_RE.test(text)) {
+      if (nationality && nationality !== "SA") { fails.push("requirement_nationality"); continue; }
+      if (!nationality) { unknowns.push("requirement_nationality"); continue; }
     }
-    if (PRIOR_BOARD_RE.test(text) && neverHeld.includes("board")) {
-      fails.push("requirement");
-      break;
+    if (PRIOR_BOARD_RE.test(text)) {
+      if (neverHeld.includes("board")) { fails.push("requirement_prior_board"); continue; }
+      unknowns.push("requirement_prior_board");
+      continue;
     }
+    const asked = YEARS_RE.exec(text);
+    if (asked) {
+      const wanted = Number(asked[1]);
+      if (years === null) unknowns.push("requirement_years");
+      else if (Number.isFinite(wanted) && wanted > years) fails.push("requirement_years");
+      continue;
+    }
+    // Something stated as mandatory that no test of ours can establish.
+    if (MANDATORY_RE.test(text)) unknowns.push("requirement_unestablished");
   }
 
-  return { pass: fails.length === 0, fails: [...new Set(fails)] };
+  return done();
 }
 
 /** The route kinds that count as a real door. */
@@ -179,15 +216,15 @@ const sameSite = (a: string, b: string): boolean =>
   a === b || a.endsWith(`.${b}`) || b.endsWith(`.${a}`);
 
 /**
- * The ladder level a record asks for: the stored level_band when it is a real
- * ladder value, otherwise read off the title. seniority_band is a different
- * vocabulary and is deliberately ignored here.
+ * The ladder level a record asks for. It is a RANKING input only — it feeds
+ * the build and explore purposes and never excludes anything.
  */
 export function levelOf(o: any): Level | null {
   const stored = String(o?.level_band ?? "").trim();
   if (LEVELS.includes(stored as Level)) return stored as Level;
   return parseLevel(o?.title, o?.scope);
 }
+
 
 /**
  * A real door. `contact` only counts when the page belongs to the issuer's own

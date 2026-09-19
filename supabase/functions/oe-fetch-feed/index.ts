@@ -622,7 +622,7 @@ Deno.serve(async (req) => {
         // could never take.
         const { data: eligRows } = await admin
           .from("oe_eligibility")
-          .select("user_id, countries_allowed, level_floor, level_ceiling, chair_types_blocked, sectors_core");
+          .select("user_id, countries_allowed, level_floor, chair_types_blocked, sectors_core");
         const { data: faces } = await admin
           .from("oe_faces").select("user_id, face, queries")
           .in("face", ["done", "wants", "stands"]);
@@ -670,14 +670,16 @@ Deno.serve(async (req) => {
         const byUser = new Map<string, string[]>();
         for (const e of eligRows ?? []) {
           const blockedChairs = (e.chair_types_blocked ?? []).map((c: string) => String(c).toLowerCase());
+          // No ceiling. A level above where he sits now is a stretch, not a
+          // closed door, so the questions run up the ladder, not into a wall.
           const floor = LEVEL_ORDER.indexOf(String(e.level_floor ?? ""));
-          const ceiling = LEVEL_ORDER.indexOf(String(e.level_ceiling ?? ""));
           const levels = LEVEL_ORDER
-            .filter((_, i) => (floor < 0 || i >= floor) && (ceiling < 0 || i <= ceiling))
+            .filter((_, i) => (floor < 0 || i >= floor))
             .filter((l) => !blockedChairs.includes(l));
           const countries = (e.countries_allowed ?? []).map((c: string) => String(c).toUpperCase());
           const chairs = Object.keys(CHAIR_WORDS).filter((c) => !blockedChairs.includes(c));
           const sectorKeys = (e.sectors_core ?? []).map((s: string) => String(s).toLowerCase());
+
 
           const built: string[] = [];
           for (const lang of [0, 1] as const) {

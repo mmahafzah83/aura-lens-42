@@ -4955,6 +4955,8 @@ export type Database = {
         Row: {
           created_at: string
           eligibility_fail: string[] | null
+          eligibility_outcome: string | null
+          eligibility_unknowns: string[]
           explore_slot: boolean
           fit_band: string | null
           gate_passed: boolean
@@ -4980,6 +4982,8 @@ export type Database = {
         Insert: {
           created_at?: string
           eligibility_fail?: string[] | null
+          eligibility_outcome?: string | null
+          eligibility_unknowns?: string[]
           explore_slot?: boolean
           fit_band?: string | null
           gate_passed?: boolean
@@ -5005,6 +5009,8 @@ export type Database = {
         Update: {
           created_at?: string
           eligibility_fail?: string[] | null
+          eligibility_outcome?: string | null
+          eligibility_unknowns?: string[]
           explore_slot?: boolean
           fit_band?: string | null
           gate_passed?: boolean
@@ -5127,6 +5133,8 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          derived_from: Json
+          entry_kind: string
           expires_at: string | null
           field: string | null
           id: string
@@ -5135,6 +5143,7 @@ export type Database = {
           origin: string
           proposal_status: string
           proposed_because: Json | null
+          ratified_at: string | null
           rule_text: string
           rule_text_ar: string | null
           stated_on: string
@@ -5145,6 +5154,8 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          derived_from?: Json
+          entry_kind?: string
           expires_at?: string | null
           field?: string | null
           id?: string
@@ -5153,6 +5164,7 @@ export type Database = {
           origin: string
           proposal_status?: string
           proposed_because?: Json | null
+          ratified_at?: string | null
           rule_text: string
           rule_text_ar?: string | null
           stated_on?: string
@@ -5163,6 +5175,8 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          derived_from?: Json
+          entry_kind?: string
           expires_at?: string | null
           field?: string | null
           id?: string
@@ -5171,6 +5185,7 @@ export type Database = {
           origin?: string
           proposal_status?: string
           proposed_because?: Json | null
+          ratified_at?: string | null
           rule_text?: string
           rule_text_ar?: string | null
           stated_on?: string
@@ -9518,9 +9533,18 @@ export type Database = {
           title: string
         }[]
       }
+      oe_derive_rules: { Args: { p_user: string }; Returns: number }
       oe_direction_save: {
         Args: { p_defer?: boolean; p_mix?: string; p_priority?: string }
         Returns: Json
+      }
+      oe_eligibility_orphans: {
+        Args: { p_user: string }
+        Returns: {
+          field: string
+          reason: string
+          value: string
+        }[]
       }
       oe_expected_lead_days: {
         Args: { p_chair_type?: string; p_discovery_kind: string }

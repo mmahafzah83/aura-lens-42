@@ -20,7 +20,8 @@ type QueueCard = {
 type Priority = "bigger_seat" | "known_for_one" | "new_rooms" | "out_of_sector" | "stay_current";
 type Mix = "win" | "build" | "explore";
 type Direction = { priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null; mix: Mix | null; mix_set_on: string | null };
-type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; rule_text_ar: string | null; field: string | null; value: string | null; stated_on: string };
+type Derivation = { comments?: Array<{ id?: string; text?: string; said_on?: string }>; profile?: string[]; legal_basis?: string };
+type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; rule_text_ar: string | null; field: string | null; value: string | null; stated_on: string; derived_from?: Derivation | null; ratified_at?: string | null };
 type Held = { id: string; day: string; reason: string | null; rank: number | null; title: string | null };
 type History = { id: string; shown_at: string; lane: string | null; tap: string | null; signal_class: string | null; truth_code: string | null; outcome: string | null; why: Record<string, unknown> | null; title: string | null };
 type DueOutcome = { id: string; title: string | null };
@@ -355,8 +356,27 @@ function DirectionCard({ kind, direction, busy, v, onChoose, onDefer }: { kind: 
   </AuraCard>;
 }
 
+/* A rule shows its own derivation: the member's sentence with its date, and
+   the profile fields it was read from. A rule nobody can trace is a guess. */
 function RuleRow({ rule, onDeactivate }: { rule: Rule; onDeactivate: (id: string) => Promise<void> }) {
-  return <div className="oe-rule"><div><strong>{rule.rule_text}</strong><span><span style={mono}>{rule.stated_on}</span> · {rule.field ?? "—"}</span></div><button type="button" className="v23-textlink" onClick={() => void onDeactivate(rule.id)}>Deactivate</button></div>;
+  const from = rule.derived_from ?? {};
+  const comments = Array.isArray(from.comments) ? from.comments : [];
+  const fields = Array.isArray(from.profile) ? from.profile : [];
+  const legal = typeof from.legal_basis === "string" ? from.legal_basis : null;
+  return <div className="oe-rule">
+    <div>
+      <strong>{rule.rule_text}</strong>
+      <span><span style={mono}>{rule.stated_on}</span> · {rule.field ?? "—"}</span>
+      {(comments.length > 0 || fields.length > 0 || legal) && <span className="oe-rule-derivation">
+        <em>Derived from</em>
+        {comments.map((comment, index) => <span key={`${comment.id ?? index}`}>“{comment.text}” <span style={mono}>{comment.said_on}</span></span>)}
+        {fields.map((field) => <span key={field}>{field}</span>)}
+        {legal && <span>{legal}</span>}
+      </span>}
+    </div>
+    <button type="button" className="v23-textlink" onClick={() => void onDeactivate(rule.id)}>Change</button>
+  </div>;
 }
+
 
 export default OpportunityQueue;
