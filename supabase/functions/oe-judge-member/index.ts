@@ -614,13 +614,28 @@ Deno.serve(async (req) => {
 
     // Both lanes are read. A writing-lane record still needs citations before
     // it can be shown with a grounded reason, and it only gets them here.
-    const scored = [...actPool, ...writePool].map((o) => {
-      const m = merged.get(o.id)!;
-      const vec = asVector(o.embedding);
-      const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
-      return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
-    }).sort((a, b) => b.score - a.score).slice(0, shortlistK);
+    // A run that times out must resume, not restart: anything already judged
+    // with citations in the last day is left alone.
+    const { data: freshJudged } = await admin.from("oe_matches")
+      .select("opportunity_id,scores,judged_at")
+      .eq("user_id", userId)
+      .gte("judged_at", new Date(Date.now() - 86_400_000).toISOString());
+    const alreadyJudged = new Set(
+      (freshJudged ?? [])
+        .filter((m: any) => Array.isArray(m.scores?.cites) && m.scores.cites.length > 0)
+        .map((m: any) => String(m.opportunity_id)),
+    );
+
+    const scored = [...actPool, ...writePool]
+      .filter((o) => !alreadyJudged.has(String(o.id)))
+      .map((o) => {
+        const m = merged.get(o.id)!;
+        const vec = asVector(o.embedding);
+        const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
+        return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
+      }).sort((a, b) => b.score - a.score).slice(0, shortlistK);
     counts.shortlisted = scored.length;
+
 
 
 
