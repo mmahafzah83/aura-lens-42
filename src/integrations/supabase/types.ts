@@ -10074,6 +10074,10 @@ export type Database = {
       }
       oe_normalize_terms: { Args: { p_text: string }; Returns: string[] }
       oe_place_country: { Args: { p_location: string }; Returns: string }
+      oe_queue_kind_investigations: {
+        Args: { p_user: string }
+        Returns: number
+      }
       oe_quote_recheck_due: {
         Args: { p_limit?: number; p_max_attempts?: number }
         Returns: {
