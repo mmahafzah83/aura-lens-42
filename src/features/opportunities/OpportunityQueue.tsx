@@ -248,9 +248,13 @@ export function OpportunityQueue() {
     <header className="oe-queue-header">
       <h1>{t("queue_morning", "Morning")}{firstName ? `, ${firstName}` : ""}</h1>
       <p>{count === 0 ? t("queue_nothing_today", "Nothing today.") : <><span style={mono}>{count}</span> {t("queue_things_today", "things today. About a minute.")}</>}</p>
-      <div className="oe-machine-line"><span className="oe-machine-dot" aria-hidden />
-        <span>{t("queue_still_reading", "Still reading")} — <b style={mono}>{data.surface_count}</b> {t("queue_sources_across", "sources across")} <b style={mono}>{data.entity_count}</b> {t("queue_organisations_next", "organisations · next at 07:00")}</span>
+      <div className="oe-machine-line"><span className={refreshing ? "oe-machine-dot oe-machine-dot-working" : "oe-machine-dot"} aria-hidden />
+        <span>{refreshing ? t("queue_refreshing", "Looking again") : t("queue_still_reading", "Still reading")} — <b style={mono}>{data.surface_count}</b> {t("queue_sources_across", "sources across")} <b style={mono}>{data.entity_count}</b> {t("queue_organisations", "organisations")}</span>
+        <button type="button" className="v23-textlink oe-refresh" onClick={() => void refresh()} disabled={refreshing || loading}>
+          {refreshing ? t("queue_refreshing_short", "Refreshing…") : t("queue_refresh", "Refresh")}
+        </button>
       </div>
+      {refreshNote ? <p className="oe-refresh-note">{refreshNote}</p> : null}
       <button type="button" className="oe-tuning-door" onClick={() => setDrawerOpen(true)}>
         <strong>{t("queue_tuning_title", "What reaches you")}</strong>
         <span><b style={mono}>{data.rule_count}</b> {t("queue_rules_force", "rules in force")} · <b style={mono}>{data.held_count}</b> {t("queue_held_month", "held back this month")}</span>
