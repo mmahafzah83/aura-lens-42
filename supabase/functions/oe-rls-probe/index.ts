@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.json().catch(() => ({} as any));
-  const victim = String(body.victim_user_id ?? "");
+  const victim = String(body.victim_user_id ?? "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3");
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
   const email = `rls-probe-${crypto.randomUUID()}@example.com`;
@@ -80,6 +80,13 @@ Deno.serve(async (req) => {
 
   const d = await asMember.from("oe_direction").update({ mix: "win" }).eq("user_id", victim).select();
   results.d_update_other_direction = { rows: d.data?.length ?? 0, data: d.data, error: d.error?.message ?? null };
+
+  await admin.from("ef_error_log").insert({
+    function_name: "oe-rls-probe",
+    severity: "info",
+    error_message: "RLS_PROBE result",
+    context: results,
+  });
 
   await admin.from("oe_world_facts").delete().eq("kind", `rls_probe_${attackerId}`);
   await admin.auth.admin.deleteUser(attackerId);
