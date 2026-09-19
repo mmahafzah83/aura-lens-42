@@ -54,3 +54,10 @@
 - screen() is now profile-versus-requirement: excluded / unknown / eligible, stored on oe_matches.
 - Purpose re-tagged: stretch above current level counts as build.
 - Invariant 10 added: any eligibility value without a ratified rule.
+
+## Step 19C — full judging coverage
+- [x] Diagnose 28 missing match rows: 24 country prefilter, 4 retrieval cutoff
+- [x] Remove silent country and retrieval exclusions; preserve them as coverage stages
+- [x] Create access outcomes for all 74 live records
+- [ ] Complete model review for the final 14 records in bounded batches
+- [ ] Re-run purpose classification and report final lane and purpose totals
