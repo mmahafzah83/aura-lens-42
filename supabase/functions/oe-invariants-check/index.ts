@@ -1,7 +1,7 @@
 /**
  * oe-invariants-check — the opportunity engine's daily audit.
  *
- * Eight assertions, each phrased so that a violation is a fact, not an
+ * Nine assertions, each phrased so that a violation is a fact, not an
  * opinion. Every violation is written to ef_error_log at 'error' with the
  * offending ids in context. A clean run writes one 'info' summary.
  *
@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
     await admin.from("ef_error_log").insert({
       function_name: FN,
       severity: "info",
-      error_message: "OE_INVARIANTS ok — all eight assertions hold",
+      error_message: "OE_INVARIANTS ok — all nine assertions hold",
       context: {},
     });
   }
