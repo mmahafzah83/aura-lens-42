@@ -77,3 +77,10 @@
 ## Step 20 — the screening brain (2026-09-19)
 - oe_member_identity derived from the profile snapshot; three gates (licence, profession, level with employer tier) in supabase/functions/_shared/oeScreen.ts; oe-screen-member runs them and the presentation test.
 - Open: the presentation test writes no line for any of the nine survivors, so the act lane is empty. Not a defect — reported as a finding.
+
+## Step 21A — the catalogue tables (2026-09-19)
+- oe_opportunity_kinds (11, required fields as data), oe_source_types (16) seeded deterministically; no model called.
+- kind + kind_completeness on oe_opportunities; source_type on oe_surfaces and oe_feeds; structured on oe_feeds.
+- Incomplete records are queued to oe_investigations as kind_field:<name> and excluded from oe_app_queue.
+- Telegram feeds (2) marked inactive, unclassified.
+- Open: 21B — entity classification and oe_source_strength.

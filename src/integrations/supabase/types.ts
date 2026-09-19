@@ -4659,6 +4659,8 @@ export type Database = {
           score_quality: number | null
           score_speed: number | null
           score_yield: number | null
+          source_type: string | null
+          structured: boolean | null
           terms_note: string | null
           terms_ok: boolean
           updated_at: string
@@ -4691,6 +4693,8 @@ export type Database = {
           score_quality?: number | null
           score_speed?: number | null
           score_yield?: number | null
+          source_type?: string | null
+          structured?: boolean | null
           terms_note?: string | null
           terms_ok?: boolean
           updated_at?: string
@@ -4723,12 +4727,22 @@ export type Database = {
           score_quality?: number | null
           score_speed?: number | null
           score_yield?: number | null
+          source_type?: string | null
+          structured?: boolean | null
           terms_note?: string | null
           terms_ok?: boolean
           updated_at?: string
           url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "oe_feeds_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "oe_source_types"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       oe_investigations: {
         Row: {
@@ -5421,6 +5435,8 @@ export type Database = {
           id: string
           issuer_id: string | null
           issuer_raw: string | null
+          kind: string | null
+          kind_completeness: Json | null
           language: string | null
           last_seen_at: string
           level_band: string | null
@@ -5469,6 +5485,8 @@ export type Database = {
           id?: string
           issuer_id?: string | null
           issuer_raw?: string | null
+          kind?: string | null
+          kind_completeness?: Json | null
           language?: string | null
           last_seen_at?: string
           level_band?: string | null
@@ -5517,6 +5535,8 @@ export type Database = {
           id?: string
           issuer_id?: string | null
           issuer_raw?: string | null
+          kind?: string | null
+          kind_completeness?: Json | null
           language?: string | null
           last_seen_at?: string
           level_band?: string | null
@@ -5560,7 +5580,53 @@ export type Database = {
             referencedRelation: "oe_issuers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "oe_opportunities_kind_fkey"
+            columns: ["kind"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunity_kinds"
+            referencedColumns: ["code"]
+          },
         ]
+      }
+      oe_opportunity_kinds: {
+        Row: {
+          allows_opportunity_language: boolean
+          code: string
+          created_at: string
+          detect_ar: string | null
+          detect_en: string | null
+          label_ar: string
+          label_en: string
+          required_fields: Json
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          allows_opportunity_language?: boolean
+          code: string
+          created_at?: string
+          detect_ar?: string | null
+          detect_en?: string | null
+          label_ar: string
+          label_en: string
+          required_fields?: Json
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          allows_opportunity_language?: boolean
+          code?: string
+          created_at?: string
+          detect_ar?: string | null
+          detect_en?: string | null
+          label_ar?: string
+          label_en?: string
+          required_fields?: Json
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       oe_outcomes: {
         Row: {
@@ -5894,6 +5960,39 @@ export type Database = {
           },
         ]
       }
+      oe_source_types: {
+        Row: {
+          code: string
+          created_at: string
+          label_ar: string
+          label_en: string
+          structured: boolean
+          typical_refresh: string
+          updated_at: string
+          yields_kinds: string[]
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          label_ar: string
+          label_en: string
+          structured?: boolean
+          typical_refresh: string
+          updated_at?: string
+          yields_kinds?: string[]
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          label_ar?: string
+          label_en?: string
+          structured?: boolean
+          typical_refresh?: string
+          updated_at?: string
+          yields_kinds?: string[]
+        }
+        Relationships: []
+      }
       oe_suppressed: {
         Row: {
           created_at: string
@@ -5939,6 +6038,7 @@ export type Database = {
           last_harvested_at: string | null
           read_yield: number | null
           selector: string | null
+          source_type: string | null
           surface_type: string
           terms_note: string | null
           terms_ok: boolean | null
@@ -5960,6 +6060,7 @@ export type Database = {
           last_harvested_at?: string | null
           read_yield?: number | null
           selector?: string | null
+          source_type?: string | null
           surface_type: string
           terms_note?: string | null
           terms_ok?: boolean | null
@@ -5981,6 +6082,7 @@ export type Database = {
           last_harvested_at?: string | null
           read_yield?: number | null
           selector?: string | null
+          source_type?: string | null
           surface_type?: string
           terms_note?: string | null
           terms_ok?: boolean | null
@@ -5995,6 +6097,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oe_entities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_surfaces_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "oe_source_types"
+            referencedColumns: ["code"]
           },
         ]
       }
@@ -9965,6 +10074,10 @@ export type Database = {
       }
       oe_normalize_terms: { Args: { p_text: string }; Returns: string[] }
       oe_place_country: { Args: { p_location: string }; Returns: string }
+      oe_queue_kind_investigations: {
+        Args: { p_user: string }
+        Returns: number
+      }
       oe_quote_recheck_due: {
         Args: { p_limit?: number; p_max_attempts?: number }
         Returns: {
