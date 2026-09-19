@@ -196,6 +196,35 @@ Deno.serve(async (req) => {
     record("weight_moved_below_stage_two", bad);
   }
 
+  // 9. Judging coverage. An active member should have a match row for nearly
+  //    every alive record. More than a quarter unjudged is a pipeline gap —
+  //    the exact failure that emptied the queue and took an audit to find.
+  {
+    const { data: alive } = await admin.from("oe_opportunities").select("id").eq("alive", true);
+    const aliveIds = (alive ?? []).map((o) => o.id as string);
+    const { data: consents } = await admin.from("oe_consents")
+      .select("user_id").eq("kind", "matching").is("revoked_at", null);
+    const bad: unknown[] = [];
+    if (aliveIds.length) {
+      for (const uid of [...new Set((consents ?? []).map((c) => c.user_id as string))]) {
+        const { data: matched } = await admin.from("oe_matches")
+          .select("opportunity_id").eq("user_id", uid).in("opportunity_id", aliveIds);
+        const covered = new Set((matched ?? []).map((m) => m.opportunity_id as string)).size;
+        const missing = aliveIds.length - covered;
+        const share = missing / aliveIds.length;
+        if (share > 0.25) {
+          bad.push({
+            user_id: uid, alive: aliveIds.length, matched: covered, unjudged: missing,
+            unjudged_share: +share.toFixed(3),
+          });
+        }
+      }
+    }
+    record("member_unjudged_share_above_quarter", bad);
+  }
+
+
+
   for (const v of violations) {
     await admin.from("ef_error_log").insert({
       function_name: FN,
