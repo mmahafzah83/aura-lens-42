@@ -1,14 +1,16 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { logEfError } from "./observe.ts";
 
-type CanonSeverity = "critical" | "high" | "info";
+type CanonSeverity = "debug" | "info" | "warn" | "error" | "fatal";
 
 function mapSeverity(input?: string): CanonSeverity {
   const s = (input ?? "").toLowerCase();
-  if (s === "critical" || s === "high" || s === "info") return s;
-  if (s === "error" || s === "fatal") return "high";
-  if (s === "warn" || s === "warning" || s === "debug" || s === "low") return "info";
-  return "high";
+  if (s === "debug" || s === "info" || s === "warn" || s === "error" || s === "fatal") return s;
+  if (s === "critical") return "fatal";
+  if (s === "high") return "error";
+  if (s === "warning" || s === "low" || s === "medium" || s === "med") return "warn";
+  if (s === "ok") return "info";
+  return "error";
 }
 
 /**

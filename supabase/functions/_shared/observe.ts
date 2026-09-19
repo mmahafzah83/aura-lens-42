@@ -1,6 +1,12 @@
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-type Severity = "critical" | "high" | "info" | "low";
+/* The closed vocabulary. 'info' is a run summary; 'error' and above is a
+   caught exception or a violated invariant. The legacy words are still
+   accepted by existing call sites and are normalised into the canon by a
+   trigger on ef_error_log, so logging can never fail on a stale word. */
+type CanonSeverity = "debug" | "info" | "warn" | "error" | "fatal";
+type LegacySeverity = "critical" | "high" | "low" | "medium" | "med" | "ok" | "warning";
+type Severity = CanonSeverity | LegacySeverity;
 
 export async function logEfError(
   admin: SupabaseClient,
@@ -15,7 +21,7 @@ export async function logEfError(
   try {
     const raw = (opts.error as any)?.message ?? opts.error;
     const error_message = String(raw ?? "unknown error").slice(0, 1000);
-    const severity = opts.severity ?? "high";
+    const severity = opts.severity ?? "error";
     // Single monitoring substrate: ef_error_log is canonical for all telemetry
     // (heartbeats + errors). Historic name — see known_issues for rename plan.
     await admin.from("ef_error_log").insert({

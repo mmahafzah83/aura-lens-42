@@ -33,11 +33,14 @@ Deno.serve(async (req) => {
 
     for (const feed of feeds ?? []) {
       const { data: rows } = await admin.from("oe_opportunities")
-        .select("id,alive,lane_final,route_url,route_dead,evidence_quote,quote_verified,signal_date,created_at")
+        .select("id,alive,route_url,route_dead,evidence_quote,quote_verified,signal_date,created_at")
         .eq("feed_id", feed.id).gte("created_at", since);
       const items = rows ?? [];
       const pulled = items.length;
-      const kept = items.filter((r: any) => r.alive && r.lane_final).length;
+      /* Source facts are global — Book Three holds no member. A lane is a
+         per-member verdict and now lives on oe_matches, so survival here is
+         measured as the record still being alive. */
+      const kept = items.filter((r: any) => r.alive).length;
       const withRoute = items.filter((r: any) => r.route_url);
       const withQuote = items.filter((r: any) => r.evidence_quote);
       const dead = withRoute.filter((r: any) => r.route_dead).length;

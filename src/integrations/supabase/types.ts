@@ -4954,6 +4954,7 @@ export type Database = {
       oe_matches: {
         Row: {
           created_at: string
+          eligibility_fail: string[] | null
           explore_slot: boolean
           fit_band: string | null
           gate_passed: boolean
@@ -4961,6 +4962,7 @@ export type Database = {
           id: string
           judged_at: string
           lane: string | null
+          lane_final: string | null
           met_count: number | null
           opportunity_id: string
           purpose: string | null
@@ -4977,6 +4979,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          eligibility_fail?: string[] | null
           explore_slot?: boolean
           fit_band?: string | null
           gate_passed?: boolean
@@ -4984,6 +4987,7 @@ export type Database = {
           id?: string
           judged_at?: string
           lane?: string | null
+          lane_final?: string | null
           met_count?: number | null
           opportunity_id: string
           purpose?: string | null
@@ -5000,6 +5004,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          eligibility_fail?: string[] | null
           explore_slot?: boolean
           fit_band?: string | null
           gate_passed?: boolean
@@ -5007,6 +5012,7 @@ export type Database = {
           id?: string
           judged_at?: string
           lane?: string | null
+          lane_final?: string | null
           met_count?: number | null
           opportunity_id?: string
           purpose?: string | null
@@ -5184,7 +5190,6 @@ export type Database = {
           created_at: string
           deadline: string | null
           discovery_kind: string
-          eligibility_fail: string[] | null
           embedding: string | null
           evidence_quote: string | null
           extraction_confidence: number | null
@@ -5193,7 +5198,6 @@ export type Database = {
           id: string
           issuer_id: string | null
           issuer_raw: string | null
-          lane_final: string | null
           language: string | null
           last_seen_at: string
           level_band: string | null
@@ -5226,7 +5230,6 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           discovery_kind?: string
-          eligibility_fail?: string[] | null
           embedding?: string | null
           evidence_quote?: string | null
           extraction_confidence?: number | null
@@ -5235,7 +5238,6 @@ export type Database = {
           id?: string
           issuer_id?: string | null
           issuer_raw?: string | null
-          lane_final?: string | null
           language?: string | null
           last_seen_at?: string
           level_band?: string | null
@@ -5268,7 +5270,6 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           discovery_kind?: string
-          eligibility_fail?: string[] | null
           embedding?: string | null
           evidence_quote?: string | null
           extraction_confidence?: number | null
@@ -5277,7 +5278,6 @@ export type Database = {
           id?: string
           issuer_id?: string | null
           issuer_raw?: string | null
-          lane_final?: string | null
           language?: string | null
           last_seen_at?: string
           level_band?: string | null
@@ -8110,6 +8110,36 @@ export type Database = {
           rendered_html: string | null
           run_reason: string | null
           run_seq: number | null
+        }
+        Relationships: []
+      }
+      ef_failures: {
+        Row: {
+          context: Json | null
+          created_at: string | null
+          error_message: string | null
+          function_name: string | null
+          id: string | null
+          severity: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          function_name?: string | null
+          id?: string | null
+          severity?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          function_name?: string | null
+          id?: string | null
+          severity?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

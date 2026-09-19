@@ -585,9 +585,15 @@ Deno.serve(async (req) => {
       const lane = laneFor(withLevel, s, issuerDomain);
       if (!s.pass) counts.skipped_ineligible++;
       (lane === "act" ? actPool : writePool).push({ ...withLevel, _screen: s });
+      // level_band is a property of the record itself and stays on the shared row.
       await admin.from("oe_opportunities")
-        .update({ lane_final: lane, eligibility_fail: s.fails, level_band: level })
+        .update({ level_band: level })
         .eq("id", o.id);
+      // The lane verdict is PER MEMBER — it belongs on this member's match row.
+      await admin.from("oe_matches").upsert({
+        user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
+        lane_final: lane, eligibility_fail: s.fails,
+      }, { onConflict: "user_id,opportunity_id,rubric_version" });
     }
     counts.lane_act = actPool.length;
     counts.lane_write = writePool.length;
