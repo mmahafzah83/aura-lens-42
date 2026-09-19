@@ -8,6 +8,7 @@
  *
  * The job row itself is completed by oe-worker, which invoked this function.
  */
+import { checkSpendCap } from "../_shared/spendCap.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";

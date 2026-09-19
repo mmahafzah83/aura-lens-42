@@ -4,6 +4,7 @@
  * resolves who is issuing it, and writes it once. Nothing is guessed: a record
  * without a verbatim quote for an open chair is dropped.
  */
+import { checkSpendCap } from "../_shared/spendCap.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
