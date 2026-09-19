@@ -5087,6 +5087,7 @@ export type Database = {
           eligibility_fail: string[] | null
           eligibility_outcome: string | null
           eligibility_unknowns: string[]
+          employer_tier: string | null
           explore_slot: boolean
           fit_band: string | null
           gate_passed: boolean
@@ -5095,15 +5096,24 @@ export type Database = {
           judged_at: string
           lane: string | null
           lane_final: string | null
+          level_direction: string | null
           member_access_confirmed: boolean
           met_count: number | null
           opportunity_id: string
+          presentation_line: string | null
+          profession_relation: string | null
           purpose: string | null
+          rejection_sentence: string | null
           requirement_check: Json | null
           retrieval: Json | null
+          role_profession: string | null
           rubric_version: string
           score_avg: number | null
           scores: Json
+          screen_gate: string | null
+          screen_outcome: string | null
+          screened_at: string | null
+          standing_gap: number | null
           total_count: number | null
           unstable: boolean
           user_id: string
@@ -5115,6 +5125,7 @@ export type Database = {
           eligibility_fail?: string[] | null
           eligibility_outcome?: string | null
           eligibility_unknowns?: string[]
+          employer_tier?: string | null
           explore_slot?: boolean
           fit_band?: string | null
           gate_passed?: boolean
@@ -5123,15 +5134,24 @@ export type Database = {
           judged_at?: string
           lane?: string | null
           lane_final?: string | null
+          level_direction?: string | null
           member_access_confirmed?: boolean
           met_count?: number | null
           opportunity_id: string
+          presentation_line?: string | null
+          profession_relation?: string | null
           purpose?: string | null
+          rejection_sentence?: string | null
           requirement_check?: Json | null
           retrieval?: Json | null
+          role_profession?: string | null
           rubric_version: string
           score_avg?: number | null
           scores?: Json
+          screen_gate?: string | null
+          screen_outcome?: string | null
+          screened_at?: string | null
+          standing_gap?: number | null
           total_count?: number | null
           unstable?: boolean
           user_id: string
@@ -5143,6 +5163,7 @@ export type Database = {
           eligibility_fail?: string[] | null
           eligibility_outcome?: string | null
           eligibility_unknowns?: string[]
+          employer_tier?: string | null
           explore_slot?: boolean
           fit_band?: string | null
           gate_passed?: boolean
@@ -5151,15 +5172,24 @@ export type Database = {
           judged_at?: string
           lane?: string | null
           lane_final?: string | null
+          level_direction?: string | null
           member_access_confirmed?: boolean
           met_count?: number | null
           opportunity_id?: string
+          presentation_line?: string | null
+          profession_relation?: string | null
           purpose?: string | null
+          rejection_sentence?: string | null
           requirement_check?: Json | null
           retrieval?: Json | null
+          role_profession?: string | null
           rubric_version?: string
           score_avg?: number | null
           scores?: Json
+          screen_gate?: string | null
+          screen_outcome?: string | null
+          screened_at?: string | null
+          standing_gap?: number | null
           total_count?: number | null
           unstable?: boolean
           user_id?: string
@@ -5175,6 +5205,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      oe_member_identity: {
+        Row: {
+          built_at: string
+          created_at: string
+          highest_standing: Json
+          positions: Json
+          professions: Json
+          qualifications: Json
+          scope_evidence: Json
+          sectors_delivered: Json
+          snapshot_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          built_at?: string
+          created_at?: string
+          highest_standing?: Json
+          positions?: Json
+          professions?: Json
+          qualifications?: Json
+          scope_evidence?: Json
+          sectors_delivered?: Json
+          snapshot_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          built_at?: string
+          created_at?: string
+          highest_standing?: Json
+          positions?: Json
+          professions?: Json
+          qualifications?: Json
+          scope_evidence?: Json
+          sectors_delivered?: Json
+          snapshot_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       oe_moves: {
         Row: {
@@ -6130,10 +6202,12 @@ export type Database = {
           assessed_at: string
           audience_fit: boolean
           created_at: string
+          has_standing: boolean | null
           has_viewpoint: boolean
           id: string
           opportunity_id: string
           reason: string | null
+          standing_reason: string | null
           suits_positioning: boolean
           updated_at: string
           user_id: string
@@ -6144,10 +6218,12 @@ export type Database = {
           assessed_at?: string
           audience_fit: boolean
           created_at?: string
+          has_standing?: boolean | null
           has_viewpoint: boolean
           id?: string
           opportunity_id: string
           reason?: string | null
+          standing_reason?: string | null
           suits_positioning: boolean
           updated_at?: string
           user_id: string
@@ -6158,10 +6234,12 @@ export type Database = {
           assessed_at?: string
           audience_fit?: boolean
           created_at?: string
+          has_standing?: boolean | null
           has_viewpoint?: boolean
           id?: string
           opportunity_id?: string
           reason?: string | null
+          standing_reason?: string | null
           suits_positioning?: boolean
           updated_at?: string
           user_id?: string

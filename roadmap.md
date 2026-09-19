@@ -73,3 +73,7 @@
 - [x] 7 Learning by evidence type; "still pursuing" distinct from "nothing came of it"
 - [x] 8 `oe_coverage_funnel` view with seven visible stages
 - [x] 9 Retrieval before judging; shortlist cap logged when smaller than the pool
+
+## Step 20 — the screening brain (2026-09-19)
+- oe_member_identity derived from the profile snapshot; three gates (licence, profession, level with employer tier) in supabase/functions/_shared/oeScreen.ts; oe-screen-member runs them and the presentation test.
+- Open: the presentation test writes no line for any of the nine survivors, so the act lane is empty. Not a defect — reported as a finding.
