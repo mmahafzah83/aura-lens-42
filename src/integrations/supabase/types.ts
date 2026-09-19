@@ -5392,6 +5392,24 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_refresh_marks: {
+        Row: {
+          created_at: string
+          last_refresh_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          last_refresh_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          last_refresh_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oe_registrations: {
         Row: {
           created_at: string
@@ -9470,6 +9488,7 @@ export type Database = {
         Returns: undefined
       }
       oe_app_queue: { Args: never; Returns: Json }
+      oe_app_refresh: { Args: never; Returns: Json }
       oe_app_render: { Args: { p_card: string }; Returns: Json }
       oe_app_show_anyway: { Args: { p_suppressed: string }; Returns: undefined }
       oe_candidates: {
