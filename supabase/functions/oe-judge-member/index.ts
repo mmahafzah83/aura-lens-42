@@ -657,16 +657,28 @@ Deno.serve(async (req) => {
         const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
         return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
       }).sort((a, b) => b.score - a.score);
-    counts.shortlisted = scored.length;
-
-
-
+    // Retrieval runs BEFORE the model: the eligible pool is ordered, then cut
+    // to the shortlist from params. The cut is a cost control, never a silent
+    // one — a shortlist smaller than the eligible pool is logged and counted.
+    const eligiblePool = scored.length;
+    const modelCap = Math.min(shortlistK, judgeMax);
+    const shortlist = scored.slice(0, modelCap);
+    counts.eligible_pool = eligiblePool;
+    counts.shortlisted = shortlist.length;
+    counts.starved = Math.max(0, eligiblePool - shortlist.length);
+    if (counts.starved > 0) {
+      await admin.from("ef_error_log").insert({
+        function_name: FN, user_id: userId, severity: "warn",
+        error_message: "Retrieval shortlist is smaller than the eligible pool; the remainder was not reviewed by the model this cycle",
+        context: { eligible_pool: eligiblePool, shortlist: shortlist.length, shortlist_k: shortlistK, judge_max: judgeMax },
+      });
+    }
 
     // ── 3. JUDGE ──────────────────────────────────────────────────────────
-    if (!lovableKey && scored.length) throw new Error("LOVABLE_API_KEY not configured");
+    if (!lovableKey && shortlist.length) throw new Error("LOVABLE_API_KEY not configured");
     const judged: Array<any> = [];
 
-    for (const cand of scored.slice(0, judgeMax)) {
+    for (const cand of shortlist) {
       const o = cand.o;
       const reqs = Array.isArray(o.requirements) ? o.requirements : [];
       const requirementIds = reqs.map((_: any, i: number) => `req:${i}`);
