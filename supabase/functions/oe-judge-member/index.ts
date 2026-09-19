@@ -592,27 +592,36 @@ Deno.serve(async (req) => {
       const issuerDomain = (o as any).issuer?.domain ?? null;
       const lane = laneFor(withLevel, s, issuerDomain);
       if (!s.pass) counts.skipped_ineligible++;
-      (lane === "act" ? actPool : writePool).push({ ...withLevel, _screen: s });
+      (lane === "act" ? actPool : writePool).push({ ...withLevel, _screen: s, _lane_final: lane });
       // level_band is a property of the record itself and stays on the shared row.
       await admin.from("oe_opportunities")
         .update({ level_band: level })
         .eq("id", o.id);
       // The lane verdict is PER MEMBER — it belongs on this member's match row.
-      await admin.from("oe_matches").upsert({
+      const { error: laneErr } = await admin.from("oe_matches").upsert({
         user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
         lane_final: lane, eligibility_fail: s.fails,
       }, { onConflict: "user_id,opportunity_id,rubric_version" });
+      if (laneErr) {
+        await logEfError(admin, {
+          function_name: FN, error: new Error(`lane upsert failed: ${laneErr.message}`),
+          severity: "error", context: { opportunity_id: o.id, user_id: userId },
+        });
+      }
     }
     counts.lane_act = actPool.length;
     counts.lane_write = writePool.length;
 
-    const scored = actPool.map((o) => {
+    // Both lanes are read. A writing-lane record still needs citations before
+    // it can be shown with a grounded reason, and it only gets them here.
+    const scored = [...actPool, ...writePool].map((o) => {
       const m = merged.get(o.id)!;
       const vec = asVector(o.embedding);
       const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
       return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
     }).sort((a, b) => b.score - a.score).slice(0, shortlistK);
     counts.shortlisted = scored.length;
+
 
 
     // ── 3. JUDGE ──────────────────────────────────────────────────────────
