@@ -428,11 +428,14 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({} as any));
   const userId = (body.user_id ?? null) as string | null;
   const jobId = (body.job_id ?? null) as string | null;
+  const requestedOpportunityIds = Array.isArray(body.opportunity_ids)
+    ? body.opportunity_ids.map(String).filter(Boolean)
+    : [];
   if (!userId) return json({ error: "user_id required" }, 400);
 
   const startedAt = new Date().toISOString();
   const counts = {
-    alive: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
+    alive: 0, retrieved: 0, outside_retrieval: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
     unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
     no_evidence: 0, no_citation: 0, warmth_rows: 0, requirement_checked: 0,
     skipped_ineligible: 0, lane_act: 0, lane_write: 0, write_carded: 0, rescreened: 0,
@@ -474,9 +477,7 @@ Deno.serve(async (req) => {
       .from("diagnostic_profiles")
       .select("seniority_band, sector_focus, country, content_language, timezone, years_experience, core_practice")
       .eq("user_id", userId).maybeSingle();
-    const memberBand = (profile?.seniority_band ?? "table") as keyof typeof BANDS;
     const memberSector = profile?.sector_focus ?? null;
-    const memberCountry = (profile?.country ?? "SA") as string;
     const lang = (profile?.content_language === "ar" ? "ar" : "en") as "ar" | "en";
     const cardDate = localToday(profile?.timezone);
 
@@ -497,16 +498,6 @@ Deno.serve(async (req) => {
 
 
 
-
-    const { data: corrections } = await admin
-      .from("oe_corrections").select("reach, reach_value, chair_type, seniority_band, expires_at")
-      .eq("user_id", userId).gt("expires_at", new Date().toISOString());
-    const excluded = { type: new Set<string>(), issuer: new Set<string>(), place: new Set<string>(), level: new Set<string>(), just_this: new Set<string>() };
-    for (const c of corrections ?? []) {
-      const reach = String(c.reach ?? "");
-      const value = String(c.reach_value ?? c.chair_type ?? c.seniority_band ?? "").toLowerCase();
-      if (reach in excluded && value) (excluded as any)[reach].add(value);
-    }
 
     // Past judgements, in his words.
     const { data: labelled } = await admin
@@ -545,52 +536,24 @@ Deno.serve(async (req) => {
       }
     }
 
-    const ids = [...merged.keys()];
-    let pool: any[] = [];
-    if (ids.length) {
-      const { data: opps } = await admin
-        .from("oe_opportunities")
-        .select("id, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, issuer:oe_issuers(domain)")
-        .in("id", ids);
-      pool = opps ?? [];
-    }
-
-    const { data: alreadyCarded } = await admin
-      .from("oe_cards").select("opportunity_id").eq("user_id", userId).not("opportunity_id", "is", null);
-    const cardedIds = new Set((alreadyCarded ?? []).map((c: any) => c.opportunity_id));
-
-    const today = new Date();
-    const inTwoDays = new Date(today.getTime() + 2 * 86400_000).toISOString().slice(0, 10);
-    const todayStr = today.toISOString().slice(0, 10);
-    // The instrument serves the Saudi market. A chair counts if it sits in
-    // Saudi Arabia, if it can be held from anywhere, if it sits in the
-    // member's own country, or if it has no place yet and is only a signal.
-    const SAUDI = /saudi|السعودية|riyadh|jeddah|dammam|neom|الرياض|جدة|مكة|المدينة|medina|khobar|gcc|gulf|\bu\.?a\.?e\b|emirates|dubai|abu dhabi|qatar|doha|kuwait|bahrain|manama|oman|muscat|الإمارات|دبي|أبوظبي|قطر|الدوحة|الكويت|البحرين|عمان|مسقط/i;
-    const countryOk = (o: any) => {
-      const loc = String(o.location ?? "");
-      if (o.remote === true) return true;
-      if (!o.location) return o.time_kind === "early_signal";
-      if (SAUDI.test(loc)) return true;
-      if (memberCountry && loc.toLowerCase().includes(memberCountry.toLowerCase())) return true;
-      return false;
-    };
-
-    const filtered = pool.filter((o) => {
-      if (cardedIds.has(o.id)) return false;
-      if (o.deadline && o.deadline < todayStr) return false;
-      if (o.time_kind !== "early_signal" && o.deadline && o.deadline < inTwoDays) return false;
-      if (o.seniority_band && Math.abs(BANDS[o.seniority_band as keyof typeof BANDS] - BANDS[memberBand]) > 1) return false;
-      if (!countryOk(o)) return false;
-      if (excluded.type.has(String(o.chair_type).toLowerCase())) return false;
-      if (o.issuer_id && excluded.issuer.has(String(o.issuer_id).toLowerCase())) return false;
-      if (o.issuer_raw && excluded.issuer.has(String(o.issuer_raw).toLowerCase())) return false;
-      if (o.location && excluded.place.has(String(o.location).toLowerCase())) return false;
-      if (o.seniority_band && excluded.level.has(String(o.seniority_band).toLowerCase())) return false;
-      if (excluded.just_this.has(String(o.id).toLowerCase())) return false;
-      return true;
-    });
+    // Coverage and ranking are separate. Retrieval decides review order; it
+    // must never decide whether a live record exists for this member. Every
+    // live record is screened and receives a match row. Eligibility, route,
+    // gate and taste then decide whether it can be served.
+    const { data: opps, error: oppsError } = await admin
+      .from("oe_opportunities")
+      .select("id, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, issuer:oe_issuers(domain)")
+      .eq("alive", true);
+    if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
+    const requestedSet = new Set(requestedOpportunityIds);
+    const pool = requestedSet.size
+      ? (opps ?? []).filter((o: any) => requestedSet.has(String(o.id)))
+      : (opps ?? []);
+    const filtered = pool;
     counts.alive = pool.length;
-    counts.filtered = pool.length - filtered.length;
+    counts.retrieved = pool.filter((o: any) => merged.has(String(o.id))).length;
+    counts.outside_retrieval = pool.length - counts.retrieved;
+    counts.filtered = 0;
 
     // ── THE ELIGIBILITY GATE — free, deterministic, and before the model ──
     // A seat he cannot hold is never read. It is not thrown away either: it
@@ -688,7 +651,7 @@ Deno.serve(async (req) => {
     const scored = [...actPool, ...writePool]
       .filter((o) => !alreadyJudged.has(String(o.id)))
       .map((o) => {
-        const m = merged.get(o.id)!;
+        const m = merged.get(o.id) ?? { score: 0, retrieval: { coverage: "outside_retrieval_top_k" } };
         const vec = asVector(o.embedding);
         const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
         return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
@@ -791,7 +754,7 @@ Deno.serve(async (req) => {
       if (check.total > 0) counts.requirement_checked++;
       costUsd += check.total > 0 ? 0.0004 : 0;
 
-      const { data: match } = await admin.from("oe_matches").upsert({
+      const { data: match, error: matchError } = await admin.from("oe_matches").upsert({
         user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
         retrieval: cand.retrieval,
         scores: { avg, passes, justification: last?.justification ?? null, cites: last?.cites ?? [], gap: last?.gap ?? "", prompt_version: P3_VERSION },
@@ -799,10 +762,14 @@ Deno.serve(async (req) => {
         win_basis: { eligibility_met: eligibility, issuer_history: issuerHistory, past_winner_similarity: null },
         lane,
         requirement_check: check.list, met_count: check.met, total_count: check.total,
+        eligibility_outcome: o._screen.outcome,
+        eligibility_fail: o._screen.fails,
+        eligibility_unknowns: o._screen.unknowns,
         // THE INTERSECTION: he can hold it, the gate passed, the door is live.
         lane_final: o._reachable && gatePassed && lane === "lane_open" ? "act" : "write",
         gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
       }, { onConflict: "user_id,opportunity_id,rubric_version" }).select("id").maybeSingle();
+      if (matchError) throw new Error(`judge match upsert failed for ${o.id}: ${matchError.message}`);
 
       judged.push({ o, scoreAvg, unstable, gatePassed, fitBand, winBand, lane, matchId: match?.id ?? null, requirementIds, warmth, check, mine: mineForReqs });
     }
@@ -944,7 +911,6 @@ Deno.serve(async (req) => {
         .map((o) => ({ o, score: merged.get(o.id)?.score ?? 0 }))
         .sort((a, b) => b.score - a.score);
       for (const { o } of ranked.slice(0, 3)) {
-        if (cardedIds.has(o.id)) continue;
         const oppVec = asVector(o.embedding);
         const mine = await memberEvidence(admin, userId, oppVec);
         if (!mine.length) { counts.no_evidence++; continue; }
