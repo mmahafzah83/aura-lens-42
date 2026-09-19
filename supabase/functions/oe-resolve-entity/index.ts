@@ -7,6 +7,18 @@
  * while an organisation whose board we can call by its exact token becomes a
  * keyless feed for ever after.
  *
+ * Second pass. Two rules now govern the whole file:
+ *
+ *   1. NEVER RECORD A FAILURE WITHOUT ITS REASON. Every non-resolution writes a
+ *      named `resolve_error` and the full probe record into `resolve_detail`:
+ *      each door tried, its HTTP status, the final URL, the byte length of the
+ *      body, and whether robots permitted it.
+ *   2. NEVER INVENT AN ENDPOINT. A fingerprint that matches gives us the
+ *      platform and the token. The endpoint is written only when a candidate
+ *      API shape was called in this run and answered with JSON carrying at
+ *      least one posting. Otherwise the endpoint stays null, the surface is
+ *      read as plain HTML, and the reason is `api_unverified`.
+ *
  * No model is called here. Every detection below is a pattern that either
  * matches the page or does not.
  */
@@ -24,13 +36,58 @@ const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 const TIMEOUT = 9_000;
 
+/** The usual doors, tried first because they answer most often. */
 const CAREERS_PATHS = [
   "/careers", "/en/careers", "/jobs", "/career", "/ar/careers",
   "/about/careers", "/en/jobs", "/join-us", "/en/about-us/careers",
 ];
+/**
+ * The second wave: Arabic doors and the longer English ones. Only asked for
+ * when the first wave found nothing, so an organisation that answers on
+ * /careers never costs us these fetches.
+ */
+const CAREERS_PATHS_EXTENDED = [
+  "/ar/الوظائف", "/ar/وظائف", "/ar/jobs", "/careers/jobs", "/en/careers/jobs",
+  "/about/careers/jobs", "/work-with-us", "/recruitment", "/hr/careers",
+];
 /** The other usual door: a careers host beside the main site, not a guess at a domain. */
 const CAREERS_HOSTS = ["careers", "jobs", "career"];
 const CAREERS_TEXT = /careers?|jobs|vacanc|join us|opportunit|وظائف|التوظيف|الوظائف|انضم/i;
+const CAREERS_PATH_RE = /\/(careers?|jobs|vacanc\w*|join-?us|recruitment|work-with-us|wazaif|%d8%a7%d9%84%d9%88%d8%b8%d8%a7%d8%a6%d9%81|وظائف|الوظائف)(\/|$|\?)/i;
+
+/**
+ * A domain that is a platform rather than an organisation. "women to drive
+ * movement" on twitter.com resolved to Greenhouse with the token `xai`: the
+ * fingerprint did its job and the seed was wrong. Nothing on these hosts is
+ * ever an employer's own careers system.
+ */
+const PLATFORM_HOSTS = [
+  "twitter.com", "x.com", "facebook.com", "linkedin.com", "instagram.com",
+  "youtube.com", "wikipedia.org", "medium.com", "crunchbase.com", "bloomberg.com",
+];
+const INVALID_SEED_REASON = "domain is a platform, not an organisation";
+
+function isPlatformHost(domain: string): boolean {
+  const d = domain.replace(/^www\./, "").toLowerCase();
+  return PLATFORM_HOSTS.some((h) => d === h || d.endsWith(`.${h}`));
+}
+
+/** Third-party job portals an employer's careers link can send an applicant to. */
+const PORTAL_HOSTS: Array<{ host: RegExp; name: string }> = [
+  { host: /(^|\.)jadarat\.sa/i, name: "jadarat.sa" },
+  { host: /(^|\.)taqat\.sa/i, name: "taqat.sa" },
+  { host: /(^|\.)bayt\.com/i, name: "bayt.com" },
+  { host: /(^|\.)gulftalent\.com/i, name: "gulftalent.com" },
+  { host: /(^|\.)naukrigulf\.com/i, name: "naukrigulf.com" },
+  { host: /(^|\.)monstergulf\.com/i, name: "monstergulf.com" },
+  { host: /(^|\.)tanqeeb\.com/i, name: "tanqeeb.com" },
+  // LinkedIn only counts when the link is to its jobs board. Almost every site
+  // in the Kingdom carries a LinkedIn company link in its footer, and reading
+  // that as "the employer recruits through LinkedIn" is a fabrication.
+  { host: /(^|\.)linkedin\.com\/jobs(\/|\?|$)/i, name: "linkedin.com" },
+  { host: /(^|\.)indeed\.com/i, name: "indeed.com" },
+];
+
 const NEWSROOM_TEXT = /newsroom|news\s*room|media\s*cent|press\s*release|press\s*cent|\bnews\b|\bmedia\b|الأخبار|المركز الإعلامي|البيانات الصحفية/i;
 
 /**
@@ -94,7 +151,7 @@ function json(body: unknown, status = 200) {
 
 const squash = (s: string) => (s || "").replace(/\s+/g, " ").trim();
 
-type Fetched = { ok: boolean; status: number; finalUrl: string; body: string };
+type Fetched = { ok: boolean; status: number; finalUrl: string; body: string; bytes: number };
 
 async function get(url: string, method: "GET" | "HEAD" = "GET"): Promise<Fetched> {
   try {
@@ -105,9 +162,10 @@ async function get(url: string, method: "GET" | "HEAD" = "GET"): Promise<Fetched
       signal: AbortSignal.timeout(TIMEOUT),
     });
     const body = method === "GET" && r.ok ? (await r.text()).slice(0, 400_000) : "";
-    return { ok: r.ok, status: r.status, finalUrl: r.url || url, body };
+    return { ok: r.ok, status: r.status, finalUrl: r.url || url, body, bytes: body.length };
   } catch {
-    return { ok: false, status: 0, finalUrl: url, body: "" };
+    // Status 0 is our word for "the host never answered".
+    return { ok: false, status: 0, finalUrl: url, body: "", bytes: 0 };
   }
 }
 
@@ -140,14 +198,45 @@ function allowed(disallows: string[], url: string): boolean {
   }
 }
 
-// ───────────────────── the fingerprints ─────────────────────
-// Each returns the platform, the exact token, and the keyless endpoint that
-// token unlocks. Case is preserved wherever the platform is case-sensitive.
+/** A page that answered 200 but is really a challenge, not a careers page. */
+function looksBotDefended(f: Fetched): boolean {
+  if (f.status === 403 || f.status === 429 || f.status === 503) return true;
+  if (!f.ok) return false;
+  return /just a moment|cf-browser-verification|cf_chl_|checking your browser|attention required|captcha|incapsula|access denied|radware/i
+    .test(f.body.slice(0, 20_000));
+}
 
-type Print = { platform: string; token: string; endpoint: string };
+/** Roughly how much readable text a page carries, script bundles removed. */
+function textLength(html: string): number {
+  return squash(
+    html.replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " "),
+  ).length;
+}
+
+// ───────────────────── the fingerprints ─────────────────────
+// Each returns the platform, the exact token, and the candidate API shapes that
+// token might unlock. Candidates are called, never assumed. Case is preserved
+// wherever the platform is case-sensitive.
+
+type Print = {
+  platform: string;
+  token: string;
+  /** Shapes to try, in order. Empty means the platform has no public JSON we know. */
+  candidates: string[];
+  /**
+   * A reading URL that is a page rather than an API, kept where the harvester
+   * already reads it that way. Never presented as a verified endpoint.
+   */
+  pageUrl?: string;
+  /** Endpoint proven before this pass and still trusted (SuccessFactors search). */
+  provenEndpoint?: string;
+};
 
 function fingerprint(url: string, html: string): Print | null {
   const hay = `${url}\n${html.slice(0, 250_000)}`;
+  const hostOf = (u: string) => { try { return new URL(u).hostname; } catch { return ""; } };
 
   let m = hay.match(/(?:job-boards|boards)\.greenhouse\.io\/(?:embed\/job_board\?for=)?([a-zA-Z0-9_-]{2,60})/);
   if (!m) m = hay.match(/boards\.greenhouse\.io\/embed\/job_board\/js\?for=([a-zA-Z0-9_-]{2,60})/);
@@ -158,7 +247,7 @@ function fingerprint(url: string, html: string): Print | null {
   if (m && !/^(embed|job_board|js)$/i.test(m[1])) {
     return {
       platform: "greenhouse", token: m[1],
-      endpoint: `https://boards-api.greenhouse.io/v1/boards/${m[1]}/jobs`,
+      candidates: [`https://boards-api.greenhouse.io/v1/boards/${m[1]}/jobs`],
     };
   }
 
@@ -167,7 +256,7 @@ function fingerprint(url: string, html: string): Print | null {
     const eu = !!m[1];
     return {
       platform: "lever", token: m[2],
-      endpoint: `https://api.${eu ? "eu." : ""}lever.co/v0/postings/${m[2]}?mode=json`,
+      candidates: [`https://api.${eu ? "eu." : ""}lever.co/v0/postings/${m[2]}?mode=json`],
     };
   }
 
@@ -175,7 +264,7 @@ function fingerprint(url: string, html: string): Print | null {
   if (m) {
     return {
       platform: "ashby", token: m[1], // case-sensitive, taken verbatim
-      endpoint: `https://api.ashbyhq.com/posting-api/job-board/${m[1]}`,
+      candidates: [`https://api.ashbyhq.com/posting-api/job-board/${m[1]}`],
     };
   }
 
@@ -183,7 +272,7 @@ function fingerprint(url: string, html: string): Print | null {
   if (m) {
     return {
       platform: "smartrecruiters", token: m[1],
-      endpoint: `https://api.smartrecruiters.com/v1/companies/${m[1]}/postings`,
+      candidates: [`https://api.smartrecruiters.com/v1/companies/${m[1]}/postings`],
     };
   }
 
@@ -192,7 +281,7 @@ function fingerprint(url: string, html: string): Print | null {
     const [, tenant, wd, , site] = m;
     return {
       platform: "workday", token: `${tenant}|${wd}|${site}`,
-      endpoint: `https://${tenant}.${wd}.myworkdayjobs.com/wday/cxs/${tenant}/${site}/jobs`,
+      candidates: [`https://${tenant}.${wd}.myworkdayjobs.com/wday/cxs/${tenant}/${site}/jobs`],
     };
   }
 
@@ -200,7 +289,7 @@ function fingerprint(url: string, html: string): Print | null {
   if (m && !/^api$/i.test(m[1])) {
     return {
       platform: "workable", token: m[1],
-      endpoint: `https://apply.workable.com/api/v1/widget/accounts/${m[1]}`,
+      candidates: [`https://apply.workable.com/api/v1/widget/accounts/${m[1]}`],
     };
   }
 
@@ -208,7 +297,7 @@ function fingerprint(url: string, html: string): Print | null {
   if (m) {
     return {
       platform: "recruitee", token: m[1],
-      endpoint: `https://${m[1]}.recruitee.com/api/offers/`,
+      candidates: [`https://${m[1]}.recruitee.com/api/offers/`],
     };
   }
 
@@ -216,7 +305,7 @@ function fingerprint(url: string, html: string): Print | null {
   if (m) {
     return {
       platform: "personio", token: m[1],
-      endpoint: `https://${m[1]}.jobs.personio.de/xml?language=en`,
+      candidates: [`https://${m[1]}.jobs.personio.de/xml?language=en`],
     };
   }
 
@@ -224,14 +313,99 @@ function fingerprint(url: string, html: string): Print | null {
   if (m) {
     return {
       platform: "pinpoint", token: m[1],
-      endpoint: `https://${m[1]}.pinpointhq.com/postings.json`,
+      candidates: [`https://${m[1]}.pinpointhq.com/postings.json`],
     };
+  }
+
+  // ── Elevatus. Absent until now, and the system the Saudi health clusters run.
+  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.elevatus\.io/i);
+  if (m && !/^(www|webs|app)$/i.test(m[1])) {
+    return {
+      platform: "elevatus", token: m[1],
+      candidates: [
+        `https://${m[1]}.elevatus.io/api/v1/jobs`,
+        `https://webs.elevatus.io/api/v1/companies/${m[1]}/jobs`,
+      ],
+      pageUrl: `https://${m[1]}.elevatus.io/`,
+    };
+  }
+  if (/webs\.elevatus\.io|\bElevatusApp\b|\belevatus\b/i.test(hay)) {
+    const tenant = hay.match(/webs\.elevatus\.io\/([a-z0-9-]{2,60})/i)?.[1]
+      ?? hostOf(url).split(".")[0];
+    return {
+      platform: "elevatus", token: tenant || hostOf(url),
+      candidates: [`https://webs.elevatus.io/api/v1/companies/${tenant}/jobs`],
+      pageUrl: url,
+    };
+  }
+
+  m = hay.match(/careers-([a-z0-9-]{2,60})\.icims\.com/i)
+    ?? hay.match(/https?:\/\/([a-z0-9-]{2,60})\.icims\.com\/jobs/i);
+  if (m) {
+    return { platform: "icims", token: m[1], candidates: [], pageUrl: `https://careers-${m[1]}.icims.com/jobs/search` };
+  }
+
+  if (/phenompeople|ph-widget|phApp\.ddo/i.test(hay)) {
+    const host = hostOf(url);
+    return {
+      platform: "phenom", token: host,
+      candidates: host
+        ? [`https://${host}/widgets?feature=joblist&isSliderEnable=false&pageName=search-results&size=10&from=0`]
+        : [],
+      pageUrl: url,
+    };
+  }
+
+  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.avature\.net/i);
+  if (m) return { platform: "avature", token: m[1], candidates: [], pageUrl: `https://${m[1]}.avature.net/careers` };
+
+  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.darwinbox\.(in|com)/i);
+  if (m) return { platform: "darwinbox", token: m[1], candidates: [], pageUrl: `https://${m[1]}.darwinbox.${m[2]}/ms/candidate/careers` };
+
+  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.teamtailor\.com/i);
+  if (m) return { platform: "teamtailor", token: m[1], candidates: [], pageUrl: `https://${m[1]}.teamtailor.com/jobs` };
+
+  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.bamboohr\.com\/(careers|jobs)/i);
+  if (m) {
+    return {
+      platform: "bamboohr", token: m[1],
+      candidates: [`https://${m[1]}.bamboohr.com/careers/list`],
+      pageUrl: `https://${m[1]}.bamboohr.com/careers`,
+    };
+  }
+
+  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.zohorecruit\.(com|eu)/i);
+  if (m) return { platform: "zohorecruit", token: m[1], candidates: [], pageUrl: `https://${m[1]}.zohorecruit.${m[2]}/jobs/Careers` };
+
+  m = hay.match(/jobs\.jobvite\.com\/([a-z0-9-]{2,60})/i);
+  if (m) return { platform: "jobvite", token: m[1], candidates: [], pageUrl: `https://jobs.jobvite.com/${m[1]}` };
+
+  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.eightfold\.ai/i);
+  if (m) {
+    return {
+      platform: "eightfold", token: m[1],
+      candidates: [`https://${m[1]}.eightfold.ai/api/apply/v2/jobs?domain=${m[1]}.com&start=0&num=10`],
+      pageUrl: `https://${m[1]}.eightfold.ai/careers`,
+    };
+  }
+
+  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.zenhr\.com/i);
+  if (m) return { platform: "zenhr", token: m[1], candidates: [], pageUrl: `https://${m[1]}.zenhr.com/jobs` };
+
+  // The national platform. Not an employer system — but knowing an employer
+  // publishes there, in one readable place, is a finding and not a failure.
+  for (const p of [/(^|\/\/|\.)jadarat\.sa/i, /(^|\/\/|\.)taqat\.sa/i]) {
+    if (p.test(url) || p.test(hay.slice(0, 60_000))) {
+      const portal = /taqat/i.test(url) || (!/jadarat/i.test(url) && /taqat\.sa/i.test(hay)) ? "taqat.sa" : "jadarat.sa";
+      return { platform: "jadarat_portal", token: portal, candidates: [], pageUrl: url };
+    }
   }
 
   // SuccessFactors recruiting marketing: by far the most common system in the
   // Kingdom. Three tells, any one of which is conclusive: the /go/{Slug}/{id}/
   // category links, a relative /job/{slug}/{id}/ role link, or the sapsf host
-  // the page loads its own machinery from. The list itself lives at /search.
+  // the page loads its own machinery from. The list itself lives at /search —
+  // a page, read as HTML, and proven in harvest before this pass.
   const sfHost = (() => {
     try { return new URL(url).origin; } catch { return null; }
   })();
@@ -241,45 +415,107 @@ function fingerprint(url: string, html: string): Print | null {
   if (sfHost && (sfGo || sfJob || sfMachinery)) {
     return {
       platform: "successfactors_rmk", token: sfHost,
-      endpoint: `${sfHost}/search/?q=`,
+      candidates: [], provenEndpoint: `${sfHost}/search/?q=`,
     };
   }
   m = hay.match(/career\d?\.sapsf\.com\/careers\?company=([A-Za-z0-9_-]{2,40})/);
   if (m) {
     return {
       platform: "successfactors_rmk", token: m[1],
-      endpoint: `https://career4.sapsf.com/careers?company=${m[1]}`,
+      candidates: [], provenEndpoint: `https://career4.sapsf.com/careers?company=${m[1]}`,
     };
   }
 
-  // Oracle Recruiting Cloud. The candidate-experience path is the reliable tell.
-  m = hay.match(/https?:\/\/([a-zA-Z0-9-]+)\.([a-z0-9-]+)\.oraclecloud\.com\/hcmUI\/CandidateExperience\/([a-z]{2}\/sites\/([A-Za-z0-9_-]+))?/);
+  // Oracle Recruiting Cloud. The candidate-experience path is the reliable
+  // tell — and the site name it carries is the thing the old rule captured and
+  // then threw away. Use it; fall back to CX_1 only where none was captured,
+  // and let the probe say which one answered.
+  m = hay.match(/https?:\/\/([a-zA-Z0-9-]+)\.([a-z0-9-]+)\.oraclecloud\.com\/hcmUI\/CandidateExperience\/(?:[a-z]{2}\/sites\/([A-Za-z0-9_-]+))?/);
   if (m) {
-    const site = m[4] ?? "";
+    const [, pod, region, site] = m;
+    const base = `https://${pod}.${region}.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions` +
+      `?onlyData=true&expand=requisitionList&finder=findReqs;siteNumber=`;
+    const sites = site ? [site, "CX_1"] : ["CX_1"];
     return {
-      platform: "oracle_orc", token: `${m[1]}|${m[2]}|${site}`,
-      endpoint:
-        `https://${m[1]}.${m[2]}.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions` +
-        `?onlyData=true&expand=requisitionList&finder=findReqs;siteNumber=CX_1,limit=100`,
+      platform: "oracle_orc", token: `${pod}|${region}|${site ?? ""}`,
+      candidates: [...new Set(sites)].map((s) => `${base}${s},limit=100`),
+      pageUrl: `https://${pod}.${region}.oraclecloud.com/hcmUI/CandidateExperience/en/sites/${site ?? "CX_1"}`,
     };
   }
 
   m = hay.match(/https?:\/\/([a-zA-Z0-9-]{2,60})\.taleo\.net\/careersection/);
   if (m) {
-    return {
-      platform: "taleo", token: m[1],
-      endpoint: `https://${m[1]}.taleo.net/careersection/`,
-    };
+    return { platform: "taleo", token: m[1], candidates: [], pageUrl: `https://${m[1]}.taleo.net/careersection/` };
   }
   m = hay.match(/tbe\.taleo\.net\/(CH\w{2})\/ats\/careers\/[^"'\s]*org=([A-Za-z0-9_-]+)/i);
   if (m) {
     return {
       platform: "taleo", token: `${m[1]}|${m[2]}`,
-      endpoint: `https://tbe.taleo.net/${m[1]}/ats/careers/v2/searchResults?org=${m[2]}`,
+      candidates: [`https://tbe.taleo.net/${m[1]}/ats/careers/v2/searchResults?org=${m[2]}`],
     };
   }
 
   return null;
+}
+
+/**
+ * Call each candidate shape once. The endpoint is written only where the answer
+ * is JSON (or Personio's XML feed) carrying at least one posting.
+ */
+async function probeApi(
+  print: Print,
+): Promise<{ endpoint: string | null; probe: Array<Record<string, unknown>> }> {
+  const probe: Array<Record<string, unknown>> = [];
+  for (const candidate of print.candidates) {
+    const r = await get(candidate);
+    const rec: Record<string, unknown> = { url: candidate, status: r.status, bytes: r.bytes };
+    if (!r.ok || !r.bytes) { rec.result = "no_answer"; probe.push(rec); continue; }
+    // Personio publishes XML, everything else JSON.
+    if (/\/xml\?/.test(candidate)) {
+      const n = (r.body.match(/<position>/gi) ?? []).length;
+      rec.result = n > 0 ? "verified" : "empty";
+      rec.postings = n;
+      probe.push(rec);
+      if (n > 0) return { endpoint: candidate, probe };
+      continue;
+    }
+    let parsed: unknown;
+    try { parsed = JSON.parse(r.body); } catch { rec.result = "not_json"; probe.push(rec); continue; }
+    const n = countPostings(parsed);
+    rec.result = n > 0 ? "verified" : "empty";
+    rec.postings = n;
+    probe.push(rec);
+    if (n > 0) return { endpoint: candidate, probe };
+  }
+  return { endpoint: null, probe };
+}
+
+/** How many postings a JSON answer carries, whatever the platform calls them. */
+function countPostings(v: unknown): number {
+  if (Array.isArray(v)) return v.length;
+  if (!v || typeof v !== "object") return 0;
+  const o = v as Record<string, unknown>;
+  for (const key of [
+    "jobs", "positions", "postings", "data", "results", "content", "items",
+    "requisitionList", "jobPostings", "offers",
+  ]) {
+    const inner = o[key];
+    if (Array.isArray(inner)) {
+      if (inner.length === 0) continue;
+      // Workday and Oracle wrap the list one level deeper.
+      const first = inner[0];
+      if (first && typeof first === "object" && !Array.isArray(first)) {
+        const deeper = countPostings(first);
+        if (deeper > 0 && !("title" in (first as object)) && !("name" in (first as object))) return deeper;
+      }
+      return inner.length;
+    }
+    if (inner && typeof inner === "object") {
+      const deeper = countPostings(inner);
+      if (deeper > 0) return deeper;
+    }
+  }
+  return 0;
 }
 
 /** Links on a page whose visible text names the thing we are looking for. */
@@ -312,6 +548,33 @@ function allLinks(html: string, base: string): Array<{ url: string; text: string
     if (out.length > 600) break;
   }
   return out;
+}
+
+/** The sitemap as a last door: a site that lists its own careers page. */
+async function sitemapCareers(origin: string): Promise<string | null> {
+  for (const name of ["/sitemap.xml", "/sitemap_index.xml"]) {
+    const r = await get(origin + name);
+    if (!r.ok || !r.bytes) continue;
+    const locs = [...r.body.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((m) => m[1]);
+    for (const loc of locs) {
+      try {
+        if (CAREERS_PATH_RE.test(new URL(loc).pathname)) return loc;
+      } catch { /* next */ }
+    }
+    // One level of index: the first child sitemap whose name hints at careers.
+    const child = locs.find((l) => /career|job|وظائف/i.test(l) && /\.xml($|\?)/i.test(l));
+    if (child) {
+      const c = await get(child);
+      if (c.ok) {
+        for (const m of c.body.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)) {
+          try {
+            if (CAREERS_PATH_RE.test(new URL(m[1]).pathname)) return m[1];
+          } catch { /* next */ }
+        }
+      }
+    }
+  }
+  return null;
 }
 
 /** How a surface can actually be read: a feed first, then structure, then plain HTML. */
@@ -387,14 +650,21 @@ Deno.serve(async (req) => {
   const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
 
   const counts: Record<string, any> = {
-    seen: 0, resolved: 0, no_ats: 0, no_careers: 0, failed: 0,
+    seen: 0, resolved: 0, no_ats: 0, no_careers: 0, failed: 0, invalid_seed: 0,
     searched: 0, surfaces: 0, by_platform: {} as Record<string, number>,
     by_surface: {} as Record<string, number>,
+    by_reason: {} as Record<string, number>,
+    found_by: {} as Record<string, number>,
+    endpoint_verified: {} as Record<string, number>,
+    recognition_only: {} as Record<string, number>,
   };
   const detail: Array<Record<string, unknown>> = [];
   /** Directory surfaces produce organisations, not opportunities: they go back to the seeder. */
   const directories: Array<{ entity_id: string; url: string }> = [];
 
+  const bump = (bucket: Record<string, number>, key: string) => {
+    bucket[key] = (bucket[key] ?? 0) + 1;
+  };
 
   try {
     // An organisation whose list already carried its official website costs
@@ -432,6 +702,7 @@ Deno.serve(async (req) => {
       disallows: string[],
       careers: Fetched | null,
       print: Print | null,
+      verifiedEndpoint: string | null,
     ): Promise<Map<string, string>> {
       const chosen = new Map<string, string>();
       const rows: Array<Record<string, unknown>> = [];
@@ -467,8 +738,15 @@ Deno.serve(async (req) => {
         let access: string | null = ok ? null : "robots_disallows";
 
         if (rule.type === "careers" && careers && print) {
-          kind = "ats_api";
-          readUrl = print.endpoint;
+          // An API reader only where an endpoint actually answered. Recognition
+          // without a verified endpoint is still read as a page.
+          if (verifiedEndpoint) {
+            kind = "ats_api";
+            readUrl = verifiedEndpoint;
+          } else {
+            kind = "html_list";
+            readUrl = print.provenEndpoint ?? print.pageUrl ?? careers.finalUrl;
+          }
           health = "ok";
         } else if (ok) {
           const page = rule.type === "careers" && careers ? careers : await get(url);
@@ -515,7 +793,26 @@ Deno.serve(async (req) => {
 
     async function resolveOne(e: any) {
       const update: Record<string, unknown> = { last_resolved_at: new Date().toISOString() };
+      /** The probe record. Written whatever the outcome. */
+      const doorLog: Array<Record<string, unknown>> = [];
+      const note = (url: string, r: Fetched, robotsOk: boolean, wave: string) => {
+        doorLog.push({
+          url, wave, status: r.status, final_url: r.finalUrl, bytes: r.bytes, robots_ok: robotsOk,
+        });
+      };
       try {
+        // 0. the seed guard. A social or encyclopaedic host is never an employer.
+        if (e.domain && isPlatformHost(e.domain)) {
+          counts.invalid_seed++;
+          bump(counts.by_reason, INVALID_SEED_REASON);
+          await admin.from("oe_entities").update({
+            ...update, resolve_status: "invalid_seed", resolve_error: INVALID_SEED_REASON,
+            ats_platform: null, ats_token: null, ats_endpoint: null,
+            resolve_detail: { guard: "platform_host", domain: e.domain, at: new Date().toISOString() },
+          }).eq("id", e.id);
+          return;
+        }
+
         // 1. the domain. Never guessed.
         let domain: string | null = e.domain ?? null;
         if (!domain && firecrawlKey && searchBudget > 0) {
@@ -526,17 +823,30 @@ Deno.serve(async (req) => {
         }
         if (!domain) {
           counts.failed++;
+          bump(counts.by_reason, "no_domain");
           await admin.from("oe_entities").update({
             ...update, resolve_status: "failed",
             resolve_error: firecrawlKey ? "no website on the list and no search result" : "no website on the list",
+            resolve_detail: { doors: [], reason: "no_domain", at: new Date().toISOString() },
           }).eq("id", e.id);
           detail.push({ name: e.name, result: "failed", why: "no domain" });
           return;
         }
+        if (isPlatformHost(domain)) {
+          counts.invalid_seed++;
+          bump(counts.by_reason, INVALID_SEED_REASON);
+          await admin.from("oe_entities").update({
+            ...update, resolve_status: "invalid_seed", resolve_error: INVALID_SEED_REASON,
+            resolve_detail: { guard: "platform_host", domain, at: new Date().toISOString() },
+          }).eq("id", e.id);
+          return;
+        }
         if (neverRead.some((b: string) => domain === b || domain!.endsWith(`.${b}`))) {
           counts.failed++;
+          bump(counts.by_reason, "never_read_list");
           await admin.from("oe_entities").update({
             ...update, resolve_status: "failed", resolve_error: "domain is on the never-read list",
+            resolve_detail: { guard: "never_read", domain, at: new Date().toISOString() },
           }).eq("id", e.id);
           return;
         }
@@ -553,64 +863,200 @@ Deno.serve(async (req) => {
           get(origin),
           ...doors.map((d) => get(d)),
         ]);
-
-        // 2. the careers page: the first usual door that answers, in priority
-        // order, and only where robots permits it.
-        let careers: Fetched | null = null;
-        for (let i = 0; i < doors.length; i++) {
-          const r = probes[i];
-          if (doors[i].startsWith(origin) && !allowed(disallows, doors[i])) continue;
-          if (r.ok && r.body.length > 500) { careers = r; break; }
-        }
         const home: Fetched = homeFirst;
+        note(origin, home, true, "homepage");
+
+        // 2. the careers page. A page we already hold is tried first, then the
+        // usual doors, then the Arabic and longer doors, then the homepage
+        // link, then the sitemap.
+        let careers: Fetched | null = null;
+        let foundBy = "";
+        let robotsBlockedAll = true;
+
+        if (e.careers_url && body.use_careers_url !== false) {
+          const r = await get(e.careers_url);
+          note(e.careers_url, r, true, "known_careers_url");
+          if (r.ok && r.bytes > 500) { careers = r; foundBy = "known_careers_url"; }
+        }
+
+        if (!careers) {
+          for (let i = 0; i < doors.length; i++) {
+            const r = probes[i];
+            const robotsOk = !doors[i].startsWith(origin) || allowed(disallows, doors[i]);
+            note(doors[i], r, robotsOk, "usual");
+            if (robotsOk) robotsBlockedAll = false;
+            if (!robotsOk) continue;
+            if (!careers && r.ok && r.body.length > 500) { careers = r; foundBy = "usual_door"; }
+          }
+        } else {
+          robotsBlockedAll = false;
+        }
+
+        // second wave: Arabic and longer doors
+        if (!careers && Date.now() < deadline) {
+          const extended = CAREERS_PATHS_EXTENDED.map((p) => origin + encodeURI(p).replace(/^https%3A/, "https:"));
+          const results = await Promise.all(extended.map((d) => get(d)));
+          for (let i = 0; i < extended.length; i++) {
+            const robotsOk = allowed(disallows, extended[i]);
+            note(extended[i], results[i], robotsOk, "arabic_or_extended");
+            if (robotsOk) robotsBlockedAll = false;
+            if (!robotsOk) continue;
+            if (!careers && results[i].ok && results[i].body.length > 500) {
+              careers = results[i];
+              foundBy = /\/ar\/|%d8/i.test(extended[i]) ? "arabic_path" : "extended_path";
+            }
+          }
+        }
+
+        let homepageLinkTried = false;
         if (!careers && home.ok) {
           const link = linkByText(home.body, home.finalUrl, CAREERS_TEXT);
-          if (link && allowed(disallows, link)) {
-            const r = await get(link);
-            if (r.ok) careers = r;
+          if (link) {
+            homepageLinkTried = true;
+            const robotsOk = allowed(disallows, link);
+            if (robotsOk) {
+              const r = await get(link);
+              note(link, r, true, "homepage_link");
+              if (r.ok && r.bytes > 500) { careers = r; foundBy = "homepage_link"; }
+              robotsBlockedAll = false;
+            } else {
+              note(link, { ok: false, status: -1, finalUrl: link, body: "", bytes: 0 }, false, "homepage_link");
+            }
+          }
+        }
+
+        if (!careers && Date.now() < deadline) {
+          const smap = await sitemapCareers(origin);
+          if (smap) {
+            const robotsOk = allowed(disallows, smap);
+            const r = robotsOk ? await get(smap) : { ok: false, status: -1, finalUrl: smap, body: "", bytes: 0 };
+            note(smap, r, robotsOk, "sitemap");
+            if (r.ok && r.bytes > 500) { careers = r; foundBy = "sitemap"; robotsBlockedAll = false; }
           }
         }
 
         // 3. the fingerprint — read off the final URL and the page source.
         const print = careers ? fingerprint(careers.finalUrl, careers.body) : null;
 
-        // 4. every surface on the site, not two. The careers page we already
-        // hold is one of them; the rest are found by link text and path.
-        const found = await discoverSurfaces(e.id, domain, home, disallows, careers, print);
+        // 4. the probe. An endpoint is written only where a shape answered.
+        let verifiedEndpoint: string | null = null;
+        let apiProbe: Array<Record<string, unknown>> = [];
+        if (print) {
+          const res = await probeApi(print);
+          verifiedEndpoint = res.endpoint;
+          apiProbe = res.probe;
+          if (!verifiedEndpoint && print.provenEndpoint) verifiedEndpoint = print.provenEndpoint;
+        }
+
+        // 5. every surface on the site, not two.
+        const found = await discoverSurfaces(e.id, domain, home, disallows, careers, print, verifiedEndpoint);
         const newsroom = found.get("news") ?? found.get("press") ?? null;
         if (newsroom) update.newsroom_url = newsroom;
         if (careers) update.careers_url = careers.finalUrl;
 
+        const detailBlob = {
+          at: new Date().toISOString(),
+          domain,
+          robots_disallow_count: disallows.length,
+          found_by: foundBy || null,
+          doors: doorLog.slice(0, 40),
+          api_probe: apiProbe,
+        };
+
         if (!careers) {
+          // ── name the failure. One of six, decided by what the doors said.
+          const tried = doorLog.filter((d) => d.wave !== "homepage");
+          const anyDefended = [home, ...probes].some(looksBotDefended);
+          const allSilent = tried.length > 0 && tried.every((d) => d.status === 0) && home.status === 0;
+          let reason: string;
+          if (tried.length > 0 && tried.every((d) => d.robots_ok === false)) {
+            reason = "careers_robots_blocked";
+          } else if (allSilent) {
+            reason = "careers_timeout";
+          } else if (anyDefended) {
+            reason = "careers_bot_defended";
+          } else if (!home.ok) {
+            reason = "careers_homepage_dead";
+          } else if (!homepageLinkTried) {
+            reason = "careers_no_link_found";
+          } else {
+            reason = "careers_all_404";
+          }
           counts.no_careers++;
+          bump(counts.by_reason, reason);
           await admin.from("oe_entities").update({
-            ...update, resolve_status: "no_careers", resolve_error: null,
+            ...update, resolve_status: "no_careers", resolve_error: reason,
+            resolve_detail: { ...detailBlob, reason },
           }).eq("id", e.id);
-          detail.push({ name: e.name, domain, result: "no_careers", surfaces: found.size });
+          detail.push({ name: e.name, domain, result: "no_careers", reason, surfaces: found.size });
           return;
         }
 
         if (!print) {
+          // ── name the failure. The careers page is in hand; why did nothing match?
+          const html = careers.body;
+          const iframe = html.match(/<iframe\b[^>]*src=["']([^"']+)["']/i)?.[1] ?? null;
+          const portal = (() => {
+            for (const p of PORTAL_HOSTS) {
+              if (p.host.test(careers!.finalUrl)) return p.name;
+              const link = [...html.matchAll(/href=["']([^"']+)["']/gi)].map((m) => m[1])
+                .find((h) => p.host.test(h));
+              if (link) return p.name;
+            }
+            return null;
+          })();
+          const text = textLength(html);
+          let reason: string;
+          const extra: Record<string, unknown> = { text_length: text };
+          if (portal) {
+            reason = "ats_portal_redirect";
+            extra.portal = portal;
+          } else if (iframe && /career|job|recruit|apply|vacan/i.test(iframe)) {
+            reason = "ats_iframe";
+            extra.frame_src = (() => { try { return new URL(iframe, careers!.finalUrl).toString(); } catch { return iframe; } })();
+          } else if (text < 2_000) {
+            reason = "ats_js_rendered";
+          } else {
+            reason = "ats_no_signature";
+          }
           counts.no_ats++;
+          bump(counts.by_reason, reason);
           await admin.from("oe_entities").update({
-            ...update, resolve_status: "no_ats", resolve_error: null,
+            ...update, resolve_status: "no_ats", resolve_error: reason,
+            resolve_detail: { ...detailBlob, reason, ...extra },
           }).eq("id", e.id);
-          detail.push({ name: e.name, domain, result: "no_ats", careers: careers.finalUrl, surfaces: found.size });
+          detail.push({ name: e.name, domain, result: "no_ats", reason, careers: careers.finalUrl, surfaces: found.size });
           return;
         }
+
         counts.resolved++;
-        counts.by_platform[print.platform] = (counts.by_platform[print.platform] ?? 0) + 1;
+        bump(counts.by_platform, print.platform);
+        if (foundBy) bump(counts.found_by, foundBy);
+        if (verifiedEndpoint) bump(counts.endpoint_verified, print.platform);
+        else bump(counts.recognition_only, print.platform);
+
         await admin.from("oe_entities").update({
-          ...update, resolve_status: "resolved", resolve_error: null,
-          ats_platform: print.platform, ats_token: print.token, ats_endpoint: print.endpoint,
+          ...update, resolve_status: "resolved",
+          // Recognition without a verified endpoint is worth having, and is
+          // said out loud rather than dressed up as a working feed.
+          resolve_error: verifiedEndpoint ? null : "api_unverified",
+          ats_platform: print.platform, ats_token: print.token,
+          ats_endpoint: verifiedEndpoint,
+          resolve_detail: { ...detailBlob, platform: print.platform, endpoint_verified: !!verifiedEndpoint },
         }).eq("id", e.id);
-        detail.push({ name: e.name, domain, result: print.platform, token: print.token, surfaces: found.size });
+        detail.push({
+          name: e.name, domain, result: print.platform, token: print.token,
+          endpoint_verified: !!verifiedEndpoint, found_by: foundBy, surfaces: found.size,
+        });
 
       } catch (err) {
         counts.failed++;
+        const msg = String((err as Error).message ?? err).slice(0, 300);
+        bump(counts.by_reason, "exception");
         await admin.from("oe_entities").update({
           resolve_status: "failed",
-          resolve_error: String((err as Error).message ?? err).slice(0, 300),
+          resolve_error: msg,
+          resolve_detail: { at: new Date().toISOString(), reason: "exception", message: msg, doors: doorLog.slice(0, 40) },
           last_resolved_at: new Date().toISOString(),
         }).eq("id", e.id);
       }

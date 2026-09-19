@@ -4518,6 +4518,7 @@ export type Database = {
           name: string
           name_ar: string | null
           newsroom_url: string | null
+          resolve_detail: Json | null
           resolve_error: string | null
           resolve_status: string
           seed_source: string
@@ -4546,6 +4547,7 @@ export type Database = {
           name: string
           name_ar?: string | null
           newsroom_url?: string | null
+          resolve_detail?: Json | null
           resolve_error?: string | null
           resolve_status?: string
           seed_source: string
@@ -4574,6 +4576,7 @@ export type Database = {
           name?: string
           name_ar?: string | null
           newsroom_url?: string | null
+          resolve_detail?: Json | null
           resolve_error?: string | null
           resolve_status?: string
           seed_source?: string
