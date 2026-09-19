@@ -734,7 +734,7 @@ Deno.serve(async (req) => {
     // ── 4. PICK — Lane A only. No way in, no card. ────────────────────────
     // Warmth never moves the score; it only breaks a tie in the ordering.
     const eligible = judged
-      .filter((j) => j.gatePassed && !j.unstable && j.lane === "lane_open")
+      .filter((j) => j.o._lane_final === "act" && j.gatePassed && !j.unstable && j.lane === "lane_open")
       .sort((a, b) => Math.abs(b.scoreAvg - a.scoreAvg) < 0.01
         ? (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0)
         : b.scoreAvg - a.scoreAvg);
