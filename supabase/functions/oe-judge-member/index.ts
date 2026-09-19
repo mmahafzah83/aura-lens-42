@@ -1035,6 +1035,9 @@ Deno.serve(async (req) => {
 
     // ── 7. LOG ────────────────────────────────────────────────────────────
 
+    const { error: purposeError } = await admin.rpc("oe_refresh_purpose", { p_user: userId });
+    if (purposeError) throw new Error(`purpose refresh failed: ${purposeError.message}`);
+
     const { data: run } = await admin.from("oe_runs").insert({
       run_kind: "judge_member", user_id: userId,
       started_at: startedAt, finished_at: new Date().toISOString(),
@@ -1043,7 +1046,7 @@ Deno.serve(async (req) => {
 
     await logEfError(admin, {
       function_name: FN, severity: "info",
-      error: `OE_JUDGE_OK user=${userId} alive=${counts.alive} filtered=${counts.filtered} shortlisted=${counts.shortlisted} judged=${counts.judged} gate=${counts.gate_passed} unstable=${counts.unstable} carded=${counts.carded} empty=${counts.empty_day}`,
+      error: `OE_JUDGE_OK user=${userId} alive=${counts.alive} retrieved=${counts.retrieved} outside_retrieval=${counts.outside_retrieval} shortlisted=${counts.shortlisted} judged=${counts.judged} gate=${counts.gate_passed} unstable=${counts.unstable} carded=${counts.carded} empty=${counts.empty_day}`,
       context: { user_id: userId, job_id: jobId, counts },
     });
 
