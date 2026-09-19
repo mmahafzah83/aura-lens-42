@@ -34,3 +34,15 @@
 - [x] One ordinary direction question per session
 - [x] Explore exception chip and drawer answers
 - [ ] 375px and live founder self-checks
+
+## Step 16 — the audit fixes
+- [ ] Snapshot `pre-step16-audit-fixes` (no repository snapshot command is available)
+- [x] F1 log severity vocabulary, backfill, normalising trigger, `ef_failures` view
+- [x] F2 grounding breakdown produced — diagnosis only, no rule change
+- [x] F3 `lane_final` / `eligibility_fail` moved to `oe_matches`, shared columns dropped
+- [x] F4 unique constraint on `oe_candidates.canonical_url`; harvest verified clean
+- [x] F5 access rules tested for real against a live non-owner account
+- [x] F6 `oe-invariants-check` — eight assertions, daily, first run recorded
+- [x] F7 morning email job unscheduled; function carries no opportunity code
+- [x] F8 daily model-call ceiling (500, tunable) across harvest, triage and judging
+- [x] F9 on-demand Refresh, once a minute; "next at 07:00" removed
