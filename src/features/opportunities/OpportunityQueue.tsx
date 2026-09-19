@@ -57,6 +57,8 @@ export function OpportunityQueue() {
   const [newRuleType, setNewRuleType] = useState<"sector" | "issuer">("sector");
   const [directionQuestion, setDirectionQuestion] = useState<DirectionQuestion>(null);
   const [directionAsked, setDirectionAsked] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshNote, setRefreshNote] = useState("");
   const renderedRef = useRef<Set<string>>(new Set());
   const v = useVocab("en");
 
