@@ -90,6 +90,26 @@ export function OpportunityQueue() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  /* REFRESH ON DEMAND. The member asks, the engine looks again. The server
+     holds the once-a-minute limit, so a second tab cannot get around it. */
+  const refresh = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshNote("");
+    const { data: payload, error } = await (supabase.rpc as any)("oe_app_refresh");
+    if (error) setRefreshNote("Could not look again just now.");
+    else if (payload && (payload as any).ok === false) {
+      const wait = Number((payload as any).retry_after_seconds ?? 60);
+      setRefreshNote(`Just looked. Try again in ${wait} second${wait === 1 ? "" : "s"}.`);
+    } else {
+      renderedRef.current = new Set();
+      setQueueIndex(0);
+      setLater(new Set());
+      await load();
+    }
+    setRefreshing(false);
+  }, [load, refreshing]);
   useEffect(() => {
     if (!drawerOpen) return;
     const old = document.body.style.overflow;
