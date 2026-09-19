@@ -469,7 +469,8 @@ Deno.serve(async (req) => {
       await admin.from("oe_feeds").update({
         last_fetched_at: new Date().toISOString(), last_error: msg,
       }).eq("id", feed.id);
-      await logEfError(admin, { function_name: FN, error: e, severity: "low", context: { feed_id: feed.id } });
+      // A caught exception is an error, not background noise.
+      await logEfError(admin, { function_name: FN, error: e, severity: "error", context: { feed_id: feed.id } });
     }
   }
 

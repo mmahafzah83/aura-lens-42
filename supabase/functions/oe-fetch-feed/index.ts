@@ -4,6 +4,7 @@
  * resolves who is issuing it, and writes it once. Nothing is guessed: a record
  * without a verbatim quote for an open chair is dropped.
  */
+import { checkSpendCap } from "../_shared/spendCap.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
@@ -417,6 +418,12 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const cap = await checkSpendCap(admin, "oe-fetch-feed");
+  if (!cap.allowed) {
+    return new Response(JSON.stringify({ ok: false, reason: "daily_call_cap", used: cap.used, cap: cap.cap }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
   const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
   const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY") || "";

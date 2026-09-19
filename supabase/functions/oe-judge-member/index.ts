@@ -8,6 +8,7 @@
  *
  * The job row itself is completed by oe-worker, which invoked this function.
  */
+import { checkSpendCap } from "../_shared/spendCap.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
@@ -414,6 +415,13 @@ Deno.serve(async (req) => {
   }
 
   const admin: SupabaseClient = createClient(SUPABASE_URL, SERVICE_ROLE);
+  // THE CEILING. Cost is acceptable; an unbounded loop is not.
+  const cap = await checkSpendCap(admin, "oe-judge-member");
+  if (!cap.allowed) {
+    return new Response(JSON.stringify({ ok: false, reason: "daily_call_cap", used: cap.used, cap: cap.cap }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
   const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
 
@@ -585,9 +593,15 @@ Deno.serve(async (req) => {
       const lane = laneFor(withLevel, s, issuerDomain);
       if (!s.pass) counts.skipped_ineligible++;
       (lane === "act" ? actPool : writePool).push({ ...withLevel, _screen: s });
+      // level_band is a property of the record itself and stays on the shared row.
       await admin.from("oe_opportunities")
-        .update({ lane_final: lane, eligibility_fail: s.fails, level_band: level })
+        .update({ level_band: level })
         .eq("id", o.id);
+      // The lane verdict is PER MEMBER — it belongs on this member's match row.
+      await admin.from("oe_matches").upsert({
+        user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
+        lane_final: lane, eligibility_fail: s.fails,
+      }, { onConflict: "user_id,opportunity_id,rubric_version" });
     }
     counts.lane_act = actPool.length;
     counts.lane_write = writePool.length;

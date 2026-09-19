@@ -7,6 +7,7 @@
  * Only the highest scores are promoted to the expensive reader, and only up to
  * a budget we set, so cost stays a number we choose rather than one we discover.
  */
+import { checkSpendCap } from "../_shared/spendCap.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logAIUsage } from "../_shared/logAIUsage.ts";
 import { logEfError } from "../_shared/observe.ts";
@@ -95,6 +96,12 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const cap = await checkSpendCap(admin, "oe-triage");
+  if (!cap.allowed) {
+    return new Response(JSON.stringify({ ok: false, reason: "daily_call_cap", used: cap.used, cap: cap.cap }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
   const body = await req.json().catch(() => ({}));
   const dryRun = body.dry_run === true;
