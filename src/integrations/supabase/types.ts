@@ -10000,6 +10000,7 @@ export type Database = {
       oe_app_refresh: { Args: never; Returns: Json }
       oe_app_render: { Args: { p_card: string }; Returns: Json }
       oe_app_show_anyway: { Args: { p_suppressed: string }; Returns: undefined }
+      oe_apply_shape_state: { Args: never; Returns: number }
       oe_assess_writing_value: { Args: { p_user: string }; Returns: number }
       oe_candidates: {
         Args: { p_face: string; p_k: number; p_user_id: string }
@@ -10059,6 +10060,13 @@ export type Database = {
           o_outcome: string
           o_title: string
         }[]
+      }
+      oe_kind_field_present: {
+        Args: {
+          o: Database["public"]["Tables"]["oe_opportunities"]["Row"]
+          p_field: string
+        }
+        Returns: boolean
       }
       oe_learning_state: { Args: { p_user: string }; Returns: Json }
       oe_member_evidence: {
