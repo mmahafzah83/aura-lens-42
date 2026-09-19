@@ -145,10 +145,14 @@ Deno.serve(async (req) => {
   }
 
   // 5. Book Three holds no member. A user_id column there is a modelling leak.
+  //    Asking for the column is the test: if it answers, the column exists.
   {
-    const { data } = await admin.rpc("oe_book_three_user_columns").catch(() => ({ data: null }));
-    const cols = (data as unknown[] | null) ?? [];
-    record("book_three_has_user_column", cols);
+    const bad: unknown[] = [];
+    for (const table of ["oe_world_facts", "oe_source_facts"]) {
+      const { error } = await admin.from(table).select("user_id").limit(1);
+      if (!error) bad.push({ table, column: "user_id" });
+    }
+    record("book_three_has_user_column", bad);
   }
 
   // 6. A bare host root proves nothing.
