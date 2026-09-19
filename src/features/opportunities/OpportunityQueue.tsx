@@ -10,12 +10,24 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useVocab } from "./useVocab";
 
 type WhyLine = { text?: string; label?: string };
+type AccessState = "observed_event" | "possible_need" | "confirmed_opportunity" | "identified_route";
+type Inference = { what_we_saw?: string | null; what_we_infer?: string | null; what_would_confirm?: string | null };
 type QueueCard = {
   id: string; opportunity_id: string; lane: "act" | "write"; why_lines: WhyLine[] | null;
   gap_line: WhyLine | null; quote: string | null; clock_text: string | null; title: string;
   chair_type: string | null; level_band: string | null; sector: string | null; location: string | null; scope: string | null; deadline: string | null;
   source_url: string | null; route_url: string | null; route_kind: string | null; issuer_id: string | null;
   issuer_name: string | null; last_checked: string | null; rule_count: number; purpose: "strength" | "build" | "explore";
+  access_state: AccessState | null; access_state_reason: string | null; inference: Inference | null;
+  claims: Record<string, "pass" | "fail" | "unknown"> | null;
+};
+
+// Only a confirmed opening, or better, may use the language of an opening.
+const STATE_LABEL: Record<AccessState, string> = {
+  observed_event: "Something happened",
+  possible_need: "A need may follow",
+  confirmed_opportunity: "An opening exists",
+  identified_route: "A way in exists",
 };
 type Priority = "bigger_seat" | "known_for_one" | "new_rooms" | "out_of_sector" | "stay_current";
 type Mix = "win" | "build" | "explore";
@@ -299,10 +311,15 @@ export function OpportunityQueue() {
       onDefer={() => void deferDirection()}
     /> : card && validWhy(card) ? <>
       <AuraCard hover="none" className="oe-decision-card" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)", borderRadius: 20 }}>
-        <div className="oe-card-flags"><div className={`oe-lane oe-lane-${card.lane}`}><span aria-hidden />{card.lane === "act" ? t("queue_open_now", "Open now") : t("queue_worth_writing", "Worth writing about")}{card.clock_text && <em> · {card.clock_text}</em>}</div>{card.purpose === "explore" && <span className="oe-purpose-chip">{v("purpose_explore")}</span>}</div>
+        <div className="oe-card-flags"><div className={`oe-lane oe-lane-${card.lane}`}><span aria-hidden />{card.access_state ? STATE_LABEL[card.access_state] : (card.lane === "act" ? t("queue_open_now", "Open now") : t("queue_worth_writing", "Worth writing about"))}{card.clock_text && <em> · {card.clock_text}</em>}</div>{card.purpose === "explore" && <span className="oe-purpose-chip">{v("purpose_explore")}</span>}</div>
         <h2>{card.title}</h2>
         <p className="oe-meta">{[card.issuer_name, card.location].filter(Boolean).join(" · ")}</p>
         {card.scope && <p className="oe-summary">{card.scope}</p>}
+        {card.inference && <div className="oe-inference">
+          {card.inference.what_we_saw && <p><strong>What we saw:</strong> “{card.inference.what_we_saw}”</p>}
+          {card.inference.what_we_infer && <p><strong>What we infer:</strong> {card.inference.what_we_infer}</p>}
+          {card.inference.what_would_confirm && <p><strong>What would confirm it:</strong> {card.inference.what_would_confirm}</p>}
+        </div>}
         <div className="oe-why">
           <div className="oe-why-lead"><p><strong>{card.lane === "act" ? t("queue_why_you", "Why you") : t("queue_your_angle", "Your angle")}:</strong> {lead}</p><button type="button" className="v23-textlink" onClick={() => setExpanded((open) => !open)}>{expanded ? t("queue_less", "Less") : t("queue_more", "More")}</button></div>
           {expanded && <div className="oe-why-more">

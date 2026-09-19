@@ -61,3 +61,15 @@
 - [x] Create access outcomes for all 74 live records
 - [ ] Complete model review for the final 14 records in bounded batches
 - [ ] Re-run purpose classification and report final lane and purpose totals
+
+## Step 17 — the review changes
+- [ ] Snapshot `pre-step17-review-changes` (no repository snapshot command is available)
+- [x] 2 Unknown is not ineligible — three outcomes, investigation queue
+- [x] 1 Five-state access ladder, member_access_confirmed, specific-route law
+- [x] 3 Writing value assessed independently, discards kept for debugging
+- [x] 4 Five claim checks recorded per claim
+- [x] 5 `oe_truth_reports` + `oe-truth-verify` worker with backoff and named causes
+- [x] 6 Private-data scan, honest privacy comment, extended security probes
+- [x] 7 Learning by evidence type; "still pursuing" distinct from "nothing came of it"
+- [x] 8 `oe_coverage_funnel` view with seven visible stages
+- [x] 9 Retrieval before judging; shortlist cap logged when smaller than the pool
