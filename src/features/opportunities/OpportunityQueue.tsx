@@ -10,12 +10,24 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useVocab } from "./useVocab";
 
 type WhyLine = { text?: string; label?: string };
+type AccessState = "observed_event" | "possible_need" | "confirmed_opportunity" | "identified_route";
+type Inference = { what_we_saw?: string | null; what_we_infer?: string | null; what_would_confirm?: string | null };
 type QueueCard = {
   id: string; opportunity_id: string; lane: "act" | "write"; why_lines: WhyLine[] | null;
   gap_line: WhyLine | null; quote: string | null; clock_text: string | null; title: string;
   chair_type: string | null; level_band: string | null; sector: string | null; location: string | null; scope: string | null; deadline: string | null;
   source_url: string | null; route_url: string | null; route_kind: string | null; issuer_id: string | null;
   issuer_name: string | null; last_checked: string | null; rule_count: number; purpose: "strength" | "build" | "explore";
+  access_state: AccessState | null; access_state_reason: string | null; inference: Inference | null;
+  claims: Record<string, "pass" | "fail" | "unknown"> | null;
+};
+
+// Only a confirmed opening, or better, may use the language of an opening.
+const STATE_LABEL: Record<AccessState, string> = {
+  observed_event: "Something happened",
+  possible_need: "A need may follow",
+  confirmed_opportunity: "An opening exists",
+  identified_route: "A way in exists",
 };
 type Priority = "bigger_seat" | "known_for_one" | "new_rooms" | "out_of_sector" | "stay_current";
 type Mix = "win" | "build" | "explore";
