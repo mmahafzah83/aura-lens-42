@@ -153,7 +153,7 @@ const GRADES: Array<[number, string, RegExp]> = [
   [8, "senior director or head of function", /senior director|head of\b|group director|رئيس قطاع/i],
   [7, "director", /\bdirector\b|مدير تنفيذي/i],
   [5, "senior manager", /senior manager|principal consultant|مدير أول/i],
-  [4, "manager", /\bmanager\b|\bmanagement\b|مدير/i],
+  [4, "manager", /\bmanager\b|head of department|مدير/i],
   [3, "lead or senior consultant", /\blead\b|senior consultant|senior .* consultant|senior specialist/i],
   [2, "consultant or specialist", /consultant|advisor|adviser|specialist|associate|analyst|officer|engineer|curator|speaker|researcher/i],
 ];
@@ -229,7 +229,10 @@ export function deriveIdentity(snapshot: any): MemberIdentity {
       company,
       started: e?.startDate?.text ?? null,
       ended: e?.endDate?.text ?? null,
-      profession: classifyProfession(title, e?.description ?? null),
+      // The TITLE carries the accountability. A description is prose: it names
+      // every technology the employer sells and would classify a process
+      // consultant as a procurement lead.
+      profession: classifyProfession(title),
       grade: grade?.rank ?? null,
       grade_label: grade?.label ?? null,
       tier,
