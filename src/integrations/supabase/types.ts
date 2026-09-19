@@ -4273,6 +4273,53 @@ export type Database = {
           },
         ]
       }
+      oe_claim_checks: {
+        Row: {
+          check_kind: string
+          checked_at: string
+          claim_key: string
+          claim_text: string | null
+          created_at: string
+          evidence: Json
+          id: string
+          opportunity_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          check_kind: string
+          checked_at?: string
+          claim_key: string
+          claim_text?: string | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          opportunity_id: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          check_kind?: string
+          checked_at?: string
+          claim_key?: string
+          claim_text?: string | null
+          created_at?: string
+          evidence?: Json
+          id?: string
+          opportunity_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_claim_checks_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       oe_consents: {
         Row: {
           created_at: string
@@ -4971,6 +5018,36 @@ export type Database = {
           },
         ]
       }
+      oe_learning_events: {
+        Row: {
+          applied: boolean
+          created_at: string
+          detail: Json
+          id: string
+          process: string
+          trigger_reason: string
+          user_id: string | null
+        }
+        Insert: {
+          applied?: boolean
+          created_at?: string
+          detail?: Json
+          id?: string
+          process: string
+          trigger_reason: string
+          user_id?: string | null
+        }
+        Update: {
+          applied?: boolean
+          created_at?: string
+          detail?: Json
+          id?: string
+          process?: string
+          trigger_reason?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       oe_learning_stage: {
         Row: {
           created_at: string
@@ -5487,6 +5564,39 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_ranking_evals: {
+        Row: {
+          accepted: boolean
+          baseline_score: number
+          candidate_score: number
+          created_at: string
+          detail: Json
+          holdout_n: number
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          accepted?: boolean
+          baseline_score: number
+          candidate_score: number
+          created_at?: string
+          detail?: Json
+          holdout_n: number
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          accepted?: boolean
+          baseline_score?: number
+          candidate_score?: number
+          created_at?: string
+          detail?: Json
+          holdout_n?: number
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       oe_refresh_marks: {
         Row: {
           created_at: string
@@ -5859,6 +5969,59 @@ export type Database = {
             columns: ["card_id"]
             isOneToOne: false
             referencedRelation: "oe_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oe_truth_reports: {
+        Row: {
+          attempts: number
+          cause: string | null
+          code: string
+          created_at: string
+          evidence: Json
+          first_seen: string
+          id: string
+          last_checked: string | null
+          opportunity_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          cause?: string | null
+          code: string
+          created_at?: string
+          evidence?: Json
+          first_seen?: string
+          id?: string
+          last_checked?: string | null
+          opportunity_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          cause?: string | null
+          code?: string
+          created_at?: string
+          evidence?: Json
+          first_seen?: string
+          id?: string
+          last_checked?: string | null
+          opportunity_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_truth_reports_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
             referencedColumns: ["id"]
           },
         ]
@@ -9150,6 +9313,16 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_coverage_funnel: {
+        Row: {
+          count: number | null
+          generated_at: string | null
+          note: string | null
+          stage: string | null
+          stage_order: number | null
+        }
+        Relationships: []
+      }
       post_provenance: {
         Row: {
           acquisition: string | null
@@ -9667,6 +9840,7 @@ export type Database = {
           title: string
         }[]
       }
+      oe_check_claims: { Args: { p_user: string }; Returns: number }
       oe_derive_access_state: { Args: never; Returns: number }
       oe_derive_rules: { Args: { p_user: string }; Returns: number }
       oe_direction_save: {
@@ -9698,6 +9872,7 @@ export type Database = {
           o_title: string
         }[]
       }
+      oe_learning_state: { Args: { p_user: string }; Returns: Json }
       oe_member_evidence: {
         Args: { p_embedding: string; p_k?: number; p_user_id: string }
         Returns: {
@@ -9750,6 +9925,29 @@ export type Database = {
       oe_route_is_specific: {
         Args: { p_kind: string; p_url: string }
         Returns: boolean
+      }
+      oe_scan_shared_facts_private: { Args: never; Returns: number }
+      oe_truth_report_resolve: {
+        Args: {
+          p_cause: string
+          p_evidence?: Json
+          p_id: string
+          p_status: string
+        }
+        Returns: Json
+      }
+      oe_truth_reports_due: {
+        Args: { p_limit?: number; p_max_attempts?: number }
+        Returns: {
+          attempts: number
+          code: string
+          evidence_quote: string
+          id: string
+          opportunity_id: string
+          route_url: string
+          source_url: string
+          user_id: string
+        }[]
       }
       oe_warmth_issuer_text: {
         Args: { p_issuer_names: string[]; p_user_id: string }
