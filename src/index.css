@@ -2149,6 +2149,9 @@ button[aria-disabled="true"],
 .oe-queue-header p { margin:0; color:var(--text-secondary); }
 .oe-machine-line { display:flex; align-items:center; gap:8px; color:var(--text-secondary); font-size:12.5px; }
 .oe-machine-dot { width:7px; height:7px; flex:0 0 7px; border-radius:999px; background:var(--machine); animation:oeMachinePulse 2.4s ease-in-out infinite; }
+.oe-machine-dot-working { animation-duration:0.9s; }
+.oe-refresh { margin-inline-start:10px; font-size:12px; }
+.oe-refresh-note { margin:6px 0 0; color:var(--text-secondary); font-size:12px; }
 .oe-tuning-door { width:100%; display:grid; gap:3px; padding:15px 16px; text-align:start; border:1px solid var(--border-default); border-radius:12px; background:var(--surface-card); color:var(--text-primary); cursor:pointer; font-family:inherit; transition:border-color 140ms ease; }
 .oe-tuning-door:hover,.oe-tuning-door:focus-visible { border-color:var(--act); outline:none; }
 .oe-tuning-door span { color:var(--text-secondary); font-size:12px; }
