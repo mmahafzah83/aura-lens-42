@@ -73,15 +73,15 @@ Deno.serve(async (req) => {
   results.b_read_other_serves = { rows: b.data?.length ?? 0, data: b.data, error: b.error?.message ?? null };
 
   const c = await asMember.from("oe_world_facts").insert({
-    fact_key: `rls_probe_${attackerId}`,
-    fact_value: { note: "a member preference does not belong in Book Three" },
+    kind: `rls_probe_${attackerId}`,
+    payload: { note: "a member preference does not belong in Book Three" },
   }).select();
   results.c_insert_world_fact = { rows: c.data?.length ?? 0, data: c.data, error: c.error?.message ?? null };
 
   const d = await asMember.from("oe_direction").update({ mix: "win" }).eq("user_id", victim).select();
   results.d_update_other_direction = { rows: d.data?.length ?? 0, data: d.data, error: d.error?.message ?? null };
 
-  await admin.from("oe_world_facts").delete().eq("fact_key", `rls_probe_${attackerId}`);
+  await admin.from("oe_world_facts").delete().eq("kind", `rls_probe_${attackerId}`);
   await admin.auth.admin.deleteUser(attackerId);
 
   return new Response(JSON.stringify(results, null, 2), {
