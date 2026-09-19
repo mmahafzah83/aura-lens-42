@@ -180,17 +180,19 @@ Deno.serve(async (req) => {
   }
 
   // 8. Below learning stage 2 the machine may not move its own weights.
+  //    A face whose weight row was touched in the last day, for a member the
+  //    machine is not yet allowed to learn from, is the violation.
   {
     const { data: stages } = await admin.from("oe_learning_stage").select("user_id,stage");
     const early = new Set(
       (stages ?? []).filter((s) => Number(s.stage ?? 0) < 2).map((s) => s.user_id as string),
     );
     const since = new Date(Date.now() - 86_400_000).toISOString();
-    const { data: moves } = await admin.from("oe_moves")
-      .select("id,user_id,created_at,source").gte("created_at", since);
-    const bad = (moves ?? [])
-      .filter((m) => early.has(m.user_id as string) && String(m.source ?? "") !== "member")
-      .map((m) => ({ move_id: m.id, user_id: m.user_id, source: m.source }));
+    const { data: faces } = await admin.from("oe_faces")
+      .select("id,user_id,face,weight,updated_at,built_at").gte("updated_at", since);
+    const bad = (faces ?? [])
+      .filter((f) => early.has(f.user_id as string) && String(f.updated_at) !== String(f.built_at))
+      .map((f) => ({ face_id: f.id, user_id: f.user_id, face: f.face, updated_at: f.updated_at }));
     record("weight_moved_below_stage_two", bad);
   }
 
