@@ -414,6 +414,13 @@ Deno.serve(async (req) => {
   }
 
   const admin: SupabaseClient = createClient(SUPABASE_URL, SERVICE_ROLE);
+  // THE CEILING. Cost is acceptable; an unbounded loop is not.
+  const cap = await checkSpendCap(admin, "oe-judge-member");
+  if (!cap.allowed) {
+    return new Response(JSON.stringify({ ok: false, reason: "daily_call_cap", used: cap.used, cap: cap.cap }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
   const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
 

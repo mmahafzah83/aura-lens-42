@@ -95,6 +95,12 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const cap = await checkSpendCap(admin, "oe-triage");
+  if (!cap.allowed) {
+    return new Response(JSON.stringify({ ok: false, reason: "daily_call_cap", used: cap.used, cap: cap.cap }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const openaiKey = Deno.env.get("OPENAI_API_KEY") || "";
   const body = await req.json().catch(() => ({}));
   const dryRun = body.dry_run === true;

@@ -417,6 +417,12 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const cap = await checkSpendCap(admin, "oe-fetch-feed");
+  if (!cap.allowed) {
+    return new Response(JSON.stringify({ ok: false, reason: "daily_call_cap", used: cap.used, cap: cap.cap }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
   const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
   const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY") || "";
