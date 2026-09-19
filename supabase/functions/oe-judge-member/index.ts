@@ -648,6 +648,7 @@ Deno.serve(async (req) => {
         .map((m: any) => String(m.opportunity_id)),
     );
 
+    // Retrieval orders review; it must never erase a live record from coverage.
     const scored = [...actPool, ...writePool]
       .filter((o) => !alreadyJudged.has(String(o.id)))
       .map((o) => {
@@ -655,7 +656,7 @@ Deno.serve(async (req) => {
         const vec = asVector(o.embedding);
         const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
         return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
-      }).sort((a, b) => b.score - a.score).slice(0, shortlistK);
+      }).sort((a, b) => b.score - a.score);
     counts.shortlisted = scored.length;
 
 
