@@ -279,3 +279,6 @@ verify_jwt = false
 [functions.oe-harvest-ats]
 verify_jwt = false
 
+
+[functions.oe-reverify-quote]
+verify_jwt = false

@@ -196,10 +196,12 @@ export function OpportunityQueue() {
     const value = newRule.trim();
     if (!userId || !value || busy) return;
     setBusy(true);
+    // He typed it as a rule, so it is a rule and it is ratified on the spot.
     await (supabase.from("oe_notebook" as any) as any).insert({
       user_id: userId, kind: "soft", rule_text: `Show me more from ${value}`,
       rule_text_ar: `أظهر لي المزيد من ${value}`, field: newRuleType, op: "prefer", value,
       origin: "stated", proposal_status: "signed", active: true,
+      entry_kind: "rule", ratified_at: new Date().toISOString(),
     });
     setNewRule(""); setBusy(false); void load();
   };

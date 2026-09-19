@@ -42,11 +42,13 @@ export function YourRules({ userId, language }: { userId: string | null; languag
   const [rules, setRules] = useState<Rule[]>([]);
   const [busy, setBusy] = useState(false);
 
+  /* A comment is what he said; a rule is what runs. Only rules appear here,
+     and only ratifying one turns it on. */
   const load = useCallback(async () => {
     if (!userId) return;
     const { data } = await (supabase.from("oe_notebook" as any) as any)
       .select("id,kind,rule_text,rule_text_ar,stated_on,proposal_status")
-      .eq("user_id", userId).eq("active", true)
+      .eq("user_id", userId).eq("active", true).eq("entry_kind", "rule")
       .order("kind", { ascending: true }).order("stated_on", { ascending: false });
     setRules((data ?? []) as Rule[]);
   }, [userId]);
@@ -55,7 +57,9 @@ export function YourRules({ userId, language }: { userId: string | null; languag
   const sign = async (id: string, status: "signed" | "declined") => {
     setBusy(true);
     await (supabase.from("oe_notebook" as any) as any)
-      .update(status === "signed" ? { proposal_status: "signed" } : { proposal_status: "declined", active: false })
+      .update(status === "signed"
+        ? { proposal_status: "signed", ratified_at: new Date().toISOString() }
+        : { proposal_status: "declined", active: false })
       .eq("id", id);
     await load();
     setBusy(false);

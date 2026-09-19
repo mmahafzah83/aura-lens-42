@@ -435,7 +435,7 @@ Deno.serve(async (req) => {
     alive: 0, filtered: 0, shortlisted: 0, judged: 0, gate_passed: 0,
     unstable: 0, carded: 0, empty_day: 0, lane_forming: 0, unexamined: 0,
     no_evidence: 0, no_citation: 0, warmth_rows: 0, requirement_checked: 0,
-    skipped_ineligible: 0, lane_act: 0, lane_write: 0, write_carded: 0,
+    skipped_ineligible: 0, lane_act: 0, lane_write: 0, write_carded: 0, rescreened: 0,
   };
 
   let costUsd = 0;
@@ -595,6 +595,20 @@ Deno.serve(async (req) => {
     // ── THE ELIGIBILITY GATE — free, deterministic, and before the model ──
     // A seat he cannot hold is never read. It is not thrown away either: it
     // goes to the writing lane, which is material, not a rejection.
+    //
+    // REACHABLE IS NOT THE ACT LANE. Reachable says only two things: he can
+    // hold it, and there is a live door. The act lane is the INTERSECTION of
+    // that with a passed gate, and the gate is not known until the judge has
+    // run. So a record enters as 'write' and is promoted only when it earns
+    // it. A database constraint refuses any other combination.
+    const { data: priorMatches } = await admin.from("oe_matches")
+      .select("opportunity_id, gate_passed, lane")
+      .eq("user_id", userId);
+    const priorGate = new Map(
+      (priorMatches ?? []).map((m: any) =>
+        [String(m.opportunity_id), m.gate_passed === true && m.lane === "lane_open"]),
+    );
+
     const actPool: any[] = [];
     const writePool: any[] = [];
     for (const o of filtered) {
@@ -602,17 +616,18 @@ Deno.serve(async (req) => {
       const withLevel = { ...o, level_band: level };
       const s = screen(withLevel, eligibility, evidence);
       const issuerDomain = (o as any).issuer?.domain ?? null;
-      const lane = laneFor(withLevel, s, issuerDomain);
+      const reachable = laneFor(withLevel, s, issuerDomain) === "act";
       if (!s.pass) counts.skipped_ineligible++;
-      (lane === "act" ? actPool : writePool).push({ ...withLevel, _screen: s, _lane_final: lane });
+      (reachable ? actPool : writePool).push({ ...withLevel, _screen: s, _reachable: reachable });
       // level_band is a property of the record itself and stays on the shared row.
       await admin.from("oe_opportunities")
         .update({ level_band: level })
         .eq("id", o.id);
       // The lane verdict is PER MEMBER — it belongs on this member's match row.
+      const laneFinal = reachable && priorGate.get(String(o.id)) === true ? "act" : "write";
       const { error: laneErr } = await admin.from("oe_matches").upsert({
         user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
-        lane_final: lane, eligibility_fail: s.fails,
+        lane_final: laneFinal, eligibility_fail: s.fails,
         eligibility_outcome: s.outcome, eligibility_unknowns: s.unknowns,
       }, { onConflict: "user_id,opportunity_id,rubric_version" });
 
@@ -625,6 +640,36 @@ Deno.serve(async (req) => {
     }
     counts.lane_act = actPool.length;
     counts.lane_write = writePool.length;
+
+    // ── THE STALE SWEEP ───────────────────────────────────────────────────
+    // A judged match carrying no access verdict predates the profile-versus-
+    // requirement test. Screening costs nothing, so no such row is left to
+    // sit: it is re-screened here even when retrieval, a taste correction or
+    // an existing card kept it out of today's pool. Every judged match must
+    // land on excluded, unknown or eligible.
+    const { data: unscreened } = await admin.from("oe_matches")
+      .select("opportunity_id, rubric_version, gate_passed, lane")
+      .eq("user_id", userId).is("eligibility_outcome", null);
+    const inPool = new Set(filtered.map((o: any) => String(o.id)));
+    const stale = (unscreened ?? []).filter((m: any) => !inPool.has(String(m.opportunity_id)));
+    if (stale.length) {
+      const { data: staleOpps } = await admin.from("oe_opportunities")
+        .select("id, title, scope, sector, chair_type, seniority_band, level_band, location, remote, requirements, route_url, route_kind, route_dead, issuer_id, issuer:oe_issuers(domain)")
+        .in("id", stale.map((m: any) => m.opportunity_id));
+      for (const row of stale) {
+        const o = (staleOpps ?? []).find((x: any) => String(x.id) === String(row.opportunity_id));
+        if (!o) continue;
+        const withLevel = { ...o, level_band: levelOf(o) };
+        const s = screen(withLevel, eligibility, evidence);
+        const reachable = laneFor(withLevel, s, (o as any).issuer?.domain ?? null) === "act";
+        await admin.from("oe_matches").update({
+          eligibility_outcome: s.outcome, eligibility_fail: s.fails, eligibility_unknowns: s.unknowns,
+          lane_final: reachable && row.gate_passed === true && row.lane === "lane_open" ? "act" : "write",
+        }).eq("user_id", userId).eq("opportunity_id", row.opportunity_id)
+          .eq("rubric_version", row.rubric_version);
+        counts.rescreened++;
+      }
+    }
 
     // Both lanes are read. A writing-lane record still needs citations before
     // it can be shown with a grounded reason, and it only gets them here.
@@ -754,6 +799,8 @@ Deno.serve(async (req) => {
         win_basis: { eligibility_met: eligibility, issuer_history: issuerHistory, past_winner_similarity: null },
         lane,
         requirement_check: check.list, met_count: check.met, total_count: check.total,
+        // THE INTERSECTION: he can hold it, the gate passed, the door is live.
+        lane_final: o._reachable && gatePassed && lane === "lane_open" ? "act" : "write",
         gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
       }, { onConflict: "user_id,opportunity_id,rubric_version" }).select("id").maybeSingle();
 
@@ -763,7 +810,7 @@ Deno.serve(async (req) => {
     // ── 4. PICK — Lane A only. No way in, no card. ────────────────────────
     // Warmth never moves the score; it only breaks a tie in the ordering.
     const eligible = judged
-      .filter((j) => j.o._lane_final === "act" && j.gatePassed && !j.unstable && j.lane === "lane_open")
+      .filter((j) => j.o._reachable === true && j.gatePassed && !j.unstable && j.lane === "lane_open")
       .sort((a, b) => Math.abs(b.scoreAvg - a.scoreAvg) < 0.01
         ? (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0)
         : b.scoreAvg - a.scoreAvg);
@@ -778,8 +825,10 @@ Deno.serve(async (req) => {
     const vocab = await loadVocab(admin);
 
     // BOOK ONE ids, so every serve can name the rules that were in force.
+    // A comment is never in force, and an unratified rule is not yet a rule.
     const { data: bookOne } = await admin.from("oe_notebook")
-      .select("id").eq("user_id", userId).eq("active", true).eq("proposal_status", "signed");
+      .select("id").eq("user_id", userId).eq("active", true).eq("proposal_status", "signed")
+      .eq("entry_kind", "rule").not("ratified_at", "is", null);
     const ruleIds = (bookOne ?? []).map((r: any) => r.id);
 
 
