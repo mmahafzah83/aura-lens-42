@@ -556,8 +556,8 @@ Deno.serve(async (req) => {
     counts.filtered = 0;
 
     // ── THE ELIGIBILITY GATE — free, deterministic, and before the model ──
-    // A seat he cannot hold is never read. It is not thrown away either: it
-    // goes to the writing lane, which is material, not a rejection.
+    // Every live record receives an access outcome before review. Excluded
+    // records remain visible in coverage but cannot enter the act lane.
     //
     // REACHABLE IS NOT THE ACT LANE. Reachable says only two things: he can
     // hold it, and there is a live door. The act lane is the INTERSECTION of
