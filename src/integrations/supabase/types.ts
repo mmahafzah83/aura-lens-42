@@ -5961,6 +5961,59 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_write_value: {
+        Row: {
+          adds_something: boolean
+          assessed_at: string
+          audience_fit: boolean
+          created_at: string
+          has_viewpoint: boolean
+          id: string
+          opportunity_id: string
+          reason: string | null
+          suits_positioning: boolean
+          updated_at: string
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          adds_something: boolean
+          assessed_at?: string
+          audience_fit: boolean
+          created_at?: string
+          has_viewpoint: boolean
+          id?: string
+          opportunity_id: string
+          reason?: string | null
+          suits_positioning: boolean
+          updated_at?: string
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          adds_something?: boolean
+          assessed_at?: string
+          audience_fit?: boolean
+          created_at?: string
+          has_viewpoint?: boolean
+          id?: string
+          opportunity_id?: string
+          reason?: string | null
+          suits_positioning?: boolean
+          updated_at?: string
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_write_value_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_article_log: {
         Row: {
           core_practice: string | null
@@ -9586,6 +9639,7 @@ export type Database = {
       oe_app_refresh: { Args: never; Returns: Json }
       oe_app_render: { Args: { p_card: string }; Returns: Json }
       oe_app_show_anyway: { Args: { p_suppressed: string }; Returns: undefined }
+      oe_assess_writing_value: { Args: { p_user: string }; Returns: number }
       oe_candidates: {
         Args: { p_face: string; p_k: number; p_user_id: string }
         Returns: {
