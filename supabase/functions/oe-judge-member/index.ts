@@ -592,27 +592,51 @@ Deno.serve(async (req) => {
       const issuerDomain = (o as any).issuer?.domain ?? null;
       const lane = laneFor(withLevel, s, issuerDomain);
       if (!s.pass) counts.skipped_ineligible++;
-      (lane === "act" ? actPool : writePool).push({ ...withLevel, _screen: s });
+      (lane === "act" ? actPool : writePool).push({ ...withLevel, _screen: s, _lane_final: lane });
       // level_band is a property of the record itself and stays on the shared row.
       await admin.from("oe_opportunities")
         .update({ level_band: level })
         .eq("id", o.id);
       // The lane verdict is PER MEMBER — it belongs on this member's match row.
-      await admin.from("oe_matches").upsert({
+      const { error: laneErr } = await admin.from("oe_matches").upsert({
         user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
         lane_final: lane, eligibility_fail: s.fails,
       }, { onConflict: "user_id,opportunity_id,rubric_version" });
+      if (laneErr) {
+        await logEfError(admin, {
+          function_name: FN, error: new Error(`lane upsert failed: ${laneErr.message}`),
+          severity: "error", context: { opportunity_id: o.id, user_id: userId },
+        });
+      }
     }
     counts.lane_act = actPool.length;
     counts.lane_write = writePool.length;
 
-    const scored = actPool.map((o) => {
-      const m = merged.get(o.id)!;
-      const vec = asVector(o.embedding);
-      const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
-      return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
-    }).sort((a, b) => b.score - a.score).slice(0, shortlistK);
+    // Both lanes are read. A writing-lane record still needs citations before
+    // it can be shown with a grounded reason, and it only gets them here.
+    // A run that times out must resume, not restart: anything already judged
+    // with citations in the last day is left alone.
+    const { data: freshJudged } = await admin.from("oe_matches")
+      .select("opportunity_id,scores,judged_at")
+      .eq("user_id", userId)
+      .gte("judged_at", new Date(Date.now() - 86_400_000).toISOString());
+    const alreadyJudged = new Set(
+      (freshJudged ?? [])
+        .filter((m: any) => Array.isArray(m.scores?.cites) && m.scores.cites.length > 0)
+        .map((m: any) => String(m.opportunity_id)),
+    );
+
+    const scored = [...actPool, ...writePool]
+      .filter((o) => !alreadyJudged.has(String(o.id)))
+      .map((o) => {
+        const m = merged.get(o.id)!;
+        const vec = asVector(o.embedding);
+        const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
+        return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
+      }).sort((a, b) => b.score - a.score).slice(0, shortlistK);
     counts.shortlisted = scored.length;
+
+
 
 
     // ── 3. JUDGE ──────────────────────────────────────────────────────────
@@ -725,7 +749,7 @@ Deno.serve(async (req) => {
     // ── 4. PICK — Lane A only. No way in, no card. ────────────────────────
     // Warmth never moves the score; it only breaks a tie in the ordering.
     const eligible = judged
-      .filter((j) => j.gatePassed && !j.unstable && j.lane === "lane_open")
+      .filter((j) => j.o._lane_final === "act" && j.gatePassed && !j.unstable && j.lane === "lane_open")
       .sort((a, b) => Math.abs(b.scoreAvg - a.scoreAvg) < 0.01
         ? (b.warmth?.total ?? 0) - (a.warmth?.total ?? 0)
         : b.scoreAvg - a.scoreAvg);
