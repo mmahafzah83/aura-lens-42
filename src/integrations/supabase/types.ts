@@ -5178,6 +5178,7 @@ export type Database = {
       oe_matches: {
         Row: {
           created_at: string
+          eligibility_conditions: string[]
           eligibility_fail: string[] | null
           eligibility_outcome: string | null
           eligibility_unknowns: string[]
@@ -5216,6 +5217,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          eligibility_conditions?: string[]
           eligibility_fail?: string[] | null
           eligibility_outcome?: string | null
           eligibility_unknowns?: string[]
@@ -5254,6 +5256,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          eligibility_conditions?: string[]
           eligibility_fail?: string[] | null
           eligibility_outcome?: string | null
           eligibility_unknowns?: string[]

@@ -788,6 +788,7 @@ Deno.serve(async (req) => {
         eligibility_outcome: o._screen.outcome,
         eligibility_fail: o._screen.fails,
         eligibility_unknowns: o._screen.unknowns,
+        eligibility_conditions: o._screen.conditions ?? [],
         // THE INTERSECTION: he can hold it, the gate passed, the door is live.
         lane_final: o._reachable && gatePassed && lane === "lane_open" ? "act" : "write",
         gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
