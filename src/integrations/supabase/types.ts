@@ -4271,6 +4271,13 @@ export type Database = {
             referencedRelation: "oe_opportunities"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "oe_cards_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
+          },
         ]
       }
       oe_claim_checks: {
@@ -4317,6 +4324,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oe_opportunities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_claim_checks_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
           },
         ]
       }
@@ -4798,6 +4812,13 @@ export type Database = {
             referencedRelation: "oe_opportunities"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "oe_investigations_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
+          },
         ]
       }
       oe_issuer_people: {
@@ -5027,11 +5048,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "oe_leadtime_pairs_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
+          },
+          {
             foreignKeyName: "oe_leadtime_pairs_posted_opportunity_id_fkey"
             columns: ["posted_opportunity_id"]
             isOneToOne: false
             referencedRelation: "oe_opportunities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_leadtime_pairs_posted_opportunity_id_fkey"
+            columns: ["posted_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
           },
         ]
       }
@@ -5221,6 +5256,13 @@ export type Database = {
             referencedRelation: "oe_opportunities"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "oe_matches_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
+          },
         ]
       }
       oe_member_identity: {
@@ -5348,6 +5390,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oe_opportunities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_moves_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
           },
         ]
       }
@@ -6208,6 +6257,13 @@ export type Database = {
             referencedRelation: "oe_opportunities"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "oe_truth_reports_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
+          },
         ]
       }
       oe_vocabulary: {
@@ -6272,6 +6328,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oe_opportunities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_warmth_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
           },
         ]
       }
@@ -6364,6 +6427,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "oe_opportunities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oe_write_value_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "oe_unjudged_alive"
+            referencedColumns: ["opportunity_id"]
           },
         ]
       }
@@ -9513,6 +9583,24 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_unjudged_alive: {
+        Row: {
+          created_at: string | null
+          kind: string | null
+          opportunity_id: string | null
+          title: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oe_opportunities_kind_fkey"
+            columns: ["kind"]
+            isOneToOne: false
+            referencedRelation: "oe_opportunity_kinds"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       post_provenance: {
         Row: {
           acquisition: string | null
@@ -10033,6 +10121,10 @@ export type Database = {
         }[]
       }
       oe_check_claims: { Args: { p_user: string }; Returns: number }
+      oe_classify_kind: {
+        Args: { o: Database["public"]["Tables"]["oe_opportunities"]["Row"] }
+        Returns: string
+      }
       oe_derive_access_state: { Args: never; Returns: number }
       oe_derive_rules: { Args: { p_user: string }; Returns: number }
       oe_direction_save: {
@@ -10100,6 +10192,7 @@ export type Database = {
         }[]
       }
       oe_rebuild_eligibility: { Args: { p_user: string }; Returns: undefined }
+      oe_reconcile_judging: { Args: never; Returns: Json }
       oe_record_outcome: {
         Args: { p_outcome: string; p_token: string }
         Returns: Json
