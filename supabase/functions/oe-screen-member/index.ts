@@ -154,22 +154,45 @@ Deno.serve(async (req) => {
 
     // ── every live record ────────────────────────────────────────────────
     const { data: opps, error: oppsError } = await admin.from("oe_opportunities")
-      .select("id, title, scope, sector, chair_type, level_band, location, remote, requirements, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
+      .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
 
-    const funnel = { alive: 0, licence: 0, profession: 0, level: 0, unknown: 0, scored: 0, presented: 0, no_line: 0 };
+    // Where he works, named as a person would name it, for the place sentence.
+    const memberPlace = {
+      where: COUNTRY_NAME[String(eligibility?.residence_country ?? "").toUpperCase()]
+        ?? eligibility?.residence_country
+        ?? (eligibility?.countries_allowed ?? []).map((c) => COUNTRY_NAME[String(c).toUpperCase()] ?? c).join(" or ")
+        ?? null,
+      nationality: COUNTRY_NAME[String(eligibility?.nationality ?? "").toUpperCase()]
+        ?? eligibility?.nationality ?? null,
+    };
+
+    const funnel = {
+      alive: 0, place: 0, nationality: 0, licence: 0, other_eligibility: 0,
+      profession: 0, level: 0, unknown: 0, scored: 0, presented: 0, no_line: 0,
+      place_conditions: 0,
+    };
     const survivors: any[] = [];
 
     for (const o of (opps ?? [])) {
       funnel.alive++;
-      const licence = screen(o, eligibility, evidence);
+      // Place means different things to different kinds; the kind's own row says which.
+      const withKind = { ...o, location_sensitivity: sensitivityOf(sensitivity, (o as any).kind) };
+      const licence = screen(withKind, eligibility, evidence);
       const routeIsSpecific = hasRoute(o, (o as any).issuer?.domain ?? null)
         && String((o as any).access_state ?? "") === "identified_route";
-      const g = runGates(identity, o, licence, routeIsSpecific);
+      const g = runGates(identity, withKind, licence, routeIsSpecific, { ladder, member: memberPlace });
 
-      if (g.outcome === "rejected") funnel[g.gate === "licence" ? "licence" : g.gate === "profession" ? "profession" : "level"]++;
-      else if (g.outcome === "unknown") funnel.unknown++;
+      if (licence.conditions.length) funnel.place_conditions++;
+      if (g.outcome === "rejected") {
+        if (g.gate === "profession") funnel.profession++;
+        else if (g.gate === "level") funnel.level++;
+        else if (g.gate === "place") funnel.place++;
+        else if (g.gate === "nationality") funnel.nationality++;
+        else if (g.gate === "licence") funnel.licence++;
+        else funnel.other_eligibility++;
+      } else if (g.outcome === "unknown") funnel.unknown++;
       else { funnel.scored++; survivors.push({ o, g }); }
 
       const { error: upErr } = await admin.from("oe_matches").update({
@@ -177,6 +200,8 @@ Deno.serve(async (req) => {
         role_profession: g.role_profession, profession_relation: g.profession_relation,
         employer_tier: g.employer_tier, level_direction: g.level_direction,
         standing_gap: g.standing_gap, screened_at: new Date().toISOString(),
+        eligibility_outcome: licence.outcome, eligibility_fail: licence.fails,
+        eligibility_unknowns: licence.unknowns, eligibility_conditions: licence.conditions,
         ...(g.outcome === "survivor" ? {} : { presentation_line: null }),
       }).eq("user_id", userId).eq("opportunity_id", o.id);
       if (upErr) {
