@@ -202,6 +202,8 @@ Deno.serve(async (req) => {
         standing_gap: g.standing_gap, screened_at: new Date().toISOString(),
         eligibility_outcome: licence.outcome, eligibility_fail: licence.fails,
         eligibility_unknowns: licence.unknowns, eligibility_conditions: licence.conditions,
+        // The act lane is an intersection; a record he cannot hold leaves it.
+        ...(licence.outcome === "excluded" ? { lane_final: "write" } : {}),
         ...(g.outcome === "survivor" ? {} : { presentation_line: null }),
       }).eq("user_id", userId).eq("opportunity_id", o.id);
       if (upErr) {
