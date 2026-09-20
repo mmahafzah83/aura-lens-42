@@ -15,7 +15,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
 import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
-import { deriveIdentity, runGates, writingStanding, type MemberIdentity } from "../_shared/oeScreen.ts";
+import { deriveIdentity, runGates, writingStanding, type LadderRow, type MemberIdentity } from "../_shared/oeScreen.ts";
+import { loadLocationSensitivity, sensitivityOf } from "../_shared/oeKinds.ts";
 
 const FN = "oe-screen-member";
 const MODEL = "openai/gpt-6-astra";
