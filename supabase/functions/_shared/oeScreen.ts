@@ -278,7 +278,7 @@ const SECTOR_PATTERNS: Array<[string, RegExp]> = [
  * hand-written: the same function run against another member's snapshot yields
  * that member's professions, standing and sectors.
  */
-export function deriveIdentity(snapshot: any): MemberIdentity {
+export function deriveIdentity(snapshot: any, ladder: LadderRow[] = []): MemberIdentity {
   const experience: any[] = Array.isArray(snapshot?.experience) ? snapshot.experience : [];
   const education: any[] = Array.isArray(snapshot?.education) ? snapshot.education : [];
   const certifications: any[] = Array.isArray(snapshot?.certifications) ? snapshot.certifications : [];
@@ -286,7 +286,7 @@ export function deriveIdentity(snapshot: any): MemberIdentity {
   const positions: MemberPosition[] = experience.map((e) => {
     const title = String(e?.position ?? e?.title ?? "").trim();
     const company = String(e?.companyName ?? e?.company ?? "").trim();
-    const tier = employerTier(company);
+    const placed = employerTier(company, ladder);
     const grade = gradeOf(title);
     return {
       title,
@@ -299,10 +299,12 @@ export function deriveIdentity(snapshot: any): MemberIdentity {
       profession: classifyProfession(title),
       grade: grade?.rank ?? null,
       grade_label: grade?.label ?? null,
-      tier,
-      standing: grade ? +(grade.rank + TIER_BONUS[tier]).toFixed(2) : null,
+      tier: placed.tier,
+      tier_label: placed.label,
+      standing: grade ? +(grade.rank + placed.bonus).toFixed(2) : null,
     };
   }).filter((p) => p.title);
+
 
   const byProfession = new Map<Profession, string[]>();
   for (const p of positions) {
