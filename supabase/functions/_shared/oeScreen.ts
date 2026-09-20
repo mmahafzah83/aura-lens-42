@@ -113,34 +113,97 @@ const ADJACENT: Record<Profession, Profession[]> = {
   document_management: ["operating_model"],
 };
 
-// ── EMPLOYER TIER ──────────────────────────────────────────────────────────
-// A Director at a boutique is not a Senior Manager at EY. Comparing title
-// strings is precisely why a demotion is invisible.
+// ── EMPLOYER LADDER ────────────────────────────────────────────────────────
+// A Director at a boutique is not a Senior Manager at EY — and a Director at
+// Aramco is not a Director at a two-person consultancy either. The ladder is
+// a JUDGEMENT about employers, so it lives in data (oe_employer_ladder), one
+// row per employer pattern per country, editable without a deploy. Nothing
+// here is a hard-coded list of firms.
+//
+// Short forms such as SAR, SAB and NCA are seeded anchored to the WHOLE name
+// (^\s*sar\s*$), and every pattern is matched against an employer-name field
+// only — never against scope, requirements or salary prose.
 
 export type Tier = "tier_1" | "tier_2" | "tier_3" | "unknown";
+export type Band = "anchor" | "major" | "local";
+
+export type LadderRow = {
+  country: string;
+  band: Band;
+  pattern: string;
+  label_en: string;
+  standing_bonus: number | string | null;
+  active?: boolean | null;
+};
+
+export type Placement = {
+  tier: Tier;
+  band: Band | null;
+  label: string;
+  bonus: number;
+  matched: string | null;
+};
 
 export const TIER_LABEL: Record<Tier, string> = {
-  tier_1: "a Big 4 or top-tier strategy house",
-  tier_2: "a global systems integrator or major consultancy",
-  tier_3: "a boutique or in-house employer",
+  tier_1: "a national anchor or top-tier firm",
+  tier_2: "a major employer",
+  tier_3: "a local or in-house employer",
   unknown: "an employer we could not place",
 };
 
-const TIER_1 = /\b(mckinsey|bcg|boston consulting|bain (&|and) company|deloitte|pwc|pricewaterhouse|ernst\s*(&|and)\s*young|\bey\b|kpmg|strategy&|oliver wyman|kearney|roland berger|booz)\b/i;
-const TIER_2 = /\b(accenture|wipro|infosys|\btcs\b|tata consultancy|capgemini|\bibm\b|cognizant|\bdxc\b|atos|\bntt\b|devoteam|sopra|fujitsu|\bhcl\b|tech mahindra|globant|thoughtworks|slalom|publicis sapient|pa consulting|alvarez (&|and) marsal|\bgartner\b)\b/i;
+const BAND_TIER: Record<Band, Tier> = { anchor: "tier_1", major: "tier_2", local: "tier_3" };
+const BAND_ORDER: Band[] = ["anchor", "major", "local"];
+
 /** An intermediary does not disclose the employer, so the employer cannot be tiered. */
 const INTERMEDIARY = /michael page|page group|hays\b|robert half|robert walters|korn ferry|heidrick|egon zehnder|spencer stuart|recruit|talent search|headhunt/i;
 
-export function employerTier(name?: string | null): Tier {
+const RE_CACHE = new Map<string, RegExp | null>();
+const compiled = (pattern: string): RegExp | null => {
+  if (!RE_CACHE.has(pattern)) {
+    try { RE_CACHE.set(pattern, new RegExp(pattern, "i")); } catch { RE_CACHE.set(pattern, null); }
+  }
+  return RE_CACHE.get(pattern) ?? null;
+};
+
+const UNPLACED: Placement = { tier: "unknown", band: null, label: TIER_LABEL.unknown, bonus: 0, matched: null };
+const LOCAL: Placement = { tier: "tier_3", band: "local", label: TIER_LABEL.tier_3, bonus: 0, matched: null };
+
+/**
+ * Place an employer on the ladder. Rows for the record's country and the
+ * global rows ('XX') are both consulted, anchors before majors. Nothing
+ * matched means 'local' — never a guess, and never a code list.
+ */
+export function employerTier(
+  name: string | null | undefined,
+  ladder: LadderRow[],
+  country?: string | null,
+): Placement {
   const n = String(name ?? "").trim();
-  if (!n) return "unknown";
-  if (TIER_1.test(n)) return "tier_1";
-  if (TIER_2.test(n)) return "tier_2";
-  if (INTERMEDIARY.test(n)) return "unknown";
-  return "tier_3";
+  if (!n) return UNPLACED;
+  if (INTERMEDIARY.test(n)) return { ...UNPLACED, matched: "intermediary" };
+
+  const ctry = String(country ?? "").trim().toUpperCase();
+  const rows = (ladder ?? []).filter((r) =>
+    r.active !== false && (r.country === "XX" || !ctry || String(r.country).toUpperCase() === ctry));
+
+  for (const band of BAND_ORDER) {
+    for (const r of rows) {
+      if (r.band !== band) continue;
+      const re = compiled(r.pattern);
+      if (re && re.test(n)) {
+        return {
+          tier: BAND_TIER[band],
+          band,
+          label: r.label_en || TIER_LABEL[BAND_TIER[band]],
+          bonus: Number(r.standing_bonus ?? 0) || 0,
+          matched: r.pattern,
+        };
+      }
+    }
+  }
+  return LOCAL;
 }
 
-const TIER_BONUS: Record<Tier, number> = { tier_1: 1.5, tier_2: 0.5, tier_3: 0, unknown: 0 };
 
 // ── THE GRADE LADDER ───────────────────────────────────────────────────────
 // Within a tier. Ordered, most senior first, because every senior title also
