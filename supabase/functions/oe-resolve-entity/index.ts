@@ -40,7 +40,7 @@ const UA =
  * bottleneck. Callers may override per run, and the default is the value that
  * test settled on.
  */
-let TIMEOUT = 20_000;
+let TIMEOUT = 12_000;
 
 
 /** The usual doors, tried first because they answer most often. */
@@ -716,8 +716,8 @@ Deno.serve(async (req) => {
   const params = (policy?.params ?? {}) as Record<string, any>;
   const neverRead: string[] = params.never_read ?? [];
   const batch = Math.min(Number(body.batch ?? params.resolve_batch ?? 60), 200);
-  const concurrency = Math.min(Number(body.concurrency ?? params.resolve_concurrency ?? 4), 16);
-  TIMEOUT = Math.min(Math.max(Number(body.timeout_ms ?? params.resolve_timeout_ms ?? 20_000), 3_000), 30_000);
+  const concurrency = Math.min(Number(body.concurrency ?? params.resolve_concurrency ?? 6), 16);
+  TIMEOUT = Math.min(Math.max(Number(body.timeout_ms ?? params.resolve_timeout_ms ?? 12_000), 3_000), 30_000);
 
   let searchBudget = Number(body.search_budget ?? params.resolve_search_budget ?? 8);
   const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
