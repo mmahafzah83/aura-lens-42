@@ -217,23 +217,42 @@ export function screen(
 ): Screened {
   const fails: string[] = [];
   const unknowns: string[] = [];
+  const conditions: string[] = [];
   const done = (): Screened => {
     const outcome: Outcome = fails.length ? "excluded" : unknowns.length ? "unknown" : "eligible";
     // Unknown never excludes. Only a demonstrated exclusion closes a record.
-    return { pass: outcome !== "excluded", fails: [...new Set(fails)], outcome, unknowns: [...new Set(unknowns)] };
+    return {
+      pass: outcome !== "excluded",
+      fails: [...new Set(fails)],
+      outcome,
+      unknowns: [...new Set(unknowns)],
+      conditions: [...new Set(conditions)],
+    };
   };
   if (!eligibility) return done();
 
   const o = opportunity ?? {};
 
-  // 1. PLACE — where he can actually work. A place we cannot read is unknown.
+  // 1. PLACE — and place does not mean the same thing to every kind of record.
+  //
+  // A full-time executive seat is location-hard: the wrong city closes it. A
+  // speaking platform, a membership, a paper, a market signal are location-
+  // irrelevant. A board seat that meets quarterly, a tender, a teaching slot
+  // sit in between: the distance is a condition he can weigh, never a reason
+  // to hide the record from him. The sensitivity is read off the kind's own
+  // catalogue row, never guessed here.
+  const sensitivity = String(o.location_sensitivity ?? "hard").toLowerCase();
   const allowed = (eligibility.countries_allowed ?? []).map((c) => String(c).toUpperCase());
-  if (allowed.length) {
+  if (allowed.length && sensitivity !== "none") {
     const explicitlyRemote = o.remote === true || REMOTE_RE.test(String(o.location ?? o.title ?? ""));
     if (!(explicitlyRemote && eligibility.remote_ok === true)) {
       const country = countryOfPlace(o.location);
-      if (!country) unknowns.push("place_unknown");
-      else if (!allowed.includes(country)) fails.push("place");
+      if (!country) {
+        if (sensitivity === "hard") unknowns.push("place_unknown");
+      } else if (!allowed.includes(country)) {
+        if (sensitivity === "hard") fails.push("place");
+        else conditions.push(`place_distance: ${String(o.location ?? country)}`);
+      }
     }
   }
 
