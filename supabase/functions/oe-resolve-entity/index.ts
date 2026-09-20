@@ -723,7 +723,7 @@ Deno.serve(async (req) => {
   const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
 
   const counts: Record<string, any> = {
-    seen: 0, resolved: 0, no_ats: 0, no_careers: 0, failed: 0, invalid_seed: 0,
+    seen: 0, resolved: 0, no_ats: 0, no_careers: 0, failed: 0, invalid_seed: 0, deferred: 0,
     searched: 0, surfaces: 0, by_platform: {} as Record<string, number>,
     by_surface: {} as Record<string, number>,
     by_reason: {} as Record<string, number>,
