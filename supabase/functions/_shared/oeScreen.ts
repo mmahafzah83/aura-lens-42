@@ -348,7 +348,7 @@ export function deriveIdentity(snapshot: any, ladder: LadderRow[] = []): MemberI
     .filter((p) => (p.grade ?? 0) >= 5)
     .map((p) => ({
       position: `${p.title} at ${p.company}`,
-      evidence: `${p.grade_label ?? "position"} at ${TIER_LABEL[p.tier]}${periodOf(p) ? `, ${periodOf(p)}` : ""}`,
+      evidence: `${p.grade_label ?? "position"} at ${p.tier_label ?? TIER_LABEL[p.tier]}${periodOf(p) ? `, ${periodOf(p)}` : ""}`,
     }));
 
   return {
