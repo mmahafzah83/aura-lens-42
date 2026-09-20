@@ -623,16 +623,20 @@ Deno.serve(async (req) => {
     const stale = (unscreened ?? []).filter((m: any) => !inPool.has(String(m.opportunity_id)));
     if (stale.length) {
       const { data: staleOpps } = await admin.from("oe_opportunities")
-        .select("id, title, scope, sector, chair_type, seniority_band, level_band, location, remote, requirements, route_url, route_kind, route_dead, issuer_id, issuer:oe_issuers(domain)")
+        .select("id, kind, title, scope, sector, chair_type, seniority_band, level_band, location, remote, requirements, route_url, route_kind, route_dead, issuer_id, issuer:oe_issuers(domain)")
         .in("id", stale.map((m: any) => m.opportunity_id));
       for (const row of stale) {
         const o = (staleOpps ?? []).find((x: any) => String(x.id) === String(row.opportunity_id));
         if (!o) continue;
-        const withLevel = { ...o, level_band: levelOf(o) };
+        const withLevel = {
+          ...o, level_band: levelOf(o),
+          location_sensitivity: sensitivityOf(kindSensitivity, (o as any).kind),
+        };
         const s = screen(withLevel, eligibility, evidence);
         const reachable = laneFor(withLevel, s, (o as any).issuer?.domain ?? null) === "act";
         await admin.from("oe_matches").update({
           eligibility_outcome: s.outcome, eligibility_fail: s.fails, eligibility_unknowns: s.unknowns,
+          eligibility_conditions: s.conditions,
           lane_final: reachable && row.gate_passed === true && row.lane === "lane_open" ? "act" : "write",
         }).eq("user_id", userId).eq("opportunity_id", row.opportunity_id)
           .eq("rubric_version", row.rubric_version);
