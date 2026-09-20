@@ -44,7 +44,18 @@ export type Evidence = {
  *  eligible — including a stretch above his current title.
  */
 export type Outcome = "excluded" | "unknown" | "eligible";
-export type Screened = { pass: boolean; fails: string[]; outcome: Outcome; unknowns: string[] };
+export type Screened = {
+  pass: boolean;
+  fails: string[];
+  outcome: Outcome;
+  unknowns: string[];
+  /**
+   * Things the member should see and decide on, which do NOT close the record.
+   * A conference panel in Dubai is not a reason to hide the panel from a man
+   * in Riyadh; it is a distance he can weigh.
+   */
+  conditions: string[];
+};
 
 
 /** The ladder. Order is the whole point; an index is a level. */
