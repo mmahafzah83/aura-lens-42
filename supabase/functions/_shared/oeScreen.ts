@@ -421,68 +421,132 @@ export function professionGate(identity: MemberIdentity, opportunity: any) {
   };
 }
 
-/** GATE 3 — level direction, adjusted for employer tier. */
-export function levelGate(identity: MemberIdentity, opportunity: any, routeIsSpecific: boolean) {
+/** GATE 3 — level direction, adjusted for where the employer sits on the ladder. */
+export function levelGate(
+  identity: MemberIdentity,
+  opportunity: any,
+  routeIsSpecific: boolean,
+  ladder: LadderRow[] = [],
+) {
   const mine = identity.highest_standing;
-  const tier = employerTier(opportunity?.issuer_raw);
+  const placed = employerTier(opportunity?.issuer_raw, ladder, opportunity?.country ?? null);
+  const tier = placed.tier;
   const grade = gradeOf(opportunity?.title) ?? gradeOf(opportunity?.scope);
 
   if (mine.standing === null || !grade) {
     return {
-      direction: "unknown" as const, gap: null, tier, sentence: null,
+      direction: "unknown" as const, gap: null, tier, placed, sentence: null,
       reason: !grade ? "role_grade_unreadable" : "member_standing_unreadable",
     };
   }
   if (tier === "unknown") {
     return {
-      direction: "unknown" as const, gap: null, tier,
+      direction: "unknown" as const, gap: null, tier, placed,
       sentence: null, reason: "employer_tier_unknown",
     };
   }
 
-  const standing = +(grade.rank + TIER_BONUS[tier]).toFixed(2);
+  const standing = +(grade.rank + placed.bonus).toFixed(2);
   const gap = +(standing - mine.standing).toFixed(2);
   const held = `you held ${mine.title} at ${mine.company}${mine.period ? ` from ${mine.period}` : ""}`;
   const thisOne = `this is ${opportunity?.title} at ${opportunity?.issuer_raw ?? "an employer at the same tier"}`;
 
   if (gap <= -1) {
     return {
-      direction: "below" as const, gap, tier, reason: null,
+      direction: "below" as const, gap, tier, placed, reason: null,
       sentence: `Below your standing — ${held}; ${thisOne}.`,
     };
   }
   if (gap < 1) {
-    if (routeIsSpecific) return { direction: "lateral" as const, gap, tier, sentence: null, reason: null };
+    if (routeIsSpecific) return { direction: "lateral" as const, gap, tier, placed, sentence: null, reason: null };
     return {
-      direction: "lateral" as const, gap, tier, reason: null,
+      direction: "lateral" as const, gap, tier, placed, reason: null,
       sentence: `Level with what you already hold — ${held} — and it opens no route your current seat does not already give you.`,
     };
   }
-  if (gap < 2) return { direction: "one_above" as const, gap, tier, sentence: null, reason: null };
-  return { direction: "two_plus" as const, gap, tier, sentence: null, reason: null };
+  if (gap < 2) return { direction: "one_above" as const, gap, tier, placed, sentence: null, reason: null };
+  return { direction: "two_plus" as const, gap, tier, placed, sentence: null, reason: null };
+}
+
+// ── GATE 1, NAMED HONESTLY ─────────────────────────────────────────────────
+// The first gate is not "licence". It is whatever the eligibility screen
+// actually found. A man told he was "ruled out on licence" for a seat in
+// Singapore has been told something untrue.
+
+export type GateOneCause =
+  | "place" | "nationality" | "licence" | "certification" | "clearance" | "language" | "other";
+
+export function causeOf(fail: string): GateOneCause {
+  const f = String(fail ?? "").toLowerCase();
+  if (f.startsWith("place")) return "place";
+  if (f.includes("nationality") || f.includes("citizen")) return "nationality";
+  if (f.includes("licen") || f.includes("registration") || f.includes("bar admission")) return "licence";
+  if (f.includes("certif") || f.includes("accredit") || f.includes("chartered")) return "certification";
+  if (f.includes("clearance") || f.includes("vetting") || f.includes("security_check")) return "clearance";
+  if (f.includes("language") || f.includes("arabic") || f.includes("english")) return "language";
+  return "other";
+}
+
+export type MemberPlace = { where?: string | null; nationality?: string | null };
+
+/** The sentence a person would write, naming the actual cause. */
+export function gateOneSentence(cause: GateOneCause, fail: string, opportunity: any, member: MemberPlace): string {
+  const seat = String(opportunity?.title ?? "this seat");
+  const where = String(opportunity?.location ?? "").trim();
+  const mine = String(member?.where ?? "").trim();
+  switch (cause) {
+    case "place":
+      return where && mine
+        ? `Wrong place — ${seat} is in ${where}, and you work from ${mine}. A full-time seat there is not one you can hold from here.`
+        : `Wrong place — this seat sits outside the countries you work in.`;
+    case "nationality": {
+      const phrase = fail.split(":").slice(1).join(":").trim();
+      const has = String(member?.nationality ?? "").trim();
+      return phrase
+        ? `Nationality — the record asks for "${phrase}"${has ? `, and your record states ${has}` : ""}.`
+        : `Nationality — the record states a citizenship requirement you do not meet.`;
+    }
+    case "licence":
+      return `Licence — this seat requires a licence to practise that your record does not show.`;
+    case "certification":
+      return `Certification — this seat requires a certification your record does not show.`;
+    case "clearance":
+      return `Clearance — this seat requires a security clearance your record does not show.`;
+    case "language":
+      return `Language — this seat states a language requirement your record does not show.`;
+    default:
+      return `Ruled out — the record states ${String(fail).replace(/_/g, " ")}, which your record cannot satisfy.`;
+  }
 }
 
 /**
- * The three gates in order. Gate 1 is the licence screen already built in
- * oeEligibility; its verdict is passed in rather than recomputed here.
+ * The three gates in order. Gate 1 is the eligibility screen already built in
+ * oeEligibility; its verdict is passed in rather than recomputed here — but
+ * its NAME is taken from what it found, never assumed.
  */
 export function runGates(
   identity: MemberIdentity,
   opportunity: any,
   licence: { outcome: "excluded" | "unknown" | "eligible"; fails: string[]; unknowns: string[] },
   routeIsSpecific: boolean,
+  ctx: { ladder?: LadderRow[]; member?: MemberPlace } = {},
 ): GateResult {
+  const ladder = ctx.ladder ?? [];
   const base: GateResult = {
-    gate: "licence", outcome: "survivor", sentence: null, role_profession: null,
+    gate: "scored", outcome: "survivor", sentence: null, role_profession: null,
     profession_relation: null, employer_tier: null, level_direction: null,
     standing_gap: null, bridge: null, stretch: false,
   };
 
   if (licence.outcome === "excluded") {
-    const stated = licence.fails.find((f) => f.startsWith("requirement_nationality")) ?? licence.fails[0] ?? "a stated requirement";
+    // Nationality is named ahead of the rest only because it is the one a
+    // member most often disputes; otherwise the first stated failure stands.
+    const fail = licence.fails.find((f) => f.toLowerCase().includes("nationality"))
+      ?? licence.fails[0] ?? "a stated requirement";
+    const cause = causeOf(fail);
     return {
-      ...base, gate: "licence", outcome: "rejected",
-      sentence: `Ruled out on licence — this record states ${stated.replace(/_/g, " ")}, which your record cannot satisfy.`,
+      ...base, gate: cause, outcome: "rejected",
+      sentence: gateOneSentence(cause, fail, opportunity, ctx.member ?? {}),
     };
   }
 
@@ -494,7 +558,7 @@ export function runGates(
     return { ...withProf, gate: "profession", outcome: "rejected", sentence: prof.sentence };
   }
 
-  const lvl = levelGate(identity, opportunity, routeIsSpecific);
+  const lvl = levelGate(identity, opportunity, routeIsSpecific, ladder);
   const withLevel: GateResult = {
     ...withProf, employer_tier: lvl.tier, level_direction: lvl.direction, standing_gap: lvl.gap,
   };
