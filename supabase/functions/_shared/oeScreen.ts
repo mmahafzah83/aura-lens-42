@@ -239,6 +239,7 @@ export type MemberPosition = {
   grade: number | null;
   grade_label: string | null;
   tier: Tier;
+  tier_label: string;
   standing: number | null;
 };
 
