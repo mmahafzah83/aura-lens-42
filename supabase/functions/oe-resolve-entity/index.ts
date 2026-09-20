@@ -34,7 +34,14 @@ const corsHeaders = {
 const FN = "oe-resolve-entity";
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
-const TIMEOUT = 9_000;
+/**
+ * How long we wait for a host. 9 seconds wrote off 200 Saudi sites as dead;
+ * the run that settled this step showed the fetcher, not the hosts, was the
+ * bottleneck. Callers may override per run, and the default is the value that
+ * test settled on.
+ */
+let TIMEOUT = 12_000;
+
 
 /** The usual doors, tried first because they answer most often. */
 const CAREERS_PATHS = [
@@ -220,9 +227,43 @@ function textLength(html: string): number {
 // token might unlock. Candidates are called, never assumed. Case is preserved
 // wherever the platform is case-sensitive.
 
+/**
+ * THE TOKEN LAW.
+ *
+ * A platform token may only be read off a hostname that belongs to that
+ * platform's own domain. "careers", "career", "app", "www" are not tenants —
+ * they are the first label of the employer's own careers host, captured
+ * because the old rules were allowed to match any hostname on the page. Where
+ * the guard rejects a capture we keep the recognition, write no token, and say
+ * `token_not_found`. We never fall back to a guess.
+ */
+const RESERVED_TOKENS = new Set([
+  "www", "app", "apps", "api", "careers", "career", "jobs", "job", "static",
+  "cdn", "assets", "media", "images", "en", "ar", "secure", "portal", "login",
+  "web", "webs", "main", "home",
+]);
+
+function cleanToken(raw: string | null | undefined): string | null {
+  const t = (raw ?? "").trim();
+  if (!t || RESERVED_TOKENS.has(t.toLowerCase())) return null;
+  return t;
+}
+
+/** The tenant label, but only when the host really belongs to the platform. */
+function tenantOf(host: string | null | undefined, domains: string[]): string | null {
+  const h = (host ?? "").toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
+  if (!h) return null;
+  const domain = domains.find((d) => h === d || h.endsWith(`.${d}`));
+  if (!domain) return null;
+  const labels = h.slice(0, h.length - domain.length).replace(/\.$/, "").split(".").filter(Boolean);
+  if (!labels.length) return null;
+  return cleanToken(labels[labels.length - 1]);
+}
+
 type Print = {
   platform: string;
-  token: string;
+  /** Null where the guard refused the capture: recognition without a tenant. */
+  token: string | null;
   /** Shapes to try, in order. Empty means the platform has no public JSON we know. */
   candidates: string[];
   /**
@@ -233,6 +274,7 @@ type Print = {
   /** Endpoint proven before this pass and still trusted (SuccessFactors search). */
   provenEndpoint?: string;
 };
+
 
 function fingerprint(url: string, html: string): Print | null {
   const hay = `${url}\n${html.slice(0, 250_000)}`;
@@ -317,80 +359,109 @@ function fingerprint(url: string, html: string): Print | null {
     };
   }
 
-  // ── Elevatus. Absent until now, and the system the Saudi health clusters run.
-  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.elevatus\.io/i);
-  if (m && !/^(www|webs|app)$/i.test(m[1])) {
+  // ── Elevatus. The tenant is a label on elevatus.io, or the first path
+  // segment under webs.elevatus.io. Never the employer's own subdomain.
+  const elevatusHost = hay.match(/https?:\/\/([a-z0-9.-]+\.elevatus\.io)/i)?.[1] ?? null;
+  const elevatusPath = cleanToken(hay.match(/webs\.elevatus\.io\/([a-z0-9-]{2,60})/i)?.[1]);
+  if (elevatusHost || /\bElevatusApp\b|\belevatus\b/i.test(hay)) {
+    const t = elevatusPath ?? tenantOf(elevatusHost, ["elevatus.io"]);
     return {
-      platform: "elevatus", token: m[1],
-      candidates: [
-        `https://${m[1]}.elevatus.io/api/v1/jobs`,
-        `https://webs.elevatus.io/api/v1/companies/${m[1]}/jobs`,
-      ],
-      pageUrl: `https://${m[1]}.elevatus.io/`,
-    };
-  }
-  if (/webs\.elevatus\.io|\bElevatusApp\b|\belevatus\b/i.test(hay)) {
-    const tenant = hay.match(/webs\.elevatus\.io\/([a-z0-9-]{2,60})/i)?.[1]
-      ?? hostOf(url).split(".")[0];
-    return {
-      platform: "elevatus", token: tenant || hostOf(url),
-      candidates: [`https://webs.elevatus.io/api/v1/companies/${tenant}/jobs`],
-      pageUrl: url,
+      platform: "elevatus", token: t,
+      candidates: t
+        ? [
+          `https://${t}.elevatus.io/api/v1/jobs`,
+          `https://webs.elevatus.io/api/v1/companies/${t}/jobs`,
+        ]
+        : [],
+      pageUrl: t ? `https://${t}.elevatus.io/` : url,
     };
   }
 
-  m = hay.match(/careers-([a-z0-9-]{2,60})\.icims\.com/i)
-    ?? hay.match(/https?:\/\/([a-z0-9-]{2,60})\.icims\.com\/jobs/i);
+  m = hay.match(/https?:\/\/(careers-[a-z0-9-]{2,60}\.icims\.com|[a-z0-9-]{2,60}\.icims\.com)\/jobs/i)
+    ?? hay.match(/https?:\/\/(careers-[a-z0-9-]{2,60}\.icims\.com)/i);
   if (m) {
-    return { platform: "icims", token: m[1], candidates: [], pageUrl: `https://careers-${m[1]}.icims.com/jobs/search` };
+    const t = tenantOf(m[1], ["icims.com"])?.replace(/^careers-/, "") ?? null;
+    return { platform: "icims", token: t, candidates: [], pageUrl: t ? `https://careers-${t}.icims.com/jobs/search` : url };
   }
 
+  // Phenom is the exception to the tenant guard: a Phenom career site runs on
+  // the employer's own host, so careers.bcg.com is the correct token. What was
+  // wrong before was the probe shape, not the token — so try every known shape
+  // on that host and record which one answered.
   if (/phenompeople|ph-widget|phApp\.ddo/i.test(hay)) {
     const host = hostOf(url);
     return {
-      platform: "phenom", token: host,
+      platform: "phenom", token: host || null,
       candidates: host
-        ? [`https://${host}/widgets?feature=joblist&isSliderEnable=false&pageName=search-results&size=10&from=0`]
+        ? [
+          `https://${host}/api/apply/v2/jobs`,
+          `https://${host}/widgets?feature=joblist&isSliderEnable=false&pageName=search-results&size=10`,
+          `https://${host}/api/jobs`,
+          `https://${host}/search-jobs/results?ActiveFacetID=0`,
+        ]
         : [],
       pageUrl: url,
     };
   }
 
-  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.avature\.net/i);
-  if (m) return { platform: "avature", token: m[1], candidates: [], pageUrl: `https://${m[1]}.avature.net/careers` };
-
-  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.darwinbox\.(in|com)/i);
-  if (m) return { platform: "darwinbox", token: m[1], candidates: [], pageUrl: `https://${m[1]}.darwinbox.${m[2]}/ms/candidate/careers` };
-
-  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.teamtailor\.com/i);
-  if (m) return { platform: "teamtailor", token: m[1], candidates: [], pageUrl: `https://${m[1]}.teamtailor.com/jobs` };
-
-  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.bamboohr\.com\/(careers|jobs)/i);
+  m = hay.match(/https?:\/\/([a-z0-9.-]+\.avature\.net)/i);
   if (m) {
+    const t = tenantOf(m[1], ["avature.net"]);
+    return { platform: "avature", token: t, candidates: [], pageUrl: t ? `https://${t}.avature.net/careers` : url };
+  }
+
+  m = hay.match(/https?:\/\/([a-z0-9.-]+\.darwinbox\.(?:in|com))/i);
+  if (m) {
+    const t = tenantOf(m[1], ["darwinbox.in", "darwinbox.com"]);
+    const tld = /darwinbox\.in/i.test(m[1]) ? "in" : "com";
+    return { platform: "darwinbox", token: t, candidates: [], pageUrl: t ? `https://${t}.darwinbox.${tld}/ms/candidate/careers` : url };
+  }
+
+  m = hay.match(/https?:\/\/([a-z0-9.-]+\.teamtailor\.com)/i);
+  if (m) {
+    const t = tenantOf(m[1], ["teamtailor.com"]);
+    return { platform: "teamtailor", token: t, candidates: [], pageUrl: t ? `https://${t}.teamtailor.com/jobs` : url };
+  }
+
+  m = hay.match(/https?:\/\/([a-z0-9.-]+\.bamboohr\.com)\/(?:careers|jobs)/i);
+  if (m) {
+    const t = tenantOf(m[1], ["bamboohr.com"]);
     return {
-      platform: "bamboohr", token: m[1],
-      candidates: [`https://${m[1]}.bamboohr.com/careers/list`],
-      pageUrl: `https://${m[1]}.bamboohr.com/careers`,
+      platform: "bamboohr", token: t,
+      candidates: t ? [`https://${t}.bamboohr.com/careers/list`] : [],
+      pageUrl: t ? `https://${t}.bamboohr.com/careers` : url,
     };
   }
 
-  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.zohorecruit\.(com|eu)/i);
-  if (m) return { platform: "zohorecruit", token: m[1], candidates: [], pageUrl: `https://${m[1]}.zohorecruit.${m[2]}/jobs/Careers` };
+  m = hay.match(/https?:\/\/([a-z0-9.-]+\.zohorecruit\.(?:com|eu))/i);
+  if (m) {
+    const t = tenantOf(m[1], ["zohorecruit.com", "zohorecruit.eu"]);
+    const tld = /zohorecruit\.eu/i.test(m[1]) ? "eu" : "com";
+    return { platform: "zohorecruit", token: t, candidates: [], pageUrl: t ? `https://${t}.zohorecruit.${tld}/jobs/Careers` : url };
+  }
 
   m = hay.match(/jobs\.jobvite\.com\/([a-z0-9-]{2,60})/i);
-  if (m) return { platform: "jobvite", token: m[1], candidates: [], pageUrl: `https://jobs.jobvite.com/${m[1]}` };
-
-  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.eightfold\.ai/i);
   if (m) {
+    const t = cleanToken(m[1]);
+    return { platform: "jobvite", token: t, candidates: [], pageUrl: t ? `https://jobs.jobvite.com/${t}` : url };
+  }
+
+  m = hay.match(/https?:\/\/([a-z0-9.-]+\.eightfold\.ai)/i);
+  if (m) {
+    const t = tenantOf(m[1], ["eightfold.ai"]);
     return {
-      platform: "eightfold", token: m[1],
-      candidates: [`https://${m[1]}.eightfold.ai/api/apply/v2/jobs?domain=${m[1]}.com&start=0&num=10`],
-      pageUrl: `https://${m[1]}.eightfold.ai/careers`,
+      platform: "eightfold", token: t,
+      candidates: t ? [`https://${t}.eightfold.ai/api/apply/v2/jobs?domain=${t}.com&start=0&num=10`] : [],
+      pageUrl: t ? `https://${t}.eightfold.ai/careers` : url,
     };
   }
 
-  m = hay.match(/https?:\/\/([a-z0-9-]{2,60})\.zenhr\.com/i);
-  if (m) return { platform: "zenhr", token: m[1], candidates: [], pageUrl: `https://${m[1]}.zenhr.com/jobs` };
+  m = hay.match(/https?:\/\/([a-z0-9.-]+\.zenhr\.com)/i);
+  if (m) {
+    const t = tenantOf(m[1], ["zenhr.com"]);
+    return { platform: "zenhr", token: t, candidates: [], pageUrl: t ? `https://${t}.zenhr.com/jobs` : url };
+  }
+
 
   // The national platform. Not an employer system — but knowing an employer
   // publishes there, in one readable place, is a finding and not a failure.
@@ -645,12 +716,14 @@ Deno.serve(async (req) => {
   const params = (policy?.params ?? {}) as Record<string, any>;
   const neverRead: string[] = params.never_read ?? [];
   const batch = Math.min(Number(body.batch ?? params.resolve_batch ?? 60), 200);
-  const concurrency = Math.min(Number(body.concurrency ?? params.resolve_concurrency ?? 8), 16);
+  const concurrency = Math.min(Number(body.concurrency ?? params.resolve_concurrency ?? 6), 16);
+  TIMEOUT = Math.min(Math.max(Number(body.timeout_ms ?? params.resolve_timeout_ms ?? 12_000), 3_000), 30_000);
+
   let searchBudget = Number(body.search_budget ?? params.resolve_search_budget ?? 8);
   const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY") || "";
 
   const counts: Record<string, any> = {
-    seen: 0, resolved: 0, no_ats: 0, no_careers: 0, failed: 0, invalid_seed: 0,
+    seen: 0, resolved: 0, no_ats: 0, no_careers: 0, failed: 0, invalid_seed: 0, deferred: 0,
     searched: 0, surfaces: 0, by_platform: {} as Record<string, number>,
     by_surface: {} as Record<string, number>,
     by_reason: {} as Record<string, number>,
@@ -676,7 +749,13 @@ Deno.serve(async (req) => {
       .order("last_resolved_at", { ascending: true, nullsFirst: true })
       .order("domain", { ascending: true, nullsFirst: false })
       .limit(batch);
+    // Re-run one named failure only — the way a finding is tested rather than
+    // a whole status swept.
+    if (Array.isArray(body.recheck_error) && body.recheck_error.length) {
+      q = q.in("resolve_error", body.recheck_error);
+    }
     if (body.with_domain_only === true) q = q.not("domain", "is", null);
+
     if (typeof body.seed_source === "string") q = q.eq("seed_source", body.seed_source);
 
     if (body.entity_id) q = admin.from("oe_entities")
@@ -815,13 +894,23 @@ Deno.serve(async (req) => {
 
         // 1. the domain. Never guessed.
         let domain: string | null = e.domain ?? null;
+        let searchRan = false;
         if (!domain && firecrawlKey && searchBudget > 0) {
           searchBudget--;
+          searchRan = true;
           counts.searched++;
           domain = await searchDomain(firecrawlKey, e.name);
           if (domain) update.domain = domain;
         }
         if (!domain) {
+          // A run that could not afford the look-up has found nothing out. It
+          // stays in the queue for the next run rather than being written off.
+          if (firecrawlKey && !searchRan) {
+            counts.deferred++;
+            bump(counts.by_reason, "search_budget_spent");
+            detail.push({ name: e.name, result: "deferred", why: "search budget spent" });
+            return;
+          }
           counts.failed++;
           bump(counts.by_reason, "no_domain");
           await admin.from("oe_entities").update({
@@ -832,6 +921,7 @@ Deno.serve(async (req) => {
           detail.push({ name: e.name, result: "failed", why: "no domain" });
           return;
         }
+
         if (isPlatformHost(domain)) {
           counts.invalid_seed++;
           bump(counts.by_reason, INVALID_SEED_REASON);
@@ -1039,8 +1129,11 @@ Deno.serve(async (req) => {
           ...update, resolve_status: "resolved",
           // Recognition without a verified endpoint is worth having, and is
           // said out loud rather than dressed up as a working feed.
-          resolve_error: verifiedEndpoint ? null : "api_unverified",
+          resolve_error: verifiedEndpoint
+            ? null
+            : (print.token === null ? "token_not_found" : "api_unverified"),
           ats_platform: print.platform, ats_token: print.token,
+
           ats_endpoint: verifiedEndpoint,
           resolve_detail: { ...detailBlob, platform: print.platform, endpoint_verified: !!verifiedEndpoint },
         }).eq("id", e.id);
