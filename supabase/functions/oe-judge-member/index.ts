@@ -578,7 +578,10 @@ Deno.serve(async (req) => {
     const writePool: any[] = [];
     for (const o of filtered) {
       const level = levelOf(o);
-      const withLevel = { ...o, level_band: level };
+      const withLevel = {
+        ...o, level_band: level,
+        location_sensitivity: sensitivityOf(kindSensitivity, (o as any).kind),
+      };
       const s = screen(withLevel, eligibility, evidence);
       const issuerDomain = (o as any).issuer?.domain ?? null;
       const reachable = laneFor(withLevel, s, issuerDomain) === "act";
@@ -594,6 +597,7 @@ Deno.serve(async (req) => {
         user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
         lane_final: laneFinal, eligibility_fail: s.fails,
         eligibility_outcome: s.outcome, eligibility_unknowns: s.unknowns,
+        eligibility_conditions: s.conditions,
       }, { onConflict: "user_id,opportunity_id,rubric_version" });
 
       if (laneErr) {
