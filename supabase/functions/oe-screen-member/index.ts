@@ -21,6 +21,14 @@ import { loadLocationSensitivity, sensitivityOf } from "../_shared/oeKinds.ts";
 const FN = "oe-screen-member";
 const MODEL = "openai/gpt-6-astra";
 
+/** Only so a rejection reads like a person wrote it: "you work from Saudi Arabia". */
+const COUNTRY_NAME: Record<string, string> = {
+  SA: "Saudi Arabia", AE: "the United Arab Emirates", QA: "Qatar", KW: "Kuwait",
+  BH: "Bahrain", OM: "Oman", JO: "Jordan", EG: "Egypt", LB: "Lebanon", IQ: "Iraq",
+  GB: "the United Kingdom", US: "the United States", FR: "France", DE: "Germany",
+  CH: "Switzerland", SG: "Singapore", IN: "India", PK: "Pakistan", TR: "Türkiye",
+};
+
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
