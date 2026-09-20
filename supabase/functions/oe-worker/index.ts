@@ -16,6 +16,8 @@ const JOB_ROUTES: Array<{ job_type: string; fn: string }> = [
   { job_type: "oe_fetch_feed", fn: "oe-fetch-feed" },
   { job_type: "oe_read_candidate", fn: "oe-fetch-feed" },
   { job_type: "oe_judge_member", fn: "oe-judge-member" },
+  // Screening runs after judging: it narrows match rows the judge has created.
+  { job_type: "oe_screen_member", fn: "oe-screen-member" },
   { job_type: "oe_resolve_entity", fn: "oe-resolve-entity" },
   { job_type: "oe_harvest_ats", fn: "oe-harvest-ats" },
 ];
