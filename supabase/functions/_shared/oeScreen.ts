@@ -373,7 +373,9 @@ export function deriveIdentity(snapshot: any, ladder: LadderRow[] = []): MemberI
 // ── THE GATES ──────────────────────────────────────────────────────────────
 
 export type GateResult = {
-  gate: "licence" | "profession" | "level" | "presentation" | "scored";
+  gate:
+    | "place" | "nationality" | "licence" | "certification" | "clearance" | "language" | "other"
+    | "profession" | "level" | "presentation" | "scored";
   outcome: "rejected" | "unknown" | "survivor";
   sentence: string | null;
   role_profession: Profession | null;
