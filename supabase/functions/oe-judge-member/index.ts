@@ -15,6 +15,7 @@ import { logEfError } from "../_shared/observe.ts";
 import { loadVocab } from "../_shared/oeVocab.ts";
 import { OE_REGISTER_FOR_PROMPT, registerFault } from "../_shared/oeRegister.ts";
 import { laneFor, levelOf, screen, type Eligibility } from "../_shared/oeEligibility.ts";
+import { loadLocationSensitivity, sensitivityOf } from "../_shared/oeKinds.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
