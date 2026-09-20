@@ -111,6 +111,15 @@ Deno.serve(async (req) => {
   if (!userId) return json({ error: "user_id required" }, 400);
 
   try {
+    // ── the employer ladder, read from data, never from a list in code ───
+    const { data: ladderRows, error: ladderError } = await admin
+      .from("oe_employer_ladder")
+      .select("country, band, pattern, label_en, standing_bonus, active")
+      .eq("active", true);
+    if (ladderError) throw new Error(`employer ladder: ${ladderError.message}`);
+    const ladder = (ladderRows ?? []) as LadderRow[];
+    const sensitivity = await loadLocationSensitivity(admin);
+
     // ── the member, derived from his own snapshot ────────────────────────
     const { data: snap } = await admin
       .from("linkedin_profile_snapshots")
@@ -118,7 +127,7 @@ Deno.serve(async (req) => {
       .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(1).maybeSingle();
     if (!snap) throw new Error("no profile snapshot — nothing to screen against");
 
-    const identity: MemberIdentity = deriveIdentity(snap);
+    const identity: MemberIdentity = deriveIdentity(snap, ladder);
     if (!identity.positions.length) throw new Error("profile snapshot holds no positions");
 
     await admin.from("oe_member_identity").upsert({
