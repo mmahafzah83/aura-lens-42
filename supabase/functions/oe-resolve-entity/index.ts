@@ -894,13 +894,23 @@ Deno.serve(async (req) => {
 
         // 1. the domain. Never guessed.
         let domain: string | null = e.domain ?? null;
+        let searchRan = false;
         if (!domain && firecrawlKey && searchBudget > 0) {
           searchBudget--;
+          searchRan = true;
           counts.searched++;
           domain = await searchDomain(firecrawlKey, e.name);
           if (domain) update.domain = domain;
         }
         if (!domain) {
+          // A run that could not afford the look-up has found nothing out. It
+          // stays in the queue for the next run rather than being written off.
+          if (firecrawlKey && !searchRan) {
+            counts.deferred++;
+            bump(counts.by_reason, "search_budget_spent");
+            detail.push({ name: e.name, result: "deferred", why: "search budget spent" });
+            return;
+          }
           counts.failed++;
           bump(counts.by_reason, "no_domain");
           await admin.from("oe_entities").update({
@@ -911,6 +921,7 @@ Deno.serve(async (req) => {
           detail.push({ name: e.name, result: "failed", why: "no domain" });
           return;
         }
+
         if (isPlatformHost(domain)) {
           counts.invalid_seed++;
           bump(counts.by_reason, INVALID_SEED_REASON);
