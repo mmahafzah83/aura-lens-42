@@ -1,0 +1,2 @@
+ALTER TABLE public.oe_entities DROP CONSTRAINT oe_entities_entity_kind_check;
+ALTER TABLE public.oe_entities ADD CONSTRAINT oe_entities_entity_kind_check CHECK (entity_kind = ANY (ARRAY['listed','private','government','government_affiliate','giga_project','university','regulator','ngo','other','media','consultancy','association','platform','event_organiser']));
