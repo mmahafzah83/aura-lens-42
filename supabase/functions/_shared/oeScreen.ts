@@ -113,34 +113,97 @@ const ADJACENT: Record<Profession, Profession[]> = {
   document_management: ["operating_model"],
 };
 
-// ── EMPLOYER TIER ──────────────────────────────────────────────────────────
-// A Director at a boutique is not a Senior Manager at EY. Comparing title
-// strings is precisely why a demotion is invisible.
+// ── EMPLOYER LADDER ────────────────────────────────────────────────────────
+// A Director at a boutique is not a Senior Manager at EY — and a Director at
+// Aramco is not a Director at a two-person consultancy either. The ladder is
+// a JUDGEMENT about employers, so it lives in data (oe_employer_ladder), one
+// row per employer pattern per country, editable without a deploy. Nothing
+// here is a hard-coded list of firms.
+//
+// Short forms such as SAR, SAB and NCA are seeded anchored to the WHOLE name
+// (^\s*sar\s*$), and every pattern is matched against an employer-name field
+// only — never against scope, requirements or salary prose.
 
 export type Tier = "tier_1" | "tier_2" | "tier_3" | "unknown";
+export type Band = "anchor" | "major" | "local";
+
+export type LadderRow = {
+  country: string;
+  band: Band;
+  pattern: string;
+  label_en: string;
+  standing_bonus: number | string | null;
+  active?: boolean | null;
+};
+
+export type Placement = {
+  tier: Tier;
+  band: Band | null;
+  label: string;
+  bonus: number;
+  matched: string | null;
+};
 
 export const TIER_LABEL: Record<Tier, string> = {
-  tier_1: "a Big 4 or top-tier strategy house",
-  tier_2: "a global systems integrator or major consultancy",
-  tier_3: "a boutique or in-house employer",
+  tier_1: "a national anchor or top-tier firm",
+  tier_2: "a major employer",
+  tier_3: "a local or in-house employer",
   unknown: "an employer we could not place",
 };
 
-const TIER_1 = /\b(mckinsey|bcg|boston consulting|bain (&|and) company|deloitte|pwc|pricewaterhouse|ernst\s*(&|and)\s*young|\bey\b|kpmg|strategy&|oliver wyman|kearney|roland berger|booz)\b/i;
-const TIER_2 = /\b(accenture|wipro|infosys|\btcs\b|tata consultancy|capgemini|\bibm\b|cognizant|\bdxc\b|atos|\bntt\b|devoteam|sopra|fujitsu|\bhcl\b|tech mahindra|globant|thoughtworks|slalom|publicis sapient|pa consulting|alvarez (&|and) marsal|\bgartner\b)\b/i;
+const BAND_TIER: Record<Band, Tier> = { anchor: "tier_1", major: "tier_2", local: "tier_3" };
+const BAND_ORDER: Band[] = ["anchor", "major", "local"];
+
 /** An intermediary does not disclose the employer, so the employer cannot be tiered. */
 const INTERMEDIARY = /michael page|page group|hays\b|robert half|robert walters|korn ferry|heidrick|egon zehnder|spencer stuart|recruit|talent search|headhunt/i;
 
-export function employerTier(name?: string | null): Tier {
+const RE_CACHE = new Map<string, RegExp | null>();
+const compiled = (pattern: string): RegExp | null => {
+  if (!RE_CACHE.has(pattern)) {
+    try { RE_CACHE.set(pattern, new RegExp(pattern, "i")); } catch { RE_CACHE.set(pattern, null); }
+  }
+  return RE_CACHE.get(pattern) ?? null;
+};
+
+const UNPLACED: Placement = { tier: "unknown", band: null, label: TIER_LABEL.unknown, bonus: 0, matched: null };
+const LOCAL: Placement = { tier: "tier_3", band: "local", label: TIER_LABEL.tier_3, bonus: 0, matched: null };
+
+/**
+ * Place an employer on the ladder. Rows for the record's country and the
+ * global rows ('XX') are both consulted, anchors before majors. Nothing
+ * matched means 'local' — never a guess, and never a code list.
+ */
+export function employerTier(
+  name: string | null | undefined,
+  ladder: LadderRow[],
+  country?: string | null,
+): Placement {
   const n = String(name ?? "").trim();
-  if (!n) return "unknown";
-  if (TIER_1.test(n)) return "tier_1";
-  if (TIER_2.test(n)) return "tier_2";
-  if (INTERMEDIARY.test(n)) return "unknown";
-  return "tier_3";
+  if (!n) return UNPLACED;
+  if (INTERMEDIARY.test(n)) return { ...UNPLACED, matched: "intermediary" };
+
+  const ctry = String(country ?? "").trim().toUpperCase();
+  const rows = (ladder ?? []).filter((r) =>
+    r.active !== false && (r.country === "XX" || !ctry || String(r.country).toUpperCase() === ctry));
+
+  for (const band of BAND_ORDER) {
+    for (const r of rows) {
+      if (r.band !== band) continue;
+      const re = compiled(r.pattern);
+      if (re && re.test(n)) {
+        return {
+          tier: BAND_TIER[band],
+          band,
+          label: r.label_en || TIER_LABEL[BAND_TIER[band]],
+          bonus: Number(r.standing_bonus ?? 0) || 0,
+          matched: r.pattern,
+        };
+      }
+    }
+  }
+  return LOCAL;
 }
 
-const TIER_BONUS: Record<Tier, number> = { tier_1: 1.5, tier_2: 0.5, tier_3: 0, unknown: 0 };
 
 // ── THE GRADE LADDER ───────────────────────────────────────────────────────
 // Within a tier. Ordered, most senior first, because every senior title also
@@ -176,6 +239,7 @@ export type MemberPosition = {
   grade: number | null;
   grade_label: string | null;
   tier: Tier;
+  tier_label: string;
   standing: number | null;
 };
 
@@ -214,7 +278,7 @@ const SECTOR_PATTERNS: Array<[string, RegExp]> = [
  * hand-written: the same function run against another member's snapshot yields
  * that member's professions, standing and sectors.
  */
-export function deriveIdentity(snapshot: any): MemberIdentity {
+export function deriveIdentity(snapshot: any, ladder: LadderRow[] = []): MemberIdentity {
   const experience: any[] = Array.isArray(snapshot?.experience) ? snapshot.experience : [];
   const education: any[] = Array.isArray(snapshot?.education) ? snapshot.education : [];
   const certifications: any[] = Array.isArray(snapshot?.certifications) ? snapshot.certifications : [];
@@ -222,7 +286,7 @@ export function deriveIdentity(snapshot: any): MemberIdentity {
   const positions: MemberPosition[] = experience.map((e) => {
     const title = String(e?.position ?? e?.title ?? "").trim();
     const company = String(e?.companyName ?? e?.company ?? "").trim();
-    const tier = employerTier(company);
+    const placed = employerTier(company, ladder);
     const grade = gradeOf(title);
     return {
       title,
@@ -235,10 +299,12 @@ export function deriveIdentity(snapshot: any): MemberIdentity {
       profession: classifyProfession(title),
       grade: grade?.rank ?? null,
       grade_label: grade?.label ?? null,
-      tier,
-      standing: grade ? +(grade.rank + TIER_BONUS[tier]).toFixed(2) : null,
+      tier: placed.tier,
+      tier_label: placed.label,
+      standing: grade ? +(grade.rank + placed.bonus).toFixed(2) : null,
     };
   }).filter((p) => p.title);
+
 
   const byProfession = new Map<Profession, string[]>();
   for (const p of positions) {
@@ -282,7 +348,7 @@ export function deriveIdentity(snapshot: any): MemberIdentity {
     .filter((p) => (p.grade ?? 0) >= 5)
     .map((p) => ({
       position: `${p.title} at ${p.company}`,
-      evidence: `${p.grade_label ?? "position"} at ${TIER_LABEL[p.tier]}${periodOf(p) ? `, ${periodOf(p)}` : ""}`,
+      evidence: `${p.grade_label ?? "position"} at ${p.tier_label ?? TIER_LABEL[p.tier]}${periodOf(p) ? `, ${periodOf(p)}` : ""}`,
     }));
 
   return {
@@ -307,7 +373,9 @@ export function deriveIdentity(snapshot: any): MemberIdentity {
 // ── THE GATES ──────────────────────────────────────────────────────────────
 
 export type GateResult = {
-  gate: "licence" | "profession" | "level" | "presentation" | "scored";
+  gate:
+    | "place" | "nationality" | "licence" | "certification" | "clearance" | "language" | "other"
+    | "profession" | "level" | "presentation" | "scored";
   outcome: "rejected" | "unknown" | "survivor";
   sentence: string | null;
   role_profession: Profession | null;
@@ -353,68 +421,132 @@ export function professionGate(identity: MemberIdentity, opportunity: any) {
   };
 }
 
-/** GATE 3 — level direction, adjusted for employer tier. */
-export function levelGate(identity: MemberIdentity, opportunity: any, routeIsSpecific: boolean) {
+/** GATE 3 — level direction, adjusted for where the employer sits on the ladder. */
+export function levelGate(
+  identity: MemberIdentity,
+  opportunity: any,
+  routeIsSpecific: boolean,
+  ladder: LadderRow[] = [],
+) {
   const mine = identity.highest_standing;
-  const tier = employerTier(opportunity?.issuer_raw);
+  const placed = employerTier(opportunity?.issuer_raw, ladder, opportunity?.country ?? null);
+  const tier = placed.tier;
   const grade = gradeOf(opportunity?.title) ?? gradeOf(opportunity?.scope);
 
   if (mine.standing === null || !grade) {
     return {
-      direction: "unknown" as const, gap: null, tier, sentence: null,
+      direction: "unknown" as const, gap: null, tier, placed, sentence: null,
       reason: !grade ? "role_grade_unreadable" : "member_standing_unreadable",
     };
   }
   if (tier === "unknown") {
     return {
-      direction: "unknown" as const, gap: null, tier,
+      direction: "unknown" as const, gap: null, tier, placed,
       sentence: null, reason: "employer_tier_unknown",
     };
   }
 
-  const standing = +(grade.rank + TIER_BONUS[tier]).toFixed(2);
+  const standing = +(grade.rank + placed.bonus).toFixed(2);
   const gap = +(standing - mine.standing).toFixed(2);
   const held = `you held ${mine.title} at ${mine.company}${mine.period ? ` from ${mine.period}` : ""}`;
   const thisOne = `this is ${opportunity?.title} at ${opportunity?.issuer_raw ?? "an employer at the same tier"}`;
 
   if (gap <= -1) {
     return {
-      direction: "below" as const, gap, tier, reason: null,
+      direction: "below" as const, gap, tier, placed, reason: null,
       sentence: `Below your standing — ${held}; ${thisOne}.`,
     };
   }
   if (gap < 1) {
-    if (routeIsSpecific) return { direction: "lateral" as const, gap, tier, sentence: null, reason: null };
+    if (routeIsSpecific) return { direction: "lateral" as const, gap, tier, placed, sentence: null, reason: null };
     return {
-      direction: "lateral" as const, gap, tier, reason: null,
+      direction: "lateral" as const, gap, tier, placed, reason: null,
       sentence: `Level with what you already hold — ${held} — and it opens no route your current seat does not already give you.`,
     };
   }
-  if (gap < 2) return { direction: "one_above" as const, gap, tier, sentence: null, reason: null };
-  return { direction: "two_plus" as const, gap, tier, sentence: null, reason: null };
+  if (gap < 2) return { direction: "one_above" as const, gap, tier, placed, sentence: null, reason: null };
+  return { direction: "two_plus" as const, gap, tier, placed, sentence: null, reason: null };
+}
+
+// ── GATE 1, NAMED HONESTLY ─────────────────────────────────────────────────
+// The first gate is not "licence". It is whatever the eligibility screen
+// actually found. A man told he was "ruled out on licence" for a seat in
+// Singapore has been told something untrue.
+
+export type GateOneCause =
+  | "place" | "nationality" | "licence" | "certification" | "clearance" | "language" | "other";
+
+export function causeOf(fail: string): GateOneCause {
+  const f = String(fail ?? "").toLowerCase();
+  if (f.startsWith("place")) return "place";
+  if (f.includes("nationality") || f.includes("citizen")) return "nationality";
+  if (f.includes("licen") || f.includes("registration") || f.includes("bar admission")) return "licence";
+  if (f.includes("certif") || f.includes("accredit") || f.includes("chartered")) return "certification";
+  if (f.includes("clearance") || f.includes("vetting") || f.includes("security_check")) return "clearance";
+  if (f.includes("language") || f.includes("arabic") || f.includes("english")) return "language";
+  return "other";
+}
+
+export type MemberPlace = { where?: string | null; nationality?: string | null };
+
+/** The sentence a person would write, naming the actual cause. */
+export function gateOneSentence(cause: GateOneCause, fail: string, opportunity: any, member: MemberPlace): string {
+  const seat = String(opportunity?.title ?? "this seat");
+  const where = String(opportunity?.location ?? "").trim();
+  const mine = String(member?.where ?? "").trim();
+  switch (cause) {
+    case "place":
+      return where && mine
+        ? `Wrong place — ${seat} is in ${where}, and you work from ${mine}. A full-time seat there is not one you can hold from here.`
+        : `Wrong place — this seat sits outside the countries you work in.`;
+    case "nationality": {
+      const phrase = fail.split(":").slice(1).join(":").trim();
+      const has = String(member?.nationality ?? "").trim();
+      return phrase
+        ? `Nationality — the record asks for "${phrase}"${has ? `, and your record states ${has}` : ""}.`
+        : `Nationality — the record states a citizenship requirement you do not meet.`;
+    }
+    case "licence":
+      return `Licence — this seat requires a licence to practise that your record does not show.`;
+    case "certification":
+      return `Certification — this seat requires a certification your record does not show.`;
+    case "clearance":
+      return `Clearance — this seat requires a security clearance your record does not show.`;
+    case "language":
+      return `Language — this seat states a language requirement your record does not show.`;
+    default:
+      return `Ruled out — the record states ${String(fail).replace(/_/g, " ")}, which your record cannot satisfy.`;
+  }
 }
 
 /**
- * The three gates in order. Gate 1 is the licence screen already built in
- * oeEligibility; its verdict is passed in rather than recomputed here.
+ * The three gates in order. Gate 1 is the eligibility screen already built in
+ * oeEligibility; its verdict is passed in rather than recomputed here — but
+ * its NAME is taken from what it found, never assumed.
  */
 export function runGates(
   identity: MemberIdentity,
   opportunity: any,
   licence: { outcome: "excluded" | "unknown" | "eligible"; fails: string[]; unknowns: string[] },
   routeIsSpecific: boolean,
+  ctx: { ladder?: LadderRow[]; member?: MemberPlace } = {},
 ): GateResult {
+  const ladder = ctx.ladder ?? [];
   const base: GateResult = {
-    gate: "licence", outcome: "survivor", sentence: null, role_profession: null,
+    gate: "scored", outcome: "survivor", sentence: null, role_profession: null,
     profession_relation: null, employer_tier: null, level_direction: null,
     standing_gap: null, bridge: null, stretch: false,
   };
 
   if (licence.outcome === "excluded") {
-    const stated = licence.fails.find((f) => f.startsWith("requirement_nationality")) ?? licence.fails[0] ?? "a stated requirement";
+    // Nationality is named ahead of the rest only because it is the one a
+    // member most often disputes; otherwise the first stated failure stands.
+    const fail = licence.fails.find((f) => f.toLowerCase().includes("nationality"))
+      ?? licence.fails[0] ?? "a stated requirement";
+    const cause = causeOf(fail);
     return {
-      ...base, gate: "licence", outcome: "rejected",
-      sentence: `Ruled out on licence — this record states ${stated.replace(/_/g, " ")}, which your record cannot satisfy.`,
+      ...base, gate: cause, outcome: "rejected",
+      sentence: gateOneSentence(cause, fail, opportunity, ctx.member ?? {}),
     };
   }
 
@@ -426,7 +558,7 @@ export function runGates(
     return { ...withProf, gate: "profession", outcome: "rejected", sentence: prof.sentence };
   }
 
-  const lvl = levelGate(identity, opportunity, routeIsSpecific);
+  const lvl = levelGate(identity, opportunity, routeIsSpecific, ladder);
   const withLevel: GateResult = {
     ...withProf, employer_tier: lvl.tier, level_direction: lvl.direction, standing_gap: lvl.gap,
   };

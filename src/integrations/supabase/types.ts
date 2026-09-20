@@ -4510,6 +4510,48 @@ export type Database = {
         }
         Relationships: []
       }
+      oe_employer_ladder: {
+        Row: {
+          active: boolean
+          band: string
+          country: string
+          created_at: string
+          id: string
+          label_ar: string | null
+          label_en: string
+          notes: string | null
+          pattern: string
+          standing_bonus: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          band: string
+          country?: string
+          created_at?: string
+          id?: string
+          label_ar?: string | null
+          label_en: string
+          notes?: string | null
+          pattern: string
+          standing_bonus?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          band?: string
+          country?: string
+          created_at?: string
+          id?: string
+          label_ar?: string | null
+          label_en?: string
+          notes?: string | null
+          pattern?: string
+          standing_bonus?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       oe_entities: {
         Row: {
           ats_endpoint: string | null
@@ -5136,6 +5178,7 @@ export type Database = {
       oe_matches: {
         Row: {
           created_at: string
+          eligibility_conditions: string[]
           eligibility_fail: string[] | null
           eligibility_outcome: string | null
           eligibility_unknowns: string[]
@@ -5174,6 +5217,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          eligibility_conditions?: string[]
           eligibility_fail?: string[] | null
           eligibility_outcome?: string | null
           eligibility_unknowns?: string[]
@@ -5212,6 +5256,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          eligibility_conditions?: string[]
           eligibility_fail?: string[] | null
           eligibility_outcome?: string | null
           eligibility_unknowns?: string[]
@@ -5650,6 +5695,7 @@ export type Database = {
           detect_en: string | null
           label_ar: string
           label_en: string
+          location_sensitivity: string
           required_fields: Json
           sort_order: number
           updated_at: string
@@ -5662,6 +5708,7 @@ export type Database = {
           detect_en?: string | null
           label_ar: string
           label_en: string
+          location_sensitivity?: string
           required_fields?: Json
           sort_order?: number
           updated_at?: string
@@ -5674,6 +5721,7 @@ export type Database = {
           detect_en?: string | null
           label_ar?: string
           label_en?: string
+          location_sensitivity?: string
           required_fields?: Json
           sort_order?: number
           updated_at?: string

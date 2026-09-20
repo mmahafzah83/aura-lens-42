@@ -15,10 +15,19 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { logEfError } from "../_shared/observe.ts";
 import { hasRoute, screen, type Eligibility } from "../_shared/oeEligibility.ts";
-import { deriveIdentity, runGates, writingStanding, type MemberIdentity } from "../_shared/oeScreen.ts";
+import { deriveIdentity, runGates, writingStanding, type LadderRow, type MemberIdentity } from "../_shared/oeScreen.ts";
+import { loadLocationSensitivity, sensitivityOf } from "../_shared/oeKinds.ts";
 
 const FN = "oe-screen-member";
 const MODEL = "openai/gpt-6-astra";
+
+/** Only so a rejection reads like a person wrote it: "you work from Saudi Arabia". */
+const COUNTRY_NAME: Record<string, string> = {
+  SA: "Saudi Arabia", AE: "the United Arab Emirates", QA: "Qatar", KW: "Kuwait",
+  BH: "Bahrain", OM: "Oman", JO: "Jordan", EG: "Egypt", LB: "Lebanon", IQ: "Iraq",
+  GB: "the United Kingdom", US: "the United States", FR: "France", DE: "Germany",
+  CH: "Switzerland", SG: "Singapore", IN: "India", PK: "Pakistan", TR: "Türkiye",
+};
 
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -110,6 +119,15 @@ Deno.serve(async (req) => {
   if (!userId) return json({ error: "user_id required" }, 400);
 
   try {
+    // ── the employer ladder, read from data, never from a list in code ───
+    const { data: ladderRows, error: ladderError } = await admin
+      .from("oe_employer_ladder")
+      .select("country, band, pattern, label_en, standing_bonus, active")
+      .eq("active", true);
+    if (ladderError) throw new Error(`employer ladder: ${ladderError.message}`);
+    const ladder = (ladderRows ?? []) as LadderRow[];
+    const sensitivity = await loadLocationSensitivity(admin);
+
     // ── the member, derived from his own snapshot ────────────────────────
     const { data: snap } = await admin
       .from("linkedin_profile_snapshots")
@@ -117,7 +135,7 @@ Deno.serve(async (req) => {
       .eq("user_id", userId).order("fetched_at", { ascending: false }).limit(1).maybeSingle();
     if (!snap) throw new Error("no profile snapshot — nothing to screen against");
 
-    const identity: MemberIdentity = deriveIdentity(snap);
+    const identity: MemberIdentity = deriveIdentity(snap, ladder);
     if (!identity.positions.length) throw new Error("profile snapshot holds no positions");
 
     await admin.from("oe_member_identity").upsert({
@@ -144,22 +162,45 @@ Deno.serve(async (req) => {
 
     // ── every live record ────────────────────────────────────────────────
     const { data: opps, error: oppsError } = await admin.from("oe_opportunities")
-      .select("id, title, scope, sector, chair_type, level_band, location, remote, requirements, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
+      .select("id, kind, title, scope, sector, chair_type, level_band, location, remote, requirements, issuer_raw, route_url, route_kind, route_dead, access_state, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
 
-    const funnel = { alive: 0, licence: 0, profession: 0, level: 0, unknown: 0, scored: 0, presented: 0, no_line: 0 };
+    // Where he works, named as a person would name it, for the place sentence.
+    const memberPlace = {
+      where: COUNTRY_NAME[String(eligibility?.residence_country ?? "").toUpperCase()]
+        ?? eligibility?.residence_country
+        ?? (eligibility?.countries_allowed ?? []).map((c) => COUNTRY_NAME[String(c).toUpperCase()] ?? c).join(" or ")
+        ?? null,
+      nationality: COUNTRY_NAME[String(eligibility?.nationality ?? "").toUpperCase()]
+        ?? eligibility?.nationality ?? null,
+    };
+
+    const funnel = {
+      alive: 0, place: 0, nationality: 0, licence: 0, other_eligibility: 0,
+      profession: 0, level: 0, unknown: 0, scored: 0, presented: 0, no_line: 0,
+      place_conditions: 0,
+    };
     const survivors: any[] = [];
 
     for (const o of (opps ?? [])) {
       funnel.alive++;
-      const licence = screen(o, eligibility, evidence);
+      // Place means different things to different kinds; the kind's own row says which.
+      const withKind = { ...o, location_sensitivity: sensitivityOf(sensitivity, (o as any).kind) };
+      const licence = screen(withKind, eligibility, evidence);
       const routeIsSpecific = hasRoute(o, (o as any).issuer?.domain ?? null)
         && String((o as any).access_state ?? "") === "identified_route";
-      const g = runGates(identity, o, licence, routeIsSpecific);
+      const g = runGates(identity, withKind, licence, routeIsSpecific, { ladder, member: memberPlace });
 
-      if (g.outcome === "rejected") funnel[g.gate === "licence" ? "licence" : g.gate === "profession" ? "profession" : "level"]++;
-      else if (g.outcome === "unknown") funnel.unknown++;
+      if (licence.conditions.length) funnel.place_conditions++;
+      if (g.outcome === "rejected") {
+        if (g.gate === "profession") funnel.profession++;
+        else if (g.gate === "level") funnel.level++;
+        else if (g.gate === "place") funnel.place++;
+        else if (g.gate === "nationality") funnel.nationality++;
+        else if (g.gate === "licence") funnel.licence++;
+        else funnel.other_eligibility++;
+      } else if (g.outcome === "unknown") funnel.unknown++;
       else { funnel.scored++; survivors.push({ o, g }); }
 
       const { error: upErr } = await admin.from("oe_matches").update({
@@ -167,6 +208,10 @@ Deno.serve(async (req) => {
         role_profession: g.role_profession, profession_relation: g.profession_relation,
         employer_tier: g.employer_tier, level_direction: g.level_direction,
         standing_gap: g.standing_gap, screened_at: new Date().toISOString(),
+        eligibility_outcome: licence.outcome, eligibility_fail: licence.fails,
+        eligibility_unknowns: licence.unknowns, eligibility_conditions: licence.conditions,
+        // The act lane is an intersection; a record he cannot hold leaves it.
+        ...(licence.outcome === "excluded" ? { lane_final: "write" } : {}),
         ...(g.outcome === "survivor" ? {} : { presentation_line: null }),
       }).eq("user_id", userId).eq("opportunity_id", o.id);
       if (upErr) {

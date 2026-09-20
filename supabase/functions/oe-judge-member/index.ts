@@ -15,6 +15,7 @@ import { logEfError } from "../_shared/observe.ts";
 import { loadVocab } from "../_shared/oeVocab.ts";
 import { OE_REGISTER_FOR_PROMPT, registerFault } from "../_shared/oeRegister.ts";
 import { laneFor, levelOf, screen, type Eligibility } from "../_shared/oeEligibility.ts";
+import { loadLocationSensitivity, sensitivityOf } from "../_shared/oeKinds.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -540,9 +541,10 @@ Deno.serve(async (req) => {
     // must never decide whether a live record exists for this member. Every
     // live record is screened and receives a match row. Eligibility, route,
     // gate and taste then decide whether it can be served.
+    const kindSensitivity = await loadLocationSensitivity(admin);
     const { data: opps, error: oppsError } = await admin
       .from("oe_opportunities")
-      .select("id, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, issuer:oe_issuers(domain)")
+      .select("id, kind, title, scope, sector, chair_type, time_kind, seniority_band, level_band, location, remote, requirements, deadline, signal_date, evidence_quote, quote_verified, source_url, route_url, route_kind, route_dead, issuer_id, issuer_raw, language, embedding, issuer:oe_issuers(domain)")
       .eq("alive", true);
     if (oppsError) throw new Error(`alive opportunities: ${oppsError.message}`);
     const requestedSet = new Set(requestedOpportunityIds);
@@ -576,7 +578,10 @@ Deno.serve(async (req) => {
     const writePool: any[] = [];
     for (const o of filtered) {
       const level = levelOf(o);
-      const withLevel = { ...o, level_band: level };
+      const withLevel = {
+        ...o, level_band: level,
+        location_sensitivity: sensitivityOf(kindSensitivity, (o as any).kind),
+      };
       const s = screen(withLevel, eligibility, evidence);
       const issuerDomain = (o as any).issuer?.domain ?? null;
       const reachable = laneFor(withLevel, s, issuerDomain) === "act";
@@ -592,6 +597,7 @@ Deno.serve(async (req) => {
         user_id: userId, opportunity_id: o.id, rubric_version: rubricVersion,
         lane_final: laneFinal, eligibility_fail: s.fails,
         eligibility_outcome: s.outcome, eligibility_unknowns: s.unknowns,
+        eligibility_conditions: s.conditions,
       }, { onConflict: "user_id,opportunity_id,rubric_version" });
 
       if (laneErr) {
@@ -617,16 +623,20 @@ Deno.serve(async (req) => {
     const stale = (unscreened ?? []).filter((m: any) => !inPool.has(String(m.opportunity_id)));
     if (stale.length) {
       const { data: staleOpps } = await admin.from("oe_opportunities")
-        .select("id, title, scope, sector, chair_type, seniority_band, level_band, location, remote, requirements, route_url, route_kind, route_dead, issuer_id, issuer:oe_issuers(domain)")
+        .select("id, kind, title, scope, sector, chair_type, seniority_band, level_band, location, remote, requirements, route_url, route_kind, route_dead, issuer_id, issuer:oe_issuers(domain)")
         .in("id", stale.map((m: any) => m.opportunity_id));
       for (const row of stale) {
         const o = (staleOpps ?? []).find((x: any) => String(x.id) === String(row.opportunity_id));
         if (!o) continue;
-        const withLevel = { ...o, level_band: levelOf(o) };
+        const withLevel = {
+          ...o, level_band: levelOf(o),
+          location_sensitivity: sensitivityOf(kindSensitivity, (o as any).kind),
+        };
         const s = screen(withLevel, eligibility, evidence);
         const reachable = laneFor(withLevel, s, (o as any).issuer?.domain ?? null) === "act";
         await admin.from("oe_matches").update({
           eligibility_outcome: s.outcome, eligibility_fail: s.fails, eligibility_unknowns: s.unknowns,
+          eligibility_conditions: s.conditions,
           lane_final: reachable && row.gate_passed === true && row.lane === "lane_open" ? "act" : "write",
         }).eq("user_id", userId).eq("opportunity_id", row.opportunity_id)
           .eq("rubric_version", row.rubric_version);
@@ -778,6 +788,7 @@ Deno.serve(async (req) => {
         eligibility_outcome: o._screen.outcome,
         eligibility_fail: o._screen.fails,
         eligibility_unknowns: o._screen.unknowns,
+        eligibility_conditions: o._screen.conditions ?? [],
         // THE INTERSECTION: he can hold it, the gate passed, the door is live.
         lane_final: o._reachable && gatePassed && lane === "lane_open" ? "act" : "write",
         gate_passed: gatePassed, gate_reason: gateReason, judged_at: new Date().toISOString(),
