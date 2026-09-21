@@ -223,8 +223,12 @@ Deno.serve(async (req) => {
         eligibility_unknowns: licence.unknowns, eligibility_conditions: licence.conditions,
         // A record cannot both pass the gate and carry a rejection. The screen
         // is the later word, so it closes the gate it just refused.
+        // The screen is the one verdict on the gates, so it writes both sides
+        // of it: a survivor passes, a refusal closes and falls to writing.
         ...(g.outcome === "rejected"
           ? { gate_passed: false, lane_final: "write" }
+          : g.outcome === "survivor"
+          ? { gate_passed: true }
           : {}),
         // The act lane is an intersection; a record he cannot hold leaves it.
         ...(licence.outcome === "excluded" ? { lane_final: "write" } : {}),
