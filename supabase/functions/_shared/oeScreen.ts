@@ -262,6 +262,34 @@ export function gradeOf(title?: string | null): { rank: number; label: string } 
   return null;
 }
 
+/**
+ * Seniority is decision rights, magnitude and scope — not a title. When the
+ * posting states any of those, they decide the grade and the title becomes the
+ * tie-breaker (a title reading higher than the stated scope is not thrown away).
+ * When the posting states none of them, the title stands alone.
+ */
+export type GradeRead = { rank: number; label: string; basis: "title" | "proxies" } | null;
+
+export function gradeFrom(opportunity: any): GradeRead {
+  const title = gradeOf(opportunity?.title) ?? gradeOf(opportunity?.scope);
+  const ev = opportunity?.scope_evidence ?? null;
+
+  const reports = Number(ev?.direct_reports?.value);
+  const scope = String(ev?.organisational_scope?.value ?? "");
+  const hasPnl = !!ev?.budget_or_pnl;
+
+  let proxy: { rank: number; label: string } | null = null;
+  if (scope === "enterprise" || hasPnl) proxy = { rank: 8, label: "enterprise scope or stated profit and loss" };
+  else if (scope === "division" || (Number.isFinite(reports) && reports >= 30)) proxy = { rank: 7, label: "division scope or thirty or more reports" };
+  else if (scope === "function" || (Number.isFinite(reports) && reports >= 8)) proxy = { rank: 5, label: "function scope or eight or more reports" };
+  else if (scope === "team") proxy = { rank: 4, label: "team scope" };
+
+  if (!proxy) return title ? { ...title, basis: "title" } : null;
+  if (title && title.rank > proxy.rank) return { ...title, basis: "proxies" };
+  return { ...proxy, basis: "proxies" };
+}
+
+
 // ── THE MEMBER, DERIVED ────────────────────────────────────────────────────
 
 export type MemberPosition = {
