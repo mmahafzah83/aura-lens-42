@@ -371,11 +371,25 @@ Deno.serve(async (req) => {
           .slice(0, 2);
 
         // His record speaks of him in the third person; the line speaks TO him.
-        const youSay = (claim: string) =>
-          r_trim(claim)
-            .replace(/^(he|the member|mohammad)\s+(has|had|is|was|led|leads|ran|runs|owns|owned|delivered|holds|held|manages|managed)\b/i, "$2")
-            .replace(/^(he|the member|mohammad)\s+/i, "")
-            .replace(/[.\s]+$/, "");
+        // Drop the pronoun, then put the verb that followed it into "you" form.
+        const IRREGULAR: Record<string, string> = {
+          has: "have", is: "are", was: "were", does: "do", "hasn't": "haven't",
+        };
+        const toYou = (verb: string) => {
+          const low = verb.toLowerCase();
+          if (IRREGULAR[low]) return IRREGULAR[low];
+          // A present-tense third-person verb ends in s; a past tense does not.
+          if (/^[a-z]+(?:ie|e|[a-z])s$/.test(low) && !/(ss|us|is)$/.test(low)) {
+            return low.endsWith("ies") ? `${low.slice(0, -3)}y` : low.endsWith("hes") || low.endsWith("oes") ? low.slice(0, -2) : low.slice(0, -1);
+          }
+          return low;
+        };
+        const youSay = (claim: string) => {
+          const c = r_trim(claim).replace(/[.\s]+$/, "");
+          const m = c.match(/^(?:he|the member|mohammad)\s+([A-Za-z']+)\b(.*)$/i);
+          if (m) return `${toYou(m[1])}${m[2]}`;
+          return c.replace(/^(?:he|the member|mohammad)\s+/i, "");
+        };
         const asked = (requirement: string) => {
           const r = r_trim(requirement).replace(/^[-•*]\s*/, "");
           return r.length > 140 ? `${r.slice(0, 137)}…` : r;
