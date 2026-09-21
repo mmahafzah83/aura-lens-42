@@ -234,11 +234,24 @@ export function OpportunityQueue() {
 
   return <section className="oe-queue" dir="ltr" aria-busy={loading}>
     <header className="oe-queue-header">
-      <h1>{t("queue_morning", "Morning")}{firstName ? `, ${firstName}` : ""}</h1>
-      {view === "today" && <p><span style={mono}>{cards.length}</span> {cards.length === 1 ? "thing" : "things"} today · about a minute</p>} {/* vocab-ok */}
-      <div className="oe-machine-line"><span className={`oe-machine-dot${refreshing ? " oe-machine-dot-working" : ""}`} aria-hidden /><span>{refreshing ? "Looking again" : "Still reading"} — <b style={mono}>{data.surface_count}</b> sources across <b style={mono}>{data.entity_count}</b> organisations</span><button type="button" className="v23-textlink oe-refresh" onClick={() => void refresh()} disabled={refreshing || loading}>{refreshing ? "Refreshing…" : "Refresh"}</button></div>
+      <div className="oe-header-top">
+        <div>
+          <SectionHeader label="Your opportunities, watched" />
+          {view === "today" && cards.length > 0 && <p><span style={mono}>{cards.length}</span> {cards.length === 1 ? "thing" : "things"} today · about a minute</p>} {/* vocab-ok */}
+        </div>
+        <dl className="oe-metrics">
+          {[["sources read", data.metrics?.sources_read ?? data.surface_count],
+            ["organisations", data.metrics?.organisations ?? data.entity_count],
+            ["judged this week", data.metrics?.judged_week ?? 0],
+            ["survived", data.metrics?.survived ?? 0],
+            ["shown", data.metrics?.shown ?? 0]].map(([label, value]) => <div key={String(label)}><dt>{label}</dt><dd style={mono}>{value}</dd></div>)}
+          {data.metrics?.first_card_expected && <div><dt>first card expected</dt><dd style={mono}>{dateText(data.metrics.first_card_expected)}</dd></div>}
+        </dl>
+      </div>
+      <div className="oe-machine-line"><span className={`oe-machine-dot${refreshing ? " oe-machine-dot-working" : ""}`} aria-hidden /><span>{refreshing ? "Looking again" : "Still reading"}</span><button type="button" className="v23-textlink oe-refresh" onClick={() => void refresh()} disabled={refreshing || loading}>{refreshing ? "Refreshing…" : "Refresh"}</button></div>
       {refreshNote && <p className="oe-refresh-note">{refreshNote}</p>}
     </header>
+
     <nav className="oe-segments" aria-label="Opportunity views">{(["today", "parked", "history", "settings"] as View[]).map((item) => <button key={item} type="button" aria-current={view === item ? "page" : undefined} onClick={() => setView(item)}><span>{item[0].toUpperCase() + item.slice(1)}</span>{item === "today" && cards.length > 0 && <b>{cards.length}</b>}{item === "parked" && data.parked.length > 0 && <b>{data.parked.length}</b>}</button>)}</nav> {/* vocab-ok */}
 
     {view === "today" && directionIncomplete && <button type="button" className="oe-setup-strip" onClick={() => openDirection()}><span><strong>Set your direction</strong><small>{direction?.goal ? `Goal set · ${!direction.priority ? "priority" : "mix"} next · 1 min` : "Goal, priority and mix · 1 min"}</small></span><span className="oe-progress" aria-label={`${directionProgress.filter(Boolean).length} of 3 set`}>{directionProgress.map((done, index) => <i key={index} className={done ? "is-set" : ""} />)}</span></button>}
