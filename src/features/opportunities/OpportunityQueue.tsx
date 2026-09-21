@@ -31,21 +31,31 @@ const STATE_LABEL: Record<AccessState, string> = {
 };
 type Priority = "bigger_seat" | "known_for_one" | "new_rooms" | "out_of_sector" | "stay_current";
 type Mix = "win" | "build" | "explore";
-type Direction = { priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null; mix: Mix | null; mix_set_on: string | null };
+type Goal = "income_from_expertise" | "advancement" | "visibility" | "relationships" | "knowledge";
+type Direction = {
+  priority: Priority | null; priority_set_on: string | null; priority_expires_at: string | null;
+  mix: Mix | null; mix_set_on: string | null;
+  goal: Goal | null; goal_proposed: Goal | null; goal_confirmed_at: string | null; goal_expires_at: string | null;
+};
+/* The window is a promise with a date on it. It is stated once, it is never
+   moved forward quietly, and it disappears the day a first card is shown. */
+type Window = { expected_by: string; declared_on: string | null; missed: boolean };
 type Derivation = { comments?: Array<{ id?: string; text?: string; said_on?: string }>; profile?: string[]; legal_basis?: string };
 type Rule = { id: string; kind: "hard" | "soft"; rule_text: string; rule_text_ar: string | null; field: string | null; value: string | null; stated_on: string; derived_from?: Derivation | null; ratified_at?: string | null };
 type Held = { id: string; day: string; reason: string | null; rank: number | null; title: string | null };
 type History = { id: string; shown_at: string; lane: string | null; tap: string | null; signal_class: string | null; truth_code: string | null; outcome: string | null; why: Record<string, unknown> | null; title: string | null };
 type DueOutcome = { id: string; title: string | null };
-type QueueData = { cards: QueueCard[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[] };
+type QueueData = { cards: QueueCard[]; surface_count: number; entity_count: number; rule_count: number; held_count: number; direction: Direction | null; window: Window | null; rules: Rule[]; held: Held[]; history: History[]; due_outcomes: DueOutcome[] };
 type Proposal = { id: string; count: number; value: string };
 type DirectionQuestion = "priority" | "mix" | null;
 
-const emptyData: QueueData = { cards: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, rules: [], held: [], history: [], due_outcomes: [] };
+const emptyData: QueueData = { cards: [], surface_count: 0, entity_count: 0, rule_count: 0, held_count: 0, direction: null, window: null, rules: [], held: [], history: [], due_outcomes: [] };
 const mono = { fontFamily: "var(--ff-mono)", fontVariantNumeric: "tabular-nums" } as const;
 const chipBase = { minHeight: 36, padding: "7px 10px", borderRadius: 4, background: "var(--surface-card)", color: "var(--text-primary)", cursor: "pointer", fontFamily: "inherit", fontSize: 13 } as const;
 const priorities: Priority[] = ["bigger_seat", "known_for_one", "new_rooms", "out_of_sector", "stay_current"];
 const mixes: Mix[] = ["win", "build", "explore"];
+const goals: Goal[] = ["income_from_expertise", "advancement", "visibility", "relationships", "knowledge"];
+
 
 function validWhy(card: QueueCard) {
   return (card.why_lines ?? []).some((line) => String(line?.text ?? "").trim());
@@ -74,6 +84,8 @@ export function OpportunityQueue() {
   const [refreshNote, setRefreshNote] = useState("");
   const renderedRef = useRef<Set<string>>(new Set());
   const v = useVocab("en");
+  const [goalChanging, setGoalChanging] = useState(false);
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -257,6 +269,25 @@ export function OpportunityQueue() {
     if (!error) { markDirectionAsked(); void load(); }
   };
 
+  /* The goal is written by the member's own confirmation and by nothing else.
+     The engine may propose; only this call, from his hand, may set it. */
+  const saveGoal = async (value: Goal) => {
+    if (busy) return;
+    setBusy(true);
+    const { error } = await (supabase.rpc as any)("oe_goal_save", { p_goal: value });
+    setBusy(false);
+    if (!error) { setGoalChanging(false); void load(); }
+  };
+
+  const deferGoal = async () => {
+    if (busy) return;
+    setBusy(true);
+    const { error } = await (supabase.rpc as any)("oe_goal_save", { p_defer: true });
+    setBusy(false);
+    if (!error) { setGoalChanging(false); void load(); }
+  };
+
+
   const changeDirection = (question: Exclude<DirectionQuestion, null>) => {
     if (directionAsked || data.cards.length === 0) return;
     setDrawerOpen(false);
@@ -265,6 +296,15 @@ export function OpportunityQueue() {
 
   const t = (key: string, fallback: string) => v(key) || fallback;
   const count = cards.length;
+  const today = new Date().toISOString().slice(0, 10);
+  /* The goal is asked first, and asked loudest when the tab is empty — an
+     empty fortnight is exactly when "opportunity" needs a meaning. */
+  const goalDeferredUntil = data.direction?.goal ? null : (data.direction?.goal_expires_at ?? null);
+  const askGoal = !data.direction?.goal && (!goalDeferredUntil || goalDeferredUntil <= today);
+  const showGoalCard = askGoal || goalChanging;
+  const windowDate = data.window?.expected_by ?? null;
+  const dateText = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
   const lead = card?.why_lines?.find((line) => String(line?.text ?? "").trim())?.text ?? "";
   const taste = card ? [
     ["queue_wrong_level", "Wrong level", "level", card.level_band],
@@ -282,6 +322,14 @@ export function OpportunityQueue() {
   ] as const;
 
   return <section className="oe-queue" dir="ltr" aria-busy={loading}>
+    {showGoalCard && !loading && <GoalCard
+      direction={data.direction}
+      busy={busy}
+      v={v}
+      onChoose={(goal) => void saveGoal(goal)}
+      onDefer={() => void deferGoal()}
+    />}
+
     <header className="oe-queue-header">
       <h1>{t("queue_morning", "Morning")}{firstName ? `, ${firstName}` : ""}</h1>
       <p>{count === 0 ? t("queue_nothing_today", "Nothing today.") : <><span style={mono}>{count}</span> {t("queue_things_today", "things today. About a minute.")}</>}</p>
@@ -340,6 +388,14 @@ export function OpportunityQueue() {
     </> : !loading && <AuraCard hover="none" className="oe-end" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)", borderRadius: 20 }}>
       <h2>{t("queue_today_done", "That is today.")}</h2>
       <p>{data.cards.length === 0 ? t("queue_still_weak", "Nothing strong enough to send. The machine is still reading.") : t("queue_held_explain", "Anything held back remains available behind What reaches you.")}</p>
+      {/* A promise with a date on it. It is never moved forward quietly, and
+          the day it is missed it says so. */}
+      {data.cards.length === 0 && windowDate && (() => {
+        const line = data.window?.missed ? v("window_missed") : v("window_expected");
+        const [before, after] = line.split("{date}");
+        return <p className="oe-window-line">{before}<span style={mono}>{dateText(windowDate)}</span>{after}</p>;
+      })()}
+
       {data.due_outcomes.map((due) => <div key={due.id} className="oe-outcome"><strong>{due.title}</strong><span>{t("queue_outcome_ask", "Did anything come of it?")}</span><div className="oe-chip-row">{[["applied","queue_applied","I applied"],["shortlisted","queue_shortlisted","I was shortlisted"],["won","queue_won","I got it"],["nothing","queue_nothing","Nothing came of it"]].map(([outcome,key,fallback]) => <button key={outcome} type="button" style={{ ...chipBase, border: "1px solid var(--border-default)" }} onClick={() => void answerOutcome(due.id,outcome)}>{t(key,fallback)}</button>)}</div></div>)}
       <div className="oe-end-links"><button type="button" className="v23-textlink" onClick={() => setDrawerOpen(true)}>{t("queue_setup", "Review what reaches you")}</button><button type="button" className="v23-textlink" onClick={() => setHistoryOpen((open) => !open)}>{t("queue_history", "History")}</button></div>
       {historyOpen && <div className="oe-history">{data.history.map((row) => <details key={row.id}><summary><strong>{row.title ?? "—"}</strong><span style={mono}>{String(row.shown_at).slice(0,10)}</span></summary><pre>{JSON.stringify(row.why, null, 2)}</pre></details>)}</div>}
@@ -347,7 +403,11 @@ export function OpportunityQueue() {
 
     {drawerOpen && createPortal(<div className="oe-drawer-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerOpen(false); }}><aside className="oe-drawer" role="dialog" aria-modal="true" aria-label={t("queue_tuning_title", "What reaches you")}>
       <div className="oe-drawer-head"><h2>{t("queue_tuning_title", "What reaches you")}</h2><button type="button" onClick={() => setDrawerOpen(false)} aria-label={t("queue_close", "Close")}><X size={18}/></button></div>
+      {data.direction?.goal && <section className="oe-direction-summary">
+        <div className="oe-rule"><div><strong>{v("goal_sentence").replace("{goal}", v(`goal_${data.direction.goal}`)).replace("{date}", String(data.direction.goal_confirmed_at ?? "").slice(0, 10))}</strong></div><button type="button" className="v23-textlink" onClick={() => { setDrawerOpen(false); setGoalChanging(true); }}>{v("direction_change")}</button></div>
+      </section>}
       {data.direction?.priority && <section className="oe-direction-summary">
+
         <div className="oe-rule"><div><strong>{v("direction_priority_sentence").replace("{priority}", v(`priority_${data.direction.priority}`)).replace("{date}", data.direction.priority_set_on ?? "")}</strong></div><button type="button" className="v23-textlink" disabled={directionAsked} onClick={() => changeDirection("priority")}>{v("direction_change")}</button></div>
         {data.direction.mix && <div className="oe-rule"><div><strong>{v("direction_mix_sentence").replace("{mix}", v(`mix_${data.direction.mix}`))}</strong></div><button type="button" className="v23-textlink" disabled={directionAsked} onClick={() => changeDirection("mix")}>{v("direction_change")}</button></div>}
       </section>}
@@ -357,6 +417,24 @@ export function OpportunityQueue() {
     </aside></div>, document.body)}
   </section>;
 }
+
+/* One question, five answers, asked before anything else and asked whether or
+   not there is a card. The engine may mark its reading of the profile; the
+   member's hand is the only thing that sets the goal. */
+function GoalCard({ direction, busy, v, onChoose, onDefer }: { direction: Direction | null; busy: boolean; v: ReturnType<typeof useVocab>; onChoose: (goal: Goal) => void; onDefer: () => void }) {
+  const proposed = direction?.goal_proposed ?? null;
+  return <AuraCard hover="none" className="oe-direction-card" style={{ background: "var(--surface-card)", border: "1px solid var(--border-default)", borderRadius: 20 }}>
+    <h2>{v("goal_question")}</h2>
+    <p>{v("goal_sub")}</p>
+    <div className="oe-direction-options">
+      {goals.map((goal) => <Button key={goal} type="button" variant="outline" className={`oe-direction-option${direction?.goal === goal ? " is-selected" : ""}`} disabled={busy} onClick={() => onChoose(goal)} aria-pressed={direction?.goal === goal}>
+        <span><strong>{v(`goal_${goal}`)}</strong>{proposed === goal && <small>{v("goal_proposed_marker")}</small>}</span>
+      </Button>)}
+    </div>
+    <button type="button" className="v23-textlink oe-direction-later" disabled={busy} onClick={onDefer}>{v("goal_not_now")}</button>
+  </AuraCard>;
+}
+
 
 function DirectionCard({ kind, direction, busy, v, onChoose, onDefer }: { kind: Exclude<DirectionQuestion, null>; direction: Direction | null; busy: boolean; v: ReturnType<typeof useVocab>; onChoose: (value: Priority | Mix) => void; onDefer: () => void }) {
   const isRenewal = kind === "priority" && Boolean(direction?.priority);

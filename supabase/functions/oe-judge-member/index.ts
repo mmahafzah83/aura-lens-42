@@ -462,6 +462,15 @@ Deno.serve(async (req) => {
     const exploreShare = Number(params.explore_share ?? 0);
     const fewShotK = Number(params.few_shot_k ?? 8);
     const alarmRun = Number(params.empty_day_alarm_run ?? 3);
+    // THE GOAL STEERS. It weights the kinds the member's own answer points at.
+    // A weight, never a filter: no kind is ever excluded because of the goal.
+    const { data: directionRow } = await admin
+      .from("oe_direction").select("goal").eq("user_id", userId).maybeSingle();
+    const memberGoal = String((directionRow as any)?.goal ?? "");
+    const goalWeights: Record<string, number> =
+      (params.goal_kind_weights?.[memberGoal] ?? {}) as Record<string, number>;
+    const goalWeight = (kind: string | null) => Number(goalWeights[String(kind ?? "")] ?? 1);
+
 
     // ── the member ────────────────────────────────────────────────────────
     const { data: faces } = await admin
@@ -600,8 +609,14 @@ Deno.serve(async (req) => {
         const m = merged.get(o.id) ?? { score: 0, retrieval: { coverage: "outside_retrieval_top_k" } };
         const vec = asVector(o.embedding);
         const penalty = avoidVec && vec ? cosine(vec, avoidVec) * 0.5 : 0;
-        return { o, score: m.score - penalty, retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4) } };
+        const gw = goalWeight((o as any).kind);
+        return {
+          o,
+          score: (m.score - penalty) * gw,
+          retrieval: { ...m.retrieval, avoid_penalty: +penalty.toFixed(4), goal: memberGoal || null, goal_weight: gw },
+        };
       }).sort((a, b) => b.score - a.score);
+
     // Retrieval runs BEFORE the model: the eligible pool is ordered, then cut
     // to the shortlist from params. The cut is a cost control, never a silent
     // one — a shortlist smaller than the eligible pool is logged and counted.
